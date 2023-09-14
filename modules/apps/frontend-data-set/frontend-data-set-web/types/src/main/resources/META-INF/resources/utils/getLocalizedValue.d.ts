@@ -12,4 +12,8 @@ export declare function getLocalizedValue(
 	item: any,
 	fieldName: string | Array<string>
 ): ILocalizedItemDetails | null;
+export declare function getLocalizedValueV2(
+	item: any,
+	fieldName: string | Array<string>
+): ILocalizedItemDetails | null;
 export {};
