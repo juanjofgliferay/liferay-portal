@@ -24,13 +24,9 @@ import {
 } from './ObjectRelationshipFormBase';
 import SelectRelationship from './SelectRelationship';
 
-export type TDeletionType = {
-	label: string;
-	value: string;
-};
 interface EditRelationshipProps {
 	baseResourceURL: string;
-	deletionTypes: TDeletionType[];
+	deletionTypes: LabelValueObject[];
 	hasUpdateObjectDefinitionPermission: boolean;
 	objectDefinitionExternalReferenceCode: string;
 	objectRelationship: ObjectRelationship;
@@ -49,7 +45,7 @@ export default function EditRelationship({
 }: EditRelationshipProps) {
 	const onSubmit = async (objectRelationship: ObjectRelationship) => {
 		try {
-			await API.updateRelationship(objectRelationship);
+			await API.putObjectRelationship(objectRelationship);
 			saveAndReload();
 
 			openToast({

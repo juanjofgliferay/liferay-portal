@@ -195,14 +195,6 @@ public class JobQueue {
 				Comparator.comparingInt(JobComparatorEntity::getPosition));
 
 			_jobEntities.sort(new PrioritizedJobComparator());
-
-			for (int i = 0; i < _jobEntities.size(); i++) {
-				JobEntity jobEntity = _jobEntities.get(i);
-
-				jobEntity.setPosition(i + 1);
-
-				_jobEntityRepository.update(jobEntity);
-			}
 		}
 	}
 
@@ -216,8 +208,6 @@ public class JobQueue {
 
 					continue;
 				}
-
-				System.out.println(jobEntity);
 
 				for (BuildEntity buildEntity : jobEntity.getBuildEntities()) {
 					if (buildEntity.getState() == BuildEntity.State.COMPLETED) {
@@ -242,8 +232,6 @@ public class JobQueue {
 
 						_buildEntityRepository.update(buildEntity);
 					}
-
-					System.out.println("> " + buildEntity);
 				}
 			}
 

@@ -7,12 +7,11 @@ import {getLocalizableLabel} from '@liferay/object-js-components-web';
 import {Edge, Node, useStore} from 'react-flow-renderer';
 
 import {defaultLanguageId} from '../../../utils/constants';
-import {manyMarkerId} from '../Edges/ManyMarkerEnd';
-import {oneMarkerId} from '../Edges/OneMarkerEnd';
+import {manyMarkerId} from '../Edges/ManyMarker';
+import {oneMarkerId} from '../Edges/OneMarker';
 import {
-	LeftSidebarItemType,
-	ObjectDefinitionNodeData,
-	ObjectFieldNode,
+	LeftSidebarItem,
+	LeftSidebarObjectDefinitionItem,
 	ObjectRelationshipEdgeData,
 	RightSidebarType,
 	TAction,
@@ -24,23 +23,22 @@ import {
 } from './objectFolderReducerUtil';
 import {TYPES} from './typesEnum';
 
-export function ObjectFolderReducer(state: TState, action: TAction) {
+export function ObjectFolderReducer(state: TState, action: TAction): TState {
 	const store = useStore();
 
 	switch (action.type) {
-		case TYPES.ADD_NEW_NODE_TO_FOLDER: {
-			const {newObjectDefinition, selectedFolderName} = action.payload;
-			const {nodes} = store.getState();
+		case TYPES.ADD_OBJECT_DEFINITION_TO_OBJECT_FOLDER: {
 			const {
-				editObjectDefinitionURL,
-				elements,
-				leftSidebarItems,
-				objectDefinitionPermissionsURL,
-			} = state;
+				newObjectDefinition,
+				selectedObjectFolderName,
+			} = action.payload;
+			const {nodes} = store.getState();
+			const {elements, leftSidebarItems} = state;
 			let newPosition = {
 				x: 2 * 300,
 				y: 2 * 400,
 			};
+
 			if (nodes.length) {
 				const yPositions = nodes.map((node) => node.position.y);
 				const maximumY = Math.max(...yPositions);
@@ -59,57 +57,90 @@ export function ObjectFolderReducer(state: TState, action: TAction) {
 					y: mostBottomRightNodePosition!.y,
 				};
 			}
-			const newLeftSidebarItems = leftSidebarItems.map((item) => {
-				let newDefinition;
 
-				if (item.folderName === selectedFolderName) {
-					newDefinition = {
-						definitionId: newObjectDefinition.id,
-						definitionName: newObjectDefinition.name,
-						name: getLocalizableLabel(
-							newObjectDefinition.defaultLanguageId,
-							newObjectDefinition.label,
-							newObjectDefinition.name
-						),
-						selected: true,
-						type: 'objectDefinition',
-					};
-					const updatedObjectDefinitions = item.objectDefinitions?.map(
-						(objectDefinition) => {
-							return {
-								...objectDefinition,
-								selected: false,
-							};
+			let linkedObjectDefinition = false;
+
+			const newLeftSidebarItems = leftSidebarItems.map(
+				(leftSidebarItem) => {
+					let newLeftSidebarObjectDefinitionItem;
+
+					if (
+						leftSidebarItem.objectFolderName ===
+						selectedObjectFolderName
+					) {
+						linkedObjectDefinition =
+							leftSidebarItem.leftSidebarObjectDefinitionItems?.find(
+								(leftSidebarObjectDefinitionItem) =>
+									leftSidebarObjectDefinitionItem.id ===
+									newObjectDefinition.id
+							)?.type === 'linkedObjectDefinition';
+
+						if (!linkedObjectDefinition) {
+							newLeftSidebarObjectDefinitionItem = {
+								id: newObjectDefinition.id,
+								label: getLocalizableLabel(
+									newObjectDefinition.defaultLanguageId,
+									newObjectDefinition.label,
+									newObjectDefinition.name
+								),
+								name: newObjectDefinition.name,
+								selected: true,
+								type: 'objectDefinition',
+							} as LeftSidebarObjectDefinitionItem;
 						}
-					);
 
-					return {
-						...item,
-						objectDefinitions: [
-							...updatedObjectDefinitions!,
-							newDefinition,
-						],
-					};
+						const updatedObjectDefinitions = leftSidebarItem.leftSidebarObjectDefinitionItems?.map(
+							(leftSidebarObjectDefinitionItem) => {
+								if (
+									linkedObjectDefinition &&
+									leftSidebarObjectDefinitionItem.id ===
+										newObjectDefinition.id
+								) {
+									return {
+										...leftSidebarObjectDefinitionItem,
+										selected: true,
+										type: 'objectDefinitionNode',
+									};
+								}
+
+								return {
+									...leftSidebarObjectDefinitionItem,
+									selected: false,
+								};
+							}
+						);
+
+						return {
+							...leftSidebarItem,
+							leftSidebarObjectDefinitionItems: newLeftSidebarObjectDefinitionItem
+								? [
+										...updatedObjectDefinitions!,
+										newLeftSidebarObjectDefinitionItem,
+								  ]
+								: [...updatedObjectDefinitions!],
+						};
+					}
+					else {
+						return {
+							...leftSidebarItem,
+						};
+					}
 				}
-				else {
-					return {
-						...item,
-					};
-				}
-			}) as LeftSidebarItemType[];
+			) as LeftSidebarItem[];
 			const objectFields = newObjectDefinition.objectFields.map(
-				(field) => {
+				(objectField) => {
 					return {
-						businessType: field.businessType,
-						externalReferenceCode: field.externalReferenceCode,
+						businessType: objectField.businessType,
+						externalReferenceCode:
+							objectField.externalReferenceCode,
 						label: getLocalizableLabel(
 							newObjectDefinition.defaultLanguageId,
-							field.label,
-							field.name
+							objectField.label,
+							objectField.name
 						),
-						name: field.name,
-						primaryKey: field.name === 'id',
-						required: field.required,
+						name: objectField.name,
+						primaryKey: objectField.name === 'id',
+						required: objectField.required,
 						selected: false,
 					} as ObjectFieldNode;
 				}
@@ -119,102 +150,137 @@ export function ObjectFolderReducer(state: TState, action: TAction) {
 					...node,
 					data: {
 						...node.data,
-						nodeSelected: false,
+						selected: false,
 					},
 				};
 			});
-			const newNode = {
-				data: {
-					defaultLanguageId: newObjectDefinition.defaultLanguageId,
-					editObjectDefinitionURL,
-					externalReferenceCode:
-						newObjectDefinition.externalReferenceCode,
-					hasObjectDefinitionDeleteResourcePermission: !!newObjectDefinition
-						.actions.delete,
-					hasObjectDefinitionManagePermissionsResourcePermission: !!newObjectDefinition
-						.actions.permissions,
-					id: newObjectDefinition.id,
-					isLinkedNode: false,
-					label: getLocalizableLabel(
-						newObjectDefinition.defaultLanguageId!,
-						newObjectDefinition.label,
-						newObjectDefinition.name
-					),
-					name: newObjectDefinition.name,
-					nodeSelected: true,
-					objectDefinitionPermissionsURL,
-					objectFields: fieldsCustomSort(objectFields),
-					status: newObjectDefinition.status,
-					system: newObjectDefinition.system,
-				},
-				id: newObjectDefinition.id.toString(),
-				position: newPosition,
-				type: 'objectDefinition',
-			} as Node<ObjectDefinitionNodeData>;
-			const newObjectDefinitionNodes = [
-				...updatedObjectDefinitionsNodes,
-				newNode,
-			] as Node<ObjectDefinitionNodeData>[];
+
+			let newObjectDefinitionNodes = [];
+
+			let newObjectDefinitionNode = {} as Node<ObjectDefinitionNodeData>;
+
+			if (linkedObjectDefinition) {
+				const objectDefinitionNodes = updatedObjectDefinitionsNodes.map(
+					(objectDefinitionNode) => {
+						if (
+							objectDefinitionNode.id ===
+							newObjectDefinition.id.toString()
+						) {
+							return {
+								...objectDefinitionNode,
+								data: {
+									...objectDefinitionNode.data,
+									linkedObjectDefinition: false,
+									selected: true,
+								},
+							} as Node<ObjectDefinitionNodeData>;
+						}
+
+						return objectDefinitionNode;
+					}
+				);
+
+				newObjectDefinitionNodes = [...objectDefinitionNodes] as Node<
+					ObjectDefinitionNodeData
+				>[];
+			}
+			else {
+				newObjectDefinitionNode = {
+					data: {
+						...newObjectDefinition,
+						hasObjectDefinitionDeleteResourcePermission: !!newObjectDefinition
+							.actions.delete,
+						hasObjectDefinitionManagePermissionsResourcePermission: !!newObjectDefinition
+							.actions.permissions,
+						hasObjectDefinitionUpdateResourcePermission: !!newObjectDefinition
+							.actions.update,
+						hasObjectDefinitionViewResourcePermission: false,
+						hasSelfObjectRelationships: false,
+						label: getLocalizableLabel(
+							newObjectDefinition.defaultLanguageId,
+							newObjectDefinition.label,
+							newObjectDefinition.name
+						),
+						linkedObjectDefinition: false,
+						objectFields: fieldsCustomSort(objectFields),
+						selected: true,
+					},
+					id: newObjectDefinition.id.toString(),
+					position: newPosition,
+					type: 'objectDefinitionNode',
+				} as Node<ObjectDefinitionNodeData>;
+
+				newObjectDefinitionNodes = [
+					...updatedObjectDefinitionsNodes,
+					newObjectDefinitionNode,
+				] as Node<ObjectDefinitionNodeData>[];
+			}
 
 			return {
 				...state,
 				elements: [...newObjectDefinitionNodes],
 				leftSidebarItems: newLeftSidebarItems,
-				selectedDefinitionNode: newNode,
+				selectedObjectDefinitionNode: newObjectDefinitionNode,
 				showChangesSaved: true,
 			};
 		}
 
 		case TYPES.BULK_CHANGE_NODE_VIEW: {
-			const {hiddenFolderNodes, leftSidebarItem} = action.payload;
+			const {hiddenObjectFolderObjectDefinitionNodes} = action.payload;
 			const {edges, nodes} = store.getState();
 			const {leftSidebarItems} = state;
 
-			const updatedNodes = nodes.map(
+			const updatedObjectDefinitionNodes = nodes.map(
 				(node: Node<ObjectDefinitionNodeData>) => {
 					return {
 						...node,
-						data: {...node.data, nodeSelected: false},
-						isHidden: !hiddenFolderNodes,
+						data: {...node.data, selected: false},
+						isHidden: !hiddenObjectFolderObjectDefinitionNodes,
 					};
 				}
-			);
+			) as Node<ObjectDefinitionNodeData>[];
 
-			const updatedEdges = edges.map(
-				(edge: Edge<ObjectRelationshipEdgeData>) => {
+			const updatedObjectRelationshipEdges = edges.map(
+				(objectRelationshipEdge: Edge<ObjectRelationshipEdgeData>) => {
 					return {
-						...edge,
-						isHidden: !hiddenFolderNodes,
+						...objectRelationshipEdge,
+						isHidden: !hiddenObjectFolderObjectDefinitionNodes,
 					};
 				}
-			);
+			) as Edge<ObjectRelationshipEdgeData>[];
 
 			const updatedLeftSidebarItems = leftSidebarItems.map(
-				(sidebarItem: LeftSidebarItemType) => {
-					const updatedObjectDefinitions = sidebarItem.objectDefinitions?.map(
-						(objectDefinition) => {
+				(leftSidebarItem: LeftSidebarItem) => {
+					const updateLeftSidebarObjectDefinitionItems = leftSidebarItem.leftSidebarObjectDefinitionItems?.map(
+						(leftSidebarObjectDefinitionItem) => {
 							return {
-								...objectDefinition,
-								hiddenNode: !hiddenFolderNodes,
+								...leftSidebarObjectDefinitionItem,
+								hiddenObjectDefinitionNode: !hiddenObjectFolderObjectDefinitionNodes,
 								selected: false,
 							};
 						}
 					);
-					if (sidebarItem.folderName === leftSidebarItem.folderName) {
+					if (
+						leftSidebarItem.objectFolderName ===
+						leftSidebarItem.objectFolderName
+					) {
 						return {
-							...sidebarItem,
-							hiddenFolderNodes: !hiddenFolderNodes,
-							objectDefinitions: updatedObjectDefinitions,
+							...leftSidebarItem,
+							hiddenObjectFolderObjectDefinitionNodes: !hiddenObjectFolderObjectDefinitionNodes,
+							leftSidebarObjectDefinitionItems: updateLeftSidebarObjectDefinitionItems,
 						};
 					}
 
-					return sidebarItem;
+					return leftSidebarItem;
 				}
 			);
 
 			return {
 				...state,
-				elements: [...updatedEdges, ...updatedNodes],
+				elements: [
+					...updatedObjectRelationshipEdges,
+					...updatedObjectDefinitionNodes,
+				],
 				leftSidebarItems: updatedLeftSidebarItems,
 				rightSidebarType: 'empty' as RightSidebarType,
 			};
@@ -222,267 +288,306 @@ export function ObjectFolderReducer(state: TState, action: TAction) {
 
 		case TYPES.CHANGE_NODE_VIEW: {
 			const {
-				definitionId,
-				definitionName,
-				hiddenNode,
-				leftSidebarItem,
+				hiddenObjectDefinitionNode,
+				objectDefinitionId,
+				objectDefinitionName,
+				selectedSidebarItem,
 			} = action.payload;
 			const {edges, nodes} = store.getState();
 			const {leftSidebarItems} = state;
-			let isNodeSelected = false;
+			let isObjectDefinitionNodeSelected = false;
 
-			const updatedEdges = edges.map(
-				(edge: Edge<ObjectRelationshipEdgeData>) => {
+			const updatedObjectRelationshipEdges = edges.map(
+				(objectRelationshipEdge: Edge<ObjectRelationshipEdgeData>) => {
 					if (
-						edge.source === definitionId.toString() ||
-						edge.target === definitionId.toString()
+						objectRelationshipEdge.source ===
+							objectDefinitionId.toString() ||
+						objectRelationshipEdge.target ===
+							objectDefinitionId.toString()
 					) {
 						return {
-							...edge,
-							isHidden: !hiddenNode,
+							...objectRelationshipEdge,
+							isHidden: !hiddenObjectDefinitionNode,
 						};
 					}
 
-					return edge;
+					return objectRelationshipEdge;
 				}
 			);
 
-			const updatedNodes = nodes.map(
-				(node: Node<ObjectDefinitionNodeData>) => {
-					if (node.data?.id === definitionId) {
+			const updatedObjectDefinitionNodes = nodes.map(
+				(objectDefinitionNode: Node<ObjectDefinitionNodeData>) => {
+					if (objectDefinitionNode.data?.id === objectDefinitionId) {
 						return {
-							...node,
-							data: {...node.data, nodeSelected: false},
-							isHidden: !hiddenNode,
+							...objectDefinitionNode,
+							data: {
+								...objectDefinitionNode.data,
+								selected: false,
+							},
+							isHidden: !hiddenObjectDefinitionNode,
 						};
 					}
 
-					return node;
+					return objectDefinitionNode;
 				}
 			);
 
 			const updatedLeftSidebarItems = leftSidebarItems.map(
-				(sidebarItem) => {
-					if (sidebarItem.folderName === leftSidebarItem.folderName) {
-						const updatedObjectDefinitions = sidebarItem.objectDefinitions?.map(
-							(objectDefinition) => {
+				(leftSidebarItem) => {
+					if (
+						leftSidebarItem.objectFolderName ===
+						selectedSidebarItem.objectFolderName
+					) {
+						const updatedObjectDefinitions = leftSidebarItem.leftSidebarObjectDefinitionItems?.map(
+							(leftSidebarObjectDefinitionItem) => {
 								if (
-									objectDefinition.definitionName ===
-									definitionName
+									leftSidebarObjectDefinitionItem.name ===
+									objectDefinitionName
 								) {
-									isNodeSelected = objectDefinition.selected;
+									isObjectDefinitionNodeSelected =
+										leftSidebarObjectDefinitionItem.selected;
 
 									return {
-										...objectDefinition,
-										hiddenNode: !hiddenNode,
+										...leftSidebarObjectDefinitionItem,
+										hiddenObjectDefinitionNode: !hiddenObjectDefinitionNode,
 										selected: false,
 									};
 								}
 
-								return objectDefinition;
+								return leftSidebarObjectDefinitionItem;
 							}
 						);
 
 						return {
-							...sidebarItem,
-							objectDefinitions: updatedObjectDefinitions,
+							...leftSidebarItem,
+							leftSidebarObjectDefinitionItems: updatedObjectDefinitions,
 						};
 					}
 
-					return sidebarItem;
+					return leftSidebarItem;
 				}
 			);
 
 			return {
 				...state,
-				elements: [...updatedEdges, ...updatedNodes],
+				elements: [
+					...updatedObjectRelationshipEdges,
+					...updatedObjectDefinitionNodes,
+				],
 				leftSidebarItems: updatedLeftSidebarItems,
-				rightSidebarType: isNodeSelected
+				rightSidebarType: isObjectDefinitionNodeSelected
 					? 'empty'
 					: state.rightSidebarType,
 			};
 		}
 
 		case TYPES.CREATE_MODEL_BUILDER_STRUCTURE: {
-			const {objectFolders} = action.payload;
-			const {
-				editObjectDefinitionURL,
-				objectDefinitionPermissionsURL,
-				selectedFolderERC,
-			} = state;
+			const {objectFolders, selectedObjectFolder} = action.payload;
 
-			const newLeftSidebar = objectFolders.map((folder) => {
-				const folderDefinitions = folder.definitions?.map(
-					(definition) => {
+			const newLeftSidebarItems = objectFolders.map((objectFolder) => {
+				const leftSidebarObjectDefinitionItems = objectFolder.objectDefinitions?.map(
+					(objectDefinition) => {
 						return {
-							definitionId: definition.id,
-							definitionName: definition.name,
-							hiddenNode: false,
-							name: getLocalizableLabel(
-								definition.defaultLanguageId,
-								definition.label,
-								definition.name
+							hiddenObjectDefinitionNode: false,
+							id: objectDefinition.id,
+							label: getLocalizableLabel(
+								objectDefinition.defaultLanguageId,
+								objectDefinition.label,
+								objectDefinition.name
 							),
+							name: objectDefinition.name,
 							selected: false,
-							type: 'objectDefinition',
-						};
+							type: objectDefinition.linkedObjectDefinition
+								? 'linkedObjectDefinition'
+								: 'objectDefinition',
+						} as LeftSidebarObjectDefinitionItem;
 					}
 				);
 
 				return {
-					folderName: folder.name,
-					hiddenFolderNodes: false,
+					hiddenObjectFolderObjectDefinitionNodes: false,
+					leftSidebarObjectDefinitionItems,
 					name: getLocalizableLabel(
 						defaultLanguageId,
-						folder.label,
-						folder.name
+						objectFolder.label,
+						objectFolder.name
 					),
-					objectDefinitions: folderDefinitions,
+					objectFolderName: objectFolder.name,
 					type: 'objectFolder',
-				} as LeftSidebarItemType;
+				} as LeftSidebarItem;
 			});
 
-			const currentFolder = objectFolders.find(
-				(folder) => folder.externalReferenceCode === selectedFolderERC
+			const currentObjectFolder = objectFolders.find(
+				(objectFolder) =>
+					objectFolder.name === selectedObjectFolder.name
 			);
 
 			let newObjectDefinitionNodes: Node<ObjectDefinitionNodeData>[] = [];
 			const allEdges: Edge<ObjectRelationshipEdgeData>[] = [];
 
-			if (currentFolder) {
-				const positionColumn = {x: 1, y: 0};
+			if (currentObjectFolder) {
+				const positionColumn = {positionX: 0, positionY: 0};
 
-				newObjectDefinitionNodes = currentFolder.definitions!.map(
+				newObjectDefinitionNodes = currentObjectFolder.objectDefinitions!.map(
 					(objectDefinition, index) => {
-						const objectFields = objectDefinition.objectFields.map(
-							(field) => {
-								return {
-									businessType: field.businessType,
-									externalReferenceCode:
-										field.externalReferenceCode,
-									label: getLocalizableLabel(
-										objectDefinition.defaultLanguageId,
-										field.label,
-										field.name
-									),
-									name: field.name,
-									primaryKey: field.name === 'id',
-									required: field.required,
-									selected: false,
-								} as ObjectFieldNode;
-							}
+						let selfObjectRelationships: ObjectRelationship[] = objectDefinition.objectRelationships.filter(
+							(objectRelationship) =>
+								objectRelationship.objectDefinitionName2 ===
+								objectDefinition.name
 						);
+
+						selfObjectRelationships = selfObjectRelationships.filter(
+							(selfObjectRelationship) =>
+								!selfObjectRelationship.reverse
+						);
+
+						const hasOneSelfObjectRelationship =
+							selfObjectRelationships?.length === 1;
 
 						if (objectDefinition.objectRelationships.length) {
 							objectDefinition.objectRelationships.forEach(
-								(relationship) => {
-									if (!relationship.reverse) {
+								(objectRelationship) => {
+									if (!objectRelationship.reverse) {
+										const isSelfObjectRelationship =
+											objectDefinition.name ===
+											objectRelationship.objectDefinitionName2;
+
 										allEdges.push({
 											data: {
-												label: getLocalizableLabel(
+												defaultLanguageId:
 													objectDefinition.defaultLanguageId,
-													relationship.label,
-													relationship.name
-												),
+												label:
+													!isSelfObjectRelationship ||
+													(isSelfObjectRelationship &&
+														hasOneSelfObjectRelationship)
+														? getLocalizableLabel(
+																objectDefinition.defaultLanguageId,
+																objectRelationship.label,
+																objectRelationship.name
+														  )
+														: selfObjectRelationships.length.toString(),
 												markerEndId: manyMarkerId,
 												markerStartId:
-													relationship.type ===
+													objectRelationship.type ===
 													'manyToMany'
 														? manyMarkerId
 														: oneMarkerId,
+												objectRelationshipId:
+													objectRelationship.id,
+												selected: false,
+												selfObjectRelationships,
 												sourceY: 0,
 												targetY: 0,
-												type: relationship.type,
+												type: objectRelationship.type,
 											},
-											id: `reactflow__edge-object-relationship-${relationship.name}-parent-${relationship.objectDefinitionExternalReferenceCode1}-child-${relationship.objectDefinitionExternalReferenceCode2}`,
+											id: `reactflow__edge-object-relationship-${objectRelationship.name}-parent-${objectRelationship.objectDefinitionId1}-child-${objectRelationship.objectDefinitionId2}`,
 											source: `${objectDefinition.id}`,
-											sourceHandle: `${objectDefinition.id}`,
-											target: `${relationship.objectDefinitionId2}`,
-											targetHandle: `${relationship.objectDefinitionId2}`,
-											type: 'floating',
+											sourceHandle: isSelfObjectRelationship
+												? 'fixedLeftHandle'
+												: `${objectDefinition.id}`,
+											target: `${objectRelationship.objectDefinitionId2}`,
+											targetHandle: isSelfObjectRelationship
+												? 'fixedRightHandle'
+												: `${objectRelationship.objectDefinitionId2}`,
+											type: isSelfObjectRelationship
+												? 'selfObjectRelationshipEdge'
+												: 'defaultObjectRelationshipEdge',
 										});
 									}
 								}
 							);
 						}
 
-						if (index % 4 === 0) {
-							positionColumn.y++;
-							positionColumn.x = 1;
+						const objectFolderItem = currentObjectFolder.objectFolderItems.find(
+							(objectFolderItem) =>
+								objectFolderItem.objectDefinitionExternalReferenceCode ===
+								objectDefinition.externalReferenceCode
+						);
+
+						let {
+							positionX,
+							positionY,
+						} = objectFolderItem as ObjectFolderItem;
+
+						if (positionX === 0 && positionY === 0) {
+							positionX = positionColumn.positionX * 300 + 200;
+							positionY = positionColumn.positionY * 400 + 100;
+
+							positionColumn.positionX++;
 						}
 
-						positionColumn.x++;
+						if (index % 4 === 0 && index !== 0) {
+							positionColumn.positionY++;
+							positionColumn.positionX = 0;
+						}
 
 						return {
 							data: {
-								defaultLanguageId:
-									objectDefinition.defaultLanguageId,
-								editObjectDefinitionURL,
-								externalReferenceCode:
-									objectDefinition.externalReferenceCode,
-								hasObjectDefinitionDeleteResourcePermission: !!objectDefinition
-									.actions.delete,
-								hasObjectDefinitionManagePermissionsResourcePermission: !!objectDefinition
-									.actions.permissions,
-								id: objectDefinition.id,
-								isLinkedNode: false,
-								label: getLocalizableLabel(
-									objectDefinition.defaultLanguageId,
-									objectDefinition.label,
-									objectDefinition.name
+								...objectDefinition,
+								hasSelfObjectRelationships:
+									selfObjectRelationships?.length > 0,
+								objectFields: fieldsCustomSort(
+									objectDefinition.objectFields
 								),
-								name: objectDefinition.name,
-								nodeSelected: false,
-								objectDefinitionPermissionsURL,
-								objectFields: fieldsCustomSort(objectFields),
-								status: objectDefinition.status,
-								system: objectDefinition.system,
 							},
 							id: objectDefinition.id.toString(),
 							position: {
-								x: positionColumn.x * 300,
-								y: positionColumn.y * 400,
+								x: positionX,
+								y: positionY,
 							},
-							type: 'objectDefinition',
+							type: 'objectDefinitionNode',
 						} as Node<ObjectDefinitionNodeData>;
 					}
 				);
 			}
 
-			const newEdges = getNonOverlappingEdges(allEdges);
+			const newObjectRelationshipEdges = getNonOverlappingEdges(allEdges);
 
 			return {
 				...state,
-				elements: [...newObjectDefinitionNodes, ...newEdges],
-				leftSidebarItems: newLeftSidebar,
+				elements: [
+					...newObjectDefinitionNodes,
+					...newObjectRelationshipEdges,
+				],
+				leftSidebarItems: newLeftSidebarItems,
+				selectedObjectFolder,
 			};
 		}
 
-		case TYPES.DELETE_FOLDER_NODE: {
-			const {currentFolderName, deletedNodeName} = action.payload;
+		case TYPES.DELETE_OBJECT_DEFINITION: {
+			const {
+				currentObjectFolderName,
+				deletedObjectDefinitionName,
+			} = action.payload;
 
 			const {leftSidebarItems} = state;
 
 			let updatedObjectDefinitions;
 
-			const newLeftSidebarItems = leftSidebarItems.map((item) => {
-				if (item.folderName === currentFolderName) {
-					updatedObjectDefinitions = item.objectDefinitions?.filter(
-						(definition) =>
-							definition.definitionName !== deletedNodeName
-					);
+			const newLeftSidebarItems = leftSidebarItems.map(
+				(leftSidebarItem) => {
+					if (
+						leftSidebarItem.objectFolderName ===
+						currentObjectFolderName
+					) {
+						updatedObjectDefinitions = leftSidebarItem.leftSidebarObjectDefinitionItems?.filter(
+							(leftSidebarObjectDefinitionItem) =>
+								leftSidebarObjectDefinitionItem.name !==
+								deletedObjectDefinitionName
+						);
 
-					return {
-						...item,
-						objectDefinitions: [...updatedObjectDefinitions!],
-					};
+						return {
+							...leftSidebarItem,
+							objectDefinitions: [...updatedObjectDefinitions!],
+						};
+					}
+					else {
+						return {
+							...leftSidebarItem,
+						};
+					}
 				}
-				else {
-					return {
-						...item,
-					};
-				}
-			}) as LeftSidebarItemType[];
+			) as LeftSidebarItem[];
 
 			return {
 				...state,
@@ -499,83 +604,167 @@ export function ObjectFolderReducer(state: TState, action: TAction) {
 			};
 		}
 
-		case TYPES.SET_SELECTED_NODE: {
+		case TYPES.SET_SELECTED_OBJECT_DEFINITION_NODE: {
 			const {edges, nodes, selectedObjectDefinitionId} = action.payload;
 
 			const {leftSidebarItems} = state;
 
-			const newObjectDefinitionNodes = nodes.map((definitionNode) => ({
-				...definitionNode,
-				data: {
-					...definitionNode.data,
-					nodeSelected:
-						definitionNode.id ===
-						selectedObjectDefinitionId.toString(),
-				},
-			}));
+			const newObjectDefinitionNodes = nodes.map(
+				(objectDefinitionNode) => ({
+					...objectDefinitionNode,
+					data: {
+						...objectDefinitionNode.data,
+						selected:
+							objectDefinitionNode.id ===
+							selectedObjectDefinitionId,
+					},
+				})
+			) as Node<ObjectDefinitionNodeData>[];
 
 			const newLeftSidebarItems = leftSidebarItems.map((sidebarItem) => {
-				const newLeftSidebarDefinitions = sidebarItem.objectDefinitions?.map(
-					(sidebarDefinition) => ({
-						...sidebarDefinition,
+				const newLeftSidebarObjectDefinitions = sidebarItem.leftSidebarObjectDefinitionItems?.map(
+					(leftSidebarObjectDefinitionItem) => ({
+						...leftSidebarObjectDefinitionItem,
 						selected:
 							selectedObjectDefinitionId ===
-							sidebarDefinition.definitionId.toString(),
+							leftSidebarObjectDefinitionItem.id.toString(),
 					})
 				);
 
 				return {
 					...sidebarItem,
-					objectDefinitions: newLeftSidebarDefinitions,
+					leftSidebarObjectDefinitionItems: newLeftSidebarObjectDefinitions,
 				};
 			});
 
+			const selectedObjectRelationshipEdge = edges.find(
+				(objectRelationshipEdge) =>
+					objectRelationshipEdge.data?.selected
+			);
+
+			const newObjectRelationshipEdges = edges;
+
+			if (selectedObjectRelationshipEdge?.data) {
+				const selectedEdgeIndex = nodes.findIndex(
+					(objectDefinitionNode) =>
+						objectDefinitionNode.data?.selected
+				);
+
+				selectedObjectRelationshipEdge.data.selected = false;
+
+				newObjectRelationshipEdges[
+					selectedEdgeIndex
+				] = selectedObjectRelationshipEdge;
+			}
+
 			return {
 				...state,
-				elements: [...edges, ...newObjectDefinitionNodes],
+				elements: [
+					...newObjectRelationshipEdges,
+					...newObjectDefinitionNodes,
+				],
 				leftSidebarItems: newLeftSidebarItems,
 				rightSidebarType: 'objectDefinitionDetails' as RightSidebarType,
 			};
 		}
 
-		case TYPES.UPDATE_FOLDER_NODE: {
-			const {currentFolderName, updatedNode} = action.payload;
+		case TYPES.SET_SELECTED_OBJECT_RELATIONSHIP_EDGE: {
+			const {edges, nodes, selectedObjectRelationshipId} = action.payload;
+
+			const newObjectRelationshipEdges = edges.map(
+				(objectRelationshipEdge) => ({
+					...objectRelationshipEdge,
+					data: {
+						...objectRelationshipEdge.data,
+						selected:
+							objectRelationshipEdge.data?.objectRelationshipId.toString() ===
+							selectedObjectRelationshipId,
+					},
+				})
+			) as Edge<ObjectRelationshipEdgeData>[];
+
+			const selectedObjectDefinitionNode = nodes.find(
+				(objectDefinitionNode) => objectDefinitionNode.data?.selected
+			);
+
+			const newObjectDefinitionNodes = nodes;
+
+			if (selectedObjectDefinitionNode?.data) {
+				const selectedNodeIndex = nodes.findIndex(
+					(objectDefinitionNode) =>
+						objectDefinitionNode.data?.selected
+				);
+
+				selectedObjectDefinitionNode.data.selected = false;
+
+				newObjectDefinitionNodes[
+					selectedNodeIndex
+				] = selectedObjectDefinitionNode;
+			}
+
+			return {
+				...state,
+				elements: [
+					...newObjectRelationshipEdges,
+					...newObjectDefinitionNodes,
+				],
+				rightSidebarType: 'objectRelationshipDetails' as RightSidebarType,
+			};
+		}
+
+		case TYPES.SET_SHOW_CHANGES_SAVED: {
+			const {updatedShowChangesSaved} = action.payload;
+
+			return {
+				...state,
+				showChangesSaved: updatedShowChangesSaved,
+			};
+		}
+
+		case TYPES.UPDATE_OBJECT_DEFINITION_NODE: {
+			const {
+				currentObjectFolderName,
+				updatedObjectDefinitionNode,
+			} = action.payload;
 
 			const {leftSidebarItems} = state;
 
 			let updatedObjectDefinitions;
 
 			const newLeftSidebarItems = leftSidebarItems.map(
-				(item: LeftSidebarItemType) => {
-					if (item.folderName === currentFolderName) {
-						updatedObjectDefinitions = item.objectDefinitions?.map(
-							(definition) => {
+				(leftSidebarItem: LeftSidebarItem) => {
+					if (
+						leftSidebarItem.objectFolderName ===
+						currentObjectFolderName
+					) {
+						updatedObjectDefinitions = leftSidebarItem.leftSidebarObjectDefinitionItems?.map(
+							(leftSidebarObjectDefinitionItem) => {
 								if (
-									definition.definitionId.toString() ===
-									updatedNode.id?.toString()
+									leftSidebarObjectDefinitionItem.id.toString() ===
+									updatedObjectDefinitionNode.id?.toString()
 								) {
 									return {
-										...definition,
-										name: updatedNode.label,
+										...leftSidebarObjectDefinitionItem,
+										name: updatedObjectDefinitionNode.label,
 									};
 								}
 
-								return definition;
+								return leftSidebarObjectDefinitionItem;
 							}
 						);
 
 						return {
-							...item,
+							...leftSidebarItem,
 							objectDefinitions: [...updatedObjectDefinitions!],
 						};
 					}
 					else {
 						return {
-							...item,
+							...leftSidebarItem,
 						};
 					}
 				}
-			) as LeftSidebarItemType[];
+			) as LeftSidebarItem[];
 
 			return {
 				...state,

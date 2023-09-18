@@ -25,26 +25,26 @@ const SCOPE_OPTIONS = [
 ];
 
 interface ScopeContainerProps {
-	companyKeyValuePair: KeyValuePair[];
+	companyKeyValuePairs: KeyValuePair[];
 	errors: FormError<ObjectDefinition>;
 	hasUpdateObjectDefinitionPermission: boolean;
 	isApproved: boolean;
-	isLinkedNode?: boolean;
+	isLinkedObjectDefinition?: boolean;
 	isRootDescendantNode: boolean;
 	setValues: (values: Partial<ObjectDefinition>) => void;
-	siteKeyValuePair: KeyValuePair[];
+	siteKeyValuePairs: KeyValuePair[];
 	values: Partial<ObjectDefinition>;
 }
 
 export function ScopeContainer({
-	companyKeyValuePair,
+	companyKeyValuePairs,
 	errors,
 	hasUpdateObjectDefinitionPermission,
 	isApproved,
-	isLinkedNode,
+	isLinkedObjectDefinition,
 	isRootDescendantNode,
 	setValues,
-	siteKeyValuePair,
+	siteKeyValuePairs,
 	values,
 }: ScopeContainerProps) {
 	const [panelCategoryKeyQuery, setPanelCategoryKeyQuery] = useState('');
@@ -57,8 +57,8 @@ export function ScopeContainer({
 		return filterArrayByQuery({
 			array:
 				values.scope === 'company'
-					? companyKeyValuePair
-					: siteKeyValuePair,
+					? companyKeyValuePairs
+					: siteKeyValuePairs,
 			creationLanguageId: values.defaultLanguageId,
 			query: panelCategoryKeyQuery,
 			str: 'value',
@@ -66,8 +66,8 @@ export function ScopeContainer({
 	}, [
 		values.defaultLanguageId,
 		values.scope,
-		companyKeyValuePair,
-		siteKeyValuePair,
+		companyKeyValuePairs,
+		siteKeyValuePairs,
 		panelCategoryKeyQuery,
 	]);
 
@@ -86,11 +86,13 @@ export function ScopeContainer({
 
 	useEffect(() => {
 		setPanelCategoryKey(
-			values.scope === 'company' ? companyKeyValuePair : siteKeyValuePair,
+			values.scope === 'company'
+				? companyKeyValuePairs
+				: siteKeyValuePairs,
 			values.panelCategoryKey as string
 		);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [values.scope, companyKeyValuePair, siteKeyValuePair]);
+	}, [values.scope, companyKeyValuePairs, siteKeyValuePairs]);
 
 	return (
 		<>
@@ -99,8 +101,8 @@ export function ScopeContainer({
 					isApproved ||
 					!hasUpdateObjectDefinitionPermission ||
 					values.storageType === 'salesforce' ||
-					isLinkedNode ||
-					isRootDescendantNode
+					isRootDescendantNode ||
+					isLinkedObjectDefinition
 				}
 				error={errors.titleObjectFieldId}
 				label={Liferay.Language.get('scope')}
@@ -125,8 +127,8 @@ export function ScopeContainer({
 						? !values.modifiable && values.system
 						: values.system) ||
 					!hasUpdateObjectDefinitionPermission ||
-					isLinkedNode ||
-					isRootDescendantNode
+					isRootDescendantNode ||
+					isLinkedObjectDefinition
 				}
 				emptyStateMessage={Liferay.Language.get(
 					'no-options-were-found'

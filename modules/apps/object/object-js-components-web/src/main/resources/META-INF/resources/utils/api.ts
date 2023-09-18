@@ -8,11 +8,6 @@ import {fetch} from 'frontend-js-web';
 import {ERRORS} from './errors';
 import {stringToURLParameterFormat} from './string';
 
-interface HTTPMethod {
-	href: string;
-	method: string;
-}
-
 interface Actions {
 	delete: HTTPMethod;
 	get: HTTPMethod;
@@ -24,14 +19,29 @@ interface ErrorDetails extends Error {
 	detail?: string;
 }
 
-interface Folder {
-	actions: [];
-	dateCreated: string;
-	dateModified: string;
+interface HTTPMethod {
+	href: string;
+	method: string;
+}
+
+interface ListTypeDefinition {
+	actions: Actions;
 	externalReferenceCode: string;
 	id: number;
-	label: LocalizedValue<string>;
+	key: string;
+	listTypeEntries: ListTypeEntry[];
 	name: string;
+	name_i18n: LocalizedValue<string>;
+	system: boolean;
+}
+
+interface ListTypeEntry {
+	externalReferenceCode: string;
+	id: number;
+	key: string;
+	listTypeDefinitionId: number;
+	name: string;
+	name_i18n: LocalizedValue<string>;
 }
 
 type NotificationTemplateType = 'email' | 'userNotification';
@@ -98,28 +108,9 @@ interface ObjectRelationship {
 	objectDefinitionId1: number;
 	objectDefinitionId2: number;
 	readonly objectDefinitionName2: string;
-	objectRelationshipId: number;
 	parameterObjectFieldId?: number;
 	reverse: boolean;
 	type: ObjectRelationshipType;
-}
-
-interface PickListItem {
-	externalReferenceCode: string;
-	id: number;
-	key: string;
-	name: string;
-	name_i18n: LocalizedValue<string>;
-}
-
-interface PickList {
-	actions: Actions;
-	externalReferenceCode: string;
-	id: number;
-	key: string;
-	listTypeEntries: PickListItem[];
-	name: string;
-	name_i18n: LocalizedValue<string>;
 }
 
 interface saveProps {
@@ -154,31 +145,23 @@ async function deleteItem(url: string) {
 	}
 }
 
-export function deleteFolder(id: number) {
-	return deleteItem(`/o/object-admin/v1.0/object-folders/${id}`);
-}
-
-export function deleteObjectDefinitions(id: number) {
-	return deleteItem(`/o/object-admin/v1.0/object-definitions/${id}`);
-}
-
-export function deleteObjectField(id: number) {
-	return deleteItem(`/o/object-admin/v1.0/object-fields/${id}`);
-}
-
-export function deleteObjectRelationships(id: number) {
-	return deleteItem(`/o/object-admin/v1.0/object-relationships/${id}`);
-}
-
-export async function deletePickList(pickListId: number) {
-	return await deleteItem(
-		`/o/headless-admin-list-type/v1.0/list-type-definitions/${pickListId}`
+export function deleteObjectDefinition(objectDefinitionId: number) {
+	return deleteItem(
+		`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}`
 	);
 }
 
-export async function deletePickListItem(id: number) {
-	return await deleteItem(
-		`/o/headless-admin-list-type/v1.0/list-type-entries/${id}`
+export function deleteObjectField(objectFieldId: number) {
+	return deleteItem(`/o/object-admin/v1.0/object-fields/${objectFieldId}`);
+}
+
+export function deleteObjectFolder(objectFolderId: number) {
+	return deleteItem(`/o/object-admin/v1.0/object-folders/${objectFolderId}`);
+}
+
+export function deleteObjectRelationship(objectRelationshipId: number) {
+	return deleteItem(
+		`/o/object-admin/v1.0/object-relationships/${objectRelationshipId}`
 	);
 }
 
@@ -188,10 +171,6 @@ export async function fetchJSON<T>(input: RequestInfo, init?: RequestInit) {
 	return (await result.json()) as T;
 }
 
-export async function getAllFolders() {
-	return await getList<ObjectFolder>('/o/object-admin/v1.0/object-folders');
-}
-
 export async function getAllObjectDefinitions() {
 	return await getList<ObjectDefinition>(
 		'/o/object-admin/v1.0/object-definitions?page=-1'
@@ -199,20 +178,9 @@ export async function getAllObjectDefinitions() {
 }
 
 export async function getAllObjectFolders() {
-	return await getList<Folder>(
+	return await getList<ObjectFolder>(
 		'/o/object-admin/v1.0/object-folders?pageSize=-1'
 	);
-}
-
-export async function getFolderByERC(folderERC: string) {
-	const folderResponse = await fetch(
-		`/o/object-admin/v1.0/object-folders/by-external-reference-code/${folderERC}`,
-		{method: 'GET'}
-	);
-
-	const folder = (await folderResponse.json()) as ObjectFolder;
-
-	return folder;
 }
 
 export async function getList<T>(url: string) {
@@ -221,11 +189,33 @@ export async function getList<T>(url: string) {
 	return items;
 }
 
+export async function getListTypeDefinition(
+	listTypeDefinitionId: number
+): Promise<ListTypeDefinition> {
+	return await fetchJSON<ListTypeDefinition>(
+		`/o/headless-admin-list-type/v1.0/list-type-definitions/${listTypeDefinitionId}`
+	);
+}
+
+export async function getListTypeDefinitionListTypeEntries(
+	listTypeDefinitionId: number
+) {
+	return await getList<ListTypeEntry>(
+		`/o/headless-admin-list-type/v1.0/list-type-definitions/${listTypeDefinitionId}/list-type-entries?pageSize=-1`
+	);
+}
+
+export async function getListTypeDefinitions() {
+	return await getList<ListTypeDefinition>(
+		'/o/headless-admin-list-type/v1.0/list-type-definitions?pageSize=-1'
+	);
+}
+
 export async function getNotificationTemplateByExternalReferenceCode(
-	notificationTemplateExternalReferenceCode: string
+	externalReferenceCode: string
 ) {
 	return await fetchJSON<NotificationTemplate>(
-		`/o/notification/v1.0/notification-templates/by-external-reference-code/${notificationTemplateExternalReferenceCode}`
+		`/o/notification/v1.0/notification-templates/by-external-reference-code/${externalReferenceCode}`
 	);
 }
 
@@ -244,16 +234,40 @@ export async function getNotificationTemplates() {
 }
 
 export async function getObjectDefinitionByExternalReferenceCode(
-	objectDefinitionExternalReferenceCode: string
+	externalReferenceCode: string
 ) {
 	return await fetchJSON<ObjectDefinition>(
-		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${objectDefinitionExternalReferenceCode}`
+		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${externalReferenceCode}`
+	);
+}
+
+export async function getObjectDefinitionByExternalReferenceCodeObjectFields(
+	externalReferenceCode: string
+) {
+	return await getList<ObjectField>(
+		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${externalReferenceCode}/object-fields?pageSize=-1`
+	);
+}
+
+export async function getObjectDefinitionByExternalReferenceCodeObjectRelationships(
+	externalReferenceCode: string
+) {
+	return await getList<ObjectRelationship>(
+		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${externalReferenceCode}/object-relationships`
 	);
 }
 
 export async function getObjectDefinitionById(objectDefinitionId: number) {
 	return await fetchJSON<ObjectDefinition>(
 		`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}`
+	);
+}
+
+export async function getObjectDefinitionObjectFields(
+	objectDefinitionId: number
+) {
+	return await getList<ObjectField>(
+		`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/object-fields?pageSize=-1`
 	);
 }
 
@@ -277,31 +291,22 @@ export async function getObjectField(objectFieldId: number) {
 	);
 }
 
-export async function getObjectFieldsByExternalReferenceCode(
+export async function getObjectFolderByExternalReferenceCode(
 	externalReferenceCode: string
 ) {
-	return await getList<ObjectField>(
-		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${externalReferenceCode}/object-fields?pageSize=-1`
+	const objectFolderResponse = await fetch(
+		`/o/object-admin/v1.0/object-folders/by-external-reference-code/${externalReferenceCode}`,
+		{method: 'GET'}
 	);
+
+	const objectFolder = (await objectFolderResponse.json()) as ObjectFolder;
+
+	return objectFolder;
 }
 
-export async function getObjectFieldsById(objectDefinitionId: number) {
-	return await getList<ObjectField>(
-		`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/object-fields?pageSize=-1`
-	);
-}
-
-export async function getObjectRelationshipsByExternalReferenceCode(
-	externalReferenceCode: string
-) {
-	return await getList<ObjectRelationship>(
-		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${externalReferenceCode}/object-relationships`
-	);
-}
-
-export async function getObjectRelationshipsById(objectDefinitionId: number) {
-	return await getList<ObjectRelationship>(
-		`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/object-relationships`
+export async function getObjectRelationship<T>(objectRelationshipId: number) {
+	return fetchJSON<T>(
+		`/o/object-admin/v1.0/object-relationships/${objectRelationshipId}`
 	);
 }
 
@@ -313,31 +318,30 @@ export async function getObjectValidationRuleById<T>(
 	);
 }
 
-export async function getPickList(pickListId: number): Promise<PickList> {
-	return await fetchJSON<PickList>(
-		`/o/headless-admin-list-type/v1.0/list-type-definitions/${pickListId}`
-	);
+export async function postListTypeEntry({
+	key,
+	listTypeDefinitionId,
+	name_i18n,
+}: Partial<ListTypeEntry>) {
+	return await save({
+		item: {key, name_i18n},
+		method: 'POST',
+		url: `/o/headless-admin-list-type/v1.0/list-type-definitions/${listTypeDefinitionId}/list-type-entries`,
+	});
 }
 
-export async function getPickListItems(pickListId: number) {
-	return await getList<PickListItem>(
-		`/o/headless-admin-list-type/v1.0/list-type-definitions/${pickListId}/list-type-entries?pageSize=-1`
-	);
+export async function postObjectDefinition(
+	objectDefinition: Partial<ObjectDefinition>
+) {
+	return await save({
+		item: objectDefinition,
+		method: 'POST',
+		returnValue: true,
+		url: `/o/object-admin/v1.0/object-definitions`,
+	});
 }
 
-export async function getPickLists() {
-	return await getList<PickList>(
-		'/o/headless-admin-list-type/v1.0/list-type-definitions?pageSize=-1'
-	);
-}
-
-export async function getRelationship<T>(objectRelationshipId: number) {
-	return fetchJSON<T>(
-		`/o/object-admin/v1.0/object-relationships/${objectRelationshipId}`
-	);
-}
-
-export async function publishObjectDefinitionById(objectDefinitionId: number) {
+export async function postObjectDefinitionPublish(objectDefinitionId: number) {
 	return await fetch(
 		`/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/publish`,
 		{
@@ -347,16 +351,62 @@ export async function publishObjectDefinitionById(objectDefinitionId: number) {
 }
 
 export async function putObjectDefinitionByExternalReferenceCode(
-	values: Partial<ObjectDefinition>
+	objectDefinition: Partial<ObjectDefinition>
 ) {
 	return await fetch(
-		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${values.externalReferenceCode}`,
+		`/o/object-admin/v1.0/object-definitions/by-external-reference-code/${objectDefinition.externalReferenceCode}`,
 		{
-			body: JSON.stringify(values),
+			body: JSON.stringify(objectDefinition),
 			headers,
 			method: 'PUT',
 		}
 	);
+}
+
+export async function putObjectFolderByExternalReferenceCode(
+	objectFolder: Partial<ObjectFolder>
+) {
+	return await fetch(
+		`/o/object-admin/v1.0/object-folders/by-external-reference-code/${objectFolder.externalReferenceCode}`,
+		{
+			body: JSON.stringify(objectFolder),
+			headers,
+			method: 'PUT',
+		}
+	);
+}
+
+export async function putListTypeDefinition({
+	externalReferenceCode,
+	id,
+	listTypeEntries,
+	name_i18n,
+}: Partial<ListTypeDefinition>) {
+	return await save({
+		item: {externalReferenceCode, listTypeEntries, name_i18n},
+		url: `/o/headless-admin-list-type/v1.0/list-type-definitions/${id}`,
+	});
+}
+
+export async function putListTypeEntry({
+	externalReferenceCode,
+	id,
+	name_i18n,
+}: Partial<ListTypeEntry>) {
+	return await save({
+		item: {externalReferenceCode, name_i18n},
+		url: `/o/headless-admin-list-type/v1.0/list-type-entries/${id}`,
+	});
+}
+
+export async function putObjectRelationship({
+	id,
+	...others
+}: ObjectRelationship) {
+	return await save({
+		item: others,
+		url: `/o/object-admin/v1.0/object-relationships/${id}`,
+	});
 }
 
 export async function save({
@@ -405,51 +455,4 @@ export async function save({
 	if (returnValue) {
 		return response.json();
 	}
-}
-
-export async function addPickListItem({
-	id,
-	key,
-	name_i18n,
-}: Partial<PickListItem>) {
-	return await save({
-		item: {key, name_i18n},
-		method: 'POST',
-		url: `/o/headless-admin-list-type/v1.0/list-type-definitions/${id}/list-type-entries`,
-	});
-}
-
-export async function updatePickList({
-	externalReferenceCode,
-	id,
-	listTypeEntries,
-	name_i18n,
-}: Partial<PickList>) {
-	return await save({
-		item: {externalReferenceCode, listTypeEntries, name_i18n},
-		method: 'PUT',
-		url: `/o/headless-admin-list-type/v1.0/list-type-definitions/${id}`,
-	});
-}
-
-export async function updatePickListItem({
-	externalReferenceCode,
-	id,
-	name_i18n,
-}: Partial<PickListItem>) {
-	return await save({
-		item: {externalReferenceCode, name_i18n},
-		method: 'PUT',
-		url: `/o/headless-admin-list-type/v1.0/list-type-entries/${id}`,
-	});
-}
-
-export async function updateRelationship({
-	objectRelationshipId,
-	...others
-}: ObjectRelationship) {
-	return await save({
-		item: others,
-		url: `/o/object-admin/v1.0/object-relationships/${objectRelationshipId}`,
-	});
 }

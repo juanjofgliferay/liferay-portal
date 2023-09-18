@@ -18,18 +18,15 @@ import {KeyValuePair} from '../../ObjectDetails/EditObjectDetails';
 import {EntryDisplayContainer} from '../../ObjectDetails/EntryDisplayContainer';
 import {ObjectDataContainer} from '../../ObjectDetails/ObjectDataContainer';
 import {ScopeContainer} from '../../ObjectDetails/ScopeContainer';
-import {
-	ObjectDefinitionNodeData,
-	nonRelationshipObjectFieldsInfo,
-} from '../types';
+import {nonRelationshipObjectFieldsInfo} from '../types';
 
 import './RightSidebarObjectDefinitionDetails.scss';
 import {useObjectDetailsForm} from '../../ObjectDetails/useObjectDetailsForm';
-import {useFolderContext} from '../ModelBuilderContext/objectFolderContext';
+import {useObjectFolderContext} from '../ModelBuilderContext/objectFolderContext';
 import {TYPES} from '../ModelBuilderContext/typesEnum';
 interface RightSidebarObjectDefinitionDetailsProps {
-	companyKeyValuePair: KeyValuePair[];
-	siteKeyValuePair: KeyValuePair[];
+	companyKeyValuePairs: KeyValuePair[];
+	siteKeyValuePairs: KeyValuePair[];
 }
 
 function setAccountRelationshipFieldMandatory(
@@ -37,15 +34,15 @@ function setAccountRelationshipFieldMandatory(
 ) {
 	const {objectFields} = values;
 
-	const newObjectFields = objectFields?.map((field) => {
-		if (field.name === values.accountEntryRestrictedObjectFieldName) {
+	const newObjectFields = objectFields?.map((objectField) => {
+		if (objectField.name === values.accountEntryRestrictedObjectFieldName) {
 			return {
-				...field,
+				...objectField,
 				required: true,
 			};
 		}
 
-		return field;
+		return objectField;
 	});
 
 	return {
@@ -55,15 +52,17 @@ function setAccountRelationshipFieldMandatory(
 }
 
 export function RightSidebarObjectDefinitionDetails({
-	companyKeyValuePair,
-	siteKeyValuePair,
+	companyKeyValuePairs,
+	siteKeyValuePairs,
 }: RightSidebarObjectDefinitionDetailsProps) {
-	const [{elements, selectedFolderERC}, dispatch] = useFolderContext();
+	const [
+		{elements, selectedObjectFolder},
+		dispatch,
+	] = useObjectFolderContext();
 
-	const selectedNode = elements.find((element) => {
+	const selectedObjectDefinitionNode = elements.find((element) => {
 		if (isNode(element)) {
-			return (element as Node<ObjectDefinitionNodeData>).data
-				?.nodeSelected;
+			return (element as Node<ObjectDefinitionNodeData>).data?.selected;
 		}
 	}) as Node<ObjectDefinitionNodeData>;
 
@@ -90,14 +89,20 @@ export function RightSidebarObjectDefinitionDetails({
 		onSubmit: () => {},
 	});
 
+	const isRootDescendantNode =
+		!!values.rootObjectDefinitionExternalReferenceCode &&
+		values.externalReferenceCode !==
+			values.rootObjectDefinitionExternalReferenceCode;
+
 	useEffect(() => {
 		const makeFetch = async () => {
-			if (selectedNode) {
-				const selectedObjectDefinitionResponse = await API.getObjectDefinitionByExternalReferenceCode(
-					selectedNode.data?.externalReferenceCode as string
+			if (selectedObjectDefinitionNode) {
+				const selectedObjectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
+					selectedObjectDefinitionNode.data
+						?.externalReferenceCode as string
 				);
 
-				const newNonRelationshipObjectFieldsInfo = selectedObjectDefinitionResponse.objectFields
+				const newNonRelationshipObjectFieldsInfo = selectedObjectDefinition.objectFields
 					.filter(
 						(objectField) =>
 							objectField.businessType !== 'Relationship'
@@ -110,22 +115,16 @@ export function RightSidebarObjectDefinitionDetails({
 				setNonRelationshipObjectFieldsInfo(
 					newNonRelationshipObjectFieldsInfo
 				);
-				setValues(selectedObjectDefinitionResponse);
+				setValues(selectedObjectDefinition);
 			}
 		};
 
 		makeFetch();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selectedNode]);
+	}, [selectedObjectDefinitionNode]);
 
 	const onSubmit = async () => {
 		const validationErrors = handleValidate();
-
-		const folderResponse = await API.getAllFolders();
-
-		const selectedFolderName = folderResponse.find(
-			(folder) => folder.externalReferenceCode === selectedFolderERC
-		)!.name;
 
 		if (!Object.keys(validationErrors).length) {
 			delete values.objectRelationships;
@@ -139,7 +138,7 @@ export function RightSidebarObjectDefinitionDetails({
 				objectDefinition = setAccountRelationshipFieldMandatory(values);
 			}
 
-			const saveResponse = await API.putObjectDefinitionByExternalReferenceCode(
+			const updatedObjectDefinitionResponse = await API.putObjectDefinitionByExternalReferenceCode(
 				objectDefinition
 			);
 
@@ -173,8 +172,10 @@ export function RightSidebarObjectDefinitionDetails({
 				return element;
 			});
 
-			if (!saveResponse.ok) {
-				const {title} = (await saveResponse.json()) as {
+			if (!updatedObjectDefinitionResponse.ok) {
+				const {
+					title,
+				} = (await updatedObjectDefinitionResponse.json()) as {
 					status: string;
 					title: string;
 				};
@@ -196,10 +197,10 @@ export function RightSidebarObjectDefinitionDetails({
 
 			dispatch({
 				payload: {
-					currentFolderName: selectedFolderName,
-					updatedNode: newObjectDefinition,
+					currentObjectFolderName: selectedObjectFolder.name,
+					updatedObjectDefinitionNode: newObjectDefinition,
 				},
-				type: TYPES.UPDATE_FOLDER_NODE,
+				type: TYPES.UPDATE_OBJECT_DEFINITION_NODE,
 			});
 
 			openToast({
@@ -213,7 +214,7 @@ export function RightSidebarObjectDefinitionDetails({
 
 	return (
 		<div onBlur={onSubmit}>
-			<div className="lfr-objects__model-builder-right-sidebar-definition-node-title">
+			<div className="lfr-objects__model-builder-right-sidebar-object-definition-node-title">
 				<span>
 					{sub(
 						Liferay.Language.get('x-details'),
@@ -226,7 +227,7 @@ export function RightSidebarObjectDefinitionDetails({
 				</span>
 			</div>
 
-			<div className="lfr-objects__model-builder-right-sidebar-definition-node-content">
+			<div className="lfr-objects__model-builder-right-sidebar-object-definition-node-content">
 				<ObjectDataContainer
 					dbTableName=""
 					errors={errors}
@@ -235,16 +236,22 @@ export function RightSidebarObjectDefinitionDetails({
 						!!values.actions?.update
 					}
 					isApproved={values.status?.label === 'approved'}
-					isLinkedNode={selectedNode.data!.isLinkedNode}
+					isLinkedObjectDefinition={
+						selectedObjectDefinitionNode?.data
+							?.linkedObjectDefinition ?? false
+					}
 					setValues={setValues}
 					values={values as ObjectDefinition}
 				/>
 			</div>
 
-			<div className="lfr-objects__model-builder-right-sidebar-definition-node-content">
+			<div className="lfr-objects__model-builder-right-sidebar-object-definition-node-content">
 				<EntryDisplayContainer
 					errors={errors}
-					isLinkedNode={selectedNode.data!.isLinkedNode}
+					isLinkedObjectDefinition={
+						selectedObjectDefinitionNode?.data
+							?.linkedObjectDefinition ?? false
+					}
 					nonRelationshipObjectFieldsInfo={
 						nonRelationshipObjectFieldsInfo ?? []
 					}
@@ -254,14 +261,17 @@ export function RightSidebarObjectDefinitionDetails({
 				/>
 
 				<ScopeContainer
-					companyKeyValuePair={companyKeyValuePair}
+					companyKeyValuePairs={companyKeyValuePairs}
 					errors={errors}
 					hasUpdateObjectDefinitionPermission={true}
 					isApproved={values.status?.label === 'approved'}
-					isLinkedNode={selectedNode.data!.isLinkedNode}
-					isRootDescendantNode={false}
+					isLinkedObjectDefinition={
+						selectedObjectDefinitionNode?.data
+							?.linkedObjectDefinition ?? false
+					}
+					isRootDescendantNode={isRootDescendantNode}
 					setValues={setValues}
-					siteKeyValuePair={siteKeyValuePair}
+					siteKeyValuePairs={siteKeyValuePairs}
 					values={values as ObjectDefinition}
 				/>
 			</div>
@@ -269,12 +279,15 @@ export function RightSidebarObjectDefinitionDetails({
 			{(Liferay.FeatureFlags['LPS-167253']
 				? values?.modifiable
 				: !values?.system) && (
-				<div className="lfr-objects__model-builder-right-sidebar-definition-node-content">
+				<div className="lfr-objects__model-builder-right-sidebar-object-definition-node-content">
 					<AccountRestrictionContainer
 						errors={errors}
 						isApproved={values?.status?.label === 'approved'}
-						isLinkedNode={selectedNode.data!.isLinkedNode}
-						isRootDescendantNode={false}
+						isLinkedObjectDefinition={
+							selectedObjectDefinitionNode?.data
+								?.linkedObjectDefinition ?? false
+						}
+						isRootDescendantNode={isRootDescendantNode}
 						objectFields={
 							(values?.objectFields as ObjectField[]) ?? []
 						}
@@ -284,13 +297,16 @@ export function RightSidebarObjectDefinitionDetails({
 				</div>
 			)}
 
-			<div className="lfr-objects__model-builder-right-sidebar-definition-node-content">
+			<div className="lfr-objects__model-builder-right-sidebar-object-definition-node-content">
 				<ConfigurationContainer
 					hasUpdateObjectDefinitionPermission={
 						!!values.actions?.update
 					}
-					isLinkedNode={selectedNode.data!.isLinkedNode}
-					isRootDescendantNode={false}
+					isLinkedObjectDefinition={
+						selectedObjectDefinitionNode?.data
+							?.linkedObjectDefinition ?? false
+					}
+					isRootDescendantNode={isRootDescendantNode}
 					setValues={setValues}
 					values={values as ObjectDefinition}
 				/>

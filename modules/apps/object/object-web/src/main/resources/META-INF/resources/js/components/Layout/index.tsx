@@ -122,11 +122,11 @@ const Layout: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 				objectDefinitionExternalReferenceCode
 			);
 
-			const objectFields = await API.getObjectFieldsByExternalReferenceCode(
+			const objectFields = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
 				objectDefinitionExternalReferenceCode
 			);
 
-			const objectRelationships = await API.getObjectRelationshipsByExternalReferenceCode(
+			const objectRelationships = await API.getObjectDefinitionByExternalReferenceCodeObjectRelationships(
 				objectDefinitionExternalReferenceCode
 			);
 
@@ -157,7 +157,9 @@ const Layout: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 			dispatch({
 				payload: {
 					objectFields: normalizeObjectFields({
-						objectFields: filteredObjectFields,
+						objectFields: Liferay.FeatureFlags['LPS-193355']
+							? objectFields
+							: filteredObjectFields,
 						objectLayout,
 					}),
 				},

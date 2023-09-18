@@ -9,7 +9,7 @@ import {FormError} from '@liferay/object-js-components-web';
 interface AccountRestrictionContainerProps {
 	errors: FormError<ObjectDefinition>;
 	isApproved: boolean;
-	isLinkedNode?: boolean;
+	isLinkedObjectDefinition?: boolean;
 	isRootDescendantNode: boolean;
 	objectFields: ObjectField[];
 	setValues: (values: Partial<ObjectDefinition>) => void;
@@ -18,7 +18,7 @@ interface AccountRestrictionContainerProps {
 export declare function AccountRestrictionContainer({
 	errors,
 	isApproved,
-	isLinkedNode,
+	isLinkedObjectDefinition,
 	isRootDescendantNode,
 	objectFields,
 	setValues,

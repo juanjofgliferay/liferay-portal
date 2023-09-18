@@ -6,9 +6,12 @@
 package com.liferay.jethr0.job.controller;
 
 import com.liferay.jethr0.bui1d.BuildEntity;
+import com.liferay.jethr0.bui1d.run.BuildRunEntity;
 import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.job.queue.JobQueue;
 import com.liferay.jethr0.job.repository.JobEntityRepository;
+
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -38,23 +41,55 @@ public class JobRestController {
 
 		JSONObject jobJSONObject = jobEntity.getJSONObject();
 
+		return new ResponseEntity<>(jobJSONObject.toString(), HttpStatus.OK);
+	}
+
+	@GetMapping("/builds/{id}")
+	public ResponseEntity<String> jobBuilds(
+		@AuthenticationPrincipal Jwt jwt, @PathVariable("id") int jobEntityId) {
+
+		JobEntity jobEntity = _jobEntityRepository.getById(jobEntityId);
+
 		JSONArray buildsJSONArray = new JSONArray();
 
 		for (BuildEntity buildEntity : jobEntity.getBuildEntities()) {
-			buildsJSONArray.put(buildEntity.getJSONObject());
+			JSONObject buildJSONObject = buildEntity.getJSONObject();
+
+			List<BuildRunEntity> historyBuildRunEntities =
+				buildEntity.getHistoryBuildRunEntities();
+
+			if (!historyBuildRunEntities.isEmpty()) {
+				BuildRunEntity latestBuildRunEntity =
+					historyBuildRunEntities.get(
+						historyBuildRunEntities.size() - 1);
+
+				buildJSONObject.put(
+					"latestJenkinsBuildURL",
+					latestBuildRunEntity.getJenkinsBuildURL());
+			}
+
+			buildsJSONArray.put(buildJSONObject);
 		}
 
-		jobJSONObject.put("builds", buildsJSONArray);
-
-		return new ResponseEntity<>(jobJSONObject.toString(), HttpStatus.OK);
+		return new ResponseEntity<>(buildsJSONArray.toString(), HttpStatus.OK);
 	}
 
 	@GetMapping("/queue")
 	public ResponseEntity<String> jobQueue(@AuthenticationPrincipal Jwt jwt) {
 		JSONArray jobsJSONArray = new JSONArray();
 
+		int position = 0;
+
 		for (JobEntity jobEntity : _jobQueue.getJobEntities()) {
+			if (jobEntity.getState() == JobEntity.State.COMPLETED) {
+				continue;
+			}
+
+			position++;
+
 			JSONObject jobJSONObject = jobEntity.getJSONObject();
+
+			jobJSONObject.put("position", position);
 
 			int completedBuilds = 0;
 			int queuedBuilds = 0;

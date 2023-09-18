@@ -23,6 +23,7 @@ taglib uri="http://liferay.com/tld/site-navigation" prefix="liferay-site-navigat
 taglib uri="http://liferay.com/tld/social-bookmarks" prefix="liferay-social-bookmarks" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
+taglib uri="http://liferay.com/tld/user" prefix="liferay-user" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
 <%@ page import="com.liferay.admin.kernel.util.PortalSearchApplicationType" %><%@
@@ -155,8 +156,6 @@ page import="com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEn
 page import="com.liferay.subscription.exception.NoSuchSubscriptionException" %><%@
 page import="com.liferay.subscription.service.SubscriptionLocalServiceUtil" %><%@
 page import="com.liferay.wiki.model.WikiPage" %>
-
-<%@ page import="java.math.BigDecimal" %>
 
 <%@ page import="java.text.Format" %>
 

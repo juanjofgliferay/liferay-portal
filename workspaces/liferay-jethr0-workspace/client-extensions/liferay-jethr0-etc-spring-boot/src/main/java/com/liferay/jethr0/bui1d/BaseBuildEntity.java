@@ -14,7 +14,11 @@ import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.task.TaskEntity;
 import com.liferay.jethr0.util.StringUtil;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -103,6 +107,18 @@ public abstract class BaseBuildEntity
 	@Override
 	public Set<EnvironmentEntity> getEnvironmentEntities() {
 		return getRelatedEntities(EnvironmentEntity.class);
+	}
+
+	@Override
+	public List<BuildRunEntity> getHistoryBuildRunEntities() {
+		List<BuildRunEntity> historyBuildRunEntities = new ArrayList<>(
+			getBuildRunEntities());
+
+		Collections.sort(
+			historyBuildRunEntities,
+			Comparator.comparing(BuildRunEntity::getCreatedDate));
+
+		return historyBuildRunEntities;
 	}
 
 	@Override

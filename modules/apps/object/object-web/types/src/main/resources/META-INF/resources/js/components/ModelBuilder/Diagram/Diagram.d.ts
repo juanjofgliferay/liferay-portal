@@ -9,6 +9,6 @@ import './Diagram.scss';
 declare function DiagramBuilder({
 	setShowModal,
 }: {
-	setShowModal: (value: boolean) => void;
+	setShowModal: (value: ModelBuilderModals) => void;
 }): JSX.Element;
 export default DiagramBuilder;

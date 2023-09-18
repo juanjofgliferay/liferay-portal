@@ -134,7 +134,7 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 				null, TestPropsValues.getUserId(),
 				Collections.singletonMap(
 					LocaleUtil.US, RandomTestUtil.randomString()),
-				listTypeEntries);
+				false, listTypeEntries);
 
 		_objectDefinition1 = _addObjectDefinition(
 			1, ObjectDefinitionConstants.SCOPE_COMPANY);
@@ -217,6 +217,40 @@ public class HeadlessBuilderResourceTest extends BaseTestCase {
 					HTTPTestUtil.invokeToHttpCode(
 						null, "c/" + _BASE_URL_1 + _API_APPLICATION_PATH_1,
 						Http.Method.GET));
+				Assert.assertFalse(
+					HTTPTestUtil.invokeToJSONObject(
+						null, "openapi", Http.Method.GET
+					).has(
+						"/c/" + _BASE_URL_1
+					));
+
+				String externalReferenceCode = RandomTestUtil.randomString();
+
+				assertSuccessfulHttpCode(
+					JSONUtil.put(
+						"applicationStatus", "published"
+					).put(
+						"baseURL", _BASE_URL_1
+					).put(
+						"externalReferenceCode", externalReferenceCode
+					).put(
+						"title", "test-app"
+					).toString(),
+					"headless-builder/applications", Http.Method.POST);
+
+				Assert.assertTrue(
+					HTTPTestUtil.invokeToJSONObject(
+						null, "openapi", Http.Method.GET
+					).has(
+						"/c/" + _BASE_URL_1
+					));
+
+				assertSuccessfulHttpCode(
+					null,
+					"headless-builder/applications/by-external-reference-code" +
+						"/" + externalReferenceCode,
+					Http.Method.DELETE);
+
 				Assert.assertFalse(
 					HTTPTestUtil.invokeToJSONObject(
 						null, "openapi", Http.Method.GET

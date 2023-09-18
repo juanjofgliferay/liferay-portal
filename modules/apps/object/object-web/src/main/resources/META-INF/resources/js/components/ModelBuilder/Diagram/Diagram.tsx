@@ -10,35 +10,42 @@ import ReactFlow, {
 	Controls,
 	Edge,
 	MiniMap,
+	Node,
 	addEdge,
 } from 'react-flow-renderer';
 
-import {DefinitionNode} from '../DefinitionNode/DefinitionNode';
-import {EmptyNode} from '../DefinitionNode/EmptyNode';
+import {EmptyNode} from '../ObjectDefinitionNode/EmptyNode';
+import {ObjectDefinitionNode} from '../ObjectDefinitionNode/ObjectDefinitionNode';
 
 import './Diagram.scss';
 
-import React, {useCallback} from 'react';
+import {API} from '@liferay/object-js-components-web';
+import React, {MouseEvent, useCallback} from 'react';
 
-import DefaultEdge from '../Edges/DefaultEdge';
-import {useFolderContext} from '../ModelBuilderContext/objectFolderContext';
+import DefaultObjectRelationshipEdge from '../Edges/DefaultObjectRelationshipEdge';
+import SelfObjectRelationshipEdge from '../Edges/SelfObjectRelationshipEdge';
+import {useObjectFolderContext} from '../ModelBuilderContext/objectFolderContext';
 import {TYPES} from '../ModelBuilderContext/typesEnum';
 
 const NODE_TYPES = {
 	emptyNode: EmptyNode,
-	objectDefinition: DefinitionNode,
+	objectDefinitionNode: ObjectDefinitionNode,
 };
 
 const EDGE_TYPES = {
-	default: DefaultEdge,
+	defaultObjectRelationshipEdge: DefaultObjectRelationshipEdge,
+	selfObjectRelationshipEdge: SelfObjectRelationshipEdge,
 };
 
 function DiagramBuilder({
 	setShowModal,
 }: {
-	setShowModal: (value: boolean) => void;
+	setShowModal: (value: ModelBuilderModals) => void;
 }) {
-	const [{elements}, dispatch] = useFolderContext();
+	const [
+		{elements, selectedObjectFolder, showChangesSaved},
+		dispatch,
+	] = useObjectFolderContext();
 
 	const emptyNode = [
 		{
@@ -66,6 +73,49 @@ function DiagramBuilder({
 		[dispatch, elements]
 	);
 
+	const onNodeDragStop = async (
+		event: MouseEvent,
+		node: Node<ObjectDefinitionNodeData>
+	) => {
+		const objectFolder = await API.getObjectFolderByExternalReferenceCode(
+			selectedObjectFolder.externalReferenceCode
+		);
+
+		const updatedObjectFolderItems = objectFolder.objectFolderItems.map(
+			(objectFolderItem) => {
+				if (
+					objectFolderItem.objectDefinitionExternalReferenceCode ===
+					node.data?.externalReferenceCode
+				) {
+					return {
+						...objectFolderItem,
+						positionX: node.position.x,
+						positionY: node.position.y,
+					};
+				}
+
+				return objectFolderItem;
+			}
+		);
+
+		const updatedObjectFolder = {
+			externalReferenceCode: selectedObjectFolder.externalReferenceCode,
+			id: selectedObjectFolder.id,
+			label: selectedObjectFolder.label,
+			name: selectedObjectFolder.name,
+			objectFolderItems: updatedObjectFolderItems,
+		};
+
+		API.putObjectFolderByExternalReferenceCode(updatedObjectFolder);
+
+		if (!showChangesSaved) {
+			dispatch({
+				payload: {updatedShowChangesSaved: true},
+				type: TYPES.SET_SHOW_CHANGES_SAVED,
+			});
+		}
+	};
+
 	return (
 		<div className="lfr-objects__model-builder-diagram-area">
 			<ReactFlow
@@ -75,6 +125,7 @@ function DiagramBuilder({
 				minZoom={0.1}
 				nodeTypes={NODE_TYPES}
 				onConnect={onConnect}
+				onNodeDragStop={onNodeDragStop}
 			>
 				<Background size={1} />
 

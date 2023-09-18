@@ -14,6 +14,7 @@ import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.task.TaskEntity;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,6 +53,8 @@ public interface BuildEntity extends Entity {
 	public Set<BuildEntity> getChildBuildEntities();
 
 	public Set<EnvironmentEntity> getEnvironmentEntities();
+
+	public List<BuildRunEntity> getHistoryBuildRunEntities();
 
 	public String getJenkinsJobName();
 
