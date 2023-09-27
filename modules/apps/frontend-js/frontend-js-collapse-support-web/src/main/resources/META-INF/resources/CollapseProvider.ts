@@ -198,8 +198,11 @@ class CollapseProvider {
 		);
 	}
 
-	_getTrigger(panel: any) {
-		return document.querySelector(`[href="#${panel.getAttribute('id')}"]`);
+	_getTrigger(panel: any): Element | null {
+		return (
+			document.querySelector(`[href="#${panel.getAttribute('id')}"]`) ||
+			panel.parentElement.querySelector('button.panel-header-link')
+		);
 	}
 
 	_onTriggerClick = (event: any) => {
