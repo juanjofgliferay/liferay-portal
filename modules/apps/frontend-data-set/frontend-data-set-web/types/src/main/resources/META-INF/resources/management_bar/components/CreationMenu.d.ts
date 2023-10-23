@@ -18,7 +18,6 @@ export interface CreationMenuItem {
 		| 'modal-lg'
 		| 'modal-sm'
 		| 'sidePanel';
-	title?: string;
 }
 declare function CreationMenu({
 	inEmptyState,
