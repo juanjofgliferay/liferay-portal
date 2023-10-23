@@ -25,6 +25,7 @@ export interface CreationMenuItem {
 		| 'modal-lg'
 		| 'modal-sm'
 		| 'sidePanel';
+	title?: string;
 }
 
 const EMPTY_STATE_BUTTON_PROPS = {

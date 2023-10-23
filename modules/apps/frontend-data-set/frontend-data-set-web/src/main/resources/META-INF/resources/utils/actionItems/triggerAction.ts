@@ -40,6 +40,7 @@ export function triggerAction(
 				id: modalId,
 				onClose: loadData,
 				size: resolveModalSize(actionTarget),
+				title: item.title,
 				url: actionTargetURL,
 			});
 			break;
