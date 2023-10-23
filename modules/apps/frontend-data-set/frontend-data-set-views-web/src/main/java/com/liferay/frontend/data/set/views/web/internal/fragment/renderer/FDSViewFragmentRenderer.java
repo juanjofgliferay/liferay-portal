@@ -265,6 +265,10 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 			HashMapBuilder.<String, Object>put(
 				"apiURL", _getAPIURL(fdsEntryObjectEntry, httpServletRequest)
 			).put(
+				"creationMenu",
+				_getCreationActionsJSONObject(
+					fdsViewObjectDefinition, fdsViewObjectEntry)
+			).put(
 				"filters",
 				_getFiltersJSONArray(
 					fdsViewObjectDefinition, fdsViewObjectEntry,
@@ -325,6 +329,78 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 		sb.append(String.valueOf(properties.get("restEndpoint")));
 
 		return _interpolateURL(sb.toString(), httpServletRequest);
+	}
+
+	private JSONObject _getCreationActionsJSONObject(
+			ObjectDefinition fdsViewObjectDefinition,
+			ObjectEntry fdsViewObjectEntry)
+		throws Exception {
+
+		Set<ObjectEntry> fdsCreationActionObjectEntries = new TreeSet<>(
+			new ObjectEntryComparator(
+				ListUtil.toList(
+					ListUtil.fromString(
+						MapUtil.getString(
+							fdsViewObjectEntry.getProperties(),
+							"fdsCreationActionsOrder"),
+						StringPool.COMMA),
+					Long::parseLong)));
+
+		fdsCreationActionObjectEntries.addAll(
+			_getRelatedObjectEntries(
+				fdsViewObjectDefinition, fdsViewObjectEntry,
+				"fdsViewFDSCreationActionRelationship"));
+
+		return JSONUtil.put(
+			"primaryItems",
+			JSONUtil.toJSONArray(
+				fdsCreationActionObjectEntries,
+				(ObjectEntry fdsCreationActionObjectEntry) -> {
+					Map<String, Object> properties =
+						fdsCreationActionObjectEntry.getProperties();
+
+					String actionTarget = String.valueOf(
+						properties.get("type"));
+
+					Boolean modal = Object.equals(actionTarget, "modal");
+
+					Boolean sidePanel = Object.equals(
+						actionTarget, "sidePanel");
+
+					JSONObject jsonObject = JSONUtil.put(
+						"data",
+						JSONUtil.put(
+							"permissionKey", properties.get("permissionKey")
+						).put(
+							"title", properties.get("label")
+						)
+					).put(
+						"href", properties.get("url")
+					).put(
+						"icon", properties.get("icon")
+					).put(
+						"label", properties.get("label")
+					).put(
+						"size", properties.get("modalSize")
+					).put(
+						"target",
+						() -> {
+							if (modal) {
+								return actionTarget + "-" +
+									String.valueOf(properties.get("modalSize"));
+							}
+
+							return actionTarget;
+						}
+					);
+
+					if (modal || sidePanel) {
+						jsonObject.put(
+							"title", String.valueOf(properties.get("title")))
+					}
+
+					return jsonObject;
+				}));
 	}
 
 	private JSONObject _getDateJSONObject(Object object) {
@@ -589,7 +665,7 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 			ObjectEntry fdsViewObjectEntry)
 		throws Exception {
 
-		Set<ObjectEntry> fdsActionObjectEntries = new TreeSet<>(
+		Set<ObjectEntry> fdsItemActionObjectEntries = new TreeSet<>(
 			new ObjectEntryComparator(
 				ListUtil.toList(
 					ListUtil.fromString(
@@ -599,16 +675,16 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 						StringPool.COMMA),
 					Long::parseLong)));
 
-		fdsActionObjectEntries.addAll(
+		fdsItemActionObjectEntries.addAll(
 			_getRelatedObjectEntries(
 				fdsViewObjectDefinition, fdsViewObjectEntry,
 				"fdsViewFDSItemActionRelationship"));
 
 		return JSONUtil.toJSONArray(
-			fdsActionObjectEntries,
-			(ObjectEntry fdsActionObjectEntry) -> {
+			fdsItemActionObjectEntries,
+			(ObjectEntry fdsItemActionObjectEntry) -> {
 				Map<String, Object> properties =
-					fdsActionObjectEntry.getProperties();
+					fdsItemActionObjectEntry.getProperties();
 
 				return JSONUtil.put(
 					"data",
