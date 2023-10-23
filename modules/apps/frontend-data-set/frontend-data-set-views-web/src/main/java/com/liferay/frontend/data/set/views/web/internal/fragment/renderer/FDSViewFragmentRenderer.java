@@ -362,10 +362,9 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 					String actionTarget = String.valueOf(
 						properties.get("type"));
 
-					Boolean modal = Object.equals(actionTarget, "modal");
+					Boolean modal = actionTarget.equals("modal");
 
-					Boolean sidePanel = Object.equals(
-						actionTarget, "sidePanel");
+					Boolean sidePanel = actionTarget.equals("sidePanel");
 
 					JSONObject jsonObject = JSONUtil.put(
 						"data",
@@ -396,7 +395,7 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 
 					if (modal || sidePanel) {
 						jsonObject.put(
-							"title", String.valueOf(properties.get("title")))
+							"title", String.valueOf(properties.get("title")));
 					}
 
 					return jsonObject;
