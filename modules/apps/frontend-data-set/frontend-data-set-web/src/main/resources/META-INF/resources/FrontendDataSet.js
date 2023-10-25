@@ -20,6 +20,7 @@ import './styles/main.scss';
 import ClayEmptyState from '@clayui/empty-state';
 
 import FrontendDataSetContext from './FrontendDataSetContext';
+import filterCreationActions from './actions/utils/filterCreationActions';
 import ManagementBar from './management_bar/ManagementBar';
 import CreationMenu from './management_bar/components/CreationMenu';
 import {
@@ -88,7 +89,9 @@ const FrontendDataSet = ({
 	views,
 }) => {
 	const wrapperRef = useRef(null);
+	const [collectionActions, setCollectionActions] = useState(null);
 	const [componentLoading, setComponentLoading] = useState(false);
+	const [creationMenuItems, setCreationMenuItems] = useState(null);
 	const [dataLoading, setDataLoading] = useState(!!apiURL);
 	const [dataSetSupportModalId] = useState(`support-modal-${getRandomId()}`);
 	const [dataSetSupportSidePanelId] = useState(
@@ -226,9 +229,31 @@ const FrontendDataSet = ({
 	const isMounted = useIsMounted();
 
 	function updateDataSetItems(dataSetData) {
-		setTotal(dataSetData.totalCount);
+		setCollectionActions(dataSetData.actions);
 		setItems(dataSetData.items);
+		setTotal(dataSetData.totalCount);
 	}
+
+	useEffect(() => {
+		const filteredCreationMenu = {};
+
+		if (creationMenu && collectionActions) {
+			if (creationMenu.primaryItems) {
+				filteredCreationMenu.primaryItems = filterCreationActions(
+					creationMenu.primaryItems,
+					collectionActions
+				);
+			}
+			if (creationMenu.secondaryItems) {
+				filteredCreationMenu.secondaryItems = filterCreationActions(
+					creationMenu.secondaryItems,
+					collectionActions
+				);
+			}
+		}
+
+		setCreationMenuItems(filteredCreationMenu);
+	}, [creationMenu, collectionActions]);
 
 	useEffect(() => {
 		if (itemsProp) {
@@ -443,7 +468,7 @@ const FrontendDataSet = ({
 		<div className="management-bar-wrapper">
 			<ManagementBar
 				bulkActions={bulkActions}
-				creationMenu={creationMenu}
+				creationMenu={creationMenuItems}
 				fluid={style === 'fluid'}
 				selectAllItems={() =>
 					selectItems(items.map((item) => item[selectedItemsKey]))
