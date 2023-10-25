@@ -12,7 +12,12 @@ import React, {useContext, useState} from 'react';
 import FrontendDataSetContext from '../../FrontendDataSetContext';
 import {triggerAction} from '../../utils/actionItems/triggerAction';
 
-export interface CreationMenuItem {
+export interface CreationActionItem {
+	data: {
+		permissionKey?: string;
+		size?: string;
+		title?: string;
+	};
 	href: string;
 	icon?: string;
 	label: string;
@@ -25,7 +30,6 @@ export interface CreationMenuItem {
 		| 'modal-lg'
 		| 'modal-sm'
 		| 'sidePanel';
-	title?: string;
 }
 
 const EMPTY_STATE_BUTTON_PROPS = {
@@ -40,7 +44,7 @@ const DropDown = ({
 	primaryItems,
 }: {
 	inEmptyState: any;
-	primaryItems: Array<CreationMenuItem>;
+	primaryItems: Array<CreationActionItem>;
 }) => {
 	const frontendDataSetContext = useContext(FrontendDataSetContext);
 
@@ -104,7 +108,7 @@ function CreationMenu({
 	primaryItems,
 }: {
 	inEmptyState: any;
-	primaryItems: Array<CreationMenuItem>;
+	primaryItems: Array<CreationActionItem>;
 }) {
 	const frontendDataSetContext = useContext(FrontendDataSetContext);
 

@@ -6,7 +6,7 @@
 import {navigate} from 'frontend-js-web';
 
 import {IFrontendDataSetContext} from '../../FrontendDataSetContext';
-import {CreationMenuItem} from '../../management_bar/components/CreationMenu';
+import {CreationActionItem} from '../../management_bar/components/CreationMenu';
 import {OPEN_MODAL, OPEN_SIDE_PANEL} from '../eventsDefinitions';
 import {resolveModalSize} from '../modals/resolveModalSize';
 import {ACTION_ITEM_TARGETS} from './constants';
@@ -22,7 +22,7 @@ const {
 } = ACTION_ITEM_TARGETS;
 
 export function triggerAction(
-	item: CreationMenuItem,
+	item: CreationActionItem,
 	context: IFrontendDataSetContext
 ): void {
 	const {href: actionTargetURL, target: actionTarget} = item;
@@ -39,8 +39,8 @@ export function triggerAction(
 			Liferay.fire(OPEN_MODAL, {
 				id: modalId,
 				onClose: loadData,
-				size: resolveModalSize(actionTarget),
-				title: item.title,
+				size: item.data?.size || resolveModalSize(actionTarget),
+				title: item.data?.title,
 				url: actionTargetURL,
 			});
 			break;

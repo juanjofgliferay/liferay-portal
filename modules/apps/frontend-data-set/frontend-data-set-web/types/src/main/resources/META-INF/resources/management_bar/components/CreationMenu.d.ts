@@ -5,7 +5,12 @@
 
 /// <reference types="react" />
 
-export interface CreationMenuItem {
+export interface CreationActionItem {
+	data: {
+		permissionKey?: string;
+		size?: string;
+		title?: string;
+	};
 	href: string;
 	icon?: string;
 	label: string;
@@ -18,13 +23,12 @@ export interface CreationMenuItem {
 		| 'modal-lg'
 		| 'modal-sm'
 		| 'sidePanel';
-	title?: string;
 }
 declare function CreationMenu({
 	inEmptyState,
 	primaryItems,
 }: {
 	inEmptyState: any;
-	primaryItems: Array<CreationMenuItem>;
+	primaryItems: Array<CreationActionItem>;
 }): false | JSX.Element;
 export default CreationMenu;
