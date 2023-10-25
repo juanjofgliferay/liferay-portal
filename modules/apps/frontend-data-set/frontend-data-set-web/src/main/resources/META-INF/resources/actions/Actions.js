@@ -8,7 +8,7 @@ import PropTypes from 'prop-types';
 import React, {useContext, useState} from 'react';
 
 import FrontendDataSetContext from '../FrontendDataSetContext';
-import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
+import {ACTION_ITEM_TARGETS} from './utils/constants';
 import {formatActionURL} from '../utils/index';
 import {openPermissionsModal} from '../utils/modals/openPermissionsModal';
 import {resolveModalSize} from '../utils/modals/resolveModalSize';

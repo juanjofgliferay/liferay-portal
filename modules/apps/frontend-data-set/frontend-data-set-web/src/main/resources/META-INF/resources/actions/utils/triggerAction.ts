@@ -7,8 +7,8 @@ import {navigate} from 'frontend-js-web';
 
 import {IFrontendDataSetContext} from '../../FrontendDataSetContext';
 import {CreationActionItem} from '../../management_bar/components/CreationMenu';
-import {OPEN_MODAL, OPEN_SIDE_PANEL} from '../eventsDefinitions';
-import {resolveModalSize} from '../modals/resolveModalSize';
+import {OPEN_MODAL, OPEN_SIDE_PANEL} from '../../utils/eventsDefinitions';
+import {resolveModalSize} from '../../utils/modals/resolveModalSize';
 import {ACTION_ITEM_TARGETS} from './constants';
 
 const {

@@ -10,7 +10,7 @@ import classNames from 'classnames';
 import React, {useContext, useState} from 'react';
 
 import FrontendDataSetContext from '../../FrontendDataSetContext';
-import {triggerAction} from '../../utils/actionItems/triggerAction';
+import {triggerAction} from '../../actions/utils/triggerAction';
 
 export interface CreationActionItem {
 	data?: {
