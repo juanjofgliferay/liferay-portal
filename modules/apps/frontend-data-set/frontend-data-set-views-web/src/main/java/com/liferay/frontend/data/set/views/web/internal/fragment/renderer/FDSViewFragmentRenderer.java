@@ -359,19 +359,14 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 					Map<String, Object> properties =
 						fdsCreationActionObjectEntry.getProperties();
 
-					String actionTarget = String.valueOf(
-						properties.get("type"));
-
-					Boolean modal = actionTarget.equals("modal");
-
-					Boolean sidePanel = actionTarget.equals("sidePanel");
-
 					JSONObject jsonObject = JSONUtil.put(
 						"data",
 						JSONUtil.put(
 							"permissionKey", properties.get("permissionKey")
 						).put(
-							"title", properties.get("label")
+							"size", properties.get("modalSize")
+						).put(
+							"title", properties.get("title")
 						)
 					).put(
 						"href", properties.get("url")
@@ -380,23 +375,8 @@ public class FDSViewFragmentRenderer implements FragmentRenderer {
 					).put(
 						"label", properties.get("label")
 					).put(
-						"size", properties.get("modalSize")
-					).put(
-						"target",
-						() -> {
-							if (modal) {
-								return actionTarget + "-" +
-									String.valueOf(properties.get("modalSize"));
-							}
-
-							return actionTarget;
-						}
+						"target", properties.get("type")
 					);
-
-					if (modal || sidePanel) {
-						jsonObject.put(
-							"title", String.valueOf(properties.get("title")));
-					}
 
 					return jsonObject;
 				}));
