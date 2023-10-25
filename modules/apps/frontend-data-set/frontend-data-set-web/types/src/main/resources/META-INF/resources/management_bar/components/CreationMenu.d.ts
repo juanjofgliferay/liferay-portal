@@ -6,7 +6,7 @@
 /// <reference types="react" />
 
 export interface CreationActionItem {
-	data: {
+	data?: {
 		permissionKey?: string;
 		size?: string;
 		title?: string;
@@ -23,6 +23,7 @@ export interface CreationActionItem {
 		| 'modal-lg'
 		| 'modal-sm'
 		| 'sidePanel';
+	type: string;
 }
 declare function CreationMenu({
 	inEmptyState,

@@ -13,7 +13,7 @@ import FrontendDataSetContext from '../../FrontendDataSetContext';
 import {triggerAction} from '../../utils/actionItems/triggerAction';
 
 export interface CreationActionItem {
-	data: {
+	data?: {
 		permissionKey?: string;
 		size?: string;
 		title?: string;
@@ -30,6 +30,7 @@ export interface CreationActionItem {
 		| 'modal-lg'
 		| 'modal-sm'
 		| 'sidePanel';
+	type: string;
 }
 
 const EMPTY_STATE_BUTTON_PROPS = {
