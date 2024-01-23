@@ -5,42 +5,42 @@
 
 import {expect, mergeTests} from '@playwright/test';
 
-import {test as FDSViewPagesTest} from '../../fixtures/FDSViewPages.fixture';
-import {apiHelpersTest} from '../../fixtures/apiHelpers.fixture';
-import {applicationsMenuPageTest} from '../../fixtures/applicationsMenuPages.fixture';
+import {dataSetManagerPageTest} from '../../fixtures/DataSetManagerPages.fixture';
+// import {apiHelpersTest} from '../../fixtures/apiHelpersTest';
+import {loginTest} from '../../fixtures/loginTest';
+import {applicationsMenuPageTest} from '../../fixtures/applicationsMenuPageTest';
 
 const DATASET_NAME = 'New Data Set Item Actions';
 
 export const test = mergeTests(
-	apiHelpersTest,
 	applicationsMenuPageTest,
-	FDSViewPagesTest
+	dataSetManagerPageTest,
+    loginTest
 );
 
 test.describe('DataSet Item Actions', () => {
     test('Setup environment', async({
-        _apiHelpers,
-        _FDSViewPage,
+        dataSetManagerPage,
     }) => {
         await test.step('Create Data Set', async() => {
-            await _FDSViewPage.createTestDataSet({name: DATASET_NAME});
+            await dataSetManagerPage.createTestDataSet({name: DATASET_NAME});
         });
         
         await test.step('Create Data Set View', async () => {
-            await _FDSViewPage.createTestDataSetView({dataSetName: DATASET_NAME});
+            await dataSetManagerPage.createTestDataSetView({dataSetName: DATASET_NAME});
         });
     });
 
     test.describe('DataSet Fields Tab', () => {      
         test('Dataset Fields Tab is selected', async ({
-            _FDSViewPage,
+            dataSetManagerPage,
             page,
         }) => {
-            await _FDSViewPage.gotoTestDataSet({name: DATASET_NAME});
-            await _FDSViewPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSet({name: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
         
             await test.step('Open Data Set Fields Tab', async() => {
-                await _FDSViewPage.gotoDataSetFieldsTab();
+                await dataSetManagerPage.gotoDataSetFieldsTab();
         
                 await expect(page.getByRole('heading', {name: 'Fields'})).toBeVisible();
                 await expect(page.getByText(/No fields added yet./)).toBeVisible();
@@ -48,21 +48,21 @@ test.describe('DataSet Item Actions', () => {
         });
     
         test('Can select Fields for the Dataset', async ({
-            _FDSViewPage,
+            dataSetManagerPage,
             page,
         }) => {
-            await _FDSViewPage.gotoTestDataSet({name: DATASET_NAME});
-            await _FDSViewPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSet({name: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
 
             await test.step('Open Data Set Fields Tab', async() => {
-                await _FDSViewPage.gotoDataSetFieldsTab();
+                await dataSetManagerPage.gotoDataSetFieldsTab();
         
                 await expect(page.getByRole('heading', {name: 'Fields'})).toBeVisible();
                 await expect(page.getByText(/No fields added yet./)).toBeVisible();
             });
 
             const fieldModal = await test.step('Open Data Set Fields Modal', async() => {
-                await _FDSViewPage.addNewField();
+                await dataSetManagerPage.addNewField();
         
                 await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -84,34 +84,34 @@ test.describe('DataSet Item Actions', () => {
 
     test.describe('DataSet Actions Tab', () => {
         test('Dataset Actions Tab is selected', async ({
-            _FDSViewPage,
+            dataSetManagerPage,
             page,
         }) => {
-            await _FDSViewPage.gotoTestDataSet({name: DATASET_NAME});
-            await _FDSViewPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSet({name: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
         
             await test.step('Open Data Set Actions Tab', async() => {
-                await _FDSViewPage.gotoDataSetActionsTab();
+                await dataSetManagerPage.gotoDataSetActionsTab();
         
                 await expect(page.getByRole('heading', {name: 'Actions'})).toBeVisible();
             });
         });
 
         test('Can define an Item Actions of type Link for the Dataset', async ({
-            _FDSViewPage,
+            dataSetManagerPage,
             page,
         }) => {
-            await _FDSViewPage.gotoTestDataSet({name: DATASET_NAME});
-            await _FDSViewPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSet({name: DATASET_NAME});
+            await dataSetManagerPage.gotoTestDataSetView({dataSetName: DATASET_NAME});
 
             await test.step('Open Data Set Actions Tab', async() => {
-                await _FDSViewPage.gotoDataSetActionsTab();
+                await dataSetManagerPage.gotoDataSetActionsTab();
         
                 await expect(page.getByRole('heading', {name: 'Actions'})).toBeVisible();
             });
 
             await test.step('Open Data Set Item Action Form', async() => {
-                await _FDSViewPage.addItemAction();
+                await dataSetManagerPage.addItemAction();
         
                 await expect(page.getByRole('heading', {name: 'New Item Action'})).toBeVisible();
             });
@@ -132,7 +132,21 @@ test.describe('DataSet Item Actions', () => {
         }); 
     });
 
-    test('Clean up environment', async ({_FDSViewPage}) => {
-        await _FDSViewPage.deleteDataSet({name: 'New Data Set Item Actions'});
+    test.describe('Navigates to home page', () => {
+        test('Add DataSet fragment to home page', async() => {
+            // Click on "Edit" button
+            // Select Content Display -> Data Set
+            // Drag and Drop into the page
+            // Find DataSet fragment and click
+            // Click "Select Data Set View" button
+            //      - opens dropdown and select "Select Data Set View..."
+            // Opens a modal and select the Data Set View
+            //      - select radio button (w/ Data Set View name)
+            //      - click save
+        });
+    });
+
+    test('Clean up environment', async ({dataSetManagerPage}) => {
+        await dataSetManagerPage.deleteDataSet({name: 'New Data Set Item Actions'});
     });
 });

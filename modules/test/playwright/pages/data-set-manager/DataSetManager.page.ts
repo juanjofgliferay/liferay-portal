@@ -5,11 +5,11 @@
 
 import {expect, test} from '@playwright/test';
 
-import {ApplicationsMenuPage} from '../product-navigation-applications-menu/applicationsMenu.page';
+import {ApplicationsMenuPage} from '../product-navigation-applications-menu/ApplicationsMenuPage';
 
 import type {Locator, Page} from '@playwright/test';
 
-export class FDSViewPage {
+export class DataSetManagerPage {
 	page: Page;
 	applicationsMenuPage: ApplicationsMenuPage;
     readonly ADD_FIELDS_BUTTON: Locator;
@@ -25,7 +25,7 @@ export class FDSViewPage {
 	}
 
 	async goto() {
-		await this.applicationsMenuPage.goToFDS();
+		await this.applicationsMenuPage.goToDataSetManager();
 	}
 
     /**

@@ -5,10 +5,10 @@
 
 import {test as pwTest} from '@playwright/test';
 
-import {FDSViewPage} from '../pages/FDS/FDSView.page';
+import {DataSetManagerPage} from '../pages/data-set-manager/DataSetManager.page';
 
-export const test = pwTest.extend({
-	_FDSViewPage: async ({page}, use) => {
-		await use(new FDSViewPage(page));
+export const dataSetManagerPageTest = pwTest.extend({
+	dataSetManagerPage: async ({page}, use) => {
+		await use(new DataSetManagerPage(page));
 	},
 });
