@@ -118,7 +118,7 @@ export class DataSetManagerPage {
             this.page.getByRole('heading', {name: 'New Data Set View'})
         ).toBeVisible();
 
-        await this.page.getByLabel('Name').fill('View Test');
+        await this.page.getByLabel('Name').fill('Data Set View Test');
 
         await this.page.getByRole('button', {name: 'Save'}).click();
 	}

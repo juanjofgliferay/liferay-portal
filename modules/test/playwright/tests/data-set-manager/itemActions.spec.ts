@@ -132,17 +132,59 @@ test.describe('DataSet Item Actions', () => {
         }); 
     });
 
-    test.describe('Navigates to home page', () => {
-        test('Add DataSet fragment to home page', async() => {
-            // Click on "Edit" button
-            // Select Content Display -> Data Set
-            // Drag and Drop into the page
-            // Find DataSet fragment and click
+    test.describe('Dataset in the home page', () => {
+        test('Add DataSet fragment', async({applicationsMenuPage, page}) => {
+            await test.step('Go Home', async () => {
+                await applicationsMenuPage.goto();
+            });
+
+            await test.step('Click on "Edit" button', async () => {
+                const editPageButton = await page.getByRole('link', {name: 'Edit'});
+                await editPageButton.click();
+            });
+
+            await test.step('Search for "Data Set" fragment', async () => {
+                const fragmentSearchInput = await page.getByLabel('Search Fragments and Widgets');
+                fragmentSearchInput.fill('Data Set');
+            });
+
+            await test.step('Drag "Data Set" fragment & Drop into the page editor', async () => {
+                // TODO: not working. Need to manually drop fragment manually
+                await page
+                    .getByRole('menuitem', {name: 'Data Set'})
+                    .dragTo(page.locator('.page-editor__root'));
+            });
+
+            await test.step('Select empty Data Set fragment', async () => {
+                await page
+                    .getByText('Select a data set view. Beta')
+                    .first()
+                    .click();
+            });
+
+            await test.step('Open Data Set View Selector', async () => {
+                await page.getByRole('button', {name: 'Select Data Set View'}).click();
+                await page.getByRole('menuitem', {name: 'Select Data Set View...'}).click();
+            });
+
+            // await test.step('Select Data Set View', async () => {
+            //     await expect(page.getByRole('heading', {name: 'Select'})).toBeVisible();
+
+            //     await page.locator('.selectable').filter({hasText: 'Data Set View Test'}).click();
+
+            //     await page.getByRole('button', {name: 'Save'}).click();
+            // });
+
             // Click "Select Data Set View" button
             //      - opens dropdown and select "Select Data Set View..."
             // Opens a modal and select the Data Set View
             //      - select radio button (w/ Data Set View name)
             //      - click save
+            // Check that Table is present in the document
+            // Look for the first item row / last column(.dnd-td .item-actions)
+            // One button (unique action)
+            // Three dots (multiple actions)
+
         });
     });
 
