@@ -97,7 +97,7 @@ test.describe('DataSet Item Actions', () => {
             });
         });
 
-        test('Can define an Item Actions of type Link for the Dataset', async ({
+        test('Can define an Item Action of type Link for the Dataset', async ({
             dataSetManagerPage,
             page,
         }) => {
@@ -135,7 +135,7 @@ test.describe('DataSet Item Actions', () => {
     test.describe('Dataset in the home page', () => {
         test('Add DataSet fragment', async({applicationsMenuPage, page}) => {
             await test.step('Go Home', async () => {
-                await applicationsMenuPage.goto();
+                await applicationsMenuPage.goToHome();
             });
 
             await test.step('Click on "Edit" button', async () => {
@@ -172,21 +172,31 @@ test.describe('DataSet Item Actions', () => {
                 await page.getByRole('menuitem', {name: 'Select Data Set View...'}).click();
             });
 
-            // await test.step('Select Data Set View', async () => {
-            //     await expect(page.getByRole('heading', {name: 'Select'})).toBeVisible();
+            await test.step('Select Data Set View', async () => {
+                await expect(page.getByRole('dialog')).toBeVisible();
+                await expect(page.getByRole('heading', {name: 'Select'})).toBeVisible();
+                await page.frameLocator('iframe[title="Select"]').locator('li').filter({ hasText: 'Data Set View Test' }).click();
+                await page.frameLocator('iframe[title="Select"]').getByRole('button', {name: 'Save'}).click();
+            });
 
-            //     await page.locator('.selectable').filter({hasText: 'Data Set View Test'}).click();
+            await test.step('Publish page with Data Set View', async () => {
+                await page.getByRole('button', {name: 'Publish'}).click();
 
-            //     await page.getByRole('button', {name: 'Save'}).click();
-            // });
+                await applicationsMenuPage.goToHome();
 
-            // Click "Select Data Set View" button
-            //      - opens dropdown and select "Select Data Set View..."
-            // Opens a modal and select the Data Set View
-            //      - select radio button (w/ Data Set View name)
-            //      - click save
-            // Check that Table is present in the document
-            // Look for the first item row / last column(.dnd-td .item-actions)
+                await expect(page.locator('.data-set-wrapper')).toBeInViewport();
+            });
+
+            await test.step('Item action are present in table row', async() => {
+                const tableRow = await page.locator('.dnd-td.item-actions').first();
+                await expect(tableRow.getByRole('link')).toBeVisible();
+
+                await tableRow.getByRole('link').click();
+
+                await page.waitForURL('https://www.liferay.com');
+                await expect(page.url()).toContain('https://www.liferay.com');
+            });
+            
             // One button (unique action)
             // Three dots (multiple actions)
 
