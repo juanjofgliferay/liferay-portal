@@ -149,10 +149,15 @@ test.describe('DataSet Item Actions', () => {
             });
 
             await test.step('Drag "Data Set" fragment & Drop into the page editor', async () => {
-                // TODO: not working. Need to manually drop fragment manually
-                await page
-                    .getByRole('menuitem', {name: 'Data Set'})
-                    .dragTo(page.locator('.page-editor__root'));
+                const source = page.getByRole('menuitem', {name: 'Data Set'});
+                const target = page.locator('.page-editor__root');
+
+                const pageEditor = await target.boundingBox();
+                const fragmentSidebarWidth = 350; // icon panel 42 + browser panel 280 + extra
+
+                await source.dragTo(target, {
+                    targetPosition: {x: fragmentSidebarWidth, y: pageEditor.y}
+                });
             });
 
             await test.step('Select empty Data Set fragment', async () => {
