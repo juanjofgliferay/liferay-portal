@@ -29,18 +29,18 @@ export class ApplicationsMenuPage {
 		this.controlPanelButton = page.getByRole('tab', {
 			name: 'Control Panel',
 		});
-		this.dataSetManagerMenuItem = page.getByRole('menuitem', {
-			exact: true,
-			name: 'Data Sets',
-		});
-		this.homePage = new HomePage(page);
-		this.instanceSettingsLink = page.getByRole('link', {
-			name: 'Instance Settings',
-		});
 		this.dataMigrationCenterMenuItem = page.getByRole('menuitem', {
 			exact: true,
 			name: 'Data Migration Center',
 		});
+		this.dataSetManagerMenuItem = page.getByRole('menuitem', {
+			exact: true,
+			name: 'Data Sets',
+		});
+		this.instanceSettingsLink = page.getByRole('link', {
+			name: 'Instance Settings',
+		});
+		this.homePage = new HomePage(page);
 		this.objectsMenuItem = page.getByRole('menuitem', {
 			exact: true,
 			name: 'Objects',
@@ -77,6 +77,10 @@ export class ApplicationsMenuPage {
 	async goToDataSetManager() {
 		await this.goToControlPanel();
 		await this.dataSetManagerMenuItem.click();
+	}
+
+	async goToHome() {
+		await this.homePage.goto();
 	}
 
 	async goToObjects() {
