@@ -15,7 +15,7 @@
  *   name: 'test',
  *   id: 123
  * }
- * 
+ *
  * Will return '/o/data-sample/123
  *
  * It also admits encoded URL

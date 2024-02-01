@@ -6,10 +6,10 @@
 import {getValueFromItem} from '../../src/main/resources/META-INF/resources/utils/getValueFromItem';
 
 const testItem = {
-	id: 1234,
 	creator: {
 		name: 'The creator',
 	},
+	id: 1234,
 	label: {
 		'en_US': 'The label',
 		'fr_FR': "L'etiquette",
