@@ -71,6 +71,9 @@ describe('QuickActions', () => {
 			name: 'Quick Action 1',
 		});
 		expect(firstQuickAction).toBeInTheDocument();
+		expect(firstQuickAction.getAttribute('href')).toEqual(
+			`/o/data-test-endpoint/${testItemData.id}`
+		);
 
 		userEvent.click(firstQuickAction);
 
