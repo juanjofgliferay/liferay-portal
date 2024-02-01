@@ -105,7 +105,7 @@ export interface IItemsActions {
 export interface IItemActionsData {
 	confirmationMessage?: string;
 	id?: string | number;
-	method?: 'DELETE' | 'GET' | 'PATCH' | 'POST';
+	method?: 'delete' | 'get' | 'patch' | 'post';
 	permissionKey?: string;
 	size?: 'sm' | 'lg' | 'full-screen';
 	status?: string | Record<string, number | string>;

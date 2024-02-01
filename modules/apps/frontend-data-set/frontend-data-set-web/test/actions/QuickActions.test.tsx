@@ -27,25 +27,6 @@ const testActions: IItemsActions[] = [
 	},
 ];
 const testItemData = {
-	actions: {
-		delete: {
-			href: 'http://localhost:8080/o/data-test-endpoint/fields/38212',
-			method: 'DELETE',
-		},
-
-		get: {
-			href: 'http://localhost:8080/o/data-test-endpoint/fields/38212',
-			method: 'GET',
-		},
-		replace: {
-			href: 'http://localhost:8080/o/data-test-endpoint/fields/38212',
-			method: 'PUT',
-		},
-		update: {
-			href: 'http://localhost:8080/o/data-test-endpoint/fields/38212',
-			method: 'PATCH',
-		},
-	},
 	creator: {
 		additionalName: '',
 		contentType: 'UserAccount',
