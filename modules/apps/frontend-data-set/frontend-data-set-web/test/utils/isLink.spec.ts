@@ -8,8 +8,8 @@ import {isLink} from '../../src/main/resources/META-INF/resources/utils/isLink';
 describe('isLink utility', () => {
 	it('returns false when it is called with a callback function', () => {
 		const inputProps = {
-			target: 'headless',
 			onClick: () => 'callback call',
+			target: 'headless',
 		};
 
 		expect(isLink(inputProps.target, inputProps.onClick)).toBe(false);

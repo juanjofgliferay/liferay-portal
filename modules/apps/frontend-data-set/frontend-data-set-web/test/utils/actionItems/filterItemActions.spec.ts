@@ -43,15 +43,20 @@ const testActionsWithoutPermissionKey: IItemsActions[] = [
 const availableItemData = [
 	{
 		actions: {
-			permissions: {
-				href:
-					'http://someurl/o/data-test-endpoint/fields/38212/permissions',
-				method: 'GET',
+			delete: {
+				href: 'http://someurl/o/data-test-endpoint/fields/38212',
+				method: 'DELETE',
 			},
 			get: {
 				href: 'http://someurl/o/data-test-endpoint/fields/38212',
 				method: 'GET',
 			},
+			permissions: {
+				href:
+					'http://someurl/o/data-test-endpoint/fields/38212/permissions',
+				method: 'GET',
+			},
+
 			replace: {
 				href: 'http://someurl/o/data-test-endpoint/fields/38212',
 				method: 'PUT',
@@ -59,10 +64,6 @@ const availableItemData = [
 			update: {
 				href: 'http://someurl/o/data-test-endpoint/fields/38212',
 				method: 'PATCH',
-			},
-			delete: {
-				href: 'http://someurl/o/data-test-endpoint/fields/38212',
-				method: 'DELETE',
 			},
 		},
 		creator: {
@@ -74,12 +75,12 @@ const availableItemData = [
 			name: 'Test Test',
 		},
 		id: 38212,
+		label: 'id',
 		label_i18n: {
 			en_US: 'id',
 		},
-		renderer: 'default',
 		name: 'id',
-		label: 'id',
+		renderer: 'default',
 		sortable: true,
 		type: 'integer',
 	},
