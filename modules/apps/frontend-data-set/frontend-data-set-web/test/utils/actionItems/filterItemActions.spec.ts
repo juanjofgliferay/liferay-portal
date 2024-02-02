@@ -7,99 +7,108 @@ import {IItemsActions} from '../../../src/main/resources/META-INF/resources';
 import filterItemActions from '../../../src/main/resources/META-INF/resources/utils/actionItems/filterItemActions';
 
 const testActionsWithPermissionKey: IItemsActions[] = [
-    {
-        data: {
-            permissionKey: 'DELETE',
-            title: 'Link action sample',
-        },
-        href: '/o/data-test-endpoint/{id}',
-        label: 'Link action sample',
-        target: 'link'
-    },
-    {
-        data: {
-            permissionKey: 'POST',
-            title: 'Another one',
-        },
-        href: '/home',
-        label: 'Another one',
-        target: 'link'
-    }
+	{
+		data: {
+			permissionKey: 'DELETE',
+			title: 'Link action sample',
+		},
+		href: '/o/data-test-endpoint/{id}',
+		label: 'Link action sample',
+		target: 'link',
+	},
+	{
+		data: {
+			permissionKey: 'POST',
+			title: 'Another one',
+		},
+		href: '/home',
+		label: 'Another one',
+		target: 'link',
+	},
 ];
 
 const testActionsWithoutPermissionKey: IItemsActions[] = [
-    {
-        href: '/o/data-test-endpoint/{id}',
-        label: 'Link action sample',
-        target: 'link',
-    },
-    {
-        href: '/home',
-        label: 'Another one',
-        target: 'link',
-    }
+	{
+		href: '/o/data-test-endpoint/{id}',
+		label: 'Link action sample',
+		target: 'link',
+	},
+	{
+		href: '/home',
+		label: 'Another one',
+		target: 'link',
+	},
 ];
 
 const availableItemData = [
-    {
-        actions: {
-          permissions: {
-            href: 'http://someurl/o/data-test-endpoint/fields/38212/permissions',
-            method: 'GET',
-          },
-          get: {
-            href: 'http://someurl/o/data-test-endpoint/fields/38212',
-            method: 'GET',
-          },
-          replace: {
-            href: 'http://someurl/o/data-test-endpoint/fields/38212',
-            method: 'PUT',
-          },
-          update: {
-            href: 'http://someurl/o/data-test-endpoint/fields/38212',
-            method: 'PATCH',
-          },
-          delete: {
-            href: 'http://someurl/o/data-test-endpoint/fields/38212',
-            method: 'DELETE',
-          }
-        },
-        creator: {
-          additionalName: '',
-          contentType: 'UserAccount',
-          familyName: 'Test',
-          givenName: 'Test',
-          id: 2222,
-          name: 'Test Test'
-        },
-        id: 38212,
-        label_i18n: {
-          en_US: 'id'
-        },
-        renderer: 'default',
-        name: 'id',
-        label: 'id',
-        sortable: true,
-        type: 'integer',
-    }
+	{
+		actions: {
+			permissions: {
+				href:
+					'http://someurl/o/data-test-endpoint/fields/38212/permissions',
+				method: 'GET',
+			},
+			get: {
+				href: 'http://someurl/o/data-test-endpoint/fields/38212',
+				method: 'GET',
+			},
+			replace: {
+				href: 'http://someurl/o/data-test-endpoint/fields/38212',
+				method: 'PUT',
+			},
+			update: {
+				href: 'http://someurl/o/data-test-endpoint/fields/38212',
+				method: 'PATCH',
+			},
+			delete: {
+				href: 'http://someurl/o/data-test-endpoint/fields/38212',
+				method: 'DELETE',
+			},
+		},
+		creator: {
+			additionalName: '',
+			contentType: 'UserAccount',
+			familyName: 'Test',
+			givenName: 'Test',
+			id: 2222,
+			name: 'Test Test',
+		},
+		id: 38212,
+		label_i18n: {
+			en_US: 'id',
+		},
+		renderer: 'default',
+		name: 'id',
+		label: 'id',
+		sortable: true,
+		type: 'integer',
+	},
 ];
 
 describe('filterItemActions', () => {
-    describe('when permissionKey is defined for an action', () => {
-        it('returns the actions where the permissionKey matches the itemData.actions key', () => {
-            const filteredActions = filterItemActions(testActionsWithPermissionKey, availableItemData);
+	describe('when permissionKey is defined for an action', () => {
+		it('returns the actions where the permissionKey matches the itemData.actions key', () => {
+			const filteredActions = filterItemActions(
+				testActionsWithPermissionKey,
+				availableItemData
+			);
 
-            expect(filteredActions.length)
-                .toBeLessThan(testActionsWithPermissionKey.length);
-        });
-    });
+			expect(filteredActions.length).toBeLessThan(
+				testActionsWithPermissionKey.length
+			);
+		});
+	});
 
-    describe('when permissionKey is not defined for an item', () => {
-        it('returns all the actions', () => {
-            const filteredActions = filterItemActions(testActionsWithoutPermissionKey, availableItemData);
+	describe('when permissionKey is not defined for an item', () => {
+		it('returns all the actions', () => {
+			const filteredActions = filterItemActions(
+				testActionsWithoutPermissionKey,
+				availableItemData
+			);
 
-            expect(filteredActions)
-                .toMatchObject(testActionsWithoutPermissionKey);
-        });
-    });
+			expect(filteredActions).toMatchObject(
+				testActionsWithoutPermissionKey
+			);
+		});
+	});
 });

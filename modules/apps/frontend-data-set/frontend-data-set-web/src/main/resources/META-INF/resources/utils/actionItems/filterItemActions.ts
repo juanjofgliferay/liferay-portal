@@ -3,43 +3,47 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {IItemsActions,IItemActionsData} from "../../index";
+import {IItemActionsData, IItemsActions} from '../../index';
 
 const filterItemActions = (
-    actions: Array<IItemsActions>,
-    itemData: any): Array<IItemsActions> => {
+	actions: Array<IItemsActions>,
+	itemData: any
+): Array<IItemsActions> => {
 	return actions
-		? actions.reduce((actions: Array<IItemsActions>, action: IItemsActions) => {
-				if (action.data?.permissionKey) {
-					if (
-						itemData.actions &&
-						Object.keys(itemData.actions).some(
-							(itemAction) =>
-								itemAction.toLowerCase() ===
-								action.data?.permissionKey?.toLowerCase()
-						)
-					) {
-						if (action.target === 'headless') {
-							return [
-								...actions,
-								{
-									...action,
-									...itemData.actions[
-										action.data.permissionKey.toLowerCase()
-									],
-								},
-							];
+		? actions.reduce(
+				(actions: Array<IItemsActions>, action: IItemsActions) => {
+					if (action.data?.permissionKey) {
+						if (
+							itemData.actions &&
+							Object.keys(itemData.actions).some(
+								(itemAction) =>
+									itemAction.toLowerCase() ===
+									action.data?.permissionKey?.toLowerCase()
+							)
+						) {
+							if (action.target === 'headless') {
+								return [
+									...actions,
+									{
+										...action,
+										...itemData.actions[
+											action.data.permissionKey.toLowerCase()
+										],
+									},
+								];
+							}
+							else {
+								return [...actions, action];
+							}
 						}
-						else {
-							return [...actions, action];
-						}
+
+						return actions;
 					}
 
-					return actions;
-				}
-
-				return [...actions, action];
-		  }, [])
+					return [...actions, action];
+				},
+				[]
+		  )
 		: [];
 };
 

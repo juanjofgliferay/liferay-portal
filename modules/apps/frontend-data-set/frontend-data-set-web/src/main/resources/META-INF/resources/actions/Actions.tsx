@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {IItemsActions} from '..';
 import {navigate, openConfirmModal} from 'frontend-js-web';
 
 // import PropTypes from 'prop-types';
 
 import React, {useContext, useState} from 'react';
 
-import FrontendDataSetContext, {IFrontendDataSetContext} from '../FrontendDataSetContext';
+import FrontendDataSetContext from '../FrontendDataSetContext';
 import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
 import filterItemActions from '../utils/actionItems/filterItemActions';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
@@ -24,7 +25,6 @@ import ViewsContext from '../views/ViewsContext';
 
 import ActionsDropdown from './ActionsDropdown';
 import QuickActions from './QuickActions';
-import {IItemsActions } from '..';
 
 const {MODAL_PERMISSIONS} = ACTION_ITEM_TARGETS;
 
@@ -35,13 +35,13 @@ function Actions({
 	itemData,
 	itemId,
 	menuActive,
-	onMenuActiveChange
+	onMenuActiveChange,
 }: {
-	actions: Array<IItemsActions>,
-	itemData: any,
-	itemId: string | number,
-	menuActive: boolean,
-	onMenuActiveChange: Function
+	actions: Array<IItemsActions>;
+	itemData: any;
+	itemId: string | number;
+	menuActive: boolean;
+	onMenuActiveChange: Function;
 }) {
 	const {
 		executeAsyncItemAction,
@@ -53,6 +53,7 @@ function Actions({
 		openSidePanel,
 		toggleItemInlineEdit,
 	}: any = useContext(FrontendDataSetContext);
+
 	// NOTE: use of any allows using all methods without error
 	// correct one should be IFrontendDataSetContext but  ...
 
@@ -61,6 +62,7 @@ function Actions({
 			activeView: {quickActionsEnabled},
 		},
 	]: any = useContext(ViewsContext);
+
 	// NOTE: use any type to get rid of a nasty TS error
 	// Need to migrate ViewsContext and define interface
 
@@ -84,11 +86,11 @@ function Actions({
 	const handleClick = ({
 		action,
 		closeMenu,
-		event
+		event,
 	}: {
-		action: any, // should be IItemsActions
-		closeMenu: any,
-		event: any
+		action: any; // should be IItemsActions
+		closeMenu: any;
+		event: any;
 	}) => {
 		const {data, href, method, onClick, target} = action;
 
