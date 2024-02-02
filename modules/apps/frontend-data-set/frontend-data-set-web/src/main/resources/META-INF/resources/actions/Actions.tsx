@@ -214,6 +214,7 @@ function Actions({
 						QUICK_ACTIONS_MAX_NUMBER
 					)}
 					itemData={itemData}
+					itemId={itemId}
 					onClick={handleClick}
 				/>
 			)}

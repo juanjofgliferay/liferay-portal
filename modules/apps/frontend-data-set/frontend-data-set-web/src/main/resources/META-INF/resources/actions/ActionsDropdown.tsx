@@ -10,20 +10,27 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {LinkOrButton} from '@clayui/shared';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classnames from 'classnames';
-import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
 
 import FrontendDataSetContext from '../FrontendDataSetContext';
+import {IActionsDropdown, IItemsActions} from '../index';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
 import {isLink} from '../utils/isLink';
-import {actionsBasePropTypes} from './Actions';
 
-function DropdownItem({action, closeMenu, onClick, url}) {
+interface IDropdownItem {
+	action: IItemsActions;
+	closeMenu: Function;
+	onClick: Function;
+	setLoading: Function;
+	url: string | undefined;
+}
+
+function DropdownItem({action, closeMenu, onClick, url}: IDropdownItem) {
 	const {icon, label, target} = action;
 
 	return (
 		<ClayDropDown.Item
-			href={isLink(target, null) ? url : null}
+			href={isLink(target, null) ? url : ''}
 			onClick={(event) =>
 				onClick({
 					action,
@@ -52,14 +59,18 @@ function ActionsDropdown({
 	onClick,
 	onMenuActiveChange,
 	setLoading,
-}) {
+}: IActionsDropdown) {
 	const {
 		applyItemInlineUpdates,
 		inlineEditingSettings,
 		itemsChanges,
 		toggleItemInlineEdit,
 		uniformActionsDisplay,
-	} = useContext(FrontendDataSetContext);
+	}: any = useContext(FrontendDataSetContext);
+
+	// NOTE: use of any allows using all methods without error
+	// correct one should be IFrontendDataSetContext but  ...
+	// same as in Actions.tsx
 
 	const inlineEditingAvailable =
 		inlineEditingSettings && itemData.actions?.update;
@@ -79,11 +90,12 @@ function ActionsDropdown({
 	const inlineEditingActions = (
 		<div className="d-flex">
 			<ClayButtonWithIcon
+				aria-label={Liferay.Language.get('edit')}
 				className="mr-1"
 				disabled={inlineEditingAlwaysOn && !itemChanges}
 				displayType="secondary"
 				onClick={() => toggleItemInlineEdit(itemId)}
-				small
+				size="xs"
 				symbol="times-small"
 			/>
 
@@ -91,6 +103,7 @@ function ActionsDropdown({
 				<ClayLoadingIndicator className="mb-2 mt-2" />
 			) : (
 				<ClayButtonWithIcon
+					aria-label={Liferay.Language.get('save')}
 					disabled={!itemChanges}
 					monospaced
 					onClick={() => {
@@ -102,7 +115,7 @@ function ActionsDropdown({
 							}
 						});
 					}}
-					small
+					size="xs"
 					symbol="check"
 				/>
 			)}
@@ -139,12 +152,15 @@ function ActionsDropdown({
 				aria-label={action.label}
 				className="btn btn-secondary btn-sm"
 				href={
-					isLink(action.target, action.onClick)
+					isLink(
+						action.target,
+						action.onClick ? action.onClick : null
+					)
 						? formatActionURL(action.href, itemData)
 						: null
 				}
 				monospaced={Boolean(action.icon)}
-				onClick={(event) => {
+				onClick={(event: any) => {
 					onClick({
 						action,
 						event,
@@ -161,7 +177,7 @@ function ActionsDropdown({
 		return <ClayLoadingIndicator className="mb-2 mt-2" />;
 	}
 
-	const renderItems = (items) =>
+	const renderItems = (items: IItemsActions[]) =>
 		items.map(({items: nestedItems = [], separator, type, ...item}, i) => {
 			if (type === 'group') {
 				return (
@@ -195,7 +211,7 @@ function ActionsDropdown({
 
 			<ClayDropDown
 				active={menuActive}
-				onActiveChange={onMenuActiveChange}
+				onActiveChange={() => onMenuActiveChange(!menuActive)}
 				trigger={
 					<ClayButton
 						className={classnames(
@@ -222,12 +238,5 @@ function ActionsDropdown({
 		</div>
 	);
 }
-
-ActionsDropdown.propTypes = {
-	...actionsBasePropTypes,
-	loading: PropTypes.bool.isRequired,
-	onClick: PropTypes.func.isRequired,
-	setLoading: PropTypes.func.isRequired,
-};
 
 export default ActionsDropdown;

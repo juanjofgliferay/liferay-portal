@@ -4,6 +4,6 @@
  */
 
 export declare function isLink(
-	target: string,
+	target: string | undefined,
 	onClick: Function | null
 ): boolean;
