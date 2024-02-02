@@ -46,12 +46,9 @@ const Cards = ({items, schema}) => {
 
 const Card = ({item, schema}) => {
 	const {
-		executeAsyncItemAction,
-		highlightItems,
 		itemsActions,
 		loadData,
 		onActionDropdownItemClick,
-		openModal,
 		openSidePanel,
 		selectItems,
 		selectable,
