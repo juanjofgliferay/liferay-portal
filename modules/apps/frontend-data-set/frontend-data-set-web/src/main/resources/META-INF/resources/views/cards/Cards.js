@@ -76,22 +76,6 @@ const Card = ({item, schema}) => {
 							openSidePanel,
 						});
 					}
-
-					handleAction(
-						{
-							event,
-							itemId: item[selectedItemsKey],
-							method: action.data?.method,
-							url: action.href,
-							...action,
-						},
-						{
-							executeAsyncItemAction,
-							highlightItems,
-							openModal,
-							openSidePanel,
-						}
-					);
 				},
 			}))}
 			description={schema.description && item[schema.description]}
