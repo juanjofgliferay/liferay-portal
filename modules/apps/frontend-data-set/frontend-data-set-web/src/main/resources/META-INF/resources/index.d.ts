@@ -79,8 +79,8 @@ export interface IInlineEditingSettings {
 
 export interface IBaseActions {
 	actions: IItemsActions[];
-	itemData: IItemActionsData;
-	itemId: number | string;
+	itemData: any;
+	itemId?: number | string;
 }
 
 export interface IItemsActions {
@@ -94,6 +94,7 @@ export interface IItemsActions {
 	target?:
 		| 'async'
 		| 'headless'
+		| 'inlineEdit'
 		| 'link'
 		| 'modal'
 		| 'modal-permissions'
@@ -104,11 +105,13 @@ export interface IItemsActions {
 
 export interface IItemActionsData {
 	confirmationMessage?: string;
+	errorMessage?: string;
 	id?: string | number;
 	method?: 'delete' | 'get' | 'patch' | 'post';
 	permissionKey?: string;
 	size?: 'sm' | 'lg' | 'full-screen';
 	status?: string | Record<string, number | string>;
+	successMessage?: string;
 	title?: string;
 }
 

@@ -4,59 +4,45 @@
  */
 
 import {navigate, openConfirmModal} from 'frontend-js-web';
-import PropTypes from 'prop-types';
+
+// import PropTypes from 'prop-types';
+
 import React, {useContext, useState} from 'react';
 
-import FrontendDataSetContext from '../FrontendDataSetContext';
+import FrontendDataSetContext, {IFrontendDataSetContext} from '../FrontendDataSetContext';
 import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
+import filterItemActions from '../utils/actionItems/filterItemActions';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
 import {openPermissionsModal} from '../utils/modals/openPermissionsModal';
 import {resolveModalSize} from '../utils/modals/resolveModalSize';
+
+// @ts-ignore
+
 import ViewsContext from '../views/ViewsContext';
+
+// @ts-ignore
+
 import ActionsDropdown from './ActionsDropdown';
 import QuickActions from './QuickActions';
+import {IItemsActions } from '..';
 
 const {MODAL_PERMISSIONS} = ACTION_ITEM_TARGETS;
 
 const QUICK_ACTIONS_MAX_NUMBER = 3;
 
-const formatActions = (actions, itemData) => {
-	return actions
-		? actions.reduce((actions, action) => {
-				if (action.data?.permissionKey) {
-					if (
-						itemData.actions &&
-						Object.keys(itemData.actions).some(
-							(itemAction) =>
-								itemAction.toLowerCase() ===
-								action.data.permissionKey.toLowerCase()
-						)
-					) {
-						if (action.target === 'headless') {
-							return [
-								...actions,
-								{
-									...action,
-									...itemData.actions[
-										action.data.permissionKey.toLowerCase()
-									],
-								},
-							];
-						}
-						else {
-							return [...actions, action];
-						}
-					}
-
-					return actions;
-				}
-
-				return [...actions, action];
-		  }, [])
-		: [];
-};
-
-function Actions({actions, itemData, itemId, menuActive, onMenuActiveChange}) {
+function Actions({
+	actions,
+	itemData,
+	itemId,
+	menuActive,
+	onMenuActiveChange
+}: {
+	actions: Array<IItemsActions>,
+	itemData: any,
+	itemId: string | number,
+	menuActive: boolean,
+	onMenuActiveChange: Function
+}) {
 	const {
 		executeAsyncItemAction,
 		highlightItems,
@@ -66,13 +52,17 @@ function Actions({actions, itemData, itemId, menuActive, onMenuActiveChange}) {
 		openModal,
 		openSidePanel,
 		toggleItemInlineEdit,
-	} = useContext(FrontendDataSetContext);
+	}: any = useContext(FrontendDataSetContext);
+	// NOTE: use of any allows using all methods without error
+	// correct one should be IFrontendDataSetContext but  ...
 
 	const [
 		{
 			activeView: {quickActionsEnabled},
 		},
-	] = useContext(ViewsContext);
+	]: any = useContext(ViewsContext);
+	// NOTE: use any type to get rid of a nasty TS error
+	// Need to migrate ViewsContext and define interface
 
 	const [loading, setLoading] = useState(false);
 
@@ -81,7 +71,7 @@ function Actions({actions, itemData, itemId, menuActive, onMenuActiveChange}) {
 	const inlineEditingAlwaysOn =
 		inlineEditingAvailable && inlineEditingSettings.alwaysOn;
 
-	const formattedActions = formatActions(actions, itemData);
+	const formattedActions = filterItemActions(actions, itemData);
 
 	if (inlineEditingAvailable && !inlineEditingAlwaysOn) {
 		formattedActions.unshift({
@@ -91,7 +81,15 @@ function Actions({actions, itemData, itemId, menuActive, onMenuActiveChange}) {
 		});
 	}
 
-	const handleClick = ({action, closeMenu, event}) => {
+	const handleClick = ({
+		action,
+		closeMenu,
+		event
+	}: {
+		action: any, // should be IItemsActions
+		closeMenu: any,
+		event: any
+	}) => {
 		const {data, href, method, onClick, target} = action;
 
 		const {
@@ -105,7 +103,7 @@ function Actions({actions, itemData, itemId, menuActive, onMenuActiveChange}) {
 
 		const url = formatActionURL(href, itemData);
 
-		const doAction = ({defaultPrevented}) => {
+		const doAction = ({defaultPrevented}: {defaultPrevented: boolean}) => {
 			if (target?.includes('modal')) {
 				event.preventDefault();
 
@@ -230,42 +228,5 @@ function Actions({actions, itemData, itemId, menuActive, onMenuActiveChange}) {
 		</>
 	);
 }
-
-const actionType = PropTypes.shape({
-	data: PropTypes.shape({
-		confirmationMessage: PropTypes.string,
-		errorMessage: PropTypes.string,
-		method: PropTypes.oneOf(['delete', 'get', 'patch', 'post']),
-		permissionKey: PropTypes.string,
-		size: PropTypes.oneOf(['sm', 'lg', 'full-screen']),
-		successMessage: PropTypes.string,
-		title: PropTypes.string,
-	}),
-	href: PropTypes.string,
-	icon: PropTypes.string,
-	label: PropTypes.string,
-	method: PropTypes.oneOf(['delete', 'get', 'patch', 'post']),
-	onClick: PropTypes.func,
-	target: PropTypes.oneOf([
-		'async',
-		'headless',
-		'inlineEdit',
-		'link',
-		'modal',
-		'modal-full-screen',
-		'modal-lg',
-		'modal-permissions',
-		'modal-sm',
-		'sidePanel',
-	]),
-});
-
-export const actionsBasePropTypes = {
-	actions: PropTypes.arrayOf(actionType),
-	itemData: PropTypes.object,
-	itemId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-};
-
-Actions.propTypes = actionsBasePropTypes;
 
 export default Actions;
