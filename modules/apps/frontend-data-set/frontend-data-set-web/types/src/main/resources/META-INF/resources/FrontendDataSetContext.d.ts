@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {IInlineEditingSettings, IItemsActions} from '.';
+import {IInlineEditingSettings, IItemsActions} from './index';
 export interface IFrontendDataSetContext {
 	actionParameterName?: string | null;
 	apiURL?: string;
@@ -18,7 +18,7 @@ export interface IFrontendDataSetContext {
 	executeAsyncItemAction?: Function;
 	formId?: string;
 	formName?: string;
-	highlightItems?: Array<any>;
+	highlightItems?: Function;
 	highlightedItemsValue?: string;
 	id?: string;
 	inlineAddingSettings?: {

@@ -10,7 +10,9 @@ import {navigate, openConfirmModal} from 'frontend-js-web';
 
 import React, {useContext, useState} from 'react';
 
-import FrontendDataSetContext, { IFrontendDataSetContext } from '../FrontendDataSetContext';
+import FrontendDataSetContext, {
+	IFrontendDataSetContext,
+} from '../FrontendDataSetContext';
 import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
 import filterItemActions from '../utils/actionItems/filterItemActions';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';

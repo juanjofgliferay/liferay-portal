@@ -12,7 +12,9 @@ import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classnames from 'classnames';
 import React, {useContext} from 'react';
 
-import FrontendDataSetContext, { IFrontendDataSetContext } from '../FrontendDataSetContext';
+import FrontendDataSetContext, {
+	IFrontendDataSetContext,
+} from '../FrontendDataSetContext';
 import {IActionsDropdown, IItemsActions} from '../index';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
 import {isLink} from '../utils/isLink';
@@ -75,18 +77,21 @@ function ActionsDropdown({
 		inlineEditingAvailable && inlineEditingSettings.alwaysOn;
 
 	const isMounted = useIsMounted();
-	
+
+	let parsedItemId: number;
+
 	if (typeof itemId === 'string') {
-		itemId = parseInt(itemId, 10);
-	} else {
-		itemId = itemId;
+		parsedItemId = parseInt(itemId, 10);
+	}
+	else {
+		parsedItemId = itemId;
 	}
 
-	const editModeActive = !!itemsChanges![itemId];
+	const editModeActive = !!itemsChanges![parsedItemId];
 
 	const itemChanges =
-		editModeActive && Object.keys(itemsChanges![itemId]).length
-			? itemsChanges![itemId]
+		editModeActive && Object.keys(itemsChanges![parsedItemId]).length
+			? itemsChanges![parsedItemId]
 			: null;
 
 	const inlineEditingActions = (
@@ -96,7 +101,7 @@ function ActionsDropdown({
 				className="mr-1"
 				disabled={inlineEditingAlwaysOn && !itemChanges}
 				displayType="secondary"
-				onClick={() => toggleItemInlineEdit!(itemId)}
+				onClick={() => toggleItemInlineEdit!(parsedItemId)}
 				size="xs"
 				symbol="times-small"
 			/>
@@ -111,7 +116,7 @@ function ActionsDropdown({
 					onClick={() => {
 						setLoading(true);
 
-						applyItemInlineUpdates!(itemId).finally(() => {
+						applyItemInlineUpdates!(parsedItemId).finally(() => {
 							if (isMounted()) {
 								setLoading(false);
 							}
