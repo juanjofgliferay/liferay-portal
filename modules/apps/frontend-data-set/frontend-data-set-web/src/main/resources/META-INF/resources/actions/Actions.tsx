@@ -10,7 +10,7 @@ import {navigate, openConfirmModal} from 'frontend-js-web';
 
 import React, {useContext, useState} from 'react';
 
-import FrontendDataSetContext from '../FrontendDataSetContext';
+import FrontendDataSetContext, { IFrontendDataSetContext } from '../FrontendDataSetContext';
 import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
 import filterItemActions from '../utils/actionItems/filterItemActions';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
@@ -52,10 +52,7 @@ function Actions({
 		openModal,
 		openSidePanel,
 		toggleItemInlineEdit,
-	}: any = useContext(FrontendDataSetContext);
-
-	// NOTE: use of any allows using all methods without error
-	// correct one should be IFrontendDataSetContext but  ...
+	}: IFrontendDataSetContext = useContext(FrontendDataSetContext);
 
 	const [
 		{
@@ -88,7 +85,7 @@ function Actions({
 		closeMenu,
 		event,
 	}: {
-		action: any; // should be IItemsActions
+		action: IItemsActions;
 		closeMenu: any;
 		event: any;
 	}) => {
@@ -113,7 +110,7 @@ function Actions({
 					openPermissionsModal(url);
 				}
 				else {
-					openModal({
+					openModal!({
 						size: size || resolveModalSize(target),
 						title,
 						url,
@@ -123,9 +120,9 @@ function Actions({
 			else if (target === 'sidePanel') {
 				event.preventDefault();
 
-				highlightItems([itemId]);
+				highlightItems!([itemId]);
 
-				openSidePanel({
+				openSidePanel!({
 					size: 'lg',
 					title,
 					url,
@@ -136,7 +133,7 @@ function Actions({
 
 				setLoading(true);
 
-				executeAsyncItemAction({
+				executeAsyncItemAction!({
 					errorMessage,
 					method: method ?? data?.method,
 					setActionItemLoading: setLoading,
@@ -147,7 +144,7 @@ function Actions({
 			else if (target === 'inlineEdit') {
 				event.preventDefault();
 
-				toggleItemInlineEdit(itemId);
+				toggleItemInlineEdit!(itemId);
 			}
 			else if (target === 'blank') {
 				event.preventDefault();

@@ -12,7 +12,7 @@ import {useIsMounted} from '@liferay/frontend-js-react-web';
 import classnames from 'classnames';
 import React, {useContext} from 'react';
 
-import FrontendDataSetContext from '../FrontendDataSetContext';
+import FrontendDataSetContext, { IFrontendDataSetContext } from '../FrontendDataSetContext';
 import {IActionsDropdown, IItemsActions} from '../index';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
 import {isLink} from '../utils/isLink';
@@ -66,11 +66,7 @@ function ActionsDropdown({
 		itemsChanges,
 		toggleItemInlineEdit,
 		uniformActionsDisplay,
-	}: any = useContext(FrontendDataSetContext);
-
-	// NOTE: use of any allows using all methods without error
-	// correct one should be IFrontendDataSetContext but  ...
-	// same as in Actions.tsx
+	}: IFrontendDataSetContext = useContext(FrontendDataSetContext);
 
 	const inlineEditingAvailable =
 		inlineEditingSettings && itemData.actions?.update;
@@ -79,12 +75,18 @@ function ActionsDropdown({
 		inlineEditingAvailable && inlineEditingSettings.alwaysOn;
 
 	const isMounted = useIsMounted();
+	
+	if (typeof itemId === 'string') {
+		itemId = parseInt(itemId, 10);
+	} else {
+		itemId = itemId;
+	}
 
-	const editModeActive = !!itemsChanges[itemId];
+	const editModeActive = !!itemsChanges![itemId];
 
 	const itemChanges =
-		editModeActive && Object.keys(itemsChanges[itemId]).length
-			? itemsChanges[itemId]
+		editModeActive && Object.keys(itemsChanges![itemId]).length
+			? itemsChanges![itemId]
 			: null;
 
 	const inlineEditingActions = (
@@ -94,7 +96,7 @@ function ActionsDropdown({
 				className="mr-1"
 				disabled={inlineEditingAlwaysOn && !itemChanges}
 				displayType="secondary"
-				onClick={() => toggleItemInlineEdit(itemId)}
+				onClick={() => toggleItemInlineEdit!(itemId)}
 				size="xs"
 				symbol="times-small"
 			/>
@@ -109,7 +111,7 @@ function ActionsDropdown({
 					onClick={() => {
 						setLoading(true);
 
-						applyItemInlineUpdates(itemId).finally(() => {
+						applyItemInlineUpdates!(itemId).finally(() => {
 							if (isMounted()) {
 								setLoading(false);
 							}

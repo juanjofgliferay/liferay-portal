@@ -102,10 +102,12 @@ export interface IItemsActions {
 
 	items?: IItemsActions[];
 	label?: string;
+	method?: string;
 	onClick?: Function;
 	separator?: boolean;
 	target?:
 		| 'async'
+		| 'blank'
 		| 'headless'
 		| 'inlineEdit'
 		| 'link'
@@ -123,7 +125,7 @@ export interface IItemActionsData {
 	method?: 'delete' | 'get' | 'patch' | 'post';
 	permissionKey?: string;
 	size?: 'sm' | 'lg' | 'full-screen';
-	status?: string | Record<string, number | string>;
+	status?: string;
 	successMessage?: string;
 	title?: string;
 }
