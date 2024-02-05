@@ -5,7 +5,7 @@
 
 /// <reference types="react" />
 
-import {IItemsActions} from '..';
+import {IItemsActions} from '../types';
 declare function Actions({
 	actions,
 	itemData,

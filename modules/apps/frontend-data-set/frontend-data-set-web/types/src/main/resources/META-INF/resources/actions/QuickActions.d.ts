@@ -5,7 +5,7 @@
 
 /// <reference types="react" />
 
-import {IQuickActions} from '..';
+import {IQuickActions} from '../types';
 declare function QuickActions({
 	actions,
 	itemData,

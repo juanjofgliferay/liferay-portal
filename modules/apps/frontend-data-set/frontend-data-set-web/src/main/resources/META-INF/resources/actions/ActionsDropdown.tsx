@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {IActionsDropdown, IItemsActions} from '..';
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
@@ -16,6 +15,7 @@ import React, {useContext} from 'react';
 import FrontendDataSetContext, {
 	IFrontendDataSetContext,
 } from '../FrontendDataSetContext';
+import {IActionsDropdown, IItemsActions} from '../types';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
 import {isLink} from '../utils/isLink';
 
