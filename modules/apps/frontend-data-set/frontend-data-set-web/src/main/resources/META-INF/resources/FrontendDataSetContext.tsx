@@ -5,7 +5,7 @@
 
 import React from 'react';
 
-import {IInlineEditingSettings, IItemsActions} from './types';
+import {IInlineEditingSettings, IItemsActions} from '.';
 
 export interface IFrontendDataSetContext {
 	actionParameterName?: string | null;

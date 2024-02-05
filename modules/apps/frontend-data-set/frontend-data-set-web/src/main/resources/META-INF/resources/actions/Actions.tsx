@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {IItemsActions} from '..';
 import {navigate, openConfirmModal} from 'frontend-js-web';
 
 // import PropTypes from 'prop-types';
@@ -12,7 +13,6 @@ import React, {useContext, useState} from 'react';
 import FrontendDataSetContext, {
 	IFrontendDataSetContext,
 } from '../FrontendDataSetContext';
-import {IItemsActions} from '../types';
 import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
 import filterItemActions from '../utils/actionItems/filterItemActions';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
