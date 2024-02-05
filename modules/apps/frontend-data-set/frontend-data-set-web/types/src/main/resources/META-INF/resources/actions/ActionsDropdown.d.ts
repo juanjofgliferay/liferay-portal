@@ -5,7 +5,7 @@
 
 /// <reference types="react" />
 
-import {IActionsDropdown} from '../index';
+import {IActionsDropdown} from '../types';
 declare function ActionsDropdown({
 	actions,
 	itemData,
