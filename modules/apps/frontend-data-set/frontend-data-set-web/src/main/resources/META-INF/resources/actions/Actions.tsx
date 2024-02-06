@@ -12,7 +12,7 @@ import React, {useContext, useState} from 'react';
 import FrontendDataSetContext, {
 	IFrontendDataSetContext,
 } from '../FrontendDataSetContext';
-import {IItemsActions} from '../types';
+import {IItemsActions} from '..';
 import {ACTION_ITEM_TARGETS} from '../utils/actionItems/constants';
 import filterItemActions from '../utils/actionItems/filterItemActions';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';

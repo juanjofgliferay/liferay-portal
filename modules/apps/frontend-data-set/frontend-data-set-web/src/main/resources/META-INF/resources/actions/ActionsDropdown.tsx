@@ -15,7 +15,7 @@ import React, {useContext} from 'react';
 import FrontendDataSetContext, {
 	IFrontendDataSetContext,
 } from '../FrontendDataSetContext';
-import {IActionsDropdown, IItemsActions} from '../types';
+import {IActionsDropdown, IItemsActions} from '..';
 import {formatActionURL} from '../utils/actionItems/formatActionURL';
 import {isLink} from '../utils/isLink';
 
