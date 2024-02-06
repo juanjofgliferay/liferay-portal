@@ -5,8 +5,6 @@
 
 import {navigate, openConfirmModal} from 'frontend-js-web';
 
-// import PropTypes from 'prop-types';
-
 import React, {useContext, useState} from 'react';
 
 import FrontendDataSetContext, {
@@ -22,9 +20,6 @@ import {resolveModalSize} from '../utils/modals/resolveModalSize';
 // @ts-ignore
 
 import ViewsContext from '../views/ViewsContext';
-
-// @ts-ignore
-
 import ActionsDropdown from './ActionsDropdown';
 import QuickActions from './QuickActions';
 
