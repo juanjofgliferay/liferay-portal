@@ -52,8 +52,8 @@ test.describe('Data Set Item Actions', () => {
 
 		await test.step('Go to Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetName: DATASET_NAME,
-				dataSetViewName: DATASET_VIEW_NAME,
+				dataSetLabel: DATASET_NAME,
+				viewLabel: DATASET_VIEW_NAME,
 			});
 		});
 
@@ -128,8 +128,8 @@ test.describe('Data Set Item Actions', () => {
 
 		await test.step('Go to Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetName: DATASET_NAME,
-				dataSetViewName: DATASET_VIEW_NAME,
+				dataSetLabel: DATASET_NAME,
+				viewLabel: DATASET_VIEW_NAME,
 			});
 		});
 
@@ -312,8 +312,8 @@ test.describe('Data Set Item Actions', () => {
 
 		await test.step('Go to Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetName: DATASET_NAME,
-				dataSetViewName: DATASET_VIEW_NAME,
+				dataSetLabel: DATASET_NAME,
+				viewLabel: DATASET_VIEW_NAME,
 			});
 		});
 
@@ -333,6 +333,7 @@ test.describe('Data Set Item Actions', () => {
 				title: MODAL_ITEM_ACTION_TITLE,
 				type: 'modal',
 				url: '/home',
+				variant: 'full-screen',
 			});
 		});
 
@@ -587,8 +588,8 @@ test.describe('Data Set Item Actions', () => {
 
 		await test.step('Go to Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetName: DATASET_NAME,
-				dataSetViewName: DATASET_VIEW_NAME,
+				dataSetLabel: DATASET_NAME,
+				viewLabel: DATASET_VIEW_NAME,
 			});
 		});
 
@@ -854,8 +855,8 @@ test.describe('Data Set Item Actions', () => {
 
 		await test.step('Go to Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetName: DATASET_NAME,
-				dataSetViewName: DATASET_VIEW_NAME,
+				dataSetLabel: DATASET_NAME,
+				viewLabel: DATASET_VIEW_NAME,
 			});
 		});
 
