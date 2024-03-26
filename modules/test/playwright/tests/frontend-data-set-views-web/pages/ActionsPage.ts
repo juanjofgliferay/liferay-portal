@@ -7,6 +7,7 @@ import {Locator, Page} from '@playwright/test';
 
 import {ICreationAction, IItemAction} from '../utils/types';
 import {ViewsPage} from './ViewsPage';
+import {ViewPage} from './view/ViewPage';
 
 export class ActionsPage {
 	readonly creationActionsTab: Locator;
@@ -27,8 +28,13 @@ export class ActionsPage {
 		titleInput: Locator;
 		typeSelect: Locator;
 		urlText: Locator;
+		variantSelect: Locator;
 	};
+	readonly newCreationActionButton: Locator;
+	readonly newItemActionButton: Locator;
+	readonly noActionsWereCreatedMessage: Locator;
 	readonly page: Page;
+	readonly viewPage: ViewPage;
 	readonly viewsPage: ViewsPage;
 
 	constructor(page: Page) {
@@ -59,30 +65,46 @@ export class ActionsPage {
 			titleInput: page.getByLabel('TitleRequired', {exact: true}),
 			typeSelect: page.getByLabel('TypeRequired', {exact: true}),
 			urlText: page.getByPlaceholder('Add a URL here.'),
+			variantSelect: page.getByLabel('VariantRequired', {exact: true}),
 		};
+		this.newCreationActionButton = page.getByRole('button', {
+			name: 'New Creation Action',
+		});
+		this.newItemActionButton = page.getByRole('button', {
+			name: 'New Item Action',
+		});
+		this.noActionsWereCreatedMessage = page
+			.getByRole('tabpanel')
+			.nth(0)
+			.locator('.c-empty-state-title');
 		this.page = page;
+		this.viewPage = new ViewPage(page);
 		this.viewsPage = new ViewsPage(page);
 	}
 
 	async goto({
-		dataSetName,
-		dataSetViewName,
+		dataSetLabel,
+		viewLabel,
 	}: {
-		dataSetName?: string;
-		dataSetViewName?: string;
-	} = {}) {
-		await this.viewsPage.goto(dataSetName);
-		await this.viewsPage.openDataSetView(dataSetViewName);
+		dataSetLabel: string;
+		viewLabel: string;
+	}) {
+		await this.viewPage.goto({
+			dataSetLabel,
+			viewLabel,
+		});
 
-		await this.page.getByRole('button', {name: 'Actions'}).first().click();
+		await this.viewPage.selectTab('Actions');
 	}
 
-	async createCreationAction({icon, name, type, url}: ICreationAction) {
+	async createCreationAction(creationActionProps: ICreationAction) {
 		await this.creationActionsTab.click();
+
+		await this.newActionButton.waitFor({state: 'visible'});
 
 		await this.newActionButton.click();
 
-		await this.createAction({icon, name, type, url});
+		await this.createAction({...creationActionProps});
 	}
 
 	async createItemAction(itemActionProps: IItemAction) {
@@ -105,6 +127,13 @@ export class ActionsPage {
 			.click();
 
 		await this.newActionForm.typeSelect.selectOption(actionProps.type);
+
+		if (actionProps.type === 'modal') {
+			await this.newActionForm.variantSelect.waitFor({state: 'visible'});
+			await this.newActionForm.variantSelect.selectOption(
+				actionProps.variant
+			);
+		}
 
 		if (actionProps.type === 'modal' || actionProps.type === 'sidePanel') {
 			const actionTitle = !actionProps.title
