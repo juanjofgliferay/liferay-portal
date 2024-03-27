@@ -253,6 +253,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 			apiHelpers,
 			dataSetManagerApiHelpers,
 			fdsFragmentPage,
+			page,
 			site,
 		}) => {
 			const actionLabel = 'Custom Creation Action';
@@ -298,6 +299,21 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					).toBeVisible();
 				}
 			);
+
+			await fragmentTest.step(
+				'Check that the Creation Action works',
+				async () => {
+					await fdsFragmentPage.page
+						.getByRole('button', {
+							name: actionLabel,
+						})
+						.click();
+
+					await expect(
+						page.getByText('Welcome to Liferay')
+					).toBeVisible();
+				}
+			);
 		}
 	);
 
@@ -317,6 +333,8 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					label_i18n: {en_US: firstActionLabel},
 					r_fdsViewFDSCreationActionRelationship_c_fdsViewERC:
 						settingsDataSetViewERC,
+					title_i18n: {en_US: 'Modal title'},
+					type: 'modal',
 				});
 
 				dataSetManagerApiHelpers.createDataSetViewCreationAction({
@@ -349,7 +367,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				}
 			);
 
-			await fragmentTest.step(
+			const actionDropdownMenuId = await fragmentTest.step(
 				'Check that the Creation Action menu is present',
 				async () => {
 					await fdsFragmentPage.creationMenuButton.isVisible();
@@ -373,10 +391,67 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 							.getByRole('menuitem')
 					).toHaveCount(2);
 
-					// await expect(fdsFragmentPage.page.getByRole('button', {name: actionLabel})).toBeVisible();
+					await expect(
+						fdsFragmentPage.page
+							.locator(`#${dropdownId}`)
+							.getByRole('menuitem', {
+								exact: true,
+								name: firstActionLabel,
+							})
+					).toBeVisible();
 
+					await expect(
+						fdsFragmentPage.page
+							.locator(`#${dropdownId}`)
+							.getByRole('menuitem', {
+								exact: true,
+								name: secondActionLabel,
+							})
+					).toBeVisible();
+
+					await fdsFragmentPage.page.keyboard.press('Escape');
+
+					return dropdownId;
 				}
 			);
+
+			await test.step('Creation Action of type "modal" opens a modal', async () => {
+				await fdsFragmentPage.creationMenuButton.click();
+
+				await fdsFragmentPage.page
+					.locator(`#${actionDropdownMenuId}`)
+					.getByRole('menuitem', {
+						exact: true,
+						name: firstActionLabel,
+					})
+					.click();
+
+				await fdsFragmentPage.page.getByRole('dialog').waitFor();
+
+				const dialog = await fdsFragmentPage.page.getByRole('dialog');
+
+				await expect(dialog).toBeInViewport();
+
+				await dialog.getByRole('button', {name: 'close'}).click();
+
+				await expect(dialog).not.toBeInViewport();
+			});
+
+			await test.step('Creation Action of type "link" is actionable', async () => {
+				await fdsFragmentPage.creationMenuButton.click();
+
+				await fdsFragmentPage.page
+					.locator(`#${actionDropdownMenuId}`)
+					.getByRole('menuitem', {
+						exact: true,
+						name: secondActionLabel,
+					})
+					.click();
+
+				await expect(
+					fdsFragmentPage.page.getByText('Welcome to Liferay')
+				).toBeVisible();
+			});
 		}
 	);
 });

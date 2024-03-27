@@ -106,7 +106,7 @@ export class DataSetManagerApiHelpers extends ApiHelpers {
 		modalSize?: ModalVariantTypes;
 		permissionKey?;
 		r_fdsViewFDSCreationActionRelationship_c_fdsViewERC: string;
-		title_i18n?: string;
+		title_i18n?: {[key: string]: string};
 		type?: CreationActionTypes;
 		url?: string;
 	}) {
