@@ -225,7 +225,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					const pageLayout =
 						await apiHelpers.headlessDelivery.createSitePage({
 							siteId: site.id,
-							title: getRandomString()
+							title: getRandomString(),
 						});
 
 					return pageLayout;
@@ -279,7 +279,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					const pageLayout =
 						await apiHelpers.headlessDelivery.createSitePage({
 							siteId: site.id,
-							title: getRandomString()
+							title: getRandomString(),
 						});
 
 					return pageLayout;
@@ -358,7 +358,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					const pageLayout =
 						await apiHelpers.headlessDelivery.createSitePage({
 							siteId: site.id,
-							title: getRandomString()
+							title: getRandomString(),
 						});
 
 					return pageLayout;
