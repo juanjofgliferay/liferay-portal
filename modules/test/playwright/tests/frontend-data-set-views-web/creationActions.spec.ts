@@ -14,7 +14,6 @@ import getRandomString from '../../utils/getRandomString';
 import {actionsPageTest} from './fixtures/actionsPageTest';
 import {dataSetManagerApiHelpersTest} from './fixtures/dataSetManagerApiHelpersTest';
 import {fdsFragmentPageTest} from './fixtures/fdsFragmentPageTest';
-import {DEFAULT_LABEL} from './utils/constants';
 
 const LINK_CREATION_ACTION_NAME = 'Link creation action';
 const MODAL_CREATION_ACTION_NAME = 'Modal creation action';
@@ -25,7 +24,6 @@ const SIDE_PANEL_CREATION_ACTION_TITLE = 'Side Panel creation title';
 export const test = mergeTests(
 	actionsPageTest,
 	dataSetManagerApiHelpersTest,
-	fdsFragmentPageTest,
 	featureFlagsTest({
 		'LPS-164563': true,
 		'LPS-178052': true,
@@ -34,22 +32,30 @@ export const test = mergeTests(
 	loginTest()
 );
 
-let settingsDataSetERC: string;
-let settingsDataSetViewERC: string;
+let actionsDataSetERC: string;
+let actionsDataSetLabel: string;
+let actionsDataSetViewERC: string;
+let actionsDataSetViewLabel: string;
 
 test.beforeEach(async ({dataSetManagerApiHelpers}) => {
-	settingsDataSetERC = getRandomString();
-	settingsDataSetViewERC = getRandomString();
+	actionsDataSetERC = getRandomString();
+	actionsDataSetLabel = getRandomString();
+	actionsDataSetViewERC = getRandomString();
+	actionsDataSetViewLabel = getRandomString();
 
-	await dataSetManagerApiHelpers.createDataSet({erc: settingsDataSetERC});
+	await dataSetManagerApiHelpers.createDataSet({
+		erc: actionsDataSetERC,
+		label: actionsDataSetLabel,
+	});
 	await dataSetManagerApiHelpers.createDataSetView({
-		erc: settingsDataSetViewERC,
-		r_fdsEntryFDSViewRelationship_c_fdsEntryERC: settingsDataSetERC,
+		erc: actionsDataSetViewERC,
+		label: actionsDataSetViewLabel,
+		r_fdsEntryFDSViewRelationship_c_fdsEntryERC: actionsDataSetERC,
 	});
 });
 
 test.afterEach(async ({dataSetManagerApiHelpers}) => {
-	await dataSetManagerApiHelpers.deleteDataSet({erc: settingsDataSetERC});
+	await dataSetManagerApiHelpers.deleteDataSet({erc: actionsDataSetERC});
 });
 
 test.describe('Creation Actions in the Data Set Manager', () => {
@@ -58,8 +64,8 @@ test.describe('Creation Actions in the Data Set Manager', () => {
 	}) => {
 		await test.step('Navigate to the Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetLabel: DEFAULT_LABEL.DATA_SET,
-				viewLabel: DEFAULT_LABEL.VIEW,
+				dataSetLabel: actionsDataSetLabel,
+				viewLabel: actionsDataSetViewLabel,
 			});
 
 			await expect(actionsPage.creationActionsTab).toBeInViewport();
@@ -83,8 +89,8 @@ test.describe('Creation Actions in the Data Set Manager', () => {
 	}) => {
 		await test.step('Navigate to the Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetLabel: DEFAULT_LABEL.DATA_SET,
-				viewLabel: DEFAULT_LABEL.VIEW,
+				dataSetLabel: actionsDataSetLabel,
+				viewLabel: actionsDataSetViewLabel,
 			});
 
 			await expect(actionsPage.creationActionsTab).toBeInViewport();
@@ -122,8 +128,8 @@ test.describe('Creation Actions in the Data Set Manager', () => {
 	}) => {
 		await test.step('Navigate to the Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetLabel: DEFAULT_LABEL.DATA_SET,
-				viewLabel: DEFAULT_LABEL.VIEW,
+				dataSetLabel: actionsDataSetLabel,
+				viewLabel: actionsDataSetViewLabel,
 			});
 
 			await expect(actionsPage.creationActionsTab).toBeInViewport();
@@ -163,8 +169,8 @@ test.describe('Creation Actions in the Data Set Manager', () => {
 	}) => {
 		await test.step('Navigate to the Actions tab', async () => {
 			await actionsPage.goto({
-				dataSetLabel: DEFAULT_LABEL.DATA_SET,
-				viewLabel: DEFAULT_LABEL.VIEW,
+				dataSetLabel: actionsDataSetLabel,
+				viewLabel: actionsDataSetViewLabel,
 			});
 
 			await expect(actionsPage.creationActionsTab).toBeInViewport();
@@ -232,6 +238,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					await fdsFragmentPage.configureDataSetFragment({
 						layout,
 						site,
+						viewLabel: actionsDataSetViewLabel,
 					});
 				}
 			);
@@ -262,7 +269,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				dataSetManagerApiHelpers.createDataSetViewCreationAction({
 					label_i18n: {en_US: actionLabel},
 					r_fdsViewFDSCreationActionRelationship_c_fdsViewERC:
-						settingsDataSetViewERC,
+						actionsDataSetViewERC,
 				});
 			});
 
@@ -285,6 +292,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					await fdsFragmentPage.configureDataSetFragment({
 						layout,
 						site,
+						viewLabel: actionsDataSetViewLabel,
 					});
 				}
 			);
@@ -332,7 +340,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				dataSetManagerApiHelpers.createDataSetViewCreationAction({
 					label_i18n: {en_US: firstActionLabel},
 					r_fdsViewFDSCreationActionRelationship_c_fdsViewERC:
-						settingsDataSetViewERC,
+						actionsDataSetViewERC,
 					title_i18n: {en_US: 'Modal title'},
 					type: 'modal',
 				});
@@ -340,7 +348,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				dataSetManagerApiHelpers.createDataSetViewCreationAction({
 					label_i18n: {en_US: secondActionLabel},
 					r_fdsViewFDSCreationActionRelationship_c_fdsViewERC:
-						settingsDataSetViewERC,
+						actionsDataSetViewERC,
 				});
 			});
 
@@ -363,6 +371,7 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 					await fdsFragmentPage.configureDataSetFragment({
 						layout,
 						site,
+						viewLabel: actionsDataSetViewLabel,
 					});
 				}
 			);
