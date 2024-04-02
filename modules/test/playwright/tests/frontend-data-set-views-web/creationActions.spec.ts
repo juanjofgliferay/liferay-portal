@@ -223,10 +223,10 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				'Create a new page',
 				async () => {
 					const pageLayout =
-						await apiHelpers.headlessDelivery.createSitePage(
-							site.id,
-							getRandomString()
-						);
+						await apiHelpers.headlessDelivery.createSitePage({
+							siteId: site.id,
+							title: getRandomString()
+						});
 
 					return pageLayout;
 				}
@@ -277,10 +277,10 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				'Create a new page',
 				async () => {
 					const pageLayout =
-						await apiHelpers.headlessDelivery.createSitePage(
-							site.id,
-							getRandomString()
-						);
+						await apiHelpers.headlessDelivery.createSitePage({
+							siteId: site.id,
+							title: getRandomString()
+						});
 
 					return pageLayout;
 				}
@@ -356,10 +356,10 @@ fragmentTest.describe('Creation Actions in the fragment', () => {
 				'Create a new page',
 				async () => {
 					const pageLayout =
-						await apiHelpers.headlessDelivery.createSitePage(
-							site.id,
-							getRandomString()
-						);
+						await apiHelpers.headlessDelivery.createSitePage({
+							siteId: site.id,
+							title: getRandomString()
+						});
 
 					return pageLayout;
 				}
