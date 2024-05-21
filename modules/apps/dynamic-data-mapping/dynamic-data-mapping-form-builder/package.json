@@ -1,9 +1,9 @@
 {
 	"name": "dynamic-data-mapping-form-builder",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
+		"build": "node-scripts build",
 		"checkFormat": "liferay-npm-scripts check",
 		"format": "liferay-npm-scripts fix"
 	},
-	"version": "4.0.53"
+	"version": "4.0.57"
 }

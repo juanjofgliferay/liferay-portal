@@ -48,6 +48,7 @@ import com.liferay.source.formatter.processor.JavaSourceProcessor;
 import com.liferay.source.formatter.processor.LDIFSourceProcessor;
 import com.liferay.source.formatter.processor.LFRBuildSourceProcessor;
 import com.liferay.source.formatter.processor.LibrarySourceProcessor;
+import com.liferay.source.formatter.processor.ListSourceProcessor;
 import com.liferay.source.formatter.processor.MarkdownSourceProcessor;
 import com.liferay.source.formatter.processor.PackageinfoSourceProcessor;
 import com.liferay.source.formatter.processor.PoshiSourceProcessor;
@@ -189,6 +190,15 @@ public class SourceFormatter {
 					GitUtil.getLocalChangesFileNames(baseDirName, false),
 					baseDirName);
 			}
+
+			sourceFormatterArgs.setCurrentBranchAddedFileNames(
+				GitUtil.getCurrentBranchAddedFileNames(
+					sourceFormatterArgs.getBaseDirName(),
+					sourceFormatterArgs.getGitWorkingBranchName()));
+			sourceFormatterArgs.setCurrentBranchRenamedFileNames(
+				GitUtil.getCurrentBranchRenamedFileNames(
+					sourceFormatterArgs.getBaseDirName(),
+					sourceFormatterArgs.getGitWorkingBranchName()));
 
 			String[] fileNames = StringUtil.split(
 				ArgumentsUtil.getString(
@@ -354,6 +364,7 @@ public class SourceFormatter {
 		_sourceProcessors.add(new LDIFSourceProcessor());
 		_sourceProcessors.add(new LFRBuildSourceProcessor());
 		_sourceProcessors.add(new LibrarySourceProcessor());
+		_sourceProcessors.add(new ListSourceProcessor());
 		_sourceProcessors.add(new MarkdownSourceProcessor());
 		_sourceProcessors.add(new PackageinfoSourceProcessor());
 		_sourceProcessors.add(new PoshiSourceProcessor());
@@ -1017,11 +1028,6 @@ public class SourceFormatter {
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.GLOB, "**/node_modules_cache/**"),
 				new ExcludeSyntaxPattern(
-					ExcludeSyntax.GLOB,
-					"**/test*/**/dependencies/*.[jlw]ar/**"),
-				new ExcludeSyntaxPattern(
-					ExcludeSyntax.GLOB, "**/test*/**/dependencies/*.zip/**"),
-				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
 					".*/frontend-theme-unstyled/.*/_unstyled/css/clay/.+"),
 				new ExcludeSyntaxPattern(
@@ -1030,10 +1036,12 @@ public class SourceFormatter {
 						"clay|lexicon)/.+"),
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
-					"^((?!/frontend-js-node-shims/src/).)*/node_modules/.*"),
+					".*/tests?/.*/?dependencies/.+\\.(jar|lar|war|zip)/.+"),
 				new ExcludeSyntaxPattern(
 					ExcludeSyntax.REGEX,
-					".*(?<!/gradle-plugins-source-formatter)/build/.*")));
+					"^((?!/frontend-js-node-shims/src/).)*/node_modules/.*"),
+				new ExcludeSyntaxPattern(
+					ExcludeSyntax.REGEX, "^((?!/src/).)*/build/.*")));
 
 		_portalSource = _containsDir("portal-impl");
 
@@ -1310,7 +1318,7 @@ public class SourceFormatter {
 				if (matcher.find()) {
 					throw new Exception(
 						StringBundler.concat(
-							"Found formatting issues in SHA ", parts[0], ":\n",
+							"Found formatting issue in SHA ", parts[0], ":\n",
 							"The commit message contains the word '", keyword,
 							"', which could reveal potential security ",
 							"vulnerablities. Please see the vulnerability ",

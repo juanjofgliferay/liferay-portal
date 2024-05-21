@@ -7,6 +7,8 @@ definition {
 	property portal.upstream = "true";
 	property testray.main.component.name = "User Tracker";
 
+	var password = PropsUtil.get("default.admin.password");
+
 	setUp {
 		TestCase.setUpPortalInstance();
 
@@ -34,10 +36,7 @@ definition {
 
 		UserTracker.viewAccessedURL(friendlyURL = "http://localhost:8080/web/guest/home");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -47,7 +46,7 @@ definition {
 		PortalInstances.viewCP(virtualHost = "www.able.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
@@ -73,10 +72,7 @@ definition {
 			locator1 = "LexiconTable#TABLE_HITS_COUNT",
 			value1 = 4);
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -86,7 +82,7 @@ definition {
 		PortalInstances.viewCP(virtualHost = "www.able.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
@@ -103,10 +99,7 @@ definition {
 
 		User.firstLoginPG();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.baker.com",
@@ -116,7 +109,7 @@ definition {
 		PortalInstances.viewCP(virtualHost = "www.baker.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.baker.com:8080",
 			userEmailAddress = "test@www.baker.com");
 
@@ -147,11 +140,11 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		var emptyTable = SQL.executeMySQLStatement(mysqlStatement = "SELECT * FROM lportal.UserTracker;");
+		var emptyTable = SQL.executeSQLStatement(sqlStatement = "SELECT * FROM lportal.UserTracker;");
 
 		SignOut.signOut();
 
-		var afterLoginUserTrackerTable = SQL.executeMySQLStatement(mysqlStatement = "SELECT * FROM lportal.UserTracker;");
+		var afterLoginUserTrackerTable = SQL.executeSQLStatement(sqlStatement = "SELECT * FROM lportal.UserTracker;");
 		var companyId = JSONCompany.getCompanyId();
 
 		echo("UserTracker table: ${afterLoginUserTrackerTable}");
@@ -168,10 +161,7 @@ definition {
 
 		User.firstLoginPG();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -181,13 +171,13 @@ definition {
 		PortalInstances.viewCP(virtualHost = "www.able.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
 		UserBar.signOut();
 
-		var afterVirutalInstanceUserTrackerTable = SQL.executeMySQLStatement(mysqlStatement = "SELECT * FROM lportal.UserTracker;");
+		var afterVirutalInstanceUserTrackerTable = SQL.executeSQLStatement(sqlStatement = "SELECT * FROM lportal.UserTracker;");
 		var virutalInstanceCompanyId = JSONCompany.getCompanyId(portalInstanceName = "www.able.com");
 
 		echo("UserTracker table: ${afterVirutalInstanceUserTrackerTable}");

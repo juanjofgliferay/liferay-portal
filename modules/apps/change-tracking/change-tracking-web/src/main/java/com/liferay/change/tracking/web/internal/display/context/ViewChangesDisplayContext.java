@@ -13,19 +13,20 @@ import com.liferay.change.tracking.mapping.CTMappingTableInfo;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.model.CTEntryTable;
+import com.liferay.change.tracking.scheduler.PublishScheduler;
+import com.liferay.change.tracking.scheduler.ScheduledPublishInfo;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
 import com.liferay.change.tracking.service.CTSchemaVersionLocalService;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRendererRegistry;
 import com.liferay.change.tracking.web.internal.display.BasePersistenceRegistry;
+import com.liferay.change.tracking.web.internal.display.CTClosureUtil;
 import com.liferay.change.tracking.web.internal.display.CTModelDisplayRendererAdapter;
 import com.liferay.change.tracking.web.internal.frontend.data.set.filter.ChangeTypeSelectionFDSFilter;
 import com.liferay.change.tracking.web.internal.frontend.data.set.filter.SiteSelectionFDSFilter;
 import com.liferay.change.tracking.web.internal.frontend.data.set.filter.TypeNameSelectionFDSFilter;
 import com.liferay.change.tracking.web.internal.frontend.data.set.filter.UserSelectionFDSFilter;
-import com.liferay.change.tracking.web.internal.scheduler.PublishScheduler;
-import com.liferay.change.tracking.web.internal.scheduler.ScheduledPublishInfo;
 import com.liferay.change.tracking.web.internal.security.permission.resource.CTCollectionPermission;
 import com.liferay.change.tracking.web.internal.security.permission.resource.CTPermission;
 import com.liferay.change.tracking.web.internal.util.PublicationsPortletURLUtil;
@@ -70,6 +71,8 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -199,7 +202,7 @@ public class ViewChangesDisplayContext {
 	}
 
 	public List<FDSActionDropdownItem> getFDSActionDropdownItems() {
-		return ListUtil.fromArray(
+		List<FDSActionDropdownItem> fdsActionDropdownItems = ListUtil.fromArray(
 			new FDSActionDropdownItem(
 				PortletURLBuilder.createRenderURL(
 					_renderResponse
@@ -214,41 +217,53 @@ public class ViewChangesDisplayContext {
 				).buildString(),
 				"list-ul", "view-change",
 				_language.get(_httpServletRequest, "review-change"), "get",
-				"get", null),
-			new FDSActionDropdownItem(
-				PortletURLBuilder.createRenderURL(
-					_renderResponse
-				).setMVCRenderCommandName(
-					"/change_tracking/view_move_changes"
-				).setRedirect(
-					_themeDisplay.getURLCurrent()
-				).setParameter(
-					"ctCollectionId", "{ctCollectionId}"
-				).setParameter(
-					"modelClassNameId", "{modelClassNameId}"
-				).setParameter(
-					"modelClassPK", "{modelClassPK}"
-				).buildString(),
-				"move-folder", "move-changes",
-				_language.get(_httpServletRequest, "move-changes"), "post",
-				"move-changes", null),
-			new FDSActionDropdownItem(
-				PortletURLBuilder.createRenderURL(
-					_renderResponse
-				).setMVCRenderCommandName(
-					"/change_tracking/view_discard"
-				).setRedirect(
-					_themeDisplay.getURLCurrent()
-				).setParameter(
-					"ctCollectionId", "{ctCollectionId}"
-				).setParameter(
-					"modelClassNameId", "{modelClassNameId}"
-				).setParameter(
-					"modelClassPK", "{modelClassPK}"
-				).buildString(),
-				"times-circle", "view-discard",
-				_language.get(_httpServletRequest, "discard"), "get",
-				"view-discard", null));
+				"get", null));
+
+		if ((_ctCollection.getStatus() == WorkflowConstants.STATUS_DRAFT) ||
+			(_ctCollection.getStatus() == WorkflowConstants.STATUS_EXPIRED)) {
+
+			fdsActionDropdownItems.add(
+				new FDSActionDropdownItem(
+					PortletURLBuilder.createRenderURL(
+						_renderResponse
+					).setMVCRenderCommandName(
+						"/change_tracking/view_move_changes"
+					).setRedirect(
+						_themeDisplay.getURLCurrent()
+					).setParameter(
+						"ctCollectionId", "{ctCollectionId}"
+					).setParameter(
+						"modelClassNameId", "{modelClassNameId}"
+					).setParameter(
+						"modelClassPK", "{modelClassPK}"
+					).buildString(),
+					"move-folder", "move-changes",
+					_language.get(_httpServletRequest, "move-changes"), "post",
+					"move-changes", null));
+		}
+
+		if (_ctCollection.getStatus() == WorkflowConstants.STATUS_DRAFT) {
+			fdsActionDropdownItems.add(
+				new FDSActionDropdownItem(
+					PortletURLBuilder.createRenderURL(
+						_renderResponse
+					).setMVCRenderCommandName(
+						"/change_tracking/view_discard"
+					).setRedirect(
+						_themeDisplay.getURLCurrent()
+					).setParameter(
+						"ctCollectionId", "{ctCollectionId}"
+					).setParameter(
+						"modelClassNameId", "{modelClassNameId}"
+					).setParameter(
+						"modelClassPK", "{modelClassPK}"
+					).buildString(),
+					"times-circle", "view-discard",
+					_language.get(_httpServletRequest, "discard"), "get",
+					"view-discard", null));
+		}
+
+		return fdsActionDropdownItems;
 	}
 
 	public List<FDSFilter> getFDSFilters() {
@@ -283,6 +298,10 @@ public class ViewChangesDisplayContext {
 		).build();
 	}
 
+	public String getMyWorkflowTaskPortletNamespace() {
+		return PortalUtil.getPortletNamespace(PortletKeys.MY_WORKFLOW_TASK);
+	}
+
 	public Map<String, Object> getReactData() throws Exception {
 		if (_reactData != null) {
 			return _reactData;
@@ -296,8 +315,7 @@ public class ViewChangesDisplayContext {
 			try {
 				if (!_user.isOnDemandUser()) {
 					ctClosure = _ctClosureFactory.create(
-						_ctCollection.getCtCollectionId(),
-						_portal.getClassNameId(Group.class));
+						_ctCollection.getCtCollectionId());
 				}
 				else {
 					ctClosure = _ctClosureFactory.create(
@@ -349,10 +367,9 @@ public class ViewChangesDisplayContext {
 		}
 		else {
 			Map.Entry<Long, List<Long>> entry = null;
-			boolean foundSelectedEntry = false;
 			int[] modelKeyCounterHolder = {1};
 
-			Map<Long, List<Long>> rootPKsMap = ctClosure.getRootPKsMap();
+			Map<Long, List<Long>> rootPKsMap = _getRootPKsMap(ctClosure);
 
 			Queue<Map.Entry<Long, List<Long>>> queue = new LinkedList<>(
 				rootPKsMap.entrySet());
@@ -360,12 +377,10 @@ public class ViewChangesDisplayContext {
 			while ((entry = queue.poll()) != null) {
 				long classNameId = entry.getKey();
 
-				if (!foundSelectedEntry) {
-					Set<Long> classPKs = classNameIdClassPKsMap.computeIfAbsent(
-						classNameId, key -> new HashSet<>());
+				Set<Long> classPKs = classNameIdClassPKsMap.computeIfAbsent(
+					classNameId, key -> new HashSet<>());
 
-					classPKs.addAll(entry.getValue());
-				}
+				classPKs.addAll(entry.getValue());
 
 				for (long classPK : entry.getValue()) {
 					ModelInfoKey modelInfoKey = new ModelInfoKey(
@@ -375,34 +390,7 @@ public class ViewChangesDisplayContext {
 						modelInfoMap.put(
 							modelInfoKey,
 							new ModelInfo(modelKeyCounterHolder[0]++));
-
-						Map<Long, List<Long>> childPKsMap =
-							ctClosure.getChildPKsMap(classNameId, classPK);
-
-						if (!childPKsMap.isEmpty()) {
-							queue.addAll(childPKsMap.entrySet());
-						}
 					}
-
-					if ((classNameId == _modelClassNameId) &&
-						(classPK == _modelClassPK)) {
-
-						foundSelectedEntry = true;
-					}
-				}
-			}
-
-			if (foundSelectedEntry) {
-				Map<Long, List<Long>> childPKsMap = ctClosure.getChildPKsMap(
-					_modelClassNameId, _modelClassPK);
-
-				for (Map.Entry<Long, List<Long>> childPKEntry :
-						childPKsMap.entrySet()) {
-
-					Set<Long> classPKs = classNameIdClassPKsMap.computeIfAbsent(
-						childPKEntry.getKey(), key -> new HashSet<>());
-
-					classPKs.addAll(childPKEntry.getValue());
 				}
 			}
 		}
@@ -411,6 +399,10 @@ public class ViewChangesDisplayContext {
 
 		for (Map.Entry<Long, Set<Long>> entry :
 				classNameIdClassPKsMap.entrySet()) {
+
+			if (entry.getKey() == 0) {
+				continue;
+			}
 
 			_populateEntryValues(
 				modelInfoMap, entry.getKey(), entry.getValue(),
@@ -481,15 +473,31 @@ public class ViewChangesDisplayContext {
 			)
 		).put(
 			"discardURL",
-			PortletURLBuilder.createRenderURL(
-				_renderResponse
-			).setMVCRenderCommandName(
-				"/change_tracking/view_discard"
-			).setRedirect(
-				_themeDisplay.getURLCurrent()
-			).setParameter(
-				"ctCollectionId", _ctCollection.getCtCollectionId()
-			).buildString()
+			() -> {
+				if (_ctCollection.getStatus() !=
+						WorkflowConstants.STATUS_DRAFT) {
+
+					return null;
+				}
+
+				return PortletURLBuilder.createRenderURL(
+					_renderResponse
+				).setMVCRenderCommandName(
+					"/change_tracking/view_discard"
+				).setRedirect(
+					PortletURLBuilder.createRenderURL(
+						_renderResponse
+					).setMVCRenderCommandName(
+						"/change_tracking/view_changes"
+					).setParameter(
+						"ctCollectionId", _ctCollection.getCtCollectionId()
+					).buildString()
+				).setBackURL(
+					_themeDisplay.getURLCurrent()
+				).setParameter(
+					"ctCollectionId", _ctCollection.getCtCollectionId()
+				).buildString();
+			}
 		).put(
 			"entryFromURL", ParamUtil.getString(_renderRequest, "entry")
 		).put(
@@ -511,7 +519,10 @@ public class ViewChangesDisplayContext {
 		).put(
 			"moveChangesURL",
 			() -> {
-				if (!FeatureFlagManagerUtil.isEnabled("LPS-171364")) {
+				if (!FeatureFlagManagerUtil.isEnabled("LPS-171364") ||
+					(_ctCollection.getStatus() !=
+						WorkflowConstants.STATUS_DRAFT)) {
+
 					return null;
 				}
 
@@ -983,7 +994,7 @@ public class ViewChangesDisplayContext {
 		Queue<ParentModel> queue = new LinkedList<>();
 
 		queue.add(
-			new ParentModel(everythingJSONObject, ctClosure.getRootPKsMap()));
+			new ParentModel(everythingJSONObject, _getRootPKsMap(ctClosure)));
 
 		ParentModel parentModel = null;
 
@@ -1002,6 +1013,10 @@ public class ViewChangesDisplayContext {
 				for (long modelClassPK : entry.getValue()) {
 					ModelInfo modelInfo = modelInfoMap.get(
 						new ModelInfoKey(modelClassNameId, modelClassPK));
+
+					if (modelInfo == null) {
+						continue;
+					}
 
 					int modelKey = modelInfo._modelKey;
 
@@ -1201,6 +1216,15 @@ public class ViewChangesDisplayContext {
 			"Missing model from ", _ctCollection.getName(), ": {classPK=",
 			classPK, ", ctCollectionId=", _ctCollection.getCtCollectionId(),
 			", modelClassNameId=", modelClassNameId, "}");
+	}
+
+	private Map<Long, List<Long>> _getRootPKsMap(CTClosure ctClosure) {
+		if ((_modelClassNameId > 0) && (_modelClassPK > 0)) {
+			return CTClosureUtil.getFamilyPKsMap(
+				ctClosure, _modelClassNameId, _modelClassPK);
+		}
+
+		return ctClosure.getRootPKsMap();
 	}
 
 	private <T extends BaseModel<T>> String _getTitle(
@@ -1441,6 +1465,20 @@ public class ViewChangesDisplayContext {
 						"groupId", groupedModel.getGroupId());
 				}
 
+				if (FeatureFlagManagerUtil.isEnabled("LPD-10703")) {
+					int changeType = _ctDisplayRendererRegistry.getChangeType(
+						ctEntry, model);
+
+					if (_ctDisplayRendererRegistry.isWorkflowEnabled(
+							ctEntry, model) &&
+						(changeType != CTConstants.CT_CHANGE_TYPE_DELETION) &&
+						((Integer)modelAttributes.get("status") !=
+							WorkflowConstants.STATUS_DRAFT)) {
+
+						modelInfo._jsonObject.put("showWorkflow", true);
+					}
+				}
+
 				modelInfo._site = _isSite(model);
 			}
 		}
@@ -1471,6 +1509,10 @@ public class ViewChangesDisplayContext {
 			for (long classPK : entry.getValue()) {
 				ModelInfo modelInfo = modelInfoMap.get(
 					new ModelInfoKey(classNameId, classPK));
+
+				if (modelInfo == null) {
+					continue;
+				}
 
 				if (modelInfo._jsonObject != null) {
 					modelInfo._jsonObject.put("groupId", groupId);

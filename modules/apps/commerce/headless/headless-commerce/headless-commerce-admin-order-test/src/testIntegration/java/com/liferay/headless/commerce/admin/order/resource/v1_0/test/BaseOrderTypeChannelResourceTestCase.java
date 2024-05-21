@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -37,6 +35,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -61,8 +60,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -301,43 +298,87 @@ public abstract class BaseOrderTypeChannelResourceTestCase {
 			testGetOrderTypeByExternalReferenceCodeOrderTypeChannelsPage_addOrderTypeChannel(
 				externalReferenceCode, randomOrderTypeChannel());
 
-		Page<OrderTypeChannel> page1 =
-			orderTypeChannelResource.
-				getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderTypeChannel> orderTypeChannels1 =
-			(List<OrderTypeChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderTypeChannels1.toString(), totalCount + 2,
-			orderTypeChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderTypeChannel> page1 =
+				orderTypeChannelResource.
+					getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<OrderTypeChannel> page2 =
-			orderTypeChannelResource.
-				getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				orderTypeChannel1, (List<OrderTypeChannel>)page1.getItems());
 
-		List<OrderTypeChannel> orderTypeChannels2 =
-			(List<OrderTypeChannel>)page2.getItems();
+			Page<OrderTypeChannel> page2 =
+				orderTypeChannelResource.
+					getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			orderTypeChannels2.toString(), 1, orderTypeChannels2.size());
+			assertContains(
+				orderTypeChannel2, (List<OrderTypeChannel>)page2.getItems());
 
-		Page<OrderTypeChannel> page3 =
-			orderTypeChannelResource.
-				getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<OrderTypeChannel> page3 =
+				orderTypeChannelResource.
+					getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			orderTypeChannel1, (List<OrderTypeChannel>)page3.getItems());
-		assertContains(
-			orderTypeChannel2, (List<OrderTypeChannel>)page3.getItems());
-		assertContains(
-			orderTypeChannel3, (List<OrderTypeChannel>)page3.getItems());
+			assertContains(
+				orderTypeChannel3, (List<OrderTypeChannel>)page3.getItems());
+		}
+		else {
+			Page<OrderTypeChannel> page1 =
+				orderTypeChannelResource.
+					getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<OrderTypeChannel> orderTypeChannels1 =
+				(List<OrderTypeChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				orderTypeChannels1.toString(), totalCount + 2,
+				orderTypeChannels1.size());
+
+			Page<OrderTypeChannel> page2 =
+				orderTypeChannelResource.
+					getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderTypeChannel> orderTypeChannels2 =
+				(List<OrderTypeChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				orderTypeChannels2.toString(), 1, orderTypeChannels2.size());
+
+			Page<OrderTypeChannel> page3 =
+				orderTypeChannelResource.
+					getOrderTypeByExternalReferenceCodeOrderTypeChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				orderTypeChannel1, (List<OrderTypeChannel>)page3.getItems());
+			assertContains(
+				orderTypeChannel2, (List<OrderTypeChannel>)page3.getItems());
+			assertContains(
+				orderTypeChannel3, (List<OrderTypeChannel>)page3.getItems());
+		}
 	}
 
 	protected OrderTypeChannel
@@ -475,39 +516,81 @@ public abstract class BaseOrderTypeChannelResourceTestCase {
 			testGetOrderTypeIdOrderTypeChannelsPage_addOrderTypeChannel(
 				id, randomOrderTypeChannel());
 
-		Page<OrderTypeChannel> page1 =
-			orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
-				id, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderTypeChannel> orderTypeChannels1 =
-			(List<OrderTypeChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderTypeChannels1.toString(), totalCount + 2,
-			orderTypeChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderTypeChannel> page1 =
+				orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<OrderTypeChannel> page2 =
-			orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
-				id, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				orderTypeChannel1, (List<OrderTypeChannel>)page1.getItems());
 
-		List<OrderTypeChannel> orderTypeChannels2 =
-			(List<OrderTypeChannel>)page2.getItems();
+			Page<OrderTypeChannel> page2 =
+				orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			orderTypeChannels2.toString(), 1, orderTypeChannels2.size());
+			assertContains(
+				orderTypeChannel2, (List<OrderTypeChannel>)page2.getItems());
 
-		Page<OrderTypeChannel> page3 =
-			orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
-				id, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<OrderTypeChannel> page3 =
+				orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(
-			orderTypeChannel1, (List<OrderTypeChannel>)page3.getItems());
-		assertContains(
-			orderTypeChannel2, (List<OrderTypeChannel>)page3.getItems());
-		assertContains(
-			orderTypeChannel3, (List<OrderTypeChannel>)page3.getItems());
+			assertContains(
+				orderTypeChannel3, (List<OrderTypeChannel>)page3.getItems());
+		}
+		else {
+			Page<OrderTypeChannel> page1 =
+				orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
+					id, null, Pagination.of(1, totalCount + 2), null);
+
+			List<OrderTypeChannel> orderTypeChannels1 =
+				(List<OrderTypeChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				orderTypeChannels1.toString(), totalCount + 2,
+				orderTypeChannels1.size());
+
+			Page<OrderTypeChannel> page2 =
+				orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
+					id, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderTypeChannel> orderTypeChannels2 =
+				(List<OrderTypeChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				orderTypeChannels2.toString(), 1, orderTypeChannels2.size());
+
+			Page<OrderTypeChannel> page3 =
+				orderTypeChannelResource.getOrderTypeIdOrderTypeChannelsPage(
+					id, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				orderTypeChannel1, (List<OrderTypeChannel>)page3.getItems());
+			assertContains(
+				orderTypeChannel2, (List<OrderTypeChannel>)page3.getItems());
+			assertContains(
+				orderTypeChannel3, (List<OrderTypeChannel>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -519,7 +602,7 @@ public abstract class BaseOrderTypeChannelResourceTestCase {
 			(entityField, orderTypeChannel1, orderTypeChannel2) -> {
 				BeanTestUtil.setProperty(
 					orderTypeChannel1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1100,6 +1183,10 @@ public abstract class BaseOrderTypeChannelResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1354,9 +1441,9 @@ public abstract class BaseOrderTypeChannelResourceTestCase {
 	}
 
 	protected OrderTypeChannelResource orderTypeChannelResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

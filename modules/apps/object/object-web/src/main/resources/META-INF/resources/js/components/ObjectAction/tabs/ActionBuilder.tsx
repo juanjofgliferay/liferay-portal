@@ -15,13 +15,15 @@ import {InputLocalized} from 'frontend-js-components-web';
 import React, {useEffect, useMemo, useState} from 'react';
 
 import {defaultLanguageId} from '../../../utils/constants';
-import {ActionError} from '../index';
+import {DisabledGroovyScriptAlert} from '../../DisabledGroovyScriptAlert';
+import {ActionError} from '../ObjectActionContainer';
 import {ActionContainer} from './ActionContainer/ActionContainer';
 import {ConditionContainer} from './ConditionContainer';
 
 import './ActionBuilder.scss';
 
 interface ActionBuilderProps {
+	disableGroovyAction: boolean;
 	errors: ActionError;
 	isApproved: boolean;
 	objectActionCodeEditorElements: SidebarCategory[];
@@ -30,6 +32,7 @@ interface ActionBuilderProps {
 	objectDefinitionExternalReferenceCode: string;
 	objectDefinitionId: number;
 	objectDefinitionsRelationshipsURL: string;
+	scriptManagementConfigurationPortletURL: string;
 	setValues: (values: Partial<ObjectAction>) => void;
 	systemObject: boolean;
 	validateExpressionURL: string;
@@ -52,6 +55,7 @@ const triggerKeys = [
 ];
 
 export default function ActionBuilder({
+	disableGroovyAction,
 	errors,
 	isApproved,
 	objectActionCodeEditorElements,
@@ -60,6 +64,7 @@ export default function ActionBuilder({
 	objectDefinitionExternalReferenceCode,
 	objectDefinitionId,
 	objectDefinitionsRelationshipsURL,
+	scriptManagementConfigurationPortletURL,
 	setValues,
 	systemObject,
 	validateExpressionURL,
@@ -197,6 +202,14 @@ export default function ActionBuilder({
 
 	return (
 		<>
+			{disableGroovyAction && (
+				<DisabledGroovyScriptAlert
+					scriptManagementConfigurationPortletURL={
+						scriptManagementConfigurationPortletURL
+					}
+				/>
+			)}
+
 			{infoAlert && (
 				<ClayAlert
 					className="lfr-objects__side-panel-content-container"
@@ -237,7 +250,9 @@ export default function ActionBuilder({
 					viewMode="inline"
 				>
 					<SingleSelect
-						disabled={isApproved || values.system}
+						disabled={
+							isApproved || values.system || disableGroovyAction
+						}
 						error={errors.objectActionTriggerKey}
 						items={objectActionTriggers}
 						onSelectionChange={(value) =>
@@ -272,6 +287,7 @@ export default function ActionBuilder({
 
 			{showConditionContainer && (
 				<ConditionContainer
+					disabled={disableGroovyAction}
 					errors={errors}
 					setValues={setValues}
 					validateExpressionURL={validateExpressionURL}
@@ -307,6 +323,7 @@ export default function ActionBuilder({
 
 			<ActionContainer
 				currentObjectDefinitionFields={currentObjectDefinitionFields}
+				disableGroovyAction={disableGroovyAction}
 				errors={errors}
 				newObjectActionExecutors={newObjectActionExecutors}
 				objectActionCodeEditorElements={objectActionCodeEditorElements}

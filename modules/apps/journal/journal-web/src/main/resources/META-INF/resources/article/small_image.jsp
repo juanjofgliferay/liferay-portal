@@ -10,7 +10,7 @@
 <%
 JournalArticle article = journalDisplayContext.getArticle();
 
-JournalEditArticleDisplayContext journalEditArticleDisplayContext = new JournalEditArticleDisplayContext(request, liferayPortletResponse, article);
+JournalEditArticleDisplayContext journalEditArticleDisplayContext = (JournalEditArticleDisplayContext)request.getAttribute(JournalEditArticleDisplayContext.class.getName());
 %>
 
 <liferay-ui:error-marker
@@ -34,7 +34,7 @@ JournalFileUploadsConfiguration journalFileUploadsConfiguration = (JournalFileUp
 
 <div>
 	<react:component
-		module="js/SmallImage"
+		module="{SmallImage} from journal-web"
 		props="<%= journalEditArticleDisplayContext.getProps() %>"
 	/>
 </div>

@@ -1,10 +1,10 @@
-@component-name = "portal-segmentation"
+@component-name = "portal-wcm"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Segmentation";
+	property testray.main.component.name = "Content Pages";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -29,9 +29,7 @@ definition {
 
 		HeadlessSite.addSite(siteName = "Test Site Name");
 
-		Staging.openStagingAdmin(siteURLKey = "test-site-name");
-
-		Staging.activateStagingCP(siteName = "Test Site Name");
+		JSONStaging.enableLocalStaging(groupName = "Test Site Name");
 	}
 
 	@description = "This is a test for LPS-128438. Changes after reordering experiences with Staging should be applied in live."
@@ -404,7 +402,7 @@ definition {
 
 			task ("Reorder the experiences as the following: Exp1 > Exp2 > Default > Exp3") {
 				User.loginUserPG(
-					password = "test",
+					password = PropsUtil.get("default.admin.password"),
 					userEmailAddress = "test@liferay.com");
 
 				Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name-staging/experience-content-page");

@@ -108,14 +108,15 @@ public class ShippingAddressResourceTest
 				testGroup.getGroupId(), RandomTestUtil.randomString(),
 				CommerceChannelConstants.CHANNEL_TYPE_SITE, null,
 				commerceCurrency.getCode(), serviceContext);
+
 		CommerceOrder commerceOrder =
 			_commerceOrderLocalService.addCommerceOrder(
-				user.getUserId(), testGroup.getGroupId(),
+				user.getUserId(), commerceChannel.getGroupId(),
 				address.getAddressId(), accountEntry.getAccountEntryId(),
 				commerceCurrency.getCommerceCurrencyId(),
 				CommerceOrderConstants.TYPE_PK_FULFILLMENT, 0,
 				address.getAddressId(), RandomTestUtil.randomString(), 1, 1,
-				2022, 0, 0, CommerceOrderConstants.ORDER_STATUS_COMPLETED,
+				2022, 0, 0, CommerceOrderConstants.ORDER_STATUS_OPEN,
 				CommercePaymentMethodConstants.TYPE_OFFLINE,
 				RandomTestUtil.randomString(), BigDecimal.ONE,
 				RandomTestUtil.randomString(), BigDecimal.ONE, BigDecimal.ONE,
@@ -139,6 +140,14 @@ public class ShippingAddressResourceTest
 			commerceOrderItem.getCommerceOrderItemId(), address.getAddressId(),
 			commerceOrderItem.getDeliveryGroup(),
 			commerceOrderItem.getPrintedNote());
+
+		commerceOrder = _commerceOrderLocalService.getCommerceOrder(
+			commerceOrder.getCommerceOrderId());
+
+		commerceOrder.setOrderStatus(
+			CommerceOrderConstants.ORDER_STATUS_COMPLETED);
+
+		_commerceOrderLocalService.updateCommerceOrder(commerceOrder);
 	}
 
 	@Ignore

@@ -10,7 +10,7 @@ import ClayIcon from '@clayui/icon';
 import ClayList from '@clayui/list';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayModal, {useModal} from '@clayui/modal';
-import {API, getLocalizableLabel} from '@liferay/object-js-components-web';
+import {API, stringUtils} from '@liferay/object-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 import {Elements, FlowElement, isNode} from 'react-flow-renderer';
@@ -31,7 +31,7 @@ enum STATUS {
 interface ModalPublishObjectDefinitionsProps {
 	disableAutoClose: boolean;
 	dispatch: React.Dispatch<TAction>;
-	elements: Elements<ObjectDefinitionNodeData | ObjectRelationshipEdgeData>;
+	elements: Elements<ObjectDefinitionNodeData | ObjectRelationshipEdgeData[]>;
 	handleOnClose: () => void;
 }
 
@@ -159,20 +159,26 @@ export function ModalPublishObjectDefinitions({
 		setModalHeaderMessage(`${Liferay.Language.get('publishing')}...`);
 		setPublishObjectDefinitionsStatus(STATUS.PENDING);
 
-		const publishObjectDefinitionPromises = selectedDraftObjectDefinitions.map(
-			({id, status}) => {
+		try {
+			const publishObjectDefinitionResponses = [];
+
+			for (const selectedDraftObjectDefinition of selectedDraftObjectDefinitions) {
 				setSelectedDraftObjectDefinitions((prevState) =>
-					updateObjectDefinitionStatus(prevState, id, status)
+					updateObjectDefinitionStatus(
+						prevState,
+						selectedDraftObjectDefinition.id,
+						selectedDraftObjectDefinition.status
+					)
 				);
 
-				return publishObjectDefinition(id);
-			}
-		);
+				const publishObjectDefinitionResponse = await publishObjectDefinition(
+					selectedDraftObjectDefinition.id
+				);
 
-		try {
-			const publishObjectDefinitionResponses = await Promise.all(
-				publishObjectDefinitionPromises
-			);
+				publishObjectDefinitionResponses.push(
+					publishObjectDefinitionResponse
+				);
+			}
 
 			const hasRejectedPublishObjectDefinitionResponses = publishObjectDefinitionResponses.some(
 				(publishObjectDefinitionResponse) =>
@@ -454,7 +460,7 @@ export function ModalPublishObjectDefinitions({
 													size={3}
 													weight="semi-bold"
 												>
-													{getLocalizableLabel(
+													{stringUtils.getLocalizableLabel(
 														defaultLanguageId,
 														data?.label,
 														data?.name

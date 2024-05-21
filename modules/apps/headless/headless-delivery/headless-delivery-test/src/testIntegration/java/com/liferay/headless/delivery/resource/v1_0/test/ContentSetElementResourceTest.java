@@ -18,7 +18,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,11 +39,11 @@ public class ContentSetElementResourceTest
 		_serviceContext = _getServiceContext();
 
 		_assetListEntry = AssetListEntryLocalServiceUtil.addAssetListEntry(
-			TestPropsValues.getUserId(), testGroup.getGroupId(),
+			null, TestPropsValues.getUserId(), testGroup.getGroupId(),
 			RandomTestUtil.randomString(),
 			AssetListEntryTypeConstants.TYPE_DYNAMIC, _serviceContext);
 		_depotAssetListEntry = AssetListEntryLocalServiceUtil.addAssetListEntry(
-			TestPropsValues.getUserId(), testDepotEntry.getGroupId(),
+			null, TestPropsValues.getUserId(), testDepotEntry.getGroupId(),
 			RandomTestUtil.randomString(),
 			AssetListEntryTypeConstants.TYPE_DYNAMIC, _serviceContext);
 	}

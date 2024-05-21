@@ -13,7 +13,6 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectRelationship;
-import com.liferay.object.rest.test.util.ObjectDefinitionTestUtil;
 import com.liferay.object.rest.test.util.ObjectEntryTestUtil;
 import com.liferay.object.rest.test.util.ObjectFieldTestUtil;
 import com.liferay.object.rest.test.util.ObjectRelationshipTestUtil;
@@ -24,6 +23,7 @@ import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
 import com.liferay.object.system.JaxRsApplicationDescriptor;
 import com.liferay.object.system.SystemObjectDefinitionManager;
 import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -61,6 +61,9 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.http.HttpStatus;
 
@@ -253,10 +256,40 @@ public class SystemObjectRelatedObjectEntriesTest {
 	public void testGetManyToOneSystemObjectRelatedObjectEntries()
 		throws Exception {
 
-		ObjectRelationship objectRelationship = _addObjectRelationship(
-			_objectDefinition, _userSystemObjectDefinition,
-			_objectEntry.getPrimaryKey(), _userAccountJSONObject.getLong("id"),
-			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
+		// Default unrelated user
+
+		ObjectRelationship objectRelationship =
+			ObjectRelationshipTestUtil.addObjectRelationship(
+				_objectDefinition, _userSystemObjectDefinition,
+				_user.getUserId(),
+				ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
+
+		_objectRelationships.add(objectRelationship);
+
+		_testGetManyToOneSystemObjectRelatedObjectEntries(
+			StringPool.BLANK, 0, objectRelationship, _user.getUserId());
+		_testGetManyToOneSystemObjectRelatedObjectEntries(
+			StringPool.BLANK, 0, objectRelationship,
+			_userAccountJSONObject.getLong("id"));
+
+		ObjectRelationshipTestUtil.relateObjectEntries(
+			_objectEntry.getObjectEntryId(), _user.getUserId(),
+			objectRelationship, _user.getUserId());
+
+		_testGetManyToOneSystemObjectRelatedObjectEntries(
+			_objectEntry.getExternalReferenceCode(),
+			_objectEntry.getObjectEntryId(), objectRelationship,
+			_user.getUserId());
+
+		ObjectRelationshipTestUtil.relateObjectEntries(
+			_objectEntry.getObjectEntryId(),
+			_userAccountJSONObject.getLong("id"), objectRelationship,
+			_user.getUserId());
+
+		_testGetManyToOneSystemObjectRelatedObjectEntries(
+			_objectEntry.getExternalReferenceCode(),
+			_objectEntry.getObjectEntryId(), objectRelationship,
+			_userAccountJSONObject.getLong("id"));
 
 		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
 			null, _getLocation(objectRelationship.getName()), Http.Method.GET);
@@ -650,6 +683,25 @@ public class SystemObjectRelatedObjectEntriesTest {
 		return objectRelationship;
 	}
 
+	private void _assertEquals(JSONArray nestedObjectEntriesJSONArray)
+		throws Exception {
+
+		JSONAssert.assertEquals(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					_OBJECT_FIELD_NAME_1, _NEW_OBJECT_FIELD_VALUE_1
+				).put(
+					"externalReferenceCode", _ERC_VALUE_1
+				),
+				JSONUtil.put(
+					_OBJECT_FIELD_NAME_1, _NEW_OBJECT_FIELD_VALUE_2
+				).put(
+					"externalReferenceCode", _ERC_VALUE_2
+				)
+			).toString(),
+			nestedObjectEntriesJSONArray.toString(), JSONCompareMode.LENIENT);
+	}
+
 	private void _assertNestedFieldsInRelationships(
 		int currentDepth, int depth, JSONObject jsonObject,
 		String nestedFieldName, String[][] objectFieldNamesAndObjectFieldValues,
@@ -781,6 +833,33 @@ public class SystemObjectRelatedObjectEntriesTest {
 		}
 
 		return Type.MANY_TO_MANY;
+	}
+
+	private void _testGetManyToOneSystemObjectRelatedObjectEntries(
+			String expectedObjectEntryExternalReferenceCode,
+			long expectedObjectEntryId, ObjectRelationship objectRelationship,
+			long userId)
+		throws Exception {
+
+		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
+			null,
+			StringBundler.concat(_getLocation(), StringPool.SLASH, userId),
+			Http.Method.GET);
+
+		Assert.assertEquals(
+			expectedObjectEntryExternalReferenceCode,
+			jsonObject.get(
+				StringBundler.concat(
+					"r_", objectRelationship.getName(), "_",
+					StringUtil.removeLast(
+						_objectDefinition.getPKObjectFieldName(), "Id"),
+					"ERC")));
+		Assert.assertEquals(
+			expectedObjectEntryId,
+			jsonObject.getLong(
+				StringBundler.concat(
+					"r_", objectRelationship.getName(), "_",
+					_objectDefinition.getPKObjectFieldName())));
 	}
 
 	private void _testGetSystemObjectRelatedObjectEntries(
@@ -920,12 +999,7 @@ public class SystemObjectRelatedObjectEntriesTest {
 
 			Assert.assertEquals(2, nestedObjectEntriesJSONArray.length());
 
-			_assertObjectEntryField(
-				(JSONObject)nestedObjectEntriesJSONArray.get(0),
-				_OBJECT_FIELD_NAME_1, _NEW_OBJECT_FIELD_VALUE_1);
-			_assertObjectEntryField(
-				(JSONObject)nestedObjectEntriesJSONArray.get(1),
-				_OBJECT_FIELD_NAME_1, _NEW_OBJECT_FIELD_VALUE_2);
+			_assertEquals(nestedObjectEntriesJSONArray);
 
 			jsonObject = HTTPTestUtil.invokeToJSONObject(
 				null,
@@ -938,12 +1012,7 @@ public class SystemObjectRelatedObjectEntriesTest {
 
 			Assert.assertEquals(2, nestedObjectEntriesJSONArray.length());
 
-			_assertObjectEntryField(
-				(JSONObject)nestedObjectEntriesJSONArray.get(0),
-				_OBJECT_FIELD_NAME_1, _NEW_OBJECT_FIELD_VALUE_1);
-			_assertObjectEntryField(
-				(JSONObject)nestedObjectEntriesJSONArray.get(1),
-				_OBJECT_FIELD_NAME_1, _NEW_OBJECT_FIELD_VALUE_2);
+			_assertEquals(nestedObjectEntriesJSONArray);
 		}
 	}
 

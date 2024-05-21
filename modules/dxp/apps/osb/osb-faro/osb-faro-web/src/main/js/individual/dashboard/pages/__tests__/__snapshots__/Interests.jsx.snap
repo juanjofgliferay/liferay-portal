@@ -189,11 +189,11 @@ exports[`Individuals Dashboard Individuals Interests renders 1`] = `
                     <td
                       class="table-column-text-end"
                     >
-                      <h4
-                        class="table-title text-truncate"
+                      <div
+                        class="h4 table-title text-truncate"
                       >
                         66.67%
-                      </h4>
+                      </div>
                     </td>
                   </tr>
                   <tr
@@ -251,11 +251,11 @@ exports[`Individuals Dashboard Individuals Interests renders 1`] = `
                     <td
                       class="table-column-text-end"
                     >
-                      <h4
-                        class="table-title text-truncate"
+                      <div
+                        class="h4 table-title text-truncate"
                       >
                         66.67%
-                      </h4>
+                      </div>
                     </td>
                   </tr>
                   <tr
@@ -313,11 +313,11 @@ exports[`Individuals Dashboard Individuals Interests renders 1`] = `
                     <td
                       class="table-column-text-end"
                     >
-                      <h4
-                        class="table-title text-truncate"
+                      <div
+                        class="h4 table-title text-truncate"
                       >
                         66.67%
-                      </h4>
+                      </div>
                     </td>
                   </tr>
                   <tr
@@ -375,11 +375,11 @@ exports[`Individuals Dashboard Individuals Interests renders 1`] = `
                     <td
                       class="table-column-text-end"
                     >
-                      <h4
-                        class="table-title text-truncate"
+                      <div
+                        class="h4 table-title text-truncate"
                       >
                         66.67%
-                      </h4>
+                      </div>
                     </td>
                   </tr>
                   <tr
@@ -437,11 +437,11 @@ exports[`Individuals Dashboard Individuals Interests renders 1`] = `
                     <td
                       class="table-column-text-end"
                     >
-                      <h4
-                        class="table-title text-truncate"
+                      <div
+                        class="h4 table-title text-truncate"
                       >
                         33.33%
-                      </h4>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -584,11 +584,11 @@ exports[`Individuals Dashboard Individuals Interests renders with data source em
               />
             </svg>
           </div>
-          <h4
-            class="no-results-title"
+          <div
+            class="h4 no-results-title"
           >
             No Sites Synced from Data Sources
-          </h4>
+          </div>
           <div
             class="no-results-description"
           >
@@ -596,9 +596,15 @@ exports[`Individuals Dashboard Individuals Interests renders with data source em
             <a
               class="d-block mb-3"
               href="https://learn.liferay.com/analytics-cloud/latest/en/getting-started/connecting-liferay-dxp-to-analytics-cloud.html"
+              rel="noreferrer noopener"
               target="_blank"
             >
               Access our documentation to learn more.
+              <span
+                class="sr-only"
+              >
+                (Opens a new window)
+              </span>
             </a>
             <a
               class="button-root btn btn-primary"

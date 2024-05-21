@@ -13,7 +13,6 @@ import com.liferay.document.library.kernel.service.DLFileVersionLocalService;
 import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.document.library.kernel.store.Store;
 import com.liferay.dynamic.data.mapping.data.provider.settings.DDMDataProviderSettingsProvider;
-import com.liferay.dynamic.data.mapping.internal.upgrade.v1_0_0.SchemaUpgradeProcess;
 import com.liferay.dynamic.data.mapping.internal.upgrade.v1_0_0.UpgradeCompanyId;
 import com.liferay.dynamic.data.mapping.internal.upgrade.v1_0_0.UpgradeKernelPackage;
 import com.liferay.dynamic.data.mapping.internal.upgrade.v1_0_0.UpgradeLastPublishDate;
@@ -50,12 +49,14 @@ import com.liferay.dynamic.data.mapping.internal.upgrade.v5_2_0.DDMFacetTemplate
 import com.liferay.dynamic.data.mapping.internal.upgrade.v5_2_1.WorkflowDefinitionLinkUpgradeProcess;
 import com.liferay.dynamic.data.mapping.internal.upgrade.v5_2_2.DLFileEntryDDMFormInstanceRecordUpgradeProcess;
 import com.liferay.dynamic.data.mapping.internal.upgrade.v5_3_3.BrowserSnifferTemplateUpgradeProcess;
+import com.liferay.dynamic.data.mapping.internal.upgrade.v5_4_5.DDMTemplateLinkUpgradeProcess;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormLayoutSerializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormSerializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesSerializer;
+import com.liferay.dynamic.data.mapping.spi.converter.SPIDDMFormRuleConverter;
 import com.liferay.dynamic.data.mapping.util.DDM;
 import com.liferay.dynamic.data.mapping.util.DDMDataDefinitionConverter;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
@@ -109,7 +110,10 @@ public class DDMServiceUpgradeStepRegistrator
 		DDMFormValuesDeserializer ddmFormValuesDeserializer =
 			_jsonDDMFormValuesDeserializer;
 
-		registry.register("0.0.1", "0.0.2", new SchemaUpgradeProcess());
+		registry.register(
+			"0.0.1", "0.0.2",
+			new com.liferay.dynamic.data.mapping.internal.upgrade.v0_0_2.
+				SchemaUpgradeProcess());
 
 		registry.register("0.0.2", "0.0.3", new UpgradeKernelPackage());
 
@@ -360,8 +364,10 @@ public class DDMServiceUpgradeStepRegistrator
 
 		registry.register(
 			"3.7.3", "3.7.4",
-			new com.liferay.dynamic.data.mapping.internal.upgrade.v3_7_4.
-				DDMTemplateUpgradeProcess());
+			UpgradeProcessFactory.runSQL(
+				"update DDMTemplate set templateKey = " +
+					"CONCAT(CAST_TEXT(templateId), '_key') where templateKey " +
+						"is null or templateKey = ''"));
 
 		registry.register(
 			"3.7.4", "3.8.0",
@@ -541,10 +547,23 @@ public class DDMServiceUpgradeStepRegistrator
 					_jsonDDMFormDeserializer, _jsonDDMFormSerializer,
 					_language));
 
+		registry.register("5.4.1", "5.4.2", new DummyUpgradeStep());
+
 		registry.register(
-			"5.4.1", "5.4.2",
-			new com.liferay.dynamic.data.mapping.internal.upgrade.v5_4_2.
+			"5.4.2", "5.4.3",
+			new com.liferay.dynamic.data.mapping.internal.upgrade.v5_4_3.
 				PollsPortletIdToDDMPortletIdUpgradeProcess());
+
+		registry.register(
+			"5.4.3", "5.4.4",
+			new com.liferay.dynamic.data.mapping.internal.upgrade.v5_4_4.
+				DDMStructureUpgradeProcess(
+					_jsonDDMFormDeserializer, _jsonDDMFormSerializer,
+					_spiDDMFormRuleConverter));
+
+		registry.register(
+			"5.4.4", "5.4.5",
+			new DDMTemplateLinkUpgradeProcess(_classNameLocalService));
 	}
 
 	@Activate
@@ -636,6 +655,9 @@ public class DDMServiceUpgradeStepRegistrator
 
 	private ServiceTrackerMap<String, DDMDataProviderSettingsProvider>
 		_serviceTrackerMap;
+
+	@Reference
+	private SPIDDMFormRuleConverter _spiDDMFormRuleConverter;
 
 	@Reference(target = "(default=true)")
 	private Store _store;

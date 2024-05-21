@@ -130,11 +130,11 @@ public class ObjectFieldUtil {
 		objectField.setIndexedLanguageId(indexedLanguageId);
 		objectField.setLabelMap(LocalizedMapUtil.getLocalizedMap(label));
 		objectField.setName(name);
-		objectField.setObjectFieldSettings(objectFieldSettings);
 		objectField.setReadOnly(readOnly);
 		objectField.setReadOnlyConditionExpression(readOnlyConditionExpression);
 		objectField.setRequired(required);
 		objectField.setSystem(system);
+		objectField.setObjectFieldSettings(objectFieldSettings);
 
 		return objectField;
 	}
@@ -193,8 +193,12 @@ public class ObjectFieldUtil {
 		else if (value.length() == 21) {
 			return "yyyy-MM-dd HH:mm:ss.S";
 		}
-		else if ((value.length() == 23) && (value.charAt(10) == 'T')) {
-			return "yyyy-MM-dd'T'HH:mm:ss.SSS";
+		else if (value.length() == 23) {
+			if (value.charAt(10) == 'T') {
+				return "yyyy-MM-dd'T'HH:mm:ss.SSS";
+			}
+
+			return "yyyy-MM-dd HH:mm:ss.SSS";
 		}
 		else if ((value.length() == 24) && (value.charAt(10) == 'T')) {
 			return "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
@@ -204,6 +208,9 @@ public class ObjectFieldUtil {
 		}
 		else if ((value.length() == 28) && (value.charAt(23) == '+')) {
 			return "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+		}
+		else if (value.length() == 28) {
+			return "EEE MMM dd HH:mm:ss zzz yyyy";
 		}
 
 		return DateUtil.ISO_8601_PATTERN;

@@ -31,13 +31,16 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -49,6 +52,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.test.util.IndexerFixture;
 import com.liferay.portal.test.log.LogCapture;
@@ -57,6 +61,7 @@ import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.ThemeFactoryUtil;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.List;
@@ -129,63 +134,74 @@ public class LayoutModelDocumentContributorTest {
 
 	@Test
 	public void testReindexPublishedLayout() throws Exception {
-		String elementText = RandomTestUtil.randomString();
-
-		Layout layout = _addTypeContentLayout(elementText, true);
-
-		List<LogEntry> logEntries = _reindexLogEntries(layout);
-
-		Assert.assertEquals(logEntries.toString(), 0, logEntries.size());
-
-		_assertSearch(elementText, layout.getPlid());
+		_assertReindexPublishedLayout(null);
 	}
 
 	@Test
 	public void testReindexPublishedLayoutFragmentEntryLinkWithPortlet()
 		throws Exception {
 
-		ServiceContextThreadLocal.pushServiceContext(
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+		_assertReindexPublishedLayoutFragmentEntryLinkWithPortlet();
+	}
 
-		String html = "<lfr-widget-web-content>";
+	@Test
+	public void testReindexPublishedLayoutFragmentEntryLinkWithPortletVirtualHostSite()
+		throws Exception {
 
-		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
+		_layoutSetLocalService.updateVirtualHosts(
+			_group.getGroupId(), false,
+			TreeMapBuilder.put(
+				"myvirtualhost", LocaleUtil.toLanguageId(_locale)
+			).build());
 
-		Layout draftLayout = layout.fetchDraftLayout();
+		_assertReindexPublishedLayoutFragmentEntryLinkWithPortlet();
+	}
 
-		Assert.assertNotNull(draftLayout);
+	@Test
+	public void testReindexPublishedLayoutLayoutSetThemeNotAvailable()
+		throws Exception {
 
-		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLinkToLayout(
-			"{}", html, draftLayout,
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				_CLASS_NAME_THEME_LOCAL_SERVICE_IMPL, LoggerTestUtil.INFO)) {
 
-		String portletId = PortletIdCodec.encode(
-			JournalContentPortletKeys.JOURNAL_CONTENT,
-			fragmentEntryLink.getNamespace());
+			LayoutSet layoutSet = _group.getPublicLayoutSet();
 
-		String content = RandomTestUtil.randomString();
+			_layoutSetLocalService.updateLookAndFeel(
+				layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+				"not_available_theme_id", layoutSet.getColorSchemeId(),
+				layoutSet.getCss());
 
-		DDMFormField ddmFormField = _createDDMFormField(
-			DDMFormFieldTypeConstants.TEXT);
+			_assertReindexPublishedLayout(null);
+		}
+	}
 
-		JournalArticle journalArticle = JournalTestUtil.addJournalArticle(
-			_dataDefinitionResourceFactory, ddmFormField,
-			_ddmFormValuesToFieldsConverter, content, _group.getGroupId(),
-			_journalConverter);
+	@Test
+	public void testReindexPublishedLayoutSpecificThemeAndLayoutSetThemeNotAvailable()
+		throws Exception {
 
-		AssetEntry assetEntry = _assetEntryLocalService.getEntry(
-			JournalArticle.class.getName(),
-			journalArticle.getResourcePrimKey());
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				_CLASS_NAME_THEME_LOCAL_SERVICE_IMPL, LoggerTestUtil.INFO)) {
 
-		_setUpPortletPreferences(
-			assetEntry, journalArticle, draftLayout, portletId);
+			LayoutSet layoutSet = _group.getPublicLayoutSet();
 
-		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
+			_layoutSetLocalService.updateLookAndFeel(
+				layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+				"not_available_theme_id", layoutSet.getColorSchemeId(),
+				layoutSet.getCss());
 
-		_assertPortletPreferences(
-			assetEntry, journalArticle, layout, portletId);
+			_assertReindexPublishedLayout(
+				ThemeFactoryUtil.getDefaultRegularThemeId(
+					TestPropsValues.getCompanyId()));
+		}
+	}
 
-		_assertReindex(content, layout);
+	@Test
+	public void testReindexPublishedLayoutThemeNotAvailable() throws Exception {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				_CLASS_NAME_THEME_LOCAL_SERVICE_IMPL, LoggerTestUtil.INFO)) {
+
+			_assertReindexPublishedLayout("not_available_theme_id");
+		}
 	}
 
 	@Test
@@ -268,6 +284,52 @@ public class LayoutModelDocumentContributorTest {
 	}
 
 	@Test
+	public void testReindexPublishedLayoutWithPortletDisplayingJournalArticleWithGeolocationDDMFormField()
+		throws Exception {
+
+		ServiceContextThreadLocal.pushServiceContext(
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		Assert.assertNotNull(draftLayout);
+
+		String portletId = _addJournalContentPortletToLayout(draftLayout);
+
+		DDMFormField ddmFormField = _createDDMFormField(
+			DDMFormFieldTypeConstants.GEOLOCATION);
+
+		double lat = RandomTestUtil.randomDouble();
+		double lng = RandomTestUtil.randomDouble();
+
+		JournalArticle journalArticle = JournalTestUtil.addJournalArticle(
+			_dataDefinitionResourceFactory, ddmFormField,
+			_ddmFormValuesToFieldsConverter,
+			JSONUtil.put(
+				"lat", lat
+			).put(
+				"lng", lng
+			).toString(),
+			_group.getGroupId(), _journalConverter);
+
+		AssetEntry assetEntry = _assetEntryLocalService.getEntry(
+			JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey());
+
+		_setUpPortletPreferences(
+			assetEntry, journalArticle, draftLayout, portletId);
+
+		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
+
+		_assertPortletPreferences(
+			assetEntry, journalArticle, layout, portletId);
+
+		_assertReindex(layout, "\"lat\":" + lat, "\"lng\":" + lng);
+	}
+
+	@Test
 	public void testReindexUnpublishedDraftLayout() throws Exception {
 		String elementText = RandomTestUtil.randomString();
 
@@ -283,7 +345,7 @@ public class LayoutModelDocumentContributorTest {
 
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionLocalService.addFragmentCollection(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(), null, serviceContext);
 
 		FragmentEntry fragmentEntry =
@@ -291,7 +353,7 @@ public class LayoutModelDocumentContributorTest {
 				TestPropsValues.getUserId(), _group.getGroupId(),
 				fragmentCollection.getFragmentCollectionId(), null,
 				RandomTestUtil.randomString(), null, html, null, false, null,
-				null, 0, FragmentConstants.TYPE_COMPONENT, null,
+				null, 0, false, FragmentConstants.TYPE_COMPONENT, null,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		return ContentLayoutTestUtil.addFragmentEntryLinkToLayout(
@@ -346,12 +408,26 @@ public class LayoutModelDocumentContributorTest {
 	private Layout _addTypeContentLayout(String elementText, boolean publish)
 		throws Exception {
 
+		return _addTypeContentLayout(elementText, publish, null);
+	}
+
+	private Layout _addTypeContentLayout(
+			String elementText, boolean publish, String themeId)
+		throws Exception {
+
 		String html =
 			"<h1 data-lfr-editable-id=\"element-text\" " +
 				"data-lfr-editable-type=\"text\">Heading Example</h1>";
 		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		Layout draftLayout = _addFragmentToLayout(elementText, html, layout);
+
+		if (themeId != null) {
+			draftLayout = _layoutLocalService.updateLookAndFeel(
+				draftLayout.getGroupId(), draftLayout.isPrivateLayout(),
+				draftLayout.getLayoutId(), themeId,
+				draftLayout.getColorSchemeId(), draftLayout.getCss());
+		}
 
 		if (publish) {
 			ContentLayoutTestUtil.publishLayout(draftLayout, layout);
@@ -380,6 +456,18 @@ public class LayoutModelDocumentContributorTest {
 			portletPreferences.getValue("groupId", null));
 	}
 
+	private void _assertReindex(Layout layout, String... expectedContents)
+		throws Exception {
+
+		List<LogEntry> logEntries = _reindexLayoutsLogEntries();
+
+		Assert.assertEquals(logEntries.toString(), 0, logEntries.size());
+
+		for (String keywords : expectedContents) {
+			_assertSearch(keywords, layout.getPlid());
+		}
+	}
+
 	private void _assertReindex(String expectedContent, Layout layout)
 		throws Exception {
 
@@ -400,6 +488,67 @@ public class LayoutModelDocumentContributorTest {
 		Assert.assertEquals(logEntries.toString(), 0, logEntries.size());
 
 		_layoutIndexerFixture.searchNoOne(keywords);
+	}
+
+	private void _assertReindexPublishedLayout(String themeId)
+		throws Exception {
+
+		String elementText = RandomTestUtil.randomString();
+
+		Layout layout = _addTypeContentLayout(elementText, true, themeId);
+
+		List<LogEntry> logEntries = _reindexLogEntries(layout);
+
+		Assert.assertEquals(logEntries.toString(), 0, logEntries.size());
+
+		_assertSearch(elementText, layout.getPlid());
+	}
+
+	private void _assertReindexPublishedLayoutFragmentEntryLinkWithPortlet()
+		throws Exception {
+
+		ServiceContextThreadLocal.pushServiceContext(
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		String html = "<lfr-widget-web-content>";
+
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		Assert.assertNotNull(draftLayout);
+
+		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLinkToLayout(
+			"{}", html, draftLayout,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		String portletId = PortletIdCodec.encode(
+			JournalContentPortletKeys.JOURNAL_CONTENT,
+			fragmentEntryLink.getNamespace());
+
+		String content = RandomTestUtil.randomString();
+
+		DDMFormField ddmFormField = _createDDMFormField(
+			DDMFormFieldTypeConstants.TEXT);
+
+		JournalArticle journalArticle = JournalTestUtil.addJournalArticle(
+			_dataDefinitionResourceFactory, ddmFormField,
+			_ddmFormValuesToFieldsConverter, content, _group.getGroupId(),
+			_journalConverter);
+
+		AssetEntry assetEntry = _assetEntryLocalService.getEntry(
+			JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey());
+
+		_setUpPortletPreferences(
+			assetEntry, journalArticle, draftLayout, portletId);
+
+		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
+
+		_assertPortletPreferences(
+			assetEntry, journalArticle, layout, portletId);
+
+		_assertReindex(content, layout);
 	}
 
 	private void _assertSearch(String keywords, long plid) {
@@ -436,9 +585,23 @@ public class LayoutModelDocumentContributorTest {
 		return ddmFormField;
 	}
 
+	private List<LogEntry> _reindexLayoutsLogEntries() throws Exception {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				_CLASS_NAME_INCLUDE_TAG, LoggerTestUtil.DEBUG)) {
+
+			_indexWriterHelper.reindex(
+				TestPropsValues.getUserId(), "reindex",
+				new long[] {_group.getCompanyId()}, Layout.class.getName(),
+				null);
+
+			return logCapture.getLogEntries();
+		}
+	}
+
 	private List<LogEntry> _reindexLogEntries(Layout layout) throws Exception {
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				_CLASS_NAME, LoggerTestUtil.DEBUG)) {
+				_CLASS_NAME_LAYOUT_MODEL_DOCUMENT_CONTRIBUTOR,
+				LoggerTestUtil.DEBUG)) {
 
 			Indexer<Layout> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				Layout.class);
@@ -470,9 +633,15 @@ public class LayoutModelDocumentContributorTest {
 			assetEntry, journalArticle, layout, portletId);
 	}
 
-	private static final String _CLASS_NAME =
+	private static final String _CLASS_NAME_INCLUDE_TAG =
+		"com.liferay.taglib.util.IncludeTag";
+
+	private static final String _CLASS_NAME_LAYOUT_MODEL_DOCUMENT_CONTRIBUTOR =
 		"com.liferay.layout.internal.search.spi.model.index.contributor." +
 			"LayoutModelDocumentContributor";
+
+	private static final String _CLASS_NAME_THEME_LOCAL_SERVICE_IMPL =
+		"com.liferay.portal.service.impl.ThemeLocalServiceImpl";
 
 	@Inject
 	private AssetEntryLocalService _assetEntryLocalService;
@@ -493,6 +662,9 @@ public class LayoutModelDocumentContributorTest {
 	private Group _group;
 
 	@Inject
+	private IndexWriterHelper _indexWriterHelper;
+
+	@Inject
 	private JournalConverter _journalConverter;
 
 	private String _languageId;
@@ -500,6 +672,9 @@ public class LayoutModelDocumentContributorTest {
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
+
+	@Inject
+	private LayoutSetLocalService _layoutSetLocalService;
 
 	private Locale _locale;
 

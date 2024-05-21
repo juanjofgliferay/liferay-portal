@@ -32,9 +32,7 @@ definition {
 		}
 
 		task ("Go to Site Page") {
-			ACUtils.navigateToSitePage(
-				pageName = "AC Page",
-				siteName = "Site Name");
+			Navigator.openSiteURL(siteName = "Site Name");
 		}
 
 		task ("Create an AB Test") {
@@ -75,19 +73,17 @@ definition {
 
 			ACNavigation.goToTests();
 
-			ACNavigation.openItem(itemName = ${nameABTest});
+			ABTest.accessABTestInAC(itemName = ${nameABTest});
 		}
 
 		task ("Click on the delete button on the top") {
-			Button.clickDelete();
-		}
-
-		task ("Get site assigned property name and get data source name") {
-			var dataSource = StringUtil.extractFirst(${assignedPropertyName}, " ");
+			ACUtils.clickGenericHyperlink(hyperlinkText = "Delete");
 		}
 
 		task ("Click on the new tab open and delete the created AB test") {
-			SelectWindow(locator1 = "title=AC Page - Site Name - ${dataSource}");
+			SelectWindow(value1 = "name=undefined");
+
+			WaitForElementPresent(locator1 = "Modal#MODAL_CONTENT");
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "Modal#MODAL_CONTENT",
@@ -125,20 +121,18 @@ definition {
 
 			ACNavigation.goToTests();
 
-			ACNavigation.openItem(itemName = ${nameABTest});
+			ABTest.accessABTestInAC(itemName = ${nameABTest});
 		}
 
 		task ("Click on the review button on the top") {
-			Button.click(button = "Review");
-		}
-
-		task ("Get site assigned property name and get data source name") {
-			var dataSource = StringUtil.extractFirst(${assignedPropertyName}, " ");
+			ACUtils.clickGenericHyperlink(hyperlinkText = "Review");
 		}
 
 		task ("See the redirection to the review and run test modal in DXP") {
 			task ("Go to the new tab open") {
-				SelectWindow(locator1 = "title=AC Page - Site Name - ${dataSource}");
+				SelectWindow(value1 = "name=undefined");
+
+				WaitForElementPresent(locator1 = "Modal#MODAL_CONTENT");
 			}
 
 			task ("Assert the review and run modal is open") {
@@ -163,19 +157,17 @@ definition {
 
 			ACNavigation.goToTests();
 
-			ACNavigation.openItem(itemName = ${nameABTest});
+			ABTest.accessABTestInAC(itemName = ${nameABTest});
 		}
 
 		task ("Click on the terminate button on the top") {
-			Button.click(button = "Terminate");
-		}
-
-		task ("Get site assigned property name and get data source name") {
-			var dataSource = StringUtil.extractFirst(${assignedPropertyName}, " ");
+			Click.mouseDownMouseUp(
+				key_buttonName = "terminate",
+				locator1 = "ACTests#REDIRECT_BUTTONS");
 		}
 
 		task ("Click on the new tab open and terminate the created AB test") {
-			SelectWindow(locator1 = "title=AC Page - Site Name - ${dataSource}");
+			SelectWindow(value1 = "name=undefined");
 
 			ABTest.assertTerminateTest();
 		}

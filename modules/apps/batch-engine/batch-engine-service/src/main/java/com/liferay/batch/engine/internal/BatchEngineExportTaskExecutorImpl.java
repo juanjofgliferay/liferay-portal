@@ -11,6 +11,7 @@ import com.liferay.batch.engine.BatchEngineTaskExecuteStatus;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegateRegistry;
 import com.liferay.batch.engine.ItemClassRegistry;
 import com.liferay.batch.engine.configuration.BatchEngineTaskCompanyConfiguration;
+import com.liferay.batch.engine.csv.ColumnDescriptorProvider;
 import com.liferay.batch.engine.internal.item.BatchEngineTaskItemDelegateExecutor;
 import com.liferay.batch.engine.internal.item.BatchEngineTaskItemDelegateExecutorFactory;
 import com.liferay.batch.engine.internal.writer.BatchEngineExportTaskItemWriter;
@@ -210,6 +211,8 @@ public class BatchEngineExportTaskExecutorImpl
 		return batchEngineExportTaskItemWriterBuilder.
 			batchEngineTaskContentType(
 				batchEngineTaskContentType
+			).columnDescriptorProvider(
+				_columnDescriptorProvider
 			).companyId(
 				batchEngineExportTask.getCompanyId()
 			).csvFileColumnDelimiter(
@@ -227,6 +230,8 @@ public class BatchEngineExportTaskExecutorImpl
 					batchEngineTaskContentType, unsyncByteArrayOutputStream)
 			).parameters(
 				parameters
+			).taskItemDelegateName(
+				batchEngineExportTask.getTaskItemDelegateName()
 			).userId(
 				batchEngineExportTask.getUserId()
 			).build();
@@ -261,10 +266,6 @@ public class BatchEngineExportTaskExecutorImpl
 		if (parameters == null) {
 			parameters = new HashMap<>();
 		}
-
-		parameters.computeIfAbsent(
-			"taskItemDelegateName",
-			key -> batchEngineExportTask.getTaskItemDelegateName());
 
 		return parameters;
 	}
@@ -317,6 +318,9 @@ public class BatchEngineExportTaskExecutorImpl
 	@Reference
 	private BatchEngineTaskItemDelegateRegistry
 		_batchEngineTaskItemDelegateRegistry;
+
+	@Reference
+	private ColumnDescriptorProvider _columnDescriptorProvider;
 
 	@Reference
 	private CompanyLocalService _companyLocalService;

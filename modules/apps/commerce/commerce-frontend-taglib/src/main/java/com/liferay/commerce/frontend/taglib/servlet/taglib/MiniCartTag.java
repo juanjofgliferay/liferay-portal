@@ -21,7 +21,6 @@ import com.liferay.commerce.product.url.CPFriendlyURL;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -73,20 +72,6 @@ public class MiniCartTag extends IncludeTag {
 				_accountEntryId = accountEntry.getAccountEntryId();
 			}
 
-			_checkoutURL = StringPool.BLANK;
-
-			PortletURL portletURL = PortletProviderUtil.getPortletURL(
-				httpServletRequest, CommercePortletKeys.COMMERCE_CHECKOUT,
-				PortletProvider.Action.VIEW);
-
-			if (portletURL != null) {
-				_checkoutURL = PortletURLBuilder.create(
-					portletURL
-				).setMVCRenderCommandName(
-					"/commerce_checkout/checkout_redirect"
-				).buildString();
-			}
-
 			_commerceChannelId = 0;
 
 			if (commerceContext != null) {
@@ -101,6 +86,20 @@ public class MiniCartTag extends IncludeTag {
 				_orderId = 0;
 
 				return super.doStartTag();
+			}
+
+			_checkoutURL = StringPool.BLANK;
+
+			PortletURL portletURL = PortletProviderUtil.getPortletURL(
+				httpServletRequest, CommercePortletKeys.COMMERCE_CHECKOUT,
+				PortletProvider.Action.VIEW);
+
+			if (portletURL != null) {
+				_checkoutURL = PortletURLBuilder.create(
+					portletURL
+				).setMVCRenderCommandName(
+					"/commerce_checkout/checkout_redirect"
+				).buildString();
 			}
 
 			_commerceChannelGroupId =
@@ -323,10 +322,6 @@ public class MiniCartTag extends IncludeTag {
 	}
 
 	private boolean _isRequestQuoteEnabled() throws PortalException {
-		if (!FeatureFlagManagerUtil.isEnabled("COMMERCE-11028")) {
-			return false;
-		}
-
 		CommerceOrderFieldsConfiguration commerceOrderFieldsConfiguration =
 			_configurationProvider.getConfiguration(
 				CommerceOrderFieldsConfiguration.class,

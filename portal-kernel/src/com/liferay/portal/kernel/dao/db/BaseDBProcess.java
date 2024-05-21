@@ -297,7 +297,7 @@ public abstract class BaseDBProcess implements DBProcess {
 	protected boolean doHasTable(String tableName) throws Exception {
 		DBInspector dbInspector = new DBInspector(connection);
 
-		return dbInspector.hasTable(tableName, true);
+		return dbInspector.hasTable(tableName);
 	}
 
 	protected List<IndexMetadata> dropIndexes(
@@ -368,6 +368,12 @@ public abstract class BaseDBProcess implements DBProcess {
 		DBInspector dbInspector = new DBInspector(connection);
 
 		return dbInspector.hasTable(tableName);
+	}
+
+	protected boolean hasView(String viewName) throws Exception {
+		DBInspector dbInspector = new DBInspector(connection);
+
+		return dbInspector.hasView(viewName);
 	}
 
 	protected void process(UnsafeConsumer<Long, Exception> unsafeConsumer)

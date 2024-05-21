@@ -43,11 +43,19 @@
 					}
 				],
 				"name": "Learning",
+				"name_i18n": {
+					"en_US": "Learning"
+				},
+				"title": "Learning",
 				"type": "node"
 			}
 		],
 		"name": "Main Menu",
+		"name_i18n": {
+			"en_US": "Main Menu"
+		},
 		"navigationType": "Primary",
+		"title": "Main Menu",
 		"type": "node"
 	},
 	{
@@ -69,6 +77,10 @@
 			}
 		],
 		"name": "Footer Clarity Menu",
+		"name_i18n": {
+			"en_US": "Footer Clarity Menu"
+		},
+		"title": "Footer Clarity Menu",
 		"type": "node"
 	},
 	{
@@ -80,6 +92,9 @@
 			},
 			{
 				"name": "Documentation",
+				"name_i18n": {
+					"en_US": "Documentation"
+				},
 				"type": "url",
 				"url": "https://learn.liferay.com",
 				"useNewTab": "true"
@@ -96,30 +111,47 @@
 			}
 		],
 		"name": "Footer Trial Menu",
+		"name_i18n": {
+			"en_US": "Footer Trial Menu"
+		},
+		"title": "Footer Trial Menu",
 		"type": "node"
 	},
 	{
 		"menuItems": [
 			{
 				"name": "About Liferay",
+				"name_i18n": {
+					"en_US": "About Liferay"
+				},
 				"type": "url",
 				"url": "https://www.liferay.com/company/our-story",
 				"useNewTab": "true"
 			},
 			{
 				"name": "Liferay Experience Cloud",
+				"name_i18n": {
+					"en_US": "Liferay Experience Cloud"
+				},
 				"type": "url",
 				"url": "https://www.liferay.com/products/liferay-cloud-capabilities",
 				"useNewTab": "true"
 			},
 			{
 				"name": "Liferay.com",
+				"name_i18n": {
+					"en_US": "Liferay.com"
+				},
 				"type": "url",
 				"url": "https://www.liferay.com",
 				"useNewTab": "true"
 			}
 		],
 		"name": "Footer Liferay Menu",
+		"name_i18n": {
+			"en_US": "Footer Liferay Menu"
+		},
+		"title": "Footer Liferay Menu",
 		"type": "node"
 	}
 ]

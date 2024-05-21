@@ -13,20 +13,21 @@ import com.liferay.portal.instances.service.PortalInstancesLocalService;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.exception.UserScreenNameException;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.EmailAddressValidator;
-import com.liferay.portal.kernel.security.auth.ScreenNameGenerator;
 import com.liferay.portal.kernel.service.CompanyService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
-import com.liferay.portal.security.auth.ScreenNameGeneratorFactory;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.pagination.Page;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -102,6 +103,12 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 	public PortalInstance postPortalInstance(PortalInstance portalInstance)
 		throws Exception {
 
+		Admin admin = portalInstance.getAdmin();
+
+		if (admin != null) {
+			_validateAdmin(admin);
+		}
+
 		Long companyId = portalInstance.getCompanyId();
 
 		if (companyId == null) {
@@ -113,29 +120,35 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 			portalInstance.getVirtualHost(), portalInstance.getDomain(), 0,
 			true);
 
-		Admin admin = portalInstance.getAdmin();
-
 		if (admin != null) {
-			_validateAdmin(admin, company.getCompanyId());
-
 			User defaultAdminUser = _userLocalService.getUserByEmailAddress(
 				company.getCompanyId(),
 				PropsValues.DEFAULT_ADMIN_EMAIL_ADDRESS_PREFIX + "@" +
 					company.getMx());
 
-			defaultAdminUser.setEmailAddress(admin.getEmailAddress());
-			defaultAdminUser.setFirstName(admin.getGivenName());
-			defaultAdminUser.setLastName(admin.getFamilyName());
+			Contact contact = defaultAdminUser.getContact();
 
-			ScreenNameGenerator screenNameGenerator =
-				ScreenNameGeneratorFactory.getInstance();
+			Calendar calendar = CalendarFactoryUtil.getCalendar();
 
-			defaultAdminUser.setScreenName(
-				screenNameGenerator.generate(
-					company.getCompanyId(), defaultAdminUser.getUserId(),
-					admin.getEmailAddress()));
+			calendar.setTime(contact.getBirthday());
 
-			_userLocalService.updateUser(defaultAdminUser);
+			_userLocalService.updateUser(
+				defaultAdminUser.getUserId(), null, null, null, false,
+				defaultAdminUser.getReminderQueryQuestion(),
+				defaultAdminUser.getReminderQueryAnswer(),
+				defaultAdminUser.getScreenName(), admin.getEmailAddress(), true,
+				null, defaultAdminUser.getLanguageId(),
+				defaultAdminUser.getTimeZoneId(),
+				defaultAdminUser.getGreeting(), defaultAdminUser.getComments(),
+				admin.getGivenName(), defaultAdminUser.getMiddleName(),
+				admin.getFamilyName(), contact.getPrefixListTypeId(),
+				contact.getSuffixListTypeId(), defaultAdminUser.isMale(),
+				calendar.get(Calendar.MONTH),
+				calendar.get(Calendar.DAY_OF_MONTH),
+				calendar.get(Calendar.YEAR), contact.getSmsSn(),
+				contact.getFacebookSn(), contact.getJabberSn(),
+				contact.getSkypeSn(), contact.getTwitterSn(),
+				contact.getJobTitle(), null, null, null, null, null, null);
 		}
 
 		try (SafeCloseable safeCloseable =
@@ -176,16 +189,16 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 	private PortalInstance _toPortalInstance(Company company) {
 		return new PortalInstance() {
 			{
-				active = company.isActive();
-				companyId = company.getCompanyId();
-				domain = company.getMx();
-				portalInstanceId = company.getWebId();
-				virtualHost = company.getVirtualHostname();
+				setActive(company::isActive);
+				setCompanyId(company::getCompanyId);
+				setDomain(company::getMx);
+				setPortalInstanceId(company::getWebId);
+				setVirtualHost(company::getVirtualHostname);
 			}
 		};
 	}
 
-	private void _validateAdmin(Admin admin, long companyId) throws Exception {
+	private void _validateAdmin(Admin admin) throws Exception {
 		if (Validator.isNull(admin.getEmailAddress()) ||
 			Validator.isNull(admin.getFamilyName()) ||
 			Validator.isNull(admin.getGivenName())) {
@@ -196,9 +209,7 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 		EmailAddressValidator emailAddressValidator =
 			EmailAddressValidatorFactory.getInstance();
 
-		if (!emailAddressValidator.validate(
-				companyId, admin.getEmailAddress())) {
-
+		if (!emailAddressValidator.validate(0, admin.getEmailAddress())) {
 			throw new UserEmailAddressException.MustValidate(
 				admin.getEmailAddress(), emailAddressValidator);
 		}

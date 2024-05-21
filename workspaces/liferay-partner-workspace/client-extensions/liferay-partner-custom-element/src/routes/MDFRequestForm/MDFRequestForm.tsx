@@ -13,13 +13,11 @@ import PRMForm from '../../common/components/PRMForm/PRMForm';
 import PRMFormik from '../../common/components/PRMFormik';
 import {ObjectActionName} from '../../common/enums/objectActionName';
 import {PermissionActionType} from '../../common/enums/permissionActionType';
-import {PRMPageRoute} from '../../common/enums/prmPageRoute';
 import useLiferayNavigate from '../../common/hooks/useLiferayNavigate';
 import usePermissionActions from '../../common/hooks/usePermissionActions';
 import MDFRequestDTO from '../../common/interfaces/dto/mdfRequestDTO';
 import MDFRequest from '../../common/interfaces/mdfRequest';
 import UserAccount from '../../common/interfaces/userAccount';
-import {Liferay} from '../../common/services/liferay';
 import {LiferayAPIs} from '../../common/services/liferay/common/enums/apis';
 import useGet from '../../common/services/liferay/object/useGet';
 import {Status} from '../../common/utils/constants/status';
@@ -39,7 +37,10 @@ const initialFormValues: MDFRequest = {
 	additionalOption: {},
 	claimPercent: 0,
 	company: {},
+	convertedTotalCostOfExpense: 0,
+	convertedTotalMDFRequestAmount: 0,
 	currency: {},
+	currencyExchangeRate: 0,
 	liferayBusinessSalesGoals: [],
 	maxDateActivity: '',
 	mdfRequestStatus: Status.DRAFT,
@@ -102,10 +103,7 @@ const MDFRequestForm = () => {
 		  hasPermissionToByPass
 		: hasPermissionToAccess;
 
-	const onCancel = () =>
-		Liferay.Util.navigate(
-			`${siteURL}/${PRMPageRoute.MDF_REQUESTS_LISTING}`
-		);
+	const onCancel = () => history.back();
 
 	const onContinue = async (
 		formikHelpers: Omit<FormikHelpers<MDFRequest>, 'setFieldValue'>,

@@ -7,7 +7,7 @@ package com.liferay.portal.service.impl;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.db.partition.DBPartitionUtil;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
@@ -64,6 +64,8 @@ public class ResourceActionLocalServiceImpl
 
 			resourceAction = resourceActionPersistence.update(resourceAction);
 		}
+
+		_resourceActions.put(encodeKey(name, actionId), resourceAction);
 
 		return resourceAction;
 	}
@@ -179,18 +181,17 @@ public class ResourceActionLocalServiceImpl
 
 					resourceAction = resourceActionPersistence.update(
 						resourceAction);
+
+					_resourceActions.put(key, resourceAction);
 				}
 				catch (Throwable throwable) {
 					if (_log.isDebugEnabled()) {
 						_log.debug(throwable);
 					}
 
-					resourceAction =
-						resourceActionLocalService.addResourceAction(
-							name, actionId, bitwiseValue);
+					resourceActionLocalService.addResourceAction(
+						name, actionId, bitwiseValue);
 				}
-
-				_resourceActions.put(key, resourceAction);
 			}
 
 			if (!addDefaultActions) {
@@ -295,10 +296,10 @@ public class ResourceActionLocalServiceImpl
 				}
 			});
 
+		resourceActionPersistence.remove(resourceAction);
+
 		_resourceActions.remove(
 			encodeKey(resourceAction.getName(), resourceAction.getActionId()));
-
-		resourceActionPersistence.remove(resourceAction);
 
 		PermissionCacheUtil.clearCache();
 
@@ -308,9 +309,7 @@ public class ResourceActionLocalServiceImpl
 	@Override
 	@Transactional(enabled = false)
 	public ResourceAction fetchResourceAction(String name, String actionId) {
-		String key = encodeKey(name, actionId);
-
-		return _resourceActions.get(key);
+		return _resourceActions.get(encodeKey(name, actionId));
 	}
 
 	@Override

@@ -1,4 +1,4 @@
-@component-name = "portal-page-audit"
+@component-name = "portal-wcm"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -47,22 +47,6 @@ definition {
 			JSONRole.assignRoleToUser(
 				roleTitle = "Page Audit Test Role",
 				userEmailAddress = "userea@liferay.com");
-		}
-	}
-
-	tearDown {
-		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
-
-		TestUtils.hardRefresh();
-
-		JSONUser.tearDownNonAdminUsers();
-
-		JSONRole.deleteRole(roleTitle = "Page Audit Test Role");
-
-		JSONGroup.deleteGroupByName(groupName = "Test Site Name");
-
-		if (${testLiferayVirtualInstance} == "true") {
-			PortalInstances.tearDownCP();
 		}
 	}
 
@@ -1355,9 +1339,9 @@ definition {
 		task ("Add Widget Page") {
 			JSONLayout.addPublicLayout(
 				groupName = "Test Site Name",
-				layoutName = "Widget Page");
+				layoutName = "Test Page Name");
 
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/widget-page");
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/test-page-name");
 		}
 
 		task ("Open Page Audit panel") {

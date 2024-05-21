@@ -238,6 +238,72 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 		return _defaultBuilds;
 	}
 
+	public Map<String, String> getGlobalEnvironmentVariables() {
+		if (_globalEnvironmentVariables != null) {
+			return _globalEnvironmentVariables;
+		}
+
+		if (!isAvailable()) {
+			return new HashMap<>();
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("import jenkins.model.Jenkins;\n");
+
+		sb.append("def globalNodeProperties = ");
+		sb.append("Jenkins.instance.getGlobalNodeProperties();\n");
+
+		sb.append("def envVars = globalNodeProperties[0].getEnvVars();\n");
+
+		sb.append("def sb = new StringBuilder();\n");
+
+		sb.append("sb.append(\"{\");\n");
+
+		sb.append("if (!envVars.isEmpty()) {\n");
+
+		sb.append("for (def envVar : envVars.entrySet()) {\n");
+		sb.append("sb.append('\"');");
+		sb.append("sb.append(envVar.key);");
+		sb.append("sb.append('\":\"');");
+		sb.append("sb.append(envVar.value.replaceAll('\"', '\\\\\\\\\"'));");
+		sb.append("sb.append('\",');");
+		sb.append("}\n");
+
+		sb.append("sb.setLength(sb.length() - 1);");
+		sb.append("}\n");
+
+		sb.append("sb.append('}');");
+
+		sb.append("println sb;");
+
+		_globalEnvironmentVariables = new HashMap<>();
+
+		try {
+			String results = JenkinsResultsParserUtil.executeJenkinsScript(
+				getName(), sb.toString());
+
+			Matcher globalEnvironmentVariablesMatcher =
+				_globalEnvironmentVariablesPattern.matcher(results);
+
+			if (!globalEnvironmentVariablesMatcher.find()) {
+				return _globalEnvironmentVariables;
+			}
+
+			JSONObject jsonObject = new JSONObject(
+				globalEnvironmentVariablesMatcher.group("json"));
+
+			for (String key : jsonObject.keySet()) {
+				_globalEnvironmentVariables.put(key, jsonObject.getString(key));
+			}
+
+			return _globalEnvironmentVariables;
+		}
+		catch (Exception exception) {
+			return _globalEnvironmentVariables;
+		}
+	}
+
 	public int getIdleJenkinsSlavesCount() {
 		int idleSlavesCount = 0;
 
@@ -309,6 +375,20 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 	@Override
 	public String getName() {
 		return _masterName;
+	}
+
+	public String getNetworkName() {
+		Map<String, String> globalEnvironmentVariables =
+			getGlobalEnvironmentVariables();
+
+		String networkName = globalEnvironmentVariables.get(
+			"MASTER_NETWORK_NAME");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(networkName)) {
+			return null;
+		}
+
+		return networkName;
 	}
 
 	public int getOfflineJenkinsSlavesCount() {
@@ -942,6 +1022,8 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 
 	private static final long _MAXIMUM_QUEUE_UPDATE_DURATION = 15 * 1000;
 
+	private static final Pattern _globalEnvironmentVariablesPattern =
+		Pattern.compile("[^\\{]+(?<json>\\{.*\\})\\s+");
 	private static final Map<String, JenkinsMaster> _jenkinsMasters =
 		Collections.synchronizedMap(new HashMap<String, JenkinsMaster>());
 	private static final List<String> _jenkinsMastersBlacklist =
@@ -972,6 +1054,7 @@ public class JenkinsMaster implements JenkinsNode<JenkinsMaster> {
 	private final Map<String, Long> _buildsUpdateTimes = new HashMap<>();
 	private final List<String> _buildURLs = new CopyOnWriteArrayList<>();
 	private final List<DefaultBuild> _defaultBuilds = new ArrayList<>();
+	private Map<String, String> _globalEnvironmentVariables;
 	private JenkinsCohort _jenkinsCohort;
 	private final Map<String, JenkinsSlave> _jenkinsSlavesMap =
 		Collections.synchronizedMap(new HashMap<String, JenkinsSlave>());

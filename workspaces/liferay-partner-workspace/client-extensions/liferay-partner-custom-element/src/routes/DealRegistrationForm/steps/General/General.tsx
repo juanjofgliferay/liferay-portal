@@ -5,7 +5,7 @@
 
 import Button from '@clayui/button';
 import {useFormikContext} from 'formik';
-import {useCallback} from 'react';
+import {useCallback, useState} from 'react';
 
 import PRMForm from '../../../../common/components/PRMForm';
 import PRMFormik from '../../../../common/components/PRMFormik';
@@ -23,6 +23,15 @@ import useDynamicFieldEntries from '../../hooks/useDynamicFieldEntries';
 import useMDFActivityOptions from '../../hooks/useMDFActivityOptions';
 import DealRegistrationStepProps from '../../interfaces/dealRegistrationStepProps';
 
+const sortByAsc = (
+	first: React.OptionHTMLAttributes<HTMLOptionElement>,
+	second: React.OptionHTMLAttributes<HTMLOptionElement>
+): number => {
+	return first.label && second.label
+		? first.label.localeCompare(second.label)
+		: 0;
+};
+
 const General = ({
 	onCancel,
 	onContinue,
@@ -34,6 +43,8 @@ const General = ({
 		values,
 		...formikHelpers
 	} = useFormikContext<DealRegistration>();
+
+	const [isButtonClicked, setIsButtonClicked] = useState(false);
 
 	const {companiesEntries, fieldEntries} = useDynamicFieldEntries(
 		useCallback(
@@ -85,7 +96,7 @@ const General = ({
 		onSelected: onIndustrySelected,
 		options: industryOptions,
 	} = getPicklistOptions(
-		fieldEntries[LiferayPicklistName.INDUSTRIES],
+		fieldEntries[LiferayPicklistName.INDUSTRIES]?.sort(sortByAsc),
 		(selected) => setFieldValue('prospect.industry', selected)
 	);
 
@@ -199,6 +210,13 @@ const General = ({
 				</PRMForm.Group>
 
 				<PRMForm.Section title="Primary Prospect Contact">
+					<PRMFormik.Field
+						component={PRMForm.InputText}
+						label="Title"
+						name="primaryProspect.title"
+						required
+					/>
+
 					<PRMForm.Group>
 						<PRMFormik.Field
 							component={PRMForm.InputText}
@@ -332,10 +350,17 @@ const General = ({
 
 				<div className="d-flex justify-content-between px-2 px-md-0">
 					<Button
-						disabled={!isValid || !dirty}
-						onClick={() =>
-							onContinue?.(formikHelpers, StepType.REVIEW)
-						}
+						disabled={!dirty || (isButtonClicked && !isValid)}
+						onClick={() => {
+							setIsButtonClicked(true);
+							onContinue?.(formikHelpers, StepType.REVIEW);
+							window.scrollTo({
+								behavior: (isValid
+									? 'instant'
+									: 'smooth') as ScrollBehavior,
+								top: 0,
+							});
+						}}
 					>
 						Proceed
 					</Button>

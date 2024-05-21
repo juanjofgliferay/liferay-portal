@@ -784,10 +784,7 @@ definition {
 		property test.run.type = "single";
 
 		task ("Given the localization for the Friendly URL is changed") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
+			PortalSettings.openInstanceSettingsAdmin();
 
 			SystemSettings.gotoConfiguration(
 				configurationCategory = "Localization",
@@ -1065,10 +1062,7 @@ definition {
 		property test.run.type = "single";
 
 		task ("Given the localization for the Friendly URL is changed") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
+			PortalSettings.openInstanceSettingsAdmin();
 
 			SystemSettings.gotoConfiguration(
 				configurationCategory = "Localization",
@@ -1138,10 +1132,7 @@ definition {
 		task ("And the virtual host signs in to the page") {
 			User.logoutPG();
 
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://www.able.com:8080",
-				userEmailAddress = "test@liferay.com");
+			User.firstLoginUI(specificURL = "http://www.able.com:8080");
 		}
 
 		task ("And Uuid of the product is acquired") {
@@ -2250,9 +2241,7 @@ definition {
 
 		// TODO Review
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Minium",

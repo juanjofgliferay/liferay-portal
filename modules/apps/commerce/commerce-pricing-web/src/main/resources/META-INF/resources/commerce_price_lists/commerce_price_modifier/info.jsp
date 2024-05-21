@@ -116,23 +116,17 @@ if (modifierType.equals(CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE)
 	</aui:button-row>
 </aui:form>
 
-<aui:script>
-	Liferay.provide(
-		window,
-		'<portlet:namespace />selectType',
-		() => {
-			const type = document.getElementById(
-				'<portlet:namespace />modifierType'
-			).value;
+<aui:script sandbox="<%= true %>">
+	Liferay.provide(window, '<portlet:namespace />selectType', () => {
+		const portletURL = Liferay.Util.PortletURL.createPortletURL(
+			'<%= currentURLObj %>',
+			{
+				modifierType: document.getElementById(
+					'<portlet:namespace />modifierType'
+				).value,
+			}
+		);
 
-			const portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
-			);
-
-			portletURL.setParameter('modifierType', type);
-
-			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
-	);
+		window.location.replace(portletURL.toString());
+	});
 </aui:script>

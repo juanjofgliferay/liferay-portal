@@ -5,322 +5,48 @@
 
 package com.liferay.jethr0.job;
 
-import com.liferay.jethr0.bui1d.BuildEntity;
-import com.liferay.jethr0.util.StringUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
-
 import java.net.URL;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
  */
 public abstract class BasePortalPullRequestJobEntity
-	extends BaseJobEntity implements PortalPullRequestJobEntity {
+	extends BasePullRequestJobEntity implements PortalPullRequestJobEntity {
 
 	@Override
-	public List<JSONObject> getInitialBuildJSONObjects() {
-		return Collections.singletonList(_getInitialBuildJSONObject());
-	}
-
-	@Override
-	public URL getJenkinsGitHubURL() {
-		if (_jenkinsGitHubURL != null) {
-			return _jenkinsGitHubURL;
-		}
-
-		String jenkinsGitHubBranchName = getJenkinsGitHubBranchName();
-		String jenkinsGitHubBranchUserName = getJenkinsGitHubBranchUserName();
-
-		if (StringUtil.isNullOrEmpty(jenkinsGitHubBranchName) ||
-			StringUtil.isNullOrEmpty(jenkinsGitHubBranchUserName)) {
-
-			return null;
-		}
-
-		_jenkinsGitHubURL = StringUtil.toURL(
-			StringUtil.combine(
-				"https://github.com/", jenkinsGitHubBranchUserName,
-				"/liferay-jenkins-ee/tree/", jenkinsGitHubBranchName));
-
-		return _jenkinsGitHubURL;
+	public String getForwardReceiverUserName() {
+		return getParameterValue("forwardReceiverUserName");
 	}
 
 	@Override
-	public JSONObject getJSONObject() {
-		JSONObject jsonObject = super.getJSONObject();
-
-		jsonObject.put(
-			"jenkinsGitHubURL", getJenkinsGitHubURL()
-		).put(
-			"portalPullRequestURL", getPortalPullRequestURL()
-		);
-
-		return jsonObject;
+	public String getGitHubGistID() {
+		return getParameterValue("gitHubGistID");
 	}
 
 	@Override
-	public String getOriginName() {
-		return _originName;
+	public URL getPortalBundlesDistURL() {
+		return getParameterValueURL("portalBundlesDistURL");
 	}
 
 	@Override
-	public URL getPortalPullRequestURL() {
-		return _portalPullRequestURL;
+	public void setForwardReceiverUserName(String forwardReceiverUserName) {
+		setParameterValue("forwardReceiverUserName", forwardReceiverUserName);
 	}
 
 	@Override
-	public String getSenderBranchName() {
-		return _senderBranchName;
+	public void setGitHubGistID(String gitHubGistID) {
+		setParameterValue("gitHubGistID", gitHubGistID);
 	}
 
 	@Override
-	public String getSenderBranchSHA() {
-		return _senderBranchSHA;
-	}
-
-	public String getSenderUserName() {
-		return _senderUserName;
-	}
-
-	@Override
-	public String getTestSuiteName() {
-		return _testSuiteName;
-	}
-
-	@Override
-	public String getUpstreamBranchName() {
-		return _upstreamBranchName;
-	}
-
-	@Override
-	public String getUpstreamBranchSHA() {
-		return _upstreamBranchSHA;
-	}
-
-	@Override
-	public void setJenkinsGitHubURL(URL jenkinsGitHubURL) {
-		_jenkinsGitHubURL = jenkinsGitHubURL;
-	}
-
-	@Override
-	public void setOriginName(String originName) {
-		_originName = originName;
-	}
-
-	@Override
-	public void setPortalPullRequestURL(URL portalPullRequestURL) {
-		_portalPullRequestURL = portalPullRequestURL;
-	}
-
-	@Override
-	public void setSenderBranchName(String senderBranchName) {
-		_senderBranchName = senderBranchName;
-	}
-
-	public void setSenderBranchSHA(String senderBranchSHA) {
-		_senderBranchSHA = senderBranchSHA;
-	}
-
-	public void setSenderUserName(String senderUserName) {
-		_senderUserName = senderUserName;
-	}
-
-	@Override
-	public void setTestSuiteName(String testSuiteName) {
-		_testSuiteName = testSuiteName;
-	}
-
-	public void setUpstreamBranchName(String upstreamBranchName) {
-		_upstreamBranchName = upstreamBranchName;
-	}
-
-	public void setUpstreamBranchSHA(String upstreamBranchSHA) {
-		_upstreamBranchSHA = upstreamBranchSHA;
+	public void setPortalBundlesDistURL(URL portalBundlesDistURL) {
+		setParameterValueURL("portalBundlesDistURL", portalBundlesDistURL);
 	}
 
 	protected BasePortalPullRequestJobEntity(JSONObject jsonObject) {
 		super(jsonObject);
-
-		String jenkinsGitHubURLString = jsonObject.optString(
-			"jenkinsGitHubURL");
-
-		if (!StringUtil.isNullOrEmpty(jenkinsGitHubURLString)) {
-			_jenkinsGitHubURL = StringUtil.toURL(jenkinsGitHubURLString);
-		}
-
-		String portalPullRequestURLString = jsonObject.optString(
-			"portalPullRequestURL");
-
-		if (!StringUtil.isNullOrEmpty(portalPullRequestURLString)) {
-			_portalPullRequestURL = StringUtil.toURL(
-				portalPullRequestURLString);
-		}
 	}
-
-	protected String getBuildParameterValue(String buildParameterName) {
-		for (BuildEntity initialBuildEntity : getInitialBuildEntities()) {
-			String buildParameterValue =
-				initialBuildEntity.getBuildParameterValue(buildParameterName);
-
-			if (StringUtil.isNullOrEmpty(buildParameterValue)) {
-				continue;
-			}
-
-			return buildParameterValue;
-		}
-
-		return null;
-	}
-
-	protected Map<String, String> getInitialBuildParameters() {
-		return HashMapBuilder.put(
-			"BUILD_PRIORITY", _BUILD_PRIORITY
-		).put(
-			"JENKINS_GITHUB_BRANCH_NAME",
-			() -> {
-				String jenkinsGitHubBranchName = getJenkinsGitHubBranchName();
-
-				if (!StringUtil.isNullOrEmpty(jenkinsGitHubBranchName)) {
-					return jenkinsGitHubBranchName;
-				}
-
-				return null;
-			}
-		).put(
-			"JENKINS_GITHUB_BRANCH_USERNAME",
-			() -> {
-				String jenkinsGitHubBranchUserName =
-					getJenkinsGitHubBranchUserName();
-
-				if (!StringUtil.isNullOrEmpty(jenkinsGitHubBranchUserName)) {
-					return jenkinsGitHubBranchUserName;
-				}
-
-				return null;
-			}
-		).build();
-	}
-
-	protected String getJenkinsGitHubBranchName() {
-		if (_jenkinsGitHubBranchName != null) {
-			return _jenkinsGitHubBranchName;
-		}
-
-		if (_jenkinsGitHubURL != null) {
-			Matcher matcher = _jenkinsGitHubURLPattern.matcher(
-				String.valueOf(_jenkinsGitHubURL));
-
-			if (matcher.find()) {
-				_jenkinsGitHubBranchName = matcher.group("branchName");
-			}
-
-			return _jenkinsGitHubBranchName;
-		}
-
-		_jenkinsGitHubBranchName = getBuildParameterValue(
-			"JENKINS_GITHUB_BRANCH_NAME");
-
-		return _jenkinsGitHubBranchName;
-	}
-
-	protected String getJenkinsGitHubBranchUserName() {
-		if (_jenkinsGitHubBranchUserName != null) {
-			return _jenkinsGitHubBranchUserName;
-		}
-
-		if (_jenkinsGitHubURL != null) {
-			Matcher matcher = _jenkinsGitHubURLPattern.matcher(
-				String.valueOf(_jenkinsGitHubURL));
-
-			if (matcher.find()) {
-				_jenkinsGitHubBranchUserName = matcher.group("branchUserName");
-			}
-
-			return _jenkinsGitHubBranchUserName;
-		}
-
-		_jenkinsGitHubBranchUserName = getBuildParameterValue(
-			"JENKINS_GITHUB_BRANCH_USERNAME");
-
-		return _jenkinsGitHubBranchUserName;
-	}
-
-	protected abstract String getJenkinsJobName();
-
-	private JSONObject _getInitialBuildJSONObject() {
-		JSONObject initialBuildJSONObject = new JSONObject();
-
-		initialBuildJSONObject.put(
-			"initialBuild", true
-		).put(
-			"jenkinsJobName", getJenkinsJobName()
-		).put(
-			"name", "top-level"
-		).put(
-			"parameters", String.valueOf(_getInitialBuildParametersJSONArray())
-		).put(
-			"state", BuildEntity.State.OPENED
-		);
-
-		return initialBuildJSONObject;
-	}
-
-	private JSONArray _getInitialBuildParametersJSONArray() {
-		JSONArray initialBuildParametersJSONArray = new JSONArray();
-
-		Map<String, String> initialBuildParameters =
-			getInitialBuildParameters();
-
-		for (Map.Entry<String, String> initialBuildParameter :
-				initialBuildParameters.entrySet()) {
-
-			String initialBuildParameterValue =
-				initialBuildParameter.getValue();
-
-			if (StringUtil.isNullOrEmpty(initialBuildParameterValue)) {
-				continue;
-			}
-
-			JSONObject initialBuildParameterJSONObject = new JSONObject();
-
-			initialBuildParameterJSONObject.put(
-				"name", initialBuildParameter.getKey()
-			).put(
-				"value", initialBuildParameterValue
-			);
-
-			initialBuildParametersJSONArray.put(
-				initialBuildParameterJSONObject);
-		}
-
-		return initialBuildParametersJSONArray;
-	}
-
-	private static final String _BUILD_PRIORITY = "4";
-
-	private static final Pattern _jenkinsGitHubURLPattern = Pattern.compile(
-		"https://github.com/(?<branchUserName>[^/]+)/liferay-jenkins-ee/tree/" +
-			"(?<branchName>[^/]+)");
-
-	private String _jenkinsGitHubBranchName;
-	private String _jenkinsGitHubBranchUserName;
-	private URL _jenkinsGitHubURL;
-	private String _originName;
-	private URL _portalPullRequestURL;
-	private String _senderBranchName;
-	private String _senderBranchSHA;
-	private String _senderUserName;
-	private String _testSuiteName;
-	private String _upstreamBranchName;
-	private String _upstreamBranchSHA;
 
 }

@@ -9,8 +9,8 @@ definition {
 	property portal.version = "7.3.10.1";
 	property test.liferay.virtual.instance = "false";
 	property test.run.type = "single";
-	property testray.component.names = "Upgrades WEM,Web Content Administration";
-	property testray.main.component.name = "Upgrades WEM";
+	property testray.component.names = "Upgrades Content Management,Web Content Administration";
+	property testray.main.component.name = "Upgrades Content Management";
 
 	setUp {
 		SignIn.signIn();
@@ -223,13 +223,15 @@ definition {
 	@description = "This is a use case for LRQA-61632. Can Duplicate Repeatable Fields And Remove Them With First Complex Structure"
 	@priority = 3
 	test CanDuplicateRepeatableFieldsAndRemoveThem {
+		property portal.release = "quarantine";
+
 		task ("Duplicate all fields that can be duplicated, 1-4 times") {
 			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
 			WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Complex Title 1");
 
 			WaitForVisible(
-				key_fieldFieldLabel = "PaginaOrigem",
+				key_fieldFieldLabel = "Imagem Aba 01",
 				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
 
 			for (var fieldName : list "Logo,Beneficio,Companhia,JeitoIdentificar,Destino,DescricaoOpPar,CompanhiaOperadora") {

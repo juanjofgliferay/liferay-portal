@@ -4,7 +4,7 @@ definition {
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Navigation";
+	property testray.main.component.name = "Navigation Menus";
 
 	setUp {
 		task ("Set up instance and sign in") {
@@ -866,10 +866,7 @@ definition {
 	@priority = 4
 	test ViewCustomFieldOfNavigationMenu {
 		task ("Add a custom field for Site Navigation Menu Item") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Custom Fields");
+			CustomFields.openCustomFieldAdmin();
 
 			CustomFields.addCP(
 				customFieldName = "Subtitle",

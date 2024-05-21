@@ -16,21 +16,18 @@ import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeEntryLocalServiceUtil;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.field.util.ObjectFieldUtil;
-import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.rest.dto.v1_0.FileEntry;
 import com.liferay.object.rest.dto.v1_0.ListEntry;
-import com.liferay.object.scope.ObjectScopeProvider;
-import com.liferay.object.scope.ObjectScopeProviderRegistry;
 import com.liferay.object.service.ObjectEntryLocalServiceUtil;
 import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
-import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.object.web.internal.model.ProxyObjectEntry;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.KeyValuePair;
 
 import java.text.Format;
 
@@ -44,37 +41,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.TimeZone;
 
 /**
  * @author Eudaldo Alonso
  */
 public class ObjectEntryUtil {
 
-	public static String getScopeKey(
-		long groupId, ObjectDefinition objectDefinition,
-		ObjectScopeProviderRegistry objectScopeProviderRegistry) {
-
-		ObjectScopeProvider objectScopeProvider =
-			objectScopeProviderRegistry.getObjectScopeProvider(
-				objectDefinition.getScope());
-
-		if (!objectScopeProvider.isGroupAware()) {
-			return null;
-		}
-
-		Group group = GroupLocalServiceUtil.fetchGroup(groupId);
-
-		if (group == null) {
-			return null;
-		}
-
-		return group.getGroupKey();
-	}
-
 	public static Object getValue(
-			Locale locale, ObjectField objectField, TimeZone timeZone,
-			Map<String, Object> values)
+			Locale locale, ObjectField objectField, Map<String, Object> values)
 		throws Exception {
 
 		Object value = values.get(objectField.getName());
@@ -153,8 +127,10 @@ public class ObjectEntryUtil {
 					fetchObjectRelationshipByObjectFieldId2(
 						objectField.getObjectFieldId());
 
-			return ObjectEntryLocalServiceUtil.getTitleValue(
-				objectRelationship.getObjectDefinitionId1(), primaryKey);
+			return new KeyValuePair(
+				String.valueOf(primaryKey),
+				ObjectEntryLocalServiceUtil.getTitleValue(
+					objectRelationship.getObjectDefinitionId1(), primaryKey));
 		}
 
 		return value;
@@ -173,7 +149,7 @@ public class ObjectEntryUtil {
 			GetterUtil.getLong(objectEntry.getId()));
 		serviceBuilderObjectEntry.setObjectDefinitionId(objectDefinitionId);
 
-		return serviceBuilderObjectEntry;
+		return new ProxyObjectEntry(serviceBuilderObjectEntry, objectEntry);
 	}
 
 	public static Map<String, Object> toProperties(

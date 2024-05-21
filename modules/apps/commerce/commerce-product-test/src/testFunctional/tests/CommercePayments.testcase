@@ -17,7 +17,6 @@ definition {
 	@description = "This is a test for COMMERCE-12756. As an admin I can add a refund reason."
 	@priority = 5
 	test CanAddRefundReason {
-		property custom.properties = "feature.flag.COMMERCE-12754=true";
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -92,14 +91,9 @@ definition {
 				userLastName = "User",
 				userScreenName = "buyeruser");
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin();
 
-			Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-			MenuItem.click(menuItem = "Account Users");
+			ManagementBar.setFilterAndOrder(filterBy = "Account Users");
 
 			CommerceLogin.editPasswordCP(
 				newPassword = "ttest",
@@ -139,14 +133,9 @@ definition {
 		}
 
 		task ("When the order status is changed from Pending to Cancelled") {
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Orders");
+			CommerceOrders.openOrdersAdmin();
 
 			WaitForElementPresent(
 				key_orderStatus = "Pending",
@@ -173,7 +162,6 @@ definition {
 	@description = "This is a test for COMMERCE-12756. As an admin I can delete a refund reason."
 	@priority = 5
 	test CanDeleteRefundReason {
-		property custom.properties = "feature.flag.COMMERCE-12754=true";
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -213,7 +201,6 @@ definition {
 	@description = "This is a test for COMMERCE-12756. As an admin I can edit a refund reason."
 	@priority = 5
 	test CanEditRefundReason {
-		property custom.properties = "feature.flag.COMMERCE-12754=true";
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -360,9 +347,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 

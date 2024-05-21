@@ -26,8 +26,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -36,6 +34,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -60,8 +59,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -283,33 +280,72 @@ public abstract class BaseWorkflowLogResourceTestCase {
 			testGetWorkflowInstanceWorkflowLogsPage_addWorkflowLog(
 				workflowInstanceId, randomWorkflowLog());
 
-		Page<WorkflowLog> page1 =
-			workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
-				workflowInstanceId, null, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<WorkflowLog> workflowLogs1 = (List<WorkflowLog>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			workflowLogs1.toString(), totalCount + 2, workflowLogs1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<WorkflowLog> page1 =
+				workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
+					workflowInstanceId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<WorkflowLog> page2 =
-			workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
-				workflowInstanceId, null, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(workflowLog1, (List<WorkflowLog>)page1.getItems());
 
-		List<WorkflowLog> workflowLogs2 = (List<WorkflowLog>)page2.getItems();
+			Page<WorkflowLog> page2 =
+				workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
+					workflowInstanceId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(workflowLogs2.toString(), 1, workflowLogs2.size());
+			assertContains(workflowLog2, (List<WorkflowLog>)page2.getItems());
 
-		Page<WorkflowLog> page3 =
-			workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
-				workflowInstanceId, null,
-				Pagination.of(1, (int)totalCount + 3));
+			Page<WorkflowLog> page3 =
+				workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
+					workflowInstanceId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(workflowLog1, (List<WorkflowLog>)page3.getItems());
-		assertContains(workflowLog2, (List<WorkflowLog>)page3.getItems());
-		assertContains(workflowLog3, (List<WorkflowLog>)page3.getItems());
+			assertContains(workflowLog3, (List<WorkflowLog>)page3.getItems());
+		}
+		else {
+			Page<WorkflowLog> page1 =
+				workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
+					workflowInstanceId, null, Pagination.of(1, totalCount + 2));
+
+			List<WorkflowLog> workflowLogs1 =
+				(List<WorkflowLog>)page1.getItems();
+
+			Assert.assertEquals(
+				workflowLogs1.toString(), totalCount + 2, workflowLogs1.size());
+
+			Page<WorkflowLog> page2 =
+				workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
+					workflowInstanceId, null, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<WorkflowLog> workflowLogs2 =
+				(List<WorkflowLog>)page2.getItems();
+
+			Assert.assertEquals(
+				workflowLogs2.toString(), 1, workflowLogs2.size());
+
+			Page<WorkflowLog> page3 =
+				workflowLogResource.getWorkflowInstanceWorkflowLogsPage(
+					workflowInstanceId, null,
+					Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(workflowLog1, (List<WorkflowLog>)page3.getItems());
+			assertContains(workflowLog2, (List<WorkflowLog>)page3.getItems());
+			assertContains(workflowLog3, (List<WorkflowLog>)page3.getItems());
+		}
 	}
 
 	protected WorkflowLog
@@ -356,6 +392,8 @@ public abstract class BaseWorkflowLogResourceTestCase {
 	public void testGraphQLGetWorkflowLog() throws Exception {
 		WorkflowLog workflowLog = testGraphQLGetWorkflowLog_addWorkflowLog();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				workflowLog,
@@ -373,11 +411,37 @@ public abstract class BaseWorkflowLogResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/workflowLog"))));
+
+		// Using the namespace headlessAdminWorkflow_v1_0
+
+		Assert.assertTrue(
+			equals(
+				workflowLog,
+				WorkflowLogSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessAdminWorkflow_v1_0",
+								new GraphQLField(
+									"workflowLog",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"workflowLogId",
+												workflowLog.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessAdminWorkflow_v1_0",
+						"Object/workflowLog"))));
 	}
 
 	@Test
 	public void testGraphQLGetWorkflowLogNotFound() throws Exception {
 		Long irrelevantWorkflowLogId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -391,6 +455,27 @@ public abstract class BaseWorkflowLogResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessAdminWorkflow_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessAdminWorkflow_v1_0",
+						new GraphQLField(
+							"workflowLog",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"workflowLogId",
+										irrelevantWorkflowLogId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -489,32 +574,72 @@ public abstract class BaseWorkflowLogResourceTestCase {
 			testGetWorkflowTaskWorkflowLogsPage_addWorkflowLog(
 				workflowTaskId, randomWorkflowLog());
 
-		Page<WorkflowLog> page1 =
-			workflowLogResource.getWorkflowTaskWorkflowLogsPage(
-				workflowTaskId, null, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<WorkflowLog> workflowLogs1 = (List<WorkflowLog>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			workflowLogs1.toString(), totalCount + 2, workflowLogs1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<WorkflowLog> page1 =
+				workflowLogResource.getWorkflowTaskWorkflowLogsPage(
+					workflowTaskId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<WorkflowLog> page2 =
-			workflowLogResource.getWorkflowTaskWorkflowLogsPage(
-				workflowTaskId, null, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(workflowLog1, (List<WorkflowLog>)page1.getItems());
 
-		List<WorkflowLog> workflowLogs2 = (List<WorkflowLog>)page2.getItems();
+			Page<WorkflowLog> page2 =
+				workflowLogResource.getWorkflowTaskWorkflowLogsPage(
+					workflowTaskId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(workflowLogs2.toString(), 1, workflowLogs2.size());
+			assertContains(workflowLog2, (List<WorkflowLog>)page2.getItems());
 
-		Page<WorkflowLog> page3 =
-			workflowLogResource.getWorkflowTaskWorkflowLogsPage(
-				workflowTaskId, null, Pagination.of(1, (int)totalCount + 3));
+			Page<WorkflowLog> page3 =
+				workflowLogResource.getWorkflowTaskWorkflowLogsPage(
+					workflowTaskId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(workflowLog1, (List<WorkflowLog>)page3.getItems());
-		assertContains(workflowLog2, (List<WorkflowLog>)page3.getItems());
-		assertContains(workflowLog3, (List<WorkflowLog>)page3.getItems());
+			assertContains(workflowLog3, (List<WorkflowLog>)page3.getItems());
+		}
+		else {
+			Page<WorkflowLog> page1 =
+				workflowLogResource.getWorkflowTaskWorkflowLogsPage(
+					workflowTaskId, null, Pagination.of(1, totalCount + 2));
+
+			List<WorkflowLog> workflowLogs1 =
+				(List<WorkflowLog>)page1.getItems();
+
+			Assert.assertEquals(
+				workflowLogs1.toString(), totalCount + 2, workflowLogs1.size());
+
+			Page<WorkflowLog> page2 =
+				workflowLogResource.getWorkflowTaskWorkflowLogsPage(
+					workflowTaskId, null, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<WorkflowLog> workflowLogs2 =
+				(List<WorkflowLog>)page2.getItems();
+
+			Assert.assertEquals(
+				workflowLogs2.toString(), 1, workflowLogs2.size());
+
+			Page<WorkflowLog> page3 =
+				workflowLogResource.getWorkflowTaskWorkflowLogsPage(
+					workflowTaskId, null,
+					Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(workflowLog1, (List<WorkflowLog>)page3.getItems());
+			assertContains(workflowLog2, (List<WorkflowLog>)page3.getItems());
+			assertContains(workflowLog3, (List<WorkflowLog>)page3.getItems());
+		}
 	}
 
 	protected WorkflowLog testGetWorkflowTaskWorkflowLogsPage_addWorkflowLog(
@@ -1051,6 +1176,10 @@ public abstract class BaseWorkflowLogResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1170,21 +1299,20 @@ public abstract class BaseWorkflowLogResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = workflowLog.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							workflowLog.getDateCreated(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(workflowLog.getDateCreated(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1538,9 +1666,9 @@ public abstract class BaseWorkflowLogResourceTestCase {
 	}
 
 	protected WorkflowLogResource workflowLogResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

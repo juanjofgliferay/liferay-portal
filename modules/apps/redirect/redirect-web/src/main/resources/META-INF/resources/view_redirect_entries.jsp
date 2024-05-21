@@ -14,7 +14,7 @@ RedirectEntriesDisplayContext redirectEntriesDisplayContext = (RedirectEntriesDi
 <c:if test="<%= !redirectEntriesDisplayContext.isStagingGroup() %>">
 	<clay:management-toolbar
 		managementToolbarDisplayContext="<%= redirectEntriesDisplayContext.getRedirectManagementToolbarDisplayContext() %>"
-		propsTransformer="js/RedirectManagementToolbarPropsTransformer"
+		propsTransformer="{RedirectManagementToolbarPropsTransformer} from redirect-web"
 	/>
 </c:if>
 
@@ -126,10 +126,8 @@ RedirectEntriesDisplayContext redirectEntriesDisplayContext = (RedirectEntriesDi
 	</clay:container-fluid>
 </div>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
-
-	delegate(
+<aui:script sandbox="<%= true %>">
+	Liferay.Util.delegate(
 		document.querySelector('#<portlet:namespace />fm'),
 		'click',
 		'.icon-shortcut',

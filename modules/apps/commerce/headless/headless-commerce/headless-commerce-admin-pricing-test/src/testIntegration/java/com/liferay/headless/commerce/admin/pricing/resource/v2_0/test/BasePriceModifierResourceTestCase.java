@@ -28,8 +28,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -38,9 +36,10 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
@@ -63,8 +62,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -298,39 +295,87 @@ public abstract class BasePriceModifierResourceTestCase {
 			testGetPriceListByExternalReferenceCodePriceModifiersPage_addPriceModifier(
 				externalReferenceCode, randomPriceModifier());
 
-		Page<PriceModifier> page1 =
-			priceModifierResource.
-				getPriceListByExternalReferenceCodePriceModifiersPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceModifier> priceModifiers1 =
-			(List<PriceModifier>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			priceModifiers1.toString(), totalCount + 2, priceModifiers1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceModifier> page1 =
+				priceModifierResource.
+					getPriceListByExternalReferenceCodePriceModifiersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<PriceModifier> page2 =
-			priceModifierResource.
-				getPriceListByExternalReferenceCodePriceModifiersPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				priceModifier1, (List<PriceModifier>)page1.getItems());
 
-		List<PriceModifier> priceModifiers2 =
-			(List<PriceModifier>)page2.getItems();
+			Page<PriceModifier> page2 =
+				priceModifierResource.
+					getPriceListByExternalReferenceCodePriceModifiersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			priceModifiers2.toString(), 1, priceModifiers2.size());
+			assertContains(
+				priceModifier2, (List<PriceModifier>)page2.getItems());
 
-		Page<PriceModifier> page3 =
-			priceModifierResource.
-				getPriceListByExternalReferenceCodePriceModifiersPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<PriceModifier> page3 =
+				priceModifierResource.
+					getPriceListByExternalReferenceCodePriceModifiersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(priceModifier1, (List<PriceModifier>)page3.getItems());
-		assertContains(priceModifier2, (List<PriceModifier>)page3.getItems());
-		assertContains(priceModifier3, (List<PriceModifier>)page3.getItems());
+			assertContains(
+				priceModifier3, (List<PriceModifier>)page3.getItems());
+		}
+		else {
+			Page<PriceModifier> page1 =
+				priceModifierResource.
+					getPriceListByExternalReferenceCodePriceModifiersPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<PriceModifier> priceModifiers1 =
+				(List<PriceModifier>)page1.getItems();
+
+			Assert.assertEquals(
+				priceModifiers1.toString(), totalCount + 2,
+				priceModifiers1.size());
+
+			Page<PriceModifier> page2 =
+				priceModifierResource.
+					getPriceListByExternalReferenceCodePriceModifiersPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceModifier> priceModifiers2 =
+				(List<PriceModifier>)page2.getItems();
+
+			Assert.assertEquals(
+				priceModifiers2.toString(), 1, priceModifiers2.size());
+
+			Page<PriceModifier> page3 =
+				priceModifierResource.
+					getPriceListByExternalReferenceCodePriceModifiersPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				priceModifier1, (List<PriceModifier>)page3.getItems());
+			assertContains(
+				priceModifier2, (List<PriceModifier>)page3.getItems());
+			assertContains(
+				priceModifier3, (List<PriceModifier>)page3.getItems());
+		}
 	}
 
 	protected PriceModifier
@@ -565,35 +610,82 @@ public abstract class BasePriceModifierResourceTestCase {
 			testGetPriceListIdPriceModifiersPage_addPriceModifier(
 				id, randomPriceModifier());
 
-		Page<PriceModifier> page1 =
-			priceModifierResource.getPriceListIdPriceModifiersPage(
-				id, null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceModifier> priceModifiers1 =
-			(List<PriceModifier>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			priceModifiers1.toString(), totalCount + 2, priceModifiers1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceModifier> page1 =
+				priceModifierResource.getPriceListIdPriceModifiersPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<PriceModifier> page2 =
-			priceModifierResource.getPriceListIdPriceModifiersPage(
-				id, null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				priceModifier1, (List<PriceModifier>)page1.getItems());
 
-		List<PriceModifier> priceModifiers2 =
-			(List<PriceModifier>)page2.getItems();
+			Page<PriceModifier> page2 =
+				priceModifierResource.getPriceListIdPriceModifiersPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			priceModifiers2.toString(), 1, priceModifiers2.size());
+			assertContains(
+				priceModifier2, (List<PriceModifier>)page2.getItems());
 
-		Page<PriceModifier> page3 =
-			priceModifierResource.getPriceListIdPriceModifiersPage(
-				id, null, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<PriceModifier> page3 =
+				priceModifierResource.getPriceListIdPriceModifiersPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(priceModifier1, (List<PriceModifier>)page3.getItems());
-		assertContains(priceModifier2, (List<PriceModifier>)page3.getItems());
-		assertContains(priceModifier3, (List<PriceModifier>)page3.getItems());
+			assertContains(
+				priceModifier3, (List<PriceModifier>)page3.getItems());
+		}
+		else {
+			Page<PriceModifier> page1 =
+				priceModifierResource.getPriceListIdPriceModifiersPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<PriceModifier> priceModifiers1 =
+				(List<PriceModifier>)page1.getItems();
+
+			Assert.assertEquals(
+				priceModifiers1.toString(), totalCount + 2,
+				priceModifiers1.size());
+
+			Page<PriceModifier> page2 =
+				priceModifierResource.getPriceListIdPriceModifiersPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceModifier> priceModifiers2 =
+				(List<PriceModifier>)page2.getItems();
+
+			Assert.assertEquals(
+				priceModifiers2.toString(), 1, priceModifiers2.size());
+
+			Page<PriceModifier> page3 =
+				priceModifierResource.getPriceListIdPriceModifiersPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(
+				priceModifier1, (List<PriceModifier>)page3.getItems());
+			assertContains(
+				priceModifier2, (List<PriceModifier>)page3.getItems());
+			assertContains(
+				priceModifier3, (List<PriceModifier>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -605,7 +697,7 @@ public abstract class BasePriceModifierResourceTestCase {
 			(entityField, priceModifier1, priceModifier2) -> {
 				BeanTestUtil.setProperty(
 					priceModifier1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -853,6 +945,8 @@ public abstract class BasePriceModifierResourceTestCase {
 		PriceModifier priceModifier =
 			testGraphQLGetPriceModifierByExternalReferenceCode_addPriceModifier();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				priceModifier,
@@ -874,6 +968,33 @@ public abstract class BasePriceModifierResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/priceModifierByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertTrue(
+			equals(
+				priceModifier,
+				PriceModifierSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminPricing_v2_0",
+								new GraphQLField(
+									"priceModifierByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													priceModifier.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminPricing_v2_0",
+						"Object/priceModifierByExternalReferenceCode"))));
 	}
 
 	@Test
@@ -882,6 +1003,8 @@ public abstract class BasePriceModifierResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -897,6 +1020,27 @@ public abstract class BasePriceModifierResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v2_0",
+						new GraphQLField(
+							"priceModifierByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -946,7 +1090,10 @@ public abstract class BasePriceModifierResourceTestCase {
 
 	@Test
 	public void testGraphQLDeletePriceModifier() throws Exception {
-		PriceModifier priceModifier =
+
+		// No namespace
+
+		PriceModifier priceModifier1 =
 			testGraphQLDeletePriceModifier_addPriceModifier();
 
 		Assert.assertTrue(
@@ -956,23 +1103,61 @@ public abstract class BasePriceModifierResourceTestCase {
 						"deletePriceModifier",
 						new HashMap<String, Object>() {
 							{
-								put("id", priceModifier.getId());
+								put("id", priceModifier1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deletePriceModifier"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"priceModifier",
 					new HashMap<String, Object>() {
 						{
-							put("id", priceModifier.getId());
+							put("id", priceModifier1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		PriceModifier priceModifier2 =
+			testGraphQLDeletePriceModifier_addPriceModifier();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v2_0",
+						new GraphQLField(
+							"deletePriceModifier",
+							new HashMap<String, Object>() {
+								{
+									put("id", priceModifier2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminPricing_v2_0",
+				"Object/deletePriceModifier"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminPricing_v2_0",
+					new GraphQLField(
+						"priceModifier",
+						new HashMap<String, Object>() {
+							{
+								put("id", priceModifier2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected PriceModifier testGraphQLDeletePriceModifier_addPriceModifier()
@@ -1005,6 +1190,8 @@ public abstract class BasePriceModifierResourceTestCase {
 		PriceModifier priceModifier =
 			testGraphQLGetPriceModifier_addPriceModifier();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				priceModifier,
@@ -1020,11 +1207,35 @@ public abstract class BasePriceModifierResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/priceModifier"))));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertTrue(
+			equals(
+				priceModifier,
+				PriceModifierSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminPricing_v2_0",
+								new GraphQLField(
+									"priceModifier",
+									new HashMap<String, Object>() {
+										{
+											put("id", priceModifier.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminPricing_v2_0",
+						"Object/priceModifier"))));
 	}
 
 	@Test
 	public void testGraphQLGetPriceModifierNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -1038,6 +1249,25 @@ public abstract class BasePriceModifierResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v2_0",
+						new GraphQLField(
+							"priceModifier",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -1634,6 +1864,10 @@ public abstract class BasePriceModifierResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1712,22 +1946,20 @@ public abstract class BasePriceModifierResourceTestCase {
 
 		if (entityFieldName.equals("displayDate")) {
 			if (operator.equals("between")) {
+				Date date = priceModifier.getDisplayDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							priceModifier.getDisplayDate(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							priceModifier.getDisplayDate(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1745,22 +1977,20 @@ public abstract class BasePriceModifierResourceTestCase {
 
 		if (entityFieldName.equals("expirationDate")) {
 			if (operator.equals("between")) {
+				Date date = priceModifier.getExpirationDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							priceModifier.getExpirationDate(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							priceModifier.getExpirationDate(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -2122,9 +2352,9 @@ public abstract class BasePriceModifierResourceTestCase {
 	}
 
 	protected PriceModifierResource priceModifierResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

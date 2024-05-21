@@ -9,6 +9,73 @@ declare module '*.svg' {
 
 declare module 'warning';
 
+type AnalyticsViews = {
+	results: {
+		metrics: {
+			avgTimeOnPageMetric: {
+				value: number;
+			};
+			bounceMetric: {
+				value: number;
+			};
+			bounceRateMetric: {
+				value: number;
+			};
+			ctaClicksMetric: {
+				value: number;
+			};
+			directAccessMetric: {
+				value: number;
+			};
+			entrancesMetric: {
+				value: number;
+			};
+			exitRateMetric: {
+				value: number;
+			};
+			indirectAccessMetric: {
+				value: number;
+			};
+			readsMetric: {
+				value: number;
+			};
+			sessionsMetric: {
+				value: number;
+			};
+			timeOnPageMetric: {
+				value: number;
+			};
+			viewsMetric: {
+				value: number;
+			};
+			visitorsMetric: {
+				value: number;
+			};
+		};
+		title: string;
+		url: string;
+	}[];
+	total: number;
+};
+
+type PublisherRequestInfo = {
+	emailAddress?: string;
+	extension?: string;
+	firstName?: string;
+	id?: number;
+	lastName?: string;
+	phone?: {
+		code: string;
+		flag: string;
+	};
+	phoneNumber?: string;
+	requestDescription?: string;
+	requestStatus?: {
+		key: string;
+		name: string;
+	};
+};
+
 type Account = {
 	customFields?: CustomField[];
 	description: string;
@@ -17,6 +84,7 @@ type Account = {
 	id: number;
 	logoURL?: string;
 	name: string;
+	taxId: string;
 	type: string;
 };
 
@@ -38,6 +106,17 @@ type CustomField = {
 	};
 	dataType?: string;
 	name: string;
+};
+
+type ActionMap<M extends {[index: string]: any}> = {
+	[Key in keyof M]: M[Key] extends undefined
+		? {
+				type: Key;
+		  }
+		: {
+				payload: M[Key];
+				type: Key;
+		  };
 };
 
 type AccountBrief = {
@@ -93,6 +172,12 @@ type AccountRole = {
 	roleId: number;
 };
 
+type Availability = {
+	active: boolean;
+	available: number;
+	max: number;
+};
+
 type BillingAddress = {
 	city?: string;
 	country?: string;
@@ -112,6 +197,7 @@ type Cart = {
 	billingAddress: BillingAddress;
 	cartItems: CartItem[];
 	currencyCode: string;
+	customFields: any;
 	id: number;
 	orderStatusInfo: {[key: string]: string};
 	orderTypeExternalReferenceCode: string;
@@ -143,12 +229,21 @@ type CartItem = {
 };
 
 type Catalog = {
+	accountId: number | null;
 	currencyCode: string;
 	defaultLanguageId: string;
 	externalReferenceCode: string;
 	id: number;
 	name: string;
 	system: boolean;
+};
+
+type ContactSales = {
+	accountName: string;
+	additionalAppsRequested?: string | undefined;
+	comments?: string | undefined;
+	email: string;
+	name: string;
 };
 
 type EmailAppInformation = {
@@ -184,6 +279,11 @@ type Channel = {
 
 type DefaultProperties = {
 	cloudBaseURL: string;
+	contactSupportUrl: string;
+	eulaBaseURL: string;
+	featureFlags?: string[];
+	marketoFormId: string;
+	trialProductId: string;
 };
 
 interface CommerceAccount extends Omit<Account, 'description'> {
@@ -198,7 +298,7 @@ type CommerceOption = {
 	name: string;
 };
 
-interface Order {
+type Order = {
 	account: {
 		id: number;
 		type: string;
@@ -225,26 +325,30 @@ interface Order {
 	orderItems: [
 		{
 			id?: number;
+			name?: {
+				en_US: string;
+			};
 			quantity?: number;
 			skuId: number;
 			unitPriceWithTaxAmount?: number;
 		}
 	];
 	orderStatus: number;
+	orderStatusInfo?: {
+		label: string;
+	};
 	orderTypeExternalReferenceCode?: string;
-	orderTypeId: number;
+	orderTypeId?: number;
 	shippingAmount?: number;
 	shippingWithTaxAmount?: number;
-}
+	totalAmount?: number;
+};
 
-interface OrderType {
-	active: boolean;
-	displayDate: string;
-	displayOrder: number;
+type OrderType = {
 	externalReferenceCode: string;
 	id: number;
 	name: {[key: string]: string};
-}
+};
 
 type PaymentMethodSelector = 'order' | 'pay' | 'trial' | 'free';
 
@@ -267,7 +371,9 @@ interface PlacedOrder {
 interface PlacedOrderItems {
 	id: number;
 	name: string;
+	options: string;
 	price: {
+		price: number;
 		priceFormatted: string;
 	};
 	productId: number;
@@ -329,16 +435,18 @@ interface Product {
 	attachments: ProductAttachment[];
 	catalog: Catalog;
 	catalogId: number;
+	catalogName?: string;
 	categories: ProductCategories[];
 	customFields?: CustomField[];
 	description: {[key: string]: string};
 	externalReferenceCode: string;
 	finalPrice?: number;
-	id?: number;
+	id: number;
 	images: ProductImages[];
 	modifiedDate: string;
 	name: {[key: string]: string};
 	price?: number;
+	productChannelFilter?: boolean;
 	productChannels: Channel[];
 	productId: number;
 	productSpecifications: ProductSpecification[];
@@ -354,12 +462,68 @@ interface Product {
 	};
 }
 
-interface ProductAttachment {
-	customFields?: CustomField[];
-	externalReferenceCode: string;
+interface DeliveryProductAttachment {
+	customFields: CustomField[];
+	galleryEnabled: boolean;
 	id: number;
 	priority: number;
 	src: string;
+	tags?: string[];
+	title: string;
+	type: number;
+}
+
+interface DeliveryProductSpecification {
+	id: number;
+	optionCategoryId: number;
+	priority: number;
+	specificationGroupKey: string;
+	specificationGroupTitle: string;
+	specificationId: number;
+	specificationKey: string;
+	specificationTitle: string;
+	value: string;
+}
+
+type DeliverySKU = {
+	customFields?: CustomField[];
+	externalReferenceCode: string;
+	id: number;
+	price: {price: number; priceFormatted: string};
+	purchasable: boolean;
+	sku: string;
+	skuOptions: DeliverySKUOption[];
+	tierPrices?: TierPrice[];
+};
+
+type DeliverySKUOption = {skuOptionKey: string; skuOptionValueKey: string};
+
+interface DeliveryProduct {
+	attachments: DeliveryProductAttachment[];
+	catalogName?: string;
+	categories: ProductCategories[];
+	customFields?: CustomField[];
+	description: string;
+	externalReferenceCode: string;
+	id: number;
+	images: ProductImages[];
+	modifiedDate: string;
+	name: string;
+	productId: number;
+	productSpecifications: DeliveryProductSpecification[];
+	productType: string;
+	skus: DeliverySKU[];
+	urlImage: string;
+}
+
+interface ProductAttachment {
+	customFields?: CustomField[];
+	externalReferenceCode: string;
+	galleryEnabled: boolean;
+	id: number;
+	priority: number;
+	src: string;
+	tags?: string[];
 	title: {[key: string]: string};
 }
 
@@ -400,14 +564,37 @@ type SKU = {
 	skuOptions: {key: string; value: string}[];
 };
 
+type OptionCategory = {
+	description?: {[key: string]: string};
+	id?: number;
+	key?: string;
+	priority?: number;
+	title?: {[key: string]: string};
+};
+
+type Specification = {
+	description?: {[key: string]: string};
+	id?: number;
+	key?: string;
+	optionCategory?: OptionCategory;
+	title?: {[key: string]: string};
+};
+
 type ProductSpecification = {
 	id?: number;
 	optionCategoryId?: number;
 	priority?: number;
 	productId?: number;
 	specificationId?: number;
-	specificationKey?: string;
+	specificationKey: string;
 	value: {[key: string]: string};
+};
+
+type TierPrice = {
+	currency: string;
+	price: number;
+	priceFormatted: string;
+	quantity: number;
 };
 
 type UserAccount = {
@@ -422,8 +609,12 @@ type UserAccount = {
 	image: string;
 	isCustomerAccount: boolean;
 	isPublisherAccount: boolean;
+	logoURL: string;
+	name: string;
 	newsSubscription: boolean;
 	password: string;
+	roleBriefs: {id: number; name: string}[];
+	type: string;
 };
 
 type RequestBody = {
@@ -476,7 +667,6 @@ type UserForm = {
 	accountQuantity: number;
 	accountSelected: Account | undefined;
 	accounts: Account[];
-	agreeToTermsAndConditions: boolean;
 	companyName: string;
 	emailAddress: string;
 	extension?: string | undefined;
@@ -504,6 +694,8 @@ type RadioOption<T> = {
 	index: number;
 	value: T;
 };
+
+type StorageType = 'persisted' | 'temporary';
 
 type APIResponse<Query = any> = {
 	actions: ObjectActions;

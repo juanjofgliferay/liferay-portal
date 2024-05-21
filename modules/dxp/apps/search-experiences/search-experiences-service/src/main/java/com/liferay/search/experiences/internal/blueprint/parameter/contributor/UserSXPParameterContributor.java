@@ -45,6 +45,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.search.experiences.blueprint.parameter.SXPParameter;
+import com.liferay.search.experiences.blueprint.parameter.contributor.SXPParameterContributor;
 import com.liferay.search.experiences.blueprint.parameter.contributor.SXPParameterContributorDefinition;
 import com.liferay.search.experiences.internal.blueprint.parameter.BooleanArraySXPParameter;
 import com.liferay.search.experiences.internal.blueprint.parameter.BooleanSXPParameter;
@@ -59,7 +60,6 @@ import com.liferay.search.experiences.internal.blueprint.parameter.LongArraySXPP
 import com.liferay.search.experiences.internal.blueprint.parameter.LongSXPParameter;
 import com.liferay.search.experiences.internal.blueprint.parameter.StringArraySXPParameter;
 import com.liferay.search.experiences.internal.blueprint.parameter.StringSXPParameter;
-import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 import com.liferay.segments.SegmentsEntryRetriever;
 import com.liferay.segments.context.Context;
 
@@ -75,8 +75,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.lang.ArrayUtils;
 
 /**
  * @author Petteri Karttunen
@@ -112,7 +110,7 @@ public class UserSXPParameterContributor implements SXPParameterContributor {
 	@Override
 	public void contribute(
 		ExceptionListener exceptionListener, SearchContext searchContext,
-		SXPBlueprint sxpBlueprint, Set<SXPParameter> sxpParameters) {
+		Set<SXPParameter> sxpParameters) {
 
 		try {
 			_contribute(searchContext, sxpParameters);
@@ -281,7 +279,7 @@ public class UserSXPParameterContributor implements SXPParameterContributor {
 				sxpParameters.add(
 					new BooleanArraySXPParameter(
 						expandoSXPParameterName, true,
-						ArrayUtils.toObject(expandoValue.getBooleanArray())));
+						ArrayUtil.toArray(expandoValue.getBooleanArray())));
 			}
 			else if (type == ExpandoColumnConstants.DATE) {
 				sxpParameters.add(
@@ -298,7 +296,7 @@ public class UserSXPParameterContributor implements SXPParameterContributor {
 				sxpParameters.add(
 					new DoubleArraySXPParameter(
 						expandoSXPParameterName, true,
-						ArrayUtils.toObject(expandoValue.getDoubleArray())));
+						ArrayUtil.toArray(expandoValue.getDoubleArray())));
 			}
 			else if (type == ExpandoColumnConstants.FLOAT) {
 				sxpParameters.add(
@@ -310,7 +308,7 @@ public class UserSXPParameterContributor implements SXPParameterContributor {
 				sxpParameters.add(
 					new FloatArraySXPParameter(
 						expandoSXPParameterName, true,
-						ArrayUtils.toObject(expandoValue.getFloatArray())));
+						ArrayUtil.toArray(expandoValue.getFloatArray())));
 			}
 			else if (type == ExpandoColumnConstants.GEOLOCATION) {
 				JSONObject jsonObject = expandoValue.getGeolocationJSONObject();
@@ -442,7 +440,8 @@ public class UserSXPParameterContributor implements SXPParameterContributor {
 							_language.getLanguageId(searchContext.getLocale()));
 						put(Context.SIGNED_IN, !user.isGuestUser());
 					}
-				});
+				},
+				new long[0]);
 
 			segmentsEntryIds = ArrayUtil.filter(
 				segmentsEntryIds, segmentsEntryId -> segmentsEntryId > 0);

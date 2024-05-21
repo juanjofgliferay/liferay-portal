@@ -70,13 +70,13 @@ public abstract class BaseTemplateUpgradeProcessTestCase {
 	protected void addFragmentEntry(String filePath) throws Exception {
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionService.addFragmentCollection(
-				_group.getGroupId(), "Fragment Collection", StringPool.BLANK,
-				_serviceContext);
+				null, _group.getGroupId(), "Fragment Collection",
+				StringPool.BLANK, _serviceContext);
 
 		_fragmentEntry = _fragmentEntryService.addFragmentEntry(
 			_group.getGroupId(), fragmentCollection.getFragmentCollectionId(),
 			null, "FragmentEntry Name", null, read(filePath), null, false, null,
-			null, 0, FragmentConstants.TYPE_COMPONENT, null,
+			null, 0, false, FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, _serviceContext);
 	}
 

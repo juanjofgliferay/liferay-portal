@@ -11,6 +11,7 @@ import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalService;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCachable;
@@ -20,6 +21,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
+import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
@@ -349,6 +351,7 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 			inputStream, mimeType);
 	}
 
+	@Override
 	public Layout copyLayout(
 			long groupId, boolean privateLayout,
 			Map<Locale, String> localeNamesMap, boolean hidden, boolean system,
@@ -433,6 +436,41 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 	}
 
 	@Override
+	public Layout fetchFirstLayout(
+		long groupId, boolean privateLayout, boolean published) {
+
+		// Eensure that virtual layouts are merged. See LPD-24277.
+
+		List<Layout> layouts = layoutLocalService.getLayouts(
+			groupId, privateLayout, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
+			true, 0, 1);
+
+		if (layouts.isEmpty()) {
+			return null;
+		}
+
+		Layout layout = layouts.get(0);
+
+		boolean viewPermission = _hasViewPermission(layout);
+
+		if ((!published || layout.isPublished()) && viewPermission) {
+			return layout;
+		}
+
+		Layout firstLayout = _getFirstLayout(groupId, privateLayout, published);
+
+		if (firstLayout != null) {
+			return firstLayout;
+		}
+
+		if (viewPermission) {
+			return layout;
+		}
+
+		return null;
+	}
+
+	@Override
 	public Layout fetchLayout(
 			long groupId, boolean privateLayout, long layoutId)
 		throws PortalException {
@@ -446,6 +484,24 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 		}
 
 		return layout;
+	}
+
+	@Override
+	public long fetchLayoutPlid(
+			String uuid, long groupId, boolean privateLayout)
+		throws PortalException {
+
+		Layout layout = layoutLocalService.fetchLayout(
+			uuid, groupId, privateLayout);
+
+		if (layout != null) {
+			LayoutPermissionUtil.check(
+				getPermissionChecker(), layout, ActionKeys.VIEW);
+
+			return layout.getPlid();
+		}
+
+		return 0;
 	}
 
 	/**
@@ -524,8 +580,6 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 			return LayoutConstants.DEFAULT_PLID;
 		}
 
-		PermissionChecker permissionChecker = getPermissionChecker();
-
 		String scopeGroupLayoutUuid = null;
 
 		Group scopeGroup = _groupLocalService.getGroup(scopeGroupId);
@@ -564,10 +618,7 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 				continue;
 			}
 
-			if (!LayoutPermissionUtil.contains(
-					permissionChecker, layout, ActionKeys.VIEW) ||
-				!layout.isTypePortlet()) {
-
+			if (!_hasViewPermission(layout) || !layout.isTypePortlet()) {
 				continue;
 			}
 
@@ -1046,12 +1097,6 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 		GroupPermissionUtil.check(
 			getPermissionChecker(), targetGroupId, ActionKeys.PUBLISH_STAGING);
 
-		Trigger trigger = TriggerFactoryUtil.createTrigger(
-			PortalUUIDUtil.generate(), groupName, schedulerStartDate,
-			schedulerEndDate, cronText,
-			TimeZone.getTimeZone(
-				MapUtil.getString(parameterMap, "timeZoneId")));
-
 		User user = _userPersistence.findByPrimaryKey(getUserId());
 
 		Map<String, Serializable> publishLayoutLocalSettingsMap =
@@ -1068,10 +1113,25 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 						TYPE_SCHEDULED_PUBLISH_LAYOUT_LOCAL,
 					publishLayoutLocalSettingsMap);
 
+		long companyId = exportImportConfiguration.getCompanyId();
+
+		Trigger trigger = TriggerFactoryUtil.createTrigger(
+			StringBundler.concat(
+				PortalUUIDUtil.generate(), StringPool.AT, companyId),
+			groupName, schedulerStartDate, schedulerEndDate, cronText,
+			TimeZone.getTimeZone(
+				MapUtil.getString(parameterMap, "timeZoneId")));
+
+		Message message = new Message();
+
+		message.put("companyId", companyId);
+
+		message.setPayload(
+			exportImportConfiguration.getExportImportConfigurationId());
+
 		SchedulerEngineHelperUtil.schedule(
 			trigger, StorageType.PERSISTED, description,
-			DestinationNames.LAYOUTS_LOCAL_PUBLISHER,
-			exportImportConfiguration.getExportImportConfigurationId());
+			DestinationNames.LAYOUTS_LOCAL_PUBLISHER, message);
 	}
 
 	/**
@@ -1116,12 +1176,6 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 		GroupPermissionUtil.check(
 			getPermissionChecker(), sourceGroupId, ActionKeys.PUBLISH_STAGING);
 
-		Trigger trigger = TriggerFactoryUtil.createTrigger(
-			PortalUUIDUtil.generate(), groupName, schedulerStartDate,
-			schedulerEndDate, cronText,
-			TimeZone.getTimeZone(
-				MapUtil.getString(parameterMap, "timeZoneId")));
-
 		User user = _userPersistence.findByPrimaryKey(getUserId());
 
 		Map<String, Serializable> publishLayoutRemoteSettingsMap =
@@ -1140,10 +1194,25 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 						TYPE_SCHEDULED_PUBLISH_LAYOUT_REMOTE,
 					publishLayoutRemoteSettingsMap);
 
+		long companyId = exportImportConfiguration.getCompanyId();
+
+		Trigger trigger = TriggerFactoryUtil.createTrigger(
+			StringBundler.concat(
+				PortalUUIDUtil.generate(), StringPool.AT, companyId),
+			groupName, schedulerStartDate, schedulerEndDate, cronText,
+			TimeZone.getTimeZone(
+				MapUtil.getString(parameterMap, "timeZoneId")));
+
+		Message message = new Message();
+
+		message.put("companyId", companyId);
+
+		message.setPayload(
+			exportImportConfiguration.getExportImportConfigurationId());
+
 		SchedulerEngineHelperUtil.schedule(
 			trigger, StorageType.PERSISTED, description,
-			DestinationNames.LAYOUTS_REMOTE_PUBLISHER,
-			exportImportConfiguration.getExportImportConfigurationId());
+			DestinationNames.LAYOUTS_REMOTE_PUBLISHER, message);
 	}
 
 	/**
@@ -1563,15 +1632,11 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 		}
 	}
 
-	protected List<Layout> filterLayouts(List<Layout> layouts)
-		throws PortalException {
-
+	protected List<Layout> filterLayouts(List<Layout> layouts) {
 		List<Layout> filteredLayouts = new ArrayList<>();
 
 		for (Layout layout : layouts) {
-			if (LayoutPermissionUtil.contains(
-					getPermissionChecker(), layout, ActionKeys.VIEW)) {
-
+			if (_hasViewPermission(layout)) {
 				filteredLayouts.add(layout);
 			}
 		}
@@ -1610,6 +1675,57 @@ public class LayoutServiceImpl extends LayoutServiceBaseImpl {
 			(LayoutTypePortlet)clonedLayout.getLayoutType();
 
 		return layoutTypePortlet.getPortletIds();
+	}
+
+	private Layout _getFirstLayout(
+		long groupId, boolean privateLayout, boolean published) {
+
+		boolean hasNext = true;
+
+		int start = 1;
+		int end = 0;
+		int interval = 5;
+
+		while (hasNext) {
+			end = start + interval;
+
+			List<Layout> layouts = layoutLocalService.getLayouts(
+				groupId, privateLayout,
+				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, true, start, end);
+
+			for (Layout layout : layouts) {
+				if ((!published || layout.isPublished()) &&
+					_hasViewPermission(layout)) {
+
+					return layout;
+				}
+			}
+
+			start = start + interval;
+
+			if (layouts.size() < interval) {
+				hasNext = false;
+			}
+		}
+
+		return null;
+	}
+
+	private boolean _hasViewPermission(Layout layout) {
+		try {
+			if (LayoutPermissionUtil.contains(
+					getPermissionChecker(), layout, ActionKeys.VIEW)) {
+
+				return true;
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

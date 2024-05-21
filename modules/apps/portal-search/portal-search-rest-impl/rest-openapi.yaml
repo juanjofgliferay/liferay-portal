@@ -104,7 +104,7 @@ components:
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.portal.search.rest.client', and version '1.0.12'."
+        'com.liferay.portal.search.rest.client', and version '1.0.18'."
     license:
         name: "Apache 2.0"
         url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -132,15 +132,11 @@ paths:
                   schema:
                       type: string
                 - in: query
-                  name: nestedFields
-                  schema:
-                      type: string
-                - in: query
-                  name: restrictFields
-                  schema:
-                      type: string
-                - in: query
                   name: filter
+                  schema:
+                      type: string
+                - in: query
+                  name: nestedFields
                   schema:
                       type: string
                 - in: query
@@ -151,6 +147,14 @@ paths:
                   name: pageSize
                   schema:
                       type: integer
+                - in: query
+                  name: restrictFields
+                  schema:
+                      type: string
+                - in: query
+                  name: scope
+                  schema:
+                      type: string
                 - in: query
                   name: search
                   schema:
@@ -194,6 +198,9 @@ paths:
                   schema:
                       type: string
                 - in: query
+                  deprecated: true
+                  description:
+                      Deprecated as of Cavanaugh (7.4.x), replaced by scope
                   name: groupId
                   schema:
                       format: int64

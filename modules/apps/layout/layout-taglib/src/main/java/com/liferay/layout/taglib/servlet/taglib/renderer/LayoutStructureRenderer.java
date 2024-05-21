@@ -22,6 +22,7 @@ import com.liferay.info.item.InfoItemDetails;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemDetailsProvider;
+import com.liferay.info.item.provider.InfoItemPermissionProvider;
 import com.liferay.info.list.renderer.DefaultInfoListRendererContext;
 import com.liferay.info.list.renderer.InfoListRenderer;
 import com.liferay.info.permission.provider.InfoPermissionProvider;
@@ -50,19 +51,14 @@ import com.liferay.layout.util.structure.collection.EmptyCollectionOptions;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
-import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTemplate;
 import com.liferay.portal.kernel.model.LayoutTemplateConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutTemplateLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -85,6 +81,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -129,7 +126,7 @@ public class LayoutStructureRenderer {
 				"infoItemActionComponent",
 				_renderLayoutStructureDisplayContext.
 					getInfoItemActionComponentContext(),
-				"render_layout_structure/js/InfoItemActionHandler");
+				"{InfoItemActionHandler} from layout-taglib");
 		}
 	}
 
@@ -198,6 +195,31 @@ public class LayoutStructureRenderer {
 		return false;
 	}
 
+	private boolean _hasUpdatePermission(
+			LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider)
+		throws Exception {
+
+		InfoItemServiceRegistry infoItemServiceRegistry =
+			ServletContextUtil.getInfoItemServiceRegistry();
+
+		InfoItemPermissionProvider infoItemPermissionProvider =
+			infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemPermissionProvider.class,
+				layoutDisplayPageObjectProvider.getClassName());
+
+		if ((infoItemPermissionProvider == null) ||
+			((_themeDisplay != null) &&
+			 infoItemPermissionProvider.hasPermission(
+				 _themeDisplay.getPermissionChecker(),
+				 layoutDisplayPageObjectProvider.getDisplayObject(),
+				 ActionKeys.UPDATE))) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private void _renderCollectionStyledLayoutStructureItem(
 			InfoForm infoForm,
 			CollectionStyledLayoutStructureItem
@@ -224,34 +246,18 @@ public class LayoutStructureRenderer {
 		jspWriter.write(collectionStyledLayoutStructureItem.getCssClass());
 		jspWriter.write("\"");
 
-		if (FeatureFlagManagerUtil.isEnabled("LRAC-14922")) {
-			ListObjectReference listObjectReference =
-				renderCollectionLayoutStructureItemDisplayContext.
-					getListObjectReference();
+		ListObjectReference listObjectReference =
+			renderCollectionLayoutStructureItemDisplayContext.
+				getListObjectReference();
 
-			if (listObjectReference != null) {
-				try {
-					JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-						listObjectReference.toJSON());
-
-					if (jsonObject.has("key")) {
-						jspWriter.write(
-							" id=\"analytics-targetable-collection-");
-						jspWriter.write(jsonObject.getString("key"));
-						jspWriter.write("\"");
-					}
-				}
-				catch (JSONException jsonException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Unable to parse JSON: " +
-								listObjectReference.toJSON(),
-							jsonException);
-					}
-				}
-			}
+		if (listObjectReference != null) {
+			jspWriter.write(" data-analytics-targetable-collection=\"");
+			jspWriter.write(HtmlUtil.escape(listObjectReference.toString()));
+			jspWriter.write("\"");
 		}
 
+		jspWriter.write(" id=\"analytics-targetable-collection-");
+		jspWriter.write(collectionStyledLayoutStructureItem.getNamespace());
 		jspWriter.write("\" style=\"");
 		jspWriter.write(
 			_renderLayoutStructureDisplayContext.getStyle(
@@ -479,8 +485,8 @@ public class LayoutStructureRenderer {
 					collectionStyledLayoutStructureItem.getItemId()));
 			paginationBarTag.setCssClass("pb-2 pt-3");
 			paginationBarTag.setPropsTransformer(
-				"render_layout_structure/js" +
-					"/NumericCollectionPaginationPropsTransformer");
+				"{NumericCollectionPaginationPropsTransformer} from " +
+					"layout-taglib");
 			paginationBarTag.setShowDeltasDropDown(false);
 			paginationBarTag.setTotalItems(
 				renderCollectionLayoutStructureItemDisplayContext.
@@ -551,7 +557,7 @@ public class LayoutStructureRenderer {
 					"collectionId",
 					collectionStyledLayoutStructureItem.getItemId()
 				).build(),
-				"render_layout_structure/js/SimpleCollectionPagination");
+				"{SimpleCollectionPagination} from layout-taglib");
 		}
 
 		jspWriter.write("</div>");
@@ -852,10 +858,10 @@ public class LayoutStructureRenderer {
 			FormStyledLayoutStructureItem formStyledLayoutStructureItem)
 		throws Exception {
 
-		if ((infoForm == null) ||
-			!_hasAddPermission(
-				PortalUtil.getClassName(
-					formStyledLayoutStructureItem.getClassNameId()))) {
+		String className = formStyledLayoutStructureItem.getClassName();
+
+		if (Validator.isNull(className) || (infoForm == null) ||
+			!_hasAddPermission(className)) {
 
 			return;
 		}
@@ -942,6 +948,8 @@ public class LayoutStructureRenderer {
 		jspWriter.write(
 			String.valueOf(formStyledLayoutStructureItem.getClassTypeId()));
 
+		boolean readOnly = false;
+
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			(LayoutDisplayPageObjectProvider<?>)
 				_httpServletRequest.getAttribute(
@@ -961,6 +969,10 @@ public class LayoutStructureRenderer {
 			jspWriter.write(" value=\"");
 			jspWriter.write(
 				layoutDisplayPageObjectProvider.getExternalReferenceCode());
+
+			if (!_hasUpdatePermission(layoutDisplayPageObjectProvider)) {
+				readOnly = true;
+			}
 		}
 
 		jspWriter.write(
@@ -1024,10 +1036,18 @@ public class LayoutStructureRenderer {
 			_httpServletRequest,
 			"infoFormParameterMap" + formStyledLayoutStructureItem.getItemId());
 
+		if (readOnly) {
+			jspWriter.write("<fieldset disabled=\"disabled\">");
+		}
+
 		_renderLayoutStructure(
 			formStyledLayoutStructureItem.getChildrenItemIds(), infoForm);
 
 		SessionMessages.remove(_httpServletRequest, "infoFormParameterMap");
+
+		if (readOnly) {
+			jspWriter.write("</fieldset>");
+		}
 
 		jspWriter.write("</form>");
 	}
@@ -1038,8 +1058,8 @@ public class LayoutStructureRenderer {
 
 		JspWriter jspWriter = _pageContext.getOut();
 
-		jspWriter.write("<div class=\"font-weight-semi-bold bg-white");
-		jspWriter.write("text-secondary text-center text-3 p-5\">");
+		jspWriter.write("<div class=\"bg-white font-weight-semi-bold ");
+		jspWriter.write("p-5 text-3 text-center text-secondary\">");
 		jspWriter.write(
 			_renderLayoutStructureDisplayContext.getSuccessMessage(
 				formStyledLayoutStructureItem));
@@ -1124,9 +1144,16 @@ public class LayoutStructureRenderer {
 			List<String> childrenItemIds, InfoForm infoForm)
 		throws Exception {
 
+		Set<String> hiddenItemIds =
+			_renderLayoutStructureDisplayContext.getHiddenItemIds();
+
 		for (String childrenItemId : childrenItemIds) {
 			LayoutStructureItem layoutStructureItem =
 				_layoutStructure.getLayoutStructureItem(childrenItemId);
+
+			if (hiddenItemIds.contains(childrenItemId)) {
+				continue;
+			}
 
 			long start = System.currentTimeMillis();
 
@@ -1341,9 +1368,6 @@ public class LayoutStructureRenderer {
 				fragmentStyledLayoutStructureItem));
 		jspWriter.write("\">");
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		LayoutStructureRenderer.class);
 
 	private final HttpServletRequest _httpServletRequest;
 	private final LayoutStructure _layoutStructure;

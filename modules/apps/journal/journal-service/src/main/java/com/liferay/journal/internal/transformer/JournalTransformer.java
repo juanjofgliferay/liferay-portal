@@ -39,6 +39,8 @@ import com.liferay.portal.kernel.mobile.device.Device;
 import com.liferay.portal.kernel.mobile.device.UnknownDevice;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -244,49 +246,6 @@ public class JournalTransformer {
 		List<TemplateNode> templateNodes, ThemeDisplay themeDisplay,
 		Map<String, String> tokens) {
 
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_ID, templateNodes,
-			themeDisplay, tokens, article.getArticleId());
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_VERSION, templateNodes,
-			themeDisplay, tokens, String.valueOf(article.getVersion()));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_TITLE, templateNodes,
-			themeDisplay, tokens, article.getTitle(languageId));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_URL_TITLE, templateNodes,
-			themeDisplay, tokens, article.getUrlTitle());
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_DESCRIPTION,
-			templateNodes, themeDisplay, tokens,
-			article.getDescription(languageId));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_CREATE_DATE,
-			templateNodes, themeDisplay, tokens,
-			Time.getRFC822(article.getCreateDate()));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_MODIFIED_DATE,
-			templateNodes, themeDisplay, tokens,
-			Time.getRFC822(article.getModifiedDate()));
-
-		if (article.getDisplayDate() != null) {
-			_addReservedEl(
-				JournalStructureConstants.RESERVED_ARTICLE_DISPLAY_DATE,
-				templateNodes, themeDisplay, tokens,
-				Time.getRFC822(article.getDisplayDate()));
-		}
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_SMALL_IMAGE_URL,
-			templateNodes, themeDisplay, tokens,
-			article.getArticleImageURL(themeDisplay));
-
 		String[] assetTagNames = AssetTagLocalServiceUtil.getTagNames(
 			JournalArticle.class.getName(), article.getResourcePrimKey());
 
@@ -294,10 +253,6 @@ public class JournalTransformer {
 			JournalStructureConstants.RESERVED_ARTICLE_ASSET_TAG_NAMES,
 			templateNodes, themeDisplay, tokens,
 			StringUtil.merge(assetTagNames));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_ID, templateNodes,
-			themeDisplay, tokens, String.valueOf(article.getUserId()));
 
 		String userName = StringPool.BLANK;
 		String userEmailAddress = StringPool.BLANK;
@@ -314,20 +269,81 @@ public class JournalTransformer {
 		}
 
 		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_NAME,
-			templateNodes, themeDisplay, tokens, userName);
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_COMMENTS,
+			templateNodes, themeDisplay, tokens, userComments);
 
 		_addReservedEl(
 			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_EMAIL_ADDRESS,
 			templateNodes, themeDisplay, tokens, userEmailAddress);
 
 		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_COMMENTS,
-			templateNodes, themeDisplay, tokens, userComments);
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_ID, templateNodes,
+			themeDisplay, tokens, String.valueOf(article.getUserId()));
 
 		_addReservedEl(
 			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_JOB_TITLE,
 			templateNodes, themeDisplay, tokens, userJobTitle);
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_NAME,
+			templateNodes, themeDisplay, tokens, userName);
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_CREATE_DATE,
+			templateNodes, themeDisplay, tokens,
+			Time.getRFC822(article.getCreateDate()));
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_DESCRIPTION,
+			templateNodes, themeDisplay, tokens,
+			article.getDescription(languageId));
+
+		if (article.getDisplayDate() != null) {
+			_addReservedEl(
+				JournalStructureConstants.RESERVED_ARTICLE_DISPLAY_DATE,
+				templateNodes, themeDisplay, tokens,
+				Time.getRFC822(article.getDisplayDate()));
+		}
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_EXTERNAL_REFERENCE_CODE,
+			templateNodes, themeDisplay, tokens,
+			article.getExternalReferenceCode());
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_ID, templateNodes,
+			themeDisplay, tokens, article.getArticleId());
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_ID_, templateNodes,
+			themeDisplay, tokens, String.valueOf(article.getId()));
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_MODIFIED_DATE,
+			templateNodes, themeDisplay, tokens,
+			Time.getRFC822(article.getModifiedDate()));
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_RESOURCE_PRIM_KEY,
+			templateNodes, themeDisplay, tokens,
+			String.valueOf(article.getResourcePrimKey()));
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_SMALL_IMAGE_URL,
+			templateNodes, themeDisplay, tokens,
+			article.getArticleImageURL(themeDisplay));
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_TITLE, templateNodes,
+			themeDisplay, tokens, article.getTitle(languageId));
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_URL_TITLE, templateNodes,
+			themeDisplay, tokens, article.getUrlTitle());
+
+		_addReservedEl(
+			JournalStructureConstants.RESERVED_ARTICLE_VERSION, templateNodes,
+			themeDisplay, tokens, String.valueOf(article.getVersion()));
 	}
 
 	private void _addReservedEl(
@@ -462,7 +478,8 @@ public class JournalTransformer {
 			}
 		}
 		else if (type.equals(DDMFormFieldTypeConstants.SELECT) &&
-				 ddmFormField.isMultiple()) {
+				 ddmFormField.isMultiple() && (dynamicContentElement != null) &&
+				 (dynamicContentElement.element("option") != null)) {
 
 			JSONArray dataJSONArray = JSONFactoryUtil.createJSONArray();
 
@@ -626,12 +643,24 @@ public class JournalTransformer {
 			friendlyURLMap.put(
 				LocaleUtil.toLanguageId(locale),
 				journalHelper.createURLPattern(
-					article, locale, false,
-					FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE,
+					article, locale, false, _getFriendlyURLSeparator(),
 					themeDisplay));
 		}
 
 		return friendlyURLMap;
+	}
+
+	private String _getFriendlyURLSeparator() {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE);
+
+		if (friendlyURLResolver != null) {
+			return friendlyURLResolver.getURLSeparator();
+		}
+
+		return FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE;
 	}
 
 	private Locale _getLocale(ThemeDisplay themeDisplay, Locale locale)

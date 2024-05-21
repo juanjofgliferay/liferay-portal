@@ -539,6 +539,7 @@ definition {
 	@description = "This is a use case for LPS-73381. LDAP security credentials are obscured when entered."
 	@priority = 3
 	test LDAPSecurityCredentialsAreHidden {
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -680,10 +681,7 @@ definition {
 		task ("Given: The main instance and a virtual instance is connected to the same LDAP Server") {
 			var enableSettingList = "enabled,required";
 
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
+			PortalInstances.openVirtualInstancesAdmin();
 
 			PortalInstances.addCP(
 				mailDomain = "www.able.com",

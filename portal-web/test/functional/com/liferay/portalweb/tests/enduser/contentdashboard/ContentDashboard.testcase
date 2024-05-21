@@ -758,22 +758,24 @@ definition {
 		}
 
 		task ("Validade if the categories are shown in order of creation") {
+			SetWindowSize.maximizeWindow();
+
 			ContentDashboard.goToContentDashboard();
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 1,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "C_Subaudien…");
+				value1 = "C_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 2,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "B_Subaudien…");
+				value1 = "B_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 3,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "A_Subaudien…");
+				value1 = "A_Subaudien");
 		}
 	}
 
@@ -4961,7 +4963,9 @@ definition {
 		task ("Check location at web content editor") {
 			AssertLocation.assertPartialLocation(value1 = "com_liferay_journal_web_portlet_JournalPortlet");
 
-			AssertLocation.assertPartialLocation(value1 = "edit_article.jsp");
+			AssertLocation.assertPartialLocation(value1 = "edit_article");
+
+			AssertVisible(locator1 = "WCEditWebContent#SIDEBAR");
 		}
 	}
 
@@ -5668,6 +5672,8 @@ definition {
 		}
 
 		task ("Go to Content Dashboard and set graph to only one vocabulary") {
+			SetWindowSize.maximizeWindow();
+
 			ContentDashboard.goToContentDashboard();
 
 			ContentDashboard.moveVocabularyDisplayConfiguration(vocabularyName = "Stage");
@@ -5688,20 +5694,20 @@ definition {
 		}
 
 		task ("Validate if the remaining categories are shown in order of creating") {
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 1,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "C_Subaudien…");
+				value1 = "C_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 2,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "B_Subaudien…");
+				value1 = "B_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 3,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "A_Subaudien…");
+				value1 = "A_Subaudien");
 		}
 	}
 
@@ -5732,7 +5738,7 @@ definition {
 		}
 
 		task ("Change the order of assets") {
-			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+			ManagementBar.sortAssets(sortDirection = "Ascending");
 
 			AssertTextEquals(
 				locator1 = "ContentDashboard#LAST_ELEMENT_LISTED",
@@ -5779,7 +5785,7 @@ definition {
 				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
 				value1 = "WC Title 2");
 
-			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+			ManagementBar.sortAssets(sortDirection = "Ascending");
 
 			AssertTextPresent(
 				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
@@ -5814,7 +5820,7 @@ definition {
 		}
 
 		task ("Change de order of assets") {
-			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+			ManagementBar.sortAssets(sortDirection = "Descending");
 
 			AssertTextEquals(
 				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
@@ -6110,7 +6116,7 @@ definition {
 		task ("Check if extension is present") {
 			AssertTextEquals(
 				locator1 = "ManagementBar#SEARCH_RESULT_SUMMARY",
-				value1 = "10 Results for");
+				value1 = "10 Results Found With Filters");
 		}
 	}
 
@@ -6585,6 +6591,42 @@ definition {
 					fillColor = "FF5F5F",
 					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
 			}
+		}
+	}
+
+	@description = "This is a use case for LPS-177756. The tooltip of the back button is Go to Content Dashboard when viewing an asset with a DPT from the Content Dashboard."
+	@priority = 3
+	test ViewBackButtonTooltipInAssociatedDisplayPageTemplate {
+		task ("Given access to the associated display page via content dashboard") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			JSONLayoutpagetemplate.setLayoutPageTemplateEntryAsDefault(
+				groupName = "Test Site Name",
+				layoutPageTemplateEntryName = "Display Page Name",
+				type = "Display Page Template");
+
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+
+			ContentDashboard.goToContentDashboard();
+
+			LexiconTable.clickTableEntryTitle(tableEntry = "Web Content Title");
+		}
+
+		task ("When hover over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to Content Dashboard",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
 		}
 	}
 

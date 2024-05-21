@@ -475,6 +475,7 @@ export const getAccountSubscriptionGroups = gql`
 				items {
 					accountSubscriptionGroupId
 					accountKey
+					activationProductName
 					activationStatus
 					externalReferenceCode
 					hasActivation
@@ -560,6 +561,20 @@ export const getAccountByExternalReferenceCode = gql`
 		) {
 			id
 			name
+		}
+	}
+`;
+
+export const getAccountByExternalReferenceCodeOrganizations = gql`
+	query getAccountByExternalReferenceCodeOrganizations(
+		$externalReferenceCode: String
+	) {
+		accountByExternalReferenceCodeOrganizations(
+			externalReferenceCode: $externalReferenceCode
+		) {
+			items {
+				name
+			}
 		}
 	}
 `;

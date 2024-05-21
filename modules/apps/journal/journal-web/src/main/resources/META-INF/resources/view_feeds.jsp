@@ -26,7 +26,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "feeds"));
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= journalFeedsManagementToolbarDisplayContext %>"
-	propsTransformer="js/FeedsManagementToolbarPropsTransformer"
+	propsTransformer="{FeedsManagementToolbarPropsTransformer} from journal-web"
 />
 
 <portlet:actionURL name="/journal/delete_feeds" var="deleteFeedsURL">
@@ -84,13 +84,13 @@ renderResponse.setTitle(LanguageUtil.get(request, "feeds"));
 							</aui:a>
 						</h5>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<%= feed.getDescription() %>
-						</h6>
+						</div>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<strong><liferay-ui:message key="id" /></strong>: <%= feed.getId() %>
-						</h6>
+						</div>
 					</liferay-ui:search-container-column-text>
 
 					<liferay-ui:search-container-column-text>
@@ -102,7 +102,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "feeds"));
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= journalFeedActionDropdownItemsProvider.getActionDropdownItems() %>"
-							propsTransformer="js/FeedElementsDefaultPropsTransformer"
+							propsTransformer="{FeedElementsDefaultPropsTransformer} from journal-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -134,7 +134,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "feeds"));
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= journalFeedActionDropdownItemsProvider.getActionDropdownItems() %>"
-							propsTransformer="js/FeedElementsDefaultPropsTransformer"
+							propsTransformer="{FeedElementsDefaultPropsTransformer} from journal-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>

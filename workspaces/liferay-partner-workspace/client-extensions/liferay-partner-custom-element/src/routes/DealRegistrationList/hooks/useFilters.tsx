@@ -5,24 +5,41 @@
 
 import {useEffect, useState} from 'react';
 
+import {Filters} from '../../../common/utils/constants/filters';
 import getSearchFilterTerm from '../../../common/utils/getSearchFilterTerm';
 import {INITIAL_FILTER} from '../utils/constants/initialFilter';
+import getDateSubmittedFilterTerm from '../utils/getDateSubmittedFilterTerm';
 
-export default function useFilters(dealRegistrationFilter?: string) {
-	const [filters, setFilters] = useState(INITIAL_FILTER);
+export default function useFilters(submittedDealsFilter?: boolean) {
+	const [filters, setFilters] = useState(
+		(JSON.parse(
+			sessionStorage.getItem('dealRegistrationFilters')!
+		) as typeof INITIAL_FILTER) || INITIAL_FILTER
+	);
 
 	const [filtersTerm, setFilterTerm] = useState('');
+
+	const dealsInitialFilter = submittedDealsFilter
+		? Filters.DEAL_LISTING.submitted
+		: Filters.DEAL_LISTING.rejected;
 
 	const onFilter = (newFilters: Partial<typeof INITIAL_FILTER>) =>
 		setFilters((previousFilters) => ({...previousFilters, ...newFilters}));
 
+	sessionStorage.setItem('dealRegistrationFilters', JSON.stringify(filters));
+	sessionStorage.setItem(
+		'submittedDealsFilter',
+		JSON.stringify(submittedDealsFilter)
+	);
+
 	useEffect(() => {
+		let hasFilter = false;
 		let initialFilter = '';
 
-		if (dealRegistrationFilter) {
+		if (dealsInitialFilter) {
 			initialFilter = initialFilter
-				? initialFilter.concat(dealRegistrationFilter)
-				: `${dealRegistrationFilter}`;
+				? initialFilter.concat(dealsInitialFilter)
+				: `${dealsInitialFilter}`;
 		}
 
 		if (filters.searchTerm) {
@@ -31,8 +48,27 @@ export default function useFilters(dealRegistrationFilter?: string) {
 				: getSearchFilterTerm(filters.searchTerm);
 		}
 
+		if (
+			filters.dataSubmitted?.dates.endDate ||
+			filters.dataSubmitted?.dates.startDate
+		) {
+			hasFilter = true;
+			initialFilter = getDateSubmittedFilterTerm(
+				initialFilter,
+				filters.dataSubmitted
+			);
+		}
+		onFilter({
+			hasValue: hasFilter,
+		});
+
 		setFilterTerm(initialFilter);
-	}, [dealRegistrationFilter, filters.searchTerm, setFilters]);
+	}, [
+		dealsInitialFilter,
+		filters.searchTerm,
+		setFilters,
+		filters.dataSubmitted,
+	]);
 
 	return {filters, filtersTerm, onFilter};
 }

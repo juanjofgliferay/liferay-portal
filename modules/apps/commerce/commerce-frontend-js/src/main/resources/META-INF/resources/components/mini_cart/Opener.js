@@ -43,13 +43,15 @@ function Opener() {
 				(cartItem) => cartItem.id === orderItemId
 			);
 
-			if (cartItem && hasOptions(cartItem.options)) {
+			if (
+				cartItem &&
+				(hasOptions(cartItem.options) || cartItem.skuUnitOfMeasure)
+			) {
 				setEditedItem({
 					cartItemId: orderItemId,
 					dataSetId,
 					name: cartItem.name,
 					productId: cartItem.productId,
-					type: 'options',
 				});
 
 				openCart();
@@ -73,6 +75,7 @@ function Opener() {
 				'mini-cart-opener': true,
 			})}
 			data-badge-count={numberOfItems}
+			data-qa-id="mini-cart-button"
 			onClick={openCart}
 		>
 			<ClayIcon symbol="shopping-cart" />

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayAlert from '@clayui/alert';
 import Button, {ClayButtonWithIcon} from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import {ArrayHelpers} from 'formik';
@@ -23,8 +24,11 @@ interface IProps {
 	budgets: MDFRequestBudget[];
 	claimPercent: number;
 	currency: LiferayPicklist;
+	currencyExchangeRate: number;
 	currentActivityIndex: number;
 	expenseEntries: React.OptionHTMLAttributes<HTMLOptionElement>[];
+	isButtonClicked: boolean;
+	isEdit: boolean;
 	setFieldValue: (
 		field: string,
 		value: any,
@@ -39,6 +43,8 @@ const BudgetBreakdownSection = ({
 	currency,
 	currentActivityIndex,
 	expenseEntries,
+	isButtonClicked,
+	isEdit,
 	setFieldValue,
 }: IProps) => {
 	const {
@@ -141,6 +147,17 @@ const BudgetBreakdownSection = ({
 					</span>
 					Add Expense
 				</Button>
+
+				{((!budgetsAmount && isButtonClicked) ||
+					(!budgetsAmount && isEdit)) && (
+					<ClayAlert
+						className="mt-2"
+						displayType="danger"
+						hideCloseIcon={true}
+					>
+						Please add expense before proceeding to the next step.
+					</ClayAlert>
+				)}
 			</div>
 
 			<div className="my-3">

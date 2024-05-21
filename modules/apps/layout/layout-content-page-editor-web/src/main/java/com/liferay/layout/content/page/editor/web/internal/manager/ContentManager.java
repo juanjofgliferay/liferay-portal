@@ -246,11 +246,15 @@ public class ContentManager {
 				continue;
 			}
 
+			String className = formStyledLayoutStructureItem.getClassName();
+
+			if (Validator.isNull(className)) {
+				continue;
+			}
+
 			InfoPermissionProvider<?> infoPermissionProvider =
 				_infoItemServiceRegistry.getFirstInfoItemService(
-					InfoPermissionProvider.class,
-					_portal.getClassName(
-						formStyledLayoutStructureItem.getClassNameId()));
+					InfoPermissionProvider.class, className);
 
 			if ((infoPermissionProvider == null) ||
 				(infoPermissionProvider.hasViewPermission(
@@ -720,6 +724,17 @@ public class ContentManager {
 				redirect
 			).setParameter(
 				"assetListEntryId", assetListEntry.getAssetListEntryId()
+			).setParameter(
+				"backURLTitle",
+				() -> {
+					ThemeDisplay themeDisplay =
+						(ThemeDisplay)httpServletRequest.getAttribute(
+							WebKeys.THEME_DISPLAY);
+
+					Layout layout = themeDisplay.getLayout();
+
+					return layout.getName(themeDisplay.getLocale());
+				}
 			).buildString();
 		}
 		catch (PortalException portalException) {
@@ -772,7 +787,7 @@ public class ContentManager {
 				_segmentsEntryRetriever.getSegmentsEntryIds(
 					_portal.getScopeGroupId(httpServletRequest),
 					_portal.getUserId(httpServletRequest),
-					_requestContextMapper.map(httpServletRequest)),
+					_requestContextMapper.map(httpServletRequest), new long[0]),
 				StringPool.BLANK);
 
 		long[] allTagIds = assetEntryQuery.getAllTagIds();

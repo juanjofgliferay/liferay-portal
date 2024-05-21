@@ -25,7 +25,6 @@ if (editContactInformationDisplayContext.getPrimaryKey() > 0) {
 }
 
 PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "addresses"), editContactInformationDisplayContext.getRedirect());
-
 PortalUtil.addPortletBreadcrumbEntry(request, editContactInformationDisplayContext.getSheetTitle(), null);
 %>
 
@@ -142,7 +141,7 @@ PortalUtil.addPortletBreadcrumbEntry(request, editContactInformationDisplayConte
 				"regionSelectVal", regionId
 			).build()
 		%>'
-		module="js/CountryRegionDynamicSelect"
+		module="{CountryRegionDynamicSelect} from users-admin-web"
 	/>
 </aui:form>
 

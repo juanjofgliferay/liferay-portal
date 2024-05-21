@@ -10,6 +10,10 @@ dependencies {
 	compileOnly group: "org.osgi", name: "osgi.core", transitive: false, version: "6.0.0"
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
@@ -18,6 +22,7 @@ patch {
 	fileNames "org/apache/felix/cm/file/ConfigurationHandler.java"
 	fileNames "org/apache/felix/cm/impl/ConfigurationImpl.java"
 	fileNames "org/apache/felix/cm/impl/ConfigurationManager.java"
+	fileNames "org/apache/felix/cm/impl/UpdateThread.java"
 	fileNames "org/apache/felix/cm/impl/persistence/PersistenceManagerTracker.java"
 
 	originalLibModuleName = "org.apache.felix.configadmin"

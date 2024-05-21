@@ -10,9 +10,6 @@
 </thead>
 
 <tbody>
-
-<!-- AC Sites -->
-
 <tr>
 	<td>ACTIVITIES_CARD</td>
 	<td>//h5[contains(text(),'Activities')]/parent::div/following-sibling::div//span[contains(text(),'Unique Visitors')]</td>
@@ -56,11 +53,6 @@
 <tr>
 	<td>TOP_PAGES_ENTRANCES_BUTTON</td>
 	<td>//span[text()='Entrances']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>TOP_VISITED_PAGES</td>
-	<td>//*[contains(text(),'${key_entryName}')]/ancestor::tr//td//h4[contains(text(),'${key_resultNumber}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -146,21 +138,6 @@
 <tr>
 	<td>PAGE_METRIC_VALUE</td>
 	<td>//a[text()='${key_pageName}']/ancestor::td[contains(@class, 'table-cell')]/following::td[${key_index}][text()='${key_metricValue}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SITE_PATH</td>
-	<td>//*[name()='svg']//*[contains(@class, 'analytics-sankey-title') and @y='0']//*[text()='${key_pageName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_PATH_TOTAL</td>
-	<td>//*[contains(@class, 'recharts-sankey-nodes')]//*[text()='${key_pageTotal}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REMOVE_SEGMENT_FILTER</td>
-	<td>//button[@title="Remove Filter"]</td>
 	<td></td>
 </tr>
 <tr>

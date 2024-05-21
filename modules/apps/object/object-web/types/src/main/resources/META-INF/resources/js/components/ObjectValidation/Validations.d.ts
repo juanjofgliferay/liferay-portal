@@ -7,9 +7,11 @@
 
 import {IFDSTableProps} from '../../utils/fds';
 interface ValidationsProps extends IFDSTableProps {
+	allowScriptContentToBeExecutedOrIncluded: boolean;
 	objectValidationRuleEngines: LabelKeyObject[];
 }
 export default function Validations({
+	allowScriptContentToBeExecutedOrIncluded,
 	apiURL,
 	creationMenu,
 	formName,

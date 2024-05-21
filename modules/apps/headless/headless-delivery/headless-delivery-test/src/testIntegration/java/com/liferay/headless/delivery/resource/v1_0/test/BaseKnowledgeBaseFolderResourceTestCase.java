@@ -30,8 +30,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -42,6 +40,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -66,8 +65,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -228,7 +225,10 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteKnowledgeBaseFolder() throws Exception {
-		KnowledgeBaseFolder knowledgeBaseFolder =
+
+		// No namespace
+
+		KnowledgeBaseFolder knowledgeBaseFolder1 =
 			testGraphQLDeleteKnowledgeBaseFolder_addKnowledgeBaseFolder();
 
 		Assert.assertTrue(
@@ -240,11 +240,12 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 							{
 								put(
 									"knowledgeBaseFolderId",
-									knowledgeBaseFolder.getId());
+									knowledgeBaseFolder1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteKnowledgeBaseFolder"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"knowledgeBaseFolder",
@@ -252,13 +253,53 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 						{
 							put(
 								"knowledgeBaseFolderId",
-								knowledgeBaseFolder.getId());
+								knowledgeBaseFolder1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		KnowledgeBaseFolder knowledgeBaseFolder2 =
+			testGraphQLDeleteKnowledgeBaseFolder_addKnowledgeBaseFolder();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteKnowledgeBaseFolder",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"knowledgeBaseFolderId",
+										knowledgeBaseFolder2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteKnowledgeBaseFolder"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"knowledgeBaseFolder",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"knowledgeBaseFolderId",
+									knowledgeBaseFolder2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected KnowledgeBaseFolder
@@ -294,6 +335,8 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 		KnowledgeBaseFolder knowledgeBaseFolder =
 			testGraphQLGetKnowledgeBaseFolder_addKnowledgeBaseFolder();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				knowledgeBaseFolder,
@@ -311,11 +354,36 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/knowledgeBaseFolder"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				knowledgeBaseFolder,
+				KnowledgeBaseFolderSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"knowledgeBaseFolder",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"knowledgeBaseFolderId",
+												knowledgeBaseFolder.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/knowledgeBaseFolder"))));
 	}
 
 	@Test
 	public void testGraphQLGetKnowledgeBaseFolderNotFound() throws Exception {
 		Long irrelevantKnowledgeBaseFolderId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -331,6 +399,27 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"knowledgeBaseFolder",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"knowledgeBaseFolderId",
+										irrelevantKnowledgeBaseFolderId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -583,45 +672,94 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 			testGetKnowledgeBaseFolderKnowledgeBaseFoldersPage_addKnowledgeBaseFolder(
 				parentKnowledgeBaseFolderId, randomKnowledgeBaseFolder());
 
-		Page<KnowledgeBaseFolder> page1 =
-			knowledgeBaseFolderResource.
-				getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
-					parentKnowledgeBaseFolderId,
-					Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<KnowledgeBaseFolder> knowledgeBaseFolders1 =
-			(List<KnowledgeBaseFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			knowledgeBaseFolders1.toString(), totalCount + 2,
-			knowledgeBaseFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<KnowledgeBaseFolder> page1 =
+				knowledgeBaseFolderResource.
+					getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
+						parentKnowledgeBaseFolderId,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<KnowledgeBaseFolder> page2 =
-			knowledgeBaseFolderResource.
-				getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
-					parentKnowledgeBaseFolderId,
-					Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				knowledgeBaseFolder1,
+				(List<KnowledgeBaseFolder>)page1.getItems());
 
-		List<KnowledgeBaseFolder> knowledgeBaseFolders2 =
-			(List<KnowledgeBaseFolder>)page2.getItems();
+			Page<KnowledgeBaseFolder> page2 =
+				knowledgeBaseFolderResource.
+					getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
+						parentKnowledgeBaseFolderId,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			knowledgeBaseFolders2.toString(), 1, knowledgeBaseFolders2.size());
+			assertContains(
+				knowledgeBaseFolder2,
+				(List<KnowledgeBaseFolder>)page2.getItems());
 
-		Page<KnowledgeBaseFolder> page3 =
-			knowledgeBaseFolderResource.
-				getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
-					parentKnowledgeBaseFolderId,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<KnowledgeBaseFolder> page3 =
+				knowledgeBaseFolderResource.
+					getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
+						parentKnowledgeBaseFolderId,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			knowledgeBaseFolder1, (List<KnowledgeBaseFolder>)page3.getItems());
-		assertContains(
-			knowledgeBaseFolder2, (List<KnowledgeBaseFolder>)page3.getItems());
-		assertContains(
-			knowledgeBaseFolder3, (List<KnowledgeBaseFolder>)page3.getItems());
+			assertContains(
+				knowledgeBaseFolder3,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+		}
+		else {
+			Page<KnowledgeBaseFolder> page1 =
+				knowledgeBaseFolderResource.
+					getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
+						parentKnowledgeBaseFolderId,
+						Pagination.of(1, totalCount + 2));
+
+			List<KnowledgeBaseFolder> knowledgeBaseFolders1 =
+				(List<KnowledgeBaseFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				knowledgeBaseFolders1.toString(), totalCount + 2,
+				knowledgeBaseFolders1.size());
+
+			Page<KnowledgeBaseFolder> page2 =
+				knowledgeBaseFolderResource.
+					getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
+						parentKnowledgeBaseFolderId,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<KnowledgeBaseFolder> knowledgeBaseFolders2 =
+				(List<KnowledgeBaseFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				knowledgeBaseFolders2.toString(), 1,
+				knowledgeBaseFolders2.size());
+
+			Page<KnowledgeBaseFolder> page3 =
+				knowledgeBaseFolderResource.
+					getKnowledgeBaseFolderKnowledgeBaseFoldersPage(
+						parentKnowledgeBaseFolderId,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				knowledgeBaseFolder1,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+			assertContains(
+				knowledgeBaseFolder2,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+			assertContains(
+				knowledgeBaseFolder3,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+		}
 	}
 
 	protected KnowledgeBaseFolder
@@ -778,39 +916,85 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 			testGetSiteKnowledgeBaseFoldersPage_addKnowledgeBaseFolder(
 				siteId, randomKnowledgeBaseFolder());
 
-		Page<KnowledgeBaseFolder> page1 =
-			knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
-				siteId, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<KnowledgeBaseFolder> knowledgeBaseFolders1 =
-			(List<KnowledgeBaseFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			knowledgeBaseFolders1.toString(), totalCount + 2,
-			knowledgeBaseFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<KnowledgeBaseFolder> page1 =
+				knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
+					siteId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<KnowledgeBaseFolder> page2 =
-			knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
-				siteId, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				knowledgeBaseFolder1,
+				(List<KnowledgeBaseFolder>)page1.getItems());
 
-		List<KnowledgeBaseFolder> knowledgeBaseFolders2 =
-			(List<KnowledgeBaseFolder>)page2.getItems();
+			Page<KnowledgeBaseFolder> page2 =
+				knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
+					siteId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(
-			knowledgeBaseFolders2.toString(), 1, knowledgeBaseFolders2.size());
+			assertContains(
+				knowledgeBaseFolder2,
+				(List<KnowledgeBaseFolder>)page2.getItems());
 
-		Page<KnowledgeBaseFolder> page3 =
-			knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
-				siteId, Pagination.of(1, (int)totalCount + 3));
+			Page<KnowledgeBaseFolder> page3 =
+				knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
+					siteId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(
-			knowledgeBaseFolder1, (List<KnowledgeBaseFolder>)page3.getItems());
-		assertContains(
-			knowledgeBaseFolder2, (List<KnowledgeBaseFolder>)page3.getItems());
-		assertContains(
-			knowledgeBaseFolder3, (List<KnowledgeBaseFolder>)page3.getItems());
+			assertContains(
+				knowledgeBaseFolder3,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+		}
+		else {
+			Page<KnowledgeBaseFolder> page1 =
+				knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
+					siteId, Pagination.of(1, totalCount + 2));
+
+			List<KnowledgeBaseFolder> knowledgeBaseFolders1 =
+				(List<KnowledgeBaseFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				knowledgeBaseFolders1.toString(), totalCount + 2,
+				knowledgeBaseFolders1.size());
+
+			Page<KnowledgeBaseFolder> page2 =
+				knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
+					siteId, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<KnowledgeBaseFolder> knowledgeBaseFolders2 =
+				(List<KnowledgeBaseFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				knowledgeBaseFolders2.toString(), 1,
+				knowledgeBaseFolders2.size());
+
+			Page<KnowledgeBaseFolder> page3 =
+				knowledgeBaseFolderResource.getSiteKnowledgeBaseFoldersPage(
+					siteId, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				knowledgeBaseFolder1,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+			assertContains(
+				knowledgeBaseFolder2,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+			assertContains(
+				knowledgeBaseFolder3,
+				(List<KnowledgeBaseFolder>)page3.getItems());
+		}
 	}
 
 	protected KnowledgeBaseFolder
@@ -851,6 +1035,8 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 			new GraphQLField("items", getGraphQLFields()),
 			new GraphQLField("page"), new GraphQLField("totalCount"));
 
+		// No namespace
+
 		JSONObject knowledgeBaseFoldersJSONObject =
 			JSONUtil.getValueAsJSONObject(
 				invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -865,6 +1051,29 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 
 		knowledgeBaseFoldersJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/knowledgeBaseFolders");
+
+		Assert.assertEquals(
+			totalCount + 2,
+			knowledgeBaseFoldersJSONObject.getLong("totalCount"));
+
+		assertContains(
+			knowledgeBaseFolder1,
+			Arrays.asList(
+				KnowledgeBaseFolderSerDes.toDTOs(
+					knowledgeBaseFoldersJSONObject.getString("items"))));
+		assertContains(
+			knowledgeBaseFolder2,
+			Arrays.asList(
+				KnowledgeBaseFolderSerDes.toDTOs(
+					knowledgeBaseFoldersJSONObject.getString("items"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		knowledgeBaseFoldersJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
 			"JSONObject/knowledgeBaseFolders");
 
 		Assert.assertEquals(
@@ -1016,6 +1225,8 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 		KnowledgeBaseFolder knowledgeBaseFolder =
 			testGraphQLGetSiteKnowledgeBaseFolderByExternalReferenceCode_addKnowledgeBaseFolder();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				knowledgeBaseFolder,
@@ -1044,6 +1255,39 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/knowledgeBaseFolderByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				knowledgeBaseFolder,
+				KnowledgeBaseFolderSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"knowledgeBaseFolderByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteKnowledgeBaseFolderByExternalReferenceCode_getSiteId(
+														knowledgeBaseFolder) +
+															"\"");
+
+											put(
+												"externalReferenceCode",
+												"\"" +
+													knowledgeBaseFolder.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/knowledgeBaseFolderByExternalReferenceCode"))));
 	}
 
 	protected Long
@@ -1060,6 +1304,8 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -1078,6 +1324,31 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"knowledgeBaseFolderByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -1898,6 +2169,10 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1982,22 +2257,20 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = knowledgeBaseFolder.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							knowledgeBaseFolder.getDateCreated(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							knowledgeBaseFolder.getDateCreated(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -2016,22 +2289,20 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = knowledgeBaseFolder.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							knowledgeBaseFolder.getDateModified(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							knowledgeBaseFolder.getDateModified(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -2306,9 +2577,9 @@ public abstract class BaseKnowledgeBaseFolderResourceTestCase {
 	}
 
 	protected KnowledgeBaseFolderResource knowledgeBaseFolderResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

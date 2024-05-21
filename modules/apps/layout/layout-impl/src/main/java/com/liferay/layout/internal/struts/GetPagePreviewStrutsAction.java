@@ -16,7 +16,6 @@ import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
@@ -41,7 +40,6 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsWebKeys;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -87,6 +85,7 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 			themeDisplay.setPlid(layout.getPlid());
 			themeDisplay.setScopeGroupId(layout.getGroupId());
+			themeDisplay.setSiteGroupId(layout.getGroupId());
 		}
 
 		if (!LayoutPermissionUtil.containsLayoutUpdatePermission(
@@ -168,13 +167,12 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 			layout.includeLayoutContent(
 				httpServletRequest, httpServletResponse);
 
-			ServletContext servletContext = ServletContextPool.get(
-				StringPool.BLANK);
 			LayoutSet layoutSet = themeDisplay.getLayoutSet();
 
 			Document document = Jsoup.parse(
 				ThemeUtil.include(
-					servletContext, httpServletRequest, httpServletResponse,
+					ServletContextPool.get(_portal.getServletContextName()),
+					httpServletRequest, httpServletResponse,
 					"portal_normal.ftl", layoutSet.getTheme(), false));
 
 			Element contentElement = document.getElementById("content");
@@ -184,7 +182,7 @@ public class GetPagePreviewStrutsAction implements StrutsAction {
 
 			contentElement.html(sb.toString());
 
-			ServletResponseUtil.write(httpServletResponse, document.toString());
+			ServletResponseUtil.write(httpServletResponse, document.html());
 		}
 		finally {
 			httpServletRequest.setAttribute(

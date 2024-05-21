@@ -4,7 +4,8 @@
  */
 
 export const MENU_TYPES = {
-	liferayExperienceCloud: 'Liferay Experience Cloud',
+	attachments: 'Attachments',
+	liferaySaaS: 'Liferay SaaS',
 	overview: 'Overview',
 	productActivation: 'Product Activation',
 	teamMembers: 'Team Members',

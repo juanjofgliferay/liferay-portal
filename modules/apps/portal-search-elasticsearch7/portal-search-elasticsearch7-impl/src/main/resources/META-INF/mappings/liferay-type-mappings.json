@@ -1542,6 +1542,14 @@
 			"store": true,
 			"type": "keyword"
 		},
+		"assetInternalCategoryTitles": {
+			"store": true,
+			"type": "keyword"
+		},
+		"assetInternalVocabularyIds": {
+			"store": true,
+			"type": "keyword"
+		},
 		"assetTagId": {
 			"store": true,
 			"type": "keyword"
@@ -1552,6 +1560,11 @@
 		},
 		"assetTagNames": {
 			"fields": {
+				"lowercase": {
+					"normalizer": "lowercase",
+					"store": true,
+					"type": "keyword"
+				},
 				"raw": {
 					"store": true,
 					"type": "keyword"
@@ -1650,6 +1663,13 @@
 			"type": "date"
 		},
 		"emailAddress": {
+			"fields": {
+				"text": {
+					"analyzer": "keyword_lowercase",
+					"search_analyzer": "email_lowercase",
+					"type": "text"
+				}
+			},
 			"store": true,
 			"type": "keyword"
 		},

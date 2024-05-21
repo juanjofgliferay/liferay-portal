@@ -26,13 +26,6 @@
 			<category name="Styling" />
 			<description name="Finds `slanted quote` (`\u201a`, `\u201b`, `\u201c`, `\u201d`, `\u201e`, `\u201f`, `\u2018` or `\u2019`) characters." />
 		</check>
-
-		<!-- Liferay Source Checks -->
-
-		<check name="NewFileCheck">
-			<category name="Bug Prevention" />
-			<description name="Finds new files in directories that should not have added files." />
-		</check>
 	</source-processor>
 	<source-processor name="BNDRunSourceProcessor">
 		<check name="BNDRunInstructionsOrderCheck">
@@ -250,7 +243,7 @@
 		</check>
 		<check name="IllegalTaglibsCheck">
 			<category name="Bug Prevention" />
-			<description name="Finds cases of incorrect use of certain taglibs." />
+			<description name="Finds cases of incorrect use of certain deprecated taglibs in modules." />
 		</check>
 	</source-processor>
 	<source-processor name="GradleSourceProcessor">
@@ -265,7 +258,6 @@
 		<check name="GradleDependenciesCheck">
 			<category name="Performance" />
 			<description name="Checks that modules are not depending on other modules." />
-			<property name="checkPetraDependencies" value="true" />
 			<property name="checkTestIntegrationCompileDependencies" value="false" />
 		</check>
 		<check name="GradleDependencyArtifactsCheck">
@@ -296,6 +288,11 @@
 			<category name="Bug Prevention" />
 			<description name="Checks values of properties `sourceCompatibility` and `targetCompatibility` in gradle build files." />
 		</check>
+		<check name="GradleMissingDependenciesForUpgradeJava21Check">
+			<category name="Bug Prevention" />
+			<description name="Checks missing dependencies for upgrade Java 21 in gradle build files." />
+			<property name="enabled" value="false" />
+		</check>
 		<check name="GradleMissingJarManifestTaskCheck">
 			<category name="Bug Prevention" />
 			<description name="Finds missing `jarManifest` task when using `jarPatched` task in gradle build files." />
@@ -312,6 +309,11 @@
 		<check name="GradleRequiredDependenciesCheck">
 			<category name="Bug Prevention" />
 			<description name="Validates the dependencies in `/required-dependencies/required-dependencies/build.gradle`." />
+		</check>
+		<check name="GradleRestClientDependenciesCheck">
+			<category name="Bug Prevention" />
+			<description name="Validates the project dependencies `.*-rest-client` can only be used for `testIntegrationImplementation`." />
+			<property name="enabled" value="false" />
 		</check>
 		<check name="GradleStylingCheck">
 			<category name="Styling" />
@@ -340,6 +342,17 @@
 		<check name="WhitespaceCheck">
 			<category name="Styling" />
 			<description name="Finds missing and unnecessary whitespace." />
+		</check>
+
+		<!-- Module Source Checks -->
+
+		<check name="GradleCommerceDependenciesCheck">
+			<category name="Bug Prevention" />
+			<description name="Checks the modules that are outside of Commerce are not allowed to depend on Commerce modules." />
+		</check>
+		<check name="GradlePetraModuleDependenciesCheck">
+			<category name="Bug Prevention" />
+			<description name="Checks that dependencies in `petra` moudule can only contains `petra` dependencies." />
 		</check>
 	</source-processor>
 	<source-processor name="GroovySourceProcessor">
@@ -370,10 +383,6 @@
 		<check name="ArrayCheck">
 			<category name="Performance" />
 			<description name="Checks if performance can be improved by using different methods that can be used by collections." />
-		</check>
-		<check name="CopyrightCheck">
-			<category name="Styling" />
-			<description name="Validates `copyright` header." />
 		</check>
 		<check name="EmptyCollectionCheck">
 			<category name="Styling" />
@@ -641,6 +650,10 @@
 
 		<!-- Liferay Source Checks -->
 
+		<check name="CopyrightCheck">
+			<category name="Styling" />
+			<description name="Validates `copyright` header." />
+		</check>
 		<check name="IllegalImportsCheck">
 			<category name="Bug Prevention" />
 			<description name="Finds cases of incorrect use of certain classes." />
@@ -677,6 +690,7 @@
 			<property name="checkMismatchedServiceAttribute" value="false" />
 			<property name="checkResourceImpl" value="false" />
 			<property name="checkSelfRegistration" value="false" />
+			<property name="checkUsesInternalService" value="false" />
 		</check>
 		<check name="JavaDeprecatedJavadocCheck">
 			<category name="Javadoc" />
@@ -686,6 +700,11 @@
 			<category name="Bug Prevention" />
 			<description name="Finds calls to deprecated classes `com.liferay.portal.kernel.util.CharPool` and `com.liferay.portal.kernel.util.StringPool`." />
 		</check>
+		<check name="JavaFeatureFlagManagerUtilCheck">
+			<category name="Bug Prevention" />
+			<description name="Finds cases where `FeatureFlagManagerUtil.isEnabled` should be used." />
+			<property name="enabled" value="false" />
+		</check>
 		<check name="JavaFinderCacheCheck">
 			<category name="Bug Prevention" />
 			<description name="Checks that the method `BasePersistenceImpl.fetchByPrimaryKey` is overridden, when using `FinderPath`." />
@@ -694,11 +713,6 @@
 			<category name="Bug Prevention" />
 			<description name="Checks that hardcoded SQL values in `*FinderImpl` classes match the SQL in the `.xml` file in the `custom-sql` directory." />
 		</check>
-		<check name="JavaGetFeatureFlagCheck">
-			<category name="Bug Prevention" />
-			<description name="Checks that `FeatureFlagManagerUtil.isEnabled` should be used (instead of `PropsUtil.get` in `GetterUtil.getBoolean`)." />
-			<property name="enabled" value="false" />
-		</check>
 		<check name="JavaHelperUtilCheck">
 			<category name="Naming Conventions" />
 			<description name="Finds incorrect use of `*Helper` or `*Util` classes." />
@@ -706,6 +720,10 @@
 		<check name="JavaIgnoreAnnotationCheck">
 			<category name="Bug Prevention" />
 			<description name="Finds methods with `@Ignore` annotation in test classes." />
+		</check>
+		<check name="JavaInitialRequestPortalInstanceLifecycleListenerCheck">
+			<category name="Bug Prevention" />
+			<description name="Performs several checks on `InitialRequestPortalInstanceLifecycleListener` subclasses." />
 		</check>
 		<check name="JavaInjectAnnotationsCheck">
 			<category name="Bug Prevention" />
@@ -825,6 +843,10 @@
 			<category name="Bug Prevention" />
 			<description name="Performs several checks on `alter` calls in Upgrade classes." />
 		</check>
+		<check name="JavaUpgradeAlterColumnCallsOrderCheck">
+			<category name="Styling" />
+			<description name="Sorts method calls for altering table columns." />
+		</check>
 		<check name="JavaUpgradeClassCheck">
 			<category name="Bug Prevention" />
 			<description name="Performs several checks on Upgrade classes." />
@@ -840,16 +862,17 @@
 		</check>
 		<check name="JavaUpgradeEmptyLinesCheck">
 			<category name="Styling" />
-			<description name="Finds missing and unnecessary empty lines in Upgrade classes." />
+			<description name="Finds missing and unnecessary empty lines in upgrade classes." />
 		</check>
 		<check name="JavaUpgradeIndexCheck">
 			<category name="Bug Prevention" />
 			<description name="Finds cases where the service builder indexes are updated manually in Upgrade classes. This is not needed because Liferay takes care of it." />
 			<property name="enabled" value="false" />
 		</check>
-		<check name="JavaUpgradeProcessFactoryCheck">
-			<category name="Styling" />
-			<description name="Sorts and groups method calls." />
+		<check name="JavaUpgradeMissingTestCheck">
+			<category name="Bug Prevention" />
+			<description name="Finds missing integration tests for upgrade classes." />
+			<property name="enabled" value="false" />
 		</check>
 		<check name="JavaUpgradeVersionCheck">
 			<category name="Bug Prevention" />
@@ -925,6 +948,10 @@
 			<description name="Finds cases of incorrect use of certain classes in modules." />
 			<property name="checkRegistryInTestClasses" value="false" />
 		</check>
+		<check name="JavaModuleInheritableVariableAccessModifierCheck">
+			<category name="Bug Prevention" />
+			<description name="Checks for cases where visibility of variable can be increased." />
+		</check>
 		<check name="JavaModuleInternalImportsCheck">
 			<category name="Bug Prevention" />
 			<description name="Finds cases where a module imports an `internal` class from another class." />
@@ -940,6 +967,15 @@
 		<check name="JavaModuleTestCheck">
 			<category name="Bug Prevention" />
 			<description name="Checks package names in tests." />
+		</check>
+		<check name="JavaModuleTestUtilCheck">
+			<category name="Bug Prevention" />
+			<description name="Checks package name for `*TestUtil.java`." />
+			<property name="enabled" value="false" />
+		</check>
+		<check name="JavaModuleUniqueUpgradeStepRegistratorCheck">
+			<category name="Bug Prevention" />
+			<description name="Checks that a module can not have more than 1 upgrade step registrator class (class implements UpgradeStepRegistrator)." />
 		</check>
 		<check name="JavaModuleUniqueVerifyProcessCheck">
 			<category name="Bug Prevention" />
@@ -1000,15 +1036,19 @@
 			<category name="Bug Prevention" />
 			<description name="Checks the version for dependencies in `package.json` files." />
 		</check>
+		<check name="JSONPageFileCheck">
+			<category name="Styling" />
+			<description name="Sorts by `roleName` in `page.json` files." />
+		</check>
+		<check name="JSONResourcePermissionsFileCheck">
+			<category name="Styling" />
+			<description name="Sorts by `resourceName` and `roleName` in `resource-permissions.json` files." />
+		</check>
 	</source-processor>
 	<source-processor name="JSPSourceProcessor">
 		<check name="ArrayCheck">
 			<category name="Performance" />
 			<description name="Checks if performance can be improved by using different methods that can be used by collections." />
-		</check>
-		<check name="CopyrightCheck">
-			<category name="Styling" />
-			<description name="Validates `copyright` header." />
 		</check>
 		<check name="EmptyCollectionCheck">
 			<category name="Styling" />
@@ -1173,6 +1213,10 @@
 
 		<!-- Liferay Source Checks -->
 
+		<check name="CopyrightCheck">
+			<category name="Styling" />
+			<description name="Validates `copyright` header." />
+		</check>
 		<check name="JSPCoreTaglibCheck">
 			<category name="Styling" />
 			<description name="Finds cases where a `c:choose` or `c:if` tag can be used instead of an if-statement." />
@@ -1233,6 +1277,11 @@
 		<check name="JSPModuleIllegalImportsCheck">
 			<category name="Miscellaneous" />
 			<description name="Finds incorrect use of `com.liferay.registry.Registry` or `com.liferay.util.ContentUtil`." />
+		</check>
+		<check name="JSPOutputTaglibsCheck">
+			<category name="Styling" />
+			<description name="Checks that value of `outputKey` follows naming conventions." />
+			<property name="enabled" value="false" />
 		</check>
 		<check name="JSPServiceUtilCheck">
 			<category name="Miscellaneous" />
@@ -1302,7 +1351,25 @@
 			<property name="enabled" value="false" />
 		</check>
 	</source-processor>
+	<source-processor name="ListSourceProcessor">
+
+		<!-- Liferay Source Checks -->
+
+		<check name="ListStylingCheck">
+			<category name="Styling" />
+			<description name="Applies rules to enforce consistency in code style." />
+		</check>
+	</source-processor>
 	<source-processor name="MarkdownSourceProcessor">
+		<check name="MarkdownBreakingChangesAmendmentsFileCheck">
+			<category name="Styling" />
+			<description name="Checks that breaking changes amendments should contain the schematized breaking changes in `BREAKING_CHANGES_AMENDMENTS.markdown` file." />
+			<property name="enabled" value="false" />
+		</check>
+		<check name="MarkdownEmptyLinesCheck">
+			<category name="Styling" />
+			<description name="Finds missing and unnecessary empty lines." />
+		</check>
 		<check name="MarkdownFileExtensionCheck">
 			<category name="Styling" />
 			<description name="Finds `markdown` files with `.md` extension (use `.markdown`)." />
@@ -1612,6 +1679,21 @@
 		<check name="UpgradeCatchAllCheck">
 			<category name="Upgrade" />
 			<description name="Performs replacements on Liferay's outdated code" />
+			<weight>2</weight>
+		</check>
+		<check name="UpgradeCatchAllJavaImportsCheck">
+			<category name="Upgrade" />
+			<description name="Sorts and groups imports in `UpgradeCatchAllCheck.testjava` file." />
+			<weight>1</weight>
+		</check>
+		<check name="UpgradeCatchAllJavaTermOrderCheck">
+			<category name="Upgrade" />
+			<description name="Sorts javaterms in `UpgradeCatchAllCheck.testjava` file." />
+			<weight>1</weight>
+		</check>
+		<check name="UpgradeCatchAllJSPImportsCheck">
+			<category name="Upgrade" />
+			<description name="Sorts and groups imports in `UpgradeCatchAllCheck.testjsp` file." />
 			<weight>1</weight>
 		</check>
 		<check name="UpgradeGradleIncludeResourceCheck">
@@ -1639,6 +1721,10 @@
 		<check name="UpgradeJavaCommerceOrderValidatorCheck">
 			<category name="Upgrade" />
 			<description name="Replace the parameter Int for BigDecimal of method validate of 'CommerceOrderValidator' interface" />
+		</check>
+		<check name="UpgradeJavaDDMFormValuesSerializerTrackerCheck">
+			<category name="Upgrade" />
+			<description name="Replaces the references of `DDMFormValuesSerializerTracker` class and also its methods usages." />
 		</check>
 		<check name="UpgradeJavaFacetedSearcherCheck">
 			<category name="Upgrade" />
@@ -1689,13 +1775,13 @@
 			<category name="Upgrade" />
 			<description name="Replace constructors that use the empty constructor of the SchedulerEntryImpl class." />
 		</check>
+		<check name="UpgradeJavaScreenContributorClassCheck">
+			<category name="Upgrade" />
+			<description name="Replace class `PortalSettingsConfigurationScreenContributor` by `ConfigurationScreenWrapper` and create an inner class" />
+		</check>
 		<check name="UpgradeJavaServiceReferenceAnnotationCheck">
 			<category name="Upgrade" />
 			<description name="Run code migration to replace '@ServiceReference' by '@Reference'" />
-		</check>
-		<check name="UpgradeJavaServiceTrackerListCheck">
-			<category name="Upgrade" />
-			<description name="Replace the number of generic type arguments in ServiceTrackerList" />
 		</check>
 		<check name="UpgradeJavaStorageTypeAwareCheck">
 			<category name="Upgrade" />

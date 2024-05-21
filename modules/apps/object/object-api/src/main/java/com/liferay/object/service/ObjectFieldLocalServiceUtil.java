@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -561,28 +562,28 @@ public class ObjectFieldLocalServiceUtil {
 
 	public static void validateReadOnlyAndReadOnlyConditionExpression(
 			String businessType, String readOnly,
-			String readOnlyConditionExpression)
+			String readOnlyConditionExpression, boolean required)
 		throws PortalException {
 
 		getService().validateReadOnlyAndReadOnlyConditionExpression(
-			businessType, readOnly, readOnlyConditionExpression);
+			businessType, readOnly, readOnlyConditionExpression, required);
 	}
 
 	public static void validateRequired(
-			long objectFieldId, String businessType, boolean required)
+			String businessType, boolean objectDefinitionApproved,
+			ObjectField oldObjectField, boolean required)
 		throws PortalException {
 
-		getService().validateRequired(objectFieldId, businessType, required);
+		getService().validateRequired(
+			businessType, objectDefinitionApproved, oldObjectField, required);
 	}
 
 	public static ObjectFieldLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectFieldLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectFieldLocalService _service;
+	private static final Snapshot<ObjectFieldLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectFieldLocalServiceUtil.class, ObjectFieldLocalService.class);
 
 }

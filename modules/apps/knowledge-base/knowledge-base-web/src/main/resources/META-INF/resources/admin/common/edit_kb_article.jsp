@@ -12,7 +12,7 @@ EditKBArticleDisplayContext editKBArticleDisplayContext = new EditKBArticleDispl
 
 if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 	portletDisplay.setShowBackIcon(true);
-	portletDisplay.setURLBack(editKBArticleDisplayContext.getRedirect());
+	portletDisplay.setURLBack(editKBArticleDisplayContext.getCancelURL());
 	portletDisplay.setURLBackTitle(portletDisplay.getTitle());
 
 	renderResponse.setTitle(editKBArticleDisplayContext.getHeaderTitle());
@@ -21,7 +21,7 @@ if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 
 <c:if test="<%= !editKBArticleDisplayContext.isHeaderVisible() %>">
 	<liferay-ui:header
-		backURL="<%= editKBArticleDisplayContext.getRedirect() %>"
+		backURL="<%= editKBArticleDisplayContext.getCancelURL() %>"
 		localizeTitle="<%= false %>"
 		title="<%= editKBArticleDisplayContext.getHeaderTitle() %>"
 	/>
@@ -44,7 +44,7 @@ if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 							borderless="<%= true %>"
 							cssClass="mr-3"
 							displayType="secondary"
-							href="<%= editKBArticleDisplayContext.getRedirect() %>"
+							href="<%= editKBArticleDisplayContext.getCancelURL() %>"
 							label="cancel"
 							small="<%= true %>"
 							type="button"
@@ -272,6 +272,16 @@ if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 				</c:if>
 
 				<liferay-ui:error exception="<%= FileNameException.class %>" message="please-enter-a-file-with-a-valid-file-name" />
+
+				<liferay-ui:error exception="<%= LockedKBArticleException.class %>">
+
+					<%
+					LockedKBArticleException lockedKBArticleException = (LockedKBArticleException)errorException;
+					%>
+
+					<liferay-ui:message arguments="<%= lockedKBArticleException.getUserName() %>" key="this-article-is-now-under-control-of-x" translateArguments="<%= false %>" />
+				</liferay-ui:error>
+
 				<liferay-ui:error exception="<%= KBArticleDisplayDateException.class %>" message="please-enter-a-valid-schedule-date" />
 				<liferay-ui:error exception="<%= KBArticleExpirationDateException.class %>" message="please-enter-a-valid-expiration-date" />
 				<liferay-ui:error exception="<%= KBArticleReviewDateException.class %>" message="please-enter-a-valid-review-date" />
@@ -374,12 +384,12 @@ if (editKBArticleDisplayContext.isPortletTitleBasedNavigation()) {
 			"schedulerEnabled", FeatureFlagManagerUtil.isEnabled("LPS-188058") && editKBArticleDisplayContext.isSchedulerEnabled()
 		).build()
 	%>'
-	module="admin/js/EditKBArticle"
+	module="{EditKBArticle} from knowledge-base-web"
 />
 
 <div>
 	<react:component
-		module="admin/js/components/ScheduleKBArticle"
+		module="{ScheduleKBArticle} from knowledge-base-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"displayDate", editKBArticleDisplayContext.getDatePickerFormattedDisplayDate()
@@ -405,6 +415,6 @@ String kbArticleSuccessMessage = GetterUtil.getString(MultiSessionMessages.get(r
 				"message", kbArticleSuccessMessage
 			).build()
 		%>'
-		module="admin/js/utils/openToast"
+		module="{openToast} from knowledge-base-web"
 	/>
 </c:if>

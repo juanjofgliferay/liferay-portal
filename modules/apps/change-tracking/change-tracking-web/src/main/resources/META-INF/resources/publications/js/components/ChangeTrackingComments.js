@@ -99,7 +99,9 @@ export default function ChangeTrackingComments({
 			ctEntryId,
 		});
 
-		fetch(portletURL)
+		fetch(portletURL, {
+			method: 'post',
+		})
 			.then((response) => response.json())
 			.then((json) => {
 				if (!json.comments) {
@@ -135,7 +137,9 @@ export default function ChangeTrackingComments({
 			ctEntryId,
 		});
 
-		fetch(portletURL)
+		fetch(portletURL, {
+			method: 'post',
+		})
 			.then((response) => response.json())
 			.then((json) => {
 				if (!json.comments) {
@@ -169,7 +173,9 @@ export default function ChangeTrackingComments({
 			value: inputValue,
 		});
 
-		fetch(portletURL.toString())
+		fetch(portletURL.toString(), {
+			method: 'post',
+		})
 			.then((response) => response.json())
 			.then((json) => {
 				setDeleting(0);
@@ -211,7 +217,9 @@ export default function ChangeTrackingComments({
 			value: newValue,
 		});
 
-		fetch(portletURL)
+		fetch(portletURL, {
+			method: 'post',
+		})
 			.then((response) => response.json())
 			.then((json) => {
 				setDeleting(0);
@@ -272,7 +280,7 @@ export default function ChangeTrackingComments({
 			return (
 				<ClayEmptyState
 					description={Liferay.Language.get('no-comments-yet')}
-					imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.gif`}
+					imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.svg`}
 					small
 					title={Liferay.Language.get('no-results-found')}
 				/>

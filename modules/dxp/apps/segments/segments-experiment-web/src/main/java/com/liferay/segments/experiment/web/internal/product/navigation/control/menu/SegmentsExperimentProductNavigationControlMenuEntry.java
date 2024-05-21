@@ -6,7 +6,6 @@
 package com.liferay.segments.experiment.web.internal.product.navigation.control.menu;
 
 import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.frontend.taglib.clay.servlet.taglib.ButtonTag;
 import com.liferay.frontend.taglib.clay.servlet.taglib.IconTag;
 import com.liferay.petra.reflect.ReflectionUtil;
@@ -431,10 +430,10 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 			sb.append("<div class=\"d-flex justify-content-between p-3 ");
 			sb.append("sidebar-header\">");
 			sb.append("<h1 class=\"sr-only\">");
-			sb.append(_language.get(httpServletRequest, "ab-test-panel"));
+			sb.append(_language.get(httpServletRequest, "tests-panel"));
 			sb.append("</h1>");
 			sb.append("<span class=\"font-weight-bold\">");
-			sb.append(_language.get(httpServletRequest, "ab-test"));
+			sb.append(_language.get(httpServletRequest, "tests"));
 			sb.append("</span>");
 
 			ButtonTag buttonTag = new ButtonTag();
@@ -459,8 +458,7 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 
 			_reactRenderer.renderReact(
 				new ComponentDescriptor(
-					_npmResolver.resolveModuleName("segments-experiment-web") +
-						"/js/SegmentsExperimentApp.es"),
+					"{SegmentsExperimentApp} from segments-experiment-web"),
 				_getData(httpServletRequest, panelStateOpen),
 				httpServletRequest, jspWriter);
 
@@ -485,9 +483,6 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

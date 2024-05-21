@@ -5,6 +5,7 @@
 
 package com.liferay.saml.opensaml.integration.internal.servlet.profile;
 
+import com.liferay.portal.kernel.cookies.CookiesManager;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -13,7 +14,7 @@ import com.liferay.saml.constants.SamlWebKeys;
 import com.liferay.saml.opensaml.integration.internal.BaseSamlTestCase;
 import com.liferay.saml.opensaml.integration.internal.bootstrap.SecurityConfigurationBootstrap;
 import com.liferay.saml.opensaml.integration.internal.helper.RelayStateHelperImpl;
-import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManagerImpl;
+import com.liferay.saml.opensaml.integration.internal.identifier.IdentifierGeneratorStrategyFactory;
 import com.liferay.saml.opensaml.integration.internal.provider.CachingChainingMetadataResolver;
 import com.liferay.saml.opensaml.integration.internal.util.OpenSamlUtil;
 import com.liferay.saml.opensaml.integration.internal.util.SamlUtil;
@@ -52,8 +53,10 @@ import net.shibboleth.utilities.java.support.security.IdentifierGenerationStrate
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -94,6 +97,7 @@ import org.opensaml.security.credential.Credential;
 import org.opensaml.xmlsec.signature.Signature;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -110,6 +114,17 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		_cookiesManagerServiceRegistration = _bundleContext.registerService(
+			CookiesManager.class, Mockito.mock(CookiesManager.class), null);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_cookiesManagerServiceRegistration.unregister();
+	}
+
 	@Before
 	@Override
 	public void setUp() throws Exception {
@@ -123,10 +138,10 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 			SamlSpSessionLocalService.class);
 
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "identifierGenerationStrategyFactory",
-			identifierGenerationStrategyFactory);
+			_webSsoProfileImpl, "credentialResolver", credentialResolver);
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "metadataManager", metadataManagerImpl);
+			_webSsoProfileImpl, "localEntityManager",
+			keyStoreLocalEntityManager);
 		ReflectionTestUtil.setFieldValue(_webSsoProfileImpl, "portal", portal);
 		ReflectionTestUtil.setFieldValue(
 			_webSsoProfileImpl, "_relayStateHelper", _relayStateHelperImpl);
@@ -147,7 +162,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 				SamlSpMessageLocalServiceUtil.class,
 				SamlSpMessageLocalService.class));
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "_samlSpIdpConnectionLocalService",
+			_webSsoProfileImpl, "samlSpIdpConnectionLocalService",
 			getMockPortletService(
 				SamlSpIdpConnectionLocalServiceUtil.class,
 				SamlSpIdpConnectionLocalService.class));
@@ -157,6 +172,17 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 
 		_webSsoProfileImpl.activate(
 			SystemBundleUtil.getBundleContext(), new HashMap<String, Object>());
+
+		ReflectionTestUtil.invoke(
+			_webSsoProfileImpl.getMetadataResolver(), "doDestroy",
+			new Class<?>[0]);
+
+		CachingChainingMetadataResolver cachingChainingMetadataResolver =
+			(CachingChainingMetadataResolver)
+				_webSsoProfileImpl.getMetadataResolver();
+
+		cachingChainingMetadataResolver.addMetadataResolver(
+			new MockMetadataResolver());
 
 		prepareServiceProvider(SP_ENTITY_ID);
 	}
@@ -168,7 +194,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		Credential credential = getCredential(IDP_ENTITY_ID);
 
 		MetadataResolver metadataResolver =
-			metadataManagerImpl.getMetadataResolver();
+			_webSsoProfileImpl.getMetadataResolver();
 
 		EntityDescriptor entityDescriptor = metadataResolver.resolveSingle(
 			new CriteriaSet(new EntityIdCriterion(SP_ENTITY_ID)));
@@ -325,7 +351,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		HttpSession mockHttpSession = mockHttpServletRequest.getSession();
 
 		SamlSsoRequestContext samlSsoRequestContext = new SamlSsoRequestContext(
-			SP_ENTITY_ID, RELAY_STATE, null, userLocalService);
+			SP_ENTITY_ID, RELAY_STATE, null);
 
 		mockHttpSession.setAttribute(
 			SamlWebKeys.SAML_SSO_REQUEST_CONTEXT, samlSsoRequestContext);
@@ -392,7 +418,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		);
 
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "_samlSpIdpConnectionLocalService",
+			_webSsoProfileImpl, "samlSpIdpConnectionLocalService",
 			samlSpIdpConnectionLocalService);
 
 		MockHttpServletRequest mockHttpServletRequest =
@@ -509,7 +535,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		);
 
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "_samlSpIdpConnectionLocalService",
+			_webSsoProfileImpl, "samlSpIdpConnectionLocalService",
 			samlSpIdpConnectionLocalService);
 
 		MockHttpServletRequest mockHttpServletRequest =
@@ -602,37 +628,16 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 
 		samlSpIdpConnection.setSamlIdpEntityId(IDP_ENTITY_ID);
 
-		metadataManagerImpl = new MetadataManagerImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_credentialResolver", credentialResolver);
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_localEntityManager",
-			keyStoreLocalEntityManager);
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_portal", portal);
-		ReflectionTestUtil.setFieldValue(
-			metadataManagerImpl, "_samlProviderConfigurationHelper",
-			samlProviderConfigurationHelper);
-
 		ReflectionTestUtil.invoke(
-			metadataManagerImpl, "activate",
-			new Class<?>[] {BundleContext.class},
-			SystemBundleUtil.getBundleContext());
-
-		ReflectionTestUtil.invoke(
-			metadataManagerImpl.getMetadataResolver(), "doDestroy",
+			_webSsoProfileImpl.getMetadataResolver(), "doDestroy",
 			new Class<?>[0]);
 
 		CachingChainingMetadataResolver cachingChainingMetadataResolver =
 			(CachingChainingMetadataResolver)
-				metadataManagerImpl.getMetadataResolver();
+				_webSsoProfileImpl.getMetadataResolver();
 
 		cachingChainingMetadataResolver.addMetadataResolver(
 			new MockMetadataResolver(false));
-
-		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "metadataManager", metadataManagerImpl);
 
 		Mockito.when(
 			samlSpIdpConnectionLocalService.getSamlSpIdpConnection(
@@ -642,7 +647,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		);
 
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "_samlSpIdpConnectionLocalService",
+			_webSsoProfileImpl, "samlSpIdpConnectionLocalService",
 			samlSpIdpConnectionLocalService);
 
 		MockHttpServletRequest mockHttpServletRequest =
@@ -696,7 +701,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		);
 
 		ReflectionTestUtil.setFieldValue(
-			_webSsoProfileImpl, "_samlSpIdpConnectionLocalService",
+			_webSsoProfileImpl, "samlSpIdpConnectionLocalService",
 			samlSpIdpConnectionLocalService);
 
 		MockHttpServletRequest mockHttpServletRequest =
@@ -773,8 +778,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlPeerEntityContext.setEntityId(IDP_ENTITY_ID);
 
 		_webSsoProfileImpl.verifyAssertionSignature(
-			null, messageContext,
-			metadataManagerImpl.getSignatureTrustEngine());
+			null, messageContext, _webSsoProfileImpl.getSignatureTrustEngine());
 	}
 
 	@Test(expected = SignatureException.class)
@@ -806,8 +810,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlPeerEntityContext.setEntityId(IDP_ENTITY_ID);
 
 		_webSsoProfileImpl.verifyAssertionSignature(
-			null, messageContext,
-			metadataManagerImpl.getSignatureTrustEngine());
+			null, messageContext, _webSsoProfileImpl.getSignatureTrustEngine());
 	}
 
 	@Test
@@ -866,7 +869,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlPeerEntityContext.setEntityId(SP_ENTITY_ID);
 
 		SamlSsoRequestContext samlSsoRequestContext = new SamlSsoRequestContext(
-			SP_ENTITY_ID, null, idpMessageContext, userLocalService);
+			SP_ENTITY_ID, null, idpMessageContext);
 
 		DateTime dateTime = new DateTime(DateTimeZone.UTC);
 
@@ -898,7 +901,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlPeerEntityContext.setEntityId(SP_ENTITY_ID);
 
 		SamlSsoRequestContext samlSsoRequestContext = new SamlSsoRequestContext(
-			SP_ENTITY_ID, null, idpMessageContext, userLocalService);
+			SP_ENTITY_ID, null, idpMessageContext);
 
 		DateTime dateTime = new DateTime(DateTimeZone.UTC);
 
@@ -930,7 +933,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlPeerEntityContext.setEntityId(SP_ENTITY_ID);
 
 		SamlSsoRequestContext samlSsoRequestContext = new SamlSsoRequestContext(
-			SP_ENTITY_ID, null, idpMessageContext, userLocalService);
+			SP_ENTITY_ID, null, idpMessageContext);
 
 		Conditions conditions = _webSsoProfileImpl.getSuccessConditions(
 			samlSsoRequestContext, null, null);
@@ -999,7 +1002,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlSpAuthRequest.setSamlIdpEntityId(IDP_ENTITY_ID);
 
 		IdentifierGenerationStrategy identifierGenerationStrategy =
-			identifierGenerationStrategyFactory.create(30);
+			IdentifierGeneratorStrategyFactory.create(30);
 
 		String samlSpAuthRequestKey =
 			identifierGenerationStrategy.generateIdentifier();
@@ -1079,7 +1082,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 		samlPeerEntityContext.setEntityId(SP_ENTITY_ID);
 
 		SamlSsoRequestContext samlSsoRequestContext = new SamlSsoRequestContext(
-			SP_ENTITY_ID, null, idpMessageContext, userLocalService);
+			SP_ENTITY_ID, null, idpMessageContext);
 
 		Conditions conditions = _webSsoProfileImpl.getSuccessConditions(
 			samlSsoRequestContext, null, null);
@@ -1223,8 +1226,7 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 
 		SamlSsoRequestContext samlSsoRequestContext = new SamlSsoRequestContext(
 			samlPeerEntityContext.getEntityId(),
-			samlBindingContext.getRelayState(), messageContext,
-			userLocalService);
+			samlBindingContext.getRelayState(), messageContext);
 
 		SAMLSelfEntityContext samlSelfEntityContext =
 			messageContext.getSubcontext(SAMLSelfEntityContext.class);
@@ -1264,14 +1266,27 @@ public class WebSsoProfileIntegrationTest extends BaseSamlTestCase {
 
 		_webSsoProfileImpl.verifyAssertionSignature(
 			assertion.getSignature(), messageContext,
-			metadataManagerImpl.getSignatureTrustEngine());
+			_webSsoProfileImpl.getSignatureTrustEngine());
 	}
+
+	private static final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+	private static ServiceRegistration<CookiesManager>
+		_cookiesManagerServiceRegistration;
 
 	private final RelayStateHelperImpl _relayStateHelperImpl =
 		new RelayStateHelperImpl();
 	private SamlSpAuthRequestLocalService _samlSpAuthRequestLocalService;
 	private SamlSpSessionLocalService _samlSpSessionLocalService;
+
 	private final WebSsoProfileImpl _webSsoProfileImpl =
-		new WebSsoProfileImpl();
+		new WebSsoProfileImpl() {
+
+			@Override
+			public String generateIdentifier(int length) {
+				return identifierGenerationStrategy.generateIdentifier();
+			}
+
+		};
 
 }

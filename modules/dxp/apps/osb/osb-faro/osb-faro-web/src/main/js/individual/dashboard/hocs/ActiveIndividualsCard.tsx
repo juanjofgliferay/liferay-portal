@@ -1,11 +1,10 @@
 import ActiveIndividualsChart from '../components/ActiveIndividualsChart';
 import Card from 'shared/components/Card';
-import DropdownRangeKey from 'shared/hoc/DropdownRangeKey';
 import IndividualSiteMetricsQuery from 'shared/queries/IndividualSiteMetricsQuery';
 import IntervalSelector from 'shared/components/IntervalSelector';
-import React, {useCallback} from 'react';
+import React from 'react';
 import {compose} from 'redux';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
+import {DropdownRangeKey} from 'shared/components/dropdown-range-key/DropdownRangeKey';
 import {graphql} from '@apollo/react-hoc';
 import {Interval} from 'shared/types';
 import {INTERVAL_KEY_MAP, isHourlyRangeKey} from 'shared/util/time';
@@ -14,6 +13,7 @@ import {
 	mapResultToProps
 } from '../hocs/mappers/site-metrics-query';
 import {RangeSelectors} from 'shared/types';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {useParams} from 'react-router-dom';
 import {withError} from 'shared/hoc';
 import {withInterval, withRangeKey} from 'shared/hoc';
@@ -31,7 +31,7 @@ interface IActiveIndividualsCardProps
 	interval: Interval;
 	loading: Boolean;
 	onChangeInterval: (val: any) => void;
-	onRangeSelectorsChange: (val: string) => void;
+	onRangeSelectorsChange: (val: RangeSelectors) => void;
 	rangeSelectors: RangeSelectors;
 }
 
@@ -45,7 +45,10 @@ const ActiveIndividualsCard: React.FC<IActiveIndividualsCardProps> = ({
 	const {channelId} = useParams();
 
 	return (
-		<Card id={Containers.ActiveIndividualsCard} minHeight={536}>
+		<Card
+			minHeight={536}
+			reportContainer={ReportContainer.ActiveIndividualsCard}
+		>
 			<Card.Header className='align-items-center d-flex justify-content-between'>
 				<Card.Title>
 					{Liferay.Language.get('active-individuals')}
@@ -63,14 +66,14 @@ const ActiveIndividualsCard: React.FC<IActiveIndividualsCardProps> = ({
 
 					<DropdownRangeKey
 						legacy={false}
-						onChange={useCallback(newVal => {
+						onRangeSelectorChange={newVal => {
 							onRangeSelectorsChange &&
 								onRangeSelectorsChange(newVal);
 
 							if (isHourlyRangeKey(newVal.rangeKey)) {
 								onChangeInterval(INTERVAL_KEY_MAP.day);
 							}
-						}, [])}
+						}}
 						rangeSelectors={rangeSelectors}
 					/>
 				</div>

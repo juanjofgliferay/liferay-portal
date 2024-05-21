@@ -14,11 +14,11 @@ import {InputLocalized} from 'frontend-js-components-web';
 import {fetch, openModal} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-import {API_URL, OBJECT_RELATIONSHIP} from '../../Constants';
 import {FDSViewType} from '../../FDSViews';
 import RequiredMark from '../../components/RequiredMark';
 import Search from '../../components/Search';
 import ValidationFeedback from '../../components/ValidationFeedback';
+import {API_URL, OBJECT_RELATIONSHIP} from '../../utils/constants';
 import openDefaultFailureToast from '../../utils/openDefaultFailureToast';
 import openDefaultSuccessToast from '../../utils/openDefaultSuccessToast';
 import {IFDSAction} from '../Actions';
@@ -164,7 +164,6 @@ const ActionForm = ({
 	const [titleTranslations, setTitleTranslations] = useState(
 		initialValues?.title_i18n ?? {}
 	);
-	const [titleValidationError, setTitleValidationError] = useState(false);
 	const [urlValidationError, setURLValidationError] = useState(false);
 
 	const [actionData, setActionData] = useState({
@@ -180,6 +179,17 @@ const ActionForm = ({
 		type: initialValues?.type ?? 'link',
 		url: initialValues?.url ?? '',
 	});
+
+	const handleActionTypeChange = (event: any) => {
+		const type = event.target.value;
+
+		setActionData({
+			...actionData,
+			method: type === ACTION_TYPE.ASYNC ? ACTION_METHOD.DELETE : '',
+			modalSize: type === ACTION_TYPE.MODAL ? MODAL_SIZES[0].value : '',
+			type,
+		});
+	};
 
 	const saveFDSAction = async () => {
 		setSaveButtonDisabled(true);
@@ -263,16 +273,12 @@ const ActionForm = ({
 	const validateForm = ({
 		labelTranslations,
 		permissionKey,
-		titleTranslations,
 		url,
 	}: {
 		labelTranslations: Partial<
 			Liferay.Language.FullyLocalizedValue<string>
 		>;
 		permissionKey: string;
-		titleTranslations: Partial<
-			Liferay.Language.FullyLocalizedValue<string>
-		>;
 		url: string;
 	}) => {
 		let valid = true;
@@ -282,12 +288,7 @@ const ActionForm = ({
 			(!permissionKey && actionData.type === ACTION_TYPE.HEADLESS) ||
 			!translationExists({
 				translations: labelTranslations,
-			}) ||
-			((actionData.type === ACTION_TYPE.MODAL ||
-				actionData.type === ACTION_TYPE.SIDEPANEL) &&
-				!translationExists({
-					translations: titleTranslations,
-				}))
+			})
 		) {
 			valid = false;
 		}
@@ -396,9 +397,15 @@ const ActionForm = ({
 	return (
 		<>
 			<h2 className="mb-0 p-4">
-				{editing
-					? initialValues?.label
-					: Liferay.Language.get('new-item-action')}
+				{editing && initialValues?.label}
+
+				{!editing &&
+					activeTab === 0 &&
+					Liferay.Language.get('new-item-action')}
+
+				{!editing &&
+					activeTab === 1 &&
+					Liferay.Language.get('new-creation-action')}
 			</h2>
 
 			<ClayPanel
@@ -432,7 +439,6 @@ const ActionForm = ({
 									validateForm({
 										labelTranslations: translations,
 										permissionKey: actionData.permissionKey,
-										titleTranslations,
 										url: actionData.url,
 									});
 								}}
@@ -548,16 +554,11 @@ const ActionForm = ({
 									disabled={editing}
 									id={typeFormElementId}
 									onChange={(event) =>
-										setActionData({
-											...actionData,
-											type: event.target.value,
-										})
+										handleActionTypeChange(event)
 									}
 									options={
 										activeTab === 0
-											? Liferay.FeatureFlags['LPS-194395']
-												? ITEM_ACTION_TYPES
-												: ACTION_TYPES.slice(0, 1)
+											? ITEM_ACTION_TYPES
 											: ACTION_TYPES
 									}
 									placeholder={Liferay.Language.get(
@@ -628,38 +629,28 @@ const ActionForm = ({
 						<ClayLayout.Row>
 							<ClayLayout.Col>
 								<InputLocalized
-									error={
-										titleValidationError
+									helpMessage={
+										actionData.type ===
+										ACTION_TYPE.SIDEPANEL
 											? Liferay.Language.get(
-													'this-field-is-required'
+													'side-panel-title-help'
 											  )
-											: undefined
+											: ''
 									}
 									id={titleFormElementId}
 									label={Liferay.Language.get('title')}
 									onChange={(translations) => {
 										setTitleTranslations(translations);
-
-										setTitleValidationError(
-											!translationExists({
-												translations,
-											})
-										);
-
-										validateForm({
-											labelTranslations,
-											permissionKey:
-												actionData.permissionKey,
-											titleTranslations: translations,
-											url: actionData.url,
-										});
 									}}
-									placeholder={Liferay.Language.get(
+									placeholder={
 										actionData.type === ACTION_TYPE.MODAL
-											? 'add-here-the-title-of-the-modal'
-											: 'add-here-the-title-of-the-side-panel'
-									)}
-									required
+											? Liferay.Language.get(
+													'add-the-title-of-the-modal'
+											  )
+											: Liferay.Language.get(
+													'add-the-title-of-the-side-panel'
+											  )
+									}
 									translations={titleTranslations}
 								/>
 							</ClayLayout.Col>
@@ -697,7 +688,6 @@ const ActionForm = ({
 												labelTranslations,
 												permissionKey:
 													actionData.permissionKey,
-												titleTranslations,
 												url,
 											});
 										}}
@@ -765,7 +755,6 @@ const ActionForm = ({
 										validateForm({
 											labelTranslations,
 											permissionKey,
-											titleTranslations,
 											url: actionData.url,
 										});
 									}}

@@ -21,6 +21,9 @@ import {
 	KeyboardMovementContextProvider,
 	useMovementSource,
 } from '../contexts/KeyboardMovementContext';
+import {LayoutKeyboardContextProvider} from '../contexts/LayoutKeyboardContext';
+import {LocalConfigContextProvider} from '../contexts/LocalConfigContext';
+import {PortletContentContextProvider} from '../contexts/PortletContentContext';
 import {StoreContextProvider} from '../contexts/StoreContext';
 import AppHooks from '../hooks/app_hooks/index';
 import {reducer} from '../reducers/index';
@@ -28,6 +31,7 @@ import {DragAndDropContextProvider} from '../utils/drag_and_drop/useDragAndDrop'
 import CommonStylesManager from './CommonStylesManager';
 import {DisplayPagePreviewItemSelector} from './DisplayPagePreviewItemSelector';
 import DragPreviewWrapper from './DragPreviewWrapper';
+import FocusManager from './FocusManager';
 import ItemConfigurationSidebar from './ItemConfigurationSidebar';
 import {LayoutBreadcrumbs} from './LayoutBreadcrumbs';
 import LayoutViewport from './LayoutViewport';
@@ -58,6 +62,8 @@ export default function App({state}) {
 
 									<DragPreviewWrapper />
 
+									<FocusManager />
+
 									<WidgetsManager />
 
 									<FormValidationContextProvider>
@@ -70,19 +76,25 @@ export default function App({state}) {
 
 											<KeyboardMovementText />
 
-											<GlobalContextProvider>
-												<CommonStylesManager />
+											<PortletContentContextProvider>
+												<LocalConfigContextProvider>
+													<GlobalContextProvider>
+														<CommonStylesManager />
 
-												<LayoutViewport />
+														<StyleBookContextProvider>
+															<Sidebar />
 
-												<LayoutBreadcrumbs />
+															<LayoutKeyboardContextProvider>
+																<LayoutViewport />
+															</LayoutKeyboardContextProvider>
 
-												<StyleBookContextProvider>
-													<Sidebar />
+															<LayoutBreadcrumbs />
 
-													<ItemConfigurationSidebar />
-												</StyleBookContextProvider>
-											</GlobalContextProvider>
+															<ItemConfigurationSidebar />
+														</StyleBookContextProvider>
+													</GlobalContextProvider>
+												</LocalConfigContextProvider>
+											</PortletContentContextProvider>
 										</KeyboardMovementContextProvider>
 									</FormValidationContextProvider>
 								</DisplayPagePreviewItemContextProvider>

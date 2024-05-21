@@ -5,7 +5,6 @@
 
 package com.liferay.segments.web.internal.product.navigation.control.menu;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorWebKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.security.permission.resource.LayoutContentModelResourcePermission;
@@ -97,9 +96,7 @@ public class SegmentsExperienceSelectorProductNavigationControlMenuEntry
 			printWriter.write("control-menu-nav-item c-ml-3 c-pl-md-3\">");
 
 			_reactRenderer.renderReact(
-				new ComponentDescriptor(
-					_npmResolver.resolveModuleName("segments-web") +
-						"/js/components/ExperiencePicker"),
+				new ComponentDescriptor("{ExperiencePicker} from segments-web"),
 				segmentsExperienceSelectorDisplayContext.getData(),
 				httpServletRequest, printWriter);
 
@@ -204,9 +201,6 @@ public class SegmentsExperienceSelectorProductNavigationControlMenuEntry
 
 	@Reference
 	private LayoutContentModelResourcePermission _modelResourcePermission;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

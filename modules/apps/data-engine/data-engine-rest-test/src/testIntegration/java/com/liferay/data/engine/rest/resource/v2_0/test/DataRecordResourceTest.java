@@ -16,17 +16,17 @@ import com.liferay.data.engine.rest.client.resource.v2_0.DataListViewResource;
 import com.liferay.data.engine.rest.client.resource.v2_0.DataRecordCollectionResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataRecordCollectionTestUtil;
-import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.ModelResourceActionTestUtil;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.data.engine.rest.strategy.util.DataRecordValueKeyUtil;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -61,9 +61,8 @@ public class DataRecordResourceTest extends BaseDataRecordResourceTestCase {
 	}
 
 	@AfterClass
-	public static void tearDownClass() {
-		ModelResourceActionTestUtil.deleteModelResourceAction(
-			_resourceActionLocalService, _resourceActions);
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
 	}
 
 	@Before
@@ -103,7 +102,7 @@ public class DataRecordResourceTest extends BaseDataRecordResourceTestCase {
 
 		DataRecordCollectionResource dataRecordCollectionResource =
 			builder.authentication(
-				"test@liferay.com", "test"
+				"test@liferay.com", TestPropsValues.USER_PASSWORD
 			).locale(
 				LocaleUtil.getDefault()
 			).build();
@@ -202,7 +201,7 @@ public class DataRecordResourceTest extends BaseDataRecordResourceTestCase {
 
 		DataRecordCollectionResource dataRecordCollectionResource =
 			dataRecordCollectionResourceBuilder.authentication(
-				"test@liferay.com", "test"
+				"test@liferay.com", TestPropsValues.USER_PASSWORD
 			).locale(
 				LocaleUtil.getDefault()
 			).build();
@@ -222,7 +221,7 @@ public class DataRecordResourceTest extends BaseDataRecordResourceTestCase {
 
 		DataListViewResource dataListViewResource =
 			dataListViewResourceBuilder.authentication(
-				"test@liferay.com", "test"
+				"test@liferay.com", TestPropsValues.USER_PASSWORD
 			).locale(
 				LocaleUtil.getDefault()
 			).build();
@@ -330,7 +329,7 @@ public class DataRecordResourceTest extends BaseDataRecordResourceTestCase {
 
 		DataRecordCollectionResource dataRecordCollectionResource =
 			builder.authentication(
-				"test@liferay.com", "test"
+				"test@liferay.com", TestPropsValues.USER_PASSWORD
 			).locale(
 				LocaleUtil.getDefault()
 			).build();
@@ -736,9 +735,6 @@ public class DataRecordResourceTest extends BaseDataRecordResourceTestCase {
 		return dataRecordResource.postDataRecordCollectionDataRecord(
 			_dataRecordCollectionId, randomDataRecord());
 	}
-
-	@Inject
-	private static ResourceActionLocalService _resourceActionLocalService;
 
 	@Inject
 	private static ResourceActions _resourceActions;

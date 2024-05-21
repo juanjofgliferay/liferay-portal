@@ -2,8 +2,6 @@
 definition {
 
 	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-	property osgi.module.configuration.file.names = "com.liferay.commerce.configuration.CommerceOrderImporterTypeConfiguration.config";
-	property osgi.module.configurations = "enabled=\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
@@ -187,7 +185,7 @@ definition {
 	@description = "COMMERCE-12548. As a buyer, I want to be able to see a SKU/UOM replace a discounted SKU"
 	@priority = 5
 	test CanSkuWithUOMReplaceDiscontinuedSku {
-		property custom.properties = "company.security.strangers.verify=false${line.separator}feature.flag.COMMERCE-11287=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
 		task ("Given 2 UOMs are created to MIN93015(base price: $20, incremental: 0.6 for UOM1; base price: $30, incremental: 1.5 for UOM2)") {
@@ -441,9 +439,7 @@ definition {
 		}
 
 		task ("And given ABS Sensor as Discontinued and set a new Replacement") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "test test");
+			User.logoutAndLoginPG();
 
 			CommerceProducts.openProductsAdmin();
 

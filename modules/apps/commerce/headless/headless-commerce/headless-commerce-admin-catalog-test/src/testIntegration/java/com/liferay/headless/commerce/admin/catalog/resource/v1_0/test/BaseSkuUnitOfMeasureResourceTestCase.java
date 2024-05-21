@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -217,7 +215,10 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteSkuUnitOfMeasure() throws Exception {
-		SkuUnitOfMeasure skuUnitOfMeasure =
+
+		// No namespace
+
+		SkuUnitOfMeasure skuUnitOfMeasure1 =
 			testGraphQLDeleteSkuUnitOfMeasure_addSkuUnitOfMeasure();
 
 		Assert.assertTrue(
@@ -227,23 +228,61 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 						"deleteSkuUnitOfMeasure",
 						new HashMap<String, Object>() {
 							{
-								put("id", skuUnitOfMeasure.getId());
+								put("id", skuUnitOfMeasure1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteSkuUnitOfMeasure"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"skuUnitOfMeasure",
 					new HashMap<String, Object>() {
 						{
-							put("id", skuUnitOfMeasure.getId());
+							put("id", skuUnitOfMeasure1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		SkuUnitOfMeasure skuUnitOfMeasure2 =
+			testGraphQLDeleteSkuUnitOfMeasure_addSkuUnitOfMeasure();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"deleteSkuUnitOfMeasure",
+							new HashMap<String, Object>() {
+								{
+									put("id", skuUnitOfMeasure2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminCatalog_v1_0",
+				"Object/deleteSkuUnitOfMeasure"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminCatalog_v1_0",
+					new GraphQLField(
+						"skuUnitOfMeasure",
+						new HashMap<String, Object>() {
+							{
+								put("id", skuUnitOfMeasure2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected SkuUnitOfMeasure
@@ -278,6 +317,8 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 		SkuUnitOfMeasure skuUnitOfMeasure =
 			testGraphQLGetSkuUnitOfMeasure_addSkuUnitOfMeasure();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				skuUnitOfMeasure,
@@ -293,11 +334,35 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/skuUnitOfMeasure"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				skuUnitOfMeasure,
+				SkuUnitOfMeasureSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"skuUnitOfMeasure",
+									new HashMap<String, Object>() {
+										{
+											put("id", skuUnitOfMeasure.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/skuUnitOfMeasure"))));
 	}
 
 	@Test
 	public void testGraphQLGetSkuUnitOfMeasureNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -311,6 +376,25 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"skuUnitOfMeasure",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -463,43 +547,87 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 			testGetSkuByExternalReferenceCodeSkuUnitOfMeasuresPage_addSkuUnitOfMeasure(
 				externalReferenceCode, randomSkuUnitOfMeasure());
 
-		Page<SkuUnitOfMeasure> page1 =
-			skuUnitOfMeasureResource.
-				getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<SkuUnitOfMeasure> skuUnitOfMeasures1 =
-			(List<SkuUnitOfMeasure>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			skuUnitOfMeasures1.toString(), totalCount + 2,
-			skuUnitOfMeasures1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<SkuUnitOfMeasure> page1 =
+				skuUnitOfMeasureResource.
+					getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<SkuUnitOfMeasure> page2 =
-			skuUnitOfMeasureResource.
-				getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				skuUnitOfMeasure1, (List<SkuUnitOfMeasure>)page1.getItems());
 
-		List<SkuUnitOfMeasure> skuUnitOfMeasures2 =
-			(List<SkuUnitOfMeasure>)page2.getItems();
+			Page<SkuUnitOfMeasure> page2 =
+				skuUnitOfMeasureResource.
+					getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			skuUnitOfMeasures2.toString(), 1, skuUnitOfMeasures2.size());
+			assertContains(
+				skuUnitOfMeasure2, (List<SkuUnitOfMeasure>)page2.getItems());
 
-		Page<SkuUnitOfMeasure> page3 =
-			skuUnitOfMeasureResource.
-				getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<SkuUnitOfMeasure> page3 =
+				skuUnitOfMeasureResource.
+					getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			skuUnitOfMeasure1, (List<SkuUnitOfMeasure>)page3.getItems());
-		assertContains(
-			skuUnitOfMeasure2, (List<SkuUnitOfMeasure>)page3.getItems());
-		assertContains(
-			skuUnitOfMeasure3, (List<SkuUnitOfMeasure>)page3.getItems());
+			assertContains(
+				skuUnitOfMeasure3, (List<SkuUnitOfMeasure>)page3.getItems());
+		}
+		else {
+			Page<SkuUnitOfMeasure> page1 =
+				skuUnitOfMeasureResource.
+					getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<SkuUnitOfMeasure> skuUnitOfMeasures1 =
+				(List<SkuUnitOfMeasure>)page1.getItems();
+
+			Assert.assertEquals(
+				skuUnitOfMeasures1.toString(), totalCount + 2,
+				skuUnitOfMeasures1.size());
+
+			Page<SkuUnitOfMeasure> page2 =
+				skuUnitOfMeasureResource.
+					getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<SkuUnitOfMeasure> skuUnitOfMeasures2 =
+				(List<SkuUnitOfMeasure>)page2.getItems();
+
+			Assert.assertEquals(
+				skuUnitOfMeasures2.toString(), 1, skuUnitOfMeasures2.size());
+
+			Page<SkuUnitOfMeasure> page3 =
+				skuUnitOfMeasureResource.
+					getSkuByExternalReferenceCodeSkuUnitOfMeasuresPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				skuUnitOfMeasure1, (List<SkuUnitOfMeasure>)page3.getItems());
+			assertContains(
+				skuUnitOfMeasure2, (List<SkuUnitOfMeasure>)page3.getItems());
+			assertContains(
+				skuUnitOfMeasure3, (List<SkuUnitOfMeasure>)page3.getItems());
+		}
 	}
 
 	protected SkuUnitOfMeasure
@@ -639,39 +767,78 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 			testGetSkuIdSkuUnitOfMeasuresPage_addSkuUnitOfMeasure(
 				id, randomSkuUnitOfMeasure());
 
-		Page<SkuUnitOfMeasure> page1 =
-			skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
-				id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<SkuUnitOfMeasure> skuUnitOfMeasures1 =
-			(List<SkuUnitOfMeasure>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			skuUnitOfMeasures1.toString(), totalCount + 2,
-			skuUnitOfMeasures1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<SkuUnitOfMeasure> page1 =
+				skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<SkuUnitOfMeasure> page2 =
-			skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
-				id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				skuUnitOfMeasure1, (List<SkuUnitOfMeasure>)page1.getItems());
 
-		List<SkuUnitOfMeasure> skuUnitOfMeasures2 =
-			(List<SkuUnitOfMeasure>)page2.getItems();
+			Page<SkuUnitOfMeasure> page2 =
+				skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(
-			skuUnitOfMeasures2.toString(), 1, skuUnitOfMeasures2.size());
+			assertContains(
+				skuUnitOfMeasure2, (List<SkuUnitOfMeasure>)page2.getItems());
 
-		Page<SkuUnitOfMeasure> page3 =
-			skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
-				id, Pagination.of(1, (int)totalCount + 3));
+			Page<SkuUnitOfMeasure> page3 =
+				skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(
-			skuUnitOfMeasure1, (List<SkuUnitOfMeasure>)page3.getItems());
-		assertContains(
-			skuUnitOfMeasure2, (List<SkuUnitOfMeasure>)page3.getItems());
-		assertContains(
-			skuUnitOfMeasure3, (List<SkuUnitOfMeasure>)page3.getItems());
+			assertContains(
+				skuUnitOfMeasure3, (List<SkuUnitOfMeasure>)page3.getItems());
+		}
+		else {
+			Page<SkuUnitOfMeasure> page1 =
+				skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
+					id, Pagination.of(1, totalCount + 2));
+
+			List<SkuUnitOfMeasure> skuUnitOfMeasures1 =
+				(List<SkuUnitOfMeasure>)page1.getItems();
+
+			Assert.assertEquals(
+				skuUnitOfMeasures1.toString(), totalCount + 2,
+				skuUnitOfMeasures1.size());
+
+			Page<SkuUnitOfMeasure> page2 =
+				skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
+					id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<SkuUnitOfMeasure> skuUnitOfMeasures2 =
+				(List<SkuUnitOfMeasure>)page2.getItems();
+
+			Assert.assertEquals(
+				skuUnitOfMeasures2.toString(), 1, skuUnitOfMeasures2.size());
+
+			Page<SkuUnitOfMeasure> page3 =
+				skuUnitOfMeasureResource.getSkuIdSkuUnitOfMeasuresPage(
+					id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				skuUnitOfMeasure1, (List<SkuUnitOfMeasure>)page3.getItems());
+			assertContains(
+				skuUnitOfMeasure2, (List<SkuUnitOfMeasure>)page3.getItems());
+			assertContains(
+				skuUnitOfMeasure3, (List<SkuUnitOfMeasure>)page3.getItems());
+		}
 	}
 
 	protected SkuUnitOfMeasure
@@ -1228,6 +1395,10 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1519,9 +1690,9 @@ public abstract class BaseSkuUnitOfMeasureResourceTestCase {
 	}
 
 	protected SkuUnitOfMeasureResource skuUnitOfMeasureResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

@@ -1,26 +1,29 @@
 <div class="search-results" id="searchResults">
-	<h2 class="pb-3 search-results-heading">
-		${searchContainer.getTotal()} ${languageUtil.get(locale, "results-for", "results for")} "${htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords())}"
-	</h2>
-
 	<#if entries?has_content>
-		<#list entries as entry>
+		<#list entries as searchEntry>
 			<#assign
-				searchEntryContent = entry.getContent()!languageUtil.get(locale, "no-content-preview", "No content preview")
-				searchEntryTitle = entry.getTitle()!""
+				searchEntryContent = searchEntry.getContent()!languageUtil.get(locale, "no-content-preview", "No content preview")
+				searchEntryTitle = searchEntry.getTitle()!""
 			/>
 
 			<#if searchEntryTitle?has_content>
-				<div class="pb-4 search-results-entry">
-					<a class="font-weight-bold search-results-entry-title" href="${entry.getViewURL()}&highlight=${htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords()?url('ISO-8859-1'))}">
+				<div class="align-items-stretch pb-4 search-results-entry">
+					<a class="font-weight-bold search-results-entry-title text-decoration-none unstyled" href="${searchEntry.getViewURL()}&highlight=${htmlUtil.escape(searchResultsPortletDisplayContext.getKeywords()?url('ISO-8859-1'))}">
 						${searchEntryTitle}
-					</a>
+						<div class="description search-results-entry-content">
+							${searchEntryContent}
+						</div>
 
-					<div class="pt-2 search-results-entry-content">
-						${searchEntryContent}
-					</div>
+						<#if searchEntry.getPublishedDateString()?has_content>
+							<div class="pt-2 published-date">
+								${languageUtil.get(locale, "published-date")}: ${searchEntry.getPublishedDateString()}
+							</div>
+						</#if>
+					</a>
 				</div>
 			</#if>
 		</#list>
 	</#if>
+
+	<hr class="solid">
 </div>

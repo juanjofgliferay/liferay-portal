@@ -31,6 +31,7 @@ import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 import com.liferay.search.experiences.rest.dto.v1_0.util.ElementInstanceUtil;
 import com.liferay.search.experiences.rest.dto.v1_0.util.SXPBlueprintUtil;
 import com.liferay.search.experiences.rest.internal.odata.entity.v1_0.SXPBlueprintEntityModel;
+import com.liferay.search.experiences.rest.internal.resource.v1_0.util.DecodeSXPUtil;
 import com.liferay.search.experiences.rest.internal.resource.v1_0.util.SearchUtil;
 import com.liferay.search.experiences.rest.internal.resource.v1_0.util.TitleMapUtil;
 import com.liferay.search.experiences.rest.resource.v1_0.SXPBlueprintResource;
@@ -188,7 +189,7 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 						getName();
 
 				sxpBlueprint.setActions(
-					HashMapBuilder.put(
+					() -> HashMapBuilder.put(
 						"create",
 						() -> addAction(
 							SXPActionKeys.ADD_SXP_BLUEPRINT, "postSXPBlueprint",
@@ -220,6 +221,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 		throws Exception {
 
 		SXPBlueprintUtil.unpack(sxpBlueprint);
+
+		DecodeSXPUtil.decodeSXPBlueprint(sxpBlueprint);
 
 		return _sxpBlueprintDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -281,7 +284,7 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 
 		SXPBlueprintUtil.unpack(sxpBlueprint);
 
-		sxpBlueprint.setId(sxpBlueprintId);
+		sxpBlueprint.setId(() -> sxpBlueprintId);
 
 		com.liferay.search.experiences.model.SXPBlueprint
 			serviceBuilderSXPBlueprint = _sxpBlueprintService.fetchSXPBlueprint(
@@ -304,7 +307,7 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 				_sxpBlueprintService.fetchSXPBlueprintByExternalReferenceCode(
 					externalReferenceCode, contextCompany.getCompanyId());
 
-		sxpBlueprint.setExternalReferenceCode(externalReferenceCode);
+		sxpBlueprint.setExternalReferenceCode(() -> externalReferenceCode);
 
 		if (serviceBuilderSXPBlueprint != null) {
 			return _updateSXPBlueprint(
@@ -338,6 +341,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 	private SXPBlueprint _updateSXPBlueprint(
 			Long sxpBlueprintId, SXPBlueprint sxpBlueprint)
 		throws Exception {
+
+		DecodeSXPUtil.decodeSXPBlueprint(sxpBlueprint);
 
 		return _sxpBlueprintDTOConverter.toDTO(
 			new DefaultDTOConverterContext(

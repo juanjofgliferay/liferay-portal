@@ -15,15 +15,18 @@ import com.liferay.document.library.kernel.document.conversion.DocumentConversio
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileShortcutConstants;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.versioning.VersioningStrategy;
 import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.display.context.helper.FileEntryDisplayContextHelper;
 import com.liferay.document.library.web.internal.display.context.helper.FileShortcutDisplayContextHelper;
 import com.liferay.document.library.web.internal.helper.DLTrashHelper;
+import com.liferay.document.library.web.internal.util.FolderItemSelectorURLProvider;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
+import com.liferay.item.selector.ItemSelector;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -49,6 +52,7 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -343,9 +347,10 @@ public class UIItemsBuilder {
 				"senna-off", "true"
 			).build()
 		).setHref(
-			_dlURLHelper.getDownloadURL(
-				_fileEntry, _fileVersion, _themeDisplay, StringPool.BLANK,
-				appendVersion, true)
+			_addDoAsUserIdParameter(
+				_dlURLHelper.getDownloadURL(
+					_fileEntry, _fileVersion, _themeDisplay, StringPool.BLANK,
+					appendVersion, true))
 		).setIcon(
 			"download"
 		).setKey(
@@ -427,6 +432,27 @@ public class UIItemsBuilder {
 			(_fileShortcut != null) ?
 				String.valueOf(_fileShortcut.getFileShortcutId()) :
 					String.valueOf(_fileEntry.getFileEntryId())
+		).putData(
+			"selectFolderURL",
+			() -> {
+				FolderItemSelectorURLProvider folderItemSelectorURLProvider =
+					new FolderItemSelectorURLProvider(
+						_httpServletRequest,
+						(ItemSelector)_httpServletRequest.getAttribute(
+							ItemSelector.class.getName()));
+
+				if (_fileShortcut != null) {
+					return folderItemSelectorURLProvider.
+						getSelectMoveToFolderURL(
+							_fileShortcut.getRepositoryId(),
+							_fileShortcut.getFolderId(),
+							DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+				}
+
+				return folderItemSelectorURLProvider.getSelectMoveToFolderURL(
+					_fileEntry.getRepositoryId(), _fileEntry.getFolderId(),
+					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+			}
 		).setIcon(
 			"move-folder"
 		).setKey(
@@ -819,6 +845,17 @@ public class UIItemsBuilder {
 				"Unable to build UIItemsBuilder for " + fileVersion,
 				portalException);
 		}
+	}
+
+	private String _addDoAsUserIdParameter(String url) {
+		if (Validator.isNull(_themeDisplay.getDoAsUserId()) ||
+			Validator.isNull(url)) {
+
+			return url;
+		}
+
+		return HttpComponentsUtil.setParameter(
+			url, "doAsUserId", _themeDisplay.getDoAsUserId());
 	}
 
 	private PortletURL _getActionURL(String mvcActionCommandName) {

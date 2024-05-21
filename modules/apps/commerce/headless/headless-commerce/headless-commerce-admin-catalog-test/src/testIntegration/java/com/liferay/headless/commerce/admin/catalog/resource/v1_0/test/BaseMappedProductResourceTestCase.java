@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -37,6 +35,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -61,8 +60,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -213,7 +210,10 @@ public abstract class BaseMappedProductResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteMappedProduct() throws Exception {
-		MappedProduct mappedProduct =
+
+		// No namespace
+
+		MappedProduct mappedProduct1 =
 			testGraphQLDeleteMappedProduct_addMappedProduct();
 
 		Assert.assertTrue(
@@ -223,10 +223,33 @@ public abstract class BaseMappedProductResourceTestCase {
 						"deleteMappedProduct",
 						new HashMap<String, Object>() {
 							{
-								put("mappedProductId", mappedProduct.getId());
+								put("mappedProductId", mappedProduct1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteMappedProduct"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		MappedProduct mappedProduct2 =
+			testGraphQLDeleteMappedProduct_addMappedProduct();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"deleteMappedProduct",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"mappedProductId",
+										mappedProduct2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminCatalog_v1_0",
+				"Object/deleteMappedProduct"));
 	}
 
 	protected MappedProduct testGraphQLDeleteMappedProduct_addMappedProduct()
@@ -342,41 +365,90 @@ public abstract class BaseMappedProductResourceTestCase {
 			testGetProductByExternalReferenceCodeMappedProductsPage_addMappedProduct(
 				externalReferenceCode, randomMappedProduct());
 
-		Page<MappedProduct> page1 =
-			mappedProductResource.
-				getProductByExternalReferenceCodeMappedProductsPage(
-					externalReferenceCode, null,
-					Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<MappedProduct> mappedProducts1 =
-			(List<MappedProduct>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			mappedProducts1.toString(), totalCount + 2, mappedProducts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<MappedProduct> page1 =
+				mappedProductResource.
+					getProductByExternalReferenceCodeMappedProductsPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Page<MappedProduct> page2 =
-			mappedProductResource.
-				getProductByExternalReferenceCodeMappedProductsPage(
-					externalReferenceCode, null,
-					Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				mappedProduct1, (List<MappedProduct>)page1.getItems());
 
-		List<MappedProduct> mappedProducts2 =
-			(List<MappedProduct>)page2.getItems();
+			Page<MappedProduct> page2 =
+				mappedProductResource.
+					getProductByExternalReferenceCodeMappedProductsPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Assert.assertEquals(
-			mappedProducts2.toString(), 1, mappedProducts2.size());
+			assertContains(
+				mappedProduct2, (List<MappedProduct>)page2.getItems());
 
-		Page<MappedProduct> page3 =
-			mappedProductResource.
-				getProductByExternalReferenceCodeMappedProductsPage(
-					externalReferenceCode, null,
-					Pagination.of(1, (int)totalCount + 3), null);
+			Page<MappedProduct> page3 =
+				mappedProductResource.
+					getProductByExternalReferenceCodeMappedProductsPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		assertContains(mappedProduct1, (List<MappedProduct>)page3.getItems());
-		assertContains(mappedProduct2, (List<MappedProduct>)page3.getItems());
-		assertContains(mappedProduct3, (List<MappedProduct>)page3.getItems());
+			assertContains(
+				mappedProduct3, (List<MappedProduct>)page3.getItems());
+		}
+		else {
+			Page<MappedProduct> page1 =
+				mappedProductResource.
+					getProductByExternalReferenceCodeMappedProductsPage(
+						externalReferenceCode, null,
+						Pagination.of(1, totalCount + 2), null);
+
+			List<MappedProduct> mappedProducts1 =
+				(List<MappedProduct>)page1.getItems();
+
+			Assert.assertEquals(
+				mappedProducts1.toString(), totalCount + 2,
+				mappedProducts1.size());
+
+			Page<MappedProduct> page2 =
+				mappedProductResource.
+					getProductByExternalReferenceCodeMappedProductsPage(
+						externalReferenceCode, null,
+						Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<MappedProduct> mappedProducts2 =
+				(List<MappedProduct>)page2.getItems();
+
+			Assert.assertEquals(
+				mappedProducts2.toString(), 1, mappedProducts2.size());
+
+			Page<MappedProduct> page3 =
+				mappedProductResource.
+					getProductByExternalReferenceCodeMappedProductsPage(
+						externalReferenceCode, null,
+						Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				mappedProduct1, (List<MappedProduct>)page3.getItems());
+			assertContains(
+				mappedProduct2, (List<MappedProduct>)page3.getItems());
+			assertContains(
+				mappedProduct3, (List<MappedProduct>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -388,7 +460,7 @@ public abstract class BaseMappedProductResourceTestCase {
 			(entityField, mappedProduct1, mappedProduct2) -> {
 				BeanTestUtil.setProperty(
 					mappedProduct1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -625,6 +697,8 @@ public abstract class BaseMappedProductResourceTestCase {
 		MappedProduct mappedProduct =
 			testGraphQLGetProductByExternalReferenceCodeMappedProductBySequence_addMappedProduct();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				mappedProduct,
@@ -650,6 +724,38 @@ public abstract class BaseMappedProductResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/productByExternalReferenceCodeMappedProductBySequence"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				mappedProduct,
+				MappedProductSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"productByExternalReferenceCodeMappedProductBySequence",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													testGraphQLGetProductByExternalReferenceCodeMappedProductBySequence_getExternalReferenceCode() +
+														"\"");
+
+											put(
+												"sequence",
+												"\"" +
+													mappedProduct.
+														getSequence() + "\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/productByExternalReferenceCodeMappedProductBySequence"))));
 	}
 
 	protected String
@@ -668,6 +774,8 @@ public abstract class BaseMappedProductResourceTestCase {
 			"\"" + RandomTestUtil.randomString() + "\"";
 		String irrelevantSequence = "\"" + RandomTestUtil.randomString() + "\"";
 
+		// No namespace
+
 		Assert.assertEquals(
 			"Not Found",
 			JSONUtil.getValueAsString(
@@ -683,6 +791,28 @@ public abstract class BaseMappedProductResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"productByExternalReferenceCodeMappedProductBySequence",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+									put("sequence", irrelevantSequence);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -782,35 +912,81 @@ public abstract class BaseMappedProductResourceTestCase {
 			testGetProductIdMappedProductsPage_addMappedProduct(
 				id, randomMappedProduct());
 
-		Page<MappedProduct> page1 =
-			mappedProductResource.getProductIdMappedProductsPage(
-				id, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<MappedProduct> mappedProducts1 =
-			(List<MappedProduct>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			mappedProducts1.toString(), totalCount + 2, mappedProducts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<MappedProduct> page1 =
+				mappedProductResource.getProductIdMappedProductsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<MappedProduct> page2 =
-			mappedProductResource.getProductIdMappedProductsPage(
-				id, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				mappedProduct1, (List<MappedProduct>)page1.getItems());
 
-		List<MappedProduct> mappedProducts2 =
-			(List<MappedProduct>)page2.getItems();
+			Page<MappedProduct> page2 =
+				mappedProductResource.getProductIdMappedProductsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			mappedProducts2.toString(), 1, mappedProducts2.size());
+			assertContains(
+				mappedProduct2, (List<MappedProduct>)page2.getItems());
 
-		Page<MappedProduct> page3 =
-			mappedProductResource.getProductIdMappedProductsPage(
-				id, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<MappedProduct> page3 =
+				mappedProductResource.getProductIdMappedProductsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(mappedProduct1, (List<MappedProduct>)page3.getItems());
-		assertContains(mappedProduct2, (List<MappedProduct>)page3.getItems());
-		assertContains(mappedProduct3, (List<MappedProduct>)page3.getItems());
+			assertContains(
+				mappedProduct3, (List<MappedProduct>)page3.getItems());
+		}
+		else {
+			Page<MappedProduct> page1 =
+				mappedProductResource.getProductIdMappedProductsPage(
+					id, null, Pagination.of(1, totalCount + 2), null);
+
+			List<MappedProduct> mappedProducts1 =
+				(List<MappedProduct>)page1.getItems();
+
+			Assert.assertEquals(
+				mappedProducts1.toString(), totalCount + 2,
+				mappedProducts1.size());
+
+			Page<MappedProduct> page2 =
+				mappedProductResource.getProductIdMappedProductsPage(
+					id, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<MappedProduct> mappedProducts2 =
+				(List<MappedProduct>)page2.getItems();
+
+			Assert.assertEquals(
+				mappedProducts2.toString(), 1, mappedProducts2.size());
+
+			Page<MappedProduct> page3 =
+				mappedProductResource.getProductIdMappedProductsPage(
+					id, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				mappedProduct1, (List<MappedProduct>)page3.getItems());
+			assertContains(
+				mappedProduct2, (List<MappedProduct>)page3.getItems());
+			assertContains(
+				mappedProduct3, (List<MappedProduct>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -822,7 +998,7 @@ public abstract class BaseMappedProductResourceTestCase {
 			(entityField, mappedProduct1, mappedProduct2) -> {
 				BeanTestUtil.setProperty(
 					mappedProduct1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1039,6 +1215,8 @@ public abstract class BaseMappedProductResourceTestCase {
 		MappedProduct mappedProduct =
 			testGraphQLGetProductIdMappedProductBySequence_addMappedProduct();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				mappedProduct,
@@ -1063,6 +1241,37 @@ public abstract class BaseMappedProductResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/productIdMappedProductBySequence"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				mappedProduct,
+				MappedProductSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"productIdMappedProductBySequence",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												testGraphQLGetProductIdMappedProductBySequence_getId(
+													mappedProduct));
+
+											put(
+												"sequence",
+												"\"" +
+													mappedProduct.
+														getSequence() + "\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/productIdMappedProductBySequence"))));
 	}
 
 	protected Long testGraphQLGetProductIdMappedProductBySequence_getId(
@@ -1079,6 +1288,8 @@ public abstract class BaseMappedProductResourceTestCase {
 		Long irrelevantId = RandomTestUtil.randomLong();
 		String irrelevantSequence = "\"" + RandomTestUtil.randomString() + "\"";
 
+		// No namespace
+
 		Assert.assertEquals(
 			"Not Found",
 			JSONUtil.getValueAsString(
@@ -1092,6 +1303,26 @@ public abstract class BaseMappedProductResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"productIdMappedProductBySequence",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+									put("sequence", irrelevantSequence);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -1572,6 +1803,10 @@ public abstract class BaseMappedProductResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1933,9 +2168,9 @@ public abstract class BaseMappedProductResourceTestCase {
 	}
 
 	protected MappedProductResource mappedProductResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

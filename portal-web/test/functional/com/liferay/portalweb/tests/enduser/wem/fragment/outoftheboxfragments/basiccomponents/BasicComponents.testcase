@@ -4,7 +4,7 @@ definition {
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Fragments";
+	property testray.main.component.name = "Fragment Administration";
 
 	setUp {
 		task ("Set up instance and sign in") {
@@ -492,14 +492,14 @@ definition {
 				index = 1,
 				locator1 = "Fragment#CONTRIBUTED_FRAGMENT_TEXT",
 				locator2 = "color",
-				value1 = "rgba(39, 40, 51, 1)");
+				value1 = "rgba(28, 28, 36, 1)");
 		}
 
 		task ("View the Inherited value is shown in Text Color field") {
 			AssertTextEquals(
 				key_fieldLabel = "Text Color",
 				locator1 = "Button#COLOR_PICKER",
-				value1 = "#272833");
+				value1 = "#1C1C24");
 		}
 
 		task ("Remove the Paragraph") {

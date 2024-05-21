@@ -16,7 +16,7 @@ if (Validator.isNull(backURL)) {
 	backURL = portletURL.toString();
 }
 
-SelectLayoutPageTemplateEntryDisplayContext selectLayoutPageTemplateEntryDisplayContext = new SelectLayoutPageTemplateEntryDisplayContext(request, liferayPortletResponse);
+SelectLayoutPageTemplateEntryDisplayContext selectLayoutPageTemplateEntryDisplayContext = (SelectLayoutPageTemplateEntryDisplayContext)request.getAttribute(SelectLayoutPageTemplateEntryDisplayContext.class.getName());
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
@@ -96,7 +96,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 							>
 								<liferay-ui:search-container-column-text>
 									<react:component
-										module="js/LayoutPageTemplateEntryCard"
+										module="{LayoutPageTemplateEntryCard} from layout-admin-web"
 										props="<%= selectLayoutPageTemplateEntryDisplayContext.getLayoutPageTemplateEntryCardProps(layoutPageTemplateEntry) %>"
 									/>
 								</liferay-ui:search-container-column-text>
@@ -120,14 +120,12 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 	</clay:row>
 </clay:container-fluid>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
-
+<aui:script sandbox="<%= true %>">
 	var layoutPageTemplateEntries = document.getElementById(
 		'<portlet:namespace />layoutPageTemplateEntries'
 	);
 
-	var addLayoutActionOptionQueryClickHandler = delegate(
+	var addLayoutActionOptionQueryClickHandler = Liferay.Util.delegate(
 		layoutPageTemplateEntries,
 		'click',
 		'.add-layout-action-option',
@@ -143,7 +141,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 		}
 	);
 
-	var addLayoutActionOptionQueryKeyDownHandler = delegate(
+	var addLayoutActionOptionQueryKeyDownHandler = Liferay.Util.delegate(
 		layoutPageTemplateEntries,
 		'keydown',
 		'.add-layout-action-option',

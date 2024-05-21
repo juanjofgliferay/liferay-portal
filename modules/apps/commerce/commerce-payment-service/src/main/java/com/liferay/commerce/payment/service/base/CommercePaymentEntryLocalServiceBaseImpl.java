@@ -7,7 +7,6 @@ package com.liferay.commerce.payment.service.base;
 
 import com.liferay.commerce.payment.model.CommercePaymentEntry;
 import com.liferay.commerce.payment.service.CommercePaymentEntryLocalService;
-import com.liferay.commerce.payment.service.CommercePaymentEntryLocalServiceUtil;
 import com.liferay.commerce.payment.service.persistence.CommercePaymentEntryPersistence;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
@@ -64,7 +63,7 @@ public abstract class CommercePaymentEntryLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>CommercePaymentEntryLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>CommercePaymentEntryLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>CommercePaymentEntryLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.commerce.payment.service.CommercePaymentEntryLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -130,11 +129,13 @@ public abstract class CommercePaymentEntryLocalServiceBaseImpl
 	 *
 	 * @param commercePaymentEntry the commerce payment entry
 	 * @return the commerce payment entry that was removed
+	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@Override
 	public CommercePaymentEntry deleteCommercePaymentEntry(
-		CommercePaymentEntry commercePaymentEntry) {
+			CommercePaymentEntry commercePaymentEntry)
+		throws PortalException {
 
 		return commercePaymentEntryPersistence.remove(commercePaymentEntry);
 	}
@@ -246,6 +247,24 @@ public abstract class CommercePaymentEntryLocalServiceBaseImpl
 
 		return commercePaymentEntryPersistence.fetchByPrimaryKey(
 			commercePaymentEntryId);
+	}
+
+	@Override
+	public CommercePaymentEntry
+		fetchCommercePaymentEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return commercePaymentEntryPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public CommercePaymentEntry getCommercePaymentEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return commercePaymentEntryPersistence.findByERC_C(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -401,7 +420,6 @@ public abstract class CommercePaymentEntryLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		CommercePaymentEntryLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -416,9 +434,6 @@ public abstract class CommercePaymentEntryLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		commercePaymentEntryLocalService =
 			(CommercePaymentEntryLocalService)aopProxy;
-
-		CommercePaymentEntryLocalServiceUtil.setService(
-			commercePaymentEntryLocalService);
 	}
 
 	/**

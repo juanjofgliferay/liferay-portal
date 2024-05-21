@@ -2,13 +2,13 @@
 	"dependencies": {
 		"frontend-js-web": "*"
 	},
-	"main": "index.js",
+	"main": "index.ts",
 	"name": "frontend-js-tabs-support-web",
 	"private": true,
 	"scripts": {
-		"build": "liferay-npm-scripts build",
+		"build": "node-scripts build",
 		"checkFormat": "liferay-npm-scripts check",
 		"format": "liferay-npm-scripts fix"
 	},
-	"version": "2.0.15"
+	"version": "2.0.18"
 }

@@ -6,7 +6,12 @@
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
 import {useIsMounted, useThunk} from '@liferay/frontend-js-react-web';
-import {fetch, loadModule, openToast} from 'frontend-js-web';
+import {
+	fetch,
+	loadClientExtensions,
+	loadModule,
+	openToast,
+} from 'frontend-js-web';
 import React, {
 	useCallback,
 	useEffect,
@@ -21,19 +26,18 @@ import ClayEmptyState from '@clayui/empty-state';
 
 import FrontendDataSetContext from './FrontendDataSetContext';
 import ManagementBar from './management_bar/ManagementBar';
-import CreationMenu from './management_bar/components/CreationMenu';
-import {FILTER_IMPLEMENTATIONS} from './management_bar/components/filters/Filter';
+import CreationMenu from './management_bar/controls/CreationMenu';
+import {FILTER_IMPLEMENTATIONS} from './management_bar/controls/filters/Filter';
 import Modal from './modal/Modal';
 import SidePanel from './side_panel/SidePanel';
 import filterCreationActions from './utils/actionItems/filterCreationActions';
 import EVENTS from './utils/eventsDefinitions';
+import getRandomId from './utils/getRandomId';
 import {
 	formatItemChanges,
 	getCurrentItemUpdates,
-	getRandomId,
 	loadData,
 } from './utils/index';
-import loadClientExtensions from './utils/loadClientExtensions';
 import {logError} from './utils/logError';
 import ViewsContext from './views/ViewsContext';
 import getViewComponent from './views/getViewComponent';
@@ -208,6 +212,10 @@ const FrontendDataSet = ({
 			[]
 		);
 
+		const activeSorts = Liferay.FeatureFlags['LPD-19465']
+			? sorts.filter((sort) => sort.active)
+			: sorts;
+
 		return loadData(
 			apiURL,
 			currentURL,
@@ -215,7 +223,7 @@ const FrontendDataSet = ({
 			searchParam,
 			paginationDelta,
 			pageNumber,
-			sorts
+			activeSorts
 		);
 	}, [
 		apiURL,
@@ -246,15 +254,24 @@ const FrontendDataSet = ({
 							}))
 					: [],
 				onLoad: (bindingContexts) => {
-					const newFilters = bindingContexts.map(
-						({
-							binding: clientExtensionFilterImplementation,
-							context: filter,
-						}) => ({
-							...filter,
-							clientExtensionFilterImplementation,
-						})
-					);
+					const newFilters = initialFilters.map((filter) => {
+						const bindingContext = bindingContexts.find(
+							(bindingContext) =>
+								bindingContext.context
+									.clientExtensionFilterURL ===
+								filter.clientExtensionFilterURL
+						);
+
+						if (bindingContext) {
+							return {
+								...filter,
+								clientExtensionFilterImplementation:
+									bindingContext.binding,
+							};
+						}
+
+						return filter;
+					});
 
 					viewsDispatch({
 						type: VIEWS_ACTION_TYPES.UPDATE_FILTERS,
@@ -580,7 +597,7 @@ const FrontendDataSet = ({
 						}
 						imgSrc={
 							themeDisplay.getPathThemeImages() +
-							(emptyState?.image ?? '/states/search_state.gif')
+							(emptyState?.image ?? '/states/search_state.svg')
 						}
 						title={
 							emptyState?.title ??
@@ -892,7 +909,11 @@ const FrontendDataSet = ({
 						/>
 					)}
 
-					<div className="data-set-wrapper" ref={wrapperRef}>
+					<div
+						className="data-set-wrapper"
+						data-testid={`visualization-mode-${activeView.name}`}
+						ref={wrapperRef}
+					>
 						{style === 'default' && (
 							<div className="data-set data-set-inline">
 								{managementBar}

@@ -50,7 +50,7 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -235,7 +235,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addDynamicAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				"Collection Title", _getTypeSettings(), _serviceContext);
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
@@ -292,7 +292,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addDynamicAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				"Collection Title", _getTypeSettings(), _serviceContext);
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
@@ -345,7 +345,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		SegmentsExperience segmentsExperience1 =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				TestPropsValues.getUserId(), layout.getGroupId(),
+				null, TestPropsValues.getUserId(), layout.getGroupId(),
 				segmentsEntry1.getSegmentsEntryId(), layout.getPlid(),
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()
@@ -357,7 +357,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		SegmentsExperience segmentsExperience2 =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				TestPropsValues.getUserId(), layout.getGroupId(),
+				null, TestPropsValues.getUserId(), layout.getGroupId(),
 				segmentsEntry2.getSegmentsEntryId(), layout.getPlid(),
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()
@@ -366,7 +366,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				"Manual title", AssetListEntryTypeConstants.TYPE_MANUAL, null,
 				_serviceContext);
 
@@ -419,7 +419,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			).put(
 				"classPK", assetListEntry.getAssetListEntryId()
 			).put(
-				"itemType", AssetEntry.class.getName()
+				"itemType", BlogsEntry.class.getName()
 			).put(
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
@@ -444,7 +444,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			).put(
 				"classPK", assetListEntry.getAssetListEntryId()
 			).put(
-				"itemType", AssetEntry.class.getName()
+				"itemType", BlogsEntry.class.getName()
 			).put(
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
@@ -470,7 +470,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			).put(
 				"classPK", assetListEntry.getAssetListEntryId()
 			).put(
-				"itemType", AssetEntry.class.getName()
+				"itemType", BlogsEntry.class.getName()
 			).put(
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
@@ -498,8 +498,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			Criteria.Conjunction.AND);
 
 		return SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
 	}
 
 	private HttpServletRequest _getHttpServletRequest() throws Exception {

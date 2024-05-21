@@ -19,6 +19,8 @@ export const ACTION_KEYS = {
 		DELETE: 'delete',
 		MOVE: 'update',
 		REMOVE: 'update',
+		UPDATE: 'update',
+		VIEW: 'get',
 	},
 	user: {
 		ADD_ENTITIES: 'update',
@@ -40,8 +42,10 @@ export const COUNTER_KEYS_MAP = {
 };
 export const DEFAULT_IMAGE_PATHS_MAP = {
 	account: '/organization_logo?img_id=0',
+	organization: '/user_portrait?img_id=0',
 	user: '/user_portrait?img_id=0',
 };
+export const DEFAULT_PAGE_SIZE = 50;
 export const DEFAULT_USER_ACCOUNT_FULL_NAME_DEFINITION_FIELDS = [
 	{
 		key: 'first-name',
@@ -73,6 +77,7 @@ export const MODEL_TYPE_MAP = {
 	organization: 'organization',
 	user: 'user',
 };
+export const MAX_DISPLAYED_ORGANIZATIONS = 10;
 export const NODE_BUTTON_WIDTH = 28;
 export const NODE_PADDING = 14;
 export const ORGANIZATIONS_PROPERTY_NAME = 'childOrganizations';

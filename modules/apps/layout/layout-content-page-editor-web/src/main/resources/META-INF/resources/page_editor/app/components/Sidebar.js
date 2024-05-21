@@ -28,6 +28,7 @@ import selectItemConfigurationOpen from '../selectors/selectItemConfigurationOpe
 import selectSidebarIsOpened from '../selectors/selectSidebarIsOpened';
 import switchSidebarPanel from '../thunks/switchSidebarPanel';
 import {useDropClear} from '../utils/drag_and_drop/useDragAndDrop';
+import isSmallResolution from '../utils/isSmallResolution';
 
 const {Suspense, useCallback, useEffect} = React;
 
@@ -100,7 +101,7 @@ export default function Sidebar() {
 	});
 
 	const promise = panel
-		? load(sidebarPanelId, panel.pluginEntryPoint)
+		? load(sidebarPanelId, panel.pluginClass)
 		: Promise.resolve();
 
 	const app = {
@@ -275,15 +276,21 @@ export default function Sidebar() {
 		const open =
 			panel.sidebarPanelId === sidebarPanelId ? !sidebarOpen : true;
 
+		const smallResolution = isSmallResolution();
+
 		dispatch(
 			switchSidebarPanel({
+				itemConfigurationOpen: smallResolution
+					? false
+					: store.sidebar.itemConfigurationOpen,
 				sidebarOpen: open,
 				sidebarPanelId: panel.sidebarPanelId,
 			})
 		);
 
 		if (open) {
-			sidebarContentRef.current?.focus();
+			sidebarContentRef.current.style.visibility = 'visible';
+			sidebarContentRef.current?.focus({preventScroll: true});
 		}
 	};
 
@@ -365,9 +372,7 @@ export default function Sidebar() {
 	return (
 		<ReactPortal className="cadmin">
 			<div
-				className={classNames(
-					'page-editor__sidebar page-editor__theme-adapter-forms'
-				)}
+				className="page-editor__sidebar page-editor__theme-adapter-forms"
 				ref={dropClearRef}
 				style={{'--sidebar-content-width': `${sidebarWidth}px`}}
 			>
@@ -392,7 +397,7 @@ export default function Sidebar() {
 								icon,
 								isLink,
 								label,
-								pluginEntryPoint,
+								pluginClass,
 								url,
 							} = panel;
 
@@ -411,10 +416,9 @@ export default function Sidebar() {
 							}
 
 							const prefetch = () =>
-								load(
-									panel.sidebarPanelId,
-									pluginEntryPoint
-								).then(...swallow);
+								load(panel.sidebarPanelId, pluginClass).then(
+									...swallow
+								);
 
 							return (
 								<ClayButtonWithIcon
@@ -472,16 +476,7 @@ export default function Sidebar() {
 					})}
 					id={sidebarContentId}
 					onClick={deselectItem}
-					ref={(ref) => {
-						sidebarContentRef.current = ref;
-
-						if (sidebarOpen) {
-							ref?.removeAttribute('inert');
-						}
-						else {
-							ref?.setAttribute('inert', '');
-						}
-					}}
+					ref={sidebarContentRef}
 					role="tabpanel"
 					tabIndex="-1"
 				>

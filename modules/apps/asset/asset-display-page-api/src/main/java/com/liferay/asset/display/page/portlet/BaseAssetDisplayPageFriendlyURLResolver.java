@@ -14,6 +14,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryService;
 import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
+import com.liferay.friendly.url.provider.FriendlyURLSeparatorProvider;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.exception.NoSuchInfoItemException;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
@@ -37,13 +38,18 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutFriendlyURLComposite;
 import com.liferay.portal.kernel.model.LayoutQueryStringComposite;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -197,12 +203,45 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 			localizedFriendlyURL = getURLSeparator() + urlTitle;
 		}
 
-		if (!Objects.equals(originalFriendlyURL, localizedFriendlyURL)) {
+		if (!isSameFriendlyURL(originalFriendlyURL, localizedFriendlyURL)) {
 			return new LayoutFriendlyURLComposite(
 				layout, localizedFriendlyURL, true);
 		}
 
 		return new LayoutFriendlyURLComposite(layout, friendlyURL, false);
+	}
+
+	@Override
+	public String getURLSeparator() {
+		if (!FeatureFlagManagerUtil.isEnabled("LPS-203351") ||
+			!isURLSeparatorConfigurable()) {
+
+			return getDefaultURLSeparator();
+		}
+
+		FriendlyURLSeparatorProvider friendlyURLSeparatorProvider =
+			_friendlyURLSeparatorProvider.get();
+
+		if (friendlyURLSeparatorProvider == null) {
+			return getDefaultURLSeparator();
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return getDefaultURLSeparator();
+		}
+
+		String urlSeparator =
+			friendlyURLSeparatorProvider.getFriendlyURLSeparator(
+				serviceContext.getCompanyId(), getKey());
+
+		if (Validator.isNull(urlSeparator)) {
+			return getDefaultURLSeparator();
+		}
+
+		return urlSeparator;
 	}
 
 	protected AssetDisplayPageEntry getAssetDisplayPageEntry(
@@ -258,6 +297,10 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 		}
 
 		return locale;
+	}
+
+	protected boolean isSameFriendlyURL(String url1, String url2) {
+		return Objects.equals(url1, url2);
 	}
 
 	protected boolean useOriginalFriendlyURL() {
@@ -432,6 +475,16 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 
 		String urlSeparator = _getURLSeparator(friendlyURL);
 
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.getFriendlyURLResolver(
+				urlSeparator);
+
+		if ((friendlyURLResolver != null) &&
+			friendlyURLResolver.isURLSeparatorConfigurable()) {
+
+			urlSeparator = friendlyURLResolver.getDefaultURLSeparator();
+		}
+
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByURLSeparator(urlSeparator);
@@ -505,5 +558,10 @@ public abstract class BaseAssetDisplayPageFriendlyURLResolver
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseAssetDisplayPageFriendlyURLResolver.class);
+
+	private static final Snapshot<FriendlyURLSeparatorProvider>
+		_friendlyURLSeparatorProvider = new Snapshot<>(
+			BaseAssetDisplayPageFriendlyURLResolver.class,
+			FriendlyURLSeparatorProvider.class);
 
 }

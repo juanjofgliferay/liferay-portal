@@ -28,8 +28,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -38,6 +36,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -62,8 +61,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -251,6 +248,8 @@ public abstract class BaseOptionValueResourceTestCase {
 		OptionValue optionValue =
 			testGraphQLGetOptionValueByExternalReferenceCode_addOptionValue();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				optionValue,
@@ -272,6 +271,33 @@ public abstract class BaseOptionValueResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/optionValueByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				optionValue,
+				OptionValueSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"optionValueByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													optionValue.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/optionValueByExternalReferenceCode"))));
 	}
 
 	@Test
@@ -280,6 +306,8 @@ public abstract class BaseOptionValueResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -295,6 +323,27 @@ public abstract class BaseOptionValueResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"optionValueByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -341,7 +390,11 @@ public abstract class BaseOptionValueResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteOptionValue() throws Exception {
-		OptionValue optionValue = testGraphQLDeleteOptionValue_addOptionValue();
+
+		// No namespace
+
+		OptionValue optionValue1 =
+			testGraphQLDeleteOptionValue_addOptionValue();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -350,23 +403,61 @@ public abstract class BaseOptionValueResourceTestCase {
 						"deleteOptionValue",
 						new HashMap<String, Object>() {
 							{
-								put("id", optionValue.getId());
+								put("id", optionValue1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteOptionValue"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"optionValue",
 					new HashMap<String, Object>() {
 						{
-							put("id", optionValue.getId());
+							put("id", optionValue1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		OptionValue optionValue2 =
+			testGraphQLDeleteOptionValue_addOptionValue();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"deleteOptionValue",
+							new HashMap<String, Object>() {
+								{
+									put("id", optionValue2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminCatalog_v1_0",
+				"Object/deleteOptionValue"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminCatalog_v1_0",
+					new GraphQLField(
+						"optionValue",
+						new HashMap<String, Object>() {
+							{
+								put("id", optionValue2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected OptionValue testGraphQLDeleteOptionValue_addOptionValue()
@@ -395,6 +486,8 @@ public abstract class BaseOptionValueResourceTestCase {
 	public void testGraphQLGetOptionValue() throws Exception {
 		OptionValue optionValue = testGraphQLGetOptionValue_addOptionValue();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				optionValue,
@@ -410,11 +503,35 @@ public abstract class BaseOptionValueResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/optionValue"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				optionValue,
+				OptionValueSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"optionValue",
+									new HashMap<String, Object>() {
+										{
+											put("id", optionValue.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/optionValue"))));
 	}
 
 	@Test
 	public void testGraphQLGetOptionValueNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -428,6 +545,25 @@ public abstract class BaseOptionValueResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"optionValue",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -544,38 +680,83 @@ public abstract class BaseOptionValueResourceTestCase {
 			testGetOptionByExternalReferenceCodeOptionValuesPage_addOptionValue(
 				externalReferenceCode, randomOptionValue());
 
-		Page<OptionValue> page1 =
-			optionValueResource.
-				getOptionByExternalReferenceCodeOptionValuesPage(
-					externalReferenceCode, null,
-					Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OptionValue> optionValues1 = (List<OptionValue>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			optionValues1.toString(), totalCount + 2, optionValues1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OptionValue> page1 =
+				optionValueResource.
+					getOptionByExternalReferenceCodeOptionValuesPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Page<OptionValue> page2 =
-			optionValueResource.
-				getOptionByExternalReferenceCodeOptionValuesPage(
-					externalReferenceCode, null,
-					Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(optionValue1, (List<OptionValue>)page1.getItems());
 
-		List<OptionValue> optionValues2 = (List<OptionValue>)page2.getItems();
+			Page<OptionValue> page2 =
+				optionValueResource.
+					getOptionByExternalReferenceCodeOptionValuesPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Assert.assertEquals(optionValues2.toString(), 1, optionValues2.size());
+			assertContains(optionValue2, (List<OptionValue>)page2.getItems());
 
-		Page<OptionValue> page3 =
-			optionValueResource.
-				getOptionByExternalReferenceCodeOptionValuesPage(
-					externalReferenceCode, null,
-					Pagination.of(1, (int)totalCount + 3), null);
+			Page<OptionValue> page3 =
+				optionValueResource.
+					getOptionByExternalReferenceCodeOptionValuesPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		assertContains(optionValue1, (List<OptionValue>)page3.getItems());
-		assertContains(optionValue2, (List<OptionValue>)page3.getItems());
-		assertContains(optionValue3, (List<OptionValue>)page3.getItems());
+			assertContains(optionValue3, (List<OptionValue>)page3.getItems());
+		}
+		else {
+			Page<OptionValue> page1 =
+				optionValueResource.
+					getOptionByExternalReferenceCodeOptionValuesPage(
+						externalReferenceCode, null,
+						Pagination.of(1, totalCount + 2), null);
+
+			List<OptionValue> optionValues1 =
+				(List<OptionValue>)page1.getItems();
+
+			Assert.assertEquals(
+				optionValues1.toString(), totalCount + 2, optionValues1.size());
+
+			Page<OptionValue> page2 =
+				optionValueResource.
+					getOptionByExternalReferenceCodeOptionValuesPage(
+						externalReferenceCode, null,
+						Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OptionValue> optionValues2 =
+				(List<OptionValue>)page2.getItems();
+
+			Assert.assertEquals(
+				optionValues2.toString(), 1, optionValues2.size());
+
+			Page<OptionValue> page3 =
+				optionValueResource.
+					getOptionByExternalReferenceCodeOptionValuesPage(
+						externalReferenceCode, null,
+						Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(optionValue1, (List<OptionValue>)page3.getItems());
+			assertContains(optionValue2, (List<OptionValue>)page3.getItems());
+			assertContains(optionValue3, (List<OptionValue>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -587,7 +768,7 @@ public abstract class BaseOptionValueResourceTestCase {
 			(entityField, optionValue1, optionValue2) -> {
 				BeanTestUtil.setProperty(
 					optionValue1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -865,32 +1046,74 @@ public abstract class BaseOptionValueResourceTestCase {
 			testGetOptionIdOptionValuesPage_addOptionValue(
 				id, randomOptionValue());
 
-		Page<OptionValue> page1 =
-			optionValueResource.getOptionIdOptionValuesPage(
-				id, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OptionValue> optionValues1 = (List<OptionValue>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			optionValues1.toString(), totalCount + 2, optionValues1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OptionValue> page1 =
+				optionValueResource.getOptionIdOptionValuesPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<OptionValue> page2 =
-			optionValueResource.getOptionIdOptionValuesPage(
-				id, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(optionValue1, (List<OptionValue>)page1.getItems());
 
-		List<OptionValue> optionValues2 = (List<OptionValue>)page2.getItems();
+			Page<OptionValue> page2 =
+				optionValueResource.getOptionIdOptionValuesPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(optionValues2.toString(), 1, optionValues2.size());
+			assertContains(optionValue2, (List<OptionValue>)page2.getItems());
 
-		Page<OptionValue> page3 =
-			optionValueResource.getOptionIdOptionValuesPage(
-				id, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<OptionValue> page3 =
+				optionValueResource.getOptionIdOptionValuesPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(optionValue1, (List<OptionValue>)page3.getItems());
-		assertContains(optionValue2, (List<OptionValue>)page3.getItems());
-		assertContains(optionValue3, (List<OptionValue>)page3.getItems());
+			assertContains(optionValue3, (List<OptionValue>)page3.getItems());
+		}
+		else {
+			Page<OptionValue> page1 =
+				optionValueResource.getOptionIdOptionValuesPage(
+					id, null, Pagination.of(1, totalCount + 2), null);
+
+			List<OptionValue> optionValues1 =
+				(List<OptionValue>)page1.getItems();
+
+			Assert.assertEquals(
+				optionValues1.toString(), totalCount + 2, optionValues1.size());
+
+			Page<OptionValue> page2 =
+				optionValueResource.getOptionIdOptionValuesPage(
+					id, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OptionValue> optionValues2 =
+				(List<OptionValue>)page2.getItems();
+
+			Assert.assertEquals(
+				optionValues2.toString(), 1, optionValues2.size());
+
+			Page<OptionValue> page3 =
+				optionValueResource.getOptionIdOptionValuesPage(
+					id, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(optionValue1, (List<OptionValue>)page3.getItems());
+			assertContains(optionValue2, (List<OptionValue>)page3.getItems());
+			assertContains(optionValue3, (List<OptionValue>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -902,7 +1125,7 @@ public abstract class BaseOptionValueResourceTestCase {
 			(entityField, optionValue1, optionValue2) -> {
 				BeanTestUtil.setProperty(
 					optionValue1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1444,6 +1667,10 @@ public abstract class BaseOptionValueResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1692,9 +1919,9 @@ public abstract class BaseOptionValueResourceTestCase {
 	}
 
 	protected OptionValueResource optionValueResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

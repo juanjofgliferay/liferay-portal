@@ -70,6 +70,7 @@ public class BatchEngineImportTaskExecutorImpl
 	public void execute(BatchEngineImportTask batchEngineImportTask) {
 		BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate =
 			_batchEngineTaskItemDelegateRegistry.getBatchEngineTaskItemDelegate(
+				batchEngineImportTask.getCompanyId(),
 				batchEngineImportTask.getClassName(),
 				batchEngineImportTask.getTaskItemDelegateName());
 
@@ -240,10 +241,6 @@ public class BatchEngineImportTaskExecutorImpl
 		if (parameters == null) {
 			parameters = new HashMap<>();
 		}
-
-		parameters.computeIfAbsent(
-			"taskItemDelegateName",
-			key -> batchEngineImportTask.getTaskItemDelegateName());
 
 		return parameters;
 	}

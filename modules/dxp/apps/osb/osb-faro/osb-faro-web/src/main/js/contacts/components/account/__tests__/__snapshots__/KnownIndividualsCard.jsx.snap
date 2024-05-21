@@ -168,11 +168,11 @@ exports[`KnownIndividualsCard should render w/ NoResultsDisplay 1`] = `
       <div
         class="no-results-content spacer"
       >
-        <h4
-          class="no-results-title"
+        <div
+          class="h4 no-results-title"
         >
           There are no individuals found.
-        </h4>
+        </div>
         <div
           class="no-results-description"
         >
@@ -182,10 +182,17 @@ exports[`KnownIndividualsCard should render w/ NoResultsDisplay 1`] = `
             Check back later to verify if data has been received from your data sources.
           </span>
           <a
+            class=""
             href="https://learn.liferay.com/analytics-cloud/latest/en/people/individuals/individuals-dashboard.html"
+            rel="noreferrer noopener"
             target="_blank"
           >
             Learn more about individuals.
+            <span
+              class="sr-only"
+            >
+              (Opens a new window)
+            </span>
           </a>
         </div>
       </div>

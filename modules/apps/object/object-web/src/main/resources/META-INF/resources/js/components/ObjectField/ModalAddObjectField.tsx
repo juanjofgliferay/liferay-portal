@@ -34,7 +34,6 @@ export function ModalAddObjectField({
 	baseResourceURL,
 	creationLanguageId,
 	objectDefinitionExternalReferenceCode,
-	objectDefinitionName,
 	onAfterSubmit,
 	setVisibility,
 }: ModalAddObjectField) {
@@ -42,11 +41,11 @@ export function ModalAddObjectField({
 	const [objectDefinition, setObjectDefinition] = useState<
 		ObjectDefinition
 	>();
-	const [objectFieldTypes, setObjectFieldTypes] = useState<ObjectFieldType[]>(
-		[]
-	);
+	const [objectFieldBusinessTypes, setObjectFieldBusinessTypes] = useState<
+		ObjectFieldBusinessType[]
+	>([]);
 	const {observer, onClose} = useModal({onClose: () => setVisibility(false)});
-
+	const formId = 'modalAddObjectField';
 	const initialValues: Partial<ObjectField> = {
 		indexed: true,
 		indexedAsKeyword: false,
@@ -119,20 +118,29 @@ export function ModalAddObjectField({
 
 			const url = createResourceURL(baseResourceURL, {
 				objectDefinitionId: objectDefinitionResponse.id,
-				p_p_resource_id: '/object_definitions/get_object_field_types',
+				p_p_resource_id:
+					'/object_definitions/get_object_field_business_types',
 			}).href;
 
-			const objectFieldTypesResponse = await fetch(url, {
+			const objectFieldBusinessTypesResponse = await fetch(url, {
 				method: 'GET',
 			});
 
 			const {
-				objectFieldTypes,
-			} = (await objectFieldTypesResponse.json()) as {
-				objectFieldTypes: ObjectFieldType[];
+				objectFieldBusinessTypes,
+			} = (await objectFieldBusinessTypesResponse.json()) as {
+				objectFieldBusinessTypes: ObjectFieldBusinessType[];
 			};
 
-			setObjectFieldTypes(objectFieldTypes);
+			setObjectFieldBusinessTypes(
+				objectFieldBusinessTypes.filter((objectFieldBusinessType) => {
+					if (
+						objectFieldBusinessType.businessType !== 'Relationship'
+					) {
+						return objectFieldBusinessType;
+					}
+				})
+			);
 		};
 
 		makeFetch();
@@ -149,12 +157,12 @@ export function ModalAddObjectField({
 		<ClayModalProvider>
 			<ClayTooltipProvider>
 				<ClayModal center observer={observer}>
-					<ClayForm onSubmit={handleSubmit}>
-						<ClayModal.Header>
-							{Liferay.Language.get('new-field')}
-						</ClayModal.Header>
+					<ClayModal.Header>
+						{Liferay.Language.get('new-field')}
+					</ClayModal.Header>
 
-						<ClayModal.Body>
+					<ClayModal.Body>
+						<ClayForm id={formId} onSubmit={handleSubmit}>
 							{error && (
 								<ClayAlert displayType="danger">
 									{error}
@@ -179,17 +187,13 @@ export function ModalAddObjectField({
 								className="lfr-objects__modal-add-object-field-form-base"
 								errors={errors}
 								handleChange={handleChange}
-								objectDefinition={objectDefinition}
-								objectDefinitionExternalReferenceCode={
-									objectDefinitionExternalReferenceCode
-								}
-								objectDefinitionName={
-									objectDefinitionName ?? objectDefinition
-										? objectDefinition?.name ?? ''
-										: ''
+								objectDefinition={
+									objectDefinition as ObjectDefinition
 								}
 								objectField={values}
-								objectFieldTypes={objectFieldTypes}
+								objectFieldBusinessTypesInfo={
+									objectFieldBusinessTypes
+								}
 								setValues={setValues}
 							>
 								{showEnableTranslationToggle && (
@@ -236,25 +240,25 @@ export function ModalAddObjectField({
 									values={values}
 								/>
 							)}
-						</ClayModal.Body>
+						</ClayForm>
+					</ClayModal.Body>
 
-						<ClayModal.Footer
-							last={
-								<ClayButton.Group spaced>
-									<ClayButton
-										displayType="secondary"
-										onClick={() => onClose()}
-									>
-										{Liferay.Language.get('cancel')}
-									</ClayButton>
+					<ClayModal.Footer
+						last={
+							<ClayButton.Group spaced>
+								<ClayButton
+									displayType="secondary"
+									onClick={() => onClose()}
+								>
+									{Liferay.Language.get('cancel')}
+								</ClayButton>
 
-									<ClayButton type="submit">
-										{Liferay.Language.get('save')}
-									</ClayButton>
-								</ClayButton.Group>
-							}
-						/>
-					</ClayForm>
+								<ClayButton form={formId} type="submit">
+									{Liferay.Language.get('save')}
+								</ClayButton>
+							</ClayButton.Group>
+						}
+					/>
 				</ClayModal>
 			</ClayTooltipProvider>
 		</ClayModalProvider>

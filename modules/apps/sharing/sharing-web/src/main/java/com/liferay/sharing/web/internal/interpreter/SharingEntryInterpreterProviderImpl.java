@@ -10,7 +10,6 @@ import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.sharing.interpreter.SharingEntryInterpreter;
 import com.liferay.sharing.interpreter.SharingEntryInterpreterProvider;
 import com.liferay.sharing.model.SharingEntry;
@@ -37,7 +36,7 @@ public class SharingEntryInterpreterProviderImpl
 		SharingEntry sharingEntry) {
 
 		SharingEntryInterpreter sharingEntryInterpreter =
-			_serviceTrackerMap.getService(sharingEntry.getClassNameId());
+			_serviceTrackerMap.getService(sharingEntry.getClassName());
 
 		if ((sharingEntryInterpreter == null) &&
 			_isAssetObject(sharingEntry.getClassName())) {
@@ -59,8 +58,7 @@ public class SharingEntryInterpreterProviderImpl
 			bundleContext, SharingEntryInterpreter.class,
 			"(model.class.name=*)",
 			(serviceReference, emitter) -> emitter.emit(
-				_classNameLocalService.getClassNameId(
-					(String)serviceReference.getProperty("model.class.name"))));
+				(String)serviceReference.getProperty("model.class.name")));
 	}
 
 	@Deactivate
@@ -85,11 +83,8 @@ public class SharingEntryInterpreterProviderImpl
 
 	private AssetRendererSharingEntryInterpreter
 		_assetRendererSharingEntryInterpreter;
-
-	@Reference
-	private ClassNameLocalService _classNameLocalService;
-
-	private ServiceTrackerMap<Long, SharingEntryInterpreter> _serviceTrackerMap;
+	private ServiceTrackerMap<String, SharingEntryInterpreter>
+		_serviceTrackerMap;
 
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.sharing.web)")
 	private ServletContext _servletContext;

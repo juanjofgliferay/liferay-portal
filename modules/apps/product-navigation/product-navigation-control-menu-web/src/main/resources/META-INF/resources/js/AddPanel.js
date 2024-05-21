@@ -19,6 +19,7 @@ const INITIAL_STATE = {
 	contents: null,
 	displayGrid: false,
 	getContentsURL: null,
+	hasAddContentPermission: false,
 	namespace: null,
 	plid: null,
 	portletNamespace: null,
@@ -131,6 +132,7 @@ const AddPanel = ({
 	addContentsURLs,
 	contents,
 	getContentsURL,
+	hasAddContentPermission,
 	languageDirection,
 	languageId,
 	namespace,
@@ -174,19 +176,23 @@ const AddPanel = ({
 				id: 'widgets',
 				label: Liferay.Language.get('widgets'),
 			},
-			{
-				collections: [
-					{
-						children: contents.map(normalizeContent),
-						collectionId: 'recent-content',
-						label: Liferay.Language.get('recent'),
-					},
-				],
-				id: 'content',
-				label: Liferay.Language.get('content'),
-			},
+			...(hasAddContentPermission
+				? [
+						{
+							collections: [
+								{
+									children: contents.map(normalizeContent),
+									collectionId: 'recent-content',
+									label: Liferay.Language.get('recent'),
+								},
+							],
+							id: 'content',
+							label: Liferay.Language.get('content'),
+						},
+				  ]
+				: []),
 		],
-		[contents, widgets]
+		[contents, hasAddContentPermission, widgets]
 	);
 
 	return (
@@ -221,6 +227,7 @@ AddPanel.propTypes = {
 	addContentsURLs: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 	contents: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 	getContentsURL: PropTypes.string.isRequired,
+	hasAddContentPermission: PropTypes.bool.isRequired,
 	languageDirection: PropTypes.shape({}),
 	languageId: PropTypes.string.isRequired,
 	namespace: PropTypes.string.isRequired,

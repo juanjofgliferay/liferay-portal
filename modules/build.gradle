@@ -4,6 +4,9 @@ import com.liferay.gradle.util.FileUtil
 import com.liferay.gradle.util.GradleUtil
 import com.liferay.gradle.util.copy.StripPathSegmentsAction
 
+import groovy.json.JsonSlurper
+
+import java.util.Objects
 import java.util.concurrent.ConcurrentSkipListSet
 
 import org.apache.tools.ant.DirectoryScanner
@@ -25,13 +28,13 @@ apply plugin: "com.liferay.yarn.defaults.plugin"
 
 ext {
 	projectTemplateTokens = [
-		"biz.aQute.bnd.version": "5.3.0",
-		"com.liferay.ant.bnd.version": "3.2.10",
+		"biz.aQute.bnd.version": "6.4.0",
+		"com.liferay.ant.bnd.version": "3.2.11",
 		"com.liferay.css.builder.version": "3.1.4",
 		"com.liferay.gradle.plugins.css.builder.version": "5.0.9",
 		"com.liferay.gradle.plugins.theme.builder.version": "2.0.17",
-		"com.liferay.portal.tools.bundle.support.version": "3.7.4",
-		"com.liferay.portal.tools.service.builder.version": "1.0.469",
+		"com.liferay.portal.tools.bundle.support.version": "3.7.5",
+		"com.liferay.portal.tools.service.builder.version": "1.0.481",
 		"com.liferay.portal.tools.rest.builder.version": "1.0.222",
 		"com.liferay.portal.tools.soy.builder.version": "3.0.4",
 		"com.liferay.portal.tools.theme.builder.version": "1.1.9",
@@ -55,7 +58,7 @@ if (Boolean.getBoolean("build.bnd.print.enabled")) {
 	}
 
 	dependencies {
-		bnd group: "biz.aQute.bnd", name: "biz.aQute.bnd", version: "5.3.0"
+		bnd group: "biz.aQute.bnd", name: "biz.aQute.bnd", version: "6.4.0"
 	}
 
 	repositories {
@@ -121,7 +124,7 @@ if (workspacesYarnLockFile.exists()) {
 
 buildDir = new File(rootDir.parentFile, "build")
 
-for (String gradleVersion in ["7.3.3"]) {
+for (String gradleVersion in ["8.5"]) {
 	String gradleDistributionURL = "https://services.gradle.org/distributions/gradle-${gradleVersion}-all.zip"
 	String suffix = gradleVersion.replace(".", "")
 
@@ -391,7 +394,7 @@ gradle.beforeProject {
 			processResources {
 				exclude "**/.sass-cache/"
 
-				filesMatching(["**/*.gradle", "**/pom.xml"]) {
+				filesMatching(["**/*.gradle", "**/*.properties", "**/pom.xml"]) {
 					filter(ReplaceTokens, tokens: projectTemplateTokens)
 				}
 
@@ -438,9 +441,25 @@ gradle.beforeProject {
 			}
 
 			if (FileUtil.exists(project, "package.json")) {
+				JsonSlurper jsonSlurper = new JsonSlurper()
+
 				File packageJSONFile = project.file("package.json")
 
-				if (packageJSONFile.text.contains("liferay-npm-scripts build")) {
+				Map<String, Object> packageJSONMap = jsonSlurper.parse(packageJSONFile, "UTF-8")
+
+				Map<String, String> scriptsJSONMap = packageJSONMap.get("scripts")
+
+				boolean liferayESModule = false
+
+				if (scriptsJSONMap != null) {
+					for (Map.Entry<String, String> entry : scriptsJSONMap.entrySet()) {
+						if (Objects.equals(entry.key, "build") && (Objects.equals(entry.value, "node-scripts") || entry.value.startsWith("node-scripts "))) {
+							liferayESModule = true
+						}
+					}
+				}
+
+				if (packageJSONFile.text.contains("liferay-npm-scripts build") || liferayESModule) {
 					buildCSS {
 						enabled = false
 					}
@@ -501,8 +520,22 @@ gradle.beforeProject {
 				mustRunAfter "formatSource"
 			}
 
-			jarSources {
-				mustRunAfter buildPluginDescriptor
+			if (tasks.findByName("generateJSPJava")) {
+				generateJSPJava {
+					mustRunAfter "generatePomFileForMavenPublication"
+				}
+			}
+
+			if (tasks.findByName("jarSources")) {
+				jarSources {
+					mustRunAfter "buildPluginDescriptor"
+				}
+			}
+
+			if (tasks.findByName("javadoc")) {
+				javadoc {
+					mustRunAfter "generatePomFileForMavenPublication"
+				}
 			}
 		}
 
@@ -548,6 +581,24 @@ gradle.beforeProject {
 						excludeTestsMatching project.property("excludeTestsMatching")
 					}
 				}
+
+				if (project.properties["junit.jvm.override.version"]) {
+					javaLauncher = javaToolchains.launcherFor {
+						languageVersion = JavaLanguageVersion.of(project.properties["junit.jvm.override.version"])
+					}
+				}
+
+				if (project.properties["junit.java.add.opens"]) {
+					jvmArgs project.properties["junit.java.add.opens"].split("\\s+")
+				}
+
+				jvmArgs "-Djava.locale.providers=JRE,COMPAT,CLDR"
+
+				if (project.properties["junit.java.security.manager"]) {
+					systemProperty "java.security.manager", project.properties["junit.java.security.manager"]
+				}
+
+				systemProperty "net.bytebuddy.experimental", "true"
 			}
 
 			testIntegration {
@@ -558,7 +609,7 @@ gradle.beforeProject {
 						return
 					}
 
-					FileTree fileTree = fileTree(dir: reports.junitXml.destination, exclude: "TEST-*-*.xml", include: "TEST-*.xml")
+					FileTree fileTree = fileTree(dir: reports.junitXml.outputLocation.get().getAsFile(), exclude: "TEST-*-*.xml", include: "TEST-*.xml")
 
 					ant.taskdef classname: "com.oopsconsultancy.xmltask.ant.XmlTask", classpath: configurations.xmltask.asPath, name: "xmltask"
 
@@ -622,6 +673,7 @@ gradle.beforeProject {
 			if (dir.exists() && !GradleUtil.getProperty(project, "com.liferay.portal.tools.rest.builder.ignore.local", true)) {
 				buildREST {
 					dependsOn ":util:portal-tools-rest-builder:deploy"
+					mustRunAfter ":util:portal-tools-rest-builder:deployDependencies"
 				}
 			}
 		}
@@ -632,6 +684,7 @@ gradle.beforeProject {
 			if (dir.exists() && !GradleUtil.getProperty(project, "com.liferay.portal.tools.service.builder.ignore.local", true)) {
 				buildService {
 					dependsOn ":util:portal-tools-service-builder:deploy"
+					mustRunAfter ":util:portal-tools-service-builder:deployDependencies"
 				}
 			}
 		}

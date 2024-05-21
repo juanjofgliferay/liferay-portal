@@ -10,6 +10,7 @@ import com.liferay.headless.admin.user.dto.v1_0.AccountGroup;
 import com.liferay.headless.admin.user.dto.v1_0.AccountRole;
 import com.liferay.headless.admin.user.dto.v1_0.Organization;
 import com.liferay.headless.admin.user.dto.v1_0.PostalAddress;
+import com.liferay.headless.admin.user.dto.v1_0.Role;
 import com.liferay.headless.admin.user.dto.v1_0.UserAccount;
 import com.liferay.headless.admin.user.dto.v1_0.UserGroup;
 import com.liferay.headless.admin.user.resource.v1_0.AccountGroupResource;
@@ -857,6 +858,22 @@ public class Mutation {
 	}
 
 	@GraphQLField
+	public Response createAccountEmailAddressesPageExportBatch(
+			@GraphQLName("accountId") Long accountId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_emailAddressResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			emailAddressResource ->
+				emailAddressResource.postAccountEmailAddressesPageExportBatch(
+					accountId, callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField
 	public Response createOrganizationEmailAddressesPageExportBatch(
 			@GraphQLName("organizationId") String organizationId,
 			@GraphQLName("callbackURL") String callbackURL,
@@ -1216,6 +1233,21 @@ public class Mutation {
 	}
 
 	@GraphQLField
+	public Response createAccountPhonesPageExportBatch(
+			@GraphQLName("accountId") Long accountId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_phoneResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			phoneResource -> phoneResource.postAccountPhonesPageExportBatch(
+				accountId, callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField
 	public Response createOrganizationPhonesPageExportBatch(
 			@GraphQLName("organizationId") String organizationId,
 			@GraphQLName("callbackURL") String callbackURL,
@@ -1395,8 +1427,8 @@ public class Mutation {
 
 	@GraphQLField
 	public Response createRolesPageExportBatch(
-			@GraphQLName("types") Integer[] types,
 			@GraphQLName("search") String search,
+			@GraphQLName("types") Integer[] types,
 			@GraphQLName("callbackURL") String callbackURL,
 			@GraphQLName("contentType") String contentType,
 			@GraphQLName("fieldNames") String fieldNames)
@@ -1406,7 +1438,78 @@ public class Mutation {
 			_roleResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			roleResource -> roleResource.postRolesPageExportBatch(
-				types, search, callbackURL, contentType, fieldNames));
+				search, types, callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField(description = "Creates a new role")
+	public Role createRole(@GraphQLName("role") Role role) throws Exception {
+		return _applyComponentServiceObjects(
+			_roleResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			roleResource -> roleResource.postRole(role));
+	}
+
+	@GraphQLField
+	public Response createRoleBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_roleResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			roleResource -> roleResource.postRoleBatch(callbackURL, object));
+	}
+
+	@GraphQLField(description = "update the given Role")
+	public Role updateRoleByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("role") Role role)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_roleResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			roleResource -> roleResource.putRoleByExternalReferenceCode(
+				externalReferenceCode, role));
+	}
+
+	@GraphQLField(
+		description = "Unassociates a role by external reference code with a user account"
+	)
+	public boolean deleteRoleByExternalReferenceCodeUserAccountAssociation(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("userAccountId") Long userAccountId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_roleResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			roleResource ->
+				roleResource.
+					deleteRoleByExternalReferenceCodeUserAccountAssociation(
+						externalReferenceCode, userAccountId));
+
+		return true;
+	}
+
+	@GraphQLField(
+		description = "Associates a role by external reference code with a user account"
+	)
+	public boolean createRoleByExternalReferenceCodeUserAccountAssociation(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("userAccountId") Long userAccountId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_roleResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			roleResource ->
+				roleResource.
+					postRoleByExternalReferenceCodeUserAccountAssociation(
+						externalReferenceCode, userAccountId));
+
+		return true;
 	}
 
 	@GraphQLField(description = "Unassociates a role with a user account")
@@ -2212,6 +2315,21 @@ public class Mutation {
 				userGroupId, longs));
 
 		return true;
+	}
+
+	@GraphQLField
+	public Response createAccountWebUrlsPageExportBatch(
+			@GraphQLName("accountId") Long accountId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_webUrlResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			webUrlResource -> webUrlResource.postAccountWebUrlsPageExportBatch(
+				accountId, callbackURL, contentType, fieldNames));
 	}
 
 	@GraphQLField

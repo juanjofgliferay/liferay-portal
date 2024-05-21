@@ -10,6 +10,7 @@ import com.liferay.object.field.builder.TextObjectFieldBuilder;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -38,16 +39,29 @@ public class ObjectDefinitionTestUtil {
 	}
 
 	public static ObjectDefinition addCustomObjectDefinition(
+			List<ObjectField> objectFields)
+		throws Exception {
+
+		return ObjectDefinitionLocalServiceUtil.addCustomObjectDefinition(
+			TestPropsValues.getUserId(), 0, false, true, false, false,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			getRandomName(), null, null,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			true, ObjectDefinitionConstants.SCOPE_COMPANY,
+			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT, objectFields);
+	}
+
+	public static ObjectDefinition addCustomObjectDefinition(
 			long objectFolderId, boolean enableLocalization,
 			ObjectDefinitionLocalService objectDefinitionLocalService,
 			List<ObjectField> objectFields)
 		throws Exception {
 
 		return objectDefinitionLocalService.addCustomObjectDefinition(
-			TestPropsValues.getUserId(), objectFolderId, false,
+			TestPropsValues.getUserId(), objectFolderId, false, true,
 			enableLocalization, false,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			"A" + RandomTestUtil.randomString(), null, null,
+			getRandomName(), null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			true, ObjectDefinitionConstants.SCOPE_COMPANY,
 			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT, objectFields);
@@ -76,7 +90,7 @@ public class ObjectDefinitionTestUtil {
 		throws PortalException {
 
 		return objectDefinitionLocalService.addCustomObjectDefinition(
-			TestPropsValues.getUserId(), 0, false, false, false,
+			TestPropsValues.getUserId(), 0, false, true, false, false,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			name, null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
@@ -103,9 +117,9 @@ public class ObjectDefinitionTestUtil {
 		throws Exception {
 
 		return objectDefinitionLocalService.addSystemObjectDefinition(
-			null, userId, 0, null, dbTableName, false, labelMap, true, name,
-			null, null, pkObjectFieldDBColumnName, pkObjectFieldName,
-			pluralLabelMap, scope, titleObjectFieldName, version,
+			null, userId, 0, null, dbTableName, false, true, labelMap, true,
+			name, null, null, pkObjectFieldDBColumnName, pkObjectFieldName,
+			pluralLabelMap, false, scope, titleObjectFieldName, version,
 			WorkflowConstants.STATUS_DRAFT, objectFields);
 	}
 
@@ -121,9 +135,74 @@ public class ObjectDefinitionTestUtil {
 
 		return objectDefinitionLocalService.addSystemObjectDefinition(
 			externalReferenceCode, userId, 0, className, dbTableName, false,
-			labelMap, false, name, null, null, pkObjectFieldDBColumnName,
-			pkObjectFieldName, pluralLabelMap, scope, titleObjectFieldName,
-			version, WorkflowConstants.STATUS_APPROVED, objectFields);
+			true, labelMap, false, name, null, null, pkObjectFieldDBColumnName,
+			pkObjectFieldName, pluralLabelMap, false, scope,
+			titleObjectFieldName, version, WorkflowConstants.STATUS_APPROVED,
+			objectFields);
+	}
+
+	public static String getRandomName() {
+		return "A" + RandomTestUtil.randomString();
+	}
+
+	public static ObjectDefinition publishObjectDefinition(
+			boolean localized, String name, List<ObjectField> objectFields,
+			String scope, long userId)
+		throws Exception {
+
+		ObjectDefinition objectDefinition =
+			ObjectDefinitionLocalServiceUtil.addCustomObjectDefinition(
+				userId, 0, false, true, localized, false,
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				name, null, null,
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				true, scope, ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+				objectFields);
+
+		return ObjectDefinitionLocalServiceUtil.publishCustomObjectDefinition(
+			userId, objectDefinition.getObjectDefinitionId());
+	}
+
+	public static ObjectDefinition publishObjectDefinition(
+			List<ObjectField> objectFields)
+		throws Exception {
+
+		return publishObjectDefinition(
+			getRandomName(), objectFields,
+			ObjectDefinitionConstants.SCOPE_COMPANY);
+	}
+
+	public static ObjectDefinition publishObjectDefinition(
+			List<ObjectField> objectFields, String scope)
+		throws Exception {
+
+		return publishObjectDefinition(
+			getRandomName(), objectFields, scope, TestPropsValues.getUserId());
+	}
+
+	public static ObjectDefinition publishObjectDefinition(
+			List<ObjectField> objectFields, String scope, long userId)
+		throws Exception {
+
+		return publishObjectDefinition(
+			getRandomName(), objectFields, scope, userId);
+	}
+
+	public static ObjectDefinition publishObjectDefinition(
+			String name, List<ObjectField> objectFields, String scope)
+		throws Exception {
+
+		return publishObjectDefinition(
+			name, objectFields, scope, TestPropsValues.getUserId());
+	}
+
+	public static ObjectDefinition publishObjectDefinition(
+			String name, List<ObjectField> objectFields, String scope,
+			long userId)
+		throws Exception {
+
+		return publishObjectDefinition(
+			false, name, objectFields, scope, userId);
 	}
 
 }

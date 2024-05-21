@@ -21,7 +21,7 @@ import com.liferay.calendar.exporter.CalendarDataHandler;
 import com.liferay.calendar.exporter.CalendarDataHandlerFactory;
 import com.liferay.calendar.internal.notification.NotificationTemplateContextFactory;
 import com.liferay.calendar.internal.recurrence.RecurrenceSplit;
-import com.liferay.calendar.internal.recurrence.RecurrenceSplitter;
+import com.liferay.calendar.internal.recurrence.RecurrenceSplitterUtil;
 import com.liferay.calendar.internal.util.CalendarUtil;
 import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.model.CalendarBooking;
@@ -233,7 +233,6 @@ public class CalendarBookingLocalServiceImpl
 		calendarBooking.setFirstReminderType(firstReminderType);
 		calendarBooking.setSecondReminder(secondReminder);
 		calendarBooking.setSecondReminderType(secondReminderType);
-		calendarBooking.setExpandoBridgeAttributes(serviceContext);
 
 		int status = 0;
 
@@ -255,6 +254,7 @@ public class CalendarBookingLocalServiceImpl
 
 		calendarBooking.setStatus(status);
 		calendarBooking.setStatusDate(serviceContext.getModifiedDate(date));
+		calendarBooking.setExpandoBridgeAttributes(serviceContext);
 
 		calendarBooking = calendarBookingPersistence.update(calendarBooking);
 
@@ -1687,9 +1687,8 @@ public class CalendarBookingLocalServiceImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_notificationSenderServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, NotificationSender.class, "notification.type");
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, NotificationSender.class, "notification.type");
 	}
 
 	@Deactivate
@@ -1697,14 +1696,11 @@ public class CalendarBookingLocalServiceImpl
 	protected void deactivate() {
 		super.deactivate();
 
-		_notificationSenderServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	@Reference
 	protected MBMessageLocalService mbMessageLocalService;
-
-	@Reference
-	protected RecurrenceSplitter recurrenceSplitter;
 
 	@Reference
 	protected SubscriptionLocalService subscriptionLocalService;
@@ -2206,9 +2202,8 @@ public class CalendarBookingLocalServiceImpl
 			ServiceContext serviceContext)
 		throws Exception {
 
-		NotificationSender notificationSender =
-			_notificationSenderServiceTrackerMap.getService(
-				notificationType.toString());
+		NotificationSender notificationSender = _serviceTrackerMap.getService(
+			notificationType.toString());
 
 		if (notificationTemplateType == NotificationTemplateType.DECLINE) {
 			User recipientUser = senderUser;
@@ -2297,13 +2292,12 @@ public class CalendarBookingLocalServiceImpl
 			User user = notificationRecipient.getUser();
 
 			NotificationSender notificationSender =
-				_notificationSenderServiceTrackerMap.getService(
-					notificationType.toString());
+				_serviceTrackerMap.getService(notificationType.toString());
 
 			NotificationTemplateContext notificationTemplateContext =
 				NotificationTemplateContextFactory.getInstance(
-					notificationType, NotificationTemplateType.REMINDER,
-					calendarBooking, user);
+					calendarBooking, NotificationTemplateType.REMINDER,
+					notificationType, null, null, user);
 
 			notificationSender.sendNotification(
 				user.getEmailAddress(), user.getFullName(),
@@ -2439,8 +2433,9 @@ public class CalendarBookingLocalServiceImpl
 							recurringCalendarBooking.getStartTime(),
 							recurringCalendarBooking.getTimeZone());
 
-					RecurrenceSplit recurrenceSplit = recurrenceSplitter.split(
-						recurrenceObj, startTimeJCalendar, splitJCalendar);
+					RecurrenceSplit recurrenceSplit =
+						RecurrenceSplitterUtil.split(
+							recurrenceObj, startTimeJCalendar, splitJCalendar);
 
 					if (recurrenceSplit.isSplit()) {
 						java.util.Calendar newStartTimeJCalendar =
@@ -2749,14 +2744,13 @@ public class CalendarBookingLocalServiceImpl
 	@Reference
 	private HtmlParser _htmlParser;
 
-	private ServiceTrackerMap<String, NotificationSender>
-		_notificationSenderServiceTrackerMap;
-
 	@Reference
 	private RatingsStatsLocalService _ratingsStatsLocalService;
 
 	@Reference
 	private ResourceLocalService _resourceLocalService;
+
+	private ServiceTrackerMap<String, NotificationSender> _serviceTrackerMap;
 
 	@Reference
 	private SocialActivityCounterLocalService

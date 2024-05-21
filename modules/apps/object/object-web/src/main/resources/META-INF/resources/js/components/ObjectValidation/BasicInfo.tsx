@@ -9,18 +9,20 @@ import {
 	RadioField,
 	SingleSelect,
 	Toggle,
-	getLocalizableLabel,
+	stringUtils,
 } from '@liferay/object-js-components-web';
 import {InputLocalized} from 'frontend-js-components-web';
 import React, {useMemo} from 'react';
 
 import {NAME_OUTPUT_OBJECT_FIELD_EXTERNAL_REFERENCE_CODE} from '../../utils/constants';
+import {DisabledGroovyScriptAlert} from '../DisabledGroovyScriptAlert';
 import {TabProps} from './useObjectValidationForm';
 
 export interface BasicInfoProps extends TabProps {
 	componentLabel: string;
 	creationLanguageId: Liferay.Language.Locale;
 	customObjectFields: ObjectField[];
+	disabledGroovyValidation: boolean;
 }
 
 const outputValidationTypeArray = [
@@ -46,38 +48,36 @@ export function BasicInfo({
 	creationLanguageId,
 	customObjectFields,
 	disabled,
+	disabledGroovyValidation,
 	errors,
+	scriptManagementConfigurationPortletURL,
+	selectedPartialValidationField,
 	setValues,
 	values,
 }: BasicInfoProps) {
 	const objectFieldsItems = useMemo(() => {
 		return customObjectFields.map(
 			({externalReferenceCode, label, name}) => ({
-				label: getLocalizableLabel(creationLanguageId, label, name),
+				label: stringUtils.getLocalizableLabel(
+					creationLanguageId,
+					label,
+					name
+				),
 				value: externalReferenceCode,
 			})
 		);
 	}, [creationLanguageId, customObjectFields]);
-	const getSelectedPartialValidationField = () => {
-		if (values.objectValidationRuleSettings?.length) {
-			const [
-				partialValidationField,
-			] = values.objectValidationRuleSettings;
-
-			const customObjectField = customObjectFields.find(
-				(currentCustomObjectField) =>
-					currentCustomObjectField.externalReferenceCode ===
-					partialValidationField.value
-			);
-
-			return customObjectField?.externalReferenceCode;
-		}
-
-		return '';
-	};
 
 	return (
 		<>
+			{disabledGroovyValidation && (
+				<DisabledGroovyScriptAlert
+					scriptManagementConfigurationPortletURL={
+						scriptManagementConfigurationPortletURL
+					}
+				/>
+			)}
+
 			<Card title={componentLabel}>
 				<InputLocalized
 					disabled={disabled}
@@ -97,7 +97,7 @@ export function BasicInfo({
 
 				{values.engine !== 'compositeKey' && (
 					<Toggle
-						disabled={disabled}
+						disabled={disabled || disabledGroovyValidation}
 						label={Liferay.Language.get('active-validation')}
 						onToggle={(active) => setValues({active})}
 						toggled={values.active}
@@ -114,7 +114,8 @@ export function BasicInfo({
 				/>
 			</Card>
 
-			{values.engine?.startsWith('function#') && (
+			{(values.engine?.startsWith('function#') ||
+				values.engine?.startsWith('javaDelegate#')) && (
 				<Card title={Liferay.Language.get('error-message')}>
 					<InputLocalized
 						disabled={disabled}
@@ -178,7 +179,7 @@ export function BasicInfo({
 									});
 								}}
 								required
-								selectedKey={getSelectedPartialValidationField()}
+								selectedKey={selectedPartialValidationField}
 							/>
 						)}
 					</>

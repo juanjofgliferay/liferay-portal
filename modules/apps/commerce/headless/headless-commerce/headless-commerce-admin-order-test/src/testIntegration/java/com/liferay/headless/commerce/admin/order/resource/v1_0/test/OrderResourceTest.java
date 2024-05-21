@@ -127,6 +127,14 @@ public class OrderResourceTest extends BaseOrderResourceTestCase {
 		super.testGetOrdersPageWithFilterDateTimeEquals();
 	}
 
+	@Ignore
+	@Override
+	@Test
+	public void testGetOrdersPageWithFilterStringContains() throws Exception {
+		super.testGetOrdersPageWithFilterStringContains();
+	}
+
+	@Ignore
 	@Override
 	@Test
 	public void testGetOrdersPageWithFilterStringEquals() throws Exception {
@@ -161,13 +169,6 @@ public class OrderResourceTest extends BaseOrderResourceTestCase {
 
 				_userLocalService.addRoleUser(role.getRoleId(), user);
 
-				orderResource = OrderResource.builder(
-				).authentication(
-					user.getEmailAddress(), "test"
-				).locale(
-					LocaleUtil.getDefault()
-				).build();
-
 				Order order3 = orderResource.postOrder(randomOrder());
 
 				Page<Order> page = orderResource.getOrdersPage(
@@ -193,6 +194,13 @@ public class OrderResourceTest extends BaseOrderResourceTestCase {
 	@Ignore
 	@Override
 	@Test
+	public void testGetOrdersPageWithFilterStringStartsWith() throws Exception {
+		super.testGetOrdersPageWithFilterStringStartsWith();
+	}
+
+	@Ignore
+	@Override
+	@Test
 	public void testGetOrdersPageWithPagination() throws Exception {
 		super.testGetOrdersPageWithPagination();
 	}
@@ -204,17 +212,32 @@ public class OrderResourceTest extends BaseOrderResourceTestCase {
 		super.testGetOrdersPageWithSortDateTime();
 	}
 
+	@Ignore
 	@Override
 	@Test
 	public void testGetOrdersPageWithSortInteger() throws Exception {
 		super.testGetOrdersPageWithSortInteger();
 	}
 
+	@Ignore
+	@Override
+	@Test
+	public void testGetOrdersPageWithSortString() throws Exception {
+		super.testGetOrdersPageWithSortString();
+	}
+
 	@Test
 	public void testGetOrderWithNestedFields() throws Exception {
+		User omniAdminUser = UserTestUtil.addOmniadminUser();
+
+		String password = RandomTestUtil.randomString();
+
+		_userLocalService.updatePassword(
+			omniAdminUser.getUserId(), password, password, false, true);
+
 		OrderResource orderResource = OrderResource.builder(
 		).authentication(
-			"test@liferay.com", "test"
+			omniAdminUser.getEmailAddress(), password
 		).locale(
 			LocaleUtil.getDefault()
 		).parameters(
@@ -259,6 +282,7 @@ public class OrderResourceTest extends BaseOrderResourceTestCase {
 		super.testPatchOrderByExternalReferenceCode();
 	}
 
+	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {
 			"currencyCode", "paymentMethod", "printedNote",

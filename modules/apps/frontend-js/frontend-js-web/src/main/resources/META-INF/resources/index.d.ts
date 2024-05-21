@@ -39,7 +39,7 @@ export function align(
 ): string;
 
 /* Cancels the scheduled debounced function. */
-export function cancelDebounce(debounced: () => void): void;
+export function cancelDebounce(debounced: (...args: any[]) => void): void;
 
 export function createActionURL(
 	basePortletURL: string,
@@ -62,7 +62,10 @@ export function createResourceURL(
 ): URL;
 
 /* Debounces function execution. */
-export function debounce(fn: () => void, delay: number): () => void;
+export function debounce(
+	fn: (...args: any[]) => void,
+	delay: number
+): (...args: any[]) => void;
 
 /**
  * Decodes the update strings.
@@ -316,7 +319,10 @@ export function suggestAlignBestRegion(
  * arguments and context are used, replacing those of any previously pending
  * calls.
  */
-export function throttle(fn: () => void, interval: number): () => void;
+export function throttle(
+	fn: (event: any) => void,
+	interval: number
+): () => void;
 
 export function toggleBoxes(
 	checkBoxId: string,
@@ -892,6 +898,8 @@ export function setSessionValue(
 export function isReducedMotion(): boolean;
 
 /**
- * Renderer API
+ * Client Extensions API
  */
-export {getModuleAndSymbolNames, loadModule} from './module';
+export {default as loadClientExtensions} from './utils/client_extensions/loadClientExtensions';
+export {default as loadEditorClientExtensions} from './utils/client_extensions/loadEditorClientExtensions';
+export {loadModule} from './utils/client_extensions/loadModule';

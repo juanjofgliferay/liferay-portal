@@ -2,7 +2,6 @@
 definition {
 
 	property ci.retries.disabled = "true";
-	property custom.properties = "feature.flag.LPS-180328=true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.component.names = "Echo Accessibility";
@@ -41,6 +40,17 @@ definition {
 			KeyPress(
 				key_configurationName = "Locked Pages",
 				key_configurationScope = "Virtual Instance Scope",
+				locator1 = "SystemSettings#SCOPED_CONFIGURATION_NAME",
+				value1 = "\TAB");
+
+			AssertElementFocused(
+				key_configurationName = "Layout Crawler Client Configuration",
+				key_configurationScope = "Site Scope",
+				locator1 = "SystemSettings#SCOPED_CONFIGURATION_NAME");
+
+			KeyPress(
+				key_configurationName = "Layout Crawler Client Configuration",
+				key_configurationScope = "Site Scope",
 				locator1 = "SystemSettings#SCOPED_CONFIGURATION_NAME",
 				value1 = "\TAB");
 
@@ -160,8 +170,7 @@ definition {
 				value1 = "\TAB");
 
 			KeyPress(
-				ariaLabel = "Filter and Order",
-				locator1 = "Button#ANY_WITH_ARIA_LABEL",
+				locator1 = "ManagementBar#FILTER",
 				value1 = "\ENTER");
 
 			KeyPress(
@@ -179,8 +188,7 @@ definition {
 			LexiconTable.viewTableEntryNotPresent(tableEntry = "404 Error Utility Page");
 
 			KeyPress(
-				ariaLabel = "Filter and Order",
-				locator1 = "Button#ANY_WITH_ARIA_LABEL",
+				locator1 = "ManagementBar#FILTER",
 				value1 = "\ENTER");
 
 			KeyPress(
@@ -194,8 +202,7 @@ definition {
 				value1 = "\ENTER");
 
 			KeyPress(
-				ariaLabel = "Filter and Order",
-				locator1 = "Button#ANY_WITH_ARIA_LABEL",
+				locator1 = "ManagementBar#ORDER",
 				value1 = "\ENTER");
 
 			KeyPress(
@@ -219,13 +226,21 @@ definition {
 				locator1 = "LexiconTable#TABLE_ENTRY_TITLE_INDEXED");
 
 			KeyPress(
-				ariaLabel = "Filter and Order",
-				locator1 = "Button#ANY_WITH_ARIA_LABEL",
+				locator1 = "ManagementBar#FILTER",
 				value1 = "\TAB");
 
 			KeyPress(
-				key_text = "order-list-down",
-				locator1 = "Icon#ANY",
+				locator1 = "ManagementBar#ORDER",
+				value1 = "\ENTER");
+
+			KeyPress(
+				key_menuItem = "Descending",
+				locator1 = "MenuItem#ANY_MENU_ITEM",
+				value1 = "\UP");
+
+			KeyPress(
+				key_menuItem = "Ascending",
+				locator1 = "MenuItem#ANY_MENU_ITEM",
 				value1 = "\ENTER");
 
 			AssertElementPresent(

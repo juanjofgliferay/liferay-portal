@@ -10,14 +10,16 @@ import ClayTabs from '@clayui/tabs';
 import {fetch, openModal} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-import {API_URL, OBJECT_RELATIONSHIP} from '../Constants';
 import {IFDSViewSectionProps} from '../FDSView';
+import {API_URL, OBJECT_RELATIONSHIP} from '../utils/constants';
 import openDefaultFailureToast from '../utils/openDefaultFailureToast';
 import openDefaultSuccessToast from '../utils/openDefaultSuccessToast';
 import ActionForm from './actions/ActionForm';
 import ActionList from './actions/ActionList';
 
 import '../../css/Actions.scss';
+import sortItems from '../utils/sortItems';
+import {IOrderable} from '../utils/types';
 
 const SECTIONS = {
 	CREATION_ACTIONS: 'creation-actions',
@@ -28,7 +30,7 @@ const SECTIONS = {
 	NEW_ITEM_ACTION: 'new-item-action',
 };
 
-interface IFDSAction {
+interface IFDSAction extends IOrderable {
 	[OBJECT_RELATIONSHIP.FDS_VIEW_FDS_CREATION_ACTION]?: any;
 	[OBJECT_RELATIONSHIP.FDS_VIEW_FDS_ITEM_ACTION]?: any;
 	actions: {
@@ -47,7 +49,6 @@ interface IFDSAction {
 		[key: string]: string;
 	};
 	icon: string;
-	id: number;
 	label: string;
 	label_i18n: {
 		[key: string]: string;
@@ -136,7 +137,7 @@ const Actions = ({fdsView, namespace, spritemap}: IFDSViewSectionProps) => {
 				? OBJECT_RELATIONSHIP.FDS_VIEW_FDS_ITEM_ACTION_ID
 				: OBJECT_RELATIONSHIP.FDS_VIEW_FDS_CREATION_ACTION_ID;
 
-		const url = `${API_URL.FDS_ACTIONS}?filter=(${relationshipID} eq '${fdsView.id}')&nestedFields=${relationShip}&sort=dateCreated:desc`;
+		const url = `${API_URL.FDS_ACTIONS}?filter=(${relationshipID} eq '${fdsView.id}')&nestedFields=${relationShip}&sort=dateCreated:asc`;
 
 		if (activeTab === 0) {
 			setActiveSection(SECTIONS.ITEM_ACTIONS);
@@ -159,33 +160,15 @@ const Actions = ({fdsView, namespace, spritemap}: IFDSViewSectionProps) => {
 
 		const storedFDSActions: IFDSAction[] = responseJSON.items;
 
-		let ordered = storedFDSActions;
-		let notOrdered: IFDSAction[] = [];
-
 		const actionTypeOrder =
 			activeTab === 0 ? 'fdsItemActionsOrder' : 'fdsCreationActionsOrder';
 
 		const fdsActionsOrder =
 			storedFDSActions?.[0]?.[relationShip]?.[actionTypeOrder];
 
-		if (fdsActionsOrder) {
-			const fdsActionsOrderArray = fdsActionsOrder.split(',') as string[];
-
-			ordered = fdsActionsOrderArray
-				.map((fdsActionId) =>
-					storedFDSActions.find(
-						(fdsAction) => fdsAction.id === Number(fdsActionId)
-					)
-				)
-				.filter(Boolean) as IFDSAction[];
-
-			notOrdered = storedFDSActions.filter(
-				(fdsAction) =>
-					!fdsActionsOrderArray.includes(String(fdsAction.id))
-			);
-		}
-
-		setFDSActions([...notOrdered, ...ordered]);
+		setFDSActions(
+			sortItems(storedFDSActions, fdsActionsOrder) as IFDSAction[]
+		);
 
 		setLoading(false);
 	};
@@ -273,7 +256,15 @@ const Actions = ({fdsView, namespace, spritemap}: IFDSViewSectionProps) => {
 
 		const storedFDSActionsOrder = responseJSON?.[actionTypeOrder];
 
-		if (storedFDSActionsOrder && storedFDSActionsOrder === order) {
+		if (
+			fdsActions &&
+			storedFDSActionsOrder &&
+			storedFDSActionsOrder === order
+		) {
+			setFDSActions(
+				sortItems(fdsActions, storedFDSActionsOrder) as IFDSAction[]
+			);
+
 			openDefaultSuccessToast();
 		}
 		else {
@@ -316,11 +307,9 @@ const Actions = ({fdsView, namespace, spritemap}: IFDSViewSectionProps) => {
 								{Liferay.Language.get('item-actions')}
 							</ClayTabs.Item>
 
-							{Liferay.FeatureFlags['LPS-194395'] && (
-								<ClayTabs.Item>
-									{Liferay.Language.get('creation-actions')}
-								</ClayTabs.Item>
-							)}
+							<ClayTabs.Item>
+								{Liferay.Language.get('creation-actions')}
+							</ClayTabs.Item>
 						</ClayTabs>
 
 						<ClayTabs.Content active={activeTab} fade>
@@ -331,6 +320,9 @@ const Actions = ({fdsView, namespace, spritemap}: IFDSViewSectionProps) => {
 							>
 								<ActionList
 									createFDSAction={createFDSAction}
+									creationMenuItemLabel={Liferay.Language.get(
+										'new-item-action'
+									)}
 									deleteFDSAction={deleteFDSAction}
 									editFDSAction={editFDSAction}
 									fdsActions={fdsActions}
@@ -350,6 +342,9 @@ const Actions = ({fdsView, namespace, spritemap}: IFDSViewSectionProps) => {
 							>
 								<ActionList
 									createFDSAction={createFDSAction}
+									creationMenuItemLabel={Liferay.Language.get(
+										'new-creation-action'
+									)}
 									deleteFDSAction={deleteFDSAction}
 									editFDSAction={editFDSAction}
 									fdsActions={fdsActions}

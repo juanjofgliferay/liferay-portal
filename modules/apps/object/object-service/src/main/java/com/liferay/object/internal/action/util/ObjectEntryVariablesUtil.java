@@ -118,6 +118,10 @@ public class ObjectEntryVariablesUtil {
 					objectDefinition,
 					Collections.unmodifiableSet(currentVariables.keySet()));
 			}
+		).put(
+			"originalEntryDTO",
+			payloadJSONObject.get(
+				"originalObjectEntryDTO" + objectDefinition.getShortName())
 		).build();
 	}
 
@@ -199,14 +203,13 @@ public class ObjectEntryVariablesUtil {
 
 		Map<String, Object> objectEntry =
 			(Map<String, Object>)payloadJSONObject.get("objectEntry");
-		String userId = payloadJSONObject.getString("userId");
 
 		Map<String, Object> allowedVariables =
 			HashMapBuilder.<String, Object>put(
 				"creator",
 				() -> {
 					if (objectDefinition.isUnmodifiableSystemObject()) {
-						return userId;
+						return null;
 					}
 
 					return MapUtil.getString(objectEntry, "userId");
@@ -229,7 +232,7 @@ public class ObjectEntryVariablesUtil {
 					return dateFormat.format(new Date());
 				}
 			).put(
-				"currentUserId", userId
+				"currentUserId", payloadJSONObject.getString("userId")
 			).put(
 				"groupId",
 				() -> {
@@ -258,6 +261,9 @@ public class ObjectEntryVariablesUtil {
 			if (variables == null) {
 				return payloadJSONObject.toMap();
 			}
+
+			allowedVariables.put(
+				"creator", MapUtil.getString(variables, "userId"));
 		}
 		else {
 			if (oldValues) {

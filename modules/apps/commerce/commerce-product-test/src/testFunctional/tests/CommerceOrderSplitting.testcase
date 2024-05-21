@@ -1,7 +1,7 @@
 @component-name = "portal-commerce"
 definition {
 
-	property custom.properties = "company.security.strangers.verify=false${line.separator}feature.flag.COMMERCE-10890=true${line.separator}feature.flag.COMMERCE-11026=true${line.separator}jsonws.web.service.paths.excludes=";
+	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Order Management";
@@ -141,9 +141,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -260,9 +258,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -386,9 +382,7 @@ definition {
 		}
 
 		task ("And the customer order is splitted") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 
@@ -516,9 +510,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -652,9 +644,7 @@ definition {
 		}
 
 		task ("And the customer order is splitted") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 
@@ -806,9 +796,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -944,9 +932,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -1091,9 +1077,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -1237,9 +1221,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -1362,9 +1344,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page and accepts the order") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 
@@ -1570,7 +1550,17 @@ definition {
 
 			CommerceSKUs.generateAllSkuCombinations();
 
-			CommerceNavigator.gotoEntry(entryName = "VALUE1VALUE2");
+			WaitForElementPresent(locator1 = "//div[(@class='dnd-tr')][2]/div[1]");
+
+			var skuCombinationName = selenium.getText("//div[(@class='dnd-tr')][2]/div[1]");
+
+			CommerceNavigator.gotoEntry(entryName = ${skuCombinationName});
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
 
 			CommerceEntry.editSkuPricingAndInventory(
 				basePrice = "20.00",
@@ -1590,12 +1580,12 @@ definition {
 
 			FrontStore.addToCartFromProductDetails(
 				productName = "ABS Sensor",
-				productSku = "VALUE1VALUE2");
+				productSku = ${skuCombinationName});
 
 			CommerceNavigator.gotoMiniCart();
 
 			CommerceNavigator.editMiniCartItemQuantity(
-				cartItemSku = "VALUE1VALUE2",
+				cartItemSku = ${skuCombinationName},
 				productQuantity = 3);
 
 			CommerceCheckout.gotoCheckout();
@@ -1625,9 +1615,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -1660,7 +1648,7 @@ definition {
 				productListPrice = "49.00",
 				productName = "ABS Sensor",
 				productQuantity = 3,
-				productSku = "VALUE1VALUE2",
+				productSku = ${skuCombinationName},
 				productTotalPrice = "147.00");
 
 			CommerceOrders.viewOrdersEntry(
@@ -1696,7 +1684,7 @@ definition {
 				productListPrice = "20.00",
 				productName = "ABS Sensor",
 				productQuantity = 3,
-				productSku = "VALUE1VALUE2",
+				productSku = ${skuCombinationName},
 				productTotalPrice = "60.00");
 
 			CommerceOrders.viewOrdersEntry(
@@ -1859,9 +1847,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2005,9 +1991,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2142,9 +2126,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2251,9 +2233,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2385,9 +2365,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2520,9 +2498,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2773,9 +2749,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -2889,9 +2863,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -3054,9 +3026,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -3183,9 +3153,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -3337,9 +3305,7 @@ definition {
 		}
 
 		task ("When the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -3447,9 +3413,7 @@ definition {
 		}
 
 		task ("And the admin reaches the Orders Admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceOrders.openOrdersAdmin();
 		}
@@ -3471,9 +3435,7 @@ definition {
 		}
 
 		task ("When the admin navigates to Commerce -> Inventory -> SKU (e.g. the one relating to the product from the Minium catalog) -> On Order tab") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Inventory");
+			CommerceInventory.openInventoryAdmin();
 
 			AppBuilderAdmin.searchByItem(itemName = "MIN55861");
 
@@ -3497,9 +3459,7 @@ definition {
 		}
 
 		task ("When the admin navigates to Commerce -> Inventory -> SKU (the other one) -> On Order tab") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Inventory");
+			CommerceInventory.openInventoryAdmin();
 
 			AppBuilderAdmin.searchByItem(itemName = "TESTSKU");
 

@@ -8,15 +8,24 @@ package com.liferay.layout.internal.importer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.liferay.asset.kernel.NoSuchClassTypeException;
+import com.liferay.asset.list.service.AssetListEntryLocalService;
 import com.liferay.client.extension.constants.ClientExtensionEntryConstants;
+import com.liferay.client.extension.model.ClientExtensionEntryRel;
 import com.liferay.client.extension.service.ClientExtensionEntryRelLocalService;
 import com.liferay.client.extension.type.CET;
 import com.liferay.client.extension.type.manager.CETManager;
 import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.listener.FragmentEntryLinkListener;
 import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
 import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
+import com.liferay.fragment.renderer.FragmentRendererRegistry;
+import com.liferay.fragment.service.FragmentCollectionLocalService;
+import com.liferay.fragment.service.FragmentCollectionService;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.fragment.service.FragmentEntryLocalService;
+import com.liferay.fragment.validator.FragmentEntryValidator;
 import com.liferay.headless.delivery.dto.v1_0.ClientExtension;
 import com.liferay.headless.delivery.dto.v1_0.ContentSubtype;
 import com.liferay.headless.delivery.dto.v1_0.ContentType;
@@ -33,14 +42,27 @@ import com.liferay.headless.delivery.dto.v1_0.UtilityPageTemplate;
 import com.liferay.info.item.InfoItemFormVariation;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormVariationsProvider;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.layout.importer.LayoutsImportStrategy;
 import com.liferay.layout.importer.LayoutsImporter;
 import com.liferay.layout.importer.LayoutsImporterResultEntry;
 import com.liferay.layout.internal.importer.exception.DropzoneLayoutStructureItemException;
+import com.liferay.layout.internal.importer.helper.PortletConfigurationImporterHelper;
+import com.liferay.layout.internal.importer.helper.PortletPermissionsImporterHelper;
+import com.liferay.layout.internal.importer.structure.util.CollectionItemLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.CollectionLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.ColumnLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.ContainerLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.DropZoneLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.FormLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.FragmentDropZoneLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.FragmentLayoutStructureItemImporter;
 import com.liferay.layout.internal.importer.structure.util.LayoutStructureItemImporter;
 import com.liferay.layout.internal.importer.structure.util.LayoutStructureRuleImporter;
+import com.liferay.layout.internal.importer.structure.util.RowLayoutStructureItemImporter;
+import com.liferay.layout.internal.importer.structure.util.WidgetLayoutStructureItemImporter;
 import com.liferay.layout.internal.importer.validator.DisplayPageTemplateValidator;
 import com.liferay.layout.internal.importer.validator.MasterPageValidator;
 import com.liferay.layout.internal.importer.validator.PageDefinitionValidator;
@@ -60,6 +82,7 @@ import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServ
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.page.template.util.CheckUnlockedLayoutThreadLocal;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.layout.util.constants.LayoutStructureConstants;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
@@ -69,14 +92,12 @@ import com.liferay.layout.utility.page.converter.LayoutUtilityPageEntryTypeConve
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
 import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryLocalService;
 import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryService;
-import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.validator.JSONValidatorException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
@@ -87,7 +108,10 @@ import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -117,6 +141,7 @@ import java.io.InputStream;
 import java.io.Serializable;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -133,7 +158,6 @@ import java.util.zip.ZipFile;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -296,16 +320,40 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext, LayoutStructureItemImporter.class, null,
-			ServiceReferenceMapperFactory.createFromFunction(
-				bundleContext,
-				LayoutStructureItemImporter::getPageElementType));
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		_serviceTrackerMap.close();
+		_addLayoutStructureItemImporter(
+			new CollectionItemLayoutStructureItemImporter());
+		_addLayoutStructureItemImporter(
+			new CollectionLayoutStructureItemImporter(
+				_assetListEntryLocalService));
+		_addLayoutStructureItemImporter(
+			new ColumnLayoutStructureItemImporter());
+		_addLayoutStructureItemImporter(
+			new ContainerLayoutStructureItemImporter());
+		_addLayoutStructureItemImporter(
+			new DropZoneLayoutStructureItemImporter(
+				_fragmentCollectionContributorRegistry,
+				_fragmentCollectionLocalService, _fragmentEntryLocalService,
+				_fragmentRendererRegistry));
+		_addLayoutStructureItemImporter(new FormLayoutStructureItemImporter());
+		_addLayoutStructureItemImporter(
+			new FragmentDropZoneLayoutStructureItemImporter());
+		_addLayoutStructureItemImporter(
+			new FragmentLayoutStructureItemImporter(
+				_companyLocalService, _fragmentCollectionContributorRegistry,
+				_fragmentCollectionService, _fragmentEntryLinkLocalService,
+				_fragmentEntryLocalService, _fragmentEntryProcessorRegistry,
+				_fragmentEntryValidator, _fragmentRendererRegistry,
+				_portletConfigurationImporterHelper, _portletFileRepository,
+				_portletLocalService, _portletPermissionsImporterHelper,
+				_segmentsExperienceLocalService));
+		_addLayoutStructureItemImporter(new RowLayoutStructureItemImporter());
+		_addLayoutStructureItemImporter(
+			new WidgetLayoutStructureItemImporter(
+				_fragmentEntryLinkLocalService, _fragmentEntryProcessorRegistry,
+				_portletConfigurationImporterHelper, _portletLocalService,
+				_portletPermissionsImporterHelper,
+				_portletPreferencesLocalService,
+				_segmentsExperienceLocalService));
 	}
 
 	private void _addClientExtensionEntryRel(
@@ -318,6 +366,21 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 
 		if ((cet == null) || !Objects.equals(type, cet.getType())) {
 			return;
+		}
+
+		List<ClientExtensionEntryRel> clientExtensionEntryRels =
+			_clientExtensionEntryRelLocalService.getClientExtensionEntryRels(
+				_portal.getClassNameId(Layout.class), layout.getPlid());
+
+		for (ClientExtensionEntryRel clientExtensionEntryRel :
+				clientExtensionEntryRels) {
+
+			if (cetExternalReferenceCode.equals(
+					clientExtensionEntryRel.getCETExternalReferenceCode())) {
+
+				_clientExtensionEntryRelLocalService.
+					deleteClientExtensionEntryRel(clientExtensionEntryRel);
+			}
 		}
 
 		UnicodeProperties unicodeProperties = new UnicodeProperties(true);
@@ -349,16 +412,24 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 
 		if (classNameId == 0) {
 			return _layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-				groupId, layoutPageTemplateCollectionId, name,
+				null, groupId, layoutPageTemplateCollectionId, name,
 				layoutPageTemplateEntryType, 0,
 				WorkflowConstants.STATUS_APPROVED,
 				ServiceContextThreadLocal.getServiceContext());
 		}
 
 		return _layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-			groupId, layoutPageTemplateCollectionId, classNameId, classTypeId,
-			name, 0, WorkflowConstants.STATUS_APPROVED,
+			null, groupId, layoutPageTemplateCollectionId, classNameId,
+			classTypeId, name, 0, WorkflowConstants.STATUS_APPROVED,
 			ServiceContextThreadLocal.getServiceContext());
+	}
+
+	private void _addLayoutStructureItemImporter(
+		LayoutStructureItemImporter layoutStructureItemImporter) {
+
+		_layoutStructureItemImporters.put(
+			layoutStructureItemImporter.getPageElementType(),
+			layoutStructureItemImporter);
 	}
 
 	private void _deleteExistingPortletPreferences(long plid) {
@@ -373,13 +444,104 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 		}
 	}
 
+	private LayoutPageTemplateCollection _getBasicLayoutPageTemplateCollection(
+			long groupId, long layoutPageTemplateCollectionId,
+			LayoutsImportStrategy layoutsImportStrategy,
+			PageTemplateCollectionEntry pageTemplateCollectionEntry)
+		throws Exception {
+
+		LayoutPageTemplateCollection layoutPageTemplateCollection = null;
+
+		if (layoutPageTemplateCollectionId > 0) {
+			layoutPageTemplateCollection =
+				_layoutPageTemplateCollectionService.
+					fetchLayoutPageTemplateCollection(
+						layoutPageTemplateCollectionId);
+
+			if (layoutPageTemplateCollection == null) {
+				throw new PortalException(
+					"Invalid layout page template collection ID: " +
+						layoutPageTemplateCollectionId);
+			}
+
+			return layoutPageTemplateCollection;
+		}
+
+		String layoutPageTemplateCollectionKey =
+			pageTemplateCollectionEntry.getKey();
+
+		PageTemplateCollection pageTemplateCollection =
+			pageTemplateCollectionEntry.getPageTemplateCollection();
+
+		layoutPageTemplateCollection =
+			_layoutPageTemplateCollectionLocalService.
+				fetchLayoutPageTemplateCollection(
+					groupId, layoutPageTemplateCollectionKey,
+					LayoutPageTemplateEntryTypeConstants.BASIC);
+
+		if (layoutPageTemplateCollection == null) {
+			layoutPageTemplateCollection =
+				_layoutPageTemplateCollectionLocalService.
+					fetchLayoutPageTemplateCollectionByName(
+						groupId, pageTemplateCollection.getName(),
+						LayoutPageTemplateEntryTypeConstants.BASIC);
+
+			if (layoutPageTemplateCollection == null) {
+				return _layoutPageTemplateCollectionService.
+					addLayoutPageTemplateCollection(
+						pageTemplateCollection.getUuid(), groupId,
+						LayoutPageTemplateConstants.
+							PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+						pageTemplateCollection.getName(),
+						pageTemplateCollection.getDescription(),
+						LayoutPageTemplateCollectionTypeConstants.BASIC,
+						ServiceContextThreadLocal.getServiceContext());
+			}
+		}
+
+		if (Objects.equals(
+				LayoutsImportStrategy.KEEP_BOTH, layoutsImportStrategy)) {
+
+			return _layoutPageTemplateCollectionService.
+				addLayoutPageTemplateCollection(
+					pageTemplateCollection.getUuid(), groupId,
+					LayoutPageTemplateConstants.
+						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+					_layoutPageTemplateCollectionLocalService.
+						getUniqueLayoutPageTemplateCollectionName(
+							groupId, pageTemplateCollection.getName(),
+							LayoutPageTemplateEntryTypeConstants.BASIC),
+					pageTemplateCollection.getDescription(),
+					LayoutPageTemplateCollectionTypeConstants.BASIC,
+					ServiceContextThreadLocal.getServiceContext());
+		}
+		else if (Objects.equals(
+					LayoutsImportStrategy.OVERWRITE, layoutsImportStrategy)) {
+
+			return _layoutPageTemplateCollectionService.
+				updateLayoutPageTemplateCollection(
+					layoutPageTemplateCollection.
+						getLayoutPageTemplateCollectionId(),
+					pageTemplateCollection.getName(),
+					pageTemplateCollection.getDescription());
+		}
+
+		if (layoutPageTemplateCollection == null) {
+			throw new PortalException(
+				"Invalid layout page template collection ID: " +
+					layoutPageTemplateCollectionId);
+		}
+
+		return layoutPageTemplateCollection;
+	}
+
 	private PageTemplateCollectionEntry
 		_getDefaultPageTemplateCollectionEntry() {
 
 		PageTemplateCollection pageTemplateCollection =
 			new PageTemplateCollection() {
 				{
-					name = _PAGE_TEMPLATE_COLLECTION_KEY_DEFAULT;
+					setName(() -> _PAGE_TEMPLATE_COLLECTION_KEY_DEFAULT);
 				}
 			};
 
@@ -536,97 +698,6 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 		return key;
 	}
 
-	private LayoutPageTemplateCollection _getLayoutPageTemplateCollection(
-			long groupId, long layoutPageTemplateCollectionId,
-			LayoutsImportStrategy layoutsImportStrategy,
-			PageTemplateCollectionEntry pageTemplateCollectionEntry)
-		throws Exception {
-
-		LayoutPageTemplateCollection layoutPageTemplateCollection = null;
-
-		if (layoutPageTemplateCollectionId > 0) {
-			layoutPageTemplateCollection =
-				_layoutPageTemplateCollectionService.
-					fetchLayoutPageTemplateCollection(
-						layoutPageTemplateCollectionId);
-
-			if (layoutPageTemplateCollection == null) {
-				throw new PortalException(
-					"Invalid layout page template collection ID: " +
-						layoutPageTemplateCollectionId);
-			}
-
-			return layoutPageTemplateCollection;
-		}
-
-		String layoutPageTemplateCollectionKey =
-			pageTemplateCollectionEntry.getKey();
-
-		PageTemplateCollection pageTemplateCollection =
-			pageTemplateCollectionEntry.getPageTemplateCollection();
-
-		layoutPageTemplateCollection =
-			_layoutPageTemplateCollectionLocalService.
-				fetchLayoutPageTemplateCollection(
-					groupId, layoutPageTemplateCollectionKey,
-					LayoutPageTemplateEntryTypeConstants.BASIC);
-
-		if (layoutPageTemplateCollection == null) {
-			layoutPageTemplateCollection =
-				_layoutPageTemplateCollectionLocalService.
-					fetchLayoutPageTemplateCollectionByName(
-						groupId, pageTemplateCollection.getName(),
-						LayoutPageTemplateEntryTypeConstants.BASIC);
-
-			if (layoutPageTemplateCollection == null) {
-				return _layoutPageTemplateCollectionService.
-					addLayoutPageTemplateCollection(
-						groupId,
-						LayoutPageTemplateConstants.
-							PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-						pageTemplateCollection.getName(),
-						pageTemplateCollection.getDescription(),
-						LayoutPageTemplateCollectionTypeConstants.BASIC,
-						ServiceContextThreadLocal.getServiceContext());
-			}
-		}
-
-		if (Objects.equals(
-				LayoutsImportStrategy.KEEP_BOTH, layoutsImportStrategy)) {
-
-			return _layoutPageTemplateCollectionService.
-				addLayoutPageTemplateCollection(
-					groupId,
-					LayoutPageTemplateConstants.
-						PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
-					_layoutPageTemplateCollectionLocalService.
-						getUniqueLayoutPageTemplateCollectionName(
-							groupId, pageTemplateCollection.getName(),
-							LayoutPageTemplateEntryTypeConstants.BASIC),
-					pageTemplateCollection.getDescription(),
-					LayoutPageTemplateCollectionTypeConstants.BASIC,
-					ServiceContextThreadLocal.getServiceContext());
-		}
-		else if (Objects.equals(
-					LayoutsImportStrategy.OVERWRITE, layoutsImportStrategy)) {
-
-			return _layoutPageTemplateCollectionService.
-				updateLayoutPageTemplateCollection(
-					layoutPageTemplateCollection.
-						getLayoutPageTemplateCollectionId(),
-					pageTemplateCollection.getName(),
-					pageTemplateCollection.getDescription());
-		}
-
-		if (layoutPageTemplateCollection == null) {
-			throw new PortalException(
-				"Invalid layout page template collection ID: " +
-					layoutPageTemplateCollectionId);
-		}
-
-		return layoutPageTemplateCollection;
-	}
-
 	private List<UtilityPageTemplateEntry> _getLayoutUtilityPageEntries(
 			long groupId,
 			List<LayoutsImporterResultEntry> layoutsImporterResultEntries,
@@ -675,6 +746,20 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 							"x-could-not-be-imported-because-its-utility-" +
 								"page-is-invalid",
 							new String[] {zipEntry.getName()})));
+
+				continue;
+			}
+
+			if ((!FeatureFlagManagerUtil.isEnabled("LPD-6378") &&
+				 ((utilityPageTemplate.getType() ==
+					 UtilityPageTemplate.Type.CREATE_ACCOUNT) ||
+				  (utilityPageTemplate.getType() ==
+					  UtilityPageTemplate.Type.FORGOT_PASSWORD) ||
+				  (utilityPageTemplate.getType() ==
+					  UtilityPageTemplate.Type.LOGIN))) ||
+				(!FeatureFlagManagerUtil.isEnabled("LPD-10588") &&
+				 (utilityPageTemplate.getType() ==
+					 UtilityPageTemplate.Type.COOKIE_POLICY))) {
 
 				continue;
 			}
@@ -1177,7 +1262,7 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 			}
 
 			LayoutPageTemplateCollection layoutPageTemplateCollection =
-				_getLayoutPageTemplateCollection(
+				_getBasicLayoutPageTemplateCollection(
 					groupId, layoutPageTemplateCollectionId,
 					layoutsImportStrategy, pageTemplateCollectionEntry);
 
@@ -1620,7 +1705,7 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 		throws Exception {
 
 		LayoutStructureItemImporter layoutStructureItemImporter =
-			_serviceTrackerMap.getService(pageElement.getType());
+			_layoutStructureItemImporters.get(pageElement.getType());
 
 		LayoutStructureItem layoutStructureItem = null;
 
@@ -1630,7 +1715,10 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 					layoutStructure,
 					new LayoutStructureItemImporterContext(
 						layout, pageDefinitionVersion, parentItemId, position,
-						preserveItemIds, segmentsExperienceId),
+						preserveItemIds, segmentsExperienceId,
+						_groupLocalService, _infoItemServiceRegistry,
+						_infoSearchClassMapperRegistry, _layoutLocalService,
+						_layoutPageTemplateEntryLocalService),
 					pageElement, warningMessages);
 		}
 		else if (pageElement.getType() == PageElement.Type.ROOT) {
@@ -1765,16 +1853,21 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 			jsonObject.toString(),
 			ServiceContextThreadLocal.getServiceContext());
 
-		for (FragmentEntryLink fragmentEntryLink :
-				_fragmentEntryLinkLocalService.getFragmentEntryLinksByPlid(
-					layout.getGroupId(), layout.getPlid())) {
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout)) {
 
-			for (FragmentEntryLinkListener fragmentEntryLinkListener :
-					_fragmentEntryLinkListenerRegistry.
-						getFragmentEntryLinkListeners()) {
+			for (FragmentEntryLink fragmentEntryLink :
+					_fragmentEntryLinkLocalService.getFragmentEntryLinksByPlid(
+						layout.getGroupId(), layout.getPlid())) {
 
-				fragmentEntryLinkListener.onAddFragmentEntryLink(
-					fragmentEntryLink);
+				for (FragmentEntryLinkListener fragmentEntryLinkListener :
+						_fragmentEntryLinkListenerRegistry.
+							getFragmentEntryLinkListeners()) {
+
+					fragmentEntryLinkListener.onAddFragmentEntryLink(
+						fragmentEntryLink);
+				}
 			}
 		}
 	}
@@ -1908,6 +2001,18 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 				themeCSSClientExtension.getExternalReferenceCode(), layout,
 				serviceContext, ClientExtensionEntryConstants.TYPE_THEME_CSS,
 				themeCSSClientExtension.getClientExtensionConfig(), userId);
+		}
+
+		ClientExtension themeSpritemapClientExtension =
+			settings.getThemeSpritemapClientExtension();
+
+		if (themeSpritemapClientExtension != null) {
+			_addClientExtensionEntryRel(
+				themeSpritemapClientExtension.getExternalReferenceCode(),
+				layout, serviceContext,
+				ClientExtensionEntryConstants.TYPE_THEME_SPRITEMAP,
+				themeSpritemapClientExtension.getClientExtensionConfig(),
+				userId);
 		}
 
 		return _layoutLocalService.updateLayout(layout);
@@ -2065,6 +2170,9 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
+	private AssetListEntryLocalService _assetListEntryLocalService;
+
+	@Reference
 	private CETManager _cetManager;
 
 	@Reference
@@ -2072,7 +2180,20 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 		_clientExtensionEntryRelLocalService;
 
 	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
 	private DLAppService _dlAppService;
+
+	@Reference
+	private FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
+
+	@Reference
+	private FragmentCollectionLocalService _fragmentCollectionLocalService;
+
+	@Reference
+	private FragmentCollectionService _fragmentCollectionService;
 
 	@Reference
 	private FragmentEntryLinkListenerRegistry
@@ -2082,7 +2203,25 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
+	private FragmentEntryLocalService _fragmentEntryLocalService;
+
+	@Reference
+	private FragmentEntryProcessorRegistry _fragmentEntryProcessorRegistry;
+
+	@Reference
+	private FragmentEntryValidator _fragmentEntryValidator;
+
+	@Reference
+	private FragmentRendererRegistry _fragmentRendererRegistry;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
+	private InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
 
 	@Reference
 	private Language _language;
@@ -2113,6 +2252,12 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 		_layoutPageTemplateStructureLocalService;
 
 	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
+
+	private final EnumMap<PageElement.Type, LayoutStructureItemImporter>
+		_layoutStructureItemImporters = new EnumMap<>(PageElement.Type.class);
+
+	@Reference
 	private LayoutUtilityPageEntryLocalService
 		_layoutUtilityPageEntryLocalService;
 
@@ -2123,16 +2268,23 @@ public class LayoutsImporterImpl implements LayoutsImporter {
 	private Portal _portal;
 
 	@Reference
+	private PortletConfigurationImporterHelper
+		_portletConfigurationImporterHelper;
+
+	@Reference
 	private PortletFileRepository _portletFileRepository;
+
+	@Reference
+	private PortletLocalService _portletLocalService;
+
+	@Reference
+	private PortletPermissionsImporterHelper _portletPermissionsImporterHelper;
 
 	@Reference
 	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
-
-	private ServiceTrackerMap<PageElement.Type, LayoutStructureItemImporter>
-		_serviceTrackerMap;
 
 	@Reference
 	private StyleBookEntryLocalService _styleBookEntryLocalService;

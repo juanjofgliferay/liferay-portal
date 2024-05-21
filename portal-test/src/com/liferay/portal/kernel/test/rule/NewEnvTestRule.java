@@ -194,8 +194,11 @@ public class NewEnvTestRule implements TestRule {
 
 	protected ClassLoader createClassLoader(Description description) {
 		try {
+			ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+
 			return new URLClassLoader(
-				ClassPathUtil.getClassPathURLs(CLASS_PATH), null);
+				ClassPathUtil.getClassPathURLs(CLASS_PATH),
+				systemClassLoader.getParent());
 		}
 		catch (MalformedURLException malformedURLException) {
 			throw new RuntimeException(malformedURLException);

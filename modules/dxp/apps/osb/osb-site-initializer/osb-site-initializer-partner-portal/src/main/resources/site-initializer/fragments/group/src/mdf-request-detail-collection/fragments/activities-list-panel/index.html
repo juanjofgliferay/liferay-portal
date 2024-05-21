@@ -2,12 +2,12 @@
 [#setting date_format="yyyy-MM-dd" /]
 
 [#assign claim_status_style = { "claimed": "ml-3 label label-tonal-info ml-2", "unclaimed": "ml-3 label label-tonal-warning ml-2" } /]
-[#assign request_status_style = { "active": "label label-tonal-info ml-2", "submitted": "label label-tonal-warning ml-2", "approved": "label label-tonal-success ml-2", "expired": "label label-tonal-danger ml-2" } /]
+[#assign activity_status_style = { "active": "label label-tonal-info ml-2", "completed": "label label-tonal-success ml-2", "expired": "label label-tonal-danger ml-2", "moreInfoRequested": "label label-tonal-warning ml-2", "rejected": "label label-tonal-danger ml-2", "submitted": "label label-tonal-warning ml-2" } /]
 
 [#assign mdf_request_id = (request.getAttribute("INFO_ITEM").objectEntryId)! /]
 
 [#function days_difference_from_now date]
-	[#return (date?long + (30 * 1000 * 60 * 60 * 24) - (.now?long)) / (1000 * 60 * 60 * 24) /]
+	[#return (date?long + (45 * 1000 * 60 * 60 * 24) - (.now?long)) / (1000 * 60 * 60 * 24) /]
 [/#function]
 
 [#function get_event_fields activity]
@@ -153,14 +153,14 @@
 	</div>
 [/#macro]
 
-[#macro request_status activity_status end_date]
+[#macro request_status activity_status end_date is_claimed]
 	<div class="align-items-center d-sm-flex mb-1 text-neutral-7 text-weight-semi-bold">
 		<p class="mb-0">
-			Request Status:
-			<span class="${request_status_style[activity_status.key]}">
+			Activity Status:
+			<span class="${activity_status_style[activity_status.key]}">
 				${(activity_status.name)!}
 			</span>
-			[#if end_date?has_content && activity_status.key == 'active']
+			[#if end_date?has_content && activity_status.key == 'active' && !is_claimed]
 				[#assign request_date = days_difference_from_now(end_date) /]
 
 				<span class="font-weight-light ml-sm-2">
@@ -173,6 +173,11 @@
 					[/#if]
 				</span>
 			[/#if]
+			[#if activity_status.key == 'expired']
+				<span class="font-weight-light ml-sm-2">
+					This activity can no longer be claimed
+				</span>
+			[/#if]
 		</p>
 	</div>
 [/#macro]
@@ -182,8 +187,8 @@
 
 	[#assign mdf_status = (restClient.get("/c/mdfrequests/${mdf_request_id}").mdfRequestStatus.key)! /]
 		[#list activities as activity]
-			<div class="border-brand-primary-lighten-4 panel" role="tablist">
-				<button aria-controls="mdfRequestActivitiesPanel-${activity.id}" aria-expanded="false" class="btn btn-unstyled collapse-icon collapse-icon-middle collapsed panel-header panel-header-link" data-target="#mdfRequestActivitiesPanel-${activity.id}" data-toggle="liferay-collapse" role="tab">
+			<div class="border-brand-primary-lighten-4 form-check-card panel" role="tablist">
+				<button aria-controls="mdfRequestActivitiesPanel-${activity.id}" aria-expanded="false" class="btn btn-unstyled card card-interactive card-type-template collapse-icon collapse-icon-top collapsed panel-header panel-header-link" data-target="#mdfRequestActivitiesPanel-${activity.id}" data-toggle="liferay-collapse" role="tab">
 					<div class="py-2 text-dark">
 						[#if activity.endDate?has_content && activity.startDate?has_content]
 							[@range_date end_date=activity.endDate start_date=activity.startDate /]
@@ -193,11 +198,18 @@
 						[#if mdf_status != "draft"]
 							[@claim_status activity_claims=(activity.actToMDFClmActs)! /]
 
-							[@request_status activity_status=(activity.activityStatus)! end_date=(activity.endDate?date)! /]
+							[@request_status activity_status=(activity.activityStatus)! end_date=(activity.endDate?date)! is_claimed=(activity.actToMDFClmActs?filter(activity_claim -> activity_claim.r_mdfClmToMDFClmActs_c_mdfClaim.mdfClaimStatus.key != "draft" && activity_claim.selected)?has_content)! /]
 						[#else]
 							[@clay.alert displayType="info" message="Pending MDF Request submission." title="Info" /]
 						[/#if]
-						</div>
+					</div>
+
+					<span class="collapse-icon-closed mt-2">
+						[@clay["icon"] symbol="angle-down"/]
+					</span>
+					<span class="collapse-icon-open mt-2">
+						[@clay["icon"] symbol="angle-up"/]
+					</span>
 				</button>
 
 				<div class="collapse panel-collapse" id="mdfRequestActivitiesPanel-${activity.id}" role="tabpanel">

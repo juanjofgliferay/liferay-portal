@@ -1011,7 +1011,8 @@ public class ServicePreAction extends Action {
 			if (layoutGroup.isUser() &&
 				(layoutGroup.getClassPK() != user.getUserId())) {
 
-				if (!GetterUtil.getBoolean(
+				if ((plid > 0) &&
+					!GetterUtil.getBoolean(
 						PropsUtil.get(
 							PropsKeys.LAYOUT_USER_ACCESS_VIA_PLID_ENABLED))) {
 
@@ -1061,16 +1062,19 @@ public class ServicePreAction extends Action {
 		boolean viewableSourceGroup = true;
 
 		if (layout != null) {
+			Group sourceGroup = null;
+
 			long sourceGroupId = ParamUtil.getLong(
 				httpServletRequest, "p_v_l_s_g_id");
 
 			if ((sourceGroupId > 0) && (sourceGroupId != layout.getGroupId())) {
+				sourceGroup = GroupLocalServiceUtil.fetchGroup(sourceGroupId);
+			}
+
+			if (sourceGroup != null) {
 				if (layout.isTypeControlPanel() || layout.isPublicLayout() ||
 					SitesUtil.isUserGroupLayoutSetViewable(
 						permissionChecker, layout.getGroup())) {
-
-					Group sourceGroup = GroupLocalServiceUtil.getGroup(
-						sourceGroupId);
 
 					if (layout.isTypeControlPanel() && sourceGroup.isUser() &&
 						(sourceGroup.getClassPK() != user.getUserId()) &&

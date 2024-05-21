@@ -12,10 +12,12 @@ import com.liferay.object.odata.filter.expression.field.predicate.provider.Field
 import com.liferay.object.rest.internal.util.BinaryExpressionConverterUtil;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.sql.dsl.Column;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.expression.Expression;
 import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.filter.expression.BinaryExpression;
 
 import java.util.List;
@@ -41,40 +43,54 @@ public class KeywordsFieldPredicateProvider implements FieldPredicateProvider {
 		return _getKeywordsPredicate(
 			objectDefinitionColumnSupplier,
 			BinaryExpressionConverterUtil.getExpressionPredicate(
-				AssetTagTable.INSTANCE.name, operation, (String)right));
+				DSLFunctionFactoryUtil.lower(AssetTagTable.INSTANCE.name),
+				operation, StringUtil.toLowerCase((String)right)));
 	}
 
 	@Override
 	public Predicate getContainsPredicate(
 		Function<String, Column<?, ?>> objectDefinitionColumnSupplier,
-		Object fieldValue) {
+		String fieldName, Object fieldValue) {
 
 		return _getKeywordsPredicate(
 			objectDefinitionColumnSupplier,
-			AssetTagTable.INSTANCE.name.like(
-				StringPool.PERCENT + fieldValue + StringPool.PERCENT));
+			DSLFunctionFactoryUtil.lower(
+				AssetTagTable.INSTANCE.name
+			).like(
+				StringUtil.toLowerCase(
+					StringPool.PERCENT + fieldValue + StringPool.PERCENT)
+			));
 	}
 
 	@Override
 	public Predicate getInPredicate(
 		Function<String, Column<?, ?>> objectDefinitionColumnSupplier,
-		List<Object> rights) {
+		Object left, List<Object> rights) {
 
 		return _getKeywordsPredicate(
 			objectDefinitionColumnSupplier,
-			AssetTagTable.INSTANCE.name.in(
+			DSLFunctionFactoryUtil.lower(
+				AssetTagTable.INSTANCE.name
+			).in(
 				TransformUtil.transformToArray(
-					rights, String::valueOf, Object.class)));
+					rights,
+					right -> StringUtil.toLowerCase(String.valueOf(right)),
+					String.class)
+			));
 	}
 
 	@Override
 	public Predicate getStartsWithPredicate(
 		Function<String, Column<?, ?>> objectDefinitionColumnSupplier,
-		Object fieldValue) {
+		String fieldName, Object fieldValue) {
 
 		return _getKeywordsPredicate(
 			objectDefinitionColumnSupplier,
-			AssetTagTable.INSTANCE.name.like(fieldValue + StringPool.PERCENT));
+			DSLFunctionFactoryUtil.lower(
+				AssetTagTable.INSTANCE.name
+			).like(
+				StringUtil.toLowerCase(fieldValue + StringPool.PERCENT)
+			));
 	}
 
 	private Predicate _getKeywordsPredicate(

@@ -253,7 +253,7 @@ public class PayPalCommercePaymentIntegration
 	}
 
 	@Override
-	public String getPaymentIntegrationName() {
+	public String getName(Locale locale) {
 		return "PayPal";
 	}
 
@@ -533,17 +533,15 @@ public class PayPalCommercePaymentIntegration
 				commerceOrder.getCommerceOrderItems(),
 				commerceOrderItem -> {
 					BigDecimal finalPrice = commerceOrderItem.getFinalPrice();
+					BigDecimal quantity = commerceOrderItem.getQuantity();
 
-					BigDecimal unitAmount = finalPrice.divide(
-						commerceOrderItem.getQuantity());
+					BigDecimal unitAmount = finalPrice.divide(quantity);
 
 					return new Item(
 					).name(
 						commerceOrderItem.getName(locale)
 					).quantity(
-						String.valueOf(
-							commerceOrderItem.getQuantity(
-							).stripTrailingZeros())
+						String.valueOf(quantity.stripTrailingZeros())
 					).sku(
 						commerceOrderItem.getSku()
 					).unitAmount(

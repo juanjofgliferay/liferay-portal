@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -221,7 +219,10 @@ public abstract class BaseProductChannelResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteProductChannel() throws Exception {
-		ProductChannel productChannel =
+
+		// No namespace
+
+		ProductChannel productChannel1 =
 			testGraphQLDeleteProductChannel_addProductChannel();
 
 		Assert.assertTrue(
@@ -231,23 +232,61 @@ public abstract class BaseProductChannelResourceTestCase {
 						"deleteProductChannel",
 						new HashMap<String, Object>() {
 							{
-								put("id", productChannel.getId());
+								put("id", productChannel1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteProductChannel"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"productChannel",
 					new HashMap<String, Object>() {
 						{
-							put("id", productChannel.getId());
+							put("id", productChannel1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		ProductChannel productChannel2 =
+			testGraphQLDeleteProductChannel_addProductChannel();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"deleteProductChannel",
+							new HashMap<String, Object>() {
+								{
+									put("id", productChannel2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminCatalog_v1_0",
+				"Object/deleteProductChannel"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminCatalog_v1_0",
+					new GraphQLField(
+						"productChannel",
+						new HashMap<String, Object>() {
+							{
+								put("id", productChannel2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected ProductChannel testGraphQLDeleteProductChannel_addProductChannel()
@@ -281,6 +320,8 @@ public abstract class BaseProductChannelResourceTestCase {
 		ProductChannel productChannel =
 			testGraphQLGetProductChannel_addProductChannel();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				productChannel,
@@ -296,11 +337,35 @@ public abstract class BaseProductChannelResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/productChannel"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				productChannel,
+				ProductChannelSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"productChannel",
+									new HashMap<String, Object>() {
+										{
+											put("id", productChannel.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/productChannel"))));
 	}
 
 	@Test
 	public void testGraphQLGetProductChannelNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -314,6 +379,25 @@ public abstract class BaseProductChannelResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"productChannel",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -427,40 +511,87 @@ public abstract class BaseProductChannelResourceTestCase {
 			testGetProductByExternalReferenceCodeProductChannelsPage_addProductChannel(
 				externalReferenceCode, randomProductChannel());
 
-		Page<ProductChannel> page1 =
-			productChannelResource.
-				getProductByExternalReferenceCodeProductChannelsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<ProductChannel> productChannels1 =
-			(List<ProductChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			productChannels1.toString(), totalCount + 2,
-			productChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<ProductChannel> page1 =
+				productChannelResource.
+					getProductByExternalReferenceCodeProductChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<ProductChannel> page2 =
-			productChannelResource.
-				getProductByExternalReferenceCodeProductChannelsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				productChannel1, (List<ProductChannel>)page1.getItems());
 
-		List<ProductChannel> productChannels2 =
-			(List<ProductChannel>)page2.getItems();
+			Page<ProductChannel> page2 =
+				productChannelResource.
+					getProductByExternalReferenceCodeProductChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			productChannels2.toString(), 1, productChannels2.size());
+			assertContains(
+				productChannel2, (List<ProductChannel>)page2.getItems());
 
-		Page<ProductChannel> page3 =
-			productChannelResource.
-				getProductByExternalReferenceCodeProductChannelsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<ProductChannel> page3 =
+				productChannelResource.
+					getProductByExternalReferenceCodeProductChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(productChannel1, (List<ProductChannel>)page3.getItems());
-		assertContains(productChannel2, (List<ProductChannel>)page3.getItems());
-		assertContains(productChannel3, (List<ProductChannel>)page3.getItems());
+			assertContains(
+				productChannel3, (List<ProductChannel>)page3.getItems());
+		}
+		else {
+			Page<ProductChannel> page1 =
+				productChannelResource.
+					getProductByExternalReferenceCodeProductChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<ProductChannel> productChannels1 =
+				(List<ProductChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				productChannels1.toString(), totalCount + 2,
+				productChannels1.size());
+
+			Page<ProductChannel> page2 =
+				productChannelResource.
+					getProductByExternalReferenceCodeProductChannelsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<ProductChannel> productChannels2 =
+				(List<ProductChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				productChannels2.toString(), 1, productChannels2.size());
+
+			Page<ProductChannel> page3 =
+				productChannelResource.
+					getProductByExternalReferenceCodeProductChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				productChannel1, (List<ProductChannel>)page3.getItems());
+			assertContains(
+				productChannel2, (List<ProductChannel>)page3.getItems());
+			assertContains(
+				productChannel3, (List<ProductChannel>)page3.getItems());
+		}
 	}
 
 	protected ProductChannel
@@ -574,36 +705,78 @@ public abstract class BaseProductChannelResourceTestCase {
 			testGetProductIdProductChannelsPage_addProductChannel(
 				id, randomProductChannel());
 
-		Page<ProductChannel> page1 =
-			productChannelResource.getProductIdProductChannelsPage(
-				id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<ProductChannel> productChannels1 =
-			(List<ProductChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			productChannels1.toString(), totalCount + 2,
-			productChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<ProductChannel> page1 =
+				productChannelResource.getProductIdProductChannelsPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<ProductChannel> page2 =
-			productChannelResource.getProductIdProductChannelsPage(
-				id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				productChannel1, (List<ProductChannel>)page1.getItems());
 
-		List<ProductChannel> productChannels2 =
-			(List<ProductChannel>)page2.getItems();
+			Page<ProductChannel> page2 =
+				productChannelResource.getProductIdProductChannelsPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(
-			productChannels2.toString(), 1, productChannels2.size());
+			assertContains(
+				productChannel2, (List<ProductChannel>)page2.getItems());
 
-		Page<ProductChannel> page3 =
-			productChannelResource.getProductIdProductChannelsPage(
-				id, Pagination.of(1, (int)totalCount + 3));
+			Page<ProductChannel> page3 =
+				productChannelResource.getProductIdProductChannelsPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(productChannel1, (List<ProductChannel>)page3.getItems());
-		assertContains(productChannel2, (List<ProductChannel>)page3.getItems());
-		assertContains(productChannel3, (List<ProductChannel>)page3.getItems());
+			assertContains(
+				productChannel3, (List<ProductChannel>)page3.getItems());
+		}
+		else {
+			Page<ProductChannel> page1 =
+				productChannelResource.getProductIdProductChannelsPage(
+					id, Pagination.of(1, totalCount + 2));
+
+			List<ProductChannel> productChannels1 =
+				(List<ProductChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				productChannels1.toString(), totalCount + 2,
+				productChannels1.size());
+
+			Page<ProductChannel> page2 =
+				productChannelResource.getProductIdProductChannelsPage(
+					id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<ProductChannel> productChannels2 =
+				(List<ProductChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				productChannels2.toString(), 1, productChannels2.size());
+
+			Page<ProductChannel> page3 =
+				productChannelResource.getProductIdProductChannelsPage(
+					id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				productChannel1, (List<ProductChannel>)page3.getItems());
+			assertContains(
+				productChannel2, (List<ProductChannel>)page3.getItems());
+			assertContains(
+				productChannel3, (List<ProductChannel>)page3.getItems());
+		}
 	}
 
 	protected ProductChannel
@@ -978,6 +1151,10 @@ public abstract class BaseProductChannelResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1306,9 +1483,9 @@ public abstract class BaseProductChannelResourceTestCase {
 	}
 
 	protected ProductChannelResource productChannelResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

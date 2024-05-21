@@ -222,6 +222,10 @@ definition {
 			locator1 = "WCEditWebContent#SELECT_FEATURED_IMAGE_TYPE",
 			value1 = "From Your Computer");
 
+		SetElementAttribute.removeElementAttribute(
+			attribute1 = "hidden",
+			locator1 = "WCEditWebContent#SELECT_FEATURED_IMAGE_INPUT");
+
 		UploadCommonFile(
 			locator1 = "WCEditWebContent#SELECT_FEATURED_IMAGE_INPUT",
 			value1 = ${uploadFileName});
@@ -333,8 +337,6 @@ definition {
 			webContentTitle = ${webContentTitle});
 
 		Button.clickPublish();
-
-		WaitForPageLoad();
 	}
 
 	@summary = "Default summary"
@@ -514,6 +516,8 @@ definition {
 	@summary = "Default summary"
 	macro addWithStructureCP(saveAsDraft = null, webContentUpload = null, available = null, description = null, webContentGeolocation = null, webContentImageDescription = null, webContentLinkToPage = null, webContentText = null, dmDocumentTitle = null, webContentImage = null, row = null, webContentSelectFromList = null, webContentSingleSelection = null, depotName = null, otherSiteName = null, webContentColor = null, structureName = null, webContentDate = null, webContentWebContent = null, navTab = null, webContentNumeric = null, webContentTitle = null, templateName = null, webContentRichText = null, dmFolderName = null, folderName = null, webContentMultipleSelection = null, fieldType = null, invalidFileValidation = null, dmNavTab = null) {
 		AssertVisible(locator1 = "WCEditWebContent#SIDEBAR");
+
+		AssertVisible(locator1 = "Sidebar#FORM_BUILDER");
 
 		if (isSet(webContentTitle)) {
 			PortletEntry.inputTitle(title = ${webContentTitle});
@@ -1233,13 +1237,10 @@ definition {
 				value1 = ${displayPageTemplateType});
 		}
 		else {
-			Click(
+			Select(
 				ariaLabel = "Select Display Page Type",
-				locator1 = "Button#ANY_WITH_ARIA_LABEL");
-
-			Click(
-				key_menuItem = ${displayPageTemplateType},
-				locator1 = "MenuItem#ANY_MENU_ITEM");
+				locator1 = "Select#ANY_ARIA_LABEL",
+				value1 = ${displayPageTemplateType});
 		}
 
 		if (${displayPageTemplateType} == "Specific") {
@@ -1613,13 +1614,15 @@ definition {
 				locator1 = "WC#ENTRY_LIST_CHECKBOX");
 		}
 
-		Click(locator1 = "Icon#MOVE");
+		Click(
+			key_text = "move",
+			locator1 = "ManagementBar#ANY_ICON");
 
 		AssertTextEquals(
 			locator1 = "Portlet#HEADER",
 			value1 = "Move Web Content");
 
-		Click(locator1 = "Button#PARENT_FOLDER_SELECT");
+		Click(locator1 = "Button#SELECT");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
@@ -1644,7 +1647,9 @@ definition {
 				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHECKBOX");
 		}
 
-		Click(locator1 = "Icon#MOVE");
+		Click(
+			key_text = "move",
+			locator1 = "ManagementBar#ANY_ICON");
 
 		AssertClick(
 			locator1 = "Button#SELECT",
@@ -1865,7 +1870,7 @@ definition {
 		SelectFrame(value1 = "relative=top");
 
 		AssertTextEquals.assertValue(
-			inputFieldId = "folderName",
+			inputFieldId = "resourceName",
 			locator1 = "TextInput#INPUT_ID",
 			value1 = ${folderName});
 	}
@@ -2321,46 +2326,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro viewEmailConfigurationCP(webContentWorkflowEnabled = null) {
-		SiteAdmin.gotoPortletConfiguration();
-
-		Navigator.gotoNavTab(navTab = "Email From");
-
-		AssertTextEquals(
-			locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_ADDED_EMAIL",
-			value1 = "Web Content Added Email");
-
-		AssertTextEquals(
-			locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_REVIEW_EMAIL",
-			value1 = "Web Content Review Email");
-
-		AssertTextEquals(
-			locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_UPDATED_EMAIL",
-			value1 = "Web Content Updated Email");
-
-		if (${webContentWorkflowEnabled} == "true") {
-			AssertTextEquals(
-				locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_DENIED_EMAIL",
-				value1 = "Web Content Denied Email");
-
-			AssertTextEquals(
-				locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_GRANTED_EMAIL",
-				value1 = "Web Content Granted Email");
-
-			AssertTextEquals(
-				locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_REQUESTED_EMAIL",
-				value1 = "Web Content Requested Email");
-		}
-		else {
-			AssertElementNotPresent(locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_DENIED_EMAIL");
-
-			AssertElementNotPresent(locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_GRANTED_EMAIL");
-
-			AssertElementNotPresent(locator1 = "WCConfiguration#NAVIGATION_WEB_CONTENT_REQUESTED_EMAIL");
-		}
-	}
-
-	@summary = "Default summary"
 	macro viewEntryAsWorkflowAsset(webContentTitle = null, webContentContent = null) {
 		SiteAdmin.viewPortletTitle(portletTitle = ${webContentTitle});
 
@@ -2506,8 +2471,6 @@ definition {
 		Click(locator1 = "Icon#INFO");
 
 		for (var tagName : list ${tagNameList}) {
-			var tagName = StringUtil.lowerCase(${tagName});
-
 			AssertElementNotPresent(
 				key_tagName = ${tagName},
 				locator1 = "WC#SIDEBAR_TAG");
@@ -2587,9 +2550,9 @@ definition {
 				value1 = ${displayPageTemplateType});
 		}
 		else {
-			AssertTextEquals(
+			AssertSelectedLabel(
 				ariaLabel = "Select Display Page Type",
-				locator1 = "Button#ANY_WITH_ARIA_LABEL",
+				locator1 = "Select#ANY_ARIA_LABEL",
 				value1 = ${displayPageTemplateType});
 		}
 
@@ -2707,8 +2670,6 @@ definition {
 
 	@summary = "Default summary"
 	macro viewTagFromInfoPanel(webContentTitle = null) {
-		var tagName = StringUtil.lowerCase(${tagName});
-
 		LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
 		Check(

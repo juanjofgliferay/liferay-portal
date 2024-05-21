@@ -7,6 +7,7 @@ package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.Map;
 
@@ -32,13 +33,13 @@ public class CPSpecificationOptionServiceUtil {
 	public static CPSpecificationOption addCPSpecificationOption(
 			long cpOptionCategoryId, Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key,
+			String key, double priority,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPSpecificationOption(
 			cpOptionCategoryId, titleMap, descriptionMap, facetable, key,
-			serviceContext);
+			priority, serviceContext);
 	}
 
 	public static void deleteCPSpecificationOption(long cpSpecificationOptionId)
@@ -91,23 +92,22 @@ public class CPSpecificationOptionServiceUtil {
 			long cpSpecificationOptionId, long cpOptionCategoryId,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key,
+			String key, double priority,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPSpecificationOption(
 			cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-			descriptionMap, facetable, key, serviceContext);
+			descriptionMap, facetable, key, priority, serviceContext);
 	}
 
 	public static CPSpecificationOptionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPSpecificationOptionService service) {
-		_service = service;
-	}
-
-	private static volatile CPSpecificationOptionService _service;
+	private static final Snapshot<CPSpecificationOptionService>
+		_serviceSnapshot = new Snapshot<>(
+			CPSpecificationOptionServiceUtil.class,
+			CPSpecificationOptionService.class);
 
 }

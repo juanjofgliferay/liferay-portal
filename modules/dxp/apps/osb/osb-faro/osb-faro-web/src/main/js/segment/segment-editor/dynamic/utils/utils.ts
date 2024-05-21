@@ -371,18 +371,20 @@ export const convertEventToProperty = (
 	const displayName = isMap(eventDefinition)
 		? eventDefinition.get('displayName')
 		: eventDefinition.displayName;
-	const id = isMap(eventDefinition)
-		? eventDefinition.get('id')
-		: eventDefinition.id;
 	const name = isMap(eventDefinition)
 		? eventDefinition.get('name')
 		: eventDefinition.name;
 
+	const hidden = isMap(eventDefinition)
+		? eventDefinition.get('hidden')
+		: eventDefinition.hidden;
+
 	return new Property({
 		entityName: Liferay.Language.get('event'),
-		id,
+		id: name,
 		label: displayName || name,
-		name: id,
+		name,
+		options: [{label: 'hidden', value: hidden}],
 		propertyKey: 'event',
 		type: PropertyTypes.Event
 	});
@@ -428,6 +430,7 @@ export const convertReferencedObjectsToProperties = (
 
 	const eventProperties = referencedObjectsIMap
 		.get('event', Map())
+		.merge(referencedObjectsIMap.get('custom-events'))
 		.map(convertEventToProperty);
 
 	return fieldMappingProperties.merge(fromJS({event: eventProperties}));

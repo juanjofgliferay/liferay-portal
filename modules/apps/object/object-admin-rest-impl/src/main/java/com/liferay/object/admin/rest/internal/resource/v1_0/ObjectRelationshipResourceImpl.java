@@ -13,10 +13,12 @@ import com.liferay.object.admin.rest.internal.dto.v1_0.util.ObjectFieldUtil;
 import com.liferay.object.admin.rest.internal.odata.entity.v1_0.ObjectRelationshipEntityModel;
 import com.liferay.object.admin.rest.resource.v1_0.ObjectRelationshipResource;
 import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectFolder;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
 import com.liferay.object.service.ObjectFilterLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.service.ObjectRelationshipService;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.search.Field;
@@ -25,6 +27,7 @@ import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -153,8 +156,7 @@ public class ObjectRelationshipResourceImpl
 					externalReferenceCode, contextCompany.getCompanyId());
 
 		com.liferay.object.model.ObjectDefinition objectDefinition2 =
-			_getObjectDefinition2(
-				objectDefinition1.getObjectFolderId(), objectRelationship);
+			_getObjectDefinition2(objectRelationship);
 
 		objectRelationship.setParameterObjectFieldId(
 			() -> {
@@ -193,17 +195,11 @@ public class ObjectRelationshipResourceImpl
 		long objectDefinitionId2 = GetterUtil.getLong(
 			objectRelationship.getObjectDefinitionId2());
 
-		if ((objectDefinitionId2 == 0) &&
-			(objectRelationship.getObjectDefinitionExternalReferenceCode2() !=
-				null)) {
-
-			com.liferay.object.model.ObjectDefinition objectDefinition1 =
-				_objectDefinitionLocalService.getObjectDefinition(
-					objectDefinitionId);
+		if (objectRelationship.getObjectDefinitionExternalReferenceCode2() !=
+				null) {
 
 			com.liferay.object.model.ObjectDefinition objectDefinition2 =
-				_getObjectDefinition2(
-					objectDefinition1.getObjectFolderId(), objectRelationship);
+				_getObjectDefinition2(objectRelationship);
 
 			objectDefinitionId2 = objectDefinition2.getObjectDefinitionId();
 		}
@@ -220,7 +216,8 @@ public class ObjectRelationshipResourceImpl
 				GetterUtil.getBoolean(objectRelationship.getSystem()),
 				objectRelationship.getTypeAsString(),
 				ObjectFieldUtil.toObjectField(
-					false, _listTypeDefinitionLocalService,
+					LocaleUtil.getSiteDefault(), false,
+					_listTypeDefinitionLocalService,
 					objectRelationship.getObjectField(),
 					_objectFieldLocalService, _objectFieldSettingLocalService,
 					_objectFilterLocalService)));
@@ -268,7 +265,8 @@ public class ObjectRelationshipResourceImpl
 				GetterUtil.getBoolean(objectRelationship.getEdge()),
 				LocalizedMapUtil.getLocalizedMap(objectRelationship.getLabel()),
 				ObjectFieldUtil.toObjectField(
-					false, _listTypeDefinitionLocalService,
+					LocaleUtil.getSiteDefault(), false,
+					_listTypeDefinitionLocalService,
 					objectRelationship.getObjectField(),
 					_objectFieldLocalService, _objectFieldSettingLocalService,
 					_objectFilterLocalService)));
@@ -286,7 +284,8 @@ public class ObjectRelationshipResourceImpl
 						externalReferenceCode, contextCompany.getCompanyId(),
 						objectRelationship.getObjectDefinitionId1());
 
-		objectRelationship.setExternalReferenceCode(externalReferenceCode);
+		objectRelationship.setExternalReferenceCode(
+			() -> externalReferenceCode);
 
 		if (serviceBuilderObjectRelationship != null) {
 			return putObjectRelationship(
@@ -299,23 +298,44 @@ public class ObjectRelationshipResourceImpl
 	}
 
 	private com.liferay.object.model.ObjectDefinition _getObjectDefinition2(
-			long objectFolderId, ObjectRelationship objectRelationship)
+			ObjectRelationship objectRelationship)
 		throws Exception {
 
-		com.liferay.object.model.ObjectDefinition objectDefinition =
-			_objectDefinitionLocalService.
-				fetchObjectDefinitionByExternalReferenceCode(
-					objectRelationship.
-						getObjectDefinitionExternalReferenceCode2(),
-					contextCompany.getCompanyId());
+		com.liferay.object.model.ObjectDefinition
+			serviceBuilderObjectDefinition2 =
+				_objectDefinitionLocalService.
+					fetchObjectDefinitionByExternalReferenceCode(
+						objectRelationship.
+							getObjectDefinitionExternalReferenceCode2(),
+						contextCompany.getCompanyId());
 
-		if (objectDefinition != null) {
-			return objectDefinition;
+		if (serviceBuilderObjectDefinition2 != null) {
+			return serviceBuilderObjectDefinition2;
+		}
+
+		ObjectFolder defaultObjectFolder =
+			_objectFolderLocalService.getOrAddDefaultObjectFolder(
+				contextCompany.getCompanyId());
+
+		long rootObjectDefinitionId = 0;
+
+		if (GetterUtil.getBoolean(objectRelationship.getEdge())) {
+			com.liferay.object.model.ObjectDefinition
+				serviceBuilderObjectDefinition1 =
+					_objectDefinitionLocalService.
+						getObjectDefinitionByExternalReferenceCode(
+							objectRelationship.
+								getObjectDefinitionExternalReferenceCode1(),
+							contextCompany.getCompanyId());
+
+			rootObjectDefinitionId =
+				serviceBuilderObjectDefinition1.getRootObjectDefinitionId();
 		}
 
 		return _objectDefinitionLocalService.addObjectDefinition(
 			objectRelationship.getObjectDefinitionExternalReferenceCode2(),
-			contextUser.getUserId(), objectFolderId,
+			contextUser.getUserId(), defaultObjectFolder.getObjectFolderId(),
+			rootObjectDefinitionId,
 			GetterUtil.get(
 				objectRelationship.getObjectDefinitionModifiable2(), true),
 			GetterUtil.get(
@@ -365,6 +385,9 @@ public class ObjectRelationshipResourceImpl
 
 	@Reference
 	private ObjectFilterLocalService _objectFilterLocalService;
+
+	@Reference
+	private ObjectFolderLocalService _objectFolderLocalService;
 
 	@Reference(target = DTOConverterConstants.OBJECT_RELATIONSHIP_DTO_CONVERTER)
 	private DTOConverter

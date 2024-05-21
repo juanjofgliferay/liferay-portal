@@ -5,7 +5,6 @@ definition {
 	property osgi.module.configurations = "enabled=B\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Page Administration";
 	property testray.main.component.name = "Publications";
 
 	setUp {
@@ -941,8 +940,6 @@ definition {
 
 	@priority = 4
 	test ContentPageChangesCanBeAutomaticallyResolved {
-		property test.assert.warning.exceptions = "true";
-
 		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONLayout.addPublicLayout(
@@ -991,9 +988,7 @@ definition {
 
 		PageEditor.gotoStyle(fragmentName = "Paragraph");
 
-		PageEditor.configureFragment(
-			alignment = "Align Right",
-			textColor = "Warning");
+		PageEditor.configureFragment(alignment = "Align Right");
 
 		PageEditor.addWidget(
 			portletName = "Asset Publisher",
@@ -1211,10 +1206,7 @@ definition {
 				groupName = "Guest",
 				layoutName = "Test Page Name");
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Custom Fields");
+			CustomFields.openCustomFieldAdmin();
 
 			CustomFields.addCP(
 				customFieldName = "Text Field",

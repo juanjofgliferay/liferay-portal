@@ -12,10 +12,7 @@ definition {
 		User.firstLoginPG();
 
 		task ("Given Client Extension admin page") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Custom Apps",
-				panel = "Applications",
-				portlet = "Client Extensions");
+			ClientExtension.openClientExtensionsAdmin();
 		}
 
 		task ("When the user clicks on plus button") {
@@ -258,6 +255,8 @@ definition {
 	@description = "LPS-175155. Verify if Source Code field only can be published with a valid value"
 	@priority = 4
 	test CannotPublishWithInvalidValueOnSourceCodeField {
+		property portal.upstream = "quarantine";
+
 		task ("And types “Change Date Format” on Name field") {
 			Type(
 				key_text = "Name",

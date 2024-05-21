@@ -6,30 +6,23 @@
 package com.liferay.search.experiences.internal.suggestions.spi;
 
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
-import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.search.asset.AssetURLViewProvider;
 import com.liferay.portal.search.constants.SearchContextAttributes;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.hits.SearchHit;
@@ -46,7 +39,8 @@ import com.liferay.portal.search.suggestions.SuggestionBuilder;
 import com.liferay.portal.search.suggestions.SuggestionBuilderFactory;
 import com.liferay.portal.search.suggestions.SuggestionsContributorResults;
 import com.liferay.portal.search.suggestions.SuggestionsContributorResultsBuilderFactory;
-import com.liferay.portal.search.web.constants.SearchResultsPortletKeys;
+
+import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,12 +48,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.MutableRenderParameters;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -108,12 +96,9 @@ public class SXPBlueprintSuggestionsContributor
 
 		SearchResponse searchResponse = _searcher.search(
 			_getSearchRequest(
-				searchContext,
+				attributes, searchContext,
 				GetterUtil.getInteger(
-					suggestionsContributorConfiguration.getSize(), 5),
-				MapUtil.getString(
-					attributes, "sxpBlueprintExternalReferenceCode"),
-				MapUtil.getLong(attributes, "sxpBlueprintId")));
+					suggestionsContributorConfiguration.getSize(), 5)));
 
 		SearchHits searchHits = searchResponse.getSearchHits();
 
@@ -161,70 +146,6 @@ public class SXPBlueprintSuggestionsContributor
 		}
 	}
 
-	private String _getAssetURL(
-		AssetRenderer<?> assetRenderer,
-		AssetRendererFactory<?> assetRendererFactory, String entryClassName,
-		long entryClassPK, LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse) {
-
-		try {
-			String viewURL = null;
-
-			PortletURL viewContentURL =
-				PortletURLBuilder.createLiferayPortletURL(
-					liferayPortletResponse,
-					SearchResultsPortletKeys.SEARCH_RESULTS,
-					PortletRequest.RENDER_PHASE
-				).setRedirect(
-					_portal.getCurrentURL(liferayPortletRequest)
-				).setPortletMode(
-					PortletMode.VIEW
-				).setWindowState(
-					WindowState.MAXIMIZED
-				).buildPortletURL();
-
-			MutableRenderParameters mutableRenderParameters =
-				viewContentURL.getRenderParameters();
-
-			mutableRenderParameters.setValue("mvcPath", "/view_content.jsp");
-
-			AssetEntry assetEntry = _assetEntryLocalService.getEntry(
-				entryClassName, entryClassPK);
-
-			mutableRenderParameters.setValue(
-				"assetEntryId", String.valueOf(assetEntry.getEntryId()));
-
-			mutableRenderParameters.setValue(
-				"type", assetRendererFactory.getType());
-
-			if (assetRenderer != null) {
-				viewURL = assetRenderer.getURLViewInContext(
-					liferayPortletRequest, liferayPortletResponse,
-					viewContentURL.toString());
-			}
-
-			if (Validator.isNull(viewURL)) {
-				viewURL = viewContentURL.toString();
-			}
-
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)liferayPortletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			return HttpComponentsUtil.setParameter(
-				viewURL, "p_l_back_url", themeDisplay.getURLCurrent());
-		}
-		catch (Exception exception) {
-			_log.error(
-				StringBundler.concat(
-					"Unable to get view URL for class ", entryClassName,
-					" with primary key ", entryClassPK),
-				exception);
-		}
-
-		return StringPool.BLANK;
-	}
-
 	private int _getCharacterThreshold(Map<String, Object> attributes) {
 		if (attributes == null) {
 			return _CHARACTER_THRESHOLD;
@@ -262,8 +183,8 @@ public class SXPBlueprintSuggestionsContributor
 	}
 
 	private SearchRequest _getSearchRequest(
-		SearchContext searchContext1, int size,
-		String sxpBlueprintExternalReferenceCode, long sxpBlueprintId) {
+		Map<String, Object> attributes, SearchContext searchContext1,
+		int size) {
 
 		SearchRequestBuilder searchRequestBuilder =
 			_searchRequestBuilderFactory.builder();
@@ -276,25 +197,15 @@ public class SXPBlueprintSuggestionsContributor
 			size
 		).withSearchContext(
 			searchContext2 -> {
+				_setSearchExperiencesSearchContextAttributes(
+					attributes, searchContext1, searchContext2);
+
 				searchContext2.setAttribute(
 					SearchContextAttributes.ATTRIBUTE_KEY_EMPTY_SEARCH,
 					searchContext1.getAttribute(
 						SearchContextAttributes.ATTRIBUTE_KEY_EMPTY_SEARCH));
 				searchContext2.setAttribute(
-					"search.experiences.blueprint.external.reference.code",
-					sxpBlueprintExternalReferenceCode);
-				searchContext2.setAttribute(
-					"search.experiences.blueprint.id", sxpBlueprintId);
-				searchContext2.setAttribute(
-					"search.experiences.ip.address",
-					GetterUtil.getString(
-						searchContext1.getAttribute(
-							"search.experiences.ip.address")));
-				searchContext2.setAttribute(
-					"search.experiences.scope.group.id",
-					GetterUtil.getLong(
-						searchContext1.getAttribute(
-							"search.experiences.scope.group.id")));
+					"search.contribute.tuning.rankings", Boolean.TRUE);
 				searchContext2.setCompanyId(searchContext1.getCompanyId());
 				searchContext2.setGroupIds(searchContext1.getGroupIds());
 				searchContext2.setKeywords(searchContext1.getKeywords());
@@ -356,13 +267,14 @@ public class SXPBlueprintSuggestionsContributor
 		if (includeAssetSearchSummary) {
 			suggestionBuilder.attribute(
 				"assetSearchSummary",
-				assetRenderer.getSearchSummary(searchContext.getLocale()));
+				assetRenderer.getSummary(
+					liferayPortletRequest, liferayPortletResponse));
 		}
 
 		if (includeAssetURL) {
 			suggestionBuilder.attribute(
 				"assetURL",
-				_getAssetURL(
+				_assetURLViewProvider.getAssetURLView(
 					assetRenderer, assetRendererFactory, entryClassName,
 					entryClassPK, liferayPortletRequest,
 					liferayPortletResponse));
@@ -452,16 +364,43 @@ public class SXPBlueprintSuggestionsContributor
 			fieldName, "${language_id}", LocaleUtil.toLanguageId(locale));
 	}
 
+	private void _setSearchExperiencesSearchContextAttributes(
+		Map<String, Object> attributes, SearchContext sourceSearchContext,
+		SearchContext targetSearchContext) {
+
+		MapUtil.isNotEmptyForEach(
+			attributes,
+			(key, value) -> {
+				if (key.startsWith("search.experiences.") && (value != null) &&
+					(value instanceof Serializable)) {
+
+					targetSearchContext.setAttribute(key, (Serializable)value);
+				}
+			});
+
+		MapUtil.isNotEmptyForEach(
+			sourceSearchContext.getAttributes(),
+			(key, value) -> {
+				if (key.startsWith("search.experiences.") && (value != null)) {
+					targetSearchContext.setAttribute(key, value);
+				}
+			});
+
+		targetSearchContext.setAttribute(
+			"search.experiences.blueprint.external.reference.code",
+			MapUtil.getString(attributes, "sxpBlueprintExternalReferenceCode"));
+		targetSearchContext.setAttribute(
+			"search.experiences.blueprint.id",
+			MapUtil.getLong(attributes, "sxpBlueprintId"));
+	}
+
 	private static final int _CHARACTER_THRESHOLD = 2;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SXPBlueprintSuggestionsContributor.class);
 
 	@Reference
-	private AssetEntryLocalService _assetEntryLocalService;
-
-	@Reference
-	private Portal _portal;
+	private AssetURLViewProvider _assetURLViewProvider;
 
 	@Reference
 	private Searcher _searcher;

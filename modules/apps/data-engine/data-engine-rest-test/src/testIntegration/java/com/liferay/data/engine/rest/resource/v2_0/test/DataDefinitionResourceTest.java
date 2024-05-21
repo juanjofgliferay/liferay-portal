@@ -21,8 +21,8 @@ import com.liferay.data.engine.rest.resource.exception.DataLayoutValidationExcep
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataLayoutTestUtil;
-import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.ModelResourceActionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.TestDataDefinitionContentType;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -30,21 +30,22 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,9 +74,8 @@ public class DataDefinitionResourceTest
 	}
 
 	@AfterClass
-	public static void tearDownClass() {
-		ModelResourceActionTestUtil.deleteModelResourceAction(
-			_resourceActionLocalService, _resourceActions);
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
 	}
 
 	@Override
@@ -188,6 +188,26 @@ public class DataDefinitionResourceTest
 					null, Pagination.of(1, 2), null);
 
 		Assert.assertEquals(1, page.getTotalCount());
+
+		List<DataDefinition> dataDefinitions = ListUtil.fromCollection(
+			page.getItems());
+
+		DataDefinition dataDefinition = dataDefinitions.get(0);
+
+		Map<String, DataDefinitionField> dataDefinitionFields = new HashMap<>();
+
+		ListUtil.isNotEmptyForEach(
+			ListUtil.fromArray(dataDefinition.getDataDefinitionFields()),
+			dataDefinitionField -> dataDefinitionFields.put(
+				dataDefinitionField.getName(), dataDefinitionField));
+
+		DataDefinitionField richTextDataDefinitionField =
+			dataDefinitionFields.get("RichText");
+
+		Map<String, Object> customProperties =
+			richTextDataDefinitionField.getCustomProperties();
+
+		Assert.assertTrue(customProperties.containsKey("editorConfig"));
 	}
 
 	@Override
@@ -942,9 +962,6 @@ public class DataDefinitionResourceTest
 	}
 
 	private static final String _CONTENT_TYPE = "test";
-
-	@Inject
-	private static ResourceActionLocalService _resourceActionLocalService;
 
 	@Inject
 	private static ResourceActions _resourceActions;

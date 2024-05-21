@@ -55,13 +55,8 @@ public abstract class BaseTestCase {
 					bundle.getSymbolicName(),
 					"com.liferay.headless.builder.impl")) {
 
-				File processedFile = bundle.getDataFile(
-					".com.liferay.headless.builder.internal.batch.headless." +
-						"builder.batch.engine.data.json.0.processed");
-
-				if ((processedFile != null) && processedFile.exists()) {
-					processedFile.delete();
-				}
+				_setUpProcessedFile(bundle, "00.list.type.definition");
+				_setUpProcessedFile(bundle, "01.object.definition");
 
 				CompletableFuture<Void> completableFuture =
 					_batchEngineUnitProcessor.processBatchEngineUnits(
@@ -82,6 +77,16 @@ public abstract class BaseTestCase {
 		Assert.assertNotEquals(
 			jsonObject.getString("title"), "BAD_REQUEST",
 			jsonObject.getString("status"));
+	}
+
+	private void _setUpProcessedFile(Bundle bundle, String processedFileName) {
+		File processedFile = bundle.getDataFile(
+			".com.liferay.headless.builder.internal.batch." +
+				processedFileName + ".batch.engine.data.json.0.processed");
+
+		if ((processedFile != null) && processedFile.exists()) {
+			processedFile.delete();
+		}
 	}
 
 	@Inject

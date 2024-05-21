@@ -15,7 +15,6 @@ import com.liferay.object.model.ObjectField;
 import com.liferay.object.rest.internal.util.ObjectEntryValuesUtil;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -36,9 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carlos Correa
  * @author Javier de Arcos
  */
-@Component(
-	service = {ExtensionProvider.class, ObjectEntryExtensionProvider.class}
-)
+@Component(service = ExtensionProvider.class)
 public class ObjectEntryExtensionProvider extends BaseObjectExtensionProvider {
 
 	@Override
@@ -49,28 +46,13 @@ public class ObjectEntryExtensionProvider extends BaseObjectExtensionProvider {
 			ObjectDefinition objectDefinition = fetchObjectDefinition(
 				companyId, className);
 
-			Map<String, Serializable> values =
-				_objectEntryLocalService.
-					getExtensionDynamicObjectDefinitionTableValues(
-						objectDefinition, getPrimaryKey(entity));
-
-			for (ObjectField objectField :
-					_objectFieldLocalService.getObjectFields(
-						objectDefinition.getObjectDefinitionId(), false)) {
-
-				if (Objects.equals(
-						objectField.getRelationshipType(),
-						ObjectRelationshipConstants.TYPE_ONE_TO_MANY)) {
-
-					values.remove(objectField.getName());
-				}
-			}
-
-			return values;
+			return _objectEntryLocalService.
+				getExtensionDynamicObjectDefinitionTableValues(
+					objectDefinition, getPrimaryKey(entity));
 		}
-		catch (PortalException portalException) {
+		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
+				_log.debug(exception);
 			}
 
 			return Collections.emptyMap();
@@ -161,9 +143,9 @@ public class ObjectEntryExtensionProvider extends BaseObjectExtensionProvider {
 						}
 					});
 		}
-		catch (PortalException portalException) {
+		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
+				_log.debug(exception);
 			}
 		}
 	}

@@ -6,6 +6,8 @@ definition {
 	property test.assert.warning.exceptions = "true";
 	property testray.main.component.name = "Instance Settings";
 
+	var password = PropsUtil.get("default.admin.password");
+
 	setUp {
 		TestCase.setUpPortalInstance();
 
@@ -16,6 +18,8 @@ definition {
 		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		if (${testLiferayVirtualInstance} == "true") {
+			PortalSettings.tearDownCP();
+
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -42,6 +46,7 @@ definition {
 	test AssertEmailVerificationIsRequiredByDefault {
 		property custom.properties = "company.security.strangers.verify=true${line.separator}jsonws.web.service.paths.excludes=${line.separator}mail.send.blacklist=noreply@liferay.com,noreply@domain.invalid,test@domain.invalid";
 		property test.smtp.server.enabled = "true";
+		property testray.main.component.name = "Users and Organizations";
 
 		var portalURL = PropsUtil.get("portal.url");
 
@@ -105,10 +110,7 @@ definition {
 
 		Button.clickVerifyButton();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.viewCP(
 			userEmailAddress = "edit@liferay.com",
@@ -120,6 +122,8 @@ definition {
 	@description = "This test asserts that a user can add additional mail host name."
 	@priority = 3
 	test CanAddAdditionalMailHostName {
+		property testray.main.component.name = "Notifications";
+
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "Email",
 			configurationName = "Mail Host Names",
@@ -234,6 +238,7 @@ definition {
 	@priority = 3
 	test CanChangeTheTermsOfUseNotRequired {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property testray.main.component.name = "Users and Organizations";
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "Instance Configuration",
@@ -258,21 +263,19 @@ definition {
 
 		User.logoutPG();
 
-		Navigator.openURL();
+		AssertClick(
+			locator1 = "UserBar#USER_SIGN_IN",
+			value1 = "Sign In");
 
-		Navigator.gotoLoginPage();
-
-		Type(
+		Type.typePause(
 			locator1 = "TextInput#EMAIL_ADDRESS",
 			value1 = "userea@liferay.com");
 
-		Type(
+		Type.typePause(
 			locator1 = "TextInput#PASSWORD",
-			value1 = "test");
+			value1 = ${password});
 
-		AssertClick(
-			locator1 = "Button#SIGN_IN",
-			value1 = "Sign In");
+		User._clickSignInButton(localization = ${localization});
 
 		AssertElementNotPresent(locator1 = "Button#SIGN_IN");
 
@@ -342,7 +345,7 @@ definition {
 
 		User.firstLoginUI(
 			authenticationMethod = "By User ID",
-			password = "test",
+			password = ${password},
 			userId = ${userId});
 
 		PortalSettings.gotoConfiguration(
@@ -419,6 +422,8 @@ definition {
 	@description = "This test asserts that a user can delete site logo via portal setting."
 	@priority = 3
 	test CanDeleteSiteLogoViaAppearance {
+		property testray.main.component.name = "Sites Administration";
+
 		Page.viewDefaultLogoPG();
 
 		PortalSettings.gotoConfiguration(
@@ -469,6 +474,7 @@ definition {
 	test CanDisabledAccountCreatedNotification {
 		property custom.properties = "mail.send.blacklist=noreply@liferay.com,noreply@domain.invalid,test@domain.invalid";
 		property test.smtp.server.enabled = "true";
+		property testray.main.component.name = "Notifications";
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "Email",
@@ -488,10 +494,7 @@ definition {
 
 		PortletEntry.save();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.addCP(
 			userEmailAddress = "userea@liferay.com",
@@ -505,6 +508,8 @@ definition {
 	@description = "This test asserts that a user can disable site admin to use their own logo."
 	@priority = 3
 	test CanDisableSiteAdminToUseTheirOwnLogo {
+		property testray.main.component.name = "Sites Administration";
+
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "Instance Configuration",
 			configurationName = "Appearance",
@@ -563,10 +568,7 @@ definition {
 		}
 
 		task ("And two new Virtual Instance are created") {
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
+			PortalInstances.openVirtualInstancesAdmin();
 
 			PortalInstances.addCP(
 				mailDomain = "www.able.com",
@@ -595,7 +597,7 @@ definition {
 
 		task ("And login to www.able.com and go to Web Content in the instance settings") {
 			User.firstLoginUI(
-				password = "test",
+				password = ${password},
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
 
@@ -619,6 +621,7 @@ definition {
 	@priority = 3
 	test CanSpecifyTheTermsofUseWebContent {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property testray.main.component.name = "Users and Organizations";
 
 		HeadlessSite.addSite(siteName = "Terms of Use Site");
 
@@ -661,21 +664,19 @@ definition {
 
 		User.logoutPG();
 
-		Navigator.openURL();
+		AssertClick(
+			locator1 = "UserBar#USER_SIGN_IN",
+			value1 = "Sign In");
 
-		Navigator.gotoLoginPage();
-
-		Type(
+		Type.typePause(
 			locator1 = "TextInput#EMAIL_ADDRESS",
 			value1 = "userea@liferay.com");
 
-		Type(
+		Type.typePause(
 			locator1 = "TextInput#PASSWORD",
-			value1 = "test");
+			value1 = ${password});
 
-		AssertClick(
-			locator1 = "Button#SIGN_IN",
-			value1 = "Sign In");
+		User._clickSignInButton(localization = ${localization});
 
 		AssertElementNotPresent(locator1 = "Button#SIGN_IN");
 
@@ -800,10 +801,7 @@ definition {
 		}
 
 		task ("And a new Virtual Instance is created") {
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
+			PortalInstances.openVirtualInstancesAdmin();
 
 			PortalInstances.addCP(
 				mailDomain = "www.able.com",
@@ -827,7 +825,7 @@ definition {
 
 		task ("And login to the new instance and go to Web Content in the instance settings") {
 			User.firstLoginUI(
-				password = "test",
+				password = ${password},
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
 
@@ -872,10 +870,7 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		UserNavigator.gotoUser(userScreenName = "usersn");
 
@@ -898,10 +893,7 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		UserNavigator.gotoUser(userScreenName = "usersn");
 
@@ -910,10 +902,9 @@ definition {
 
 	@priority = 4
 	test EditDefaultUserAssociationsSites {
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+		property testray.main.component.name = "Users and Organizations";
+
+		Site.openSitesAdmin();
 
 		Site.addBlankCP(siteName = "Site Name");
 
@@ -925,10 +916,7 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		UserNavigator.gotoUser(userScreenName = "usersn");
 
@@ -939,10 +927,9 @@ definition {
 
 	@priority = 4
 	test EditDefaultUserAssociationsUserGroups {
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "User Groups");
+		property testray.main.component.name = "Users and Organizations";
+
+		UserGroup.openUserGroupsAdmin();
 
 		UserGroup.addCP(userGroupName = "UG UserGroup Name");
 
@@ -954,10 +941,7 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		UserNavigator.gotoUser(userScreenName = "usersn");
 
@@ -972,10 +956,7 @@ definition {
 
 		PortalSettings.enterReservedEmailAddressCP(userEmailAddress = "userea@liferay.com");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.addReservedEmailAddressCP(
 			userEmailAddress = "userea@liferay.com",
@@ -992,10 +973,7 @@ definition {
 
 		PortalSettings.enterReservedScreenNameCP(userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.addReservedScreenNameCP(
 			userEmailAddress = "userea@liferay.com",
@@ -1098,10 +1076,7 @@ definition {
 			openIdConnectClientSecret = ${openIdConnectClientSecret},
 			providerName = "Google");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
+		PortalInstances.openVirtualInstancesAdmin();
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
@@ -1111,7 +1086,7 @@ definition {
 		PortalInstances.viewCP(virtualHost = "www.able.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
@@ -1368,6 +1343,8 @@ definition {
 
 	@priority = 3
 	test ViewEmailNotificationsAccountCreatedNotification {
+		property testray.main.component.name = "Notifications";
+
 		Navigator.openURL();
 
 		PortalSettings.viewEmailNotificationsAccountCreatedNotificationCP();
@@ -1375,6 +1352,8 @@ definition {
 
 	@priority = 3
 	test ViewEmailNotificationsSender {
+		property testray.main.component.name = "Notifications";
+
 		Navigator.openURL();
 
 		PortalSettings.viewEmailNotificationsSenderCP();
@@ -1417,8 +1396,10 @@ definition {
 	@description = "This is a use case for LPS-156105. The test assert the value of mail setting for new instance is inherited from server level."
 	@priority = 2
 	test ViewInstanceMailSettingsValueIsInheritedFromServerLevel {
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
+		property testray.main.component.name = "Server Administration";
 
 		task ("Given change the server/company level mail setting value") {
 			ServerAdministration.openServerAdmin();
@@ -1452,7 +1433,7 @@ definition {
 				webId = "www.able.com");
 
 			User.firstLoginUI(
-				password = "test",
+				password = ${password},
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
 
@@ -1598,10 +1579,7 @@ definition {
 				''',
 				notificationsSubject = "[$PORTAL_URL$]: Dear [$TO_FIRST_NAME$], please reset Your Password");
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin();
 
 			User.addCP(
 				userEmailAddress = "userea@liferay.com",

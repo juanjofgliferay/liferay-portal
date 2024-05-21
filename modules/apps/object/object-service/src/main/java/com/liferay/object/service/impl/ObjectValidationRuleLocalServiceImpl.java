@@ -59,11 +59,13 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.script.management.configuration.helper.ScriptManagementConfigurationHelper;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 
 import java.util.ArrayList;
@@ -225,6 +227,13 @@ public class ObjectValidationRuleLocalServiceImpl
 				findByObjectValidationRuleId(objectValidationRuleId));
 
 		return objectValidationRule;
+	}
+
+	@Override
+	public List<ObjectValidationRule> getObjectValidationRules(
+		boolean active, String engine) {
+
+		return objectValidationRulePersistence.findByA_E(active, engine);
 	}
 
 	@Override
@@ -413,6 +422,19 @@ public class ObjectValidationRuleLocalServiceImpl
 					(Map<String, Object>)variables.get("baseModel"),
 					objectValidationRule.getScript());
 			}
+			else if (StringUtil.startsWith(
+						objectValidationRuleEngine.getKey(),
+						ObjectValidationRuleConstants.
+							ENGINE_TYPE_JAVA_DELEGATE_PREFIX)) {
+
+				results = objectValidationRuleEngine.execute(
+					HashMapBuilder.put(
+						"entryDTO", variables.get("entryDTO")
+					).put(
+						"originalEntryDTO", variables.get("originalEntryDTO")
+					).build(),
+					null);
+			}
 			else {
 				results = objectValidationRuleEngine.execute(
 					(Map<String, Object>)variables.get("entryDTO"), null);
@@ -589,12 +611,13 @@ public class ObjectValidationRuleLocalServiceImpl
 			throw new ObjectValidationRuleEngineException.MustNotBeNull();
 		}
 
-		ObjectValidationRuleEngine objectValidationRuleEngine =
-			_objectValidationRuleEngineRegistry.getObjectValidationRuleEngine(
-				companyId, engine);
+		if (Objects.equals(
+				engine, ObjectValidationRuleConstants.ENGINE_TYPE_GROOVY) &&
+			!_scriptManagementConfigurationHelper.
+				isAllowScriptContentToBeExecutedOrIncluded()) {
 
-		if (objectValidationRuleEngine == null) {
-			throw new ObjectValidationRuleEngineException.NoSuchEngine(engine);
+			throw new ObjectValidationRuleEngineException.NotAllowedEngine(
+				ObjectValidationRuleConstants.ENGINE_TYPE_GROOVY);
 		}
 
 		Locale locale = LocaleUtil.getSiteDefault();
@@ -615,11 +638,19 @@ public class ObjectValidationRuleLocalServiceImpl
 				"Invalid output type " + outputType);
 		}
 
+		ObjectValidationRuleEngine objectValidationRuleEngine =
+			_objectValidationRuleEngineRegistry.getObjectValidationRuleEngine(
+				companyId, engine);
+
 		if (Validator.isNull(script) &&
 			!(objectValidationRuleEngine instanceof
 				FunctionObjectValidationRuleEngineImpl ||
 			  objectValidationRuleEngine instanceof
-				  UniqueCompositeKeyObjectValidationRuleEngineImpl)) {
+				  UniqueCompositeKeyObjectValidationRuleEngineImpl ||
+			  StringUtil.startsWith(
+				  engine,
+				  ObjectValidationRuleConstants.
+					  ENGINE_TYPE_JAVA_DELEGATE_PREFIX))) {
 
 			throw new ObjectValidationRuleScriptException(
 				"The script is required", "required");
@@ -641,18 +672,14 @@ public class ObjectValidationRuleLocalServiceImpl
 				_objectScriptingValidator.validate("groovy", script);
 			}
 		}
+		catch (ObjectScriptingException objectScriptingException) {
+			throw new ObjectValidationRuleScriptException(
+				objectScriptingException.getMessage(),
+				objectScriptingException.getMessageKey());
+		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(portalException);
-			}
-
-			if (portalException instanceof ObjectScriptingException) {
-				ObjectScriptingException objectScriptingException =
-					(ObjectScriptingException)portalException;
-
-				throw new ObjectValidationRuleScriptException(
-					objectScriptingException.getMessage(),
-					objectScriptingException.getMessageKey());
 			}
 
 			throw new ObjectValidationRuleScriptException(
@@ -670,8 +697,11 @@ public class ObjectValidationRuleLocalServiceImpl
 						NAME_OUTPUT_OBJECT_FIELD_ID);
 		}
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-187854")) {
-			_allowedObjectValidationRuleSettingNames.remove(
+		Set<String> allowedObjectValidationRuleSettingNames = SetUtil.fromArray(
+			ObjectValidationRuleSettingConstants.NAME_OUTPUT_OBJECT_FIELD_ID);
+
+		if (FeatureFlagManagerUtil.isEnabled("LPS-187854")) {
+			allowedObjectValidationRuleSettingNames.add(
 				ObjectValidationRuleSettingConstants.
 					NAME_COMPOSITE_KEY_OBJECT_FIELD_ID);
 		}
@@ -681,7 +711,7 @@ public class ObjectValidationRuleLocalServiceImpl
 		for (ObjectValidationRuleSetting objectValidationRuleSetting :
 				objectValidationRuleSettings) {
 
-			if (!_allowedObjectValidationRuleSettingNames.contains(
+			if (!allowedObjectValidationRuleSettingNames.contains(
 					objectValidationRuleSetting.getName()) ||
 				(objectValidationRuleSetting.compareName(
 					ObjectValidationRuleSettingConstants.
@@ -784,11 +814,6 @@ public class ObjectValidationRuleLocalServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		ObjectValidationRuleLocalServiceImpl.class);
 
-	private static final Set<String> _allowedObjectValidationRuleSettingNames =
-		SetUtil.fromArray(
-			ObjectValidationRuleSettingConstants.
-				NAME_COMPOSITE_KEY_OBJECT_FIELD_ID,
-			ObjectValidationRuleSettingConstants.NAME_OUTPUT_OBJECT_FIELD_ID);
 	private static final List<String> _compositeKeyObjectFieldBusinessTypes =
 		Arrays.asList(
 			ObjectFieldConstants.BUSINESS_TYPE_INTEGER,
@@ -833,6 +858,10 @@ public class ObjectValidationRuleLocalServiceImpl
 	@Reference
 	private ObjectValidationRuleSettingPersistence
 		_objectValidationRuleSettingPersistence;
+
+	@Reference
+	private ScriptManagementConfigurationHelper
+		_scriptManagementConfigurationHelper;
 
 	@Reference
 	private SystemObjectDefinitionManagerRegistry

@@ -599,7 +599,7 @@ components:
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.search.experiences.rest.client', and version '3.0.23'."
+        'com.liferay.search.experiences.rest.client', and version '3.0.29'."
     license:
         name: "Apache 2.0"
         url: "http://www.apache.org/licenses/LICENSE-2.0.html"
@@ -609,12 +609,11 @@ openapi: "3.0.1"
 paths:
     "/search":
         post:
+            description:
+                This API is only for the Blueprints application's preview. For a search API, use search/v1.0/search
+                instead.
             operationId: postSearch
             parameters:
-                - in: query
-                  name: query
-                  schema:
-                      type: string
                 - in: query
                   name: page
                   schema:
@@ -623,6 +622,10 @@ paths:
                   name: pageSize
                   schema:
                       type: integer
+                - in: query
+                  name: query
+                  schema:
+                      type: string
             requestBody:
                 content:
                     application/json:

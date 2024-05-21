@@ -27,7 +27,7 @@ renderResponse.setTitle(translateDisplayContext.getTitle());
 		<aui:input name="targetLanguageId" type="hidden" value="<%= translateDisplayContext.getTargetLanguageId() %>" />
 		<aui:input name="workflowAction" type="hidden" value="<%= String.valueOf(WorkflowConstants.ACTION_PUBLISH) %>" />
 
-		<nav class="component-tbar subnav-tbar-light tbar">
+		<nav class="management-bar management-bar-light navbar navbar-expand-md">
 			<clay:container-fluid>
 				<ul class="tbar-nav">
 					<li class="tbar-item tbar-item-expand"></li>
@@ -213,7 +213,7 @@ renderResponse.setTitle(translateDisplayContext.getTitle());
 
 	<c:if test="<%= translateDisplayContext.hasTranslationPermission() %>">
 		<react:component
-			module="js/translate/Translate"
+			module="{Translate} from translation-web"
 			props="<%= translateDisplayContext.getInfoFieldSetEntriesData() %>"
 		/>
 	</c:if>

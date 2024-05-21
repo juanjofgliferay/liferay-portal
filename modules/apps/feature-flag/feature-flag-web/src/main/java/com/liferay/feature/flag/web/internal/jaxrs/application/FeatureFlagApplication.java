@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,6 +81,54 @@ public class FeatureFlagApplication extends Application {
 		return Collections.singleton(this);
 	}
 
+	@Path("/is-enabled")
+	@POST
+	public Response isEnabled(
+		@Context HttpServletRequest httpServletRequest,
+		@Context HttpServletResponse httpServletResponse,
+		@FormParam("companyId") long companyId, @FormParam("key") String key) {
+
+		try {
+			FeatureFlagsBag featureFlagsBag =
+				_featureFlagsBagProvider.getOrCreateFeatureFlagsBag(companyId);
+
+			FeatureFlag featureFlag = featureFlagsBag.getFeatureFlag(key);
+
+			if (featureFlag == null) {
+				return Response.ok(
+					HashMapBuilder.<String, Object>put(
+						"error",
+						"Feature flag \"" + HtmlUtil.escape(key) +
+							"\" is not available"
+					).build(),
+					MediaType.APPLICATION_JSON
+				).build();
+			}
+
+			return Response.ok(
+				HashMapBuilder.<String, Object>put(
+					"dependentFeatureFlags",
+					TransformUtil.transform(
+						_getDependentFeatureFlags(featureFlagsBag, key),
+						dependentFeatureFlag -> _toMap(
+							companyId, dependentFeatureFlag, featureFlagsBag))
+				).put(
+					"featureFlag",
+					_toMap(companyId, featureFlag, featureFlagsBag)
+				).build(),
+				MediaType.APPLICATION_JSON
+			).build();
+		}
+		catch (Exception exception) {
+			return Response.ok(
+				HashMapBuilder.<String, Object>put(
+					"error", exception.toString()
+				).build(),
+				MediaType.APPLICATION_JSON
+			).build();
+		}
+	}
+
 	private List<FeatureFlag> _getDependencyFeatureFlags(
 		long companyId, FeatureFlagsBag featureFlagsBag, String key) {
 
@@ -88,8 +137,8 @@ public class FeatureFlagApplication extends Application {
 		if (featureFlag == null) {
 			_log.error(
 				StringBundler.concat(
-					"Feature flag ", key, " does not exist for company ",
-					companyId));
+					"Feature flag ", HtmlUtil.escape(key),
+					" does not exist for company ", companyId));
 
 			return new ArrayList<>();
 		}

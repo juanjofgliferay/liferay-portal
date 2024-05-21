@@ -1686,7 +1686,7 @@ public class JenkinsResultsParserUtil {
 			}
 		}
 
-		return ciProperties.getProperty(key);
+		return getProperty(ciProperties, key);
 	}
 
 	public static String getCohortName() {
@@ -2341,6 +2341,10 @@ public class JenkinsResultsParserUtil {
 		}
 	}
 
+	public static JenkinsCohort getJenkinsCohort() {
+		return JenkinsCohort.getInstance(getCohortName());
+	}
+
 	public static String getJenkinsMasterName(String jenkinsSlaveName) {
 		jenkinsSlaveName = jenkinsSlaveName.replaceAll("([^\\.]+).*", "$1");
 
@@ -2394,12 +2398,22 @@ public class JenkinsResultsParserUtil {
 
 	public static List<JenkinsMaster> getJenkinsMasters(
 		Properties buildProperties, int minimumRAM, int maximumSlavesPerHost,
-		String prefix) {
+		String cohortName) {
+
+		return getJenkinsMasters(
+			buildProperties, minimumRAM, maximumSlavesPerHost, cohortName,
+			null);
+	}
+
+	public static List<JenkinsMaster> getJenkinsMasters(
+		Properties buildProperties, int minimumRAM, int maximumSlavesPerHost,
+		String cohortName, String networkName) {
 
 		List<JenkinsMaster> jenkinsMasters = new ArrayList<>();
 
 		Pattern pattern = Pattern.compile(
-			"master\\.slaves\\((?<jenkinsMasterName>" + prefix + "-\\d+)\\)");
+			"master\\.slaves\\((?<jenkinsMasterName>" + cohortName +
+				"-\\d+)\\)");
 
 		for (String buildPropertyName : buildProperties.stringPropertyNames()) {
 			Matcher matcher = pattern.matcher(buildPropertyName);
@@ -2411,11 +2425,23 @@ public class JenkinsResultsParserUtil {
 			JenkinsMaster jenkinsMaster = JenkinsMaster.getInstance(
 				matcher.group("jenkinsMasterName"));
 
-			if ((jenkinsMaster.getSlaveRAM() >= minimumRAM) &&
-				(jenkinsMaster.getSlavesPerHost() <= maximumSlavesPerHost)) {
+			if ((jenkinsMaster.getSlaveRAM() < minimumRAM) ||
+				(jenkinsMaster.getSlavesPerHost() > maximumSlavesPerHost)) {
 
-				jenkinsMasters.add(jenkinsMaster);
+				continue;
 			}
+
+			if (isNullOrEmpty(networkName)) {
+				jenkinsMasters.add(jenkinsMaster);
+
+				continue;
+			}
+
+			if (!Objects.equals(jenkinsMaster.getNetworkName(), networkName)) {
+				continue;
+			}
+
+			jenkinsMasters.add(jenkinsMaster);
 		}
 
 		return jenkinsMasters;
@@ -3277,6 +3303,11 @@ public class JenkinsResultsParserUtil {
 				JenkinsResultsParserUtil.class.getResourceAsStream(
 					resourceName)) {
 
+			if (resourceInputStream == null) {
+				throw new RuntimeException(
+					"Unable to find resource: " + resourceName);
+			}
+
 			return readInputStream(resourceInputStream);
 		}
 	}
@@ -3578,6 +3609,40 @@ public class JenkinsResultsParserUtil {
 		}
 
 		return false;
+	}
+
+	public static boolean isJenkinsSlaveInNetwork(
+		String jenkinsSlaveName, String networkName) {
+
+		String jenkinsMasterName = getJenkinsMasterName(jenkinsSlaveName);
+
+		try {
+			String jenkinsMasterNetworkName = getBuildProperty(
+				"master.property(" + jenkinsMasterName +
+					"/master.network.name)");
+
+			if (!isNullOrEmpty(jenkinsMasterNetworkName)) {
+				if (jenkinsMasterNetworkName.equals(networkName)) {
+					return true;
+				}
+
+				return false;
+			}
+		}
+		catch (IOException ioException) {
+			System.out.println("WARNING: Unable to get build properties");
+		}
+
+		JenkinsMaster jenkinsMaster = JenkinsMaster.getInstance(
+			jenkinsMasterName);
+
+		if ((jenkinsMaster == null) ||
+			!Objects.equals(jenkinsMaster.getNetworkName(), networkName)) {
+
+			return false;
+		}
+
+		return true;
 	}
 
 	public static boolean isJSONArray(String string) {
@@ -4138,6 +4203,10 @@ public class JenkinsResultsParserUtil {
 
 		synchronized (_redactTokens) {
 			for (String redactToken : _redactTokens) {
+				if (_forbiddenRedactTokens.contains(redactToken)) {
+					continue;
+				}
+
 				string = string.replace(redactToken, "[REDACTED]");
 			}
 		}
@@ -4780,6 +4849,10 @@ public class JenkinsResultsParserUtil {
 				return urlConnection.getInputStream();
 			}
 			catch (IOException ioException) {
+				if (ioException instanceof FileNotFoundException) {
+					throw ioException;
+				}
+
 				if ((ioException instanceof UnknownHostException) &&
 					url.matches("http://test-\\d+-\\d+/.*")) {
 
@@ -5467,6 +5540,20 @@ public class JenkinsResultsParserUtil {
 		}
 	}
 
+	public static void updateBuildDescription(
+		String buildDescription, URL buildURL) {
+
+		Matcher matcher = _buildURLPattern.matcher(String.valueOf(buildURL));
+
+		if (!matcher.find()) {
+			throw new RuntimeException("Invalid Build URL");
+		}
+
+		updateBuildDescription(
+			buildDescription, Integer.valueOf(matcher.group("buildNumber")),
+			matcher.group("jobName"), matcher.group("masterHostname"));
+	}
+
 	public static void updateBuildResult(
 		int buildNumber, String buildResult, String jobName,
 		String masterHostname) {
@@ -6148,11 +6235,9 @@ public class JenkinsResultsParserUtil {
 				gitDirectoriesJSONArray.getJSONObject(i);
 
 			if ((gitDirectoryJSONObject == JSONObject.NULL) ||
-				!Objects.equals(
-					repositoryName,
+				!repositoryName.matches(
 					gitDirectoryJSONObject.getString("repository")) ||
-				!Objects.equals(
-					upstreamBranchName,
+				!upstreamBranchName.matches(
 					gitDirectoryJSONObject.getString("branch"))) {
 
 				continue;
@@ -6486,28 +6571,21 @@ public class JenkinsResultsParserUtil {
 
 			String redactToken = getProperty(properties, key);
 
-			if (redactToken != null) {
-				if ((redactToken.length() < 5) && redactToken.matches("\\d+")) {
-					System.out.println(
-						combine(
-							"Ignoring ", key,
-							" because the value is numeric and ",
-							"less than 5 characters long."));
-				}
-				else {
-					if (!redactToken.isEmpty()) {
-						_redactTokens.add(redactToken);
+			if (isNullOrEmpty(redactToken) ||
+				_forbiddenRedactTokens.contains(redactToken) ||
+				redactToken.matches("^\\s*\\d{5}\\s*$")) {
 
-						if (redactToken.contains("\\")) {
-							_redactTokens.add(
-								redactToken.replace("\\", "\\\\"));
-						}
-					}
+				continue;
+			}
+
+			if (!redactToken.isEmpty()) {
+				_redactTokens.add(redactToken);
+
+				if (redactToken.contains("\\")) {
+					_redactTokens.add(redactToken.replace("\\", "\\\\"));
 				}
 			}
 		}
-
-		_redactTokens.remove("test");
 	}
 
 	private static boolean _isJSONExpectedAndActualEqual(
@@ -6595,7 +6673,7 @@ public class JenkinsResultsParserUtil {
 	private static final Pattern _dockerFilePattern = Pattern.compile(
 		".*FROM (?<dockerImageName>[^\\s]+)( AS builder)?\\n[\\s\\S]*");
 	private static final List<String> _forbiddenRedactTokens = Arrays.asList(
-		"test");
+		"liferay", "test");
 	private static JSONArray _gitDirectoriesJSONArray;
 	private static final Pattern _gitHubAPIURLPattern = Pattern.compile(
 		"https\\:\\/\\/api\\.github\\.com(.*)");

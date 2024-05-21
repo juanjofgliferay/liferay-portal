@@ -12,21 +12,21 @@ declare type Option = {
 declare type Props = {
 	portletNamespace: string;
 	searchIn: Key;
+	searchInCommentsURL: string;
 	searchInOptions: Option[];
 	searchLocation: Key;
 	searchLocationOptions: Option[];
 	searchResults: Key;
-	searchResultsOptions: Option[];
 	searchURL: string;
 };
 declare const SearchOptions: ({
 	portletNamespace: namespace,
 	searchIn: initialSearchIn,
+	searchInCommentsURL,
 	searchInOptions,
 	searchLocation: initialLocation,
 	searchLocationOptions,
 	searchResults: initialResults,
-	searchResultsOptions,
 	searchURL,
 }: Props) => JSX.Element;
 export default SearchOptions;

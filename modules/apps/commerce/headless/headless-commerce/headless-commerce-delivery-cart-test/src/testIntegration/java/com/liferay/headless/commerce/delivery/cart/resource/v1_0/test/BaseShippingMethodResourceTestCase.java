@@ -25,8 +25,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -181,6 +179,101 @@ public abstract class BaseShippingMethodResourceTestCase {
 
 		Assert.assertEquals(regex, shippingMethod.getDescription());
 		Assert.assertEquals(regex, shippingMethod.getName());
+	}
+
+	@Test
+	public void testGetCartByExternalReferenceCodeShippingMethodsPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetCartByExternalReferenceCodeShippingMethodsPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetCartByExternalReferenceCodeShippingMethodsPage_getIrrelevantExternalReferenceCode();
+
+		Page<ShippingMethod> page =
+			shippingMethodResource.
+				getCartByExternalReferenceCodeShippingMethodsPage(
+					externalReferenceCode);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			ShippingMethod irrelevantShippingMethod =
+				testGetCartByExternalReferenceCodeShippingMethodsPage_addShippingMethod(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantShippingMethod());
+
+			page =
+				shippingMethodResource.
+					getCartByExternalReferenceCodeShippingMethodsPage(
+						irrelevantExternalReferenceCode);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantShippingMethod,
+				(List<ShippingMethod>)page.getItems());
+			assertValid(
+				page,
+				testGetCartByExternalReferenceCodeShippingMethodsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		ShippingMethod shippingMethod1 =
+			testGetCartByExternalReferenceCodeShippingMethodsPage_addShippingMethod(
+				externalReferenceCode, randomShippingMethod());
+
+		ShippingMethod shippingMethod2 =
+			testGetCartByExternalReferenceCodeShippingMethodsPage_addShippingMethod(
+				externalReferenceCode, randomShippingMethod());
+
+		page =
+			shippingMethodResource.
+				getCartByExternalReferenceCodeShippingMethodsPage(
+					externalReferenceCode);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(shippingMethod1, (List<ShippingMethod>)page.getItems());
+		assertContains(shippingMethod2, (List<ShippingMethod>)page.getItems());
+		assertValid(
+			page,
+			testGetCartByExternalReferenceCodeShippingMethodsPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetCartByExternalReferenceCodeShippingMethodsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected ShippingMethod
+			testGetCartByExternalReferenceCodeShippingMethodsPage_addShippingMethod(
+				String externalReferenceCode, ShippingMethod shippingMethod)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetCartByExternalReferenceCodeShippingMethodsPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetCartByExternalReferenceCodeShippingMethodsPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
 	}
 
 	@Test
@@ -568,6 +661,10 @@ public abstract class BaseShippingMethodResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -800,9 +897,9 @@ public abstract class BaseShippingMethodResourceTestCase {
 	}
 
 	protected ShippingMethodResource shippingMethodResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

@@ -183,6 +183,10 @@ public class FacetResponseProcessor {
 	private String _getSiteDisplayName(long groupId, Locale locale) {
 		Group group = _groupLocalService.fetchGroup(groupId);
 
+		if (group == null) {
+			return null;
+		}
+
 		try {
 			String name = group.getDescriptiveName(locale);
 
@@ -382,8 +386,16 @@ public class FacetResponseProcessor {
 
 		for (FacetConfiguration facetConfiguration : facetConfigurations) {
 			Facet facet = searchResponse.withFacetContextGet(
-				facetContext -> facetContext.getFacet(
-					facetConfiguration.getName()));
+				facetContext -> {
+					if (Validator.isNotNull(
+							facetConfiguration.getAggregationName())) {
+
+						return facetContext.getFacet(
+							facetConfiguration.getAggregationName());
+					}
+
+					return facetContext.getFacet(facetConfiguration.getName());
+				});
 
 			if (facet == null) {
 				continue;

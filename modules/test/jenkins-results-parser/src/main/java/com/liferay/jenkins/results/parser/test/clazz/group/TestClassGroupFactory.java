@@ -46,8 +46,7 @@ public class TestClassGroupFactory {
 		}
 
 		if (batchTestClassGroup instanceof PlaywrightBatchTestClassGroup) {
-			return new PlaywrightAxisTestClassGroup(
-				(PlaywrightBatchTestClassGroup)batchTestClassGroup);
+			return new PlaywrightAxisTestClassGroup(batchTestClassGroup);
 		}
 
 		if (batchTestClassGroup instanceof PluginsGulpBatchTestClassGroup) {
@@ -179,6 +178,14 @@ public class TestClassGroupFactory {
 			}
 
 			return new ModulesSegmentTestClassGroup(batchTestClassGroup);
+		}
+		else if (batchTestClassGroup instanceof PlaywrightBatchTestClassGroup) {
+			if (jsonObject != null) {
+				return new PlaywrightSegmentTestClassGroup(
+					batchTestClassGroup, jsonObject);
+			}
+
+			return new PlaywrightSegmentTestClassGroup(batchTestClassGroup);
 		}
 		else if (batchTestClassGroup instanceof PluginsBatchTestClassGroup) {
 			if (jsonObject != null) {
@@ -339,6 +346,18 @@ public class TestClassGroupFactory {
 						batchName, portalTestClassJob);
 				}
 			}
+			else if (batchName.startsWith("playwright-compile-")) {
+				if (jsonObject != null) {
+					batchTestClassGroup =
+						new PlaywrightCompileBatchTestClassGroup(
+							jsonObject, portalTestClassJob);
+				}
+				else {
+					batchTestClassGroup =
+						new PlaywrightCompileBatchTestClassGroup(
+							batchName, portalTestClassJob);
+				}
+			}
 			else if (batchName.startsWith("playwright-js-")) {
 				if (jsonObject != null) {
 					batchTestClassGroup = new PlaywrightBatchTestClassGroup(
@@ -405,6 +424,16 @@ public class TestClassGroupFactory {
 					batchTestClassGroup =
 						new RESTBuilderModulesBatchTestClassGroup(
 							batchName, portalTestClassJob);
+				}
+			}
+			else if (batchName.startsWith("semantic-versioning")) {
+				if (jsonObject != null) {
+					batchTestClassGroup = new SemanticVersioningTestClassGroup(
+						jsonObject, portalTestClassJob);
+				}
+				else {
+					batchTestClassGroup = new SemanticVersioningTestClassGroup(
+						batchName, portalTestClassJob);
 				}
 			}
 			else if (batchName.startsWith("service-builder-")) {

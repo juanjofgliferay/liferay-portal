@@ -129,13 +129,18 @@ public class PostgreSQLDB extends BaseDB {
 	}
 
 	@Override
+	public boolean isSupportsDBPartition() {
+		return true;
+	}
+
+	@Override
 	public boolean isSupportsNewUuidFunction() {
 		return _supportsNewUuidFunction;
 	}
 
 	@Override
 	public boolean isSupportsQueryingAfterException() {
-		return _SUPPORTS_QUERYING_AFTER_EXCEPTION;
+		return false;
 	}
 
 	@Override
@@ -314,8 +319,9 @@ public class PostgreSQLDB extends BaseDB {
 		return _POSTGRESQL;
 	}
 
+	@Override
 	protected boolean isSupportsDuplicatedIndexName() {
-		return _SUPPORTS_DUPLICATED_INDEX_NAME;
+		return false;
 	}
 
 	@Override
@@ -479,10 +485,6 @@ public class PostgreSQLDB extends BaseDB {
 		Types.DOUBLE, Types.INTEGER, Types.BIGINT, Types.VARCHAR, Types.VARCHAR,
 		Types.VARCHAR
 	};
-
-	private static final boolean _SUPPORTS_DUPLICATED_INDEX_NAME = false;
-
-	private static final boolean _SUPPORTS_QUERYING_AFTER_EXCEPTION = false;
 
 	private static final Pattern _oidPattern = Pattern.compile(
 		" oid(\\W|$)", Pattern.CASE_INSENSITIVE);

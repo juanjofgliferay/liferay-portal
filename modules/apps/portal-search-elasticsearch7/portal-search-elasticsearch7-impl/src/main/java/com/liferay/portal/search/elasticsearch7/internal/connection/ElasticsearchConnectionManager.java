@@ -8,22 +8,20 @@ package com.liferay.portal.search.elasticsearch7.internal.connection;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.cluster.ClusterExecutor;
-import com.liferay.portal.kernel.cluster.ClusterNode;
 import com.liferay.portal.kernel.concurrent.SystemExecutorServiceUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.PortalInetSocketAddressEventListener;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.ccr.CrossClusterReplicationConfigurationHelper;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationObserver;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
-import com.liferay.portal.search.elasticsearch7.internal.configuration.OperationModeResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.constants.ConnectionConstants;
 import com.liferay.portal.search.elasticsearch7.internal.helper.SearchLogHelperUtil;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,6 +34,8 @@ import java.util.function.Supplier;
 
 import org.elasticsearch.client.RestHighLevelClient;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -171,13 +171,13 @@ public class ElasticsearchConnectionManager
 	}
 
 	public String getLocalClusterConnectionId() {
-		ClusterNode localClusterNode = _clusterExecutor.getLocalClusterNode();
+		InetSocketAddress portalInetSocketAddress = _portalInetSocketAddress;
 
 		CrossClusterReplicationConfigurationHelper
 			currentCrossClusterReplicationConfigurationHelper =
 				_crossClusterReplicationConfigurationHelperSnapshot.get();
 
-		if (localClusterNode == null) {
+		if (portalInetSocketAddress == null) {
 			if (currentCrossClusterReplicationConfigurationHelper == null) {
 				return null;
 			}
@@ -193,21 +193,13 @@ public class ElasticsearchConnectionManager
 			return localClusterConnectionIds.get(0);
 		}
 
-		InetAddress portalInetAddress = localClusterNode.getPortalInetAddress();
-
-		if ((portalInetAddress == null) ||
-			(currentCrossClusterReplicationConfigurationHelper == null)) {
-
-			return null;
-		}
-
 		Map<String, String> localClusterConnectionConfigurations =
 			currentCrossClusterReplicationConfigurationHelper.
 				getLocalClusterConnectionIdsMap();
 
 		String localClusterNodeHostName =
-			portalInetAddress.getHostName() + StringPool.COLON +
-				localClusterNode.getPortalPort();
+			portalInetSocketAddress.getHostName() + StringPool.COLON +
+				portalInetSocketAddress.getPort();
 
 		return localClusterConnectionConfigurations.get(
 			localClusterNodeHostName);
@@ -295,7 +287,11 @@ public class ElasticsearchConnectionManager
 	}
 
 	@Activate
-	protected void activate() {
+	protected void activate(BundleContext bundleContext) {
+		_serviceRegistration = bundleContext.registerService(
+			PortalInetSocketAddressEventListener.class,
+			new ElasticsearchPortalInetSocketAddressEventListener(), null);
+
 		elasticsearchConfigurationWrapper.register(this);
 
 		applyConfigurations();
@@ -305,7 +301,7 @@ public class ElasticsearchConnectionManager
 		SearchLogHelperUtil.setRESTClientLoggerLevel(
 			elasticsearchConfigurationWrapper.restClientLoggerLevel());
 
-		if (operationModeResolver.isProductionModeEnabled()) {
+		if (elasticsearchConfigurationWrapper.isProductionModeEnabled()) {
 			if (Validator.isBlank(
 					elasticsearchConfigurationWrapper.
 						remoteClusterConnectionId())) {
@@ -347,6 +343,8 @@ public class ElasticsearchConnectionManager
 
 			elasticsearchConnection.close();
 		}
+
+		_serviceRegistration.unregister();
 	}
 
 	protected ElasticsearchConnection getElasticsearchConnection(
@@ -364,7 +362,7 @@ public class ElasticsearchConnectionManager
 			return getElasticsearchConnection(connectionId);
 		}
 
-		if (operationModeResolver.isDevelopmentModeEnabled()) {
+		if (elasticsearchConfigurationWrapper.isDevelopmentModeEnabled()) {
 			if (_log.isInfoEnabled()) {
 				_log.info(
 					"Getting " + ConnectionConstants.SIDECAR_CONNECTION_ID +
@@ -407,14 +405,11 @@ public class ElasticsearchConnectionManager
 	}
 
 	@Reference
-	protected volatile ElasticsearchConfigurationWrapper
+	protected ElasticsearchConfigurationWrapper
 		elasticsearchConfigurationWrapper;
 
 	@Reference
 	protected Http http;
-
-	@Reference
-	protected OperationModeResolver operationModeResolver;
 
 	private ElasticsearchConnection _createRemoteElasticsearchConnection() {
 		ElasticsearchConnectionBuilder elasticsearchConnectionBuilder =
@@ -456,7 +451,7 @@ public class ElasticsearchConnectionManager
 
 		return StringBundler.concat(
 			message, " Production Mode Enabled: ",
-			operationModeResolver.isProductionModeEnabled(),
+			elasticsearchConfigurationWrapper.isProductionModeEnabled(),
 			", Connection ID: ", connectionId, ", Prefer Local Cluster: ",
 			preferLocalCluster, ", Cross-Cluster Replication Enabled: ",
 			isCrossClusterReplicationEnabled(), ". Enable INFO logs on ",
@@ -471,10 +466,26 @@ public class ElasticsearchConnectionManager
 			ElasticsearchConnectionManager.class,
 			CrossClusterReplicationConfigurationHelper.class, null, true);
 
-	@Reference
-	private ClusterExecutor _clusterExecutor;
-
 	private final Map<String, Supplier<ElasticsearchConnection>>
 		_elasticsearchConnectionSuppliers = new ConcurrentHashMap<>();
+	private volatile InetSocketAddress _portalInetSocketAddress;
+	private ServiceRegistration<?> _serviceRegistration;
+
+	private class ElasticsearchPortalInetSocketAddressEventListener
+		implements PortalInetSocketAddressEventListener {
+
+		@Override
+		public void portalLocalInetSocketAddressConfigured(
+			InetSocketAddress inetSocketAddress, boolean secure) {
+
+			_portalInetSocketAddress = inetSocketAddress;
+		}
+
+		@Override
+		public void portalServerInetSocketAddressConfigured(
+			InetSocketAddress inetSocketAddress, boolean secure) {
+		}
+
+	}
 
 }

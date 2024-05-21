@@ -26,8 +26,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -172,6 +170,7 @@ public abstract class BaseCategoryResourceTestCase {
 		Category category = randomCategory();
 
 		category.setName(regex);
+		category.setTitle(regex);
 		category.setVocabulary(regex);
 
 		String json = CategorySerDes.toJSON(category);
@@ -181,6 +180,7 @@ public abstract class BaseCategoryResourceTestCase {
 		category = CategorySerDes.toDTO(json);
 
 		Assert.assertEquals(regex, category.getName());
+		Assert.assertEquals(regex, category.getTitle());
 		Assert.assertEquals(regex, category.getVocabulary());
 	}
 
@@ -268,29 +268,69 @@ public abstract class BaseCategoryResourceTestCase {
 		Category category3 = testGetChannelProductCategoriesPage_addCategory(
 			channelId, productId, randomCategory());
 
-		Page<Category> page1 = categoryResource.getChannelProductCategoriesPage(
-			channelId, productId, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Category> categories1 = (List<Category>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			categories1.toString(), totalCount + 2, categories1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Category> page1 =
+				categoryResource.getChannelProductCategoriesPage(
+					channelId, productId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<Category> page2 = categoryResource.getChannelProductCategoriesPage(
-			channelId, productId, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(category1, (List<Category>)page1.getItems());
 
-		List<Category> categories2 = (List<Category>)page2.getItems();
+			Page<Category> page2 =
+				categoryResource.getChannelProductCategoriesPage(
+					channelId, productId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(categories2.toString(), 1, categories2.size());
+			assertContains(category2, (List<Category>)page2.getItems());
 
-		Page<Category> page3 = categoryResource.getChannelProductCategoriesPage(
-			channelId, productId, Pagination.of(1, (int)totalCount + 3));
+			Page<Category> page3 =
+				categoryResource.getChannelProductCategoriesPage(
+					channelId, productId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(category1, (List<Category>)page3.getItems());
-		assertContains(category2, (List<Category>)page3.getItems());
-		assertContains(category3, (List<Category>)page3.getItems());
+			assertContains(category3, (List<Category>)page3.getItems());
+		}
+		else {
+			Page<Category> page1 =
+				categoryResource.getChannelProductCategoriesPage(
+					channelId, productId, Pagination.of(1, totalCount + 2));
+
+			List<Category> categories1 = (List<Category>)page1.getItems();
+
+			Assert.assertEquals(
+				categories1.toString(), totalCount + 2, categories1.size());
+
+			Page<Category> page2 =
+				categoryResource.getChannelProductCategoriesPage(
+					channelId, productId, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Category> categories2 = (List<Category>)page2.getItems();
+
+			Assert.assertEquals(categories2.toString(), 1, categories2.size());
+
+			Page<Category> page3 =
+				categoryResource.getChannelProductCategoriesPage(
+					channelId, productId,
+					Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(category1, (List<Category>)page3.getItems());
+			assertContains(category2, (List<Category>)page3.getItems());
+			assertContains(category3, (List<Category>)page3.getItems());
+		}
 	}
 
 	protected Category testGetChannelProductCategoriesPage_addCategory(
@@ -413,6 +453,14 @@ public abstract class BaseCategoryResourceTestCase {
 
 			if (Objects.equals("name", additionalAssertFieldName)) {
 				if (category.getName() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("title", additionalAssertFieldName)) {
+				if (category.getTitle() == null) {
 					valid = false;
 				}
 
@@ -567,6 +615,16 @@ public abstract class BaseCategoryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("title", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						category1.getTitle(), category2.getTitle())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("vocabulary", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						category1.getVocabulary(), category2.getVocabulary())) {
@@ -613,6 +671,10 @@ public abstract class BaseCategoryResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -736,6 +798,52 @@ public abstract class BaseCategoryResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("title")) {
+			Object object = category.getTitle();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("vocabulary")) {
 			Object object = category.getVocabulary();
 
@@ -829,6 +937,7 @@ public abstract class BaseCategoryResourceTestCase {
 				id = RandomTestUtil.randomLong();
 				name = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				siteId = testGroup.getGroupId();
+				title = StringUtil.toLowerCase(RandomTestUtil.randomString());
 				vocabulary = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 			}
@@ -848,9 +957,9 @@ public abstract class BaseCategoryResourceTestCase {
 	}
 
 	protected CategoryResource categoryResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

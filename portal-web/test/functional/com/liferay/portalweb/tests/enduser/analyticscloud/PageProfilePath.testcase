@@ -107,39 +107,6 @@ definition {
 		}
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8357 | Test Summary: Last Year time period filter in Path Analysis"
-	@ignore = "true"
-	@priority = 3
-	test CanTimeFilterUseLastYearPathAnalysis {
-
-		// AC Refactor: Need past data
-		// AC Refactor ticket: LRAC-8875
-
-		task ("Switch to new property in AC") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = ${propertyName});
-		}
-
-		task ("Go to Pages tab in Sites") {
-			ACNavigation.goToSites();
-
-			ACNavigation.switchTab(tabName = "Pages");
-		}
-
-		// Can't assert that the filter is working correctly without past data
-
-		task ("Assert 'Last Year' time filter") {
-			ACTimeFilter.clickTimeFilterButton();
-
-			ACTimeFilter.setLastYear();
-
-			ACTimeFilter.assertCurrentTimeFilterRange(timeFilterRange = "Last Year");
-		}
-	}
-
 	@description = "Bug: LRAC-8988 | Automation ID: LRAC-11059 | Test Summary: Create the page name with special characters makes the correct name appear in the path part of AC pages"
 	@priority = 3
 	test CreatePageNameWithSpecialCharactersMakeCorrectNameAppearInPath {
@@ -156,7 +123,7 @@ definition {
 		task ("Visit the page, then close the sessions") {
 			ACUtils.navigateToSitePage(
 				actionType = "View Blog",
-				documentTitleList = "Snúið Vinsælar þú",
+				documentTitleList = "Snúið Vinsælar þú,Snúið Vinsælar þú,Snúið Vinsælar þú,Snúið Vinsælar þú",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -188,9 +155,13 @@ definition {
 		}
 
 		task ("Check if the page name is displayed correctly") {
+			MouseOver(
+				key_pageName = "Snúið Vinsælar",
+				locator1 = "ACPagePath#PATH_PAGE_NAME_SANKEY");
+
 			AssertElementPresent(
 				key_pageName = "Snúið Vinsælar þú - Site Name - ${dataSourceName}",
-				locator1 = "ACSites#SITE_PATH");
+				locator1 = "ACPagePath#PATH_PAGE_NAME_POPOVER");
 		}
 	}
 
@@ -210,7 +181,7 @@ definition {
 		task ("Visit the page, then close the sessions") {
 			ACUtils.navigateToSitePage(
 				actionType = "View Blog",
-				documentTitleList = "Blog test",
+				documentTitleList = "Blog test,Blog test,Blog test,Blog test",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -258,11 +229,13 @@ definition {
 		task ("Navigate to page report entry") {
 			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
 
-			ACNavigation.openItem(itemName = "AC Page - Site Name - ${dataSourceName}");
+			ACNavigation.openItem(itemName = "Blog test - Site Name - ${dataSourceName}");
 		}
 
 		task ("Go to the Path tab") {
 			ACNavigation.switchTab(tabName = "Path");
+
+			ACUtils.waitForLoading();
 		}
 
 		task ("Click Filter button") {
@@ -270,7 +243,7 @@ definition {
 		}
 
 		task ("Search for segment on the list") {
-			ACUtils.searchBar(searchItem = "Dynamic Segment Test");
+			ACPagePath.searchSegmentFilterBar(searchItem = "Dynamic Segment Test");
 
 			ACPagePath.viewSegmentDropdown(nameList = "Dynamic Segment Test");
 		}
@@ -294,11 +267,13 @@ definition {
 		}
 
 		task ("Navigate to page report entry") {
-			ACNavigation.openItem(itemName = "AC Page - Site Name - ${dataSourceName}");
+			ACNavigation.openItem(itemName = "Blog test - Site Name - ${dataSourceName}");
 		}
 
 		task ("Go to the Path tab") {
 			ACNavigation.switchTab(tabName = "Path");
+
+			ACUtils.waitForLoading();
 		}
 
 		task ("Click Filter button") {
@@ -306,7 +281,7 @@ definition {
 		}
 
 		task ("Search for segment not on list") {
-			ACUtils.searchBar(searchItem = "Dynamic Segment Test");
+			ACPagePath.searchSegmentFilterBar(searchItem = "Dynamic Segment Test");
 
 			ACUtils.viewNoResultsMessage(noResultMessage = "There are no segments.");
 		}
@@ -315,6 +290,19 @@ definition {
 	@description = "Feature ID: LRAC-14836 | Automation ID: LRAC-15062 | Test Summary: Remove segments from the filter"
 	@priority = 5
 	test RemoveSegmentFromFilter {
+		task ("Add a new user") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+		}
+
 		task ("Create a site and a blog and add to a page") {
 			ACUtils.addSiteAndPage();
 
@@ -328,7 +316,14 @@ definition {
 		task ("Visit the page, then close the sessions") {
 			ACUtils.navigateToSitePage(
 				actionType = "View Blog",
-				documentTitleList = "Blog test",
+				documentTitleList = "Blog test,Blog test,Blog test",
+				pageName = "AC Page",
+				siteName = "Site Name");
+
+			ACUtils.navigateToSitePageWithUser(
+				actionType = "View Blog",
+				documentTitleList = "Blog test,Blog test,Blog test,Blog test,Blog test,Blog test",
+				emailList = "userea@liferay.com",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -341,20 +336,14 @@ definition {
 			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Add a new dynamic segment") {
+		task ("Add a new static segment") {
 			ACNavigation.goToSegments();
 
-			ACSegments.createDynamicSegment();
+			ACSegments.createStaticSegment();
 
-			ACUtils.setItemName(itemName = "Dynamic Segment Test");
-		}
+			ACUtils.setItemName(itemName = "Static Segment Test");
 
-		task ("Add an email field") {
-			ACSegments.goToSidebarAttributes(criterion = "Individual Attributes");
-
-			ACSegments.addSegmentField(segmentField = "email");
-
-			ACSegments.selectOperator(operator = "is unknown");
+			ACSegments.addStaticMember(tableMember = "userfn userln");
 		}
 
 		task ("Save the segment") {
@@ -374,17 +363,17 @@ definition {
 		}
 
 		task ("Navigate to page report entry") {
-			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
-
-			ACNavigation.openItem(itemName = "AC Page - Site Name - ${dataSourceName}");
+			ACNavigation.openFirstItem();
 		}
 
 		task ("Go to the Path tab") {
 			ACNavigation.switchTab(tabName = "Path");
+
+			ACUtils.waitForLoading();
 		}
 
-		task ("Observe page total") {
-			ACPagePath.viewPagePathTotal(pageTotal = 1);
+		task ("Get the Total Views for the main page in the Path Analysis graph") {
+			var pagePathTotalWithoutFilter = selenium.getText("ACPagePath#MAIN_PAGE_PATH_TOTAL");
 		}
 
 		task ("Click Filter button") {
@@ -392,25 +381,41 @@ definition {
 		}
 
 		task ("Click Segment for filter") {
-			ACPagePath.clickFilterSegment(segmentName = "Dynamic Segment Test");
+			ACUtils.waitForLoading();
+
+			ACPagePath.clickFilterSegment(segmentName = "Static Segment Test");
 		}
 
-		task ("Observe page total changes with filter") {
-			ACPagePath.viewPagePathTotal(pageTotal = 0);
+		task ("Check if the Total Views number was modified after adding the filter") {
+			ACUtils.waitForLoading();
+
+			var pagePathTotalWithFilter = selenium.getText("ACPagePath#MAIN_PAGE_PATH_TOTAL");
+
+			TestUtils.assertNotEquals(
+				actual = ${pagePathTotalWithFilter},
+				expected = ${pagePathTotalWithoutFilter});
 		}
 
 		task ("Remove segment from filter") {
 			ACPagePath.removeSegmentFilter();
+
+			ACUtils.waitForLoading();
 		}
 
-		task ("Observe page total changes with filter") {
-			ACPagePath.viewPagePathTotal(pageTotal = 1);
+		task ("Check if the Total Views number was modified after removing the filter") {
+			var pagePathTotalActual = selenium.getText("ACPagePath#MAIN_PAGE_PATH_TOTAL");
+
+			TestUtils.assertEquals(
+				actual = ${pagePathTotalActual},
+				expected = ${pagePathTotalWithoutFilter});
 		}
 	}
 
 	@description = "Feature ID: LRAC-14836 | Automation ID: LRAC-15061 | Test Summary: The filter shows all segments"
 	@priority = 5
 	test ViewSegmentDropdownList {
+		property test.run.type = "single";
+
 		task ("Create a site and a blog and add to a page") {
 			ACUtils.addSiteAndPage();
 
@@ -424,7 +429,7 @@ definition {
 		task ("Visit the page, then close the sessions") {
 			ACUtils.navigateToSitePage(
 				actionType = "View Blog",
-				documentTitleList = "Blog test",
+				documentTitleList = "Blog test,Blog test,Blog test,Blog test,Blog test",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -437,19 +442,15 @@ definition {
 			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Create four dynamic segments") {
+		task ("Create four static segments") {
 			for (var n : list "1,2,3,4") {
 				ACNavigation.goToSegments();
 
-				ACSegments.createDynamicSegment();
+				ACSegments.createStaticSegment();
 
-				ACUtils.setItemName(itemName = "Dynamic Segment Test ${n}");
+				ACUtils.setItemName(itemName = "Static Segment Test ${n}");
 
-				ACSegments.goToSidebarAttributes(criterion = "Individual Attributes");
-
-				ACSegments.addSegmentField(segmentField = "email");
-
-				ACSegments.editTextCriterion(textInput = "test@liferay.com");
+				ACSegments.addStaticMember(tableMember = "Test Test");
 
 				ACSegments.saveSegment();
 			}
@@ -470,11 +471,13 @@ definition {
 		task ("Navigate to page report entry") {
 			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
 
-			ACNavigation.openItem(itemName = "AC Page - Site Name - ${dataSourceName}");
+			ACNavigation.openItem(itemName = "Blog test - Site Name - ${dataSourceName}");
 		}
 
 		task ("Go to the Path tab") {
 			ACNavigation.switchTab(tabName = "Path");
+
+			ACUtils.waitForLoading();
 		}
 
 		task ("Click Filter button") {
@@ -482,7 +485,7 @@ definition {
 		}
 
 		task ("View segments on the list") {
-			ACPagePath.viewSegmentDropdown(nameList = "Dynamic Segment Test 1,Dynamic Segment Test 2,Dynamic Segment Test 3,Dynamic Segment Test 4");
+			ACPagePath.viewSegmentDropdown(nameList = "Static Segment Test 1,Static Segment Test 2,Static Segment Test 3,Static Segment Test 4");
 		}
 	}
 

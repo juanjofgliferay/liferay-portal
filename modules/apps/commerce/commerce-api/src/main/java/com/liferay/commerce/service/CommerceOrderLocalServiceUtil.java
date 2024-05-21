@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -246,7 +247,8 @@ public class CommerceOrderLocalServiceUtil {
 	}
 
 	public static void deleteCommerceOrdersByAccountId(
-		long commerceAccountId, java.util.Date date, int status) {
+			long commerceAccountId, java.util.Date date, int status)
+		throws PortalException {
 
 		getService().deleteCommerceOrdersByAccountId(
 			commerceAccountId, date, status);
@@ -1200,13 +1202,12 @@ public class CommerceOrderLocalServiceUtil {
 	}
 
 	public static CommerceOrderLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceOrderLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceOrderLocalService _service;
+	private static final Snapshot<CommerceOrderLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CommerceOrderLocalServiceUtil.class,
+			CommerceOrderLocalService.class);
 
 }

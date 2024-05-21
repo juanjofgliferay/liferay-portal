@@ -57,7 +57,7 @@ const MDFClaimForm = () => {
 		MDFClaimDTO
 	>(
 		mdfClaimId &&
-			`/o/${LiferayAPIs.OBJECT}/mdfclaims/${mdfClaimId}?nestedFields=mdfClmToMDFClmActs,mdfClmActToMDFClmBgts,mdfClmActToMDFActDocs&nestedFieldsDepth=2`
+			`/o/${LiferayAPIs.OBJECT}/mdfclaims/${mdfClaimId}?nestedFields=mdfClmToMDFClmActs,mdfClmActToMDFClmBgts,mdfClmActToMDFActDocs,mdfClmToMDFClmDocs&nestedFieldsDepth=2`
 	);
 
 	const actions = usePermissionActions(ObjectActionName.MDF_CLAIM);
@@ -92,10 +92,7 @@ const MDFClaimForm = () => {
 
 	const siteURL = useLiferayNavigate();
 
-	const onCancel = () =>
-		mdfRequestId &&
-		siteURL &&
-		Liferay.Util.navigate(`${siteURL}/l/${mdfRequestId}`);
+	const onCancel = () => history.back();
 
 	const mdfClaim =
 		mdfClaimDTO && getMDFClaimFromDTO(mdfClaimDTO as MDFClaimDTO);
@@ -145,6 +142,7 @@ const MDFClaimForm = () => {
 			initialValues={getInitialFormValues(
 				Number(mdfRequestId),
 				mdfRequest.currency,
+				mdfRequest.currencyExchangeRate,
 				mdfRequest.mdfReqToActs,
 				mdfRequest.totalMDFRequestAmount,
 				mdfClaim
@@ -168,6 +166,7 @@ const MDFClaimForm = () => {
 			}
 		>
 			<MDFClaimPage
+				hasPermissionShowForm={hasPermissionShowForm}
 				mdfRequest={mdfRequest}
 				onCancel={onCancel}
 				onSaveAsDraft={(values, formikHelpers) =>

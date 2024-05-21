@@ -113,7 +113,7 @@ public class SaveVariantSegmentsExperienceMVCActionCommandTest {
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceService.addSegmentsExperience(
-				_group.getGroupId(), 0, _layout.getPlid(),
+				null, _group.getGroupId(), 0, _layout.getPlid(),
 				Collections.singletonMap(
 					LocaleUtil.getSiteDefault(), "Variant 1"),
 				false, new UnicodeProperties(true), _serviceContext);
@@ -218,7 +218,7 @@ public class SaveVariantSegmentsExperienceMVCActionCommandTest {
 
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionLocalService.addFragmentCollection(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(), StringPool.BLANK,
 				_serviceContext);
 		String html = "<div data-lfr-styles><span>Test</span>Fragment</div>";
@@ -227,7 +227,7 @@ public class SaveVariantSegmentsExperienceMVCActionCommandTest {
 			TestPropsValues.getUserId(), _group.getGroupId(),
 			fragmentCollection.getFragmentCollectionId(), "fragment-entry-key",
 			RandomTestUtil.randomString(), StringPool.BLANK, html,
-			StringPool.BLANK, false, StringPool.BLANK, null, 0,
+			StringPool.BLANK, false, StringPool.BLANK, null, 0, false,
 			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, _serviceContext);
 

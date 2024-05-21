@@ -16,7 +16,7 @@
 	%>
 
 	<react:component
-		module="js/index.es"
+		module="{Main} from questions-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"askQuestionButtonText", LocalizationUtil.getLocalization(questionsConfiguration.askQuestionButtonTextAsLocalizedXML(), themeDisplay.getLanguageId())
@@ -39,7 +39,7 @@
 			).put(
 				"isContentReviewer", permissionChecker.isContentReviewer(themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId())
 			).put(
-				"isOmniAdmin", permissionChecker.isOmniadmin()
+				"isOmniadmin", permissionChecker.isOmniadmin()
 			).put(
 				"newQuestionPageTitle", LocalizationUtil.getLocalization(questionsConfiguration.newQuestionPageTitleAsLocalizedXML(), themeDisplay.getLanguageId())
 			).put(

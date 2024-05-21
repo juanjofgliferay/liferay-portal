@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -59,14 +60,14 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 	public static CPDefinitionSpecificationOptionValue
 			addCPDefinitionSpecificationOptionValue(
 				long cpDefinitionId, long cpSpecificationOptionId,
-				long cpOptionCategoryId, Map<java.util.Locale, String> valueMap,
-				double priority,
+				long cpOptionCategoryId, double priority,
+				Map<java.util.Locale, String> valueMap,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionSpecificationOptionValue(
 			cpDefinitionId, cpSpecificationOptionId, cpOptionCategoryId,
-			valueMap, priority, serviceContext);
+			priority, valueMap, serviceContext);
 	}
 
 	/**
@@ -278,6 +279,14 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 		return getService().fetchCPDefinitionSpecificationOptionValue(
 			cpDefinitionId, cpDefinitionSpecificationOptionValueId);
+	}
+
+	public static CPDefinitionSpecificationOptionValue
+		fetchCPDefinitionSpecificationOptionValue(
+			long cpDefinitionId, String key) {
+
+		return getService().fetchCPDefinitionSpecificationOptionValue(
+			cpDefinitionId, key);
 	}
 
 	/**
@@ -510,14 +519,14 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 	public static CPDefinitionSpecificationOptionValue
 			updateCPDefinitionSpecificationOptionValue(
 				long cpDefinitionSpecificationOptionValueId,
-				long cpOptionCategoryId, Map<java.util.Locale, String> valueMap,
-				double priority,
+				long cpOptionCategoryId, String key, double priority,
+				Map<java.util.Locale, String> valueMap,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPDefinitionSpecificationOptionValue(
-			cpDefinitionSpecificationOptionValueId, cpOptionCategoryId,
-			valueMap, priority, serviceContext);
+			cpDefinitionSpecificationOptionValueId, cpOptionCategoryId, key,
+			priority, valueMap, serviceContext);
 	}
 
 	public static CPDefinitionSpecificationOptionValue updateCPOptionCategoryId(
@@ -532,16 +541,13 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 	public static CPDefinitionSpecificationOptionValueLocalService
 		getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CPDefinitionSpecificationOptionValueLocalService service) {
-
-		_service = service;
-	}
-
-	private static volatile CPDefinitionSpecificationOptionValueLocalService
-		_service;
+	private static final Snapshot
+		<CPDefinitionSpecificationOptionValueLocalService> _serviceSnapshot =
+			new Snapshot<>(
+				CPDefinitionSpecificationOptionValueLocalServiceUtil.class,
+				CPDefinitionSpecificationOptionValueLocalService.class);
 
 }

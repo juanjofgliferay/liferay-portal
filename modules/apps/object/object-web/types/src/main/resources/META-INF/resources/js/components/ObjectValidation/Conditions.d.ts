@@ -5,22 +5,26 @@
 
 /// <reference types="react" />
 
-import 'codemirror/mode/groovy/groovy';
 import {SidebarCategory} from '@liferay/object-js-components-web';
+import {ILearnResourceContext} from 'frontend-js-components-web';
 import {TabProps} from './useObjectValidationForm';
 export interface ConditionsProps extends TabProps {
 	creationLanguageId: Liferay.Language.Locale;
 	customObjectFields: ObjectField[];
-	learnResources: ObjectWebLearnResources;
+	disabledGroovyValidation: boolean;
+	learnResources: ILearnResourceContext;
 	objectValidationRuleElements: SidebarCategory[];
 }
 export declare function Conditions({
 	creationLanguageId,
 	customObjectFields,
 	disabled,
+	disabledGroovyValidation,
 	errors,
 	learnResources,
 	objectValidationRuleElements,
+	scriptManagementConfigurationPortletURL,
+	selectedPartialValidationField,
 	setValues,
 	values,
 }: ConditionsProps): JSX.Element;

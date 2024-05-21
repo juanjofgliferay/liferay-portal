@@ -79,7 +79,7 @@ public class ExtRepositoryAdapter extends BaseRepositoryImpl {
 			String externalReferenceCode, long userId, long folderId,
 			String fileName, String mimeType, String title, String urlTitle,
 			String description, String changeLog, InputStream inputStream,
-			long size, Date expirationDate, Date reviewDate,
+			long size, Date displayDate, Date expirationDate, Date reviewDate,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -669,6 +669,13 @@ public class ExtRepositoryAdapter extends BaseRepositoryImpl {
 	}
 
 	@Override
+	public List<FileShortcut> getRepositoryFileShortcuts(long groupId)
+		throws PortalException {
+
+		return Collections.emptyList();
+	}
+
+	@Override
 	public void getSubfolderIds(List<Long> folderIds, long folderId)
 		throws PortalException {
 
@@ -1014,8 +1021,8 @@ public class ExtRepositoryAdapter extends BaseRepositoryImpl {
 			long userId, long fileEntryId, String sourceFileName,
 			String mimeType, String title, String urlTitle, String description,
 			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		boolean needsCheckIn = false;

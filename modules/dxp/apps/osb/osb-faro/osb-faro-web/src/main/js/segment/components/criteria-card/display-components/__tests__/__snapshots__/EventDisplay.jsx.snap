@@ -5,6 +5,9 @@ exports[`EventDisplay renders 1`] = `
   <span
     class="sentence-start"
   >
+    Individual
+  </span>
+  <span>
     has
   </span>
   <span>
@@ -23,22 +26,7 @@ exports[`EventDisplay renders 1`] = `
     time(s)
   </span>
   <span>
-    since
+    ever
   </span>
-  <span>
-    Last 24 hours
-  </span>
-  <span>
-    where
-  </span>
-  <b>
-    Foo Attribute String
-  </b>
-  <b>
-    contains
-  </b>
-  <b>
-    "Test String"
-  </b>
 </div>
 `;

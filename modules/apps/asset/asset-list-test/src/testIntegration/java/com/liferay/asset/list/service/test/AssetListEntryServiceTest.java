@@ -13,7 +13,7 @@ import com.liferay.asset.list.exception.DuplicateAssetListEntryTitleException;
 import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.service.AssetListEntryAssetEntryRelLocalService;
 import com.liferay.asset.list.service.AssetListEntryService;
-import com.liferay.asset.list.util.AssetListTestUtil;
+import com.liferay.asset.list.test.util.AssetListTestUtil;
 import com.liferay.asset.list.util.comparator.AssetListEntryCreateDateComparator;
 import com.liferay.asset.list.util.comparator.AssetListEntryTitleComparator;
 import com.liferay.asset.test.util.AssetTestUtil;
@@ -109,7 +109,8 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
 				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
 
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
@@ -148,7 +149,8 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
 				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
 
 		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
@@ -185,7 +187,8 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
 				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
 
 		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
@@ -283,13 +286,16 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), "Test Name", 0, serviceContext);
+				RandomTestUtil.randomString(), _group.getGroupId(), "Test Name",
+				0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "A Test Name", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(), "A Test Name",
+			0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "B Test name", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(), "B Test name",
+			0, serviceContext);
 
 		OrderByComparator<AssetListEntry> orderByComparator =
 			new AssetListEntryCreateDateComparator(true);
@@ -325,13 +331,16 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), "AA Asset List Entry", 0, serviceContext);
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				"AA Asset List Entry", 0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "AB Asset List Entry", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(),
+			"AB Asset List Entry", 0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "AC Asset List Entry", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(),
+			"AC Asset List Entry", 0, serviceContext);
 
 		OrderByComparator<AssetListEntry> orderByComparator =
 			new AssetListEntryTitleComparator(true);
@@ -383,7 +392,8 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), "Manual Asset List Entry",
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				"Manual Asset List Entry",
 				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
 
 		AssetEntry assetEntry1 = AssetTestUtil.addAssetEntry(
@@ -440,7 +450,7 @@ public class AssetListEntryServiceTest {
 		throws PortalException {
 
 		return _assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), title, 0,
+			RandomTestUtil.randomString(), _group.getGroupId(), title, 0,
 			ServiceContextTestUtil.getServiceContext(
 				_group.getGroupId(), TestPropsValues.getUserId()));
 	}

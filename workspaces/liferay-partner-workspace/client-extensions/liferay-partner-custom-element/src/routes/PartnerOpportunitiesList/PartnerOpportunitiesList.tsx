@@ -4,90 +4,116 @@
  */
 
 import ClayAlert from '@clayui/alert';
-import ClayButton from '@clayui/button';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import {useModal} from '@clayui/modal';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
+import ClayTabs from '@clayui/tabs';
 import {useState} from 'react';
 import {CSVLink} from 'react-csv';
 
+import './index.css';
 import Modal from '../../common/components/Modal';
 import Table from '../../common/components/Table';
 import TableHeader from '../../common/components/TableHeader';
 import Search from '../../common/components/TableHeader/Search';
 import {PartnerOpportunitiesColumnKey} from '../../common/enums/partnerOpportunitiesColumnKey';
-import {PRMPageRoute} from '../../common/enums/prmPageRoute';
-import useLiferayNavigate from '../../common/hooks/useLiferayNavigate';
+import {SortableTable} from '../../common/enums/sortableTable';
+import useDebounce from '../../common/hooks/useDebounce';
 import usePagination from '../../common/hooks/usePagination';
-import TableColumn from '../../common/interfaces/tableColumn';
-import {Liferay} from '../../common/services/liferay';
+import useQueryParams from '../../common/hooks/useQueryParams';
 import getDoubleParagraph from '../../common/utils/getDoubleParagraph';
+import setURLParams from '../../common/utils/setURLParams';
 import ModalContent from './components/ModalContent';
 import useFilters from './hooks/useFilters';
 import useGetListItemsFromPartnerOpportunities from './hooks/useGetListItemsFromPartnerOpportunities';
 import PartnerOpportunitiesItem from './interfaces/partnerOpportunitiesItem';
 
 interface IProps {
-	columnsDates: TableColumn<PartnerOpportunitiesItem>[];
+	isRenewalListing?: boolean;
 	name: string;
-	newButtonDeal?: boolean;
-	renewalOpportunitiesFilter?: string;
-	sort: string;
 }
 
-const BASE_PAGE = 1;
-const MAX_ITEMS = 200;
+const PartnerOpportunitiesList = ({isRenewalListing, name}: IProps) => {
+	const [openOpportunitiesFilter, setOpenOpportunitiesFilter] = useState(
+		JSON.parse(sessionStorage.getItem('openOpportunitiesFilter')!) === null
+			? true
+			: (JSON.parse(
+					sessionStorage.getItem('openOpportunitiesFilter')!
+			  ) as boolean)
+	);
 
-const PartnerOpportunitiesList = ({
-	columnsDates,
-	name,
-	newButtonDeal,
-	renewalOpportunitiesFilter,
-	sort,
-}: IProps) => {
 	const {filters, filtersTerm, onFilter} = useFilters(
-		renewalOpportunitiesFilter
+		openOpportunitiesFilter,
+		isRenewalListing
 	);
 	const [isVisibleModal, setIsVisibleModal] = useState(false);
 	const [modalContent, setModalContent] = useState<
 		PartnerOpportunitiesItem
 	>();
 	const {observer, onClose} = useModal({
-		onClose: () => setIsVisibleModal(false),
+		onClose: () => {
+			setIsVisibleModal(false);
+			setModalContent(undefined);
+		},
 	});
 
 	const pagination = usePagination();
+
+	const urlParams = useQueryParams();
+
+	const [opportunitiesTableSort, setOpportunitiesTableSort] = useState<
+		string
+	>('partnerAccountName:asc');
+
+	const debouncedDealRegistrationTableSort = useDebounce(
+		opportunitiesTableSort,
+		1000
+	);
+
 	const {data, isValidating} = useGetListItemsFromPartnerOpportunities(
 		pagination.activePage,
 		pagination.activeDelta,
-		filtersTerm,
-		sort
+		setURLParams({
+			filter: filtersTerm,
+			sort: debouncedDealRegistrationTableSort,
+			urlParams,
+		})
 	);
+
 	const {data: dataCSV} = useGetListItemsFromPartnerOpportunities(
-		BASE_PAGE,
-		MAX_ITEMS,
-		filtersTerm,
-		sort
+		pagination.activePage,
+		pagination.maxItemsSF,
+		setURLParams({filter: filtersTerm, urlParams})
 	);
 
 	const {totalCount: totalPagination} = data;
 	const filteredData = data.items;
 	const filteredCSVData = dataCSV.items;
 
-	const siteURL = useLiferayNavigate();
 	const columns = [
 		{
 			columnKey: PartnerOpportunitiesColumnKey.PARTNER_ACCOUNT_NAME,
 			label: 'Partner Account Name',
 		},
 		{
-			columnKey: PartnerOpportunitiesColumnKey.ACCOUNT_NAME,
+			columnKey: PartnerOpportunitiesColumnKey.OPPORTUNITY_ACCOUNT_NAME,
 			label: 'Account Name',
 		},
-		...columnsDates,
 		{
 			columnKey: PartnerOpportunitiesColumnKey.SUBSCRIPTION_ARR,
 			label: 'Subscription ARR',
+		},
+		{
+			columnKey: PartnerOpportunitiesColumnKey.STAGE,
+			label: 'Stage',
+		},
+		{
+			columnKey: PartnerOpportunitiesColumnKey.CLOSE_DATE,
+			label: 'Close Date',
+		},
+		{
+			columnKey: PartnerOpportunitiesColumnKey.SUBSCRIPTION_TERM,
+			label: 'Subscription Term',
 		},
 		{
 			columnKey: PartnerOpportunitiesColumnKey.PARTNER_REP_NAME,
@@ -101,13 +127,9 @@ const PartnerOpportunitiesList = ({
 			columnKey: PartnerOpportunitiesColumnKey.LIFERAY_REP,
 			label: 'Liferay Rep',
 		},
-		{
-			columnKey: PartnerOpportunitiesColumnKey.STAGE,
-			label: 'Stage',
-		},
 	];
 
-	const handleCustomClickOnRow = (row: PartnerOpportunitiesItem) => {
+	const handleCustomClickOnRow = async (row: PartnerOpportunitiesItem) => {
 		setIsVisibleModal(true);
 		setModalContent(row);
 	};
@@ -142,9 +164,18 @@ const PartnerOpportunitiesList = ({
 			return (
 				<div className="mt-3">
 					<Table<PartnerOpportunitiesItem>
+						className="custom-table"
 						columns={columns}
 						customClickOnRow={handleCustomClickOnRow}
 						rows={items}
+						setTableSort={setOpportunitiesTableSort}
+						sortable={[
+							SortableTable.ACCOUNT_NAME,
+							SortableTable.CLOSE_DATE,
+							SortableTable.PARTNER_ACCOUNT_NAME,
+							SortableTable.STAGE,
+						]}
+						tableLayoutAuto
 					/>
 
 					<ClayPaginationBarWithBasicItems
@@ -158,12 +189,31 @@ const PartnerOpportunitiesList = ({
 
 	return (
 		<div className="border-0 my-4">
-			<h1>{name}</h1>
+			<div className="align-items-center d-md-flex justify-content-between mb-3 mr-4">
+				<h1>{name}</h1>
+				<ClayTabs className="h-100 nav nav-segment nav-tabs">
+					<ClayTabs.Item
+						active={openOpportunitiesFilter}
+						className="nav-item"
+						onClick={() => setOpenOpportunitiesFilter(true)}
+					>
+						Open
+					</ClayTabs.Item>
+					<ClayTabs.Item
+						active={!openOpportunitiesFilter}
+						className="nav-item"
+						onClick={() => setOpenOpportunitiesFilter(false)}
+					>
+						Closed
+					</ClayTabs.Item>
+				</ClayTabs>
+			</div>
 
 			<TableHeader>
 				<div className="d-flex">
 					<div>
 						<Search
+							initialSearchTerm={filters.searchTerm}
 							onSearchSubmit={(searchTerm: string) =>
 								onFilter({
 									searchTerm,
@@ -196,19 +246,6 @@ const PartnerOpportunitiesList = ({
 						>
 							Export {name}
 						</CSVLink>
-					)}
-
-					{newButtonDeal && (
-						<ClayButton
-							className="mb-2 mb-lg-0 mr-2"
-							onClick={() =>
-								Liferay.Util.navigate(
-									`${siteURL}/${PRMPageRoute.CREATE_DEAL_REGISTRATION}`
-								)
-							}
-						>
-							Register New Deal
-						</ClayButton>
 					)}
 				</div>
 			</TableHeader>

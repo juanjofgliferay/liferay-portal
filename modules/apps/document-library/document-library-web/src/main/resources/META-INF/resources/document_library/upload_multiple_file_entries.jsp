@@ -108,9 +108,7 @@ if (portletTitleBasedNavigation) {
 						PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "add-multiple-file-entries"), currentURL);
 						%>
 
-						<aui:script require="frontend-js-web/index as frontendJsWeb">
-							var {runScriptsInElement} = frontendJsWeb;
-
+						<aui:script sandbox="<%= true %>">
 							Liferay.on('tempFileRemoved', () => {
 								Liferay.Util.openToast({
 									message:
@@ -231,7 +229,9 @@ if (portletTitleBasedNavigation) {
 											.then((response) => {
 												commonFileMetadataContainer.innerHTML = response;
 
-												runScriptsInElement(commonFileMetadataContainer);
+												Liferay.Util.runScriptsInElement(
+													commonFileMetadataContainer
+												);
 											});
 
 										Liferay.fire('filesSaved');
@@ -262,6 +262,7 @@ if (portletTitleBasedNavigation) {
 										});
 
 										commonFileMetadataContainer.classList.remove('hide');
+										loading.classList.add('hide');
 									});
 							}
 

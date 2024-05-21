@@ -7,8 +7,16 @@ package com.liferay.object.admin.rest.resource.v1_0.test;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectDefinition;
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectField;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectLayout;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectLayoutBox;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectLayoutColumn;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectLayoutRow;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectLayoutTab;
+import com.liferay.object.admin.rest.client.dto.v1_0.ObjectRelationship;
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectValidationRule;
 import com.liferay.object.admin.rest.client.dto.v1_0.ObjectValidationRuleSetting;
 import com.liferay.object.admin.rest.client.dto.v1_0.Status;
@@ -49,9 +57,11 @@ import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -63,7 +73,7 @@ import org.junit.runner.RunWith;
 /**
  * @author Javier Gamarra
  */
-@FeatureFlags({"LPS-148856", "LPS-181663", "LPS-187142"})
+@FeatureFlags("LPS-187142")
 @RunWith(Arquillian.class)
 public class ObjectDefinitionResourceTest
 	extends BaseObjectDefinitionResourceTestCase {
@@ -89,10 +99,10 @@ public class ObjectDefinitionResourceTest
 	public void tearDown() throws Exception {
 		super.tearDown();
 
-		if (_objectDefinition != null) {
+		for (ObjectDefinition objectDefinition : _objectDefinitions) {
 			try {
 				_objectDefinitionLocalService.deleteObjectDefinition(
-					_objectDefinition.getId());
+					objectDefinition.getId());
 			}
 			catch (NoSuchObjectDefinitionException
 						noSuchObjectDefinitionException) {
@@ -119,6 +129,50 @@ public class ObjectDefinitionResourceTest
 		Assert.assertEquals(
 			"/o/c/" + objectDefinitionPluralName,
 			objectDefinition.getRestContextPath());
+	}
+
+	@Override
+	@Test
+	public void testGetObjectDefinitionsPage() throws Exception {
+		super.testGetObjectDefinitionsPage();
+
+		Page<ObjectDefinition> page =
+			objectDefinitionResource.getObjectDefinitionsPage(
+				null, null, "status/any(k:k eq 2)", Pagination.of(1, 20), null);
+
+		long totalCount = page.getTotalCount();
+
+		ObjectDefinition objectDefinition =
+			testGetObjectDefinitionsPage_addObjectDefinition(
+				randomObjectDefinition());
+
+		ObjectDefinition randomObjectDefinition = randomObjectDefinition();
+
+		Status status = new Status() {
+			{
+				code = WorkflowConstants.STATUS_APPROVED;
+				label = WorkflowConstants.getStatusLabel(
+					WorkflowConstants.STATUS_APPROVED);
+				label_i18n = _language.get(
+					LanguageResources.getResourceBundle(
+						LocaleUtil.getDefault()),
+					WorkflowConstants.getStatusLabel(
+						WorkflowConstants.STATUS_APPROVED));
+			}
+		};
+
+		randomObjectDefinition.setStatus(status);
+
+		testGetObjectDefinitionsPage_addObjectDefinition(
+			randomObjectDefinition);
+
+		page = objectDefinitionResource.getObjectDefinitionsPage(
+			null, null, "status/any(k:k eq 2)", Pagination.of(1, 20), null);
+
+		Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+		assertContains(
+			objectDefinition, (List<ObjectDefinition>)page.getItems());
 	}
 
 	@Override
@@ -228,6 +282,7 @@ public class ObjectDefinitionResourceTest
 					objectDefinitionsJSONObject.getString("items"))));
 	}
 
+	@FeatureFlags("LPD-23379")
 	@Override
 	@Test
 	public void testPostObjectDefinition() throws Exception {
@@ -256,6 +311,104 @@ public class ObjectDefinitionResourceTest
 
 		assertEquals(postObjectDefinition, randomObjectDefinition);
 		assertValid(postObjectDefinition);
+
+		String randomListTypeDefinitionExternalReferenceCode =
+			RandomTestUtil.randomString();
+
+		ObjectDefinition randomModifiableSystemObjectDefinition =
+			_randomModifiableSystemObjectDefinition();
+
+		randomModifiableSystemObjectDefinition.setObjectFields(
+			new ObjectField[] {
+				new ObjectField() {
+					{
+						businessType = BusinessType.PICKLIST;
+						DBType = ObjectField.DBType.create("String");
+						externalReferenceCode = RandomTestUtil.randomString();
+						indexed = false;
+						indexedAsKeyword = false;
+						label = Collections.singletonMap(
+							"en-US", RandomTestUtil.randomString());
+						listTypeDefinitionExternalReferenceCode =
+							randomListTypeDefinitionExternalReferenceCode;
+						localized = false;
+						name = "a" + RandomTestUtil.randomString();
+						readOnly = ReadOnly.FALSE;
+						required = false;
+						state = false;
+						system = true;
+					}
+				}
+			});
+
+		testPostObjectDefinition_addObjectDefinition(
+			randomModifiableSystemObjectDefinition);
+
+		ListTypeDefinition serviceBuilderlistTypeDefinition =
+			_listTypeDefinitionLocalService.
+				fetchListTypeDefinitionByExternalReferenceCode(
+					randomListTypeDefinitionExternalReferenceCode,
+					TestPropsValues.getCompanyId());
+
+		Assert.assertNotNull(serviceBuilderlistTypeDefinition);
+		Assert.assertTrue(serviceBuilderlistTypeDefinition.isSystem());
+
+		randomObjectDefinition = randomObjectDefinition();
+
+		ObjectRelationship objectRelationship = new ObjectRelationship();
+
+		objectRelationship.setDeletionType(
+			ObjectRelationship.DeletionType.CASCADE);
+		objectRelationship.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+		objectRelationship.setName("a" + RandomTestUtil.randomString());
+		objectRelationship.setObjectDefinitionExternalReferenceCode1(
+			randomObjectDefinition.getExternalReferenceCode());
+		objectRelationship.setObjectDefinitionExternalReferenceCode2(
+			randomObjectDefinition.getExternalReferenceCode());
+		objectRelationship.setObjectDefinitionId1(RandomTestUtil.randomLong());
+		objectRelationship.setObjectDefinitionId2(RandomTestUtil.randomLong());
+		objectRelationship.setType(ObjectRelationship.Type.ONE_TO_MANY);
+
+		randomObjectDefinition.setObjectRelationships(
+			new ObjectRelationship[] {objectRelationship});
+
+		postObjectDefinition = testPostObjectDefinition_addObjectDefinition(
+			randomObjectDefinition);
+
+		assertEquals(postObjectDefinition, randomObjectDefinition);
+		assertValid(postObjectDefinition);
+
+		randomObjectDefinition = randomObjectDefinition();
+
+		ObjectField relationshipObjectField = new ObjectField();
+
+		relationshipObjectField.setBusinessType(
+			ObjectField.BusinessType.RELATIONSHIP);
+		relationshipObjectField.setLabel(
+			Collections.singletonMap("en_US", RandomTestUtil.randomString()));
+		relationshipObjectField.setLocalized(false);
+		relationshipObjectField.setName("r_" + RandomTestUtil.randomString());
+
+		randomObjectDefinition.setObjectFields(
+			ArrayUtil.append(
+				randomObjectDefinition.getObjectFields(),
+				relationshipObjectField));
+
+		postObjectDefinition = testPostObjectDefinition_addObjectDefinition(
+			randomObjectDefinition);
+
+		assertEquals(postObjectDefinition, randomObjectDefinition);
+		assertValid(postObjectDefinition);
+
+		randomObjectDefinition = randomObjectDefinition();
+
+		randomObjectDefinition.setEnableIndexSearch((Boolean)null);
+
+		postObjectDefinition = testPostObjectDefinition_addObjectDefinition(
+			randomObjectDefinition);
+
+		Assert.assertTrue(postObjectDefinition.getEnableIndexSearch());
 	}
 
 	@Override
@@ -316,8 +469,82 @@ public class ObjectDefinitionResourceTest
 			accountEntryRestrictedObjectFieldName,
 			postObjectDefinition.getAccountEntryRestrictedObjectFieldName());
 
+		// Account entry update with null object definition ID 2
+
+		accountEntryObjectDefinition.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+		accountEntryObjectDefinition.setTitleObjectFieldName("type");
+
+		ObjectRelationship objectRelationship =
+			accountEntryObjectDefinition.getObjectRelationships()[0];
+
+		objectRelationship.setObjectDefinitionId2((Long)null);
+
+		ObjectDefinition putAccountEntryObjectDefinition =
+			objectDefinitionResource.putObjectDefinition(
+				accountEntryObjectDefinition.getId(),
+				accountEntryObjectDefinition);
+
+		Assert.assertEquals(
+			accountEntryObjectDefinition.getExternalReferenceCode(),
+			putAccountEntryObjectDefinition.getExternalReferenceCode());
+		Assert.assertEquals(
+			accountEntryObjectDefinition.getTitleObjectFieldName(),
+			putAccountEntryObjectDefinition.getTitleObjectFieldName());
+
+		objectRelationship =
+			putAccountEntryObjectDefinition.getObjectRelationships()[0];
+
+		Assert.assertNotNull(objectRelationship.getObjectDefinitionId2());
+
 		_objectDefinitionLocalService.deleteObjectDefinition(
 			postObjectDefinition.getId());
+
+		// Draft custom object definition
+
+		postObjectDefinition = objectDefinitionResource.postObjectDefinition(
+			randomObjectDefinition());
+
+		Assert.assertEquals(
+			postObjectDefinition.getStatus(),
+			new Status() {
+				{
+					code = WorkflowConstants.STATUS_DRAFT;
+					label = WorkflowConstants.getStatusLabel(
+						WorkflowConstants.STATUS_DRAFT);
+					label_i18n = _language.get(
+						LanguageResources.getResourceBundle(
+							LocaleUtil.getDefault()),
+						WorkflowConstants.getStatusLabel(
+							WorkflowConstants.STATUS_DRAFT));
+				}
+			});
+
+		postObjectDefinition.setStatus(
+			new Status() {
+				{
+					code = WorkflowConstants.STATUS_APPROVED;
+				}
+			});
+
+		ObjectDefinition randomPersistedPublishedObjectDefinition =
+			objectDefinitionResource.putObjectDefinition(
+				postObjectDefinition.getId(), postObjectDefinition);
+
+		Assert.assertEquals(
+			randomPersistedPublishedObjectDefinition.getStatus(),
+			new Status() {
+				{
+					code = WorkflowConstants.STATUS_APPROVED;
+					label = WorkflowConstants.getStatusLabel(
+						WorkflowConstants.STATUS_APPROVED);
+					label_i18n = _language.get(
+						LanguageResources.getResourceBundle(
+							LocaleUtil.getDefault()),
+						WorkflowConstants.getStatusLabel(
+							WorkflowConstants.STATUS_APPROVED));
+				}
+			});
 
 		// Modifiable system object definition
 
@@ -344,7 +571,7 @@ public class ObjectDefinitionResourceTest
 			new ObjectValidationRule() {
 				{
 					active = false;
-					engine = ObjectValidationRuleConstants.ENGINE_TYPE_GROOVY;
+					engine = ObjectValidationRuleConstants.ENGINE_TYPE_DDM;
 					errorLabel = Collections.singletonMap(
 						"en_US", RandomTestUtil.randomString());
 					externalReferenceCode =
@@ -377,8 +604,7 @@ public class ObjectDefinitionResourceTest
 				new ObjectValidationRule() {
 					{
 						active = false;
-						engine =
-							ObjectValidationRuleConstants.ENGINE_TYPE_GROOVY;
+						engine = ObjectValidationRuleConstants.ENGINE_TYPE_DDM;
 						errorLabel = Collections.singletonMap(
 							"en_US", RandomTestUtil.randomString());
 						externalReferenceCode =
@@ -461,6 +687,184 @@ public class ObjectDefinitionResourceTest
 	}
 
 	@Override
+	@Test
+	public void testPutObjectDefinitionByExternalReferenceCode()
+		throws Exception {
+
+		super.testPutObjectDefinitionByExternalReferenceCode();
+
+		ObjectDefinition randomObjectDefinition = randomObjectDefinition();
+
+		randomObjectDefinition.setExternalReferenceCode(
+			"TESTOBJECTDEFINITION2");
+		randomObjectDefinition.setObjectFields(
+			new ObjectField[] {
+				new ObjectField() {
+					{
+						businessType = BusinessType.RELATIONSHIP;
+						DBType = ObjectField.DBType.LONG;
+						indexed = true;
+						label = Collections.singletonMap(
+							"en_US", RandomTestUtil.randomString());
+						name = "relationshipObjectFieldName";
+						objectDefinitionExternalReferenceCode1 =
+							"TESTOBJECTDEFINITION1";
+						objectRelationshipExternalReferenceCode =
+							"TESTOBJECTRELATIONSHIP";
+					}
+				}
+			});
+
+		ObjectLayoutRow[] finalObjectLayoutRows = {
+			new ObjectLayoutRow() {
+				{
+					objectLayoutColumns = new ObjectLayoutColumn[] {
+						new ObjectLayoutColumn() {
+							{
+								objectFieldName = "relationshipObjectFieldName";
+								priority = 0;
+								size = 6;
+							}
+						}
+					};
+					priority = 0;
+				}
+			}
+		};
+
+		randomObjectDefinition.setObjectLayouts(
+			new ObjectLayout[] {
+				new ObjectLayout() {
+					{
+						defaultObjectLayout = true;
+						objectLayoutTabs = new ObjectLayoutTab[] {
+							new ObjectLayoutTab() {
+								{
+									objectLayoutBoxes = new ObjectLayoutBox[] {
+										new ObjectLayoutBox() {
+											{
+												collapsable = true;
+												objectLayoutRows =
+													finalObjectLayoutRows;
+												priority = 0;
+												type = Type.REGULAR;
+											}
+										}
+									};
+									priority = 0;
+								}
+							}
+						};
+					}
+				}
+			});
+
+		ObjectDefinition putObjectDefinition =
+			objectDefinitionResource.putObjectDefinitionByExternalReferenceCode(
+				randomObjectDefinition.getExternalReferenceCode(),
+				randomObjectDefinition);
+
+		ObjectField[] objectFields = ArrayUtil.filter(
+			putObjectDefinition.getObjectFields(),
+			objectField -> !objectField.getSystem());
+
+		Assert.assertEquals(
+			Arrays.toString(objectFields), 1, objectFields.length);
+
+		ObjectField objectField = objectFields[0];
+
+		Assert.assertEquals(
+			"relationshipObjectFieldName", objectField.getName());
+		Assert.assertEquals(
+			"TESTOBJECTDEFINITION1",
+			objectField.getObjectDefinitionExternalReferenceCode1());
+		Assert.assertEquals(
+			"TESTOBJECTRELATIONSHIP",
+			objectField.getObjectRelationshipExternalReferenceCode());
+
+		ObjectLayout[] objectLayouts = putObjectDefinition.getObjectLayouts();
+
+		Assert.assertEquals(
+			Arrays.toString(objectLayouts), 1, objectLayouts.length);
+
+		Assert.assertNotNull(
+			objectDefinitionResource.getObjectDefinitionByExternalReferenceCode(
+				"TESTOBJECTDEFINITION1"));
+
+		randomObjectDefinition = randomObjectDefinition();
+
+		randomObjectDefinition.setExternalReferenceCode(
+			"TESTOBJECTDEFINITION1");
+		randomObjectDefinition.setObjectFields(
+			new ObjectField[] {
+				new ObjectField() {
+					{
+						businessType = BusinessType.TEXT;
+						DBType = ObjectField.DBType.STRING;
+						indexed = true;
+						label = Collections.singletonMap(
+							"en_US", RandomTestUtil.randomString());
+						name = "titleObjectFieldName";
+					}
+				}
+			});
+
+		Map<String, String> objectRelationshipLabelMap =
+			Collections.singletonMap("en_US", RandomTestUtil.randomString());
+
+		randomObjectDefinition.setObjectRelationships(
+			new ObjectRelationship[] {
+				new ObjectRelationship() {
+					{
+						deletionType = ObjectRelationship.DeletionType.CASCADE;
+						externalReferenceCode = "TESTOBJECTRELATIONSHIP";
+						label = objectRelationshipLabelMap;
+						name = RandomTestUtil.randomString();
+						objectDefinitionExternalReferenceCode1 =
+							"TESTOBJECTDEFINITION1";
+						objectDefinitionExternalReferenceCode2 =
+							"TESTOBJECTDEFINITION2";
+					}
+				}
+			});
+
+		randomObjectDefinition.setTitleObjectFieldName("titleObjectFieldName");
+
+		putObjectDefinition =
+			objectDefinitionResource.putObjectDefinitionByExternalReferenceCode(
+				randomObjectDefinition.getExternalReferenceCode(),
+				randomObjectDefinition);
+
+		ObjectRelationship[] objectRelationships =
+			putObjectDefinition.getObjectRelationships();
+
+		Assert.assertEquals(
+			Arrays.toString(objectRelationships), 1,
+			objectRelationships.length);
+
+		ObjectRelationship objectRelationship = objectRelationships[0];
+
+		Assert.assertEquals(
+			ObjectRelationship.DeletionType.CASCADE,
+			objectRelationship.getDeletionType());
+		Assert.assertEquals(
+			"TESTOBJECTRELATIONSHIP",
+			objectRelationship.getExternalReferenceCode());
+		Assert.assertEquals(
+			objectRelationshipLabelMap, objectRelationship.getLabel());
+		Assert.assertEquals(
+			"TESTOBJECTDEFINITION1",
+			objectRelationship.getObjectDefinitionExternalReferenceCode1());
+		Assert.assertEquals(
+			"TESTOBJECTDEFINITION2",
+			objectRelationship.getObjectDefinitionExternalReferenceCode2());
+
+		Assert.assertEquals(
+			"titleObjectFieldName",
+			randomObjectDefinition.getTitleObjectFieldName());
+	}
+
+	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {"name", "status"};
 	}
@@ -484,10 +888,7 @@ public class ObjectDefinitionResourceTest
 		objectDefinition.setModifiable(true);
 		objectDefinition.setName("O" + objectDefinition.getName());
 		objectDefinition.setObjectFolderExternalReferenceCode(
-			ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_UNCATEGORIZED);
-		objectDefinition.setPluralLabel(
-			Collections.singletonMap(
-				"en_US", "O" + objectDefinition.getName()));
+			ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_DEFAULT);
 		objectDefinition.setObjectFields(
 			new ObjectField[] {
 				new ObjectField() {
@@ -505,6 +906,11 @@ public class ObjectDefinitionResourceTest
 					}
 				}
 			});
+		objectDefinition.setPluralLabel(
+			Collections.singletonMap(
+				"en_US", "O" + objectDefinition.getName()));
+		objectDefinition.setRootObjectDefinitionExternalReferenceCode(
+			StringPool.BLANK);
 		objectDefinition.setScope(ObjectDefinitionConstants.SCOPE_COMPANY);
 		objectDefinition.setStatus(
 			new Status() {
@@ -585,6 +991,13 @@ public class ObjectDefinitionResourceTest
 		testGetObjectDefinitionsPage_addObjectDefinition(objectDefinition2);
 
 		for (EntityField entityField : entityFields) {
+			if (StringUtil.equals(
+					entityField.getName(),
+					"rootObjectDefinitionExternalReferenceCode")) {
+
+				continue;
+			}
+
 			_assertGetObjectDefinitionsPageWithFilter(
 				Collections.singletonList(objectDefinition1),
 				getFilterString(entityField, operator, objectDefinition1));
@@ -592,7 +1005,7 @@ public class ObjectDefinitionResourceTest
 			_objectFolder1 = _objectFolderLocalService.updateObjectFolder(
 				RandomTestUtil.randomString(),
 				_objectFolder1.getObjectFolderId(),
-				_objectFolder1.getLabelMap(), Collections.emptyList());
+				_objectFolder1.getLabelMap());
 
 			objectDefinition1 = objectDefinitionResource.getObjectDefinition(
 				objectDefinition1.getId());
@@ -653,10 +1066,12 @@ public class ObjectDefinitionResourceTest
 			ObjectDefinition objectDefinition)
 		throws Exception {
 
-		_objectDefinition = objectDefinitionResource.postObjectDefinition(
+		objectDefinition = objectDefinitionResource.postObjectDefinition(
 			objectDefinition);
 
-		return _objectDefinition;
+		_objectDefinitions.add(objectDefinition);
+
+		return objectDefinition;
 	}
 
 	private void _assertGetObjectDefinitionsPageWithFilter(
@@ -843,10 +1258,13 @@ public class ObjectDefinitionResourceTest
 	@Inject
 	private Language _language;
 
-	private ObjectDefinition _objectDefinition;
+	@Inject
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
 
 	@Inject
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	private final List<ObjectDefinition> _objectDefinitions = new ArrayList<>();
 
 	@DeleteAfterTestRun
 	private ObjectFolder _objectFolder1;

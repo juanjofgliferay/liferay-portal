@@ -3,12 +3,13 @@
 		"@liferay/map-common": "*",
 		"frontend-js-web": "*"
 	},
+	"main": "js/index.js",
 	"name": "@liferay/map-google-maps",
 	"private": true,
 	"scripts": {
-		"build": "liferay-npm-scripts build",
+		"build": "node-scripts build",
 		"checkFormat": "liferay-npm-scripts check",
 		"format": "liferay-npm-scripts fix"
 	},
-	"version": "5.0.30"
+	"version": "5.0.35"
 }

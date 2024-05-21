@@ -25,7 +25,6 @@ import com.liferay.journal.model.JournalArticleResource;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalArticleResourceLocalService;
 import com.liferay.journal.util.JournalContent;
-import com.liferay.journal.util.JournalConverter;
 import com.liferay.journal.util.JournalHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -295,8 +294,8 @@ public class JournalArticleAssetRendererFactory
 			_portal.getControlPanelPortletURL(
 				liferayPortletRequest, getGroup(liferayPortletRequest),
 				JournalPortletKeys.JOURNAL, 0, 0, PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/edit_article.jsp"
+		).setMVCRenderCommandName(
+			"/journal/edit_article"
 		).setParameter(
 			"ddmStructureId",
 			() -> {
@@ -410,9 +409,6 @@ public class JournalArticleAssetRendererFactory
 
 	@Reference
 	private JournalContent _journalContent;
-
-	@Reference
-	private JournalConverter _journalConverter;
 
 	@Reference
 	private JournalHelper _journalHelper;

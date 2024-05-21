@@ -20,8 +20,6 @@ import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormProvider;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
-import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
-import com.liferay.layout.page.template.service.LayoutPageTemplateStructureService;
 import com.liferay.layout.util.structure.DropZoneLayoutStructureItem;
 import com.liferay.layout.util.structure.FormStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
@@ -40,7 +38,6 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.segments.constants.SegmentsExperienceConstants;
@@ -294,9 +291,14 @@ public class FormItemManager {
 			long groupId)
 		throws PortalException {
 
+		String className = formStyledLayoutStructureItem.getClassName();
+
+		if (Validator.isNull(className)) {
+			return Collections.emptyList();
+		}
+
 		String itemClassName = _infoSearchClassMapperRegistry.getClassName(
-			_portal.getClassName(
-				formStyledLayoutStructureItem.getClassNameId()));
+			className);
 
 		InfoItemFormProvider<?> infoItemFormProvider =
 			_infoItemServiceRegistry.getFirstInfoItemService(
@@ -405,16 +407,5 @@ public class FormItemManager {
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private LayoutPageTemplateStructureLocalService
-		_layoutPageTemplateStructureLocalService;
-
-	@Reference
-	private LayoutPageTemplateStructureService
-		_layoutPageTemplateStructureService;
-
-	@Reference
-	private Portal _portal;
 
 }

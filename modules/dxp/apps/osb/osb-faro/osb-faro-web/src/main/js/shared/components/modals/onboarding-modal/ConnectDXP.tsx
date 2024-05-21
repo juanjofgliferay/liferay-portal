@@ -146,14 +146,6 @@ const ConnectDXP: React.FC<IConnectDXPWrapperProps & IConnectDXPProps> = ({
 						TIMEOUT_INTERVAL
 					);
 				} else {
-					analytics.track(
-						'Established connection w/ DXP - TEST',
-						null,
-						{
-							ip: '0'
-						}
-					);
-
 					if (onboarding) {
 						onDxpConnected(true);
 
@@ -396,7 +388,7 @@ const FixPackSelect: FC<React.HTMLAttributes<HTMLElement>> = () => {
 						'x-to-learn-how-to-connect-liferay-dxp-to-analytics-cloud'
 					),
 					[
-						<a
+						<ClayLink
 							href={URLConstants.HelpConnectDxp}
 							key='helpConnectDxpText'
 							target='_blank'
@@ -404,7 +396,7 @@ const FixPackSelect: FC<React.HTMLAttributes<HTMLElement>> = () => {
 							{upperFirst(
 								Liferay.Language.get('click-here').toLowerCase()
 							)}
-						</a>
+						</ClayLink>
 					],
 					false
 				)}
@@ -439,7 +431,7 @@ const FixPackSelect: FC<React.HTMLAttributes<HTMLElement>> = () => {
 				</div>
 
 				<div className='fix-pack-button'>
-					<a
+					<ClayLink
 						className='btn btn-secondary button-root more-information-link mt-4'
 						href={DXP_VERSIONS[dxpVersion].url}
 						target='_blank'
@@ -450,7 +442,7 @@ const FixPackSelect: FC<React.HTMLAttributes<HTMLElement>> = () => {
 						/>
 
 						{Liferay.Language.get('download')}
-					</a>
+					</ClayLink>
 				</div>
 			</div>
 		</>
@@ -465,10 +457,6 @@ const TokenInput: FC<ITokenInputProps> = ({token}) => {
 
 	const _inputRef = useRef<any>();
 	const selectAll = () => {
-		analytics.track('Clicked Copy Token Button - TEST', null, {
-			ip: '0'
-		});
-
 		_inputRef.current && _inputRef.current.selectAll();
 	};
 
@@ -500,12 +488,6 @@ const TokenInput: FC<ITokenInputProps> = ({token}) => {
 							displayType='unstyled'
 							onClick={() => {
 								setTokenCopied(true);
-
-								analytics.track(
-									'Clicked Copy Token Button - TEST',
-									null,
-									{ip: '0'}
-								);
 							}}
 							text={token}
 						/>

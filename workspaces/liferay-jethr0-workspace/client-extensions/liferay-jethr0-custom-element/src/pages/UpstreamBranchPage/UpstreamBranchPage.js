@@ -9,16 +9,12 @@ import ClayPanel from '@clayui/panel';
 import {useState} from 'react';
 import {Link, useParams} from 'react-router-dom';
 
-import './UpstreamBranchPage.css';
 import Jethr0Breadcrumbs from '../../components/Jethr0Breadcrumbs/Jethr0Breadcrumbs';
 import Jethr0Card from '../../components/Jethr0Card/Jethr0Card';
+import Jethr0ContainerFluid from '../../components/Jethr0ContainerFluid/Jethr0ContainerFluid';
 import Jethr0NavigationBar from '../../components/Jethr0NavigationBar/Jethr0NavigationBar';
+import {getUpstreamGitBranch} from '../../objects/gitbranches/GitBranchUtil';
 import {toLocaleString} from '../../services/DateUtil';
-import useSpringBootData from '../../services/useSpringBootData';
-
-const gitHubURLRegExp = new RegExp(
-	'https://github.com/([^/]+)/([^/]+)/tree/([^/]+)'
-);
 
 function UpstreamBranchInformation({upstreamBranch}) {
 	if (!upstreamBranch) {
@@ -34,13 +30,6 @@ function UpstreamBranchInformation({upstreamBranch}) {
 		);
 	}
 
-	const gitHubURLMatch = upstreamBranch.branchURL.match(gitHubURLRegExp);
-
-	const upstreamBranchName = gitHubURLMatch[3];
-	const upstreamBranchRepositoryName = gitHubURLMatch[2];
-	const upstreamBranchUserName = gitHubURLMatch[1];
-	const upstreamBranchSHA = upstreamBranch.branchSHA;
-
 	return (
 		<ClayPanel
 			collapsable
@@ -52,37 +41,39 @@ function UpstreamBranchInformation({upstreamBranch}) {
 				Branch ID: {upstreamBranch.id}
 				<br />
 				Branch Name:{' '}
-				<Link to={upstreamBranch.branchURL}>{upstreamBranchName}</Link>
+				<Link to={upstreamBranch.url}>{upstreamBranch.name}</Link>
 				<br />
 				Branch SHA:{' '}
-				<Link
-					to={
-						'https://github.com/' +
-						upstreamBranchUserName +
-						'/' +
-						upstreamBranchRepositoryName +
-						'/commit/' +
-						upstreamBranchSHA
-					}
-				>
-					{upstreamBranchSHA.substring(0, 7)}
-				</Link>
+				{upstreamBranch.latestSHA && (
+					<Link
+						to={
+							'https://github.com/' +
+							upstreamBranch.userName +
+							'/' +
+							upstreamBranch.repositoryName +
+							'/commit/' +
+							upstreamBranch.latestSHA
+						}
+					>
+						{upstreamBranch.latestSHA.substring(0, 7)}
+					</Link>
+				)}
 				<br />
 				Repository Name:{' '}
 				<Link
 					to={
 						'https://github.com/' +
-						upstreamBranchUserName +
+						upstreamBranch.userName +
 						'/' +
-						upstreamBranchRepositoryName
+						upstreamBranch.repositoryName
 					}
 				>
-					{upstreamBranchRepositoryName}
+					{upstreamBranch.repositoryName}
 				</Link>
 				<br />
 				User Name:{' '}
-				<Link to={'https://github.com/' + upstreamBranchUserName}>
-					{upstreamBranchUserName}
+				<Link to={'https://github.com/' + upstreamBranch.userName}>
+					{upstreamBranch.userName}
 				</Link>
 				<br />
 				Create Date:
@@ -97,23 +88,21 @@ function UpstreamBranchInformation({upstreamBranch}) {
 
 function UpstreamBranchPage() {
 	const {id} = useParams();
-	const [upstreamBranch, setUpstreamBranch] = useState(null);
+	const [upstreamGitBranch, setUpstreamGitBranch] = useState(null);
 
-	useSpringBootData({
-		setData: setUpstreamBranch,
-		urlPath: '/git-branches/' + id,
-	});
+	if (!upstreamGitBranch) {
+		getUpstreamGitBranch({id, setUpstreamGitBranch});
+	}
 
 	let upstreamBranchTitle = 'Git Branch #' + id;
 
-	if (upstreamBranch) {
-		const gitHubURLMatch = upstreamBranch.branchURL.match(gitHubURLRegExp);
-
-		const upstreamBranchName = gitHubURLMatch[3];
-		const upstreamBranchRepositoryName = gitHubURLMatch[2];
-
+	if (upstreamGitBranch) {
 		upstreamBranchTitle =
-			upstreamBranchRepositoryName + '/' + upstreamBranchName;
+			upstreamGitBranch.userName +
+			'/' +
+			upstreamGitBranch.repositoryName +
+			'/' +
+			upstreamGitBranch.name;
 	}
 
 	const breadcrumbs = [
@@ -130,15 +119,18 @@ function UpstreamBranchPage() {
 		<ClayLayout.Container>
 			<Jethr0Card>
 				<Jethr0NavigationBar active="Upstream Branches" />
+
 				<Jethr0Breadcrumbs breadcrumbs={breadcrumbs} />
-				<ClayLayout.ContainerFluid className="jethr0-upstream-branch-page-menu">
+
+				<Jethr0ContainerFluid>
 					<ClayLayout.Row justify="between">
 						<Heading level={3} weight="lighter">
 							{upstreamBranchTitle}
 						</Heading>
 					</ClayLayout.Row>
-				</ClayLayout.ContainerFluid>
-				<UpstreamBranchInformation upstreamBranch={upstreamBranch} />
+				</Jethr0ContainerFluid>
+
+				<UpstreamBranchInformation upstreamBranch={upstreamGitBranch} />
 			</Jethr0Card>
 		</ClayLayout.Container>
 	);

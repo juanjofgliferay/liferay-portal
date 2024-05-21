@@ -34,6 +34,14 @@ const initSPA = function (config) {
 
 				if (app.isLinkSameOrigin_(host)) {
 					match = uri.searchParams.get('p_p_lifecycle') === '1';
+
+					if (match) {
+						const id = uri.searchParams.get('p_p_id');
+
+						if (id && config.excludedTargetPortlets) {
+							match = !config.excludedTargetPortlets.includes(id);
+						}
+					}
 				}
 
 				return match;
@@ -116,7 +124,7 @@ const initSPA = function (config) {
 	return app;
 };
 
-export default function init(config) {
+export function init(config) {
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', () => {
 			initSPA(config);

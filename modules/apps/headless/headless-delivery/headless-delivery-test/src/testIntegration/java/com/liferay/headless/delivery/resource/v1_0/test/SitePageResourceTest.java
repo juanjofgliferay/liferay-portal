@@ -65,7 +65,6 @@ import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocal
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLocalService;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
-import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -78,7 +77,6 @@ import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.kernel.model.Role;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -325,7 +323,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		_testPostSiteSitePageFailurePagePermissionsActionKeyNonexisting();
 		_testPostSiteSitePageSuccessCustomFields();
 		_testPostSiteSitePageSuccessInvalidParentSitePage();
-		_testPostSiteSitePageSuccessKeywords(StringUtil::toLowerCase);
+		_testPostSiteSitePageSuccessKeywords();
 		_testPostSiteSitePageSuccessPageDefinition();
 		_testPostSiteSitePageSuccessPageDefinitionSettingsClientExtensionEntries();
 		_testPostSiteSitePageSuccessPageDefinitionSettingsFaviconFromClientExtensionEntry();
@@ -345,14 +343,6 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		_testPostSiteSitePageSuccessTaxonomyCategoryBriefSitePageSiteSiteKeyNull();
 		_testPostSiteSitePageSuccessTaxonomyCategoryBriefSitePageSiteSiteKeyNonnull();
 		_testPostSiteSitePageSuccessTaxonomyCategoryBriefNonsitePage();
-	}
-
-	@FeatureFlags("LPS-194362")
-	@Test
-	public void testPostSiteSitePageSuccessKeywordsWithCaseSensitiveTags()
-		throws Exception {
-
-		_testPostSiteSitePageSuccessKeywords(string -> string);
 	}
 
 	@Override
@@ -465,11 +455,11 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()
 				).build(),
-				null, true, null, User.class.getName(), serviceContext);
+				null, true, null, serviceContext);
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				TestPropsValues.getUserId(), layout.getGroupId(),
+				null, TestPropsValues.getUserId(), layout.getGroupId(),
 				segmentsEntry.getSegmentsEntryId(), layout.getPlid(),
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()
@@ -866,10 +856,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		}
 	}
 
-	private void _testPostSiteSitePageSuccessKeywords(
-			UnsafeFunction<String, String, Exception> unsafeFunction)
-		throws Exception {
-
+	private void _testPostSiteSitePageSuccessKeywords() throws Exception {
 		SitePage randomSitePage = randomSitePage();
 
 		String[] keywords = {
@@ -893,8 +880,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		Assert.assertEquals(Arrays.toString(tags), 2, tags.length);
 
 		for (String keyword : keywords) {
-			Assert.assertTrue(
-				ArrayUtil.contains(tags, unsafeFunction.apply(keyword)));
+			Assert.assertTrue(ArrayUtil.contains(tags, keyword));
 		}
 	}
 
@@ -906,7 +892,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionLocalService.addFragmentCollection(
-				testGroup.getCreatorUserId(), testGroup.getGroupId(),
+				null, testGroup.getCreatorUserId(), testGroup.getGroupId(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				serviceContext);
 
@@ -917,7 +903,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				RandomTestUtil.randomString(), StringPool.BLANK,
 				"<lfr-editable id=\"fragmentEditableId\" type=\"text\">" +
 					"Default Fragment Text</lfr-editable>",
-				StringPool.BLANK, false, null, null, 0,
+				StringPool.BLANK, false, null, null, 0, false,
 				FragmentConstants.TYPE_COMPONENT, null,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
@@ -1257,7 +1243,6 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				}
 			}
 		};
-
 		PagePermission[] inputPagePermissions = {
 			new PagePermission() {
 				{
@@ -1283,26 +1268,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 	private void _testPostSiteSitePageSuccessPagePermissionsEmpty()
 		throws Exception {
 
-		PagePermission[] expectedPagePermissions = {
-			new PagePermission() {
-				{
-					actionKeys = new String[] {
-						ActionKeys.ADD_DISCUSSION, ActionKeys.ADD_LAYOUT,
-						ActionKeys.CONFIGURE_PORTLETS, ActionKeys.CUSTOMIZE,
-						ActionKeys.DELETE, ActionKeys.DELETE_DISCUSSION,
-						ActionKeys.LAYOUT_RULE_BUILDER, ActionKeys.UPDATE,
-						ActionKeys.UPDATE_DISCUSSION,
-						ActionKeys.UPDATE_LAYOUT_ADVANCED_OPTIONS,
-						ActionKeys.UPDATE_LAYOUT_BASIC,
-						ActionKeys.UPDATE_LAYOUT_CONTENT,
-						ActionKeys.UPDATE_LAYOUT_LIMITED,
-						ActionKeys.PERMISSIONS, ActionKeys.VIEW
-					};
-					roleKey = RoleConstants.OWNER;
-				}
-			}
-		};
-
+		PagePermission[] expectedPagePermissions = {_PAGE_PERMISSIONS};
 		PagePermission[] inputPagePermissions = {};
 
 		_testPostSiteSitePageSuccessPagePermissions(
@@ -1313,23 +1279,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		throws Exception {
 
 		PagePermission[] expectedPagePermissions = {
-			new PagePermission() {
-				{
-					actionKeys = new String[] {
-						ActionKeys.ADD_DISCUSSION, ActionKeys.ADD_LAYOUT,
-						ActionKeys.CONFIGURE_PORTLETS, ActionKeys.CUSTOMIZE,
-						ActionKeys.DELETE, ActionKeys.DELETE_DISCUSSION,
-						ActionKeys.LAYOUT_RULE_BUILDER, ActionKeys.UPDATE,
-						ActionKeys.UPDATE_DISCUSSION,
-						ActionKeys.UPDATE_LAYOUT_ADVANCED_OPTIONS,
-						ActionKeys.UPDATE_LAYOUT_BASIC,
-						ActionKeys.UPDATE_LAYOUT_CONTENT,
-						ActionKeys.UPDATE_LAYOUT_LIMITED,
-						ActionKeys.PERMISSIONS, ActionKeys.VIEW
-					};
-					roleKey = RoleConstants.OWNER;
-				}
-			},
+			_PAGE_PERMISSIONS,
 			new PagePermission() {
 				{
 					actionKeys = new String[] {
@@ -1362,7 +1312,6 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				}
 			}
 		};
-
 		PagePermission[] inputPagePermissions = {
 			new PagePermission() {
 				{
@@ -1386,23 +1335,7 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 		throws Exception {
 
 		PagePermission[] expectedPagePermissions = {
-			new PagePermission() {
-				{
-					actionKeys = new String[] {
-						ActionKeys.ADD_DISCUSSION, ActionKeys.ADD_LAYOUT,
-						ActionKeys.CONFIGURE_PORTLETS, ActionKeys.CUSTOMIZE,
-						ActionKeys.DELETE, ActionKeys.DELETE_DISCUSSION,
-						ActionKeys.LAYOUT_RULE_BUILDER, ActionKeys.UPDATE,
-						ActionKeys.UPDATE_DISCUSSION,
-						ActionKeys.UPDATE_LAYOUT_ADVANCED_OPTIONS,
-						ActionKeys.UPDATE_LAYOUT_BASIC,
-						ActionKeys.UPDATE_LAYOUT_CONTENT,
-						ActionKeys.UPDATE_LAYOUT_LIMITED,
-						ActionKeys.PERMISSIONS, ActionKeys.VIEW
-					};
-					roleKey = RoleConstants.OWNER;
-				}
-			},
+			_PAGE_PERMISSIONS,
 			new PagePermission() {
 				{
 					actionKeys = new String[] {ActionKeys.VIEW};
@@ -1410,7 +1343,6 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 				}
 			}
 		};
-
 		PagePermission[] inputPagePermissions = {
 			new PagePermission() {
 				{
@@ -1563,6 +1495,8 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 							{
 								changeFrequency = ChangeFrequency.ALWAYS;
 								include = RandomTestUtil.randomBoolean();
+								includeChildSitePages =
+									RandomTestUtil.randomBoolean();
 								pagePriority = RandomTestUtil.randomDouble();
 							}
 						};
@@ -1948,6 +1882,25 @@ public class SitePageResourceTest extends BaseSitePageResourceTestCase {
 	private static final String _CLASS_NAME_EXCEPTION_MAPPER =
 		"com.liferay.headless.delivery.internal.resource.v1_0." +
 			"SitePageResourceImpl";
+
+	private static final PagePermission _PAGE_PERMISSIONS =
+		new PagePermission() {
+			{
+				actionKeys = new String[] {
+					ActionKeys.ADD_DISCUSSION, ActionKeys.ADD_LAYOUT,
+					ActionKeys.CONFIGURE_PORTLETS, ActionKeys.CUSTOMIZE,
+					ActionKeys.DELETE, ActionKeys.DELETE_DISCUSSION,
+					ActionKeys.LAYOUT_RULE_BUILDER, ActionKeys.PREVIEW_DRAFT,
+					ActionKeys.UPDATE, ActionKeys.UPDATE_DISCUSSION,
+					ActionKeys.UPDATE_LAYOUT_ADVANCED_OPTIONS,
+					ActionKeys.UPDATE_LAYOUT_BASIC,
+					ActionKeys.UPDATE_LAYOUT_CONTENT,
+					ActionKeys.UPDATE_LAYOUT_LIMITED, ActionKeys.PERMISSIONS,
+					ActionKeys.VIEW
+				};
+				roleKey = RoleConstants.OWNER;
+			}
+		};
 
 	@Inject
 	private static ExpandoColumnLocalService _expandoColumnLocalService;

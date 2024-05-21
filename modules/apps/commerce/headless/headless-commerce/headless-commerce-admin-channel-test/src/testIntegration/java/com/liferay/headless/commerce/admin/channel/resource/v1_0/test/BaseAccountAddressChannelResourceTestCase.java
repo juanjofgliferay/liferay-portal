@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -37,9 +35,10 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
@@ -62,8 +61,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -311,47 +308,94 @@ public abstract class BaseAccountAddressChannelResourceTestCase {
 			testGetAccountAddressByExternalReferenceCodeAccountAddressChannelsPage_addAccountAddressChannel(
 				externalReferenceCode, randomAccountAddressChannel());
 
-		Page<AccountAddressChannel> page1 =
-			accountAddressChannelResource.
-				getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountAddressChannel> accountAddressChannels1 =
-			(List<AccountAddressChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountAddressChannels1.toString(), totalCount + 2,
-			accountAddressChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountAddressChannel> page1 =
+				accountAddressChannelResource.
+					getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountAddressChannel> page2 =
-			accountAddressChannelResource.
-				getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountAddressChannel1,
+				(List<AccountAddressChannel>)page1.getItems());
 
-		List<AccountAddressChannel> accountAddressChannels2 =
-			(List<AccountAddressChannel>)page2.getItems();
+			Page<AccountAddressChannel> page2 =
+				accountAddressChannelResource.
+					getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountAddressChannels2.toString(), 1,
-			accountAddressChannels2.size());
+			assertContains(
+				accountAddressChannel2,
+				(List<AccountAddressChannel>)page2.getItems());
 
-		Page<AccountAddressChannel> page3 =
-			accountAddressChannelResource.
-				getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountAddressChannel> page3 =
+				accountAddressChannelResource.
+					getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountAddressChannel1,
-			(List<AccountAddressChannel>)page3.getItems());
-		assertContains(
-			accountAddressChannel2,
-			(List<AccountAddressChannel>)page3.getItems());
-		assertContains(
-			accountAddressChannel3,
-			(List<AccountAddressChannel>)page3.getItems());
+			assertContains(
+				accountAddressChannel3,
+				(List<AccountAddressChannel>)page3.getItems());
+		}
+		else {
+			Page<AccountAddressChannel> page1 =
+				accountAddressChannelResource.
+					getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountAddressChannel> accountAddressChannels1 =
+				(List<AccountAddressChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				accountAddressChannels1.toString(), totalCount + 2,
+				accountAddressChannels1.size());
+
+			Page<AccountAddressChannel> page2 =
+				accountAddressChannelResource.
+					getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountAddressChannel> accountAddressChannels2 =
+				(List<AccountAddressChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				accountAddressChannels2.toString(), 1,
+				accountAddressChannels2.size());
+
+			Page<AccountAddressChannel> page3 =
+				accountAddressChannelResource.
+					getAccountAddressByExternalReferenceCodeAccountAddressChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountAddressChannel1,
+				(List<AccountAddressChannel>)page3.getItems());
+			assertContains(
+				accountAddressChannel2,
+				(List<AccountAddressChannel>)page3.getItems());
+			assertContains(
+				accountAddressChannel3,
+				(List<AccountAddressChannel>)page3.getItems());
+		}
 	}
 
 	protected AccountAddressChannel
@@ -611,49 +655,97 @@ public abstract class BaseAccountAddressChannelResourceTestCase {
 			testGetAccountAddressIdAccountAddressChannelsPage_addAccountAddressChannel(
 				addressId, randomAccountAddressChannel());
 
-		Page<AccountAddressChannel> page1 =
-			accountAddressChannelResource.
-				getAccountAddressIdAccountAddressChannelsPage(
-					addressId, null, null, Pagination.of(1, totalCount + 2),
-					null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountAddressChannel> accountAddressChannels1 =
-			(List<AccountAddressChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountAddressChannels1.toString(), totalCount + 2,
-			accountAddressChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountAddressChannel> page1 =
+				accountAddressChannelResource.
+					getAccountAddressIdAccountAddressChannelsPage(
+						addressId, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Page<AccountAddressChannel> page2 =
-			accountAddressChannelResource.
-				getAccountAddressIdAccountAddressChannelsPage(
-					addressId, null, null, Pagination.of(2, totalCount + 2),
-					null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountAddressChannel1,
+				(List<AccountAddressChannel>)page1.getItems());
 
-		List<AccountAddressChannel> accountAddressChannels2 =
-			(List<AccountAddressChannel>)page2.getItems();
+			Page<AccountAddressChannel> page2 =
+				accountAddressChannelResource.
+					getAccountAddressIdAccountAddressChannelsPage(
+						addressId, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Assert.assertEquals(
-			accountAddressChannels2.toString(), 1,
-			accountAddressChannels2.size());
+			assertContains(
+				accountAddressChannel2,
+				(List<AccountAddressChannel>)page2.getItems());
 
-		Page<AccountAddressChannel> page3 =
-			accountAddressChannelResource.
-				getAccountAddressIdAccountAddressChannelsPage(
-					addressId, null, null,
-					Pagination.of(1, (int)totalCount + 3), null);
+			Page<AccountAddressChannel> page3 =
+				accountAddressChannelResource.
+					getAccountAddressIdAccountAddressChannelsPage(
+						addressId, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		assertContains(
-			accountAddressChannel1,
-			(List<AccountAddressChannel>)page3.getItems());
-		assertContains(
-			accountAddressChannel2,
-			(List<AccountAddressChannel>)page3.getItems());
-		assertContains(
-			accountAddressChannel3,
-			(List<AccountAddressChannel>)page3.getItems());
+			assertContains(
+				accountAddressChannel3,
+				(List<AccountAddressChannel>)page3.getItems());
+		}
+		else {
+			Page<AccountAddressChannel> page1 =
+				accountAddressChannelResource.
+					getAccountAddressIdAccountAddressChannelsPage(
+						addressId, null, null, Pagination.of(1, totalCount + 2),
+						null);
+
+			List<AccountAddressChannel> accountAddressChannels1 =
+				(List<AccountAddressChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				accountAddressChannels1.toString(), totalCount + 2,
+				accountAddressChannels1.size());
+
+			Page<AccountAddressChannel> page2 =
+				accountAddressChannelResource.
+					getAccountAddressIdAccountAddressChannelsPage(
+						addressId, null, null, Pagination.of(2, totalCount + 2),
+						null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountAddressChannel> accountAddressChannels2 =
+				(List<AccountAddressChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				accountAddressChannels2.toString(), 1,
+				accountAddressChannels2.size());
+
+			Page<AccountAddressChannel> page3 =
+				accountAddressChannelResource.
+					getAccountAddressIdAccountAddressChannelsPage(
+						addressId, null, null,
+						Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				accountAddressChannel1,
+				(List<AccountAddressChannel>)page3.getItems());
+			assertContains(
+				accountAddressChannel2,
+				(List<AccountAddressChannel>)page3.getItems());
+			assertContains(
+				accountAddressChannel3,
+				(List<AccountAddressChannel>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -665,7 +757,7 @@ public abstract class BaseAccountAddressChannelResourceTestCase {
 			(entityField, accountAddressChannel1, accountAddressChannel2) -> {
 				BeanTestUtil.setProperty(
 					accountAddressChannel1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1280,6 +1372,10 @@ public abstract class BaseAccountAddressChannelResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1539,9 +1635,9 @@ public abstract class BaseAccountAddressChannelResourceTestCase {
 	}
 
 	protected AccountAddressChannelResource accountAddressChannelResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

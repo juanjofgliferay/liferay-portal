@@ -25,10 +25,12 @@ FileVersion fileVersion = dlViewFileEntryDisplayContext.getFileVersion();
 						</h2>
 
 						<c:if test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
-							<clay:icon
-								cssClass="inline-item inline-item-after state-icon"
-								symbol="lock"
-							/>
+							<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
+								<clay:icon
+									cssClass="inline-item inline-item-after state-icon"
+									symbol="lock"
+								/>
+							</span>
 						</c:if>
 
 						<c:if test="<%= dlViewFileEntryDisplayContext.isShared() %>">
@@ -81,7 +83,7 @@ FileVersion fileVersion = dlViewFileEntryDisplayContext.getFileVersion();
 					<clay:dropdown-actions
 						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= dlViewFileEntryDisplayContext.getActionDropdownItems() %>"
-						propsTransformer="document_library/js/DLFileEntryDropdownPropsTransformer"
+						propsTransformer="{DLFileEntryDropdownPropsTransformer} from document-library-web"
 					/>
 				</li>
 			</ul>

@@ -26,6 +26,7 @@ import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSele
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.util.AssetHelper;
+import com.liferay.info.pagination.InfoPage;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -33,7 +34,6 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -337,9 +337,13 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 				portletRequest.getAttribute(
 					SegmentsWebKeys.SEGMENTS_ANONYMOUS_USER_ID));
 
-			return _assetListAssetEntryProvider.getAssetEntries(
-				assetListEntry, segmentsEntryIds, null, null, StringPool.BLANK,
-				acClientUserId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+			InfoPage<AssetEntry> infoPage =
+				_assetListAssetEntryProvider.getAssetEntriesInfoPage(
+					assetListEntry, segmentsEntryIds, null, null,
+					StringPool.BLANK, acClientUserId, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS);
+
+			return (List<AssetEntry>)infoPage.getPageItems();
 		}
 
 		List<AssetEntry> assetEntries = getAssetEntries(
@@ -1170,7 +1174,8 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 		return _segmentsEntryRetriever.getSegmentsEntryIds(
 			themeDisplay.getScopeGroupId(), themeDisplay.getUserId(),
 			_requestContextMapper.map(
-				_portal.getHttpServletRequest(portletRequest)));
+				_portal.getHttpServletRequest(portletRequest)),
+			new long[0]);
 	}
 
 	private long[] _getSiteGroupIds(long[] groupIds) {
@@ -1217,10 +1222,6 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 
 		for (int i = 0; i < assetTagNames.length; i++) {
 			assetTagNames[i] = StringUtil.trim(assetTagNames[i]);
-
-			if (!_featureFlagManager.isEnabled("LPS-194362")) {
-				assetTagNames[i] = StringUtil.toLowerCase(assetTagNames[i]);
-			}
 		}
 
 		return assetTagNames;
@@ -1438,9 +1439,6 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 
 	@Reference
 	private AssetTagLocalService _assetTagLocalService;
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

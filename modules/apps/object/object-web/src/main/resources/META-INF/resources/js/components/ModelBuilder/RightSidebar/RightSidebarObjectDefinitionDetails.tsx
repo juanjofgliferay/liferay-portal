@@ -3,12 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	API,
-	getLocalizableLabel,
-	openToast,
-} from '@liferay/object-js-components-web';
-import {createResourceURL, sub} from 'frontend-js-web';
+import {API, openToast, stringUtils} from '@liferay/object-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 import {useStore} from 'react-flow-renderer';
 
@@ -61,13 +57,9 @@ export function RightSidebarObjectDefinitionDetails({
 		nonRelationshipObjectFieldsInfo,
 		setNonRelationshipObjectFieldsInfo,
 	] = useState<nonRelationshipObjectFieldsInfo[]>();
-	const [
-		objectDefinitionDBTableName,
-		setObjectDefinitionDBTableName,
-	] = useState('');
 
 	const [
-		{baseResourceURL, selectedObjectDefinitionNode, selectedObjectFolder},
+		{selectedObjectDefinitionNode, selectedObjectFolder},
 		dispatch,
 	] = useObjectFolderContext();
 
@@ -103,24 +95,6 @@ export function RightSidebarObjectDefinitionDetails({
 				const selectedObjectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
 					selectedObjectDefinitionNode.data
 						?.externalReferenceCode as string
-				);
-
-				const objectDefinitionInfoURL = createResourceURL(
-					baseResourceURL,
-					{
-						objectDefinitionId:
-							selectedObjectDefinitionNode.data?.id,
-						p_p_resource_id:
-							'/object_definitions/get_object_definition_info',
-					}
-				).href;
-
-				const objectDefinitionInfoResponse = await API.fetchJSON<{
-					tableName: string;
-				}>(objectDefinitionInfoURL);
-
-				setObjectDefinitionDBTableName(
-					objectDefinitionInfoResponse.tableName
 				);
 
 				const newNonRelationshipObjectFieldsInfo = selectedObjectDefinition.objectFields
@@ -201,7 +175,7 @@ export function RightSidebarObjectDefinitionDetails({
 
 	const objectDefinitionNodeDetailsTitle = sub(
 		Liferay.Language.get('x-details'),
-		getLocalizableLabel(
+		stringUtils.getLocalizableLabel(
 			values.defaultLanguageId as Liferay.Language.Locale,
 			values?.label,
 			values?.name
@@ -221,7 +195,9 @@ export function RightSidebarObjectDefinitionDetails({
 
 			<div className="lfr-objects__model-builder-right-sidebar-object-definition-node-content">
 				<ObjectDataContainer
-					dbTableName={objectDefinitionDBTableName}
+					dbTableName={
+						selectedObjectDefinitionNode?.data?.dbTableName
+					}
 					errors={errors}
 					handleChange={handleChange}
 					hasUpdateObjectDefinitionPermission={

@@ -31,6 +31,7 @@ import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.info.search.InfoSearchClassMapperRegistryUtil;
 import com.liferay.info.type.WebImage;
 import com.liferay.info.type.WebURL;
+import com.liferay.layout.helper.structure.LayoutStructureRulesHelper;
 import com.liferay.layout.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.layout.util.constants.LayoutDataItemTypeConstants;
 import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
@@ -282,6 +283,13 @@ public class RenderLayoutStructureDisplayContext {
 		return defaultFragmentRendererContext;
 	}
 
+	public Set<String> getDisplayedItemIds() {
+		LayoutStructureRulesHelper.LayoutStructureRulesResult
+			layoutStructureRulesResult = _getLayoutStructureRulesResult();
+
+		return layoutStructureRulesResult.getDisplayedItemIds();
+	}
+
 	public String getEditInfoItemActionURL() {
 		StringBundler sb = new StringBundler(3);
 
@@ -372,6 +380,13 @@ public class RenderLayoutStructureDisplayContext {
 		return successMessageJSONObject.getString("displayPage");
 	}
 
+	public Set<String> getHiddenItemIds() {
+		LayoutStructureRulesHelper.LayoutStructureRulesResult
+			layoutStructureRulesResult = _getLayoutStructureRulesResult();
+
+		return layoutStructureRulesResult.getHiddenItemIds();
+	}
+
 	public InfoForm getInfoForm(
 		FormStyledLayoutStructureItem formStyledLayoutStructureItem) {
 
@@ -381,13 +396,18 @@ public class RenderLayoutStructureDisplayContext {
 			return null;
 		}
 
+		String className = formStyledLayoutStructureItem.getClassName();
+
+		if (Validator.isNull(className)) {
+			return null;
+		}
+
 		InfoItemServiceRegistry infoItemServiceRegistry =
 			ServletContextUtil.getInfoItemServiceRegistry();
 
 		InfoItemFormProvider<Object> infoItemFormProvider =
 			infoItemServiceRegistry.getFirstInfoItemService(
-				InfoItemFormProvider.class,
-				PortalUtil.getClassName(classNameId));
+				InfoItemFormProvider.class, className);
 
 		if (infoItemFormProvider != null) {
 			try {
@@ -511,7 +531,7 @@ public class RenderLayoutStructureDisplayContext {
 	public String getStyle(StyledLayoutStructureItem styledLayoutStructureItem)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(8);
+		StringBundler sb = new StringBundler(9);
 
 		JSONObject backgroundImageJSONObject =
 			styledLayoutStructureItem.getBackgroundImageJSONObject();
@@ -564,6 +584,12 @@ public class RenderLayoutStructureDisplayContext {
 			sb.append(": url(");
 			sb.append(backgroundImageURL);
 			sb.append(");");
+		}
+
+		Set<String> displayedItemIds = getDisplayedItemIds();
+
+		if (displayedItemIds.contains(styledLayoutStructureItem.getItemId())) {
+			sb.append("display: block !important;");
 		}
 
 		return sb.toString();
@@ -932,6 +958,28 @@ public class RenderLayoutStructureDisplayContext {
 		return null;
 	}
 
+	private LayoutStructureRulesHelper.LayoutStructureRulesResult
+		_getLayoutStructureRulesResult() {
+
+		if (_layoutStructureRulesResult != null) {
+			return _layoutStructureRulesResult;
+		}
+
+		LayoutStructureRulesHelper layoutStructureRulesHelper =
+			ServletContextUtil.getLayoutStructureRulesHelper();
+
+		LayoutStructureRulesHelper.LayoutStructureRulesResult
+			layoutStructureRulesResult =
+				layoutStructureRulesHelper.processLayoutStructureRules(
+					_themeDisplay.getScopeGroupId(), _layoutStructure,
+					_themeDisplay.getPermissionChecker(),
+					_getSegmentsEntryIds());
+
+		_layoutStructureRulesResult = layoutStructureRulesResult;
+
+		return _layoutStructureRulesResult;
+	}
+
 	private String _getMainItemId() {
 		if (Validator.isNotNull(_mainItemId)) {
 			return _mainItemId;
@@ -1012,7 +1060,7 @@ public class RenderLayoutStructureDisplayContext {
 
 		_segmentsEntryIds = segmentsEntryRetriever.getSegmentsEntryIds(
 			_themeDisplay.getScopeGroupId(), _themeDisplay.getUserId(),
-			requestContextMapper.map(_httpServletRequest));
+			requestContextMapper.map(_httpServletRequest), new long[0]);
 
 		return _segmentsEntryIds;
 	}
@@ -1087,6 +1135,8 @@ public class RenderLayoutStructureDisplayContext {
 
 	private final HttpServletRequest _httpServletRequest;
 	private final LayoutStructure _layoutStructure;
+	private LayoutStructureRulesHelper.LayoutStructureRulesResult
+		_layoutStructureRulesResult;
 	private final String _mainItemId;
 	private final String _mode;
 	private Long _previewClassNameId;

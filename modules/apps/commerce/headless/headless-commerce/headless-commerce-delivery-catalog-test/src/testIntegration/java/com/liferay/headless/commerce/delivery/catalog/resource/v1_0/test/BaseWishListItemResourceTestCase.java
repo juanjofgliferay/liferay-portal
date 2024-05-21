@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -224,7 +222,10 @@ public abstract class BaseWishListItemResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteWishListItem() throws Exception {
-		WishListItem wishListItem =
+
+		// No namespace
+
+		WishListItem wishListItem1 =
 			testGraphQLDeleteWishListItem_addWishListItem();
 
 		Assert.assertTrue(
@@ -234,23 +235,63 @@ public abstract class BaseWishListItemResourceTestCase {
 						"deleteWishListItem",
 						new HashMap<String, Object>() {
 							{
-								put("wishListItemId", wishListItem.getId());
+								put("wishListItemId", wishListItem1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteWishListItem"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"wishListItem",
 					new HashMap<String, Object>() {
 						{
-							put("wishListItemId", wishListItem.getId());
+							put("wishListItemId", wishListItem1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceDeliveryCatalog_v1_0
+
+		WishListItem wishListItem2 =
+			testGraphQLDeleteWishListItem_addWishListItem();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceDeliveryCatalog_v1_0",
+						new GraphQLField(
+							"deleteWishListItem",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"wishListItemId",
+										wishListItem2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceDeliveryCatalog_v1_0",
+				"Object/deleteWishListItem"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceDeliveryCatalog_v1_0",
+					new GraphQLField(
+						"wishListItem",
+						new HashMap<String, Object>() {
+							{
+								put("wishListItemId", wishListItem2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected WishListItem testGraphQLDeleteWishListItem_addWishListItem()
@@ -282,6 +323,8 @@ public abstract class BaseWishListItemResourceTestCase {
 		WishListItem wishListItem =
 			testGraphQLGetWishListItem_addWishListItem();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				wishListItem,
@@ -299,11 +342,37 @@ public abstract class BaseWishListItemResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/wishListItem"))));
+
+		// Using the namespace headlessCommerceDeliveryCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				wishListItem,
+				WishListItemSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceDeliveryCatalog_v1_0",
+								new GraphQLField(
+									"wishListItem",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"wishListItemId",
+												wishListItem.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceDeliveryCatalog_v1_0",
+						"Object/wishListItem"))));
 	}
 
 	@Test
 	public void testGraphQLGetWishListItemNotFound() throws Exception {
 		Long irrelevantWishListItemId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -317,6 +386,27 @@ public abstract class BaseWishListItemResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceDeliveryCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceDeliveryCatalog_v1_0",
+						new GraphQLField(
+							"wishListItem",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"wishListItemId",
+										irrelevantWishListItemId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -420,35 +510,72 @@ public abstract class BaseWishListItemResourceTestCase {
 			testGetWishlistWishListWishListItemsPage_addWishListItem(
 				wishListId, randomWishListItem());
 
-		Page<WishListItem> page1 =
-			wishListItemResource.getWishlistWishListWishListItemsPage(
-				wishListId, null, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<WishListItem> wishListItems1 =
-			(List<WishListItem>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			wishListItems1.toString(), totalCount + 2, wishListItems1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<WishListItem> page1 =
+				wishListItemResource.getWishlistWishListWishListItemsPage(
+					wishListId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<WishListItem> page2 =
-			wishListItemResource.getWishlistWishListWishListItemsPage(
-				wishListId, null, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(wishListItem1, (List<WishListItem>)page1.getItems());
 
-		List<WishListItem> wishListItems2 =
-			(List<WishListItem>)page2.getItems();
+			Page<WishListItem> page2 =
+				wishListItemResource.getWishlistWishListWishListItemsPage(
+					wishListId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(
-			wishListItems2.toString(), 1, wishListItems2.size());
+			assertContains(wishListItem2, (List<WishListItem>)page2.getItems());
 
-		Page<WishListItem> page3 =
-			wishListItemResource.getWishlistWishListWishListItemsPage(
-				wishListId, null, Pagination.of(1, (int)totalCount + 3));
+			Page<WishListItem> page3 =
+				wishListItemResource.getWishlistWishListWishListItemsPage(
+					wishListId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(wishListItem1, (List<WishListItem>)page3.getItems());
-		assertContains(wishListItem2, (List<WishListItem>)page3.getItems());
-		assertContains(wishListItem3, (List<WishListItem>)page3.getItems());
+			assertContains(wishListItem3, (List<WishListItem>)page3.getItems());
+		}
+		else {
+			Page<WishListItem> page1 =
+				wishListItemResource.getWishlistWishListWishListItemsPage(
+					wishListId, null, Pagination.of(1, totalCount + 2));
+
+			List<WishListItem> wishListItems1 =
+				(List<WishListItem>)page1.getItems();
+
+			Assert.assertEquals(
+				wishListItems1.toString(), totalCount + 2,
+				wishListItems1.size());
+
+			Page<WishListItem> page2 =
+				wishListItemResource.getWishlistWishListWishListItemsPage(
+					wishListId, null, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<WishListItem> wishListItems2 =
+				(List<WishListItem>)page2.getItems();
+
+			Assert.assertEquals(
+				wishListItems2.toString(), 1, wishListItems2.size());
+
+			Page<WishListItem> page3 =
+				wishListItemResource.getWishlistWishListWishListItemsPage(
+					wishListId, null, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(wishListItem1, (List<WishListItem>)page3.getItems());
+			assertContains(wishListItem2, (List<WishListItem>)page3.getItems());
+			assertContains(wishListItem3, (List<WishListItem>)page3.getItems());
+		}
 	}
 
 	protected WishListItem
@@ -857,6 +984,10 @@ public abstract class BaseWishListItemResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1191,9 +1322,9 @@ public abstract class BaseWishListItemResourceTestCase {
 	}
 
 	protected WishListItemResource wishListItemResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

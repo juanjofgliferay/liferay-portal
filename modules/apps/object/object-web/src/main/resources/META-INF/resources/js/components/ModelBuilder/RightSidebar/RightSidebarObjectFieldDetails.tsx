@@ -6,11 +6,7 @@
 import {ClayButtonWithIcon} from '@clayui/button';
 import {Text} from '@clayui/core';
 import ClayPanel from '@clayui/panel';
-import {
-	API,
-	getLocalizableLabel,
-	openToast,
-} from '@liferay/object-js-components-web';
+import {API, openToast, stringUtils} from '@liferay/object-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 import {useStore} from 'react-flow-renderer';
@@ -43,7 +39,8 @@ export function RightSidebarObjectFieldDetails() {
 			forbiddenChars,
 			forbiddenLastChars,
 			forbiddenNames,
-			objectWebLearnResources,
+			isRootDescendantNode,
+			learnResourceContext,
 			selectedObjectDefinitionNode,
 			selectedObjectField,
 			workflowStatuses,
@@ -53,6 +50,8 @@ export function RightSidebarObjectFieldDetails() {
 	const store = useStore();
 
 	const {edges, nodes} = store.getState();
+
+	const objectDefinitionNodeData = selectedObjectDefinitionNode?.data as ObjectDefinitionNodeData;
 
 	const {
 		errors,
@@ -86,15 +85,14 @@ export function RightSidebarObjectFieldDetails() {
 			let objectField: Partial<ObjectField>;
 
 			if (!editedObjectField) {
-				objectField = values;
+				objectField = {...values};
 			}
 			else {
-				objectField = editedObjectField;
+				objectField = {...editedObjectField};
 			}
 
 			delete objectField.defaultValue;
 			delete objectField.listTypeDefinitionId;
-			delete objectField.system;
 
 			try {
 				const updatedObjectFieldResponse = await API.save<ObjectField>({
@@ -135,21 +133,6 @@ export function RightSidebarObjectFieldDetails() {
 	};
 
 	useEffect(() => {
-		const makeFetch = async () => {
-			if (selectedObjectField) {
-				const objectFieldResponse = await API.getObjectField(
-					selectedObjectField?.id as number
-				);
-
-				setValues(objectFieldResponse);
-			}
-		};
-
-		makeFetch();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, []);
-
-	useEffect(() => {
 		if (errors.defaultValue) {
 			openToast({
 				message: Liferay.Language.get(
@@ -175,12 +158,10 @@ export function RightSidebarObjectFieldDetails() {
 								handleTriggerDeleteObjectField({
 									baseResourceURL,
 									objectFieldId: selectedObjectField?.id!,
-									objectFieldLabel: getLocalizableLabel(
-										selectedObjectDefinitionNode?.data
-											?.defaultLanguageId!,
-										selectedObjectDefinitionNode?.data
-											?.label,
-										selectedObjectDefinitionNode?.data?.name
+									objectFieldLabel: stringUtils.getLocalizableLabel(
+										objectDefinitionNodeData.defaultLanguageId,
+										objectDefinitionNodeData.label,
+										objectDefinitionNodeData.name
 									),
 									onAfterDelete: () => {
 										if (
@@ -210,40 +191,36 @@ export function RightSidebarObjectFieldDetails() {
 
 			<div>
 				<div className="lfr-objects__model-builder-right-sidebar-definition-node-content">
-					<EditObjectFieldContent
-						baseResourceURL={baseResourceURL}
-						containerWrapper={ClayPanel}
-						creationLanguageId={
-							selectedObjectDefinitionNode?.data
-								?.defaultLanguageId ?? 'en_US'
-						}
-						errors={errors}
-						filterOperators={filterOperators}
-						handleChange={handleChange}
-						isApproved={
-							selectedObjectDefinitionNode?.data?.status.label ===
-							'approved'
-						}
-						isDefaultStorageType={
-							selectedObjectDefinitionNode?.data?.storageType ===
-								'default' ?? true
-						}
-						learnResources={objectWebLearnResources}
-						modelBuilder
-						objectDefinitionExternalReferenceCode={
-							selectedObjectDefinitionNode?.data
-								?.externalReferenceCode ?? ''
-						}
-						onSubmit={onSubmit}
-						readOnly={
-							!selectedObjectDefinitionNode?.data
-								?.hasObjectDefinitionUpdateResourcePermission ??
-							false
-						}
-						setValues={setValues}
-						values={values}
-						workflowStatuses={workflowStatuses}
-					/>
+					{selectedObjectField?.id && (
+						<EditObjectFieldContent
+							baseResourceURL={baseResourceURL}
+							containerWrapper={ClayPanel}
+							creationLanguageId={
+								objectDefinitionNodeData.defaultLanguageId
+							}
+							errors={errors}
+							filterOperators={filterOperators}
+							handleChange={handleChange}
+							isDefaultStorageType={
+								objectDefinitionNodeData.storageType ===
+								'default'
+							}
+							isRootDescendantNode={isRootDescendantNode}
+							learnResources={learnResourceContext}
+							modelBuilder
+							objectDefinitionExternalReferenceCode={
+								objectDefinitionNodeData.externalReferenceCode
+							}
+							objectFieldId={selectedObjectField.id}
+							onSubmit={onSubmit}
+							readOnly={
+								!objectDefinitionNodeData.hasObjectDefinitionUpdateResourcePermission
+							}
+							setValues={setValues}
+							values={values}
+							workflowStatuses={workflowStatuses}
+						/>
+					)}
 				</div>
 			</div>
 
@@ -286,9 +263,8 @@ export function RightSidebarObjectFieldDetails() {
 									Liferay.Language.get(
 										'the-object-field-x-cannot-be-deleted-because-it-is-the-only-custom-object-field-of-the-published-object-definition'
 									),
-									`${getLocalizableLabel(
-										selectedObjectDefinitionNode?.data
-											?.defaultLanguageId as Liferay.Language.Locale,
+									`${stringUtils.getLocalizableLabel(
+										objectDefinitionNodeData.defaultLanguageId as Liferay.Language.Locale,
 										values.label,
 										values.name
 									)}`
@@ -300,9 +276,8 @@ export function RightSidebarObjectFieldDetails() {
 									Liferay.Language.get(
 										'the-object-field-x-cannot-be-deleted-because-it-is-used-in-a-unique-composite-key-validation'
 									),
-									`${getLocalizableLabel(
-										selectedObjectDefinitionNode?.data
-											?.defaultLanguageId as Liferay.Language.Locale,
+									`${stringUtils.getLocalizableLabel(
+										objectDefinitionNodeData.defaultLanguageId as Liferay.Language.Locale,
 										values.label,
 										values.name
 									)}`

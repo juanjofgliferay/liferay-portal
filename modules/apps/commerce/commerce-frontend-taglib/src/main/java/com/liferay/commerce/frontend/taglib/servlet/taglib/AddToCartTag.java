@@ -35,7 +35,6 @@ import com.liferay.commerce.service.CommerceOrderTypeLocalService;
 import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -142,15 +141,12 @@ public class AddToCartTag extends IncludeTag {
 					}
 				}
 
-				if (FeatureFlagManagerUtil.isEnabled("COMMERCE-11287")) {
-					List<CPInstanceUnitOfMeasure> cpInstanceUnitOfMeasures =
-						_cpInstanceUnitOfMeasureLocalService.
-							getActiveCPInstanceUnitOfMeasures(_cpInstanceId);
+				List<CPInstanceUnitOfMeasure> cpInstanceUnitOfMeasures =
+					_cpInstanceUnitOfMeasureLocalService.
+						getActiveCPInstanceUnitOfMeasures(_cpInstanceId);
 
-					if (!cpInstanceUnitOfMeasures.isEmpty()) {
-						_cpInstanceUnitOfMeasure = cpInstanceUnitOfMeasures.get(
-							0);
-					}
+				if (!cpInstanceUnitOfMeasures.isEmpty()) {
+					_cpInstanceUnitOfMeasure = cpInstanceUnitOfMeasures.get(0);
 				}
 			}
 
@@ -284,47 +280,61 @@ public class AddToCartTag extends IncludeTag {
 
 	@Override
 	public void setAttributes(HttpServletRequest httpServletRequest) {
-		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
-
-		setNamespacedAttribute(httpServletRequest, "alignment", _alignment);
-		setNamespacedAttribute(
-			httpServletRequest, "commerceAccountId", _commerceAccountId);
-		setNamespacedAttribute(
-			httpServletRequest, "commerceChannelGroupId",
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:alignment", _alignment);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:commerceAccountId",
+			_commerceAccountId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:commerceChannelGroupId",
 			_commerceChannelGroupId);
-		setNamespacedAttribute(
-			httpServletRequest, "commerceChannelId", _commerceChannelId);
-		setNamespacedAttribute(
-			httpServletRequest, "commerceCurrencyCode", _commerceCurrencyCode);
-		setNamespacedAttribute(
-			httpServletRequest, "commerceOrderId", _commerceOrderId);
-		setNamespacedAttribute(
-			httpServletRequest, "cpInstanceId", _cpInstanceId);
-		setNamespacedAttribute(
-			httpServletRequest, "cpInstanceUnitOfMeasure",
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:commerceChannelId",
+			_commerceChannelId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:commerceCurrencyCode",
+			_commerceCurrencyCode);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:commerceOrderId", _commerceOrderId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:cpInstanceId", _cpInstanceId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:cpInstanceUnitOfMeasure",
 			_cpInstanceUnitOfMeasure);
-		setNamespacedAttribute(httpServletRequest, "disabled", _disabled);
-		setNamespacedAttribute(httpServletRequest, "iconOnly", _iconOnly);
-		setNamespacedAttribute(httpServletRequest, "inCart", _inCart);
-		setNamespacedAttribute(httpServletRequest, "inline", _inline);
-		setNamespacedAttribute(httpServletRequest, "purchasable", _purchasable);
-		setNamespacedAttribute(httpServletRequest, "published", _published);
-		setNamespacedAttribute(httpServletRequest, "namespace", _namespace);
-		setNamespacedAttribute(httpServletRequest, "productId", _productId);
-		setNamespacedAttribute(
-			httpServletRequest, "productSettingsModel", _productSettingsModel);
-		setNamespacedAttribute(httpServletRequest, "size", _size);
-		setNamespacedAttribute(
-			httpServletRequest, "showOrderTypeModal", _showOrderTypeModal);
-		setNamespacedAttribute(
-			httpServletRequest, "showOrderTypeModalURL",
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:disabled", _disabled);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:iconOnly", _iconOnly);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:inCart", _inCart);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:inline", _inline);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:namespace", _namespace);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:productId", _productId);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:productSettingsModel",
+			_productSettingsModel);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:published", _published);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:purchasable", _purchasable);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:showOrderTypeModal",
+			_showOrderTypeModal);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:showOrderTypeModalURL",
 			_showOrderTypeModalURL);
-		setNamespacedAttribute(
-			httpServletRequest, "showUnitOfMeasureSelector",
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:showUnitOfMeasureSelector",
 			_showUnitOfMeasureSelector);
-		setNamespacedAttribute(httpServletRequest, "skuOptions", _skuOptions);
-		setNamespacedAttribute(
-			httpServletRequest, "stockQuantity", _stockQuantity);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:size", _size);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:skuOptions", _skuOptions);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:add-to-cart:stockQuantity", _stockQuantity);
 	}
 
 	public void setCPCatalogEntry(CPCatalogEntry cpCatalogEntry) {
@@ -467,9 +477,6 @@ public class AddToCartTag extends IncludeTag {
 			LiferayWindowState.POP_UP
 		).buildString();
 	}
-
-	private static final String _ATTRIBUTE_NAMESPACE =
-		"liferay-commerce:add-to-cart:";
 
 	private static final String _PAGE = "/add_to_cart/page.jsp";
 

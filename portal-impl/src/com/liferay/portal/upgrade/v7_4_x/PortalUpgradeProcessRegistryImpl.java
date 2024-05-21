@@ -358,6 +358,56 @@ public class PortalUpgradeProcessRegistryImpl
 
 		upgradeVersionTreeMap.put(
 			new Version(29, 1, 2), new UpgradeListTypeType());
+
+		upgradeVersionTreeMap.put(
+			new Version(29, 2, 0),
+			UpgradeProcessFactory.addColumns(
+				"DLFileEntry", "displayDate DATE null"),
+			UpgradeProcessFactory.addColumns(
+				"DLFileVersion", "displayDate DATE null"));
+
+		upgradeVersionTreeMap.put(
+			new Version(29, 2, 1),
+			UpgradeModulesFactory.create(
+				new String[] {"com.liferay.portal.search.tuning.rankings.web"},
+				null));
+
+		upgradeVersionTreeMap.put(
+			new Version(29, 2, 2),
+			UpgradeModulesFactory.create(
+				new String[] {"com.liferay.headless.builder.impl"}, null));
+
+		upgradeVersionTreeMap.put(
+			new Version(29, 3, 0),
+			new CTModelUpgradeProcess("AnnouncementsDelivery"));
+
+		upgradeVersionTreeMap.put(
+			new Version(30, 0, 0),
+			new UpgradePartitionedControlTable("Counter"));
+
+		upgradeVersionTreeMap.put(
+			new Version(30, 0, 1),
+			UpgradeProcessFactory.alterColumnType(
+				"PortalPreferenceValue", "key_", "VARCHAR(1024) null"));
+
+		upgradeVersionTreeMap.put(new Version(30, 1, 1), new UpgradeRelease());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 0, 0), new UpgradeListTypeAuditFields());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 0, 1), new UpgradePortletPreferencesCompanyId());
+
+		upgradeVersionTreeMap.put(
+			new Version(31, 1, 0),
+			UpgradeProcessFactory.alterColumnType(
+				"PasswordTracker", "password_", "VARCHAR(255) null"),
+			//
+			UpgradeProcessFactory.alterColumnType(
+				"Ticket", "key_", "VARCHAR(255) null"),
+			//
+			UpgradeProcessFactory.alterColumnType(
+				"User_", "password_", "VARCHAR(255) null"));
 	}
 
 }

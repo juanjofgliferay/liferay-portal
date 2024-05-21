@@ -28,8 +28,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -38,6 +36,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -62,8 +61,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -225,7 +222,10 @@ public abstract class BaseProductOptionResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteProductOption() throws Exception {
-		ProductOption productOption =
+
+		// No namespace
+
+		ProductOption productOption1 =
 			testGraphQLDeleteProductOption_addProductOption();
 
 		Assert.assertTrue(
@@ -235,23 +235,61 @@ public abstract class BaseProductOptionResourceTestCase {
 						"deleteProductOption",
 						new HashMap<String, Object>() {
 							{
-								put("id", productOption.getId());
+								put("id", productOption1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteProductOption"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"productOption",
 					new HashMap<String, Object>() {
 						{
-							put("id", productOption.getId());
+							put("id", productOption1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		ProductOption productOption2 =
+			testGraphQLDeleteProductOption_addProductOption();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"deleteProductOption",
+							new HashMap<String, Object>() {
+								{
+									put("id", productOption2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminCatalog_v1_0",
+				"Object/deleteProductOption"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminCatalog_v1_0",
+					new GraphQLField(
+						"productOption",
+						new HashMap<String, Object>() {
+							{
+								put("id", productOption2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected ProductOption testGraphQLDeleteProductOption_addProductOption()
@@ -284,6 +322,8 @@ public abstract class BaseProductOptionResourceTestCase {
 		ProductOption productOption =
 			testGraphQLGetProductOption_addProductOption();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				productOption,
@@ -299,11 +339,35 @@ public abstract class BaseProductOptionResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/productOption"))));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertTrue(
+			equals(
+				productOption,
+				ProductOptionSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminCatalog_v1_0",
+								new GraphQLField(
+									"productOption",
+									new HashMap<String, Object>() {
+										{
+											put("id", productOption.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminCatalog_v1_0",
+						"Object/productOption"))));
 	}
 
 	@Test
 	public void testGraphQLGetProductOptionNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -317,6 +381,25 @@ public abstract class BaseProductOptionResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminCatalog_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminCatalog_v1_0",
+						new GraphQLField(
+							"productOption",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -434,41 +517,90 @@ public abstract class BaseProductOptionResourceTestCase {
 			testGetProductByExternalReferenceCodeProductOptionsPage_addProductOption(
 				externalReferenceCode, randomProductOption());
 
-		Page<ProductOption> page1 =
-			productOptionResource.
-				getProductByExternalReferenceCodeProductOptionsPage(
-					externalReferenceCode, null,
-					Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<ProductOption> productOptions1 =
-			(List<ProductOption>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			productOptions1.toString(), totalCount + 2, productOptions1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<ProductOption> page1 =
+				productOptionResource.
+					getProductByExternalReferenceCodeProductOptionsPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Page<ProductOption> page2 =
-			productOptionResource.
-				getProductByExternalReferenceCodeProductOptionsPage(
-					externalReferenceCode, null,
-					Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				productOption1, (List<ProductOption>)page1.getItems());
 
-		List<ProductOption> productOptions2 =
-			(List<ProductOption>)page2.getItems();
+			Page<ProductOption> page2 =
+				productOptionResource.
+					getProductByExternalReferenceCodeProductOptionsPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Assert.assertEquals(
-			productOptions2.toString(), 1, productOptions2.size());
+			assertContains(
+				productOption2, (List<ProductOption>)page2.getItems());
 
-		Page<ProductOption> page3 =
-			productOptionResource.
-				getProductByExternalReferenceCodeProductOptionsPage(
-					externalReferenceCode, null,
-					Pagination.of(1, (int)totalCount + 3), null);
+			Page<ProductOption> page3 =
+				productOptionResource.
+					getProductByExternalReferenceCodeProductOptionsPage(
+						externalReferenceCode, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		assertContains(productOption1, (List<ProductOption>)page3.getItems());
-		assertContains(productOption2, (List<ProductOption>)page3.getItems());
-		assertContains(productOption3, (List<ProductOption>)page3.getItems());
+			assertContains(
+				productOption3, (List<ProductOption>)page3.getItems());
+		}
+		else {
+			Page<ProductOption> page1 =
+				productOptionResource.
+					getProductByExternalReferenceCodeProductOptionsPage(
+						externalReferenceCode, null,
+						Pagination.of(1, totalCount + 2), null);
+
+			List<ProductOption> productOptions1 =
+				(List<ProductOption>)page1.getItems();
+
+			Assert.assertEquals(
+				productOptions1.toString(), totalCount + 2,
+				productOptions1.size());
+
+			Page<ProductOption> page2 =
+				productOptionResource.
+					getProductByExternalReferenceCodeProductOptionsPage(
+						externalReferenceCode, null,
+						Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<ProductOption> productOptions2 =
+				(List<ProductOption>)page2.getItems();
+
+			Assert.assertEquals(
+				productOptions2.toString(), 1, productOptions2.size());
+
+			Page<ProductOption> page3 =
+				productOptionResource.
+					getProductByExternalReferenceCodeProductOptionsPage(
+						externalReferenceCode, null,
+						Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				productOption1, (List<ProductOption>)page3.getItems());
+			assertContains(
+				productOption2, (List<ProductOption>)page3.getItems());
+			assertContains(
+				productOption3, (List<ProductOption>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -480,7 +612,7 @@ public abstract class BaseProductOptionResourceTestCase {
 			(entityField, productOption1, productOption2) -> {
 				BeanTestUtil.setProperty(
 					productOption1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -749,35 +881,81 @@ public abstract class BaseProductOptionResourceTestCase {
 			testGetProductIdProductOptionsPage_addProductOption(
 				id, randomProductOption());
 
-		Page<ProductOption> page1 =
-			productOptionResource.getProductIdProductOptionsPage(
-				id, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<ProductOption> productOptions1 =
-			(List<ProductOption>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			productOptions1.toString(), totalCount + 2, productOptions1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<ProductOption> page1 =
+				productOptionResource.getProductIdProductOptionsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<ProductOption> page2 =
-			productOptionResource.getProductIdProductOptionsPage(
-				id, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				productOption1, (List<ProductOption>)page1.getItems());
 
-		List<ProductOption> productOptions2 =
-			(List<ProductOption>)page2.getItems();
+			Page<ProductOption> page2 =
+				productOptionResource.getProductIdProductOptionsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			productOptions2.toString(), 1, productOptions2.size());
+			assertContains(
+				productOption2, (List<ProductOption>)page2.getItems());
 
-		Page<ProductOption> page3 =
-			productOptionResource.getProductIdProductOptionsPage(
-				id, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<ProductOption> page3 =
+				productOptionResource.getProductIdProductOptionsPage(
+					id, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(productOption1, (List<ProductOption>)page3.getItems());
-		assertContains(productOption2, (List<ProductOption>)page3.getItems());
-		assertContains(productOption3, (List<ProductOption>)page3.getItems());
+			assertContains(
+				productOption3, (List<ProductOption>)page3.getItems());
+		}
+		else {
+			Page<ProductOption> page1 =
+				productOptionResource.getProductIdProductOptionsPage(
+					id, null, Pagination.of(1, totalCount + 2), null);
+
+			List<ProductOption> productOptions1 =
+				(List<ProductOption>)page1.getItems();
+
+			Assert.assertEquals(
+				productOptions1.toString(), totalCount + 2,
+				productOptions1.size());
+
+			Page<ProductOption> page2 =
+				productOptionResource.getProductIdProductOptionsPage(
+					id, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<ProductOption> productOptions2 =
+				(List<ProductOption>)page2.getItems();
+
+			Assert.assertEquals(
+				productOptions2.toString(), 1, productOptions2.size());
+
+			Page<ProductOption> page3 =
+				productOptionResource.getProductIdProductOptionsPage(
+					id, null, Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				productOption1, (List<ProductOption>)page3.getItems());
+			assertContains(
+				productOption2, (List<ProductOption>)page3.getItems());
+			assertContains(
+				productOption3, (List<ProductOption>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -789,7 +967,7 @@ public abstract class BaseProductOptionResourceTestCase {
 			(entityField, productOption1, productOption2) -> {
 				BeanTestUtil.setProperty(
 					productOption1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1522,6 +1700,10 @@ public abstract class BaseProductOptionResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1955,9 +2137,9 @@ public abstract class BaseProductOptionResourceTestCase {
 	}
 
 	protected ProductOptionResource productOptionResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

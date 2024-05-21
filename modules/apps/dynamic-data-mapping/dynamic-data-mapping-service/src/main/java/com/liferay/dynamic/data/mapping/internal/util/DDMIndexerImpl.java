@@ -511,6 +511,11 @@ public class DDMIndexerImpl implements DDMIndexer {
 			sb.append(StringPool.UNDERLINE);
 			sb.append(LocaleUtil.toLanguageId(locale));
 		}
+		else if (isLegacyDDMIndexFieldsEnabled() &&
+				 StringUtil.equals(fieldReference, "date")) {
+
+			sb.append(StringPool.UNDERLINE);
+		}
 
 		return sb.toString();
 	}
@@ -680,9 +685,13 @@ public class DDMIndexerImpl implements DDMIndexer {
 
 			if (indexType.equals("keyword")) {
 				document.addKeywordSortable(name, valuesString);
+
+				document.addKeyword(_getSortableFieldName(name), valuesString);
 			}
 			else {
 				document.addTextSortable(name, valuesString);
+
+				document.addText(_getSortableFieldName(name), valuesString);
 			}
 		}
 		else {
@@ -823,8 +832,17 @@ public class DDMIndexerImpl implements DDMIndexer {
 					ddmFormFieldLocale, sb, ddmFormFieldValue.getValue());
 			}
 			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+
 				if (_log.isWarnEnabled()) {
-					_log.warn(exception);
+					_log.warn(
+						StringBundler.concat(
+							"Unable to index ", ddmFormField.getName(),
+							" because it was deleted from the dynamic data ",
+							"mapping structure ID",
+							ddmStructure.getStructureId()));
 				}
 			}
 

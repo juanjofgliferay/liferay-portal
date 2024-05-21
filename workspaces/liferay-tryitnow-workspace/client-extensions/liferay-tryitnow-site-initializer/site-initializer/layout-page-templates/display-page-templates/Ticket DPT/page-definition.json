@@ -169,7 +169,7 @@
 												},
 												"text": {
 													"mapping": {
-														"fieldKey": "ObjectEntry_objectEntryId",
+														"fieldKey": "ObjectField_subject",
 														"itemReference": {
 															"contextSource": "DisplayPageItem"
 														}
@@ -500,7 +500,7 @@
 																		},
 																		"text": {
 																			"mapping": {
-																				"fieldKey": "ObjectEntry_objectEntryId",
+																				"fieldKey": "ObjectField_subject",
 																				"itemReference": {
 																					"contextSource": "DisplayPageItem"
 																				}
@@ -586,7 +586,7 @@
 																},
 																"text": {
 																	"mapping": {
-																		"fieldKey": "ObjectField_wFStatus",
+																		"fieldKey": "ObjectField_ticketStatus",
 																		"itemReference": {
 																			"contextSource": "DisplayPageItem"
 																		}
@@ -706,31 +706,17 @@
 											{
 												"definition": {
 													"fragment": {
-														"key": "DIALECT-dialect-text",
-														"siteKey": "[$GROUP_KEY$]"
+														"key": "BASIC_COMPONENT-html"
 													},
 													"fragmentConfig": {
-														"textType": "text-paragraph-sm"
 													},
 													"fragmentFields": [
 														{
-															"id": "element-text",
+															"id": "element-html",
 															"value": {
-																"fragmentLink": {
-																	"value": {
-																		"href": {
-																			"mapping": {
-																				"fieldKey": "ddmTemplate__ddmTemplate_[$TEMPLATE_ENTRY_ID:Attachment Link$]",
-																				"itemReference": {
-																					"contextSource": "DisplayPageItem"
-																				}
-																			}
-																		}
-																	}
-																},
-																"text": {
+																"html": {
 																	"mapping": {
-																		"fieldKey": "ddmTemplate__ddmTemplate_[$TEMPLATE_ENTRY_ID:Attachment Name$]",
+																		"fieldKey": "ddmTemplate__ddmTemplate_[$TEMPLATE_ENTRY_ID:M2H8 Ticket Attachment$]",
 																		"itemReference": {
 																			"contextSource": "DisplayPageItem"
 																		}
@@ -739,11 +725,6 @@
 															}
 														}
 													],
-													"fragmentStyle": {
-														"fontWeight": "fontWeightLight",
-														"marginTop": "1",
-														"textColor": "colorBrandPrimary"
-													},
 													"indexed": true
 												},
 												"type": "Fragment"
@@ -784,7 +765,7 @@
 												"definition": {
 													"collectionConfig": {
 														"collectionReference": {
-															"className": "com.liferay.object.internal.info.collection.provider.OneToManyObjectRelationshipRelatedInfoCollectionProvider_[$COMPANY_ID$]_C_Ticket_relatedTicket"
+															"className": "com.liferay.object.internal.info.collection.provider.OneToManyObjectRelationshipRelatedInfoCollectionProvider_[$COMPANY_ID$]_C_J3Y7Ticket_j3y7TicketToJ3Y7Tickets"
 														},
 														"collectionType": "CollectionProvider"
 													},

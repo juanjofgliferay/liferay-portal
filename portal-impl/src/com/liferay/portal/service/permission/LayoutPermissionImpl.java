@@ -8,6 +8,7 @@ package com.liferay.portal.service.permission;
 import com.liferay.exportimport.kernel.staging.permission.StagingPermissionUtil;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
@@ -205,6 +206,34 @@ public class LayoutPermissionImpl implements LayoutPermission {
 	}
 
 	@Override
+	public boolean containsLayoutPreviewDraftPermission(
+			PermissionChecker permissionChecker, Layout layout)
+		throws PortalException {
+
+		if (!layout.isTypeAssetDisplay() && !layout.isTypeContent()) {
+			return false;
+		}
+
+		if (containsLayoutUpdatePermission(permissionChecker, layout) ||
+			(FeatureFlagManagerUtil.isEnabled("LPD-11070") &&
+			 contains(permissionChecker, layout, ActionKeys.PREVIEW_DRAFT))) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean containsLayoutPreviewDraftPermission(
+			PermissionChecker permissionChecker, long plid)
+		throws PortalException {
+
+		return containsLayoutPreviewDraftPermission(
+			permissionChecker, LayoutLocalServiceUtil.getLayout(plid));
+	}
+
+	@Override
 	public boolean containsLayoutRestrictedUpdatePermission(
 			PermissionChecker permissionChecker, Layout layout)
 		throws PortalException {
@@ -304,7 +333,9 @@ public class LayoutPermissionImpl implements LayoutPermission {
 			return false;
 		}
 
-		if (layout.isPending()) {
+		if (layout.isPending() &&
+			(!actionId.equals(ActionKeys.VIEW) || !layout.isPublished())) {
+
 			Boolean hasPermission = WorkflowPermissionUtil.hasPermission(
 				permissionChecker, layout.getGroupId(), Layout.class.getName(),
 				layout.getPlid(), actionId);

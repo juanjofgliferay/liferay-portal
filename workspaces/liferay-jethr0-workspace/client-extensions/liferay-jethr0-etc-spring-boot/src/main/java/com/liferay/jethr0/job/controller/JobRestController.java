@@ -9,6 +9,8 @@ import com.liferay.jethr0.bui1d.BuildEntity;
 import com.liferay.jethr0.bui1d.queue.BuildQueue;
 import com.liferay.jethr0.bui1d.repository.BuildEntityRepository;
 import com.liferay.jethr0.bui1d.run.BuildRunEntity;
+import com.liferay.jethr0.event.EventHandler;
+import com.liferay.jethr0.event.liferay.LiferayEventHandlerFactory;
 import com.liferay.jethr0.jenkins.JenkinsQueue;
 import com.liferay.jethr0.job.JobEntity;
 import com.liferay.jethr0.job.queue.JobQueue;
@@ -40,6 +42,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/jobs")
 @RestController
 public class JobRestController {
+
+	@PostMapping("/action")
+	public ResponseEntity<String> action(
+		@AuthenticationPrincipal Jwt jwt, @RequestBody String body) {
+
+		try {
+			EventHandler eventHandler =
+				_liferayEventHandlerFactory.newEventHandler(
+					new JSONObject(body));
+
+			return new ResponseEntity<>(eventHandler.process(), HttpStatus.OK);
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+	}
 
 	@PostMapping("/create")
 	public ResponseEntity<String> createJob(
@@ -86,25 +104,7 @@ public class JobRestController {
 		return new ResponseEntity<>(jobJSONObject.toString(), HttpStatus.OK);
 	}
 
-	@GetMapping("/build/{id}")
-	public ResponseEntity<String> jobBuild(
-		@AuthenticationPrincipal Jwt jwt,
-		@PathVariable("id") int buildEntityId) {
-
-		BuildEntity buildEntity = _buildEntityRepository.getById(buildEntityId);
-
-		JSONObject buildJSONObject = buildEntity.getJSONObject();
-
-		JobEntity jobEntity = buildEntity.getJobEntity();
-
-		if (jobEntity != null) {
-			buildJSONObject.put("job", jobEntity.getJSONObject());
-		}
-
-		return new ResponseEntity<>(buildJSONObject.toString(), HttpStatus.OK);
-	}
-
-	@GetMapping("/builds/{id}")
+	@GetMapping("/{id}/builds")
 	public ResponseEntity<String> jobBuilds(
 		@AuthenticationPrincipal Jwt jwt, @PathVariable("id") int jobEntityId) {
 
@@ -252,18 +252,6 @@ public class JobRestController {
 		return new ResponseEntity<>(jobsJSONArray.toString(), HttpStatus.OK);
 	}
 
-	@GetMapping("/types")
-	public ResponseEntity<String> jobTypes(@AuthenticationPrincipal Jwt jwt) {
-		JSONArray jobTypesJSONArray = new JSONArray();
-
-		for (JobEntity.Type type : JobEntity.Type.values()) {
-			jobTypesJSONArray.put(type.getJSONObject());
-		}
-
-		return new ResponseEntity<>(
-			jobTypesJSONArray.toString(), HttpStatus.OK);
-	}
-
 	@Autowired
 	private BuildEntityRepository _buildEntityRepository;
 
@@ -278,5 +266,8 @@ public class JobRestController {
 
 	@Autowired
 	private JobQueue _jobQueue;
+
+	@Autowired
+	private LiferayEventHandlerFactory _liferayEventHandlerFactory;
 
 }

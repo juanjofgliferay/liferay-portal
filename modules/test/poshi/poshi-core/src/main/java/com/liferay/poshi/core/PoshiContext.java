@@ -14,7 +14,6 @@ import com.liferay.poshi.core.elements.PoshiElementException;
 import com.liferay.poshi.core.elements.PropertyPoshiElement;
 import com.liferay.poshi.core.pql.PQLEntity;
 import com.liferay.poshi.core.pql.PQLEntityFactory;
-import com.liferay.poshi.core.prose.PoshiProseMatcher;
 import com.liferay.poshi.core.script.PoshiScriptParserException;
 import com.liferay.poshi.core.selenium.LiferaySelenium;
 import com.liferay.poshi.core.selenium.LiferaySeleniumMethod;
@@ -72,9 +71,7 @@ public class PoshiContext {
 		"**/*.action", "**/*.function", "**/*.macro", "**/*.path"
 	};
 
-	public static final String[] POSHI_TEST_FILE_INCLUDES = {
-		"**/*.prose", "**/*.testcase"
-	};
+	public static final String[] POSHI_TEST_FILE_INCLUDES = {"**/*.testcase"};
 
 	public static void addPoshiPropertyNames(Set<String> poshiPropertyNames) {
 		_poshiPropertyNames.addAll(poshiPropertyNames);
@@ -637,7 +634,7 @@ public class PoshiContext {
 						testName);
 
 				Collections.addAll(
-					poshiFileIncludes, "**/" + className + ".{prose,testcase}");
+					poshiFileIncludes, "**/" + className + ".testcase");
 			}
 		}
 
@@ -737,7 +734,11 @@ public class PoshiContext {
 
 		executorService.shutdown();
 
-		if (!executorService.awaitTermination(3, TimeUnit.MINUTES)) {
+		PoshiProperties poshiProperties = PoshiProperties.getPoshiProperties();
+
+		if (!executorService.awaitTermination(
+				poshiProperties.poshiFileReadTimeout, TimeUnit.MINUTES)) {
+
 			throw new TimeoutException(
 				"Timed out while loading " + poshiFileType + " Poshi files");
 		}
@@ -1207,16 +1208,6 @@ public class PoshiContext {
 						classCommandName, classType, overrideCommandElement,
 						rootElement));
 
-				String prose = overrideCommandElement.attributeValue("prose");
-
-				if (classType.equals("macro") && (prose != null) &&
-					!prose.isEmpty()) {
-
-					PoshiProseMatcher.storePoshiProseMatcher(
-						overrideCommandElement.attributeValue("prose"),
-						baseNamespacedClassCommandName);
-				}
-
 				if (classType.equals("test-case")) {
 					Properties baseProperties =
 						_namespacedClassCommandNamePropertiesMap.get(
@@ -1566,16 +1557,6 @@ public class PoshiContext {
 						classCommandName, classType, commandElement,
 						rootElement));
 
-				String prose = commandElement.attributeValue("prose");
-
-				if (classType.equals("macro") && (prose != null) &&
-					!prose.isEmpty()) {
-
-					PoshiProseMatcher.storePoshiProseMatcher(
-						commandElement.attributeValue("prose"),
-						namespacedClassCommandName);
-				}
-
 				if (classType.equals("test-case")) {
 					Properties commandProperties =
 						_getClassCommandNameProperties(
@@ -1708,7 +1689,7 @@ public class PoshiContext {
 				continue;
 			}
 
-			if (fileName.endsWith(".testcase") || fileName.endsWith(".prose")) {
+			if (fileName.endsWith(".testcase")) {
 				testPoshiFileRunnables.add(
 					new PoshiFileRunnable(url, namespace));
 

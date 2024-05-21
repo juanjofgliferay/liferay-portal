@@ -368,9 +368,9 @@ const SetupDXPCloudPage = ({
 			}}
 			headerProps={{
 				helper: i18n.translate(
-					'we-ll-need-a-few-details-to-finish-building-your-lxc-sm-environment'
+					'we-ll-need-a-few-details-to-finish-building-your-liferay-paas-environment'
 				),
-				title: i18n.translate('set-up-lxc-sm'),
+				title: i18n.translate('set-up-liferay-paas'),
 			}}
 		>
 			{step === 1 && (
@@ -567,9 +567,9 @@ const SetupDXPCloudPage = ({
 			}}
 			headerProps={{
 				helper: i18n.translate(
-					'we-ll-need-a-few-details-to-finish-building-your-lxc-sm-environment'
+					'we-ll-need-a-few-details-to-finish-building-your-liferay-paas-environment'
 				),
-				title: i18n.translate('set-up-lxc-sm'),
+				title: i18n.translate('set-up-liferay-paas'),
 			}}
 		>
 			<FieldArray

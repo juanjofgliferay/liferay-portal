@@ -34,8 +34,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -48,9 +46,10 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
@@ -73,8 +72,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -419,39 +416,84 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			testGetAssetLibraryDocumentFoldersPage_addDocumentFolder(
 				assetLibraryId, randomDocumentFolder());
 
-		Page<DocumentFolder> page1 =
-			documentFolderResource.getAssetLibraryDocumentFoldersPage(
-				assetLibraryId, null, null, null, null,
-				Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DocumentFolder> documentFolders1 =
-			(List<DocumentFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			documentFolders1.toString(), totalCount + 2,
-			documentFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getAssetLibraryDocumentFoldersPage(
+					assetLibraryId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<DocumentFolder> page2 =
-			documentFolderResource.getAssetLibraryDocumentFoldersPage(
-				assetLibraryId, null, null, null, null,
-				Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page1.getItems());
 
-		List<DocumentFolder> documentFolders2 =
-			(List<DocumentFolder>)page2.getItems();
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getAssetLibraryDocumentFoldersPage(
+					assetLibraryId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			documentFolders2.toString(), 1, documentFolders2.size());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page2.getItems());
 
-		Page<DocumentFolder> page3 =
-			documentFolderResource.getAssetLibraryDocumentFoldersPage(
-				assetLibraryId, null, null, null, null,
-				Pagination.of(1, (int)totalCount + 3), null);
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getAssetLibraryDocumentFoldersPage(
+					assetLibraryId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(documentFolder1, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder2, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder3, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
+		else {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getAssetLibraryDocumentFoldersPage(
+					assetLibraryId, null, null, null, null,
+					Pagination.of(1, totalCount + 2), null);
+
+			List<DocumentFolder> documentFolders1 =
+				(List<DocumentFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				documentFolders1.toString(), totalCount + 2,
+				documentFolders1.size());
+
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getAssetLibraryDocumentFoldersPage(
+					assetLibraryId, null, null, null, null,
+					Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DocumentFolder> documentFolders2 =
+				(List<DocumentFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				documentFolders2.toString(), 1, documentFolders2.size());
+
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getAssetLibraryDocumentFoldersPage(
+					assetLibraryId, null, null, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -463,7 +505,7 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			(entityField, documentFolder1, documentFolder2) -> {
 				BeanTestUtil.setProperty(
 					documentFolder1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -820,36 +862,84 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			testGetAssetLibraryDocumentFoldersRatedByMePage_addDocumentFolder(
 				assetLibraryId, randomDocumentFolder());
 
-		Page<DocumentFolder> page1 =
-			documentFolderResource.getAssetLibraryDocumentFoldersRatedByMePage(
-				assetLibraryId, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DocumentFolder> documentFolders1 =
-			(List<DocumentFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			documentFolders1.toString(), totalCount + 2,
-			documentFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.
+					getAssetLibraryDocumentFoldersRatedByMePage(
+						assetLibraryId,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<DocumentFolder> page2 =
-			documentFolderResource.getAssetLibraryDocumentFoldersRatedByMePage(
-				assetLibraryId, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page1.getItems());
 
-		List<DocumentFolder> documentFolders2 =
-			(List<DocumentFolder>)page2.getItems();
+			Page<DocumentFolder> page2 =
+				documentFolderResource.
+					getAssetLibraryDocumentFoldersRatedByMePage(
+						assetLibraryId,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			documentFolders2.toString(), 1, documentFolders2.size());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page2.getItems());
 
-		Page<DocumentFolder> page3 =
-			documentFolderResource.getAssetLibraryDocumentFoldersRatedByMePage(
-				assetLibraryId, Pagination.of(1, (int)totalCount + 3));
+			Page<DocumentFolder> page3 =
+				documentFolderResource.
+					getAssetLibraryDocumentFoldersRatedByMePage(
+						assetLibraryId,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(documentFolder1, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder2, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder3, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
+		else {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.
+					getAssetLibraryDocumentFoldersRatedByMePage(
+						assetLibraryId, Pagination.of(1, totalCount + 2));
+
+			List<DocumentFolder> documentFolders1 =
+				(List<DocumentFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				documentFolders1.toString(), totalCount + 2,
+				documentFolders1.size());
+
+			Page<DocumentFolder> page2 =
+				documentFolderResource.
+					getAssetLibraryDocumentFoldersRatedByMePage(
+						assetLibraryId, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DocumentFolder> documentFolders2 =
+				(List<DocumentFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				documentFolders2.toString(), 1, documentFolders2.size());
+
+			Page<DocumentFolder> page3 =
+				documentFolderResource.
+					getAssetLibraryDocumentFoldersRatedByMePage(
+						assetLibraryId, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
 	}
 
 	protected DocumentFolder
@@ -904,7 +994,10 @@ public abstract class BaseDocumentFolderResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteDocumentFolder() throws Exception {
-		DocumentFolder documentFolder =
+
+		// No namespace
+
+		DocumentFolder documentFolder1 =
 			testGraphQLDeleteDocumentFolder_addDocumentFolder();
 
 		Assert.assertTrue(
@@ -914,23 +1007,66 @@ public abstract class BaseDocumentFolderResourceTestCase {
 						"deleteDocumentFolder",
 						new HashMap<String, Object>() {
 							{
-								put("documentFolderId", documentFolder.getId());
+								put(
+									"documentFolderId",
+									documentFolder1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteDocumentFolder"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"documentFolder",
 					new HashMap<String, Object>() {
 						{
-							put("documentFolderId", documentFolder.getId());
+							put("documentFolderId", documentFolder1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		DocumentFolder documentFolder2 =
+			testGraphQLDeleteDocumentFolder_addDocumentFolder();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteDocumentFolder",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"documentFolderId",
+										documentFolder2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteDocumentFolder"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"documentFolder",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"documentFolderId",
+									documentFolder2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected DocumentFolder testGraphQLDeleteDocumentFolder_addDocumentFolder()
@@ -964,6 +1100,8 @@ public abstract class BaseDocumentFolderResourceTestCase {
 		DocumentFolder documentFolder =
 			testGraphQLGetDocumentFolder_addDocumentFolder();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				documentFolder,
@@ -981,11 +1119,36 @@ public abstract class BaseDocumentFolderResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/documentFolder"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				documentFolder,
+				DocumentFolderSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"documentFolder",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"documentFolderId",
+												documentFolder.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/documentFolder"))));
 	}
 
 	@Test
 	public void testGraphQLGetDocumentFolderNotFound() throws Exception {
 		Long irrelevantDocumentFolderId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -1001,6 +1164,27 @@ public abstract class BaseDocumentFolderResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"documentFolder",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"documentFolderId",
+										irrelevantDocumentFolderId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -1410,39 +1594,84 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			testGetDocumentFolderDocumentFoldersPage_addDocumentFolder(
 				parentDocumentFolderId, randomDocumentFolder());
 
-		Page<DocumentFolder> page1 =
-			documentFolderResource.getDocumentFolderDocumentFoldersPage(
-				parentDocumentFolderId, null, null, null, null,
-				Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DocumentFolder> documentFolders1 =
-			(List<DocumentFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			documentFolders1.toString(), totalCount + 2,
-			documentFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getDocumentFolderDocumentFoldersPage(
+					parentDocumentFolderId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<DocumentFolder> page2 =
-			documentFolderResource.getDocumentFolderDocumentFoldersPage(
-				parentDocumentFolderId, null, null, null, null,
-				Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page1.getItems());
 
-		List<DocumentFolder> documentFolders2 =
-			(List<DocumentFolder>)page2.getItems();
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getDocumentFolderDocumentFoldersPage(
+					parentDocumentFolderId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			documentFolders2.toString(), 1, documentFolders2.size());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page2.getItems());
 
-		Page<DocumentFolder> page3 =
-			documentFolderResource.getDocumentFolderDocumentFoldersPage(
-				parentDocumentFolderId, null, null, null, null,
-				Pagination.of(1, (int)totalCount + 3), null);
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getDocumentFolderDocumentFoldersPage(
+					parentDocumentFolderId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(documentFolder1, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder2, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder3, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
+		else {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getDocumentFolderDocumentFoldersPage(
+					parentDocumentFolderId, null, null, null, null,
+					Pagination.of(1, totalCount + 2), null);
+
+			List<DocumentFolder> documentFolders1 =
+				(List<DocumentFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				documentFolders1.toString(), totalCount + 2,
+				documentFolders1.size());
+
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getDocumentFolderDocumentFoldersPage(
+					parentDocumentFolderId, null, null, null, null,
+					Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DocumentFolder> documentFolders2 =
+				(List<DocumentFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				documentFolders2.toString(), 1, documentFolders2.size());
+
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getDocumentFolderDocumentFoldersPage(
+					parentDocumentFolderId, null, null, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -1454,7 +1683,7 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			(entityField, documentFolder1, documentFolder2) -> {
 				BeanTestUtil.setProperty(
 					documentFolder1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1839,39 +2068,84 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			testGetSiteDocumentFoldersPage_addDocumentFolder(
 				siteId, randomDocumentFolder());
 
-		Page<DocumentFolder> page1 =
-			documentFolderResource.getSiteDocumentFoldersPage(
-				siteId, null, null, null, null,
-				Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DocumentFolder> documentFolders1 =
-			(List<DocumentFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			documentFolders1.toString(), totalCount + 2,
-			documentFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getSiteDocumentFoldersPage(
+					siteId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<DocumentFolder> page2 =
-			documentFolderResource.getSiteDocumentFoldersPage(
-				siteId, null, null, null, null,
-				Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page1.getItems());
 
-		List<DocumentFolder> documentFolders2 =
-			(List<DocumentFolder>)page2.getItems();
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getSiteDocumentFoldersPage(
+					siteId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			documentFolders2.toString(), 1, documentFolders2.size());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page2.getItems());
 
-		Page<DocumentFolder> page3 =
-			documentFolderResource.getSiteDocumentFoldersPage(
-				siteId, null, null, null, null,
-				Pagination.of(1, (int)totalCount + 3), null);
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getSiteDocumentFoldersPage(
+					siteId, null, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(documentFolder1, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder2, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder3, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
+		else {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getSiteDocumentFoldersPage(
+					siteId, null, null, null, null,
+					Pagination.of(1, totalCount + 2), null);
+
+			List<DocumentFolder> documentFolders1 =
+				(List<DocumentFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				documentFolders1.toString(), totalCount + 2,
+				documentFolders1.size());
+
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getSiteDocumentFoldersPage(
+					siteId, null, null, null, null,
+					Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DocumentFolder> documentFolders2 =
+				(List<DocumentFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				documentFolders2.toString(), 1, documentFolders2.size());
+
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getSiteDocumentFoldersPage(
+					siteId, null, null, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -1883,7 +2157,7 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			(entityField, documentFolder1, documentFolder2) -> {
 				BeanTestUtil.setProperty(
 					documentFolder1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -2061,6 +2335,8 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			new GraphQLField("items", getGraphQLFields()),
 			new GraphQLField("page"), new GraphQLField("totalCount"));
 
+		// No namespace
+
 		JSONObject documentFoldersJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
 			"JSONObject/documentFolders");
@@ -2074,6 +2350,28 @@ public abstract class BaseDocumentFolderResourceTestCase {
 
 		documentFoldersJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/documentFolders");
+
+		Assert.assertEquals(
+			totalCount + 2, documentFoldersJSONObject.getLong("totalCount"));
+
+		assertContains(
+			documentFolder1,
+			Arrays.asList(
+				DocumentFolderSerDes.toDTOs(
+					documentFoldersJSONObject.getString("items"))));
+		assertContains(
+			documentFolder2,
+			Arrays.asList(
+				DocumentFolderSerDes.toDTOs(
+					documentFoldersJSONObject.getString("items"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		documentFoldersJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
 			"JSONObject/documentFolders");
 
 		Assert.assertEquals(
@@ -2281,36 +2579,78 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			testGetSiteDocumentFoldersRatedByMePage_addDocumentFolder(
 				siteId, randomDocumentFolder());
 
-		Page<DocumentFolder> page1 =
-			documentFolderResource.getSiteDocumentFoldersRatedByMePage(
-				siteId, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DocumentFolder> documentFolders1 =
-			(List<DocumentFolder>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			documentFolders1.toString(), totalCount + 2,
-			documentFolders1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getSiteDocumentFoldersRatedByMePage(
+					siteId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<DocumentFolder> page2 =
-			documentFolderResource.getSiteDocumentFoldersRatedByMePage(
-				siteId, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page1.getItems());
 
-		List<DocumentFolder> documentFolders2 =
-			(List<DocumentFolder>)page2.getItems();
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getSiteDocumentFoldersRatedByMePage(
+					siteId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(
-			documentFolders2.toString(), 1, documentFolders2.size());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page2.getItems());
 
-		Page<DocumentFolder> page3 =
-			documentFolderResource.getSiteDocumentFoldersRatedByMePage(
-				siteId, Pagination.of(1, (int)totalCount + 3));
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getSiteDocumentFoldersRatedByMePage(
+					siteId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(documentFolder1, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder2, (List<DocumentFolder>)page3.getItems());
-		assertContains(documentFolder3, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
+		else {
+			Page<DocumentFolder> page1 =
+				documentFolderResource.getSiteDocumentFoldersRatedByMePage(
+					siteId, Pagination.of(1, totalCount + 2));
+
+			List<DocumentFolder> documentFolders1 =
+				(List<DocumentFolder>)page1.getItems();
+
+			Assert.assertEquals(
+				documentFolders1.toString(), totalCount + 2,
+				documentFolders1.size());
+
+			Page<DocumentFolder> page2 =
+				documentFolderResource.getSiteDocumentFoldersRatedByMePage(
+					siteId, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DocumentFolder> documentFolders2 =
+				(List<DocumentFolder>)page2.getItems();
+
+			Assert.assertEquals(
+				documentFolders2.toString(), 1, documentFolders2.size());
+
+			Page<DocumentFolder> page3 =
+				documentFolderResource.getSiteDocumentFoldersRatedByMePage(
+					siteId, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				documentFolder1, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder2, (List<DocumentFolder>)page3.getItems());
+			assertContains(
+				documentFolder3, (List<DocumentFolder>)page3.getItems());
+		}
 	}
 
 	protected DocumentFolder
@@ -2423,6 +2763,8 @@ public abstract class BaseDocumentFolderResourceTestCase {
 		DocumentFolder documentFolder =
 			testGraphQLGetSiteDocumentsFolderByExternalReferenceCode_addDocumentFolder();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				documentFolder,
@@ -2450,6 +2792,38 @@ public abstract class BaseDocumentFolderResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/documentsFolderByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				documentFolder,
+				DocumentFolderSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"documentsFolderByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteDocumentsFolderByExternalReferenceCode_getSiteId(
+														documentFolder) + "\"");
+
+											put(
+												"externalReferenceCode",
+												"\"" +
+													documentFolder.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/documentsFolderByExternalReferenceCode"))));
 	}
 
 	protected Long
@@ -2466,6 +2840,8 @@ public abstract class BaseDocumentFolderResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -2484,6 +2860,31 @@ public abstract class BaseDocumentFolderResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"documentsFolderByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -2827,7 +3228,7 @@ public abstract class BaseDocumentFolderResourceTestCase {
 			valid = false;
 		}
 
-		Group group = testDepotEntry.getGroup();
+		com.liferay.portal.kernel.model.Group group = testDepotEntry.getGroup();
 
 		if (!Objects.equals(
 				documentFolder.getAssetLibraryKey(), group.getGroupKey()) &&
@@ -3426,6 +3827,10 @@ public abstract class BaseDocumentFolderResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -3556,22 +3961,20 @@ public abstract class BaseDocumentFolderResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = documentFolder.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							documentFolder.getDateCreated(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							documentFolder.getDateCreated(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -3589,22 +3992,20 @@ public abstract class BaseDocumentFolderResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = documentFolder.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							documentFolder.getDateModified(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							documentFolder.getDateModified(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -3885,10 +4286,10 @@ public abstract class BaseDocumentFolderResourceTestCase {
 	}
 
 	protected DocumentFolderResource documentFolderResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
 	protected DepotEntry testDepotEntry;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

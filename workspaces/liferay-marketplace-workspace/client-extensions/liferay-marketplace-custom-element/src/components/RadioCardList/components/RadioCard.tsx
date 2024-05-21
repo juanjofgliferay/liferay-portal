@@ -10,14 +10,14 @@ import classNames from 'classnames';
 
 import './RadioCard.scss';
 
+import ClayIcon from '@clayui/icon';
 import {ReactNode} from 'react';
-
-import emptyPictureIcon from '../../../assets/icons/avatar.svg';
 
 interface RadioCardProps {
 	activeRadio: boolean | undefined;
 	description?: ReactNode;
 	disabled?: boolean;
+	fullTitle?: boolean;
 	imageURL?: string;
 	index?: number;
 	label?: string;
@@ -31,6 +31,7 @@ const NewRadioCard = ({
 	activeRadio,
 	description,
 	disabled,
+	fullTitle = false,
 	imageURL,
 	index,
 	label,
@@ -81,16 +82,22 @@ const NewRadioCard = ({
 								)}
 							>
 								<ClaySticker shape="circle" size="lg">
-									<ClaySticker.Image
-										alt="placeholder"
-										src={imageURL ?? emptyPictureIcon}
-									/>
+									{imageURL ? (
+										<ClaySticker.Image
+											alt="placeholder"
+											src={imageURL}
+										/>
+									) : (
+										<ClayIcon symbol="picture" />
+									)}
 								</ClaySticker>
 							</div>
 						)}
 
 						<div
-							className={classNames('mt-2 col-10 mb-0', {
+							className={classNames('mt-2  mb-0', {
+								'col-10': !fullTitle,
+								'col-12 pr-0': fullTitle,
 								'pl-0': !leftRadio,
 							})}
 						>

@@ -1,5 +1,6 @@
 import BasePage from 'shared/components/base-page';
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import CohortAnalysis from 'sites/components/cohort-analysis';
 import CohortQuery from 'shared/queries/CohortQuery';
 import Form from 'shared/components/form';
@@ -7,7 +8,6 @@ import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React, {useContext, useState} from 'react';
 import URLConstants from 'shared/util/url-constants';
 import {compose} from 'shared/hoc';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {
 	DAY,
 	INTERVAL_OPTIONS,
@@ -17,6 +17,7 @@ import {
 import {graphql} from '@apollo/react-hoc';
 import {mapPropsToOptions, mapResultToProps} from './mappers/cohort-query';
 import {Option, Picker} from '@clayui/core';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {withError, withLoading} from 'shared/hoc/util';
 
 const withEmpty = Component => ({empty, ...otherProps}) => {
@@ -31,7 +32,7 @@ const withEmpty = Component => ({empty, ...otherProps}) => {
 							)}
 						</span>
 
-						<a
+						<ClayLink
 							href={URLConstants.SitesDashboardCohortAnalysis}
 							key='DOCUMENTATION'
 							target='_blank'
@@ -39,7 +40,7 @@ const withEmpty = Component => ({empty, ...otherProps}) => {
 							{Liferay.Language.get(
 								'learn-more-about-cohort-analysis'
 							)}
-						</a>
+						</ClayLink>
 					</>
 				}
 				title={Liferay.Language.get(
@@ -75,7 +76,7 @@ const CohortAnalysisCard = () => {
 	return (
 		<Card
 			className='cohort-analysis-card-root'
-			id={Containers.CohortAnalysisCard}
+			reportContainer={ReportContainer.CohortAnalysisCard}
 		>
 			<Card.Header>
 				<Card.Title>

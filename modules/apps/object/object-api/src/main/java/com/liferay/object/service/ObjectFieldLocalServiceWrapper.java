@@ -647,20 +647,22 @@ public class ObjectFieldLocalServiceWrapper
 	@Override
 	public void validateReadOnlyAndReadOnlyConditionExpression(
 			String businessType, String readOnly,
-			String readOnlyConditionExpression)
+			String readOnlyConditionExpression, boolean required)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_objectFieldLocalService.validateReadOnlyAndReadOnlyConditionExpression(
-			businessType, readOnly, readOnlyConditionExpression);
+			businessType, readOnly, readOnlyConditionExpression, required);
 	}
 
 	@Override
 	public void validateRequired(
-			long objectFieldId, String businessType, boolean required)
+			String businessType, boolean objectDefinitionApproved,
+			com.liferay.object.model.ObjectField oldObjectField,
+			boolean required)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_objectFieldLocalService.validateRequired(
-			objectFieldId, businessType, required);
+			businessType, objectDefinitionApproved, oldObjectField, required);
 	}
 
 	@Override

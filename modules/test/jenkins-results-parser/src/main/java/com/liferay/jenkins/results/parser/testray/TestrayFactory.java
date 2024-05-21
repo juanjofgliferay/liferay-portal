@@ -26,11 +26,12 @@ import java.util.Map;
  */
 public class TestrayFactory {
 
-	public static PortalLogTestrayCaseResult newPortalLogTestrayCaseResult(
-		TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
-		AxisTestClassGroup axisTestClassGroup) {
+	public static PortalLogBatchBuildTestrayCaseResult
+		newPortalLogTestrayCaseResult(
+			TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
+			AxisTestClassGroup axisTestClassGroup) {
 
-		return new PortalLogTestrayCaseResult(
+		return new PortalLogBatchBuildTestrayCaseResult(
 			testrayBuild, topLevelBuild, axisTestClassGroup);
 	}
 
@@ -139,8 +140,8 @@ public class TestrayFactory {
 		}
 
 		if (axisTestClassGroup instanceof PlaywrightAxisTestClassGroup) {
-			return new PlaywrightBatchBuildTestrayCaseResult(
-				testrayBuild, topLevelBuild, axisTestClassGroup);
+			return new PlaywrightJUnitBatchBuildTestrayCaseResult(
+				testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
 		}
 
 		if (topLevelBuild instanceof SourceFormatBuild) {

@@ -10,6 +10,10 @@ const navigationIcons = {
 		NavigationMenuIcons.AnalyticsIcon,
 		NavigationMenuIcons.AnalyticsIconGray,
 	],
+	attachments: [
+		NavigationMenuIcons.AttachmentsIcon,
+		NavigationMenuIcons.AttachmentsIcon,
+	],
 	commerce: [
 		NavigationMenuIcons.CommerceIcon,
 		NavigationMenuIcons.CommerceIconGray,
@@ -23,6 +27,7 @@ const navigationIcons = {
 		NavigationMenuIcons.ExperienceCloudIcon,
 		NavigationMenuIcons.ExperienceCloudIconGray,
 	],
+	liferay: [NavigationMenuIcons.DXPIcon, NavigationMenuIcons.DXPIconGray],
 	lxc: [NavigationMenuIcons.LXCIcon, NavigationMenuIcons.LXCIconGray],
 	overview: [
 		NavigationMenuIcons.OverviewIcon,

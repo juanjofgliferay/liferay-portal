@@ -54,6 +54,109 @@ definition {
 		}
 	}
 
+	@description = "LPS-182558. Verify IN USE label is displayed in Filter By options."
+	@priority = 4
+	test AssertInUseLabelInClientExtensionFilterFilterByField {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("When the user creates a new client extension filter") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+
+			DropdownMenuItem.click(menuItem = "creator");
+
+			Click(
+				key_label = "Client Extension",
+				locator1 = "FrontendDataSet#OPEN_DROPDOWN_MENU");
+
+			DropdownMenuItem.click(menuItem = "Frontend Data Set Filter");
+
+			Button.clickSave();
+		}
+
+		task ("Then the client extension filter is displayed on Filters tab") {
+			AssertVisible(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
+		}
+
+		task ("When the user creates a new client extension filter") {
+			LexiconEntry.gotoAdd();
+
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("And fills the Name field") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+		}
+
+		task ("And selects Filter By field") {
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+		}
+
+		task ("Then the label IN USE is displayed next to the field used in the previous client extension") {
+			AssertVisible(
+				filterByItem = "creator",
+				locator1 = "DataSet#IN_USE_BADGE");
+		}
+
+		task ("When the user selects the field option in use") {
+			DropdownMenuItem.click(menuItem = "creator");
+		}
+
+		task ("Then an error message appears") {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Modal#BODY",
+				value1 = "This field is being used by another filter. Only one field per filter is allowed.");
+		}
+
+		task ("And the Save button is disabled") {
+			AssertVisible(
+				key_text = "Save",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
 	@description = "LPS-176184. Confirm that when 'Name Field' is not provided, it is filled with the same name as field name."
 	@ignore = "true"
 	@priority = 3
@@ -76,6 +179,75 @@ definition {
 				key_tableColumn = 1,
 				key_tableRow = 1,
 				locator1 = "DataSet#FILTER_TABLE_CELL");
+		}
+	}
+
+	@description = "LPS-182558. Verify client extension filter modal informs the user there is not client extension available."
+	@priority = 5
+	test AssertNoClientExtensionAvailableMessage {
+		task ("Given a new data set entry") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.createDataSet(
+				key_name = "Data Set Test",
+				key_type = "data-set-manager/fields");
+		}
+
+		task ("And a new view") {
+			DataSetAdmin.goToViews(dataSetName = "Data Set Test");
+
+			DataSetAdmin.createDataSetView(
+				description = "Description",
+				key_name = "View Test");
+
+			DataSetAdmin.goToSpecificViewPage(
+				dataSetName = "Data Set Test",
+				key_viewName = "View Test");
+		}
+
+		task ("When the user goes to the Filters tab") {
+			DataSetAdmin.goToTab(tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("Then the Client Extension option is displayed in the dropdown") {
+			AssertVisible(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("When the user clicks on Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("Then the “New Client Extension filter” modal is displayed") {
+			AssertVisible(
+				key_modal_title = "New Client Extension Filter",
+				locator1 = "AccessibilityMenu#MODAL_TITLE");
+		}
+
+		task ("And the Name field is editable") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Client Extension Filter");
+		}
+
+		task ("And the Save button is disabled") {
+			AssertVisible(
+				key_text = "Save",
+				locator1 = "Button#ANY_DISABLED");
+		}
+
+		task ("And the message 'Info: No Client Extensions are available.'") {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Modal#BODY",
+				value1 = "No frontend data set filter client extensions are available. Add a client extension first in order to create a filter.");
 		}
 	}
 
@@ -184,8 +356,8 @@ definition {
 				picklistName = "Transport");
 		}
 
-		task ("When the user accesses the Fields tab and add datecreated,datemodified") {
-			DataSetAdmin.goToTab(tabName = "Fields");
+		task ("When the user accesses the Visualization Modes tab and add datecreated,datemodified") {
+			DataSetAdmin.goToTab(tabName = "Visualization Modes");
 
 			LexiconEntry.gotoAdd();
 
@@ -258,11 +430,11 @@ definition {
 		}
 
 		task ("And go to the page created, and put a "pt" in URL page") {
-			Navigator.openURL();
+			var portalURL = PropsUtil.get("portal.url");
 
 			Navigator.gotoPage(pageName = "Data Set Test");
 
-			Navigator.openSpecificURL(url = "http://localhost:8080/pt/data-set-test");
+			Navigator.openSpecificURL(url = "${portalURL}/pt/data-set-test");
 		}
 
 		task ("Then Confirm the page translation according to PT-BR") {
@@ -1120,10 +1292,82 @@ definition {
 			Button.clickCancel();
 		}
 
-		task ("Then assert the field is not deleted and it still appears in the Fields tab table") {
+		task ("Then assert the field is not deleted and it still appears in the Visualization Modes tab table") {
 			DataSetAdmin.assertFieldsOnTable(
 				key_position = 1,
 				keyName = "from");
+		}
+	}
+
+	@description = "LPS-182558. Verify it's possible to cancel the creation of a client extension filter."
+	@priority = 3
+	test CanCancelClientExtensionFilterCreation {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("And the user fills the Name field") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+		}
+
+		task ("And selects an option on Filter by field") {
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+
+			DropdownMenuItem.click(menuItem = "creator");
+		}
+
+		task ("When the user selects the created client extension") {
+			Click(
+				key_label = "Client Extension",
+				locator1 = "FrontendDataSet#OPEN_DROPDOWN_MENU");
+
+			DropdownMenuItem.click(menuItem = "Frontend Data Set Filter");
+		}
+
+		task ("And clicks on Cancel button") {
+			Button.clickCancel();
+		}
+
+		task ("Then the modal is closed") {
+			AssertElementNotPresent(
+				key_modal_title = "New Client Extension Filter",
+				locator1 = "AccessibilityMenu#MODAL_TITLE");
+		}
+
+		task ("And the client extension filter is not created") {
+			AssertElementNotPresent(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
 		}
 	}
 
@@ -1393,6 +1637,150 @@ definition {
 		}
 	}
 
+	@description = "LPS-182558. Verify it's possible to close the 'New Client Extension Filter' modal and the creation of a client extension filter."
+	@priority = 3
+	test CanCloseClientExtensionFilterCreation {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("And the user fills the Name field") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+		}
+
+		task ("And selects an option on Filter by field") {
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+
+			DropdownMenuItem.click(menuItem = "creator");
+		}
+
+		task ("When the user selects the created client extension") {
+			Click(
+				key_label = "Client Extension",
+				locator1 = "FrontendDataSet#OPEN_DROPDOWN_MENU");
+
+			DropdownMenuItem.click(menuItem = "Frontend Data Set Filter");
+		}
+
+		task ("And clicks on close button") {
+			Click(
+				key_modalTitle = "New Client Extension Filter",
+				locator1 = "Button#CLOSE_MODAL");
+		}
+
+		task ("Then the modal is closed") {
+			AssertElementNotPresent(
+				key_modal_title = "New Client Extension Filter",
+				locator1 = "AccessibilityMenu#MODAL_TITLE");
+		}
+
+		task ("And the client extension filter is not created") {
+			AssertElementNotPresent(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
+		}
+	}
+
+	@description = "LPS-182558. Verify it's possible to create a client extension filter."
+	@priority = 5
+	test CanCreateClientExtensionFilter {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("And the user fills the Name field") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+		}
+
+		task ("And selects an option on Filter by field") {
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+
+			DropdownMenuItem.click(menuItem = "creator");
+		}
+
+		task ("When the user selects the created client extension") {
+			Click(
+				key_label = "Client Extension",
+				locator1 = "FrontendDataSet#OPEN_DROPDOWN_MENU");
+
+			DropdownMenuItem.click(menuItem = "Frontend Data Set Filter");
+		}
+
+		task ("And clicks on Save button") {
+			Button.clickSave();
+		}
+
+		task ("Then a confirmation toast message is displayed") {
+			Alert.viewSuccessMessage();
+		}
+
+		task ("And the client extension filter is created") {
+			AssertVisible(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
+		}
+	}
+
 	@description = "LPS-176184. Confirm that the text Select is labeling the  Filter By Field"
 	@ignore = "true"
 	@priority = 5
@@ -1441,6 +1829,212 @@ definition {
 			DataSetAdmin.assertFieldsOnTable(
 				key_position = 2,
 				keyName = "id");
+		}
+	}
+
+	@description = "LPS-182558. Verify it's not possible to save a client extension filter with Client Extension field empty"
+	@priority = 4
+	test CanNotCreateClientExtensionFilterWithClientExtensionFieldEmpty {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("When the user fills the Name field") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+		}
+
+		task ("And selects an option on Filter by field") {
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+
+			DropdownMenuItem.click(menuItem = "creator");
+		}
+
+		task ("And clicks on Save button") {
+			Button.clickSave();
+		}
+
+		task ("Then Save button is disabled") {
+			AssertVisible(
+				key_text = "Save",
+				locator1 = "Button#ANY_DISABLED");
+		}
+
+		task ("And it’s not possible to create a client extension filter") {
+			Click(
+				key_modalTitle = "New Client Extension Filter",
+				locator1 = "Button#CLOSE_MODAL");
+
+			AssertElementNotPresent(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
+		}
+	}
+
+	@description = "LPS-182558. Verify it's not possible to save a client extension filter with Filter by field empty"
+	@priority = 5
+	test CanNotCreateClientExtensionFilterWithFilterByFieldEmpty {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("When the user fills the Name field") {
+			Type(
+				key_text = "Name",
+				locator1 = "TextInput#ANY",
+				value1 = "Liferay Sample Data Set Filter");
+		}
+
+		task ("And selects the created client extension") {
+			Click(
+				key_label = "Client Extension",
+				locator1 = "FrontendDataSet#OPEN_DROPDOWN_MENU");
+
+			DropdownMenuItem.click(menuItem = "Frontend Data Set Filter");
+		}
+
+		task ("And clicks on Save button") {
+			Button.clickSave();
+		}
+
+		task ("Then Save button is disabled") {
+			AssertVisible(
+				key_text = "Save",
+				locator1 = "Button#ANY_DISABLED");
+		}
+
+		task ("And it’s not possible to create a client extension filter") {
+			Click(
+				key_modalTitle = "New Client Extension Filter",
+				locator1 = "Button#CLOSE_MODAL");
+
+			AssertElementNotPresent(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
+		}
+	}
+
+	@description = "Blocked by LPS-203267. LPS-182558. Verify it's not possible to save a client extension filter with Name field empty."
+	@ignore = "true"
+	@priority = 5
+	test CanNotCreateClientExtensionFilterWithNameFieldEmpty {
+		task ("Given a new Client Extension Frontend Data Set filter") {
+			ClientExtensionGeneral.goToRemoteAppsPortlet();
+
+			ClientExtensionGeneral.addFrontendDataSetFilter(
+				description = "New Client Extension Frontend Data Set Filter",
+				javaScriptURL = "https://liferay.github.io/liferay-frontend-projects/date-filter.js",
+				name = "Frontend Data Set Filter");
+		}
+
+		task ("When the user goes to the Filter tab ") {
+			DataSetAdmin.goToDataSetAdminPage();
+
+			DataSetAdmin.goToDataSetViewAdminPage(dataSetName = "Data Set Test");
+
+			DataSetAdmin.goToTab(
+				dataSetViewName = "View Test",
+				tabName = "Filters");
+		}
+
+		task ("And clicks on plus button") {
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("And selects the Client Extension option") {
+			Click(
+				key_fieldName = "Client Extension",
+				locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+		}
+
+		task ("And selects an option on Filter by field") {
+			Click(
+				dropdownLabel = "Filter By",
+				locator1 = "ObjectField#ANY_DROPDOWN_LABEL");
+
+			DropdownMenuItem.click(menuItem = "creator");
+		}
+
+		task ("And selects the created client extension") {
+			Click(
+				key_label = "Client Extension",
+				locator1 = "FrontendDataSet#OPEN_DROPDOWN_MENU");
+
+			DropdownMenuItem.click(menuItem = "Frontend Data Set Filter");
+		}
+
+		task ("And clicks on Save button") {
+			Button.clickSave();
+		}
+
+		task ("Then Save button is disabled") {
+			AssertVisible(
+				key_text = "Save",
+				locator1 = "Button#ANY_DISABLED");
+		}
+
+		task ("And it’s not possible to create a client extension filter") {
+			Click(
+				key_modalTitle = "New Client Extension Filter",
+				locator1 = "Button#CLOSE_MODAL");
+
+			AssertElementNotPresent(
+				key_entryName = "Liferay Sample Data Set Filter",
+				locator1 = "DataSet#FILTERS_ENTRY");
 		}
 	}
 
@@ -1578,7 +2172,7 @@ definition {
 				dropdownLabel = "Select",
 				locator1 = "Dropdown#ANY_DROPDOWN_LABEL");
 
-			DropdownMenuItem.viewDisabledItem(itemList = "creator,externalReferenceCode,status");
+			DropdownMenuItem.viewDisabledItem(itemList = "externalReferenceCode,fieldName,label");
 		}
 	}
 
@@ -1597,12 +2191,12 @@ definition {
 			DataSetAdmin.createFilters(
 				filterName = "Test Filter",
 				filterType = "Selection",
-				key_filterList = "creator,label,status");
+				key_filterList = "externalReferenceCode,label,fieldName");
 		}
 
 		task ("And edits one of them") {
 			Click(
-				key_fieldName = "creator",
+				key_fieldName = "externalReferenceCode",
 				locator1 = "DataSet#VERTICAL_ELLIPSIS_BY_FIELDS_NAME");
 
 			MenuItem.click(menuItem = "Edit");
@@ -1610,7 +2204,7 @@ definition {
 			Type(
 				key_text = "Name",
 				locator1 = "TextInput#ANY",
-				value1 = "creator edited");
+				value1 = "externalReferenceCode edited");
 
 			Click(
 				key_text = "Save",
@@ -1641,16 +2235,16 @@ definition {
 
 		task ("When the user reorder the filters") {
 			DragAndDrop.javaScriptDragAndDropToBottom(
-				key_nameField = "creator edited",
+				key_nameField = "externalReferenceCode edited",
 				key_position = 2,
-				keyName = "status",
+				keyName = "fieldName",
 				locator1 = "DataSet#SELECT_DATASET",
 				locator2 = "DataSet#FIELDS_TABLE");
 		}
 
 		task ("Then the filters are ordered accordingly to the changes") {
 			AssertElementPresent(
-				chosenFilter = "status",
+				chosenFilter = "fieldName",
 				key_tableColumn = 1,
 				key_tableRow = 1,
 				locator1 = "DataSet#FILTER_TABLE_CELL");
@@ -1682,8 +2276,8 @@ definition {
 				picklistName = "Transport");
 		}
 
-		task ("When the user accesses the Fields tab") {
-			DataSetAdmin.goToTab(tabName = "Fields");
+		task ("When the user accesses the Visualization Modes tab") {
+			DataSetAdmin.goToTab(tabName = "Visualization Modes");
 		}
 
 		task ("And adds a new filter") {
@@ -1766,11 +2360,11 @@ definition {
 		}
 
 		task ("And go to the page created, and put a "pt" in URL page") {
-			Navigator.openURL();
+			var portalURL = PropsUtil.get("portal.url");
 
 			Navigator.gotoPage(pageName = "Data Set Test");
 
-			Navigator.openSpecificURL(url = "http://localhost:8080/pt/data-set-test");
+			Navigator.openSpecificURL(url = "${portalURL}/pt/data-set-test");
 		}
 
 		task ("Then Confirm the page translation is not according to PT-BR") {
@@ -1805,8 +2399,8 @@ definition {
 				picklistName = "Transport");
 		}
 
-		task ("When the user accesses the Fields tab") {
-			DataSetAdmin.goToTab(tabName = "Fields");
+		task ("When the user accesses the Visualization Modes tab") {
+			DataSetAdmin.goToTab(tabName = "Visualization Modes");
 		}
 
 		task ("And adds a new filter") {
@@ -1889,11 +2483,11 @@ definition {
 		}
 
 		task ("And go to the page created, and put a "pt" in URL page") {
-			Navigator.openURL();
+			var portalURL = PropsUtil.get("portal.url");
 
 			Navigator.gotoPage(pageName = "Data Set Test");
 
-			Navigator.openSpecificURL(url = "http://localhost:8080/pt/data-set-test");
+			Navigator.openSpecificURL(url = "${portalURL}/pt/data-set-test");
 		}
 
 		task ("Then Confirm the page translation is not according to PT-BR") {
@@ -1906,6 +2500,8 @@ definition {
 	@description = "LPS-183621. Confirm that by editing the filter and selecting Multiple, other items can be added and saved."
 	@priority = 4
 	test SelectionTypeAfterEditFilterChangeSelectionToMultiple {
+		property portal.upstream = "quarantine";
+
 		task ("And creating a picklist And Add items to the created picklist") {
 			DataSetAdmin.setUpPicklistforDataSet(
 				picklistItemList = "bike,car,bus",
@@ -1949,6 +2545,8 @@ definition {
 	@description = "LPS-183621. Confirm that Single works when there is only one item left in Preselected values."
 	@priority = 4
 	test SelectionTypeAfterEditFilterChangeSelectionToSingle {
+		property portal.upstream = "quarantine";
+
 		task ("And creating a picklist And Add items to the created picklist") {
 			DataSetAdmin.setUpPicklistforDataSet(
 				picklistItemList = "bike,car,bus",
@@ -2047,6 +2645,8 @@ definition {
 	@description = "LPS-183621. Confirm that by selecting the radio button Multiple and selecting more than one item, the filter can be saved ."
 	@priority = 4
 	test SelectionTypeWithSelectionMultipleField {
+		property portal.upstream = "quarantine";
+
 		task ("And creating a picklist And Add items to the created picklist") {
 			DataSetAdmin.setUpPicklistforDataSet(
 				picklistItemList = "bike,car,bus",
@@ -2107,6 +2707,8 @@ definition {
 	@description = "LPS-183621. Confirm that when you select the Single radio button and select more than one item, an error message is displayed."
 	@priority = 4
 	test SelectionTypeWithSelectionSingleFieldAndMultipleItem {
+		property portal.upstream = "quarantine";
+
 		task ("And creating a picklist And Add items to the created picklist") {
 			DataSetAdmin.setUpPicklistforDataSet(
 				picklistItemList = "bike,car,bus",

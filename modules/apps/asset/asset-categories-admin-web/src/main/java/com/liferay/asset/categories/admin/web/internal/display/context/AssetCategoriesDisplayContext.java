@@ -12,6 +12,7 @@ import com.liferay.asset.categories.admin.web.internal.constants.AssetCategories
 import com.liferay.asset.categories.admin.web.internal.item.selector.criterion.AssetVocabularyItemSelectorCriterion;
 import com.liferay.asset.categories.admin.web.internal.util.AssetCategoryTreePathComparator;
 import com.liferay.asset.categories.configuration.AssetCategoriesCompanyConfiguration;
+import com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalServiceUtil;
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
@@ -29,6 +30,7 @@ import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryServiceUtil;
 import com.liferay.exportimport.kernel.staging.permission.StagingPermissionUtil;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.IconItem;
@@ -155,6 +157,15 @@ public class AssetCategoriesDisplayContext {
 		).buildString();
 	}
 
+	public int getAssetEntryAssetCategoryRelsCountByClassNameId(
+		long assetCategoryId) {
+
+		return AssetEntryAssetCategoryRelLocalServiceUtil.
+			getAssetEntryAssetCategoryRelsCountByClassNameId(
+				assetCategoryId,
+				PortalUtil.getClassNameId(FriendlyURLEntry.class));
+	}
+
 	public String getAssetType(AssetVocabulary vocabulary) {
 		long[] selectedClassNameIds = vocabulary.getSelectedClassNameIds();
 		long[] selectedClassTypePKs = vocabulary.getSelectedClassTypePKs();
@@ -203,7 +214,10 @@ public class AssetCategoriesDisplayContext {
 
 			sb.append(name);
 
-			if (vocabulary.isRequired(classNameId, classTypePK)) {
+			if (vocabulary.isRequired(
+					classNameId, classTypePK,
+					_themeDisplay.getScopeGroupId())) {
+
 				sb.append(StringPool.SPACE);
 				sb.append(StringPool.STAR);
 				sb.append(StringPool.OPEN_PARENTHESIS);

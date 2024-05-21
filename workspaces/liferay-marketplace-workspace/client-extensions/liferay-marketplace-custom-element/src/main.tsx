@@ -4,40 +4,34 @@
  */
 
 import {Root, createRoot} from 'react-dom/client';
-import {SWRConfig} from 'swr';
 
-import App from './App';
-import MarketplaceContextProvider from './context/MarketplaceContext';
-import {AppContextProvider} from './manage-app-state/AppManageState';
-import SWRCacheProvider from './services/SWRCacheProvider';
+import Routes, {RouteType} from './Routes';
 
-const GRAVATAR_API = `https://www.gravatar.com/avatar`;
+import './main.scss';
 
 class WebComponent extends HTMLElement {
 	private root: Root | undefined;
 
 	connectedCallback() {
-		const properties = {
-			cloudBaseURL: this.getAttribute('cloudBaseURL') || '',
-		};
-
 		if (!this.root) {
 			this.root = createRoot(this);
 
 			this.root.render(
-				<SWRConfig
-					value={{
-						provider: SWRCacheProvider,
-						revalidateIfStale: true,
-						revalidateOnFocus: false,
+				<Routes
+					path={this.getAttribute('path') as RouteType}
+					properties={{
+						cloudBaseURL: this.getAttribute('cloudBaseURL') || '',
+						contactSupportUrl:
+							this.getAttribute('contactSupportUrl') || '',
+						eulaBaseURL: this.getAttribute('eulaBaseURL') || '',
+						featureFlags: (this.getAttribute('featureFlags') ?? '')
+							.split(',')
+							.map((featureflag) => featureflag.trim()),
+						marketoFormId: this.getAttribute('marketoFormId') || '',
+						trialProductId:
+							this.getAttribute('trialProductId') || '',
 					}}
-				>
-					<MarketplaceContextProvider properties={properties}>
-						<AppContextProvider gravatarAPI={GRAVATAR_API}>
-							<App route={this.getAttribute('route') || '/'} />
-						</AppContextProvider>
-					</MarketplaceContextProvider>
-				</SWRConfig>
+				/>
 			);
 		}
 	}

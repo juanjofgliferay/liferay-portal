@@ -3,7 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal, openSimpleInputModal} from 'frontend-js-web';
+import {openCreationModal} from '@liferay/layout-js-components-web';
+import {
+	openModal,
+	openSelectionModal,
+	setFormValues,
+	sub,
+} from 'frontend-js-web';
 
 import openDeletePageTemplateModal from '../commands/openDeletePageTemplateModal';
 
@@ -23,6 +29,39 @@ const ACTIONS = {
 		});
 	},
 
+	moveLayoutPageTemplateCollection(
+		{
+			itemSelectorURL,
+			layoutPageTemplateCollectionId,
+			layoutPageTemplateCollectionName,
+		},
+		portletNamespace
+	) {
+		openSelectionModal({
+			height: '70vh',
+			onSelect: (selectedItem) => {
+				const form = document.getElementById(
+					`${portletNamespace}actionEntriesFm`
+				);
+
+				setFormValues(form, {
+					layoutPageTemplateCollectionsIds: layoutPageTemplateCollectionId,
+					targetLayoutPageTemplateCollectionId:
+						selectedItem.resourceid,
+				});
+
+				submitForm(form);
+			},
+			selectEventName: 'selectFolder',
+			size: 'md',
+			title: sub(
+				Liferay.Language.get('move-x-to'),
+				`"${layoutPageTemplateCollectionName}"`
+			),
+			url: itemSelectorURL,
+		});
+	},
+
 	permissionsLayoutPageTemplateCollection({
 		permissionsLayoutPageTemplateCollectionURL,
 	}) {
@@ -35,19 +74,18 @@ const ACTIONS = {
 	updateLayoutPageTemplateCollection(
 		{
 			dialogTitle,
+			layoutPageTemplateCollectionDescription,
 			layoutPageTemplateCollectionName,
 			updateLayoutPageTemplateCollectionURL,
 		},
 		portletNamespace
 	) {
-		openSimpleInputModal({
-			dialogTitle,
+		openCreationModal({
+			descriptionInputValue: layoutPageTemplateCollectionDescription,
 			formSubmitURL: updateLayoutPageTemplateCollectionURL,
-			mainFieldLabel: Liferay.Language.get('name'),
-			mainFieldName: 'name',
-			mainFieldPlaceholder: Liferay.Language.get('name'),
-			mainFieldValue: layoutPageTemplateCollectionName,
-			namespace: portletNamespace,
+			heading: dialogTitle,
+			nameInputValue: layoutPageTemplateCollectionName,
+			portletNamespace,
 		});
 	},
 };

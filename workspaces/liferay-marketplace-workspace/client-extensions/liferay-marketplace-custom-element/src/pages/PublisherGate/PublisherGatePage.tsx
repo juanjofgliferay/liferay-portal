@@ -42,10 +42,6 @@ export function PublisherGatePage() {
 						svg: cloudUpload,
 					}}
 					label={i18n.translate('free')}
-					link={{
-						href: '#',
-						label: i18n.translate('learn-more'),
-					}}
 					title={i18n.translate(
 						'publish-apps-to-the-liferay-marketplace'
 					)}
@@ -59,10 +55,6 @@ export function PublisherGatePage() {
 						description: i18n.translate('cash'),
 						svg: cash,
 					}}
-					link={{
-						href: '#',
-						label: i18n.translate('learn-more'),
-					}}
 					title={i18n.translate('monetize-your-apps-and-solutions')}
 				/>
 
@@ -73,7 +65,9 @@ export function PublisherGatePage() {
 						className="mr-4 publisher-gate-page-button"
 						displayType="secondary"
 						onClick={() => {
-							window.location.href = `${Liferay.ThemeDisplay.getPortalURL()}${getSiteURL()}/home`;
+							Liferay.Util.navigate(
+								`${Liferay.ThemeDisplay.getPortalURL()}${getSiteURL()}/home`
+							);
 						}}
 					>
 						{i18n.translate('go-back-to-marketplace')}

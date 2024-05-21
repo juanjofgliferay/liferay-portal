@@ -25,7 +25,6 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.concurrent.Callable;
@@ -104,10 +103,9 @@ public class CopyLayoutUtilityPageEntryMVCActionCommand
 		Layout targetLayout = _layoutLocalService.getLayout(
 			layoutUtilityPageEntry.getPlid());
 
-		_layoutCopyHelper.copyLayoutContent(
-			sourceLayout.fetchDraftLayout(), targetLayout.fetchDraftLayout());
-
 		_layoutCopyHelper.copyLayoutContent(sourceLayout, targetLayout);
+		_layoutCopyHelper.copyLayoutContent(
+			sourceLayout, targetLayout.fetchDraftLayout());
 
 		return layoutUtilityPageEntry;
 	}
@@ -131,9 +129,6 @@ public class CopyLayoutUtilityPageEntryMVCActionCommand
 
 	@Reference
 	private LayoutUtilityPageEntryService _layoutUtilityPageEntryService;
-
-	@Reference
-	private Portal _portal;
 
 	private class CopyLayoutUtilityPageEntryCallable
 		implements Callable<LayoutUtilityPageEntry> {

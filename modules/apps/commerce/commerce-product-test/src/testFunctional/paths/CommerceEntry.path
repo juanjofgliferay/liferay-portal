@@ -406,6 +406,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PLUS_BUTTON</td>
+	<td>//a[contains(@class,'btn')][contains(@href,'new') or contains(@href,'redirect') or contains(@href,'mvc') or contains(@href,'javascript')][.//*[name()='svg'][contains(@class,'icon-plus')]][not(contains(@class,'borderless'))] | //button[not(contains(@class,'borderless'))][not(contains(@class,'btn-unstyled'))][*[contains(@class,'icon-plus')]]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>PLUS_MENU</td>
 	<td>//div[contains (@class, 'dropdown')]//li/a[contains (.,'${key_plusMenu}')]</td>
 	<td></td>
@@ -478,6 +483,11 @@
 <tr>
 	<td>EDIT_ROW</td>
 	<td>//*[@data-qa-id='row']//*[normalize-space(text())='${key_rowEntry}']//..//..//*[normalize-space(text())='Edit']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ENTRY_CONTENT_ENTRY_NAME_INDEX</td>
+	<td>//*[@data-qa-id='row']//*[normalize-space(text())='${key_rowEntry}'][${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -572,7 +582,12 @@
 </tr>
 <tr>
 	<td>COMBOBOX_DROPDOWN_OPTION_NAME</td>
-	<td>//div[contains(@class, 'dropdown-menu dropdown-menu-indicator-start dropdown-menu-select show')]//span[contains(text(),'${key_optionName}')]</td>
+	<td>//div[contains(@class, 'dropdown-menu dropdown-menu-indicator-start dropdown-menu-select show')]//*[contains(text(),'${key_optionName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DROPDOWN_OPTION_NAME_WITH_WARNING_MESSAGE</td>
+	<td>//div[contains(@class, 'dropdown-menu dropdown-menu-indicator-start dropdown-menu-select show')]//span[contains(text(),'${key_warning}')]/../../..//*[contains(text(),'${key_optionName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -706,6 +721,16 @@
 	<td></td>
 </tr>
 <tr>
+	<td>BODY_VERTICAL_ELLIPSIS_ACCOUNT</td>
+	<td>//div[@class='data-set-wrapper' or @class='searchcontainer-content']//a[text()='${key_name}']/../../..//*[*[name()='svg'][contains(@class,'icon-ellipsis')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BODY_VERTICAL_ELLIPSIS_ORDER</td>
+	<td>//div[contains(@class,'portlet') and contains(@class,'container')]//a[span/*[name()='svg'][contains(@class,'icon-ellipsis')]] | //*[contains(@class,'sheet-title')]//*[contains(@class,'dropdown-toggle')][.//*[name()='svg'][contains(@class,'icon-ellipsis')]]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>CHANNEL_TYPE_VALUE</td>
 	<td>//header[contains(., 'Type')]/../div[@class='description']</td>
 	<td></td>
@@ -722,7 +747,7 @@
 </tr>
 <tr>
 	<td>PAGINATION_ITEMS_PER_PAGE_SELECT</td>
-	<td>//div[contains(@id,'${key_id}')]//../button[contains(@class,'dropdown-toggle btn btn-unstyled')]</td>
+	<td>//div[contains(@id,'${key_id}')]//div[contains (@class,'pagination')]/button[contains(@class,'dropdown-toggle btn btn-unstyled')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -762,7 +787,7 @@
 </tr>
 <tr>
 	<td>ENTRY_CONTENT_ROW_NUMBER_DATASET</td>
-	<td>//table[@class='table table-autofit']/tbody/tr[${key_rowNumber}]/td[text()="${key_entry}"]</td>
+	<td>//table/tbody/tr[${key_rowNumber}]/td[text()="${key_entry}"]</td>
 	<td></td>
 </tr>
 <tr>
@@ -936,6 +961,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>HEADER_ID_DATA_QA_ID</td>
+	<td>//div[@class='header-info']//div//span[contains(.,'ID')]/following-sibling::strong@data-qa-id</td>
+	<td></td>
+</tr>
+<tr>
 	<td>NOTIFICATION_DELIVERY_PANEL_CLOSED</td>
 	<td>//div[contains(@class,'content')]//a[contains(.,'${key_contentType}') and contains(@class,'collapsed')]//span[contains(@class,'closed')]//*[name()='svg']</td>
 	<td></td>
@@ -957,7 +987,7 @@
 </tr>
 <tr>
 	<td>ANY_FRAGMENT_DROP_TARGET_N</td>
-	<td>//div[@aria-label='${key_targetFragmentName}'][${key_index}]/div[contains(@class,'page-editor__topper__content')]</td>
+	<td>//div[@data-name='${key_targetFragmentName}'][${key_index}]/div[contains(@class,'page-editor__topper__content')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -1402,6 +1432,16 @@
 	<td></td>
 </tr>
 <tr>
+	<td>GENERIC_SELECT_FIELD_N</td>
+	<td>xpath=(//div[label[normalize-space(text())='${key_fieldLabel}']]/select)[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INPUT_INDEX</td>
+	<td>xpath=(//input[contains(@class,'form-control')])[${key_index}]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>REMOVE_OPTION_CATEGORY</td>
 	<td>//div[contains(@class,'form-group')]/label[contains(.,'Category')]/..//span[contains(@class,'label label-secondary')]/span[contains(.,'${key_category}')]/..//button</td>
 	<td></td>
@@ -1468,7 +1508,7 @@
 </tr>
 <tr>
 	<td>SEARCH_PRODUCT_RELATIONS</td>
-	<td>//input[@placeholder='Search for']</td>
+	<td>//input[starts-with(@placeholder, 'Search')]</td>
 	<td></td>
 </tr>
 <tr>

@@ -8,11 +8,12 @@ package com.liferay.commerce.price.list.service.impl;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.base.CommercePriceEntryServiceBaseImpl;
-import com.liferay.commerce.price.list.service.persistence.CommercePriceListFinder;
+import com.liferay.commerce.price.list.util.comparator.CommercePriceEntryUOMCreateDateComparator;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
+import java.util.Iterator;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -269,8 +271,28 @@ public class CommercePriceEntryServiceImpl
 			return Collections.emptyList();
 		}
 
-		return _commercePriceListFinder.findByCPInstanceUuid(
-			cpInstance.getCPInstanceUuid(), start, end, true);
+		List<CommercePriceEntry> commercePriceEntries =
+			commercePriceEntryLocalService.getInstanceCommercePriceEntries(
+				cpInstance.getCPInstanceUuid(), start, end,
+				new CommercePriceEntryUOMCreateDateComparator(true));
+
+		Iterator<CommercePriceEntry> iterator = commercePriceEntries.iterator();
+
+		while (iterator.hasNext()) {
+			CommercePriceEntry commercePriceEntry = iterator.next();
+
+			if (_commercePriceListModelResourcePermission.contains(
+					getPermissionChecker(),
+					commercePriceEntry.getCommercePriceListId(),
+					ActionKeys.VIEW)) {
+
+				continue;
+			}
+
+			iterator.remove();
+		}
+
+		return commercePriceEntries;
 	}
 
 	@Override
@@ -284,8 +306,25 @@ public class CommercePriceEntryServiceImpl
 			return 0;
 		}
 
-		return _commercePriceListFinder.countByCPInstanceUuid(
-			cpInstance.getCPInstanceUuid(), true);
+		int count = 0;
+
+		List<CommercePriceEntry> commercePriceEntries =
+			commercePriceEntryLocalService.getInstanceCommercePriceEntries(
+				cpInstance.getCPInstanceUuid(), QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS,
+				new CommercePriceEntryUOMCreateDateComparator(true));
+
+		for (CommercePriceEntry commercePriceEntry : commercePriceEntries) {
+			if (_commercePriceListModelResourcePermission.contains(
+					getPermissionChecker(),
+					commercePriceEntry.getCommercePriceListId(),
+					ActionKeys.VIEW)) {
+
+				count++;
+			}
+		}
+
+		return count;
 	}
 
 	@Override
@@ -377,9 +416,6 @@ public class CommercePriceEntryServiceImpl
 			commercePriceEntryId, bulkPricing, price, priceOnApplication,
 			promoPrice, unitOfMeasureKey, serviceContext);
 	}
-
-	@Reference
-	private CommercePriceListFinder _commercePriceListFinder;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.price.list.model.CommercePriceList)"

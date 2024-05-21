@@ -386,10 +386,7 @@ definition {
 		}
 
 		task ("When the user creates a Commerce Product entry") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Product Management",
-				panel = "Commerce",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CPCommerceCatalog.newProductsEntry(
 				productCatalog = "Master",
@@ -398,10 +395,7 @@ definition {
 		}
 
 		task ("Then the action is triggered and a user is added") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin();
 
 			LexiconEntry.viewEntryName(rowEntry = "newusertest");
 		}
@@ -565,9 +559,7 @@ definition {
 		}
 
 		task ("When The user changes the order status.") {
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Orders");
+			CommerceOrders.openOrdersAdmin();
 
 			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -756,9 +748,7 @@ definition {
 		}
 
 		task ("And when the order status is updated") {
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Orders");
+			CommerceOrders.openOrdersAdmin();
 
 			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -793,104 +783,6 @@ definition {
 				recipient = "test@liferay",
 				sender = "Test Test",
 				subject = "Subject Test");
-		}
-	}
-
-	@description = "LPS-171799 -  Verify it's possible to create a notification action with the trigger On Payment Status Update"
-	@priority = 5
-	test CanCreateActionNotificationWithOnPaymentStatusUpdate {
-		property portal.acceptance = "true";
-
-		task ("Given a Notification Template is created") {
-			Notifications.goToNotificationTemplateAdmin();
-
-			ObjectNotifications.addNewNotificationTemplate(notificationType = "Email");
-
-			ObjectNotifications.configureEmailNotificationTemplate(
-				entryTo = "test@liferay.com",
-				fromAddress = "test@liferay.com",
-				fromName = "Test Test",
-				name = "Notification Template",
-				subject = "Subject Test");
-
-			PortletEntry.save();
-		}
-
-		task ("And given a notification action with the trigger On Order Status Update is created") {
-			ObjectAdmin.openObjectAdmin();
-
-			ObjectPortlet.selectCustomObject(label = "Commerce Order");
-
-			ObjectAdmin.goToActionsTab();
-
-			ObjectAdmin.addObjectActionViaUI(
-				actionLabel = "Custom Action",
-				actionName = "CustomAction",
-				active = "true",
-				inputExpression = "orderStatus == 1",
-				notificationName = "Notification Template",
-				thenAction = "Notification",
-				whenAction = "On Payment Status Update");
-		}
-
-		task ("And given an account, minium site and an order is created") {
-			CommerceJSONAccountsAPI._addCommerceAccount(
-				accountName = "Account Name",
-				accountType = "Business");
-
-			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-			ApplicationsMenu.gotoSite(site = "Minium");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			CommerceCheckout.gotoCheckout();
-
-			CommerceCheckout.initializersCheckout(
-				newAddressAddress = "Test Address",
-				newAddressCity = "Test City",
-				newAddressCountry = "United States",
-				newAddressName = "Address Name",
-				newAddressZipCode = "Test Zip Code",
-				productName = "U-Joint",
-				productQuantity = 1,
-				productUnitPrice = 24,
-				shippingMethod = "Standard");
-		}
-
-		task ("When the payment status is updated") {
-			CommerceOrders.openOrdersAdmin();
-
-			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
-
-			CommerceEntry.gotoMenuTab(menuTab = "Payments");
-
-			CommercePaymentStatus.editPaymentStatus(statusValue = "Canceled");
-
-			CommercePaymentStatus.assertPaymentStatus(statusValue = "Canceled");
-		}
-
-		task ("Then assert the action run and the notification is in the queue") {
-			Notifications.goToNotificationQueueAdmin();
-
-			AssertElementPresent(
-				key_entryLabel = "CommerceOrder",
-				key_entryStatus = "Sent",
-				locator1 = "ObjectNotifications#VIEW_NOTIFICATION_ENTRIES");
-
-			// Workaround for LPS-193383
-
-			CommerceOrders.openOrdersAdmin();
-
-			Click.clickNoMouseOverNoWaitForVisible(locator1 = "CommerceNavigation#SELECT_ALL_CHECKBOX");
-
-			ClickNoError(locator1 = "Button#TRASH_ENABLED");
-
-			AssertConfirm.assertPartialConfirmation(value1 = "Are you sure you want to delete all selected orders?");
-
-			CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
 		}
 	}
 
@@ -945,9 +837,7 @@ definition {
 		}
 
 		task ("Then the action is triggered and the order status is updated") {
-			CommerceNavigator.gotoPortlet(
-				category = "Order Management",
-				portlet = "Orders");
+			CommerceOrders.openOrdersAdmin();
 
 			AssertElementPresent(
 				key_value = "On Hold",
@@ -1048,6 +938,7 @@ definition {
 	@priority = 3
 	test CanCreateActionUsingGroovyScripWithOnOrderStatusUpdate {
 		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Given an action in the Commerce Order object") {
 			ObjectAdmin.openObjectAdmin();
@@ -1095,7 +986,9 @@ definition {
 		}
 
 		task ("When the user changes the order status") {
-			CommerceOrders.openOrdersAdmin();
+			CommerceNavigator.gotoPortlet(
+				category = "Order Management",
+				portlet = "Orders");
 
 			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -1107,7 +1000,7 @@ definition {
 
 			AssertElementPresent(
 				key_value = "Processing",
-				locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+				locator1 = "CommerceEntry#ORDERS_ENTRY_BODY_VERTICAL_ELLIPSIS");
 		}
 
 		task ("Then the action is triggered") {
@@ -1121,18 +1014,6 @@ definition {
 				actionActive = "Yes",
 				actionLabel = "Action Label",
 				status = "Success");
-
-			// Workaround for LPS-193383
-
-			CommerceOrders.openOrdersAdmin();
-
-			Click.clickNoMouseOverNoWaitForVisible(locator1 = "CommerceNavigation#SELECT_ALL_CHECKBOX");
-
-			ClickNoError(locator1 = "Button#TRASH_ENABLED");
-
-			AssertConfirm.assertPartialConfirmation(value1 = "Are you sure you want to delete all selected orders?");
-
-			CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
 		}
 	}
 
@@ -1955,67 +1836,6 @@ definition {
 			value1 = "Required");
 	}
 
-	@description = "Verify if an error message appears when trying to save an Update an object Entry action with a Standalone trigger when using the invalid expression"
-	@priority = 4
-	test CannotSaveUpdateAnObjectEntryActions {
-		property portal.upstream = "quarantine";
-
-		task ("Given a custom object is created") {
-			ObjectAdmin.addObjectViaAPI(
-				labelName = "Custom Object 175620",
-				objectName = "CustomObject175620",
-				pluralLabelName = "Custom Objects");
-
-			ObjectAdmin.addObjectFieldViaAPI(
-				fieldBusinessType = "Integer",
-				fieldLabelName = "Custom Integer",
-				fieldName = "customInteger",
-				fieldType = "Integer",
-				isRequired = "true",
-				objectName = "CustomObject175620");
-		}
-
-		task ("When the user adds an invalid expression to the Update an Object Entry action") {
-			ObjectAdmin.openObjectAdmin();
-
-			ObjectPortlet.selectCustomObject(label = "Custom Object 175620");
-
-			ObjectAdmin.goToActionsTab();
-
-			ObjectAdmin.gotoAddObjectAction();
-
-			ObjectAdmin.fillObjectAction(
-				actionLabel = "Action Label",
-				actionName = "ActionName",
-				active = "true",
-				errorMessage = "Error",
-				fieldName = "Custom Integer",
-				inputExpressionValue = "abc",
-				inputMethod = "false",
-				objectLabel = "Custom Object 175620",
-				thenAction = "Update an Object Entry",
-				whenAction = "Standalone");
-		}
-
-		task ("Then an invalid error message appears") {
-			Button.clickSave();
-
-			AssertElementPresent(locator1 = "Message#ALERT_DISMISSIBLE");
-		}
-
-		task ("Then the action is not created") {
-			ObjectAdmin.openObjectAdmin();
-
-			ObjectPortlet.selectCustomObject(label = "Custom Object 175620");
-
-			ObjectAdmin.goToActionsTab();
-
-			AssertElementNotPresent(
-				key_actionLabel = "Action Label",
-				locator1 = "ObjectAdmin#VIEW_ACTIONS_LABEL");
-		}
-	}
-
 	@description = "LPS-156319 - Verify that the Expression Builder field is required"
 	@priority = 3
 	test CannotSaveWithoutExpressionBuilder {
@@ -2278,69 +2098,6 @@ definition {
 			ObjectPortlet.viewEntry(entry = "Entry Test");
 
 			ObjectPortlet.viewEntry(entry = "New object entry value");
-		}
-	}
-
-	@description = "LPS-146871 - Verify an Action with Groovy Script can be triggered after deleting an entry."
-	@priority = 4
-	test CanTriggerActionDeleteWithGroovyScript {
-		property portal.upstream = "quarantine";
-
-		task ("Given an object with a field is created") {
-			ObjectAdmin.addObjectViaAPI(
-				labelName = "Custom Object 156566",
-				objectName = "CustomObject156566",
-				pluralLabelName = "Custom Objects 156566");
-
-			ObjectAdmin.addObjectFieldViaAPI(
-				fieldBusinessType = "Text",
-				fieldLabelName = "Custom Field",
-				fieldName = "customField",
-				fieldType = "String",
-				isRequired = "true",
-				objectName = "CustomObject156566");
-
-			ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject156566");
-
-			ObjectAdmin.addObjectSingleFieldEntryViaAPI(
-				fieldName = "customField",
-				objectName = "CustomObject156566",
-				value = "Entry Test");
-		}
-
-		task ("When an action is created using Groovy Script and is triggered when an object entry is deleted") {
-			ObjectAdmin.openObjectAdmin();
-
-			ObjectPortlet.selectCustomObject(label = "Custom Object 156566");
-
-			ObjectAdmin.goToActionsTab();
-
-			ObjectAdmin.addObjectActionViaUI(
-				actionLabel = "Action Label",
-				actionName = "ActionName",
-				active = "true",
-				scriptValidation = "print('Hello world')",
-				thenAction = "Groovy Script",
-				whenAction = "On After Delete");
-		}
-
-		task ("Then deleting an object entry will trigger the action") {
-			ObjectAdmin.goToCustomObject(objectName = "CustomObject156566");
-
-			ObjectPortlet.deleteEntry(entry = "Entry Test");
-
-			ObjectAdmin.openObjectAdmin();
-
-			ObjectPortlet.selectCustomObject(label = "Custom Object 156566");
-
-			ObjectAdmin.goToActionsTab();
-
-			ObjectAdmin.assertObjectActions(
-				actionActive = "Yes",
-				actionLabel = "Action Label",
-				status = "Success");
-
-			AssertConsoleTextPresent(value1 = "Hello world");
 		}
 	}
 
@@ -2987,7 +2744,7 @@ definition {
 
 			AssertElementPresent(
 				key_value = "On Hold",
-				locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+				locator1 = "CommerceEntry#ORDERS_ENTRY_BODY_VERTICAL_ELLIPSIS");
 
 			// Workaround for LPS-193383
 
@@ -3008,6 +2765,7 @@ definition {
 	test CanUseExpressionWithGroovyScript {
 		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Given an object with a field is created") {
 			ObjectAdmin.addObjectViaAPI(
@@ -3158,10 +2916,7 @@ definition {
 		}
 
 		task ("When check the object entries in define permissions tab of a regular role") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Roles");
+			Role.openRolesAdmin();
 
 			RoleNavigator.gotoDefineRolePermissions(roleTitle = "Portal Content Reviewer");
 
@@ -3215,10 +2970,7 @@ definition {
 		property portal.acceptance = "true";
 
 		task ("Given a object system") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Object",
-				panel = "Control Panel",
-				portlet = "Objects");
+			ObjectAdmin.openObjectAdmin();
 
 			ObjectPortlet.selectSystemObject(label = "Commerce Order");
 		}

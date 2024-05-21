@@ -2,10 +2,11 @@ import AcquisitionsQuery, {
 	AcquisitionsQueryData,
 	AcquisitionsQueryVariables
 } from 'shared/queries/AcquisitionsQuery';
+import BaseCard from 'shared/components/base-card';
 import BasePage from 'shared/components/base-page';
 import Card from 'shared/components/Card';
 import CardTabs from 'shared/components/CardTabs';
-import CardWithRangeKey from 'shared/hoc/CardWithRangeKey';
+import ClayLink from '@clayui/link';
 import ErrorDisplay from 'shared/components/ErrorDisplay';
 import React, {useContext, useState} from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
@@ -15,9 +16,9 @@ import {ACQUISITION_LABEL_MAP} from 'shared/util/lang';
 import {AcquisitionTypes, CompositionTypes} from 'shared/util/constants';
 import {ApolloError} from 'apollo-client';
 import {compositionListColumns} from 'shared/util/table-columns';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {getSafeRangeSelectors} from 'shared/util/util';
 import {RangeSelectors} from 'shared/types';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {useQuery} from '@apollo/react-hooks';
 
 const ROW_IDENTIFIER = 'name';
@@ -79,11 +80,11 @@ const AcquisitionsCard: React.FC<IAcquisitionsCardProps> = ({
 	label,
 	legacyDropdownRangeKey
 }) => (
-	<CardWithRangeKey
+	<BaseCard
 		className={className}
-		id={Containers.AcquisitionsCard}
 		label={label}
 		legacyDropdownRangeKey={legacyDropdownRangeKey}
+		reportContainer={ReportContainer.AcquisitionsCard}
 	>
 		{({rangeSelectors}) => (
 			<AcquisitionsCardWithData
@@ -91,7 +92,7 @@ const AcquisitionsCard: React.FC<IAcquisitionsCardProps> = ({
 				rangeSelectors={rangeSelectors}
 			/>
 		)}
-	</CardWithRangeKey>
+	</BaseCard>
 );
 
 interface IAcquisitionsCard extends Partial<IAcquisitionsCardProps> {
@@ -181,13 +182,13 @@ const AcquisitionsCardWithStatesRenderer: React.FC<IAcquisitionsCardWithStatesRe
 						)}
 					</span>
 
-					<a
+					<ClayLink
 						href={URLConstants.SitesDashboardAcquisitions}
 						key='DOCUMENTATION'
 						target='_blank'
 					>
 						{Liferay.Language.get('learn-more-about-acquisitions')}
-					</a>
+					</ClayLink>
 				</>
 			}
 			showIcon={false}

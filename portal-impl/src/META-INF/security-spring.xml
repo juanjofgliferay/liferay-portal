@@ -7,7 +7,6 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd"
 >
-	<bean class="com.liferay.portal.kernel.internal.security.permission.resource.PortletResourcePermissionDefinitionTracker" id="com.liferay.portal.kernel.internal.security.permission.resource.PortletResourcePermissionDefinitionTracker" />
 	<bean class="com.liferay.portal.kernel.model.ModelHintsUtil" id="com.liferay.portal.kernel.model.ModelHintsUtil">
 		<property name="modelHints">
 			<bean class="com.liferay.portal.model.DefaultModelHintsImpl" />
@@ -63,5 +62,4 @@
 	<bean class="com.liferay.portal.security.auth.registry.AuthVerifierRegistry" id="com.liferay.portal.security.auth.registry.AuthVerifierRegistry" />
 	<bean class="com.liferay.portal.security.auth.tunnel.TunnelAuthenticationManagerImpl" id="com.liferay.portal.security.auth.tunnel.TunnelAuthenticationManagerImpl" />
 	<bean class="com.liferay.portal.security.membershippolicy.DefaultSiteMembershipPolicy" id="com.liferay.portal.security.membershippolicy.DefaultSiteMembershipPolicy" />
-	<bean class="com.liferay.portal.security.pwd.PasswordPolicyToolkit" id="com.liferay.portal.security.pwd.PasswordPolicyToolkit" />
 </beans>

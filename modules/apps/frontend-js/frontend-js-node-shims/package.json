@@ -14,9 +14,9 @@
 	},
 	"name": "frontend-js-node-shims",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
+		"build": "node-scripts build",
 		"checkFormat": "liferay-npm-scripts check",
 		"format": "liferay-npm-scripts fix"
 	},
-	"version": "5.0.11"
+	"version": "5.0.12"
 }

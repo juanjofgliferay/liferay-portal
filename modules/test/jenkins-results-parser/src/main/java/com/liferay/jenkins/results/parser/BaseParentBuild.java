@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +26,7 @@ import org.dom4j.Element;
  */
 public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 
+	@Override
 	public void addDownstreamBuilds(Map<String, String> urlAxisNames) {
 		if (urlAxisNames.isEmpty()) {
 			return;
@@ -347,18 +347,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			downstreamBuilds = getDownstreamBuilds(status);
 		}
 
-		for (Build downstreamBuild : downstreamBuilds) {
-			if (!(downstreamBuild instanceof ParentBuild)) {
-				continue;
-			}
-
-			ParentBuild parentBuild = (ParentBuild)downstreamBuild;
-
-			totalSlavesUsedCount += parentBuild.getTotalSlavesUsedCount(
-				status, modifiedBuildsOnly);
-		}
-
-		return totalSlavesUsedCount;
+		return totalSlavesUsedCount + downstreamBuilds.size();
 	}
 
 	@Override
@@ -504,7 +493,12 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			callables, getExecutorService(), "update");
 
 		try {
-			parallelExecutor.execute();
+			if (Objects.equals(getJobName(), "test-portal-release")) {
+				parallelExecutor.execute(60L * 240L);
+			}
+			else {
+				parallelExecutor.execute();
+			}
 		}
 		catch (TimeoutException timeoutException) {
 			throw new RuntimeException(timeoutException);
@@ -585,7 +579,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 		return count;
 	}
 
-	protected Map<Build, Element> getDownstreamBuildMessages(
+	protected List<Element> getDownstreamBuildMessageElements(
 		List<Build> downstreamBuilds) {
 
 		List<Callable<Element>> callables = new ArrayList<>();
@@ -610,15 +604,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			callables, getExecutorService(), "getDownstreamBuildMessages");
 
 		try {
-			List<Element> elements = parallelExecutor.execute();
-
-			Map<Build, Element> elementsMap = new LinkedHashMap<>();
-
-			for (int i = 0; i < elements.size(); i++) {
-				elementsMap.put(downstreamBuilds.get(i), elements.get(i));
-			}
-
-			return elementsMap;
+			return parallelExecutor.execute();
 		}
 		catch (TimeoutException timeoutException) {
 			throw new RuntimeException(timeoutException);
@@ -636,6 +622,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 		return failedDownstreamBuilds;
 	}
 
+	@Override
 	protected List<Element> getJenkinsReportTableRowElements(
 		String result, String status) {
 

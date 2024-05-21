@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -57,13 +58,13 @@ public class CPSpecificationOptionLocalServiceUtil {
 			long userId, long cpOptionCategoryId,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key,
+			String key, double priority,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPSpecificationOption(
 			userId, cpOptionCategoryId, titleMap, descriptionMap, facetable,
-			key, serviceContext);
+			key, priority, serviceContext);
 	}
 
 	/**
@@ -395,23 +396,22 @@ public class CPSpecificationOptionLocalServiceUtil {
 			long cpSpecificationOptionId, long cpOptionCategoryId,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key,
+			String key, double priority,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPSpecificationOption(
 			cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-			descriptionMap, facetable, key, serviceContext);
+			descriptionMap, facetable, key, priority, serviceContext);
 	}
 
 	public static CPSpecificationOptionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPSpecificationOptionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CPSpecificationOptionLocalService _service;
+	private static final Snapshot<CPSpecificationOptionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPSpecificationOptionLocalServiceUtil.class,
+			CPSpecificationOptionLocalService.class);
 
 }

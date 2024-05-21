@@ -27,15 +27,21 @@ renderResponse.setTitle(LanguageUtil.get(request, "review-change"));
 <div class="publications-view-changes-wrapper">
 	<div>
 		<react:component
-			module="publications/js/views/ChangeTrackingChangesToolbar"
+			module="{ChangeTrackingChangesToolbar} from change-tracking-web"
 			props="<%= viewChangesDisplayContext.getToolbarReactData() %>"
 		/>
 	</div>
 
 	<div class="sidenav-content">
 		<react:component
-			module="publications/js/views/ChangeTrackingChangeView"
+			module="{ChangeTrackingChangeView} from change-tracking-web"
 			props="<%= viewChangesDisplayContext.getReactData() %>"
 		/>
 	</div>
 </div>
+
+<aui:script>
+	function <%= viewChangesDisplayContext.getMyWorkflowTaskPortletNamespace() %>refreshPortlet() {
+		Liferay.fire('<portlet:namespace />workflowTaskUpdated');
+	}
+</aui:script>

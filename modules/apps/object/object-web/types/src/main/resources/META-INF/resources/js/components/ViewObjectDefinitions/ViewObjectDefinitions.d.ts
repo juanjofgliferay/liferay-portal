@@ -6,12 +6,23 @@
 /// <reference types="react" />
 
 import {IFDSTableProps} from '../../utils/fds';
+import {ModalImportKeys} from '../ModalImport/ModalImport';
 import './ViewObjectDefinitions.scss';
+export interface ModalImportProperties {
+	JSONInputId: string;
+	apiURL: string;
+	importExtendedInfo?: KeyValueObject;
+	importURL: string;
+	modalImportKey: ModalImportKeys;
+}
 interface ViewObjectDefinitionsProps extends IFDSTableProps {
 	baseResourceURL: string;
 	editObjectDefinitionURL: string;
+	importObjectDefinitionURL: string;
+	importObjectFolderURL: string;
+	learnResourceContext: any;
 	modelBuilderURL: string;
-	objectDefinitionsAPIURL: any;
+	nameMaxLength: string;
 	objectDefinitionsCreationMenu: {
 		primaryItems?: any[];
 		secondaryItems?: any[];
@@ -20,22 +31,21 @@ interface ViewObjectDefinitionsProps extends IFDSTableProps {
 	objectDefinitionsFDSName: any;
 	objectDefinitionsStorageTypes: LabelValueObject[];
 	objectFolderPermissionsURL: string;
-}
-export interface DeletedObjectDefinition {
-	hasObjectRelationship: boolean;
-	id: number;
-	name: string;
-	objectEntriesCount: number;
+	portletNamespace: string;
 }
 export default function ViewObjectDefinitions({
 	baseResourceURL,
 	editObjectDefinitionURL,
+	importObjectDefinitionURL,
+	importObjectFolderURL,
+	learnResourceContext,
 	modelBuilderURL,
-	objectDefinitionsAPIURL,
+	nameMaxLength,
 	objectDefinitionsCreationMenu,
 	objectDefinitionsFDSActionDropdownItems,
 	objectDefinitionsFDSName,
 	objectDefinitionsStorageTypes,
 	objectFolderPermissionsURL,
+	portletNamespace,
 }: ViewObjectDefinitionsProps): JSX.Element;
 export {};

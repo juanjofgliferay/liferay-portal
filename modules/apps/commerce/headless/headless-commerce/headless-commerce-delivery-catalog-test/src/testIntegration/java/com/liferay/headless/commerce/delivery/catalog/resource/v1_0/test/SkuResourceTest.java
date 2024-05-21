@@ -12,6 +12,7 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
@@ -35,7 +36,6 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 
 import java.math.BigDecimal;
@@ -55,7 +55,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Andrea Sbarra
  */
-@FeatureFlags("COMMERCE-11287")
 @RunWith(Arquillian.class)
 public class SkuResourceTest extends BaseSkuResourceTestCase {
 
@@ -91,6 +90,18 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 	}
 
 	@Ignore
+	@Test
+	public void testGraphQLGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode()
+		throws Exception {
+	}
+
+	@Ignore
+	@Test
+	public void testGraphQLGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCodeNotFound()
+		throws Exception {
+	}
+
+	@Ignore
 	@Override
 	@Test
 	public void testGraphQLGetChannelProductSku() throws Exception {
@@ -106,6 +117,68 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 	@Override
 	@Test
 	public void testPostChannelProductSku() {
+	}
+
+	@Override
+	protected Sku
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode_addSku()
+		throws Exception {
+
+		return _addCPInstance(randomSku());
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode_getChannelExternalReferenceCode()
+		throws Exception {
+
+		return _commerceChannel.getExternalReferenceCode();
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode_getProductExternalReferenceCode()
+		throws Exception {
+
+		CProduct cProduct = _cpDefinition.getCProduct();
+
+		return cProduct.getExternalReferenceCode();
+	}
+
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode_getSkuExternalReferenceCode()
+		throws Exception {
+
+		CPInstance cpInstance = _cpInstances.get(_cpInstances.size() - 1);
+
+		return cpInstance.getExternalReferenceCode();
+	}
+
+	@Override
+	protected Sku
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkusPage_addSku(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode, Sku sku)
+		throws Exception {
+
+		return _addCPInstance(sku);
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkusPage_getChannelExternalReferenceCode()
+		throws Exception {
+
+		return _commerceChannel.getExternalReferenceCode();
+	}
+
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkusPage_getProductExternalReferenceCode()
+		throws Exception {
+
+		CProduct cProduct = _cpDefinition.getCProduct();
+
+		return cProduct.getExternalReferenceCode();
 	}
 
 	@Override
@@ -153,6 +226,24 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 	}
 
 	@Override
+	protected Sku
+			testPostChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSku_addSku(
+				Sku sku)
+		throws Exception {
+
+		return _addCPInstance(sku);
+	}
+
+	@Override
+	protected Sku
+			testPostChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuBySkuOption_addSku(
+				Sku sku)
+		throws Exception {
+
+		return _addCPInstance(sku);
+	}
+
+	@Override
 	protected Sku testPostChannelProductSkuBySkuOption_addSku(Sku sku)
 		throws Exception {
 
@@ -192,6 +283,7 @@ public class SkuResourceTest extends BaseSkuResourceTestCase {
 				depth = cpInstance.getDepth();
 				displayDate = cpInstance.getDisplayDate();
 				expirationDate = cpInstance.getExpirationDate();
+				externalReferenceCode = cpInstance.getExternalReferenceCode();
 				gtin = cpInstance.getGtin();
 				height = cpInstance.getHeight();
 				id = cpInstance.getCPInstanceId();

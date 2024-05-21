@@ -27,8 +27,10 @@ import useTypeActivityOptions from './hooks/useTypeActivityOptions';
 interface IProps {
 	claimPercent: number;
 	currency: LiferayPicklist;
+	currencyExchangeRate: number;
 	currentActivity: MDFRequestActivity;
 	currentActivityIndex: number;
+	isButtonClicked?: boolean;
 	setFieldValue: (
 		field: string,
 		value: any,
@@ -43,8 +45,10 @@ type TypeActivityComponent = {
 const Form = ({
 	claimPercent,
 	currency,
+	currencyExchangeRate,
 	currentActivity,
 	currentActivityIndex,
+	isButtonClicked,
 	setFieldValue,
 }: IProps) => {
 	const {fieldEntries} = useDynamicFieldEntries();
@@ -200,10 +204,13 @@ const Form = ({
 				claimPercent={claimPercent}
 				component={BudgetBreakdownSection}
 				currency={currency}
+				currencyExchangeRate={currencyExchangeRate}
 				currentActivityIndex={currentActivityIndex}
 				expenseEntries={
 					fieldEntries[LiferayPicklistName.BUDGET_EXPENSES]
 				}
+				isButtonClicked={isButtonClicked}
+				isEdit={Boolean(currentActivity.id)}
 				name={`activities[${currentActivityIndex}].budgets`}
 				setFieldValue={setFieldValue}
 			/>

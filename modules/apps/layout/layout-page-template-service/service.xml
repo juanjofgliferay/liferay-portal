@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.layout.page.template">
 	<namespace>Layout</namespace>
-	<entity local-service="true" name="LayoutPageTemplateCollection" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="LayoutPageTemplateCollection" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -49,6 +49,11 @@
 			<finder-column name="groupId" />
 			<finder-column name="type" />
 		</finder>
+		<finder name="G_P_T" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="parentLayoutPageTemplateCollectionId" />
+			<finder-column name="type" />
+		</finder>
 		<finder name="G_LPTCK_T" return-type="LayoutPageTemplateCollection" unique="true">
 			<finder-column name="groupId" />
 			<finder-column name="layoutPageTemplateCollectionKey" />
@@ -65,7 +70,7 @@
 			<finder-column name="type" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="LayoutPageTemplateEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="LayoutPageTemplateEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -95,11 +100,11 @@
 		<column name="defaultTemplate" type="boolean" />
 		<column name="layoutPrototypeId" type="long" />
 		<column name="plid" type="long" />
-		<column name="lastPublishDate" type="Date" />
+		<column change-tracking-resolution-type="merge" name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
-		<column name="statusByUserId" type="long" />
-		<column name="statusByUserName" type="String" />
-		<column name="statusDate" type="Date" />
+		<column change-tracking-resolution-type="merge" name="statusByUserId" type="long" />
+		<column change-tracking-resolution-type="merge" name="statusByUserName" type="String" />
+		<column change-tracking-resolution-type="merge" name="statusDate" type="Date" />
 
 		<!-- Order -->
 
@@ -133,6 +138,10 @@
 		<finder name="G_T" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column arrayable-operator="OR" name="type" />
+		</finder>
+		<finder name="G_S" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="status" />
 		</finder>
 		<finder name="G_L_LikeN" return-type="Collection">
 			<finder-column name="groupId" />

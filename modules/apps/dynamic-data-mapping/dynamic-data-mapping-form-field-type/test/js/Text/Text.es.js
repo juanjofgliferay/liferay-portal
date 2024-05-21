@@ -175,6 +175,35 @@ describe('Field Text', () => {
 		expect(container).toMatchSnapshot();
 	});
 
+	it('does not render html autocomplete attribute', () => {
+		const {container} = render(<TextWithProvider {...defaultTextConfig} />);
+
+		act(() => {
+			jest.runAllTimers();
+		});
+
+		const textInputTag = container.querySelector('.ddm-field-text');
+
+		expect(textInputTag.hasAttribute('autocomplete')).toBe(false);
+	});
+
+	it('renders html autocomplete attribute', () => {
+		const {container} = render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				htmlAutocompleteAttribute="name"
+			/>
+		);
+
+		act(() => {
+			jest.runAllTimers();
+		});
+
+		const textInputTag = container.querySelector('.ddm-field-text');
+
+		expect(textInputTag.getAttribute('autocomplete')).toBe('name');
+	});
+
 	it('renders autocomplete dropdown menu', () => {
 		const onChange = jest.fn();
 
@@ -373,10 +402,6 @@ describe('Field Text', () => {
 			},
 		});
 
-		act(() => {
-			jest.runAllTimers();
-		});
-
 		expect(input.value).toEqual('FieldReference');
 	});
 
@@ -398,10 +423,6 @@ describe('Field Text', () => {
 			target: {
 				value: '+9 (129) 993-9999',
 			},
-		});
-
-		act(() => {
-			jest.runAllTimers();
 		});
 
 		expect(input.value).toEqual('+9 (9) 99-9999');

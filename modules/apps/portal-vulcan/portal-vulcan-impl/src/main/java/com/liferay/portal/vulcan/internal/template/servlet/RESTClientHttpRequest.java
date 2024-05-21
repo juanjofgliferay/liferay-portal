@@ -7,6 +7,7 @@ package com.liferay.portal.vulcan.internal.template.servlet;
 
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.HttpMethods;
+import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -67,6 +68,32 @@ public class RESTClientHttpRequest implements HttpServletRequest {
 				Locale locale = PortalUtil.getLocale(httpServletRequest);
 
 				return locale.toLanguageTag();
+			}
+		).put(
+			"X-CSRF-Token",
+			() -> {
+				HttpSession httpSession =
+					PortalSessionThreadLocal.getHttpSession();
+
+				if (httpSession == null) {
+					return null;
+				}
+
+				String csrfToken = (String)httpSession.getAttribute(
+					WebKeys.AUTHENTICATION_TOKEN + "#CSRF");
+
+				if (csrfToken == null) {
+					return null;
+				}
+
+				httpSession = httpServletRequest.getSession(false);
+
+				if (httpSession != null) {
+					httpSession.setAttribute(
+						WebKeys.AUTHENTICATION_TOKEN + "#CSRF", csrfToken);
+				}
+
+				return csrfToken;
 			}
 		).build();
 		_httpServletRequest = httpServletRequest;
@@ -331,7 +358,7 @@ public class RESTClientHttpRequest implements HttpServletRequest {
 
 	@Override
 	public HttpSession getSession() {
-		return _httpServletRequest.getSession();
+		return getSession(false);
 	}
 
 	@Override

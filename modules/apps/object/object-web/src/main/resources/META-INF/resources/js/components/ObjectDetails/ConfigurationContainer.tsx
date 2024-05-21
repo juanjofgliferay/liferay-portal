@@ -102,6 +102,32 @@ export function ConfigurationContainer({
 				/>
 			</ClayForm.Group>
 
+			{Liferay.FeatureFlags['LPD-23379'] && (
+				<ClayForm.Group>
+					<Toggle
+						disabled={disabled || values.active}
+						label={sub(
+							Liferay.Language.get('enable-x'),
+							Liferay.Language.get('indexed-search')
+						)}
+						name="enableIndexSearch"
+						onBlur={(event) => {
+							event.stopPropagation();
+
+							if (onSubmit) {
+								onSubmit();
+							}
+						}}
+						onToggle={() =>
+							setValues({
+								enableIndexSearch: !values.enableIndexSearch,
+							})
+						}
+						toggled={values.enableIndexSearch}
+					/>
+				</ClayForm.Group>
+			)}
+
 			<ClayForm.Group>
 				<Toggle
 					disabled={isLinkedObjectDefinition || isReadOnly}
@@ -126,32 +152,30 @@ export function ConfigurationContainer({
 				/>
 			</ClayForm.Group>
 
-			{Liferay.FeatureFlags['LPS-181663'] && (
-				<ClayForm.Group>
-					<Toggle
-						disabled={
-							isReadOnly || !hasUpdateObjectDefinitionPermission
-						}
-						label={Liferay.Language.get(
-							'allow-users-to-save-entries-as-draft'
-						)}
-						name="enableObjectEntryDraft"
-						onBlur={(event) => {
-							event.stopPropagation();
+			<ClayForm.Group>
+				<Toggle
+					disabled={
+						isReadOnly || !hasUpdateObjectDefinitionPermission
+					}
+					label={Liferay.Language.get(
+						'allow-users-to-save-entries-as-draft'
+					)}
+					name="enableObjectEntryDraft"
+					onBlur={(event) => {
+						event.stopPropagation();
 
-							if (onSubmit) {
-								onSubmit();
-							}
-						}}
-						onToggle={() =>
-							setValues({
-								enableObjectEntryDraft: !values.enableObjectEntryDraft,
-							})
+						if (onSubmit) {
+							onSubmit();
 						}
-						toggled={values.enableObjectEntryDraft}
-					/>
-				</ClayForm.Group>
-			)}
+					}}
+					onToggle={() =>
+						setValues({
+							enableObjectEntryDraft: !values.enableObjectEntryDraft,
+						})
+					}
+					toggled={values.enableObjectEntryDraft}
+				/>
+			</ClayForm.Group>
 		</div>
 	);
 }

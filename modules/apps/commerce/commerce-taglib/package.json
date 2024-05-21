@@ -1,0 +1,13 @@
+{
+	"dependencies": {
+		"commerce-frontend-js": "*"
+	},
+	"main": "js/index.js",
+	"name": "@liferay/commerce-taglib",
+	"scripts": {
+		"build": "node-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"format": "liferay-npm-scripts fix"
+	},
+	"version": "6.0.4"
+}

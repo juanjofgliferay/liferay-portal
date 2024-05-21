@@ -9,6 +9,7 @@ import com.liferay.batch.engine.unit.BatchEngineUnitThreadLocal;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.tools.DBUpgrader;
 import com.liferay.portal.util.PortalInstances;
 
 import java.util.Map;
@@ -53,7 +54,8 @@ public class ObjectDefinitionUtil {
 	}
 
 	public static boolean isInvokerBundleAllowed() {
-		if (PortalInstances.isCurrentCompanyInDeletionProcess() ||
+		if (DBUpgrader.isUpgradeClient() ||
+			PortalInstances.isCurrentCompanyInDeletionProcess() ||
 			PortalRunMode.isTestMode()) {
 
 			return true;
@@ -85,6 +87,7 @@ public class ObjectDefinitionUtil {
 	}
 
 	private static final String[] _ALLOWED_INVOKER_BUNDLE_SYMBOLIC_NAMES = {
+		"com.liferay.commerce.service", "com.liferay.cookies.impl",
 		"com.liferay.frontend.data.set.views.web",
 		"com.liferay.headless.builder.impl", "com.liferay.list.type.service",
 		"com.liferay.notification.service", "com.liferay.object.service"
@@ -106,7 +109,13 @@ public class ObjectDefinitionUtil {
 		).put(
 			"Bookmark", "/bookmarks"
 		).put(
+			"CommerceReturn", "/commerce-returns"
+		).put(
+			"CommerceReturnItem", "/commerce-return-items"
+		).put(
 			"FDSAction", "/data-set-manager/actions"
+		).put(
+			"FDSCardsSection", "/data-set-manager/cards-sections"
 		).put(
 			"FDSClientExtensionFilter",
 			"/data-set-manager/client-extension-filters"
@@ -119,9 +128,19 @@ public class ObjectDefinitionUtil {
 		).put(
 			"FDSField", "/data-set-manager/fields"
 		).put(
+			"FDSListSection", "/data-set-manager/list-sections"
+		).put(
 			"FDSSort", "/data-set-manager/sorts"
 		).put(
 			"FDSView", "/data-set-manager/views"
+		).put(
+			"FunctionalCookieEntry", "/functional-cookies-entries"
+		).put(
+			"NecessaryCookieEntry", "/necessary-cookies-entries"
+		).put(
+			"PerformanceCookieEntry", "/performance-cookies-entries"
+		).put(
+			"PersonalizationCookieEntry", "/personalization-cookies-entries"
 		).build();
 	private static final Map<String, String>
 		_allowedUnmodifiableSystemObjectDefinitionNames = HashMapBuilder.put(
@@ -130,6 +149,8 @@ public class ObjectDefinitionUtil {
 			"Address", "L_POSTAL_ADDRESS"
 		).put(
 			"CommerceOrder", "L_COMMERCE_ORDER"
+		).put(
+			"CommerceOrderItem", "L_COMMERCE_ORDER_ITEM"
 		).put(
 			"CommercePricingClass", "L_COMMERCE_PRODUCT_GROUP"
 		).put(

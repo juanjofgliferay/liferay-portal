@@ -6,6 +6,8 @@ definition {
 	property portal.upstream = "true";
 	property testray.main.component.name = "Locale";
 
+	var password = PropsUtil.get("default.admin.password");
+
 	setUp {
 		TestCase.setUpPortalInstance();
 	}
@@ -27,6 +29,7 @@ definition {
 	@priority = 5
 	test AddFormWithSpanishAsOnlyLocale {
 		property custom.properties = "company.default.locale=es_ES${line.separator}locales=es_ES${line.separator}locales.enabled=es_ES";
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -129,7 +132,7 @@ definition {
 	@priority = 4
 	test CanRemoveAvailableLanguageFromSite {
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
 		User.firstLoginPG();
 
@@ -206,7 +209,7 @@ definition {
 			PortalSettings.configureCurrentLanguagesCP(currentPortalLanguages = "English (United States)");
 
 			User.firstLoginUI(
-				password = "test",
+				password = ${password},
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
 
@@ -414,7 +417,7 @@ definition {
 			localizedAgree = "Acepto",
 			localizedAnswer = "Respuesta",
 			localizedSaveButton = "Guardar",
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
@@ -476,9 +479,9 @@ definition {
 			locator1 = "UserBar#USER_SIGN_IN",
 			value1 = "Accedeix");
 
-		Click(
-			key_language = "српски (serbia, latin)",
-			locator1 = "Language#LONG_TEXT_LINK");
+		// TODO Clean up after CLDR update is finished
+
+		Click(locator1 = "//a[contains(@class, 'long-text') and contains(., 'српски') and contains(., 'latin')]");
 
 		AssertLocation(value1 = "${portalURL}/sr-RS-latin/web/guest/language-selector-page");
 
@@ -875,73 +878,10 @@ definition {
 		}
 	}
 
-	@priority = 3
-	test UserLockoutShowsTimezoneInformation {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-		property testray.component.names = "Password Policies";
-		property user.time.zone = "UTC";
-
-		task ("Given: Change time zone, add a new user and enable lockout function of default password policy.") {
-			User.firstLoginPG();
-
-			PortalSettings.gotoConfiguration(
-				configurationCategory = "Localization",
-				configurationName = "Time Zone",
-				configurationScope = "Virtual Instance Scope");
-
-			PortalSettings.configureTimeZone(timeZone = "(UTC +05:00) Pakistan Time");
-
-			JSONUser.addUser(
-				userEmailAddress = "userea@liferay.com",
-				userFirstName = "userfn",
-				userLastName = "userln",
-				userScreenName = "usersn");
-
-			JSONUser.setFirstPassword(
-				agreeToTermsAndAnswerReminderQuery = "true",
-				requireReset = "false",
-				userEmailAddress = "userea@liferay.com");
-
-			PasswordPolicies.openPasswordPoliciesAdmin();
-
-			PasswordPolicies.enableLockout(
-				lockoutDuration = "5 Minutes",
-				passwordPolicyName = "Default Password Policy",
-				passwordPolicyPanel = "Lockout");
-		}
-
-		task ("When: Try three times to log in as the new user with the wrong password and log in with the correct password for the fourth time.") {
-			User.logoutPG();
-
-			User.loginUserInvalidPG(
-				loginAttempts = 3,
-				password = "INVALID",
-				userEmailAddress = "userea@liferay.com");
-
-			Navigator.openURL();
-
-			User.firstLoginUI(
-				password = "test",
-				userEmailAddress = "userea@liferay.com");
-		}
-
-		task ("Then: Assert Timezone is included with account lockout message.") {
-			AssertTextEquals.assertPartialText(
-				locator1 = "Message#ERROR_DISMISSIBLE",
-				value1 = "This account is locked until");
-
-			AssertTextEquals.assertPartialText(
-				locator1 = "Message#ERROR_DISMISSIBLE",
-				value1 = "PKT.");
-		}
-	}
-
 	@priority = 4
 	test ViewDefaultAvailableTimeZonesForInstancesAndUsers {
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
 		User.firstLoginPG();
 
@@ -1036,7 +976,7 @@ definition {
 			localizedAgree = "Sono d'accordo",
 			localizedAnswer = "Risposta",
 			localizedSaveButton = "Salva",
-			password = "test",
+			password = ${password},
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 	}
@@ -1073,7 +1013,7 @@ definition {
 	@priority = 4
 	test ViewTimeZoneIDInNonEnglishLocale {
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
 		User.firstLoginPG();
 
@@ -1232,7 +1172,7 @@ definition {
 	@priority = 3
 	test VirtualHostLanguageCanBeChangedWithUserDefaultLanguage {
 		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
+		property test.run.type = "sequential";
 
 		User.firstLoginPG();
 

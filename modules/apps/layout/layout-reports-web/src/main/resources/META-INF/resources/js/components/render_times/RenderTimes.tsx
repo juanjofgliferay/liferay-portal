@@ -10,7 +10,7 @@ import {
 	SearchResultsMessage,
 	SegmentExperience,
 } from '@liferay/layout-js-components-web';
-import {BetaButton} from 'frontend-js-components-web';
+import {FeatureIndicator} from 'frontend-js-components-web';
 import {fetch} from 'frontend-js-web';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 
@@ -66,11 +66,14 @@ export default function RenderTimes({
 
 	return (
 		<>
-			<BetaButton
-				containerClassName="c-mb-3"
-				learnResourceContext={learnResources}
-				tooltipAlign="top-left"
-			/>
+			<div className="c-mb-3">
+				<FeatureIndicator
+					interactive
+					learnResourceContext={learnResources}
+					tooltipAlign="top-left"
+					type="beta"
+				/>
+			</div>
 
 			{segmentsExperiences.length > 1 ? (
 				<ExperienceSelector
@@ -120,7 +123,7 @@ export default function RenderTimes({
 					description={Liferay.Language.get(
 						'try-again-with-a-different-search'
 					)}
-					imgSrc={`${Liferay.ThemeDisplay.getPathThemeImages()}/states/search_state.gif`}
+					imgSrc={`${Liferay.ThemeDisplay.getPathThemeImages()}/states/search_state.svg`}
 					small
 					title={Liferay.Language.get('no-results-found')}
 				/>

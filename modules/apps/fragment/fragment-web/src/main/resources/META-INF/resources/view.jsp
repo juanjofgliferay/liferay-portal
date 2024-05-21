@@ -72,6 +72,7 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 											cssClass="component-action"
 											href="<%= editFragmentCollectionURL %>"
 											icon="plus"
+											title='<%= LanguageUtil.get(request, "add-fragment-set") %>'
 											type="button"
 										/>
 									</c:if>
@@ -100,7 +101,7 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 										%>'
 										aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 										dropdownItems="<%= fragmentEntriesDisplayContext.getCollectionsDropdownItems() %>"
-										propsTransformer="js/FragmentCollectionViewDefaultPropsTransformer"
+										propsTransformer="{FragmentCollectionViewDefaultPropsTransformer} from fragment-web"
 									/>
 								</li>
 							</ul>
@@ -148,10 +149,10 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 						actionDropdownItems="<%= FragmentPermission.contains(permissionChecker, scopeGroupId, FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES) ? fragmentEntriesDisplayContext.getActionDropdownItems() : null %>"
 						additionalProps="<%= fragmentEntriesDisplayContext.getFragmentCollectionsViewContext() %>"
 						animationType="<%= EmptyResultMessageKeys.AnimationType.NONE %>"
-						buttonPropsTransformer="js/FragmentCollectionViewButtonPropsTransformer"
+						buttonPropsTransformer="{FragmentCollectionViewButtonPropsTransformer} from fragment-web"
 						description='<%= LanguageUtil.get(request, "fragment-sets-are-needed-to-create-fragments") %>'
 						elementType='<%= LanguageUtil.get(request, "fragment-sets") %>'
-						propsTransformer="js/FragmentCollectionViewDefaultPropsTransformer"
+						propsTransformer="{FragmentCollectionViewDefaultPropsTransformer} from fragment-web"
 						propsTransformerServletContext="<%= application %>"
 					/>
 				</c:otherwise>
@@ -185,7 +186,7 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 									<clay:dropdown-actions
 										aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 										dropdownItems="<%= fragmentCollectionActionDropdownItemsProvider.getActionDropdownItems() %>"
-										propsTransformer="js/FragmentCollectionDropdownPropsTransformer"
+										propsTransformer="{FragmentCollectionDropdownPropsTransformer} from fragment-web"
 									/>
 								</clay:content-col>
 							</c:if>

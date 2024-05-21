@@ -166,6 +166,20 @@ public class JournalArticleLocalServiceTest {
 		_themeDisplay = _getThemeDisplay();
 	}
 
+	@Test(expected = DuplicateArticleExternalReferenceCodeException.class)
+	public void testAddArticleWithExistingExternalReferenceCode()
+		throws Exception {
+
+		JournalArticle article = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		JournalTestUtil.addArticle(
+			article.getExternalReferenceCode(), _group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			article.getArticleId(), true);
+	}
+
 	@Test
 	public void testArticleFriendlyURLValidation() throws Exception {
 		_assertArticleFriendlyURLMap(_group);
@@ -294,6 +308,7 @@ public class JournalArticleLocalServiceTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/image.jpg"), null, null,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		JournalArticle journalArticle = _journalArticleLocalService.addArticle(
@@ -420,7 +435,7 @@ public class JournalArticleLocalServiceTest {
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			JournalArticleConstants.CLASS_NAME_ID_DEFAULT,
 			StringUtil.replace(
-				_readFileToString("journal_content_with_images.xml"),
+				_readFileToString("journal_article_content_with_images.xml"),
 				new String[] {"[$IMAGE_JSON_1$]", "[$IMAGE_JSON_2$]"},
 				new String[] {
 					_toJSON(_addTempFileEntry("test_01.jpg")),
@@ -454,7 +469,8 @@ public class JournalArticleLocalServiceTest {
 			JournalArticleConstants.CLASS_NAME_ID_DEFAULT,
 			StringUtil.replace(
 				_readFileToString(
-					"journal_content_with_images_and_nested_fields.xml"),
+					"journal_article_content_with_images_and_nested_fields." +
+						"xml"),
 				new String[] {"[$IMAGE_JSON_1$]", "[$IMAGE_JSON_2$]"},
 				new String[] {
 					_toJSON(_addTempFileEntry("test_01.jpg")),
@@ -490,7 +506,8 @@ public class JournalArticleLocalServiceTest {
 			JournalArticleConstants.CLASS_NAME_ID_DEFAULT,
 			StringUtil.replace(
 				_readFileToString(
-					"journal_content_with_images_and_repeatable_fields.xml"),
+					"journal_article_content_with_images_and_repeatable_" +
+						"fields.xml"),
 				new String[] {
 					"[$IMAGE_JSON_1$]", "[$IMAGE_JSON_2$]", "[$IMAGE_JSON_3$]",
 					"[$IMAGE_JSON_4$]", "[$IMAGE_JSON_5$]", "[$IMAGE_JSON_6$]",
@@ -517,6 +534,99 @@ public class JournalArticleLocalServiceTest {
 			newArticle.getImagesFileEntriesCount());
 
 		_validateDDMFormValuesImages(newArticle);
+	}
+
+	@Test
+	public void testCopyArticleWithMultipleImages() throws Exception {
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
+			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
+			StringUtil.randomString(), new byte[0], null, null, null,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		String fileEntryJSONString = _toJSON(fileEntry);
+
+		DataDefinition dataDefinition =
+			DataDefinitionTestUtil.addDataDefinition(
+				"journal", _dataDefinitionResourceFactory, _group.getGroupId(),
+				_readFileToString("ddm_form_with_multiple_images.json"),
+				TestPropsValues.getUser());
+
+		JournalArticle oldArticle = JournalTestUtil.addArticleWithXMLContent(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			JournalArticleConstants.CLASS_NAME_ID_DEFAULT,
+			StringUtil.replace(
+				_readFileToString(
+					"journal_article_content_with_multiple_images.xml"),
+				new String[] {"[$IMAGE_JSON_1$]", "[$IMAGE_JSON_2$]"},
+				new String[] {fileEntryJSONString, fileEntryJSONString}),
+			dataDefinition.getDataDefinitionKey(), null, LocaleUtil.US);
+
+		JournalArticle newArticle = _journalArticleLocalService.copyArticle(
+			oldArticle.getUserId(), oldArticle.getGroupId(),
+			oldArticle.getArticleId(), null, true, oldArticle.getVersion());
+
+		Assert.assertEquals(0, newArticle.getImagesFileEntriesCount());
+
+		_validateDDMFormValuesImages(newArticle);
+	}
+
+	@Test
+	public void testCopyArticleWithSpecialCharacters() throws Exception {
+		JournalArticle oldArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID, "hatékony",
+			RandomTestUtil.randomString());
+
+		JournalArticle newArticle = _journalArticleLocalService.copyArticle(
+			oldArticle.getUserId(), oldArticle.getGroupId(),
+			oldArticle.getArticleId(), null, true, oldArticle.getVersion());
+
+		Assert.assertNotEquals(oldArticle, newArticle);
+		Assert.assertEquals("hat%C3%A9kony-copy-", newArticle.getUrlTitle());
+
+		List<ResourcePermission> oldResourcePermissions =
+			_resourcePermissionLocalService.getResourcePermissions(
+				oldArticle.getCompanyId(), JournalArticle.class.getName(),
+				ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(oldArticle.getResourcePrimKey()));
+
+		List<ResourcePermission> newResourcePermissions =
+			_resourcePermissionLocalService.getResourcePermissions(
+				newArticle.getCompanyId(), JournalArticle.class.getName(),
+				ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(newArticle.getResourcePrimKey()));
+
+		Assert.assertEquals(
+			StringBundler.concat(
+				"Old resource permissions: ", oldResourcePermissions,
+				", new resource permissions: ", newResourcePermissions),
+			oldResourcePermissions.size(), newResourcePermissions.size());
+
+		for (int i = 0; i < oldResourcePermissions.size(); i++) {
+			ResourcePermission oldResourcePermission =
+				oldResourcePermissions.get(i);
+			ResourcePermission newResourcePermission =
+				newResourcePermissions.get(i);
+
+			Assert.assertNotEquals(
+				oldResourcePermission, newResourcePermission);
+			Assert.assertEquals(
+				oldResourcePermission.getRoleId(),
+				newResourcePermission.getRoleId());
+			Assert.assertEquals(
+				oldResourcePermission.getOwnerId(),
+				newResourcePermission.getOwnerId());
+			Assert.assertEquals(
+				oldResourcePermission.getActionIds(),
+				newResourcePermission.getActionIds());
+			Assert.assertEquals(
+				oldResourcePermission.isViewActionId(),
+				newResourcePermission.isViewActionId());
+		}
 	}
 
 	@Test
@@ -951,18 +1061,6 @@ public class JournalArticleLocalServiceTest {
 			article.getArticleId(), true);
 	}
 
-	@Test(expected = DuplicateArticleExternalReferenceCodeException.class)
-	public void testDuplicatedExternalReferenceCode() throws Exception {
-		JournalArticle article = JournalTestUtil.addArticle(
-			_group.getGroupId(),
-			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
-
-		JournalTestUtil.addArticle(
-			article.getExternalReferenceCode(), _group.getGroupId(),
-			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			article.getArticleId(), true);
-	}
-
 	@Test
 	public void testGetArticleDisplayFriendlyURLDisplayPageExists()
 		throws Exception {
@@ -994,7 +1092,7 @@ public class JournalArticleLocalServiceTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				_group.getCreatorUserId(), _group.getGroupId(), 0,
+				null, _group.getCreatorUserId(), _group.getGroupId(), 0,
 				_portal.getClassNameId(JournalArticle.class.getName()),
 				ddmStructure.getStructureId(), RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
@@ -1066,6 +1164,7 @@ public class JournalArticleLocalServiceTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/image.jpg"), null, null,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		JournalArticle journalArticle =
@@ -1074,7 +1173,7 @@ public class JournalArticleLocalServiceTest {
 				JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 				JournalArticleConstants.CLASS_NAME_ID_DEFAULT,
 				StringUtil.replace(
-					_readFileToString("complex_journal_content.xml"),
+					_readFileToString("complex_journal_article_content.xml"),
 					"[$DOCUMENT_JSON$]", _toJSON(fileEntry)),
 				dataDefinition.getDataDefinitionKey(), null, LocaleUtil.SPAIN);
 
@@ -1119,6 +1218,7 @@ public class JournalArticleLocalServiceTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/image.jpg"), null, null,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		JournalArticle journalArticle =
@@ -1128,7 +1228,8 @@ public class JournalArticleLocalServiceTest {
 				JournalArticleConstants.CLASS_NAME_ID_DEFAULT,
 				StringUtil.replace(
 					_readFileToString(
-						"complex_with_translations_journal_content.xml"),
+						"complex_with_translations_journal_article_content." +
+							"xml"),
 					"[$DOCUMENT_JSON$]", _toJSON(fileEntry)),
 				dataDefinition.getDataDefinitionKey(), null, LocaleUtil.SPAIN);
 
@@ -1305,6 +1406,7 @@ public class JournalArticleLocalServiceTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/image.jpg"), null, null,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
@@ -1332,7 +1434,8 @@ public class JournalArticleLocalServiceTest {
 				LocaleUtil.US, "friendly-url"
 			).build(),
 			StringUtil.replace(
-				_readFileToString("journal_content_with_different_locales.xml"),
+				_readFileToString(
+					"journal_article_content_with_different_locales.xml"),
 				"[$DOCUMENT_JSON$]", _toJSON(fileEntry)),
 			ddmStructure.getStructureId(), null, null, 1, 1, 1965, 0, 0, 0, 0,
 			0, 0, 0, true, 0, 0, 0, 0, 0, true, true, false, 0, 0, null, null,
@@ -1377,6 +1480,7 @@ public class JournalArticleLocalServiceTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/image.jpg"), null, null,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
@@ -1405,7 +1509,8 @@ public class JournalArticleLocalServiceTest {
 			).build(),
 			StringUtil.replace(
 				_readFileToString(
-					"journal_content_nested_fields_with_different_locales.xml"),
+					"journal_article_content_nested_fields" +
+						"_with_different_locales.xml"),
 				"[$DOCUMENT_JSON$]", _toJSON(fileEntry)),
 			ddmStructure.getStructureId(), null, null, 1, 1, 1965, 0, 0, 0, 0,
 			0, 0, 0, true, 0, 0, 0, 0, 0, true, true, false, 0, 0, null, null,
@@ -1435,6 +1540,71 @@ public class JournalArticleLocalServiceTest {
 		Assert.assertFalse(availableLocales.contains(LocaleUtil.SPAIN));
 
 		_validateDDMFormFieldValues(ddmFormValues.getDDMFormFieldValues());
+	}
+
+	@Test
+	public void testTrashArticleExternalReferenceCode() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		JournalArticle originalJournalArticle =
+			JournalTestUtil.addArticleWithWorkflow(
+				_group.getGroupId(), 0, RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), true, serviceContext);
+
+		JournalArticle latestJournalArticle =
+			_journalArticleLocalService.updateArticle(
+				originalJournalArticle.getUserId(),
+				originalJournalArticle.getGroupId(),
+				originalJournalArticle.getFolderId(),
+				originalJournalArticle.getArticleId(),
+				originalJournalArticle.getVersion(),
+				originalJournalArticle.getTitleMap(),
+				originalJournalArticle.getDescriptionMap(),
+				originalJournalArticle.getContent(),
+				originalJournalArticle.getLayoutUuid(), serviceContext);
+
+		Map<Double, String> externalReferenceCodeMap = HashMapBuilder.put(
+			originalJournalArticle.getVersion(),
+			originalJournalArticle.getExternalReferenceCode()
+		).put(
+			latestJournalArticle.getVersion(),
+			latestJournalArticle.getExternalReferenceCode()
+		).build();
+
+		latestJournalArticle = _journalArticleLocalService.moveArticleToTrash(
+			TestPropsValues.getUserId(), latestJournalArticle);
+
+		for (Map.Entry<Double, String> entry :
+				externalReferenceCodeMap.entrySet()) {
+
+			JournalArticle persistedJournalArticle =
+				_journalArticleLocalService.fetchArticleByUrlTitle(
+					originalJournalArticle.getGroupId(),
+					originalJournalArticle.getUrlTitle(), entry.getKey());
+
+			Assert.assertTrue(persistedJournalArticle.isInTrash());
+			Assert.assertEquals(
+				entry.getValue(),
+				persistedJournalArticle.getExternalReferenceCode());
+		}
+
+		_journalArticleLocalService.restoreArticleFromTrash(
+			TestPropsValues.getUserId(), latestJournalArticle);
+
+		for (Map.Entry<Double, String> entry :
+				externalReferenceCodeMap.entrySet()) {
+
+			JournalArticle persistedJournalArticle =
+				_journalArticleLocalService.fetchArticleByUrlTitle(
+					originalJournalArticle.getGroupId(),
+					originalJournalArticle.getUrlTitle(), entry.getKey());
+
+			Assert.assertFalse(persistedJournalArticle.isInTrash());
+			Assert.assertEquals(
+				entry.getValue(),
+				persistedJournalArticle.getExternalReferenceCode());
+		}
 	}
 
 	@Test

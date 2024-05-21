@@ -27,7 +27,6 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.PortalPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.ThemeLocalService;
@@ -96,6 +95,14 @@ public class LayoutServiceContextHelperImpl
 	}
 
 	@Override
+	public AutoCloseable getServiceContextAutoCloseable(
+			Company company, User user)
+		throws PortalException {
+
+		return new ServiceContextTemporarySwapper(company, user);
+	}
+
+	@Override
 	public AutoCloseable getServiceContextAutoCloseable(Layout layout)
 		throws PortalException {
 
@@ -120,9 +127,6 @@ public class LayoutServiceContextHelperImpl
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortalPreferencesLocalService _portalPreferencesLocalService;
 
 	@Reference
 	private ThemeLocalService _themeLocalService;
@@ -186,7 +190,7 @@ public class LayoutServiceContextHelperImpl
 
 		@Override
 		public String getContextPath() {
-			return null;
+			return _portal.getPathContext();
 		}
 
 		@Override
@@ -458,9 +462,7 @@ public class LayoutServiceContextHelperImpl
 
 		@Override
 		public void setAttribute(String name, Object value) {
-			if ((name != null) && (value != null)) {
-				_attributes.put(name, value);
-			}
+			_setAttribute(name, value);
 		}
 
 		@Override
@@ -486,6 +488,15 @@ public class LayoutServiceContextHelperImpl
 			throws IOException, ServletException {
 
 			return null;
+		}
+
+		private void _setAttribute(String name, Object value) {
+			if ((name != null) && (value != null)) {
+				_attributes.put(name, value);
+			}
+			else if (name != null) {
+				_attributes.remove(name);
+			}
 		}
 
 		private final Map<String, Object> _attributes =
@@ -569,7 +580,7 @@ public class LayoutServiceContextHelperImpl
 
 			@Override
 			public void setAttribute(String name, Object value) {
-				_attributes.put(name, value);
+				_setAttribute(name, value);
 			}
 
 			@Override
@@ -585,10 +596,17 @@ public class LayoutServiceContextHelperImpl
 		public ServiceContextTemporarySwapper(Company company)
 			throws PortalException {
 
-			this(company, null);
+			this(company, null, null);
 		}
 
 		public ServiceContextTemporarySwapper(Company company, Layout layout)
+			throws PortalException {
+
+			this(company, layout, null);
+		}
+
+		public ServiceContextTemporarySwapper(
+				Company company, Layout layout, User user)
 			throws PortalException {
 
 			_company = company;
@@ -669,7 +687,13 @@ public class LayoutServiceContextHelperImpl
 
 			_layout = layout;
 
-			_user = _userLocalService.fetchGuestUser(company.getCompanyId());
+			if (user == null) {
+				_user = _userLocalService.fetchGuestUser(
+					company.getCompanyId());
+			}
+			else {
+				_user = user;
+			}
 
 			_permissionChecker = PermissionCheckerFactoryUtil.create(_user);
 
@@ -677,6 +701,12 @@ public class LayoutServiceContextHelperImpl
 				_setHttpServletRequestAttributes(_permissionChecker, _user);
 
 			_setCompanyServiceContext();
+		}
+
+		public ServiceContextTemporarySwapper(Company company, User user)
+			throws PortalException {
+
+			this(company, null, user);
 		}
 
 		@Override
@@ -721,15 +751,24 @@ public class LayoutServiceContextHelperImpl
 				themeDisplay.setLocale(
 					LocaleUtil.fromLanguageId(_layout.getDefaultLanguageId()));
 
-				Theme theme = _themeLocalService.fetchTheme(
-					company.getCompanyId(), layoutSet.getThemeId());
+				Theme theme = _layout.getTheme();
+
+				if (theme == null) {
+					theme = _themeLocalService.getTheme(
+						company.getCompanyId(), layoutSet.getThemeId());
+				}
+				else if (_log.isDebugEnabled()) {
+					_log.debug(_layout.getThemeId() + " is not registered");
+				}
 
 				if (theme != null) {
 					themeDisplay.setLookAndFeel(
 						layoutSet.getTheme(), layoutSet.getColorScheme());
 				}
 				else if (_log.isDebugEnabled()) {
-					_log.debug(layoutSet.getThemeId() + " is not registered");
+					_log.debug(
+						"Unable to get theme for layout PLID " +
+							_layout.getPlid());
 				}
 
 				themeDisplay.setPlid(_layout.getPlid());
@@ -755,6 +794,7 @@ public class LayoutServiceContextHelperImpl
 
 			themeDisplay.setRealUser(user);
 			themeDisplay.setScopeGroupId(_group.getGroupId());
+			themeDisplay.setServerName(company.getVirtualHostname());
 			themeDisplay.setServerPort(portalServerPort);
 			themeDisplay.setSiteGroupId(_group.getGroupId());
 			themeDisplay.setTimeZone(user.getTimeZone());
@@ -801,6 +841,8 @@ public class LayoutServiceContextHelperImpl
 				WebKeys.COMPANY_ID,
 				_httpServletRequest.getAttribute(WebKeys.COMPANY_ID)
 			).put(
+				WebKeys.CTX, _httpServletRequest.getAttribute(WebKeys.CTX)
+			).put(
 				WebKeys.LAYOUT, _httpServletRequest.getAttribute(WebKeys.LAYOUT)
 			).put(
 				WebKeys.THEME_DISPLAY,
@@ -814,12 +856,17 @@ public class LayoutServiceContextHelperImpl
 
 			_httpServletRequest.setAttribute(
 				WebKeys.COMPANY_ID, _company.getCompanyId());
+			_httpServletRequest.setAttribute(
+				WebKeys.CTX,
+				ServletContextPool.get(_portal.getServletContextName()));
 
 			ThemeDisplay themeDisplay = _getThemeDisplay(
 				_company, permissionChecker, user);
 
 			_httpServletRequest.setAttribute(
 				WebKeys.LAYOUT, themeDisplay.getLayout());
+			_httpServletRequest.setAttribute(
+				WebKeys.LOCALE, themeDisplay.getLocale());
 			_httpServletRequest.setAttribute(
 				WebKeys.THEME_DISPLAY, themeDisplay);
 

@@ -7,7 +7,6 @@ import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
 import {ReactNode} from 'react';
 
-import catalogIcon from '../../assets/icons/catalog_icon.svg';
 import {AccountAndAppCard} from '../../components/Card/AccountAndAppCard';
 import {Header} from '../../components/Header/Header';
 import {NewAppPageFooterButtons} from '../../components/NewAppPageFooterButtons/NewAppPageFooterButtons';
@@ -23,12 +22,13 @@ import './NextSteps.scss';
 
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 
+import withProviders from '../../hoc/withProviders';
 import CommerceSelectAccountImpl from '../../services/rest/CommerceSelectAccount';
-import {PaymentStatus} from '../GetAppPage/enums/PaymentStatus';
-import getProductPriceModel from '../GetAppPage/utils/getProductPriceModel';
+import {PaymentStatus} from '../GetApp/enums/PaymentStatus';
+import getProductPriceModel from '../GetApp/utils/getProductPriceModel';
 import useNextSteps from './useNextSteps';
 
-interface NextStepsProps {
+type NextStepsProps = {
 	children?: ReactNode;
 	continueButtonText?: string;
 	header?: {
@@ -40,7 +40,7 @@ interface NextStepsProps {
 	showBackButton?: boolean;
 	showOrderId?: boolean;
 	size?: 'lg';
-}
+};
 
 type TypeNextStepBody = {
 	[key in string]?: ReactNode;
@@ -72,7 +72,7 @@ export function NextSteps({
 			item.sku.endsWith('ts') || item.sku.toLowerCase().includes('trial')
 	);
 
-	const appIcon = getThumbnailByProductAttachment(product?.attachments);
+	const appIcon = getThumbnailByProductAttachment(product?.images);
 
 	const appLogo = showAppImage(appIcon as string).replace(
 		(appIcon as string)?.split('/o')[0],
@@ -99,12 +99,11 @@ export function NextSteps({
 								Your Order ID is: <strong>{orderId}</strong>
 							</p>
 							<p>
-								To license your app, you can click Continue
-								Configuration below. Find your Order ID and
-								choose Create License Key. To create a license,
-								you must have at least one of your instance
-								details available - IP address, MAC address or
-								hostname.
+								To license your app, you can click Go to
+								Dashboard below. Find your Order ID and choose
+								Create License Key. To create a license, you
+								must have at least one of your instance details
+								available - IP address, MAC address or hostname.
 							</p>
 						</p>
 					) : (
@@ -115,10 +114,11 @@ export function NextSteps({
 								Your Order ID is: <strong>{orderId}</strong>
 							</p>
 							<p>
-								To download your app, you can click Continue
-								Configuration below. To find your app download,
-								find your Order ID and choose Manage → Download
-								App.
+								To download your app, you can click &quot;Go to
+								Dashboard&quot; button below. To find your app
+								download, find your Order ID and click on
+								<ClayIcon className="m-1" symbol="ellipsis-v" />
+								→ Download App.
 							</p>
 						</p>
 					)
@@ -132,23 +132,18 @@ export function NextSteps({
 					isTrial ? (
 						<>
 							<p>
-								Congratulations on agreeing to purchase{' '}
-								<strong>{appName}</strong>. Payment is required
-								before licensing the app. An invoice will be
-								sent to the email address listed in the order.
-								Once payment is processed, you will be notified
-								as to the next steps to license your app.
+								You will need to create a license for your app
+								before deploying it to your DXP instance
 							</p>
 							<p>
 								Your Order ID is: <strong>{orderId}</strong>
 							</p>
 							<p>
-								To license your app, you can click Continue
-								Configuration below. Find your Order ID and
-								choose Create License Key. To create a license,
-								you must have at least one of your instance
-								details available - IP address, MAC address or
-								hostname.
+								To license your app, you can click Go to
+								Dashboard below. Find your Order ID and choose
+								Create License Key. To create a license, you
+								must have at least one of your instance details
+								available - IP address, MAC address or hostname.
 							</p>
 						</>
 					) : (
@@ -185,16 +180,14 @@ export function NextSteps({
 					<div className="next-step-page-cards">
 						<AccountAndAppCard
 							category="Application"
-							logo={appLogo || catalogIcon}
+							logo={appLogo || 'catalog'}
 							title={appName}
 						/>
 
-						<div className="icon-container">
-							<ClayIcon
-								className="m-0 next-step-page-icon"
-								symbol="arrow-right-full"
-							/>
-						</div>
+						<ClayIcon
+							className="m-0 next-step-page-icon"
+							symbol="arrow-right-full"
+						/>
 
 						<AccountAndAppCard
 							category="Account"
@@ -221,16 +214,19 @@ export function NextSteps({
 							Liferay.CommerceContext.account = {
 								accountId: cart?.accountId,
 							};
-							window.location.href = Liferay.ThemeDisplay.getCanonicalURL().replace(
-								'/next-steps',
-								`/customer-dashboard`
+
+							Liferay.Util.navigate(
+								Liferay.ThemeDisplay.getLayoutURL().replace(
+									'/next-steps',
+									`/customer-dashboard`
+								)
 							);
 						});
 					}}
 					onClickContinue={() => {
 						if (onClickContinue) {
 							window.location.href =
-								'https://console.marketplacedemo.liferay.sh/projects';
+								'https://console.liferay.cloud/projects';
 						}
 					}}
 					showBackButton={showBackButton}
@@ -248,3 +244,5 @@ export function NextSteps({
 		</div>
 	);
 }
+
+export default withProviders(NextSteps);

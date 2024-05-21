@@ -28,8 +28,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -38,6 +36,7 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -62,8 +61,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -318,36 +315,78 @@ public abstract class BaseDataListViewResourceTestCase {
 			testGetDataDefinitionDataListViewsPage_addDataListView(
 				dataDefinitionId, randomDataListView());
 
-		Page<DataListView> page1 =
-			dataListViewResource.getDataDefinitionDataListViewsPage(
-				dataDefinitionId, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DataListView> dataListViews1 =
-			(List<DataListView>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			dataListViews1.toString(), totalCount + 2, dataListViews1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DataListView> page1 =
+				dataListViewResource.getDataDefinitionDataListViewsPage(
+					dataDefinitionId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<DataListView> page2 =
-			dataListViewResource.getDataDefinitionDataListViewsPage(
-				dataDefinitionId, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(dataListView1, (List<DataListView>)page1.getItems());
 
-		List<DataListView> dataListViews2 =
-			(List<DataListView>)page2.getItems();
+			Page<DataListView> page2 =
+				dataListViewResource.getDataDefinitionDataListViewsPage(
+					dataDefinitionId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			dataListViews2.toString(), 1, dataListViews2.size());
+			assertContains(dataListView2, (List<DataListView>)page2.getItems());
 
-		Page<DataListView> page3 =
-			dataListViewResource.getDataDefinitionDataListViewsPage(
-				dataDefinitionId, null, Pagination.of(1, (int)totalCount + 3),
-				null);
+			Page<DataListView> page3 =
+				dataListViewResource.getDataDefinitionDataListViewsPage(
+					dataDefinitionId, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(dataListView1, (List<DataListView>)page3.getItems());
-		assertContains(dataListView2, (List<DataListView>)page3.getItems());
-		assertContains(dataListView3, (List<DataListView>)page3.getItems());
+			assertContains(dataListView3, (List<DataListView>)page3.getItems());
+		}
+		else {
+			Page<DataListView> page1 =
+				dataListViewResource.getDataDefinitionDataListViewsPage(
+					dataDefinitionId, null, Pagination.of(1, totalCount + 2),
+					null);
+
+			List<DataListView> dataListViews1 =
+				(List<DataListView>)page1.getItems();
+
+			Assert.assertEquals(
+				dataListViews1.toString(), totalCount + 2,
+				dataListViews1.size());
+
+			Page<DataListView> page2 =
+				dataListViewResource.getDataDefinitionDataListViewsPage(
+					dataDefinitionId, null, Pagination.of(2, totalCount + 2),
+					null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DataListView> dataListViews2 =
+				(List<DataListView>)page2.getItems();
+
+			Assert.assertEquals(
+				dataListViews2.toString(), 1, dataListViews2.size());
+
+			Page<DataListView> page3 =
+				dataListViewResource.getDataDefinitionDataListViewsPage(
+					dataDefinitionId, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(dataListView1, (List<DataListView>)page3.getItems());
+			assertContains(dataListView2, (List<DataListView>)page3.getItems());
+			assertContains(dataListView3, (List<DataListView>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -359,7 +398,7 @@ public abstract class BaseDataListViewResourceTestCase {
 			(entityField, dataListView1, dataListView2) -> {
 				BeanTestUtil.setProperty(
 					dataListView1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -574,7 +613,10 @@ public abstract class BaseDataListViewResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteDataListView() throws Exception {
-		DataListView dataListView =
+
+		// No namespace
+
+		DataListView dataListView1 =
 			testGraphQLDeleteDataListView_addDataListView();
 
 		Assert.assertTrue(
@@ -584,23 +626,62 @@ public abstract class BaseDataListViewResourceTestCase {
 						"deleteDataListView",
 						new HashMap<String, Object>() {
 							{
-								put("dataListViewId", dataListView.getId());
+								put("dataListViewId", dataListView1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteDataListView"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"dataListView",
 					new HashMap<String, Object>() {
 						{
-							put("dataListViewId", dataListView.getId());
+							put("dataListViewId", dataListView1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace dataEngine_v2_0
+
+		DataListView dataListView2 =
+			testGraphQLDeleteDataListView_addDataListView();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"dataEngine_v2_0",
+						new GraphQLField(
+							"deleteDataListView",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"dataListViewId",
+										dataListView2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/dataEngine_v2_0",
+				"Object/deleteDataListView"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"dataEngine_v2_0",
+					new GraphQLField(
+						"dataListView",
+						new HashMap<String, Object>() {
+							{
+								put("dataListViewId", dataListView2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected DataListView testGraphQLDeleteDataListView_addDataListView()
@@ -632,6 +713,8 @@ public abstract class BaseDataListViewResourceTestCase {
 		DataListView dataListView =
 			testGraphQLGetDataListView_addDataListView();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				dataListView,
@@ -649,11 +732,36 @@ public abstract class BaseDataListViewResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/dataListView"))));
+
+		// Using the namespace dataEngine_v2_0
+
+		Assert.assertTrue(
+			equals(
+				dataListView,
+				DataListViewSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"dataEngine_v2_0",
+								new GraphQLField(
+									"dataListView",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"dataListViewId",
+												dataListView.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/dataEngine_v2_0",
+						"Object/dataListView"))));
 	}
 
 	@Test
 	public void testGraphQLGetDataListViewNotFound() throws Exception {
 		Long irrelevantDataListViewId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -667,6 +775,27 @@ public abstract class BaseDataListViewResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace dataEngine_v2_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"dataEngine_v2_0",
+						new GraphQLField(
+							"dataListView",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"dataListViewId",
+										irrelevantDataListViewId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -1108,6 +1237,10 @@ public abstract class BaseDataListViewResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1186,22 +1319,20 @@ public abstract class BaseDataListViewResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = dataListView.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							dataListView.getDateCreated(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							dataListView.getDateCreated(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1219,22 +1350,20 @@ public abstract class BaseDataListViewResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = dataListView.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							dataListView.getDateModified(), -2)));
+					_dateFormat.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
 				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							dataListView.getDateModified(), 2)));
+					_dateFormat.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1390,9 +1519,9 @@ public abstract class BaseDataListViewResourceTestCase {
 	}
 
 	protected DataListViewResource dataListViewResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

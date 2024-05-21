@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.style.book.model.StyleBookEntry;
 
@@ -36,23 +37,14 @@ public class StyleBookEntryLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
+			long userId, long groupId, boolean defaultStyleBookEntry,
+			String frontendTokensValues, String name, String styleBookEntryKey,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addStyleBookEntry(
-			userId, groupId, name, styleBookEntryKey, serviceContext);
-	}
-
-	public static StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addStyleBookEntry(
-			userId, groupId, frontendTokensValues, name, styleBookEntryKey,
-			serviceContext);
+			userId, groupId, defaultStyleBookEntry, frontendTokensValues, name,
+			styleBookEntryKey, serviceContext);
 	}
 
 	/**
@@ -531,13 +523,12 @@ public class StyleBookEntryLocalServiceUtil {
 	}
 
 	public static StyleBookEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(StyleBookEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile StyleBookEntryLocalService _service;
+	private static final Snapshot<StyleBookEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			StyleBookEntryLocalServiceUtil.class,
+			StyleBookEntryLocalService.class);
 
 }

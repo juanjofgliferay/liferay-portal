@@ -17,12 +17,13 @@ import getDealStatus from '../utils/getDealStatus';
 export default function useGetListItemsFromDealRegistration(
 	page: number,
 	pageSize: number,
-	filtersTerm: string,
-	sort: string
+	urlParams: URLSearchParams
 ) {
 	const swrResponse = useGet<LiferayItems<DealRegistrationDTO[]>>(
-		`/o/${LiferayAPIs.OBJECT}/${ResourceName.LEADS_SALESFORCE}?&filter=${filtersTerm}&page=${page}&pageSize=${pageSize}&sort=${sort}
-			 `
+		urlParams &&
+			`/o/${LiferayAPIs.OBJECT}/${
+				ResourceName.LEADS_SALESFORCE
+			}?${urlParams.toString()}&page=${page}&pageSize=${pageSize}`
 	);
 
 	const listItems = useMemo(
@@ -46,12 +47,12 @@ export default function useGetListItemsFromDealRegistration(
 				[DealRegistrationColumnKey.ACCOUNT_NAME]: item.prospectAccountName
 					? item.prospectAccountName
 					: ' - ',
-				...getDealDates(item.dateCreated),
+				...getDealDates(item.dateCreated, item.dateCreated),
 
 				[DealRegistrationColumnKey.STATUS]: item.leadStatus
 					? getDealStatus(item.leadStatus)
 					: ' - ',
-				...getDealDates(item.dateCreated),
+				...getDealDates(item.dateCreated, item.dateCreated),
 				[DealRegistrationColumnKey.PRIMARY_PROSPECT_NAME]: `${
 					item.primaryProspectFirstName
 						? item.primaryProspectFirstName
@@ -103,6 +104,12 @@ export default function useGetListItemsFromDealRegistration(
 				[DealRegistrationColumnKey.ADDITIONAL_CONTACTS]: item.additionalContacts
 					? item.additionalContacts
 					: ' - ',
+				[DealRegistrationColumnKey.ISCONVERTED]: item.isConverted
+					? item.isConverted
+					: false,
+				[DealRegistrationColumnKey.EXTERNAL_REFERENCE_CODE]: item.externalReferenceCode
+					? item.externalReferenceCode
+					: undefined,
 			})),
 		[swrResponse.data?.items]
 	);

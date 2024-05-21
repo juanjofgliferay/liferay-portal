@@ -10,7 +10,8 @@
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
-taglib uri="http://liferay.com/tld/ddm" prefix="liferay-ddm" %>
+taglib uri="http://liferay.com/tld/ddm" prefix="liferay-ddm" %><%@
+taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %>
 
 <%@ page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
@@ -36,7 +37,7 @@ DateFacetPortletInstanceConfiguration dateFacetPortletInstanceConfiguration = da
 %>
 
 <c:if test="<%= !dateFacetDisplayContext.isRenderNothing() %>">
-	<aui:form action="#" method="get" name="fm">
+	<aui:form action="#" autocomplete="off" method="get" name="fm">
 		<aui:input cssClass="facet-parameter-name" name="facet-parameter-name" type="hidden" value="<%= HtmlUtil.escapeAttribute(dateFacetDisplayContext.getParameterName()) %>" />
 		<aui:input name="start-parameter-name" type="hidden" value="<%= dateFacetDisplayContext.getPaginationStartParameterName() %>" />
 
@@ -61,6 +62,15 @@ DateFacetPortletInstanceConfiguration dateFacetPortletInstanceConfiguration = da
 		/>
 	</aui:form>
 
+	<liferay-frontend:component
+		context='<%=
+			HashMapBuilder.<String, Object>put(
+				"namespace", liferayPortletResponse.getNamespace()
+			).build()
+		%>'
+		module="{FacetUtil} from portal-search-web"
+	/>
+
 	<aui:script use="liferay-search-date-facet">
 		new Liferay.Search.DateFacetFilter({
 			form: A.one('#<portlet:namespace />fm'),
@@ -75,9 +85,5 @@ DateFacetPortletInstanceConfiguration dateFacetPortletInstanceConfiguration = da
 				'<portlet:namespace /><%= customRangeBucketDisplayContext.getBucketText() %>',
 			toInputName: '<portlet:namespace />toInput',
 		});
-
-		Liferay.Search.FacetUtil.enableInputs(
-			document.querySelectorAll('#<portlet:namespace />fm .facet-term')
-		);
 	</aui:script>
 </c:if>

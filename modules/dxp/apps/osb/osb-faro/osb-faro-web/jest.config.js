@@ -219,7 +219,6 @@ module.exports = {
 				orderDefault: 'asc',
 				orderDescending: 'desc'
 			},
-			pathThemeImages: '/images',
 			preferencesScopes: {
 				group: 'group',
 				user: 'user'
@@ -301,6 +300,13 @@ module.exports = {
 					name: 'Liferay Analytics Cloud Enterprise Tracked Pages',
 					pageViewsLimit: 5000000,
 					price: 250
+				},
+				['LXC - Business Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 10000,
+					name: 'LXC - Business Plan',
+					pageViewsLimit: 5000000,
+					price: 7500
 				},
 				['LXC - CSP - Custom User Tier']: {
 					baseSubscriptionPlan: null,
@@ -400,6 +406,20 @@ module.exports = {
 					pageViewsLimit: 5000000,
 					price: 250
 				},
+				['LXC - Enterprise Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 100000,
+					name: 'LXC - Enterprise Plan',
+					pageViewsLimit: 60000000,
+					price: 20000
+				},
+				['LXC - Pro Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 1000,
+					name: 'LXC - Pro Plan',
+					pageViewsLimit: 300000,
+					price: 0
+				},
 				['LXC Subscription - Engage Site']: {
 					baseSubscriptionPlan: null,
 					individualsLimit: 0,
@@ -478,9 +498,7 @@ module.exports = {
 		'^touchpoints(.*)': '<rootDir>/src/main/js/touchpoints$1',
 		'^ui-kit(.*)$': '<rootDir>/src/main/js/ui-kit$1'
 	},
-	setupFiles: ['<rootDir>/enzyme.config.js'],
 	setupFilesAfterEnv: ['<rootDir>/src/main/js/test/setup.js'],
-	snapshotSerializers: ['enzyme-to-json/serializer'],
 	testEnvironment: 'jest-environment-jsdom-fifteen',
 	testURL: 'http://liferay.com',
 	timers: 'fake',

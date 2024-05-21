@@ -30,7 +30,6 @@
 						<div class="custom-control custom-radio">
 							<label class="facet-checkbox-label" for="${namespace}${entry.getBucketText()}">
 								<input
-									autocomplete="off"
 									${(entry.isSelected())?then("checked", "")}
 									class="custom-control-input facet-term"
 									disabled
@@ -64,7 +63,6 @@
 				<div class="custom-control custom-radio">
 					<label class="facet-checkbox-label" for="${namespace}${customRangeBucketDisplayContext.getBucketText()}">
 						<input
-							autocomplete="off"
 							${(customRangeBucketDisplayContext.isSelected())?then("checked", "")}
 							class="custom-control-input facet-term"
 							disabled
@@ -105,7 +103,7 @@
 							firstDayOfWeek=modifiedFacetCalendarDisplayContext.getFromFirstDayOfWeek()
 							monthParam="fromMonth"
 							monthValue=modifiedFacetCalendarDisplayContext.getFromMonthValue()
-							name="${namespace}fromInput"
+							name="fromInput"
 							yearParam="fromYear"
 							yearValue=modifiedFacetCalendarDisplayContext.getFromYearValue()
 						/>
@@ -122,7 +120,7 @@
 							firstDayOfWeek=modifiedFacetCalendarDisplayContext.getToFirstDayOfWeek()
 							monthParam="toMonth"
 							monthValue=modifiedFacetCalendarDisplayContext.getToMonthValue()
-							name="${namespace}toInput"
+							name="toInput"
 							yearParam="toYear"
 							yearValue=modifiedFacetCalendarDisplayContext.getToYearValue()
 						/>

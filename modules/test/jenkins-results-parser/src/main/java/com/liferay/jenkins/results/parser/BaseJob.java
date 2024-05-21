@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -283,40 +284,69 @@ public abstract class BaseJob implements Job {
 
 	@Override
 	public List<String> getDistNodes() {
-		try {
-			List<JenkinsMaster> jenkinsMasters =
-				JenkinsResultsParserUtil.getJenkinsMasters(
-					JenkinsResultsParserUtil.getBuildProperties(),
-					_getSlaveRAMMinimumDefault(), _getSlavesPerHostDefault(),
-					JenkinsResultsParserUtil.getCohortName());
+		List<String> distNodes = new ArrayList<>();
 
-			int axisCount = getAxisCount();
-			int distNodeAxisCount = _getDistNodeAxisCount();
-
-			int distNodeCount = axisCount / distNodeAxisCount;
-
-			if ((axisCount % distNodeAxisCount) > 0) {
-				distNodeCount++;
+		for (String networkName : getNetworkNames()) {
+			if (JenkinsResultsParserUtil.isNullOrEmpty(networkName)) {
+				continue;
 			}
 
-			distNodeCount = Math.min(distNodeCount, jenkinsMasters.size());
-
-			distNodeCount = Math.max(distNodeCount, _getDistNodeCountMinimum());
-
-			List<JenkinsSlave> jenkinsSlaves =
-				JenkinsResultsParserUtil.getReachableJenkinsSlaves(
-					jenkinsMasters, distNodeCount);
-
-			List<String> distNodes = new ArrayList<>();
-
-			for (JenkinsSlave jenkinsSlave : jenkinsSlaves) {
-				distNodes.add(jenkinsSlave.getName());
-			}
-
-			return distNodes;
+			distNodes.addAll(getDistNodes(networkName));
 		}
-		catch (IOException ioException) {
-			return new ArrayList<>();
+
+		return distNodes;
+	}
+
+	@Override
+	public List<String> getDistNodes(String networkName) {
+		synchronized (_distNodesMap) {
+			List<String> distNodes = _distNodesMap.get(networkName);
+
+			if (distNodes != null) {
+				return distNodes;
+			}
+
+			distNodes = new ArrayList<>();
+
+			try {
+				List<JenkinsMaster> jenkinsMasters =
+					JenkinsResultsParserUtil.getJenkinsMasters(
+						JenkinsResultsParserUtil.getBuildProperties(),
+						_getSlaveRAMMinimumDefault(),
+						_getSlavesPerHostDefault(),
+						JenkinsResultsParserUtil.getCohortName(), networkName);
+
+				int axisCount = getAxisCount();
+				int distNodeAxisCount = _getDistNodeAxisCount();
+
+				int distNodeCount = axisCount / distNodeAxisCount;
+
+				Set<String> networkNames = getNetworkNames();
+
+				distNodeCount = distNodeCount / networkNames.size();
+
+				if ((axisCount % distNodeAxisCount) > 0) {
+					distNodeCount++;
+				}
+
+				distNodeCount = Math.min(distNodeCount, jenkinsMasters.size());
+
+				distNodeCount = Math.max(
+					distNodeCount, _getDistNodeCountMinimum());
+
+				List<JenkinsSlave> jenkinsSlaves =
+					JenkinsResultsParserUtil.getReachableJenkinsSlaves(
+						jenkinsMasters, distNodeCount);
+
+				for (JenkinsSlave jenkinsSlave : jenkinsSlaves) {
+					distNodes.add(jenkinsSlave.getName());
+				}
+
+				return distNodes;
+			}
+			catch (IOException ioException) {
+				return new ArrayList<>();
+			}
 		}
 	}
 
@@ -339,6 +369,12 @@ public abstract class BaseJob implements Job {
 		distTypesExcludingTomcat.remove("tomcat");
 
 		return distTypesExcludingTomcat;
+	}
+
+	@Override
+	public Set<JenkinsCohort> getJenkinsCohorts() {
+		return Collections.singleton(
+			JenkinsResultsParserUtil.getJenkinsCohort());
 	}
 
 	@Override
@@ -452,6 +488,19 @@ public abstract class BaseJob implements Job {
 
 			return jsonObject;
 		}
+	}
+
+	@Override
+	public Set<String> getNetworkNames() {
+		Set<String> networkNames = new HashSet<>();
+
+		for (JenkinsCohort jenkinsCohort : getJenkinsCohorts()) {
+			networkNames.addAll(jenkinsCohort.getNetworkNames());
+		}
+
+		networkNames.removeAll(Collections.singleton(null));
+
+		return networkNames;
 	}
 
 	@Override
@@ -702,6 +751,23 @@ public abstract class BaseJob implements Job {
 	}
 
 	@Override
+	public boolean testAnalyticsCloud() {
+		for (BatchTestClassGroup batchTestClassGroup :
+				getBatchTestClassGroups()) {
+
+			if (batchTestClassGroup.testAnalyticsCloud()) {
+				_testAnalyticsCloud = true;
+
+				return _testAnalyticsCloud;
+			}
+		}
+
+		_testAnalyticsCloud = false;
+
+		return _testAnalyticsCloud;
+	}
+
+	@Override
 	public boolean testHotfixChanges() {
 		JobProperty jobProperty = getJobProperty("test.hotfix.changes");
 
@@ -834,6 +900,15 @@ public abstract class BaseJob implements Job {
 								return _call();
 							}
 							catch (Exception exception) {
+								String message = exception.getMessage();
+
+								if ((message != null) &&
+									message.contains(
+										"Errors found in Playwright tests")) {
+
+									throw exception;
+								}
+
 								System.out.println(
 									JenkinsResultsParserUtil.combine(
 										"[", batchName, "] Retry creating a ",
@@ -1201,7 +1276,7 @@ public abstract class BaseJob implements Job {
 		"unit-jdk8"
 	};
 
-	private static final Integer _THREAD_COUNT = 20;
+	private static final Integer _THREAD_COUNT = 10;
 
 	private static final ExecutorService _executorService =
 		JenkinsResultsParserUtil.getNewThreadPoolExecutor(_THREAD_COUNT, true);
@@ -1211,10 +1286,12 @@ public abstract class BaseJob implements Job {
 	private String _companyDefaultLocale;
 	private Document _configDocument;
 	private List<BatchTestClassGroup> _dependentBatchTestClassGroups;
+	private final Map<String, List<String>> _distNodesMap = new HashMap<>();
 	private boolean _initializeJobProperties;
 	private JobHistory _jobHistory;
 	private final String _jobName;
 	private final List<JobProperty> _jobProperties = new ArrayList<>();
 	private Boolean _jUnitTestFileModifiedOnly;
+	private Boolean _testAnalyticsCloud;
 
 }

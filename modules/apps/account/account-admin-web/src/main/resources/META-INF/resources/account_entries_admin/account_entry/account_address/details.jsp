@@ -16,15 +16,19 @@ String defaultType = ParamUtil.getString(request, "defaultType");
 
 AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttribute(AccountWebKeys.ACCOUNT_ENTRY_DISPLAY);
 
-String backURL = PortletURLBuilder.createRenderURL(
-	renderResponse
-).setMVCRenderCommandName(
-	"/account_admin/edit_account_entry"
-).setParameter(
-	"accountEntryId", accountEntryDisplay.getAccountEntryId()
-).setParameter(
-	"screenNavigationCategoryKey", "addresses"
-).buildString();
+String backURL = ParamUtil.getString(request, "backURL");
+
+if (Validator.isNull(backURL)) {
+	backURL = PortletURLBuilder.createRenderURL(
+		renderResponse
+	).setMVCRenderCommandName(
+		"/account_admin/edit_account_entry"
+	).setParameter(
+		"accountEntryId", accountEntryDisplay.getAccountEntryId()
+	).setParameter(
+		"screenNavigationCategoryKey", "addresses"
+	).buildString();
+}
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
@@ -39,7 +43,7 @@ renderResponse.setTitle((addressDisplay.getAddressId() == 0) ? LanguageUtil.get(
 >
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= (addressDisplay.getAddressId() == 0) ? Constants.ADD : Constants.UPDATE %>" />
 	<aui:input name="redirect" type="hidden" value="<%= backURL %>" />
-	<aui:input name="addressDisplay.getAddressId()" type="hidden" value="<%= addressDisplay.getAddressId() %>" />
+	<aui:input name="accountEntryAddressId" type="hidden" value="<%= addressDisplay.getAddressId() %>" />
 	<aui:input name="accountEntryId" type="hidden" value="<%= accountEntryDisplay.getAccountEntryId() %>" />
 	<aui:input name="defaultType" type="hidden" value="<%= defaultType %>" />
 
@@ -153,5 +157,5 @@ renderResponse.setTitle((addressDisplay.getAddressId() == 0) ? LanguageUtil.get(
 			"regionSelectVal", (address == null) ? 0L : address.getRegionId()
 		).build()
 		%>'
-	module="account_entries_admin/js/CountryRegionDynamicSelect"
+	module="{CountryRegionDynamicSelect} from account-admin-web"
 />

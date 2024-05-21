@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {API, Input, SidebarCategory} from '@liferay/object-js-components-web';
+import {Input, SidebarCategory} from '@liferay/object-js-components-web';
 import classNames from 'classnames';
-import React, {ElementType, useEffect, useState} from 'react';
+import React, {ElementType, useState} from 'react';
 
 import {AutoIncrementFormBase} from '../../AutoIncrementFormBase';
 import {ObjectFieldErrors} from '../../ObjectFieldFormBase';
@@ -33,17 +33,18 @@ export interface AggregationFilters {
 interface BasicInfoTabProps {
 	baseResourceURL: string;
 	containerWrapper: ElementType;
+	dbObjectFieldRequired?: boolean;
 	errors: ObjectFieldErrors;
 	filterOperators: TFilterOperators;
 	handleChange: React.ChangeEventHandler<HTMLInputElement>;
-	isApproved: boolean;
 	isDefaultStorageType: boolean;
 	modelBuilder?: boolean;
-	objectDefinitionExternalReferenceCode: string;
-	objectFieldTypes: ObjectFieldType[];
+	objectDefinition?: ObjectDefinition;
+	objectFieldBusinessTypes: ObjectFieldBusinessType[];
 	objectRelationshipId: number;
 	onSubmit?: (editedObjectField?: Partial<ObjectField>) => void;
 	readOnly: boolean;
+	setDbObjectFieldRequired?: (value: boolean) => void;
 	setValues: (values: Partial<ObjectField>) => void;
 	sidebarElements: SidebarCategory[];
 	values: Partial<ObjectField>;
@@ -53,29 +54,23 @@ interface BasicInfoTabProps {
 export function BasicInfoTab({
 	baseResourceURL,
 	containerWrapper: ContainerWrapper,
+	dbObjectFieldRequired,
 	errors,
 	filterOperators,
 	handleChange,
-	isApproved,
 	isDefaultStorageType,
 	modelBuilder = false,
-	objectDefinitionExternalReferenceCode,
-	objectFieldTypes,
+	objectDefinition,
+	objectFieldBusinessTypes,
 	objectRelationshipId,
 	onSubmit,
 	readOnly,
+	setDbObjectFieldRequired,
 	setValues,
 	sidebarElements,
 	values,
 	workflowStatuses,
 }: BasicInfoTabProps) {
-	const [objectDefinition, setObjectDefinition] = useState<
-		Partial<ObjectDefinition>
-	>({enableLocalization: false});
-	const [
-		objectDefinitionExternalReferenceCode2,
-		setObjectDefinitionExternalReferenceCode2,
-	] = useState<string>();
 	const [aggregationFilters, setAggregationFilters] = useState<
 		AggregationFilters[]
 	>([]);
@@ -84,19 +79,12 @@ export function BasicInfoTab({
 		Liferay.Language.Locale
 	>();
 
-	useEffect(() => {
-		const makeFetch = async () => {
-			if (objectDefinitionExternalReferenceCode) {
-				const objectDefinitionResponse = await API.getObjectDefinitionByExternalReferenceCode(
-					objectDefinitionExternalReferenceCode
-				);
+	const [
+		objectDefinitionExternalReferenceCode2,
+		setObjectDefinitionExternalReferenceCode2,
+	] = useState<string>();
 
-				setObjectDefinition(objectDefinitionResponse);
-			}
-		};
-
-		makeFetch();
-	}, [objectDefinitionExternalReferenceCode]);
+	const isApproved = objectDefinition?.status!.label === 'approved';
 
 	return (
 		<>
@@ -110,20 +98,17 @@ export function BasicInfoTab({
 				<BasicInfoContainer
 					baseResourceURL={baseResourceURL}
 					creationLanguageId2={creationLanguageId2}
+					dbObjectFieldRequired={dbObjectFieldRequired}
 					errors={errors}
 					handleChange={handleChange}
-					isApproved={isApproved}
 					modelBuilder={modelBuilder}
 					objectDefinition={objectDefinition}
-					objectDefinitionExternalReferenceCode={
-						objectDefinitionExternalReferenceCode
-					}
-					objectDefinitionName={objectDefinition.name ?? ''}
-					objectFieldTypes={objectFieldTypes}
+					objectFieldBusinessTypes={objectFieldBusinessTypes}
 					objectRelationshipId={objectRelationshipId}
 					onSubmit={onSubmit}
 					readOnly={readOnly}
 					setAggregationFilters={setAggregationFilters}
+					setDbObjectFieldRequired={setDbObjectFieldRequired}
 					setObjectDefinitionExternalReferenceCode2={
 						setObjectDefinitionExternalReferenceCode2
 					}
@@ -132,30 +117,29 @@ export function BasicInfoTab({
 				/>
 			</ContainerWrapper>
 
-			{Liferay.FeatureFlags['LPS-196724'] &&
-				values.businessType === 'AutoIncrement' && (
-					<ContainerWrapper
-						collapsable
-						defaultExpanded
-						displayTitle={Liferay.Language.get(
-							'increment-configuration'
-						)}
-						displayType="unstyled"
-						title={Liferay.Language.get('increment-configuration')}
-					>
-						<AutoIncrementFormBase
-							disabled={isApproved}
-							errors={errors}
-							modelBuilder={modelBuilder}
-							onSubmit={onSubmit}
-							setValues={setValues}
-							values={values}
-						/>
-					</ContainerWrapper>
-				)}
+			{values.businessType === 'AutoIncrement' && (
+				<ContainerWrapper
+					collapsable
+					defaultExpanded
+					displayTitle={Liferay.Language.get(
+						'increment-configuration'
+					)}
+					displayType="unstyled"
+					title={Liferay.Language.get('increment-configuration')}
+				>
+					<AutoIncrementFormBase
+						disabled={isApproved}
+						errors={errors}
+						modelBuilder={modelBuilder}
+						onSubmit={onSubmit}
+						setValues={setValues}
+						values={values}
+					/>
+				</ContainerWrapper>
+			)}
 
 			{values.businessType === 'Aggregation' &&
-				objectDefinitionExternalReferenceCode !==
+				objectDefinition?.externalReferenceCode !==
 					objectDefinitionExternalReferenceCode2 && (
 					<AggregationFilterContainer
 						aggregationFilters={aggregationFilters}

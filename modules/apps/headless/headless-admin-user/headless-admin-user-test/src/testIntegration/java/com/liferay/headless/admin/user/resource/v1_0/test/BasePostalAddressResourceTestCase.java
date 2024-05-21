@@ -26,8 +26,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -200,6 +198,104 @@ public abstract class BasePostalAddressResourceTestCase {
 	}
 
 	@Test
+	public void testGetAccountByExternalReferenceCodePostalAddressesPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetAccountByExternalReferenceCodePostalAddressesPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetAccountByExternalReferenceCodePostalAddressesPage_getIrrelevantExternalReferenceCode();
+
+		Page<PostalAddress> page =
+			postalAddressResource.
+				getAccountByExternalReferenceCodePostalAddressesPage(
+					externalReferenceCode);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			PostalAddress irrelevantPostalAddress =
+				testGetAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantPostalAddress());
+
+			page =
+				postalAddressResource.
+					getAccountByExternalReferenceCodePostalAddressesPage(
+						irrelevantExternalReferenceCode);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantPostalAddress, (List<PostalAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetAccountByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		PostalAddress postalAddress1 =
+			testGetAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				externalReferenceCode, randomPostalAddress());
+
+		PostalAddress postalAddress2 =
+			testGetAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				externalReferenceCode, randomPostalAddress());
+
+		page =
+			postalAddressResource.
+				getAccountByExternalReferenceCodePostalAddressesPage(
+					externalReferenceCode);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(postalAddress1, (List<PostalAddress>)page.getItems());
+		assertContains(postalAddress2, (List<PostalAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetAccountByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+				externalReferenceCode));
+
+		postalAddressResource.deletePostalAddress(postalAddress1.getId());
+
+		postalAddressResource.deletePostalAddress(postalAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetAccountByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected PostalAddress
+			testGetAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				String externalReferenceCode, PostalAddress postalAddress)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetAccountByExternalReferenceCodePostalAddressesPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetAccountByExternalReferenceCodePostalAddressesPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
 	public void testGetAccountPostalAddressesPage() throws Exception {
 		Long accountId = testGetAccountPostalAddressesPage_getAccountId();
 		Long irrelevantAccountId =
@@ -307,6 +403,104 @@ public abstract class BasePostalAddressResourceTestCase {
 
 		return postalAddressResource.postAccountPostalAddress(
 			testGetAccountPostalAddressesPage_getAccountId(), postalAddress);
+	}
+
+	@Test
+	public void testGetOrganizationByExternalReferenceCodePostalAddressesPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_getIrrelevantExternalReferenceCode();
+
+		Page<PostalAddress> page =
+			postalAddressResource.
+				getOrganizationByExternalReferenceCodePostalAddressesPage(
+					externalReferenceCode);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			PostalAddress irrelevantPostalAddress =
+				testGetOrganizationByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantPostalAddress());
+
+			page =
+				postalAddressResource.
+					getOrganizationByExternalReferenceCodePostalAddressesPage(
+						irrelevantExternalReferenceCode);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantPostalAddress, (List<PostalAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetOrganizationByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		PostalAddress postalAddress1 =
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				externalReferenceCode, randomPostalAddress());
+
+		PostalAddress postalAddress2 =
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				externalReferenceCode, randomPostalAddress());
+
+		page =
+			postalAddressResource.
+				getOrganizationByExternalReferenceCodePostalAddressesPage(
+					externalReferenceCode);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(postalAddress1, (List<PostalAddress>)page.getItems());
+		assertContains(postalAddress2, (List<PostalAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+				externalReferenceCode));
+
+		postalAddressResource.deletePostalAddress(postalAddress1.getId());
+
+		postalAddressResource.deletePostalAddress(postalAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected PostalAddress
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				String externalReferenceCode, PostalAddress postalAddress)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetOrganizationByExternalReferenceCodePostalAddressesPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
 	}
 
 	@Test
@@ -427,7 +621,10 @@ public abstract class BasePostalAddressResourceTestCase {
 
 	@Test
 	public void testGraphQLDeletePostalAddress() throws Exception {
-		PostalAddress postalAddress =
+
+		// No namespace
+
+		PostalAddress postalAddress1 =
 			testGraphQLDeletePostalAddress_addPostalAddress();
 
 		Assert.assertTrue(
@@ -437,23 +634,62 @@ public abstract class BasePostalAddressResourceTestCase {
 						"deletePostalAddress",
 						new HashMap<String, Object>() {
 							{
-								put("postalAddressId", postalAddress.getId());
+								put("postalAddressId", postalAddress1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deletePostalAddress"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"postalAddress",
 					new HashMap<String, Object>() {
 						{
-							put("postalAddressId", postalAddress.getId());
+							put("postalAddressId", postalAddress1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessAdminUser_v1_0
+
+		PostalAddress postalAddress2 =
+			testGraphQLDeletePostalAddress_addPostalAddress();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessAdminUser_v1_0",
+						new GraphQLField(
+							"deletePostalAddress",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"postalAddressId",
+										postalAddress2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessAdminUser_v1_0",
+				"Object/deletePostalAddress"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessAdminUser_v1_0",
+					new GraphQLField(
+						"postalAddress",
+						new HashMap<String, Object>() {
+							{
+								put("postalAddressId", postalAddress2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected PostalAddress testGraphQLDeletePostalAddress_addPostalAddress()
@@ -486,6 +722,8 @@ public abstract class BasePostalAddressResourceTestCase {
 		PostalAddress postalAddress =
 			testGraphQLGetPostalAddress_addPostalAddress();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				postalAddress,
@@ -503,11 +741,36 @@ public abstract class BasePostalAddressResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/postalAddress"))));
+
+		// Using the namespace headlessAdminUser_v1_0
+
+		Assert.assertTrue(
+			equals(
+				postalAddress,
+				PostalAddressSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessAdminUser_v1_0",
+								new GraphQLField(
+									"postalAddress",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"postalAddressId",
+												postalAddress.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessAdminUser_v1_0",
+						"Object/postalAddress"))));
 	}
 
 	@Test
 	public void testGraphQLGetPostalAddressNotFound() throws Exception {
 		Long irrelevantPostalAddressId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -523,6 +786,27 @@ public abstract class BasePostalAddressResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessAdminUser_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessAdminUser_v1_0",
+						new GraphQLField(
+							"postalAddress",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"postalAddressId",
+										irrelevantPostalAddressId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -589,6 +873,104 @@ public abstract class BasePostalAddressResourceTestCase {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGetUserAccountByExternalReferenceCodePostalAddressesPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_getIrrelevantExternalReferenceCode();
+
+		Page<PostalAddress> page =
+			postalAddressResource.
+				getUserAccountByExternalReferenceCodePostalAddressesPage(
+					externalReferenceCode);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			PostalAddress irrelevantPostalAddress =
+				testGetUserAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantPostalAddress());
+
+			page =
+				postalAddressResource.
+					getUserAccountByExternalReferenceCodePostalAddressesPage(
+						irrelevantExternalReferenceCode);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantPostalAddress, (List<PostalAddress>)page.getItems());
+			assertValid(
+				page,
+				testGetUserAccountByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		PostalAddress postalAddress1 =
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				externalReferenceCode, randomPostalAddress());
+
+		PostalAddress postalAddress2 =
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				externalReferenceCode, randomPostalAddress());
+
+		page =
+			postalAddressResource.
+				getUserAccountByExternalReferenceCodePostalAddressesPage(
+					externalReferenceCode);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(postalAddress1, (List<PostalAddress>)page.getItems());
+		assertContains(postalAddress2, (List<PostalAddress>)page.getItems());
+		assertValid(
+			page,
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+				externalReferenceCode));
+
+		postalAddressResource.deletePostalAddress(postalAddress1.getId());
+
+		postalAddressResource.deletePostalAddress(postalAddress2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected PostalAddress
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_addPostalAddress(
+				String externalReferenceCode, PostalAddress postalAddress)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetUserAccountByExternalReferenceCodePostalAddressesPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
 	}
 
 	@Test
@@ -1175,6 +1557,10 @@ public abstract class BasePostalAddressResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -1797,9 +2183,9 @@ public abstract class BasePostalAddressResourceTestCase {
 	}
 
 	protected PostalAddressResource postalAddressResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

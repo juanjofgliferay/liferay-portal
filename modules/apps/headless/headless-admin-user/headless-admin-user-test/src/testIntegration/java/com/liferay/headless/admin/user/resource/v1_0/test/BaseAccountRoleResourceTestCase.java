@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -37,9 +35,10 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
@@ -62,8 +61,6 @@ import java.util.Set;
 import javax.annotation.Generated;
 
 import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -584,38 +581,83 @@ public abstract class BaseAccountRoleResourceTestCase {
 			testGetAccountAccountRolesByExternalReferenceCodePage_addAccountRole(
 				externalReferenceCode, randomAccountRole());
 
-		Page<AccountRole> page1 =
-			accountRoleResource.
-				getAccountAccountRolesByExternalReferenceCodePage(
-					externalReferenceCode, null, null,
-					Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountRole> accountRoles1 = (List<AccountRole>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountRoles1.toString(), totalCount + 2, accountRoles1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountRole> page1 =
+				accountRoleResource.
+					getAccountAccountRolesByExternalReferenceCodePage(
+						externalReferenceCode, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Page<AccountRole> page2 =
-			accountRoleResource.
-				getAccountAccountRolesByExternalReferenceCodePage(
-					externalReferenceCode, null, null,
-					Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(accountRole1, (List<AccountRole>)page1.getItems());
 
-		List<AccountRole> accountRoles2 = (List<AccountRole>)page2.getItems();
+			Page<AccountRole> page2 =
+				accountRoleResource.
+					getAccountAccountRolesByExternalReferenceCodePage(
+						externalReferenceCode, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		Assert.assertEquals(accountRoles2.toString(), 1, accountRoles2.size());
+			assertContains(accountRole2, (List<AccountRole>)page2.getItems());
 
-		Page<AccountRole> page3 =
-			accountRoleResource.
-				getAccountAccountRolesByExternalReferenceCodePage(
-					externalReferenceCode, null, null,
-					Pagination.of(1, (int)totalCount + 3), null);
+			Page<AccountRole> page3 =
+				accountRoleResource.
+					getAccountAccountRolesByExternalReferenceCodePage(
+						externalReferenceCode, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
 
-		assertContains(accountRole1, (List<AccountRole>)page3.getItems());
-		assertContains(accountRole2, (List<AccountRole>)page3.getItems());
-		assertContains(accountRole3, (List<AccountRole>)page3.getItems());
+			assertContains(accountRole3, (List<AccountRole>)page3.getItems());
+		}
+		else {
+			Page<AccountRole> page1 =
+				accountRoleResource.
+					getAccountAccountRolesByExternalReferenceCodePage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, totalCount + 2), null);
+
+			List<AccountRole> accountRoles1 =
+				(List<AccountRole>)page1.getItems();
+
+			Assert.assertEquals(
+				accountRoles1.toString(), totalCount + 2, accountRoles1.size());
+
+			Page<AccountRole> page2 =
+				accountRoleResource.
+					getAccountAccountRolesByExternalReferenceCodePage(
+						externalReferenceCode, null, null,
+						Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountRole> accountRoles2 =
+				(List<AccountRole>)page2.getItems();
+
+			Assert.assertEquals(
+				accountRoles2.toString(), 1, accountRoles2.size());
+
+			Page<AccountRole> page3 =
+				accountRoleResource.
+					getAccountAccountRolesByExternalReferenceCodePage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(accountRole1, (List<AccountRole>)page3.getItems());
+			assertContains(accountRole2, (List<AccountRole>)page3.getItems());
+			assertContains(accountRole3, (List<AccountRole>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -627,7 +669,7 @@ public abstract class BaseAccountRoleResourceTestCase {
 			(entityField, accountRole1, accountRole2) -> {
 				BeanTestUtil.setProperty(
 					accountRole1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1195,33 +1237,77 @@ public abstract class BaseAccountRoleResourceTestCase {
 			testGetAccountAccountRolesPage_addAccountRole(
 				accountId, randomAccountRole());
 
-		Page<AccountRole> page1 =
-			accountRoleResource.getAccountAccountRolesPage(
-				accountId, null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountRole> accountRoles1 = (List<AccountRole>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountRoles1.toString(), totalCount + 2, accountRoles1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountRole> page1 =
+				accountRoleResource.getAccountAccountRolesPage(
+					accountId, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<AccountRole> page2 =
-			accountRoleResource.getAccountAccountRolesPage(
-				accountId, null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(accountRole1, (List<AccountRole>)page1.getItems());
 
-		List<AccountRole> accountRoles2 = (List<AccountRole>)page2.getItems();
+			Page<AccountRole> page2 =
+				accountRoleResource.getAccountAccountRolesPage(
+					accountId, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(accountRoles2.toString(), 1, accountRoles2.size());
+			assertContains(accountRole2, (List<AccountRole>)page2.getItems());
 
-		Page<AccountRole> page3 =
-			accountRoleResource.getAccountAccountRolesPage(
-				accountId, null, null, Pagination.of(1, (int)totalCount + 3),
-				null);
+			Page<AccountRole> page3 =
+				accountRoleResource.getAccountAccountRolesPage(
+					accountId, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(accountRole1, (List<AccountRole>)page3.getItems());
-		assertContains(accountRole2, (List<AccountRole>)page3.getItems());
-		assertContains(accountRole3, (List<AccountRole>)page3.getItems());
+			assertContains(accountRole3, (List<AccountRole>)page3.getItems());
+		}
+		else {
+			Page<AccountRole> page1 =
+				accountRoleResource.getAccountAccountRolesPage(
+					accountId, null, null, Pagination.of(1, totalCount + 2),
+					null);
+
+			List<AccountRole> accountRoles1 =
+				(List<AccountRole>)page1.getItems();
+
+			Assert.assertEquals(
+				accountRoles1.toString(), totalCount + 2, accountRoles1.size());
+
+			Page<AccountRole> page2 =
+				accountRoleResource.getAccountAccountRolesPage(
+					accountId, null, null, Pagination.of(2, totalCount + 2),
+					null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountRole> accountRoles2 =
+				(List<AccountRole>)page2.getItems();
+
+			Assert.assertEquals(
+				accountRoles2.toString(), 1, accountRoles2.size());
+
+			Page<AccountRole> page3 =
+				accountRoleResource.getAccountAccountRolesPage(
+					accountId, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(accountRole1, (List<AccountRole>)page3.getItems());
+			assertContains(accountRole2, (List<AccountRole>)page3.getItems());
+			assertContains(accountRole3, (List<AccountRole>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -1233,7 +1319,7 @@ public abstract class BaseAccountRoleResourceTestCase {
 			(entityField, accountRole1, accountRole2) -> {
 				BeanTestUtil.setProperty(
 					accountRole1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1828,6 +1914,10 @@ public abstract class BaseAccountRoleResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -2114,9 +2204,9 @@ public abstract class BaseAccountRoleResourceTestCase {
 	}
 
 	protected AccountRoleResource accountRoleResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

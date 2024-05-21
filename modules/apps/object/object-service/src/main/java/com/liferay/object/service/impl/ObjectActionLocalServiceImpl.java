@@ -17,6 +17,7 @@ import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.definition.util.ObjectDefinitionUtil;
 import com.liferay.object.exception.DuplicateObjectActionExternalReferenceCodeException;
+import com.liferay.object.exception.LockedObjectActionException;
 import com.liferay.object.exception.ObjectActionConditionExpressionException;
 import com.liferay.object.exception.ObjectActionErrorMessageException;
 import com.liferay.object.exception.ObjectActionExecutorKeyException;
@@ -46,6 +47,7 @@ import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
@@ -65,6 +67,8 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.security.script.management.configuration.helper.ScriptManagementConfigurationHelper;
 
 import java.util.HashMap;
 import java.util.List;
@@ -295,6 +299,14 @@ public class ObjectActionLocalServiceImpl
 	}
 
 	@Override
+	public List<ObjectAction> getObjectActions(
+		boolean active, String objectActionExecutorKey) {
+
+		return objectActionPersistence.findByA_OAEK(
+			active, objectActionExecutorKey);
+	}
+
+	@Override
 	public List<ObjectAction> getObjectActions(long objectDefinitionId) {
 		return objectActionPersistence.findByObjectDefinitionId(
 			objectDefinitionId);
@@ -382,15 +394,37 @@ public class ObjectActionLocalServiceImpl
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
-	public ObjectAction updateStatus(long objectActionId, int status)
+	public synchronized ObjectAction updateStatus(
+			long objectActionId, int status)
 		throws PortalException {
 
-		ObjectAction objectAction = objectActionPersistence.findByPrimaryKey(
-			objectActionId);
+		boolean locked = LockManagerUtil.isLocked(
+			ObjectAction.class.getName(), objectActionId);
 
-		objectAction.setStatus(status);
+		if (locked) {
+			throw new LockedObjectActionException(
+				String.format(
+					"Unable to update the status of object action %d because " +
+						"it is being updated by another thread",
+					objectActionId));
+		}
 
-		return objectActionPersistence.update(objectAction);
+		try {
+			LockManagerUtil.lock(
+				ObjectAction.class.getName(), String.valueOf(objectActionId),
+				PortalUUIDUtil.generate());
+
+			ObjectAction objectAction =
+				objectActionPersistence.findByPrimaryKey(objectActionId);
+
+			objectAction.setStatus(status);
+
+			return objectActionPersistence.update(objectAction);
+		}
+		finally {
+			LockManagerUtil.unlock(
+				ObjectAction.class.getName(), objectActionId);
+		}
 	}
 
 	private void _validateErrorMessage(
@@ -495,6 +529,16 @@ public class ObjectActionLocalServiceImpl
 			}
 
 			return;
+		}
+
+		if (Objects.equals(
+				ObjectActionExecutorConstants.KEY_GROOVY,
+				objectActionExecutorKey) &&
+			!_scriptManagementConfigurationHelper.
+				isAllowScriptContentToBeExecutedOrIncluded()) {
+
+			throw new ObjectActionExecutorKeyException(
+				"Groovy script based object actions are not allowed");
 		}
 
 		ObjectActionExecutor objectActionExecutor =
@@ -888,6 +932,10 @@ public class ObjectActionLocalServiceImpl
 
 	@Reference
 	private ResourceActions _resourceActions;
+
+	@Reference
+	private ScriptManagementConfigurationHelper
+		_scriptManagementConfigurationHelper;
 
 	@Reference
 	private TreeFactory _treeFactory;

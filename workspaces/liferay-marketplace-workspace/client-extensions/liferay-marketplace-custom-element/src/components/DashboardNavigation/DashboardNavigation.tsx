@@ -3,106 +3,51 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayDropDown from '@clayui/drop-down';
-import ClayIcon from '@clayui/icon';
-import {useNavigate} from 'react-router-dom';
-
-import {getAccountImage} from '../../utils/util';
 import {DashboardNavigationList} from './DashboardNavigationList';
 
 import './DashboardNavigation.scss';
-import {Liferay} from '../../liferay/liferay';
-import CommerceSelectAccountImpl from '../../services/rest/CommerceSelectAccount';
+import useAccounts from '../../hooks/data/useAccounts';
 import {AppProps} from '../DashboardTable/DashboardTable';
-export interface DashboardListItems {
-	itemIcon: string;
-	itemName: string;
-	itemSelected?: boolean;
+import AccountSearchDropdown from './AccountSearchDropdown';
+
+export type DashboardListItems = {
 	itemTitle: string;
 	items?: AppProps[];
 	path: string;
-}
+	symbol: string;
+};
 
-interface DashboardNavigationProps {
-	accountAppsNumber: number;
-	accountIcon: string;
-	accounts: Account[];
-	currentAccount: Account;
+export type DashboardNavigationProps = {
+	accountAppsNumber?: number;
+	accountIcon?: string;
+	accountsSearch?: ReturnType<typeof useAccounts>;
+	currentAccount?: Account;
 	dashboardNavigationItems: DashboardListItems[];
-}
+};
 
 export function DashboardNavigation({
 	accountAppsNumber,
 	accountIcon,
-	accounts,
+	accountsSearch,
 	currentAccount,
 	dashboardNavigationItems,
 }: DashboardNavigationProps) {
-	const navigate = useNavigate();
-
 	return (
 		<div className="dashboard-navigation-container">
-			<ClayDropDown
-				trigger={
-					<div className="dashboard-navigation-header">
-						<div className="dashboard-navigation-header-left-content">
-							<img
-								alt="account logo"
-								className="dashboard-navigation-header-logo"
-								src={getAccountImage(accountIcon)}
-							/>
-
-							<div className="dashboard-navigation-header-text-container">
-								<span
-									className="dashboard-navigation-header-title"
-									title={currentAccount?.name}
-								>
-									{currentAccount?.name}
-								</span>
-
-								<span className="dashboard-navigation-header-apps">
-									{accountAppsNumber} apps
-								</span>
-							</div>
-						</div>
-
-						<ClayIcon
-							className="dashboard-navigation-header-arrow-down"
-							symbol="caret-bottom"
-						/>
-					</div>
-				}
-			>
-				<ClayDropDown.ItemList>
-					{accounts.map((account) => (
-						<ClayDropDown.Item
-							active={account.id === currentAccount?.id}
-							key={account.id}
-							onClick={() =>
-								CommerceSelectAccountImpl.selectAccount(
-									account.id
-								).then(() => {
-									Liferay.CommerceContext.account = {
-										accountId: account.id,
-									};
-
-									navigate('/');
-
-									window.location.reload();
-								})
-							}
-						>
-							{account.name}
-						</ClayDropDown.Item>
-					))}
-				</ClayDropDown.ItemList>
-			</ClayDropDown>
+			{accountsSearch && (
+				<AccountSearchDropdown
+					accountAppsNumber={accountAppsNumber}
+					accountIcon={accountIcon}
+					accountsSearch={accountsSearch}
+					currentAccount={currentAccount}
+				/>
+			)}
 
 			<div className="dashboard-navigation-body">
-				{dashboardNavigationItems.map((navigationMock, index) => (
+				{dashboardNavigationItems.map((dashboardNavigation, index) => (
 					<DashboardNavigationList
+						dashboardNavigation={dashboardNavigation}
 						key={index}
-						navigationItemMock={navigationMock}
 					/>
 				))}
 			</div>

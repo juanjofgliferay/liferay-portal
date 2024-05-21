@@ -8,8 +8,6 @@ import ClayModal, {useModal} from '@clayui/modal';
 import classNames from 'classnames';
 import {useState} from 'react';
 
-import checkFillIcon from '../../assets/icons/check_fill_icon.svg';
-import circleFillIcon from '../../assets/icons/circle_fill_icon.svg';
 import {
 	getOrderTypes,
 	getProductSKU,
@@ -22,6 +20,9 @@ import {ProjectDetails} from './ProjectDetails';
 import {RulesAndGuidelines} from './RulesAndGuidelines';
 
 import './CreateProjectModal.scss';
+
+import ClayIcon from '@clayui/icon';
+
 import SearchBuilder from '../../core/SearchBuilder';
 import HeadlessCommerceAdminCatalogImpl from '../../services/rest/HeadlessCommerceAdminCatalog';
 
@@ -126,14 +127,11 @@ export function CreateProjectModal({
 		});
 
 		await patchOrderByERC(cartCheckoutResponse.orderUUID, {
-			orderStatus: 1,
-		});
-
-		await patchOrderByERC(cartCheckoutResponse.orderUUID, {
 			customFields: {
 				'Github username': githubUsername,
 				'Project Name': projectName,
 			},
+			orderStatus: 1,
 		});
 
 		handleClose();
@@ -154,8 +152,8 @@ export function CreateProjectModal({
 							className="create-project-modal-multi-step-item-container"
 							key={multiStepItem.label + i}
 						>
-							<img
-								alt="Circle Icon"
+							<ClayIcon
+								aria-label="Circle Icon"
 								className={classNames(
 									'create-project-modal-multi-step-icon',
 									{
@@ -164,10 +162,8 @@ export function CreateProjectModal({
 											multiStepItem.completed,
 									}
 								)}
-								src={
-									multiStepItem.completed
-										? checkFillIcon
-										: circleFillIcon
+								symbol={
+									multiStepItem.completed ? 'check' : 'circle'
 								}
 							/>
 

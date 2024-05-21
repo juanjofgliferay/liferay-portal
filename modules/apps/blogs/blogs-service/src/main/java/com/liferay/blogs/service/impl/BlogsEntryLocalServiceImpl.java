@@ -5,6 +5,7 @@
 
 package com.liferay.blogs.service.impl;
 
+import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.link.constants.AssetLinkConstants;
@@ -42,6 +43,7 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -86,6 +88,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -319,7 +322,10 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			urlTitle = friendlyURLEntry.getUrlTitle();
 		}
 
+		urlTitle = _sanitizeUrlTitle(urlTitle);
+
 		entry.setUrlTitle(urlTitle);
+
 		entry.setDescription(description);
 		entry.setContent(content);
 		entry.setDisplayDate(displayDate);
@@ -1089,8 +1095,8 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			visible = true;
 		}
 
-		String summary = _htmlParser.extractText(
-			StringUtil.shorten(entry.getContent(), 500));
+		String summary = StringUtil.shorten(
+			_htmlParser.extractText(entry.getContent()), 500);
 
 		AssetEntry assetEntry = _assetEntryLocalService.updateEntry(
 			userId, entry.getGroupId(), entry.getCreateDate(),
@@ -1195,13 +1201,16 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 			urlTitle = _getUniqueUrlTitle(entry, title);
 		}
 
+		urlTitle = _sanitizeUrlTitle(urlTitle);
+
 		String oldUrlTitle = entry.getUrlTitle();
 
 		entry.setTitle(title);
 		entry.setSubtitle(subtitle);
 
 		if (Validator.isNotNull(urlTitle) &&
-			!urlTitle.equals(entry.getUrlTitle()) &&
+			(!urlTitle.equals(entry.getUrlTitle()) ||
+			 _isUpdatedAssetCategories(entry, serviceContext)) &&
 			!ExportImportThreadLocal.isImportInProcess()) {
 
 			FriendlyURLEntry friendlyURLEntry =
@@ -1858,6 +1867,39 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 		return true;
 	}
 
+	private boolean _isUpdatedAssetCategories(
+		BlogsEntry entry, ServiceContext serviceContext) {
+
+		if ((serviceContext == null) ||
+			!FeatureFlagManagerUtil.isEnabled(
+				entry.getCompanyId(), "LPD-11147")) {
+
+			return false;
+		}
+
+		FriendlyURLEntry mainFriendlyURLEntry =
+			_friendlyURLEntryLocalService.fetchMainFriendlyURLEntry(
+				_portal.getClassNameId(BlogsEntry.class.getName()),
+				entry.getEntryId());
+
+		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+			_portal.getClassNameId(FriendlyURLEntry.class),
+			mainFriendlyURLEntry.getFriendlyURLEntryId());
+
+		List<AssetCategory> assetCategories = assetEntry.getCategories();
+
+		long[] friendlyURLAssetCategoryIds = GetterUtil.getLongValues(
+			serviceContext.getAttribute("friendlyURLAssetCategoryIds"));
+
+		if (assetCategories.containsAll(
+				ListUtil.toList(friendlyURLAssetCategoryIds))) {
+
+			return false;
+		}
+
+		return true;
+	}
+
 	private boolean _isValidImageMimeType(FileEntry fileEntry) {
 		if (ArrayUtil.contains(
 				_blogsFileUploadsConfiguration.imageExtensions(),
@@ -2254,6 +2296,14 @@ public class BlogsEntryLocalServiceImpl extends BlogsEntryLocalServiceBaseImpl {
 
 			blogsEntryPersistence.update(entry);
 		}
+	}
+
+	private String _sanitizeUrlTitle(String urlTitle) {
+		while (urlTitle.startsWith(StringPool.SLASH)) {
+			urlTitle = urlTitle.substring(1);
+		}
+
+		return urlTitle;
 	}
 
 	private BlogsEntry _startWorkflowInstance(

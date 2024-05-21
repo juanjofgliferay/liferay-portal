@@ -8,9 +8,7 @@ package com.liferay.object.web.internal.object.definitions.portlet.action.util;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectAction;
 import com.liferay.object.admin.rest.dto.v1_0.ObjectDefinition;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,6 +21,10 @@ public class ExportImportObjectDefinitionUtil {
 
 	public static void prepareObjectDefinitionForExport(
 		JSONFactory jsonFactory, ObjectDefinition objectDefinition) {
+
+		if (objectDefinition == null) {
+			return;
+		}
 
 		for (ObjectAction objectAction : objectDefinition.getObjectActions()) {
 			Map<String, Object> parameters =
@@ -40,12 +42,6 @@ public class ExportImportObjectDefinitionUtil {
 					(ArrayList<LinkedHashMap>)object,
 					jsonFactory::createJSONObject));
 		}
-
-		objectDefinition.setObjectFields(
-			ArrayUtil.filter(
-				objectDefinition.getObjectFields(),
-				objectField -> Validator.isNull(
-					objectField.getRelationshipType())));
 	}
 
 }

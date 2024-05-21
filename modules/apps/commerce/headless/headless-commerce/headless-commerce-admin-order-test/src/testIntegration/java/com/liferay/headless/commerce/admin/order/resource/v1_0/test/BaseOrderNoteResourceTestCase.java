@@ -27,8 +27,6 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -247,6 +245,8 @@ public abstract class BaseOrderNoteResourceTestCase {
 		OrderNote orderNote =
 			testGraphQLGetOrderNoteByExternalReferenceCode_addOrderNote();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				orderNote,
@@ -268,6 +268,33 @@ public abstract class BaseOrderNoteResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/orderNoteByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertTrue(
+			equals(
+				orderNote,
+				OrderNoteSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminOrder_v1_0",
+								new GraphQLField(
+									"orderNoteByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													orderNote.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminOrder_v1_0",
+						"Object/orderNoteByExternalReferenceCode"))));
 	}
 
 	@Test
@@ -276,6 +303,8 @@ public abstract class BaseOrderNoteResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -291,6 +320,27 @@ public abstract class BaseOrderNoteResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"orderNoteByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -330,7 +380,10 @@ public abstract class BaseOrderNoteResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteOrderNote() throws Exception {
-		OrderNote orderNote = testGraphQLDeleteOrderNote_addOrderNote();
+
+		// No namespace
+
+		OrderNote orderNote1 = testGraphQLDeleteOrderNote_addOrderNote();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -339,23 +392,59 @@ public abstract class BaseOrderNoteResourceTestCase {
 						"deleteOrderNote",
 						new HashMap<String, Object>() {
 							{
-								put("id", orderNote.getId());
+								put("id", orderNote1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteOrderNote"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"orderNote",
 					new HashMap<String, Object>() {
 						{
-							put("id", orderNote.getId());
+							put("id", orderNote1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		OrderNote orderNote2 = testGraphQLDeleteOrderNote_addOrderNote();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"deleteOrderNote",
+							new HashMap<String, Object>() {
+								{
+									put("id", orderNote2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessCommerceAdminOrder_v1_0",
+				"Object/deleteOrderNote"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminOrder_v1_0",
+					new GraphQLField(
+						"orderNote",
+						new HashMap<String, Object>() {
+							{
+								put("id", orderNote2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected OrderNote testGraphQLDeleteOrderNote_addOrderNote()
@@ -384,6 +473,8 @@ public abstract class BaseOrderNoteResourceTestCase {
 	public void testGraphQLGetOrderNote() throws Exception {
 		OrderNote orderNote = testGraphQLGetOrderNote_addOrderNote();
 
+		// No namespace
+
 		Assert.assertTrue(
 			equals(
 				orderNote,
@@ -399,11 +490,35 @@ public abstract class BaseOrderNoteResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/orderNote"))));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertTrue(
+			equals(
+				orderNote,
+				OrderNoteSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminOrder_v1_0",
+								new GraphQLField(
+									"orderNote",
+									new HashMap<String, Object>() {
+										{
+											put("id", orderNote.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminOrder_v1_0",
+						"Object/orderNote"))));
 	}
 
 	@Test
 	public void testGraphQLGetOrderNoteNotFound() throws Exception {
 		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -417,6 +532,25 @@ public abstract class BaseOrderNoteResourceTestCase {
 							}
 						},
 						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"orderNote",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
 	}
@@ -528,32 +662,69 @@ public abstract class BaseOrderNoteResourceTestCase {
 			testGetOrderByExternalReferenceCodeOrderNotesPage_addOrderNote(
 				externalReferenceCode, randomOrderNote());
 
-		Page<OrderNote> page1 =
-			orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
-				externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderNote> orderNotes1 = (List<OrderNote>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderNotes1.toString(), totalCount + 2, orderNotes1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderNote> page1 =
+				orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
+					externalReferenceCode,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<OrderNote> page2 =
-			orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
-				externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(orderNote1, (List<OrderNote>)page1.getItems());
 
-		List<OrderNote> orderNotes2 = (List<OrderNote>)page2.getItems();
+			Page<OrderNote> page2 =
+				orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
+					externalReferenceCode,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(orderNotes2.toString(), 1, orderNotes2.size());
+			assertContains(orderNote2, (List<OrderNote>)page2.getItems());
 
-		Page<OrderNote> page3 =
-			orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
-				externalReferenceCode, Pagination.of(1, (int)totalCount + 3));
+			Page<OrderNote> page3 =
+				orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
+					externalReferenceCode,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(orderNote1, (List<OrderNote>)page3.getItems());
-		assertContains(orderNote2, (List<OrderNote>)page3.getItems());
-		assertContains(orderNote3, (List<OrderNote>)page3.getItems());
+			assertContains(orderNote3, (List<OrderNote>)page3.getItems());
+		}
+		else {
+			Page<OrderNote> page1 =
+				orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
+					externalReferenceCode, Pagination.of(1, totalCount + 2));
+
+			List<OrderNote> orderNotes1 = (List<OrderNote>)page1.getItems();
+
+			Assert.assertEquals(
+				orderNotes1.toString(), totalCount + 2, orderNotes1.size());
+
+			Page<OrderNote> page2 =
+				orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
+					externalReferenceCode, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderNote> orderNotes2 = (List<OrderNote>)page2.getItems();
+
+			Assert.assertEquals(orderNotes2.toString(), 1, orderNotes2.size());
+
+			Page<OrderNote> page3 =
+				orderNoteResource.getOrderByExternalReferenceCodeOrderNotesPage(
+					externalReferenceCode,
+					Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(orderNote1, (List<OrderNote>)page3.getItems());
+			assertContains(orderNote2, (List<OrderNote>)page3.getItems());
+			assertContains(orderNote3, (List<OrderNote>)page3.getItems());
+		}
 	}
 
 	protected OrderNote
@@ -677,29 +848,62 @@ public abstract class BaseOrderNoteResourceTestCase {
 		OrderNote orderNote3 = testGetOrderIdOrderNotesPage_addOrderNote(
 			id, randomOrderNote());
 
-		Page<OrderNote> page1 = orderNoteResource.getOrderIdOrderNotesPage(
-			id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderNote> orderNotes1 = (List<OrderNote>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderNotes1.toString(), totalCount + 2, orderNotes1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderNote> page1 = orderNoteResource.getOrderIdOrderNotesPage(
+				id,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit));
 
-		Page<OrderNote> page2 = orderNoteResource.getOrderIdOrderNotesPage(
-			id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(orderNote1, (List<OrderNote>)page1.getItems());
 
-		List<OrderNote> orderNotes2 = (List<OrderNote>)page2.getItems();
+			Page<OrderNote> page2 = orderNoteResource.getOrderIdOrderNotesPage(
+				id,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit));
 
-		Assert.assertEquals(orderNotes2.toString(), 1, orderNotes2.size());
+			assertContains(orderNote2, (List<OrderNote>)page2.getItems());
 
-		Page<OrderNote> page3 = orderNoteResource.getOrderIdOrderNotesPage(
-			id, Pagination.of(1, (int)totalCount + 3));
+			Page<OrderNote> page3 = orderNoteResource.getOrderIdOrderNotesPage(
+				id,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit));
 
-		assertContains(orderNote1, (List<OrderNote>)page3.getItems());
-		assertContains(orderNote2, (List<OrderNote>)page3.getItems());
-		assertContains(orderNote3, (List<OrderNote>)page3.getItems());
+			assertContains(orderNote3, (List<OrderNote>)page3.getItems());
+		}
+		else {
+			Page<OrderNote> page1 = orderNoteResource.getOrderIdOrderNotesPage(
+				id, Pagination.of(1, totalCount + 2));
+
+			List<OrderNote> orderNotes1 = (List<OrderNote>)page1.getItems();
+
+			Assert.assertEquals(
+				orderNotes1.toString(), totalCount + 2, orderNotes1.size());
+
+			Page<OrderNote> page2 = orderNoteResource.getOrderIdOrderNotesPage(
+				id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderNote> orderNotes2 = (List<OrderNote>)page2.getItems();
+
+			Assert.assertEquals(orderNotes2.toString(), 1, orderNotes2.size());
+
+			Page<OrderNote> page3 = orderNoteResource.getOrderIdOrderNotesPage(
+				id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(orderNote1, (List<OrderNote>)page3.getItems());
+			assertContains(orderNote2, (List<OrderNote>)page3.getItems());
+			assertContains(orderNote3, (List<OrderNote>)page3.getItems());
+		}
 	}
 
 	protected OrderNote testGetOrderIdOrderNotesPage_addOrderNote(
@@ -1103,6 +1307,10 @@ public abstract class BaseOrderNoteResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1436,9 +1644,9 @@ public abstract class BaseOrderNoteResourceTestCase {
 	}
 
 	protected OrderNoteResource orderNoteResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 

@@ -4,8 +4,11 @@
  */
 
 import {Option, Picker} from '@clayui/core';
+import classNames from 'classnames';
 import {FieldBase} from 'frontend-js-components-web';
 import React, {Key, ReactElement} from 'react';
+
+import './SingleSelect.scss';
 
 type SingleSelectOption = {
 	label?: string;
@@ -45,7 +48,7 @@ export function SingleSelect<T extends SingleSelectOption>({
 	items,
 	label,
 	onSelectionChange,
-	placeholder,
+	placeholder = Liferay.Language.get('select-an-option'),
 	required,
 	selectedKey,
 	tooltip,
@@ -62,12 +65,15 @@ export function SingleSelect<T extends SingleSelectOption>({
 			tooltip={tooltip}
 		>
 			<Picker<T>
-				UNSAFE_menuClassName={className}
+				UNSAFE_menuClassName={classNames('lfr__object-single-select', {
+					className,
+				})}
 				as={as}
-				className={className}
 				defaultSelectedKey={defaultSelectedKey}
 				disabled={disabled}
+				id={id}
 				items={items}
+				name={id}
 				onSelectionChange={onSelectionChange}
 				placeholder={placeholder}
 				selectedKey={selectedKey}

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import CodeMirror from 'codemirror';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
 import React, {ReactNode, RefObject} from 'react';
 
 import {Collapsible} from './Collapsible';
@@ -22,8 +22,9 @@ export interface SidebarCategory {
 	items: SidebarElement[];
 	label: string;
 }
-interface IProps {
+interface SidebarProps {
 	CustomSidebarContent?: ReactNode;
+	disabled?: boolean;
 	editorRef: RefObject<CodeMirror.Editor>;
 	elements: SidebarCategory[];
 	elementsDisabled?: boolean;
@@ -32,10 +33,11 @@ interface IProps {
 
 export function Sidebar({
 	CustomSidebarContent,
+	disabled,
 	editorRef,
 	elements,
 	elementsDisabled,
-}: IProps) {
+}: SidebarProps) {
 	const handleClick = (item: SidebarElement) =>
 		editorRef.current?.replaceSelection(item.content);
 
@@ -50,7 +52,7 @@ export function Sidebar({
 					<Collapsible key={label} label={label}>
 						{items.map((item) => (
 							<Element
-								disabled={elementsDisabled}
+								disabled={elementsDisabled || disabled}
 								helpText={
 									(item.helpText ?? item.tooltip) as string
 								}

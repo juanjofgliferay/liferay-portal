@@ -9,14 +9,14 @@ import ClayForm from '@clayui/form';
 import ClayModal, {ClayModalProvider, useModal} from '@clayui/modal';
 import {
 	API,
-	BetaButton,
 	FormError,
 	Input,
-	REQUIRED_MSG,
 	SingleSelect,
+	constantsUtils,
 	openToast,
 	useForm,
 } from '@liferay/object-js-components-web';
+import {FeatureIndicator} from 'frontend-js-components-web';
 import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
 
@@ -27,6 +27,7 @@ import {normalizeName} from './objectDefinitionUtil';
 
 interface ModalAddObjectDefinitionProps {
 	handleOnClose: () => void;
+	learnResourceContext: any;
 	objectDefinitionsStorageTypes: LabelValueObject[];
 	objectFolderExternalReferenceCode?: string;
 	onAfterSubmit?: (value: ObjectDefinition) => void;
@@ -42,6 +43,7 @@ type TInitialValues = {
 
 export function ModalAddObjectDefinition({
 	handleOnClose,
+	learnResourceContext,
 	objectDefinitionsStorageTypes,
 	objectFolderExternalReferenceCode,
 	onAfterSubmit,
@@ -94,10 +96,7 @@ export function ModalAddObjectDefinition({
 			scope: 'company',
 		};
 
-		if (
-			Liferay.FeatureFlags['LPS-148856'] &&
-			objectFolderExternalReferenceCode
-		) {
+		if (objectFolderExternalReferenceCode) {
 			objectDefinition.objectFolderExternalReferenceCode = objectFolderExternalReferenceCode;
 		}
 
@@ -132,13 +131,13 @@ export function ModalAddObjectDefinition({
 		const errors: FormError<TInitialValues> = {};
 
 		if (!values.label) {
-			errors.label = REQUIRED_MSG;
+			errors.label = constantsUtils.REQUIRED_MSG;
 		}
 		if (!(values.name ?? values.label)) {
-			errors.name = REQUIRED_MSG;
+			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 		if (!values.pluralLabel) {
-			errors.pluralLabel = REQUIRED_MSG;
+			errors.pluralLabel = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -213,7 +212,13 @@ export function ModalAddObjectDefinition({
 								/>
 
 								<div className="lfr__object-web-modal-add-object-definition-storage-type-beta">
-									<BetaButton />
+									<FeatureIndicator
+										interactive
+										learnResourceContext={
+											learnResourceContext
+										}
+										type="beta"
+									/>
 								</div>
 							</div>
 						)}

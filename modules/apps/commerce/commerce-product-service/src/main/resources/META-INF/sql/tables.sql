@@ -63,8 +63,9 @@ create table CPDSpecificationOptionValue (
 	CPDefinitionId LONG,
 	CPSpecificationOptionId LONG,
 	CPOptionCategoryId LONG,
-	value STRING null,
+	key_ VARCHAR(75) null,
 	priority DOUBLE,
+	value STRING null,
 	lastPublishDate DATE null,
 	primary key (CPDSpecificationOptionValueId, ctCollectionId)
 );
@@ -420,6 +421,7 @@ create table CPSpecificationOption (
 	description STRING null,
 	facetable BOOLEAN,
 	key_ VARCHAR(75) null,
+	priority DOUBLE,
 	lastPublishDate DATE null,
 	primary key (CPSpecificationOptionId, ctCollectionId)
 );

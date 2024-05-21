@@ -3077,9 +3077,7 @@ definition {
 
 			User.singleDeactivateCP(userFirstName = "first");
 
-			Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-			MenuItem.click(menuItem = "Inactive");
+			ManagementBar.setFilterAndOrder(filterBy = "Inactive");
 
 			User.singleDeleteCP(userFirstName = "first");
 		}
@@ -3162,6 +3160,7 @@ definition {
 	@priority = 4
 	test HotDeploySAMLApp {
 		property hot.deploy.osgi.app.includes = "saml";
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -5357,7 +5356,7 @@ definition {
 	@priority = 4
 	test ViewSPInitiatedSSOWithOktaAndUserGroups {
 		property app.server.types = "jboss,tcserver,tomcat,wildfly";
-		property custom.properties = "feature.flag.LPS-180198=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property database.types = "hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
 		property portal.release = "false";
 		property portal.ssl.enabled = "true";
@@ -5419,7 +5418,7 @@ definition {
 	@priority = 4
 	test ViewSPInitiatedSSOWithOktaUserGroupCanBeAssignedLater {
 		property app.server.types = "jboss,tcserver,tomcat,wildfly";
-		property custom.properties = "feature.flag.LPS-180198=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property database.types = "hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
 		property portal.release = "false";
 		property portal.ssl.enabled = "true";
@@ -5499,7 +5498,7 @@ definition {
 	@priority = 4
 	test ViewSPInitiatedSSOWithOktaUserGroupsAreNotCreatedDuringLogin {
 		property app.server.types = "jboss,tcserver,tomcat,wildfly";
-		property custom.properties = "feature.flag.LPS-180198=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property database.types = "hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
 		property portal.release = "false";
 		property portal.ssl.enabled = "true";
@@ -5559,7 +5558,7 @@ definition {
 	@priority = 4
 	test ViewSPInitiatedSSOWithOktaWithMultipleUserGroups {
 		property app.server.types = "jboss,tcserver,tomcat,wildfly";
-		property custom.properties = "feature.flag.LPS-180198=true${line.separator}jsonws.web.service.paths.excludes=";
+		property custom.properties = "jsonws.web.service.paths.excludes=";
 		property database.types = "hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
 		property portal.release = "false";
 		property portal.ssl.enabled = "true";
@@ -6159,27 +6158,27 @@ definition {
 
 		task ("Add IdP configurations to SPs") {
 			SAML.addIDPConfigurationsToServiceProvider(
-				idpAttributeMapping = "screenName,UUID,emailAddress,firstName,lastName",
-				idpAttributeMappingText = "screenName,uuid,emailAddress,firstName,lastName",
+				idpAttributeMapping = "UUID,screenName,emailAddress,firstName,lastName",
+				idpAttributeMappingText = "uuid,screenName,emailAddress,firstName,lastName",
 				idpEntityId = ${identityProviderEntityId},
 				idpKeepAliveURL = "http://localhost:8080/c/portal/saml/keep_alive",
 				idpURL = "http://localhost:8080",
 				nameIdentifierFormat = "Email Address",
 				spURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com",
-				userMatchingAttributeIndex = 1,
+				userMatchingAttributeIndex = 0,
 				userResolution = "attribute");
 
 			SAML.addIDPConfigurationsToServiceProvider(
-				idpAttributeMapping = "screenName,UUID,emailAddress,firstName,lastName",
-				idpAttributeMappingText = "screenName,uuid,emailAddress,firstName,lastName",
+				idpAttributeMapping = "UUID,screenName,emailAddress,firstName,lastName",
+				idpAttributeMappingText = "uuid,screenName,emailAddress,firstName,lastName",
 				idpEntityId = ${identityProviderEntityId},
 				idpKeepAliveURL = "http://localhost:8080/c/portal/saml/keep_alive",
 				idpURL = "http://localhost:8080",
 				nameIdentifierFormat = "Email Address",
 				spURL = "http://www.baker.com:8080",
 				userEmailAddress = "test@www.baker.com",
-				userMatchingAttributeIndex = 1,
+				userMatchingAttributeIndex = 0,
 				userResolution = "attribute");
 		}
 

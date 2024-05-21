@@ -38,6 +38,15 @@ public interface PropsKeys {
 	public static final String ADMIN_EMAIL_PASSWORD_CHANGED_SUBJECT =
 		"admin.email.password.changed.subject";
 
+	public static final String ADMIN_EMAIL_PASSWORD_LOCKOUT_BODY =
+		"admin.email.password.lockout.body";
+
+	public static final String ADMIN_EMAIL_PASSWORD_LOCKOUT_SUBJECT =
+		"admin.email.password.lockout.subject";
+
+	public static final String ADMIN_EMAIL_PASSWORD_LOCKOUT_UNTIL_BODY =
+		"admin.email.password.lockout.until.body";
+
 	public static final String ADMIN_EMAIL_PASSWORD_RESET_BODY =
 		"admin.email.password.reset.body";
 
@@ -58,6 +67,12 @@ public interface PropsKeys {
 	public static final String ADMIN_EMAIL_PASSWORD_SENT_SUBJECT =
 		"admin.email.password.sent.subject";
 
+	public static final String ADMIN_EMAIL_PASSWORD_UNCHANGEABLE_BODY =
+		"admin.email.password.unchangeable.body";
+
+	public static final String ADMIN_EMAIL_PASSWORD_UNCHANGEABLE_SUBJECT =
+		"admin.email.password.unchangeable.subject";
+
 	/**
 	 * @deprecated As of Mueller (7.2.x), with no direct replacement
 	 */
@@ -76,6 +91,12 @@ public interface PropsKeys {
 
 	public static final String ADMIN_EMAIL_USER_ADDED_SUBJECT =
 		"admin.email.user.added.subject";
+
+	public static final String ADMIN_EMAIL_USER_CREATION_ATTEMPT_BODY =
+		"admin.email.user.creation.attempt.body";
+
+	public static final String ADMIN_EMAIL_USER_CREATION_ATTEMPT_SUBJECT =
+		"admin.email.user.creation.attempt.subject";
 
 	public static final String ADMIN_EMAIL_VERIFICATION_BODY =
 		"admin.email.verification.body";
@@ -370,6 +391,12 @@ public interface PropsKeys {
 
 	public static final String CDN_HOST_HTTPS = "cdn.host.https";
 
+	public static final String CHANGE_TRACKING_DELETION_PROTECTION_ENABLED =
+		"change.tracking.deletion.protection.enabled";
+
+	public static final String CLUSTER_LINK_AUTH_VALUE =
+		"cluster.link.auth.value";
+
 	public static final String CLUSTER_LINK_AUTODETECT_ADDRESS =
 		"cluster.link.autodetect.address";
 
@@ -407,6 +434,8 @@ public interface PropsKeys {
 	public static final String COMBO_CHECK_TIMESTAMP_INTERVAL =
 		"combo.check.timestamp.interval";
 
+	public static final String COMBO_MAX_FILES = "combo.max.files";
+
 	public static final String COMMUNITIES_CONTROL_PANEL_MEMBERS_VISIBLE =
 		"communities.control.panel.members.visible";
 
@@ -426,6 +455,9 @@ public interface PropsKeys {
 
 	public static final String COMPANY_DEFAULT_VIRTUAL_HOST_NAME =
 		"company.default.virtual.host.name";
+
+	public static final String COMPANY_DEFAULT_VIRTUAL_HOST_SYNC_ON_STARTUP =
+		"company.default.virtual.host.sync.on.startup";
 
 	public static final String COMPANY_DEFAULT_WEB_ID =
 		"company.default.web.id";
@@ -931,6 +963,9 @@ public interface PropsKeys {
 	public static final String DNS_SECURITY_THREAD_LIMIT =
 		"dns.security.thread.limit";
 
+	public static final String DNS_SECURITY_THREAD_QUEUE_LIMIT =
+		"dns.security.thread.queue.limit";
+
 	public static final String EDITOR_WYSIWYG_DEFAULT =
 		"editor.wysiwyg.default";
 
@@ -1096,10 +1131,6 @@ public interface PropsKeys {
 
 	public static final String INDEX_ON_STARTUP_DELAY =
 		"index.on.startup.delay";
-
-	public static final String
-		INDEX_PERMISSION_FILTER_SEARCH_AMPLIFICATION_FACTOR =
-			"index.permission.filter.search.amplification.factor";
 
 	public static final String
 		INDEX_SEARCH_COLLATED_SPELL_CHECK_RESULT_ENABLED =
@@ -1389,15 +1420,6 @@ public interface PropsKeys {
 
 	public static final String LDAP_ATTRS_TRANSFORMER_IMPL =
 		"ldap.attrs.transformer.impl";
-
-	public static final String LEARN_RESOURCES_CDN_ENABLED =
-		"learn.resources.cdn.enabled";
-
-	public static final String LEARN_RESOURCES_ENABLED =
-		"learn.resources.enabled";
-
-	public static final String LEARN_RESOURCES_REFRESH_TIME =
-		"learn.resources.refresh.time";
 
 	public static final String LIFERAY_HOME = "liferay.home";
 
@@ -2246,6 +2268,9 @@ public interface PropsKeys {
 
 	public static final String SCHEMA_RUN_ENABLED = "schema.run.enabled";
 
+	public static final String SCRIPT_MANAGEMENT_CONFIGURATION_ENABLED =
+		"script.management.configuration.enabled";
+
 	public static final String SEARCH_CONTAINER_PAGE_DEFAULT_DELTA =
 		"search.container.page.default.delta";
 
@@ -2511,6 +2536,9 @@ public interface PropsKeys {
 
 	public static final String SOURCE_FORGE_MIRRORS = "source.forge.mirrors";
 
+	public static final String SPRING_BEANFACTORY_STRICT_LIFECYCLE_ENABLED =
+		"spring.beanfactory.strict.lifecycle.enabled";
+
 	public static final String SPRING_CONFIGS = "spring.configs";
 
 	public static final String
@@ -2526,9 +2554,6 @@ public interface PropsKeys {
 
 	public static final String SPRING_HIBERNATE_SESSION_FACTORY_VERIFY =
 		"spring.hibernate.session.factory.verify";
-
-	public static final String SPRING_INFRASTRUCTURE_CONFIGS =
-		"spring.infrastructure.configs";
 
 	public static final String
 		STAGING_DRAFT_EXPORT_IMPORT_CONFIGURATION_CHECK_INTERVAL =
@@ -2620,9 +2645,6 @@ public interface PropsKeys {
 		"thread.dump.speed.threshold";
 
 	public static final String TIME_ZONES = "time.zones";
-
-	public static final String TRANSACTION_ISOLATION_COUNTER =
-		"transaction.isolation.counter";
 
 	public static final String TRANSACTION_ISOLATION_PORTAL =
 		"transaction.isolation.portal";
@@ -2907,6 +2929,9 @@ public interface PropsKeys {
 
 	public static final String WORKFLOW_EMAIL_FROM_NAME =
 		"workflow.email.from.name";
+
+	public static final String XML_RPC_MAX_PARAMETERS =
+		"xml.rpc.max.parameters";
 
 	public static final String XML_SECURITY_ENABLED = "xml.security.enabled";
 

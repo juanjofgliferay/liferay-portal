@@ -4,7 +4,6 @@
  */
 
 import ClayAlert from '@clayui/alert';
-import ClayBadge from '@clayui/badge';
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayDropDown, {Align, ClayDropDownWithItems} from '@clayui/drop-down';
 import ClayEmptyState from '@clayui/empty-state';
@@ -15,15 +14,19 @@ import ClayLink from '@clayui/link';
 import ClayNavigationBar from '@clayui/navigation-bar';
 import ClayTable from '@clayui/table';
 import classNames from 'classnames';
+import {FeatureIndicator} from 'frontend-js-components-web';
 import {
 	createPortletURL,
 	fetch,
 	navigate as navigateUtil,
 	openConfirmModal,
+	openToast,
 } from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
 import ExperienceDropdown from '../components/ExperienceDropdown';
+import {WorkflowStatusLabel} from '../components/WorkflowStatusLabel';
+import ChangeTrackingWorkflowView from './ChangeTrackingWorkflowView';
 
 const LocalizationDropdown = ({
 	currentLocale,
@@ -135,11 +138,14 @@ export default function ChangeTrackingRenderView({
 	handleNavigation,
 	initialDataURL,
 	moveChangesURL,
+	namespace,
 	parentEntries,
 	showDropdown,
 	showHeader = true,
+	showWorkflow,
 	spritemap,
 	title,
+	workflowStatus,
 }) {
 	const CHANGE_TYPE_ADDED = 'added';
 	const CHANGE_TYPE_DELETED = 'deleted';
@@ -148,6 +154,7 @@ export default function ChangeTrackingRenderView({
 	const CONTENT_TYPE_PARENTS = 'parents';
 	const CONTENT_TYPE_RENDER = 'data';
 	const CONTENT_TYPE_PREVIEW = 'display';
+	const CONTENT_TYPE_WORKFLOW = 'workflow';
 	const VIEW_LEFT = 'VIEW_LEFT';
 	const VIEW_RIGHT = 'VIEW_RIGHT';
 	const VIEW_SPLIT = 'VIEW_SPLIT';
@@ -155,11 +162,16 @@ export default function ChangeTrackingRenderView({
 
 	const [dataURL, setDataURL] = useState(initialDataURL);
 	const [loading, setLoading] = useState(false);
+	const [refresh, setRefresh] = useState({});
 	const [selectedLocale, setSelectedLocale] = useState(defaultLocale);
 	const [
 		selectedSegmentsExperienceId,
 		setSelectedSegmentsExperienceId,
 	] = useState(null);
+	const [
+		showWorkflowSuccessMessage,
+		setShowWorkflowSuccessMessage,
+	] = useState(false);
 	const [state, setState] = useState({
 		contentType: CONTENT_TYPE_PREVIEW,
 		renderData: null,
@@ -187,7 +199,6 @@ export default function ChangeTrackingRenderView({
 
 				const newState = {
 					children: childEntries,
-					contentType: CONTENT_TYPE_PREVIEW,
 					parents: parentEntries,
 					renderData: json,
 					view: VIEW_UNIFIED,
@@ -234,7 +245,8 @@ export default function ChangeTrackingRenderView({
 							json,
 							'unifiedLocalizedRender'
 						)) ||
-						(newState.contentType === CONTENT_TYPE_PREVIEW &&
+						((!newState.contentType ||
+							newState.contentType === CONTENT_TYPE_PREVIEW) &&
 							!Object.prototype.hasOwnProperty.call(
 								json,
 								'unifiedPreview'
@@ -247,7 +259,7 @@ export default function ChangeTrackingRenderView({
 					newState.view = VIEW_SPLIT;
 				}
 
-				setState(newState);
+				setState((prevState) => ({...prevState, ...newState}));
 
 				setLoading(false);
 			})
@@ -261,7 +273,28 @@ export default function ChangeTrackingRenderView({
 					},
 				});
 			});
-	}, [childEntries, dataURL, parentEntries, selectedSegmentsExperienceId]);
+	}, [
+		childEntries,
+		dataURL,
+		parentEntries,
+		refresh,
+		selectedSegmentsExperienceId,
+	]);
+
+	useEffect(() => {
+		if (showWorkflowSuccessMessage) {
+			Liferay.fire('closeModal');
+
+			setRefresh({});
+
+			openToast({
+				message: Liferay.Language.get(
+					'your-request-completed-successfully'
+				),
+				type: 'success',
+			});
+		}
+	}, [showWorkflowSuccessMessage]);
 
 	let currentLocale = selectedLocale;
 	let currentTitle = title;
@@ -648,6 +681,30 @@ export default function ChangeTrackingRenderView({
 		);
 	};
 
+	const renderWorkflowView = () => {
+		if (
+			state.contentType === CONTENT_TYPE_WORKFLOW &&
+			Object.prototype.hasOwnProperty.call(
+				state.renderData,
+				'workflowData'
+			)
+		) {
+			return (
+				<ChangeTrackingWorkflowView
+					workflowData={state.renderData.workflowData}
+				/>
+			);
+		}
+
+		return (
+			<ClayAlert displayType="danger" spritemap={spritemap}>
+				{Liferay.Language.get(
+					'unable-to-display-content-due-to-an-unexpected-error'
+				)}
+			</ClayAlert>
+		);
+	};
+
 	const renderDiffLegend = () => {
 		if (
 			(state.contentType !== CONTENT_TYPE_PREVIEW &&
@@ -713,7 +770,7 @@ export default function ChangeTrackingRenderView({
 			return null;
 		}
 
-		const dropdownItems = [];
+		let dropdownItems = [];
 
 		if (state.renderData.editInPublication) {
 			dropdownItems.push({
@@ -748,7 +805,7 @@ export default function ChangeTrackingRenderView({
 						{Liferay.Language.get('move-changes')}
 
 						<div className="float-right">
-							<ClayBadge displayType="beta" label="beta" />
+							<FeatureIndicator type="beta" />
 						</div>
 					</>
 				),
@@ -757,11 +814,66 @@ export default function ChangeTrackingRenderView({
 			});
 		}
 
-		dropdownItems.push({
-			label: Liferay.Language.get('discard'),
-			onClick: () => navigate(discardURL),
-			symbolLeft: 'times-circle',
+		const workflowActionsDropdownItems = [];
+
+		state.renderData.workflowActions?.forEach((workflowAction) => {
+			workflowActionsDropdownItems.push({
+				label: workflowAction.label,
+				onClick: () =>
+					Liferay.Util.openModal({
+						center: true,
+						customEvents: [
+							{
+								name: `${namespace}workflowTaskUpdated`,
+								onEvent() {
+									const iframe = document.querySelector(
+										'.liferay-modal iframe'
+									);
+
+									iframe.contentWindow.location.reload();
+
+									setShowWorkflowSuccessMessage(true);
+								},
+							},
+						],
+						height: workflowAction.modalHeight,
+						onOpen: () => setShowWorkflowSuccessMessage(false),
+						size: 'lg',
+						title: workflowAction.label,
+						url: workflowAction.href,
+					}),
+				symbolLeft: 'workflow',
+			});
 		});
+
+		if (workflowActionsDropdownItems.length) {
+			dropdownItems = [
+				{
+					items: dropdownItems,
+					label: Liferay.Language.get('publication'),
+					type: 'group',
+				},
+				{type: 'divider'},
+				{
+					items: workflowActionsDropdownItems,
+					label: Liferay.Language.get('workflow'),
+					type: 'group',
+				},
+				{type: 'divider'},
+			];
+		}
+
+		if (discardURL !== null) {
+			dropdownItems.push({
+				label: Liferay.Language.get('discard'),
+				onClick: () => navigateUtil(discardURL),
+				symbolLeft: 'times-circle',
+			});
+		}
+
+		if (!dropdownItems.length) {
+			return null;
+		}
 
 		return (
 			<div className="autofit-col">
@@ -989,7 +1101,7 @@ export default function ChangeTrackingRenderView({
 					description={Liferay.Language.get(
 						'there-are-no-changes-to-display-in-this-view'
 					)}
-					imgSrc={`${themeDisplay.getPathThemeImages()}/states/search_state.gif`}
+					imgSrc={`${themeDisplay.getPathThemeImages()}/states/search_state.svg`}
 					title={Liferay.Language.get('no-results-found')}
 				/>
 			);
@@ -1122,6 +1234,12 @@ export default function ChangeTrackingRenderView({
 
 					{state.contentType === CONTENT_TYPE_CHILDREN &&
 						getTableRows(state.children)}
+
+					{state.contentType === CONTENT_TYPE_WORKFLOW && (
+						<td className="publications-render-view-content">
+							{renderWorkflowView()}
+						</td>
+					)}
 				</ClayTable.Body>
 			</ClayTable>
 		);
@@ -1295,6 +1413,27 @@ export default function ChangeTrackingRenderView({
 			);
 		}
 
+		if (workflowStatus !== null && showWorkflow) {
+			items.push(
+				<ClayNavigationBar.Item
+					active={state.contentType === CONTENT_TYPE_WORKFLOW}
+					key="workflow"
+				>
+					<ClayLink
+						onClick={() =>
+							setState((prevState) => ({
+								...prevState,
+								contentType: CONTENT_TYPE_WORKFLOW,
+								view: VIEW_UNIFIED,
+							}))
+						}
+					>
+						{Liferay.Language.get('workflow')}
+					</ClayLink>
+				</ClayNavigationBar.Item>
+			);
+		}
+
 		return (
 			<tr>
 				<td
@@ -1380,7 +1519,17 @@ export default function ChangeTrackingRenderView({
 								)}
 						</div>
 
-						<div className="entry-description">{description}</div>
+						<div className="entry-description">
+							<span>{description} </span>
+
+							{Liferay.FeatureFlags['LPD-10703'] ? (
+								<>
+									<WorkflowStatusLabel
+										workflowStatus={workflowStatus}
+									/>
+								</>
+							) : null}
+						</div>
 					</div>
 
 					{renderDropdownMenu()}

@@ -17,6 +17,7 @@ import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
 import com.liferay.info.collection.provider.item.selector.criterion.InfoCollectionProviderItemSelectorCriterion;
+import com.liferay.info.field.item.selector.criterion.InfoFieldItemSelectorCriterion;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.list.provider.item.selector.criterion.InfoListProviderItemSelectorReturnType;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
@@ -233,9 +234,7 @@ public class ContentPageEditorDisplayContext {
 			WebKeys.THEME_DISPLAY);
 	}
 
-	public Map<String, Object> getEditorContext(String npmResolvedPackageName)
-		throws Exception {
-
+	public Map<String, Object> getEditorContext() throws Exception {
 		return HashMapBuilder.<String, Object>put(
 			"config",
 			HashMapBuilder.<String, Object>put(
@@ -383,13 +382,12 @@ public class ContentPageEditorDisplayContext {
 				() -> {
 					Group group = themeDisplay.getScopeGroup();
 
-					LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-						themeDisplay.getSiteGroupId(),
-						group.isLayoutSetPrototype());
-
 					FrontendTokenDefinition frontendTokenDefinition =
 						_frontendTokenDefinitionRegistry.
-							getFrontendTokenDefinition(layoutSet.getThemeId());
+							getFrontendTokenDefinition(
+								_layoutSetLocalService.fetchLayoutSet(
+									themeDisplay.getSiteGroupId(),
+									group.isLayoutSetPrototype()));
 
 					if (frontendTokenDefinition == null) {
 						return _jsonFactory.createJSONObject();
@@ -417,10 +415,6 @@ public class ContentPageEditorDisplayContext {
 				"getAvailableTemplatesURL",
 				_getResourceURL(
 					"/layout_content_page_editor/get_available_templates")
-			).put(
-				"getCollectionConfigurationURL",
-				_getResourceURL(
-					"/layout_content_page_editor/get_collection_configuration")
 			).put(
 				"getCollectionFieldURL",
 				_getResourceURL(
@@ -535,6 +529,8 @@ public class ContentPageEditorDisplayContext {
 				"imagesPath",
 				portal.getPathContext(httpServletRequest) + "/images"
 			).put(
+				"infoFieldItemSelectorURL", _getInfoFieldItemSelectorURL()
+			).put(
 				"infoItemSelectorURL", _getInfoItemSelectorURL()
 			).put(
 				"infoListSelectorURL", _getInfoListSelectorURL()
@@ -558,7 +554,7 @@ public class ContentPageEditorDisplayContext {
 			).put(
 				"layoutType", String.valueOf(_getLayoutType())
 			).put(
-				"lookAndFeelURL", _getLookAndFeelURL()
+				"lookAndFeelURL", getLookAndFeelURL()
 			).put(
 				"mappingFieldsURL",
 				_getResourceURL(
@@ -618,18 +614,15 @@ public class ContentPageEditorDisplayContext {
 					return false;
 				}
 			).put(
-				"pluginsRootPath",
-				npmResolvedPackageName + "/page_editor/plugins"
-			).put(
 				"portletNamespace", getPortletNamespace()
 			).put(
 				"publishURL", getPublishURL()
 			).put(
 				"redirectURL", _getRedirect()
 			).put(
-				"renderFragmentEntryURL",
+				"renderFragmentEntriesURL",
 				_getResourceURL(
-					"/layout_content_page_editor/get_fragment_entry_link")
+					"/layout_content_page_editor/get_fragment_entry_links")
 			).put(
 				"restoreCollectionDisplayConfigURL",
 				getFragmentEntryActionURL(
@@ -775,13 +768,6 @@ public class ContentPageEditorDisplayContext {
 				"mappingFields", _getMappingFieldsJSONObject()
 			).put(
 				"masterLayout", _getMasterLayoutJSONObject()
-			).put(
-				"pageContents",
-				_contentManager.getPageContentsJSONArray(
-					httpServletRequest,
-					portal.getHttpServletResponse(renderResponse),
-					themeDisplay.getPlid(), _getRestrictedItemIds(),
-					getSegmentsExperienceId())
 			).put(
 				"permissions",
 				() -> {
@@ -950,6 +936,48 @@ public class ContentPageEditorDisplayContext {
 		return _groupId;
 	}
 
+	protected String getLookAndFeelURL() throws Exception {
+		return layoutLockManager.getUnlockDraftLayoutURL(
+			portal.getLiferayPortletResponse(renderResponse),
+			() -> {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
+
+				Layout layout = themeDisplay.getLayout();
+
+				return PortletURLBuilder.create(
+					portal.getControlPanelPortletURL(
+						httpServletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
+						PortletRequest.RENDER_PHASE)
+				).setMVCRenderCommandName(
+					"/layout_admin/edit_layout"
+				).setRedirect(
+					themeDisplay.getURLCurrent()
+				).setBackURL(
+					themeDisplay.getURLCurrent()
+				).setParameter(
+					"backURLTitle", layout.getName(themeDisplay.getLocale())
+				).setParameter(
+					"groupId", layout.getGroupId()
+				).setParameter(
+					"privateLayout", layout.isPrivateLayout()
+				).setParameter(
+					"screenNavigationEntryKey",
+					LayoutScreenNavigationEntryConstants.ENTRY_KEY_DESIGN
+				).setParameter(
+					"selPlid",
+					() -> {
+						if (layout.isDraftLayout()) {
+							return layout.getClassPK();
+						}
+
+						return layout.getPlid();
+					}
+				).buildString();
+			});
+	}
+
 	protected long getSegmentsExperienceId() {
 		if (_segmentsExperienceId != null) {
 			return _segmentsExperienceId;
@@ -1109,8 +1137,7 @@ public class ContentPageEditorDisplayContext {
 		List<SegmentsEntry> segmentsEntries =
 			_segmentsEntryService.getSegmentsEntries(
 				stagingGroupHelper.getStagedPortletGroupId(
-					getGroupId(), SegmentsPortletKeys.SEGMENTS),
-				true);
+					getGroupId(), SegmentsPortletKeys.SEGMENTS));
 
 		for (SegmentsEntry segmentsEntry : segmentsEntries) {
 			availableSegmentsEntries.put(
@@ -1472,6 +1499,20 @@ public class ContentPageEditorDisplayContext {
 		return _imageItemSelectorCriterion;
 	}
 
+	private String _getInfoFieldItemSelectorURL() {
+		InfoFieldItemSelectorCriterion infoFieldItemSelectorCriterion =
+			new InfoFieldItemSelectorCriterion();
+
+		infoFieldItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new UUIDItemSelectorReturnType());
+
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+				renderResponse.getNamespace() + "selectInfoField",
+				infoFieldItemSelectorCriterion));
+	}
+
 	private String _getInfoItemSelectorURL() {
 		InfoItemItemSelectorCriterion itemSelectorCriterion =
 			new InfoItemItemSelectorCriterion();
@@ -1576,48 +1617,6 @@ public class ContentPageEditorDisplayContext {
 		}
 
 		return _layoutType;
-	}
-
-	private Object _getLookAndFeelURL() throws Exception {
-		return layoutLockManager.getUnlockDraftLayoutURL(
-			portal.getLiferayPortletResponse(renderResponse),
-			() -> {
-				ThemeDisplay themeDisplay =
-					(ThemeDisplay)httpServletRequest.getAttribute(
-						WebKeys.THEME_DISPLAY);
-
-				Layout layout = themeDisplay.getLayout();
-
-				return PortletURLBuilder.create(
-					portal.getControlPanelPortletURL(
-						httpServletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
-						PortletRequest.RENDER_PHASE)
-				).setMVCRenderCommandName(
-					"/layout_admin/edit_layout"
-				).setRedirect(
-					themeDisplay.getURLCurrent()
-				).setBackURL(
-					themeDisplay.getURLCurrent()
-				).setParameter(
-					"backURLTitle", layout.getName(themeDisplay.getLocale())
-				).setParameter(
-					"groupId", layout.getGroupId()
-				).setParameter(
-					"privateLayout", layout.isPrivateLayout()
-				).setParameter(
-					"screenNavigationEntryKey",
-					LayoutScreenNavigationEntryConstants.ENTRY_KEY_DESIGN
-				).setParameter(
-					"selPlid",
-					() -> {
-						if (layout.isDraftLayout()) {
-							return layout.getClassPK();
-						}
-
-						return layout.getPlid();
-					}
-				).buildString();
-			});
 	}
 
 	private JSONObject _getMappingFieldsJSONObject() throws Exception {

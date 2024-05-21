@@ -54,7 +54,7 @@ import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.mail.MailMessage;
 import com.liferay.portal.test.mail.MailServiceTestUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -1468,7 +1468,7 @@ public class CalendarBookingLocalServiceTest {
 	}
 
 	@Test
-	public void testInviteUserCalendarWithWorkflowShouldNotifieInviteCalendarBookingOnlyAfterApprovedAndPublished()
+	public void testInviteUserCalendarWithWorkflowShouldNotifyInviteCalendarBookingOnlyAfterApprovedAndPublished()
 		throws Exception {
 
 		Group group = GroupTestUtil.addGroup();
@@ -3209,15 +3209,6 @@ public class CalendarBookingLocalServiceTest {
 			calendarBooking.getCalendarBookingId());
 
 		Assert.assertNull(calendarBooking.getRecurrenceObj());
-	}
-
-	protected void assertEqualsTime(
-		int hour, int minute, java.util.Calendar jCalendar) {
-
-		Assert.assertEquals(
-			hour, jCalendar.get(java.util.Calendar.HOUR_OF_DAY));
-
-		Assert.assertEquals(minute, jCalendar.get(java.util.Calendar.MINUTE));
 	}
 
 	protected void assertMailBody(String subject, String expectedBody) {

@@ -3,7 +3,6 @@
 /development/annotations.jar
 /development/ant-apache-bsf.jar
 /development/ant-compress.jar
-/development/appium.jar
 /development/asm-commons.jar
 /development/asm-tree.jar
 /development/asm.jar
@@ -46,7 +45,6 @@
 /development/jhighlight.jar
 /development/jndi.jar
 /development/jsch.jar
-/development/jserrorcollector.jar
 /development/jsonassert.jar
 /development/jsp-api.jar
 /development/jstl-api.jar
@@ -79,6 +77,7 @@
 /development/sling-commons-osgi.jar
 /development/sling-testing-osgi-mock-core.jar
 /development/smtp.jar
+/development/snakeyaml.jar
 /development/spring-instrument-tomcat.jar
 /development/spring-instrument.jar
 /development/spring-test.jar
@@ -112,7 +111,6 @@
 /portal/jodd-util.jar
 /portal/json-java.jar
 /portal/jws-api.jar
-/portal/log4j-1.2-api.jar
 /portal/log4j-api.jar
 /portal/log4j-core.jar
 /portal/persistence.jar

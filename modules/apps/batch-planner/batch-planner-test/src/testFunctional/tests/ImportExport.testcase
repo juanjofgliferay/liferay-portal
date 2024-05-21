@@ -15,58 +15,10 @@ definition {
 	tearDown {
 		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
+		ObjectAdmin.deleteAllCustomObjectsViaAPI();
+
 		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
-		}
-		else {
-			ObjectAdmin.deleteAllCustomObjectsViaAPI();
-		}
-	}
-
-	@priority = 4
-	test CanDownloadJsonTFormatFileAsJson {
-		property portal.acceptance = "true";
-
-		task ("Given Stock object definition created") {
-			ObjectDefinitionAPI.createAndPublishObjectDefinition(
-				en_US_label = "stock",
-				en_US_plural_label = "stocks",
-				name = "Stock",
-				requiredStringFieldName = "name");
-		}
-
-		task ("And Given Stock entries created") {
-			CustomObjectAPI.createObjectEntryWithFields(
-				en_US_plural_label = "stocks",
-				fieldName = "name",
-				fieldValue = "Stock Entry");
-		}
-
-		task ("When Exporting File with JSONT format in Import/Export center") {
-			BatchEngine.setUpGlobalIds();
-
-			ImportExport.exportAndUnzipFile(
-				entityType = "C_Stock (v1_0 - Liferay Object REST)",
-				exportFields = "name",
-				exportFileFormat = "JSONT");
-		}
-
-		task ("Then the downloaded zip file contain *.json file") {
-			DownloadTempFile();
-
-			var filePath = TestCase.getDependenciesDirPath(fileName = "jsont_objectEntry_import.txt");
-
-			FileUtil.replaceStringInFile(${filePath}, 20095, ${staticCompanyId});
-
-			FileUtil.replaceStringInFile(${filePath}, 20123, ${staticUserId});
-
-			var originalFileDownloadName = TestCase.getDownloadedTempFileName(fileNamePattern = "*.zip");
-
-			AntCommands.runCommand("build-test.xml", "unzip-temp-file -DfileName=${originalFileDownloadName}");
-
-			ImportExport.assertFileContent(
-				comparisonFileName = "jsont_objectEntry_import.txt",
-				fileName = "export.batch-engine-data.json");
 		}
 	}
 
@@ -77,8 +29,6 @@ definition {
 		property portal.acceptance = "true";
 
 		task ("Given a completed import") {
-			ImportExport.openImportExportAdmin();
-
 			ImportExport.importFile(
 				entityType = "Account (v1_0 - Liferay Headless Admin User)",
 				fieldMappings = "name:Account Name,type:Account Type,description:Account Description,externalReferenceCode:External Reference Code",
@@ -142,7 +92,6 @@ definition {
 	@ignore = "true"
 	@priority = 3
 	test CanExcludeCSVFieldsFromExport {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given several channels") {
@@ -226,81 +175,10 @@ definition {
 		}
 	}
 
-	@description = "Verify users can exclude fields from being exported in JSON format"
-	@priority = 3
-	test CanExcludeJSONFieldsFromExport {
-		property portal.acceptance = "true";
-
-		task ("Given Stock object definition created") {
-			ObjectDefinitionAPI.createAndPublishObjectDefinition(
-				en_US_label = "stock",
-				en_US_plural_label = "stocks",
-				name = "Stock",
-				requiredStringFieldName = "name");
-		}
-
-		task ("And Given Stock entries created") {
-			CustomObjectAPI.createObjectEntryWithFields(
-				en_US_plural_label = "stocks",
-				fieldName = "name",
-				fieldValue = "Stock Entry");
-		}
-
-		task ("When the user selects specific channel fields in JSON format") {
-			ImportExport.exportAndUnzipFile(
-				entityType = "C_Stock (v1_0 - Liferay Object REST)",
-				exportFields = "name",
-				exportFileFormat = "JSON");
-		}
-
-		task ("Then only those fields should be exported") {
-			ImportExport.assertFileContent(
-				comparisonFileName = "json_objectEntry_export_excluded.txt",
-				fileName = "export.json");
-		}
-	}
-
-	@description = "Verify users can exclude fields from being exported in JSONL format"
-	@priority = 3
-	test CanExcludeJSONLFieldsFromExport {
-		property portal.acceptance = "true";
-
-		task ("Given Stock object definition created") {
-			ObjectDefinitionAPI.createAndPublishObjectDefinition(
-				en_US_label = "stock",
-				en_US_plural_label = "stocks",
-				name = "Stock",
-				requiredStringFieldName = "name");
-		}
-
-		task ("And Given Stock entries created") {
-			CustomObjectAPI.createObjectEntryWithFields(
-				en_US_plural_label = "stocks",
-				fieldName = "name",
-				fieldValue = "Stock Entry");
-		}
-
-		task ("When the user selects specific channel fields in JSONL format in Import/Export center") {
-			BatchEngine.setUpGlobalIds();
-
-			ImportExport.exportAndUnzipFile(
-				entityType = "C_Stock (v1_0 - Liferay Object REST)",
-				exportFields = "name",
-				exportFileFormat = "JSONL");
-		}
-
-		task ("Then only those fields should be exported") {
-			ImportExport.assertFileContent(
-				comparisonFileName = "jsonl_objectEntry_import.txt",
-				fileName = "export.jsonl");
-		}
-	}
-
 	@description = "Verify users can export entity data via CSV files"
 	@ignore = "true"
 	@priority = 3
 	test CanExportCSVFiles {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given several accounts") {
@@ -341,7 +219,6 @@ definition {
 	@ignore = "true"
 	@priority = 3
 	test CanExportCSVFileWithoutHeaders {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given several accounts") {
@@ -382,12 +259,9 @@ definition {
 	@description = "Verify users can filter Import/Export executions by Action."
 	@priority = 3
 	test CanFilterExecutionsByAction {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given Object Definition import and export") {
-			ImportExport.openImportExportAdmin();
-
 			ImportExport.importFile(
 				entityType = "ObjectDefinition (v1_0 - Liferay Object Admin REST)",
 				fileName = "json_objectDefinition_import_approved.json");
@@ -656,12 +530,9 @@ definition {
 	@description = "Verify users can order Import/Export executions by Create Date."
 	@priority = 3
 	test CanOrderExecutionsByCreateDate {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given Object Definition import and export") {
-			ImportExport.openImportExportAdmin();
-
 			ImportExport.importFile(
 				entityType = "ObjectDefinition (v1_0 - Liferay Object Admin REST)",
 				fileName = "json_objectDefinition_import_approved.json");
@@ -674,17 +545,17 @@ definition {
 		task ("When I go to the Import/Export Center and order by create date") {
 			ImportExport.openImportExportAdmin();
 
-			ManagementBar.setFilterAndOrder(orderBy = "Create Date");
+			Click(locator1 = "ManagementBar#ORDER_ICON_GENERIC");
 		}
 
-		task ("Then the executions should be ordered by create date in descending order") {
+		task ("Then the executions should be ordered by create date in ascending order") {
 			AssertTextEquals.assertPartialText(
-				key_rowNumber = 1,
+				key_rowNumber = 2,
 				locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER",
 				value1 = "ObjectDefinition Plan Execution");
 
 			AssertTextEquals.assertPartialText(
-				key_rowNumber = 2,
+				key_rowNumber = 1,
 				locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER",
 				value1 = "json_objectDefinition_import_approved");
 		}
@@ -693,12 +564,12 @@ definition {
 			ManagementBar.toggleViewOrder();
 
 			AssertTextEquals.assertPartialText(
-				key_rowNumber = 1,
+				key_rowNumber = 2,
 				locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER",
 				value1 = "json_objectDefinition_import_approved");
 
 			AssertTextEquals.assertPartialText(
-				key_rowNumber = 2,
+				key_rowNumber = 1,
 				locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER",
 				value1 = "ObjectDefinition Plan Execution");
 		}
@@ -889,8 +760,6 @@ definition {
 	@priority = 3
 	test CanSearchExecutions {
 		task ("Given object definition import and export") {
-			ImportExport.openImportExportAdmin();
-
 			ImportExport.importFile(
 				entityType = "ObjectDefinition (v1_0 - Liferay Object Admin REST)",
 				fileName = "json_objectDefinition_import_approved.json");
@@ -942,7 +811,6 @@ definition {
 	@description = "Verify users can search Import/Exports templates by name and action."
 	@priority = 3
 	test CanSearchTemplates {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given object definition import and export templates") {
@@ -1079,7 +947,6 @@ definition {
 	@description = "Verify users receive a notification when an export is triggered."
 	@priority = 3
 	test CanViewExportNotifications {
-		property custom.properties = "feature.flag.LPS-173135=true";
 		property portal.acceptance = "true";
 
 		task ("Given a failed export") {
@@ -1131,7 +998,9 @@ definition {
 
 			PortletEntry.selectAll();
 
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(
+				key_text = "times-circle",
+				locator1 = "ManagementBar#ANY_ICON");
 		}
 	}
 
@@ -1209,8 +1078,6 @@ definition {
 		}
 
 		task ("And given a succesful import") {
-			ImportExport.openImportExportAdmin();
-
 			ImportExport.importFile(
 				entityType = "Account (v1_0 - Liferay Headless Admin User)",
 				fieldMappings = "name:Account Name,type:Account Type,description:Account Description,externalReferenceCode:External Reference Code",
@@ -1250,7 +1117,9 @@ definition {
 
 			PortletEntry.selectAll();
 
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(
+				key_text = "times-circle",
+				locator1 = "ManagementBar#ANY_ICON");
 		}
 	}
 
@@ -1340,6 +1209,11 @@ definition {
 
 		task ("When new export file") {
 			ImportExport.gotoExport();
+
+			Select(
+				key_selectFieldLabel = "Export File Format",
+				locator1 = "ImportExport#SELECT",
+				value1 = "JSON");
 		}
 
 		task ("Then I can see all available entity types to export") {
@@ -1519,8 +1393,6 @@ definition {
 		property portal.acceptance = "true";
 
 		task ("Given a failed account import in which one of 3 rows was skipped due to an error in the second row") {
-			ImportExport.openImportExportAdmin();
-
 			ImportExport.importFile(
 				entityType = "Account (v1_0 - Liferay Headless Admin User)",
 				fieldMappings = "name:Account Name,type:Account Type,description:Account Description,externalReferenceCode:External Reference Code",

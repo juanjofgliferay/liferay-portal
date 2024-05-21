@@ -11,11 +11,23 @@ interface IProps {
 	children?: JSX.Element | JSX.Element[];
 	dateFilters: (dates: {endDate: string; startDate: string}) => void;
 	filterDescription?: string;
+	initialDates?: {endDate: string; startDate: string};
+	years?: {end: string; start: string};
 }
 
-const DateFilter = ({children, dateFilters, filterDescription}: IProps) => {
-	const [startActivityDate, setStartActivityDate] = useState('');
-	const [endActivityDate, setEndActivityDate] = useState('');
+const DateFilter = ({
+	children,
+	dateFilters,
+	filterDescription,
+	initialDates,
+	years,
+}: IProps) => {
+	const [startActivityDate, setStartActivityDate] = useState(
+		initialDates?.startDate ? initialDates?.startDate : ''
+	);
+	const [endActivityDate, setEndActivityDate] = useState(
+		initialDates?.endDate ? initialDates?.endDate : ''
+	);
 
 	return (
 		<div className="p-3 w-100">
@@ -24,10 +36,11 @@ const DateFilter = ({children, dateFilters, filterDescription}: IProps) => {
 				On Or After
 				<ClayInput
 					id="basicInputText"
+					max={years?.end}
+					min={years?.start}
 					onChange={(event) => {
 						setStartActivityDate(event.target.value);
 					}}
-					placeholder="mm-dd-yyyye"
 					type="date"
 					value={startActivityDate}
 				/>
@@ -38,10 +51,11 @@ const DateFilter = ({children, dateFilters, filterDescription}: IProps) => {
 				On Or Before
 				<ClayInput
 					id="basicInputText"
+					max={years?.end}
+					min={years?.start}
 					onChange={(event) => {
 						setEndActivityDate(event.target.value);
 					}}
-					placeholder="mm-dd-yyyy"
 					type="date"
 					value={endActivityDate}
 				/>

@@ -209,16 +209,8 @@ public class DuplicateItemMVCActionCommandTest {
 				duplicatedDropZoneFragmentStyledLayoutStructureItem.
 					getFragmentEntryLinkId());
 
-		Assert.assertEquals(
-			dropzoneFragmentEntryLink.getFragmentEntryId(),
-			duplicatedDropzoneFragmentEntryLink.getFragmentEntryId());
-		Assert.assertEquals(
-			dropzoneFragmentEntryLink.getHtml(),
-			duplicatedDropzoneFragmentEntryLink.getHtml());
-
-		Assert.assertNotEquals(
-			dropzoneFragmentEntryLink.getNamespace(),
-			duplicatedDropzoneFragmentEntryLink.getNamespace());
+		_assertDuplicatedFragmentEntryLink(
+			duplicatedDropzoneFragmentEntryLink, dropzoneFragmentEntryLink);
 
 		FragmentDropZoneLayoutStructureItem
 			duplicatedFragmentDropZoneLayoutStructureItem =
@@ -238,20 +230,11 @@ public class DuplicateItemMVCActionCommandTest {
 						layoutStructure,
 						duplicatedFragmentDropZoneLayoutStructureItem));
 
-		FragmentEntryLink duplicatedHeadingFragmentEntryLink =
+		_assertDuplicatedFragmentEntryLink(
 			_fragmentEntryLinkLocalService.getFragmentEntryLink(
 				duplicatedHeadingFragmentStyledLayoutStructureItem.
-					getFragmentEntryLinkId());
-
-		Assert.assertEquals(
-			headingFragmentEntryLink.getFragmentEntryId(),
-			duplicatedHeadingFragmentEntryLink.getFragmentEntryId());
-		Assert.assertEquals(
-			headingFragmentEntryLink.getHtml(),
-			duplicatedHeadingFragmentEntryLink.getHtml());
-		Assert.assertEquals(
-			headingFragmentEntryLink.getEditableValues(),
-			duplicatedHeadingFragmentEntryLink.getEditableValues());
+					getFragmentEntryLinkId()),
+			headingFragmentEntryLink);
 	}
 
 	private FragmentEntryLink _addFragmentEntryLink(
@@ -261,7 +244,7 @@ public class DuplicateItemMVCActionCommandTest {
 
 		FragmentCollection fragmentCollection =
 			_fragmentCollectionLocalService.addFragmentCollection(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				StringUtil.randomString(), StringPool.BLANK, _serviceContext);
 
 		FragmentEntry fragmentEntry =
@@ -270,8 +253,9 @@ public class DuplicateItemMVCActionCommandTest {
 				fragmentCollection.getFragmentCollectionId(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				StringPool.BLANK, html, StringPool.BLANK, false,
-				StringPool.BLANK, null, 0, FragmentConstants.TYPE_COMPONENT,
-				null, WorkflowConstants.STATUS_APPROVED, _serviceContext);
+				StringPool.BLANK, null, 0, false,
+				FragmentConstants.TYPE_COMPONENT, null,
+				WorkflowConstants.STATUS_APPROVED, _serviceContext);
 
 		FragmentEntryLink fragmentEntryLink =
 			ContentLayoutTestUtil.addFragmentEntryLinkToLayout(
@@ -309,6 +293,22 @@ public class DuplicateItemMVCActionCommandTest {
 		Assert.assertNotNull(childLayoutStructureItem);
 
 		return childLayoutStructureItem;
+	}
+
+	private void _assertDuplicatedFragmentEntryLink(
+		FragmentEntryLink duplicatedFragmentEntryLink,
+		FragmentEntryLink fragmentEntryLink) {
+
+		Assert.assertEquals(
+			fragmentEntryLink.getFragmentEntryId(),
+			duplicatedFragmentEntryLink.getFragmentEntryId());
+		Assert.assertEquals(
+			fragmentEntryLink.getHtml(), duplicatedFragmentEntryLink.getHtml());
+		Assert.assertNotEquals(
+			fragmentEntryLink.getNamespace(),
+			duplicatedFragmentEntryLink.getNamespace());
+		Assert.assertEquals(
+			0, duplicatedFragmentEntryLink.getOriginalFragmentEntryLinkId());
 	}
 
 	private FragmentDropZoneLayoutStructureItem

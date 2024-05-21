@@ -5,6 +5,8 @@
 
 package com.liferay.portal.security.content.security.policy.internal.servlet.filter;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -18,6 +20,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -74,6 +79,8 @@ public class ContentSecurityPolicyFilter extends BasePortalFilter {
 			httpServletRequest);
 
 		try {
+			httpServletResponse.setContentType("text/html; charset=UTF-8");
+
 			ContentSecurityPolicyConfiguration
 				contentSecurityPolicyConfiguration =
 					ContentSecurityPolicyConfigurationUtil.
@@ -96,21 +103,8 @@ public class ContentSecurityPolicyFilter extends BasePortalFilter {
 			filterChain.doFilter(
 				httpServletRequest, contentSecurityPolicyHttpServletResponse);
 
-			String content =
-				contentSecurityPolicyHttpServletResponse.getContent();
-
-			content = content.replaceAll(
-				"<(?i)link ", "<link nonce=\"" + nonce + "\" ");
-			content = content.replaceAll(
-				"<(?i)link>", "<link nonce=\"" + nonce + "\">");
-			content = content.replaceAll(
-				"<(?i)script ", "<script nonce=\"" + nonce + "\" ");
-			content = content.replaceAll(
-				"<(?i)script>", "<script nonce=\"" + nonce + "\">");
-			content = content.replaceAll(
-				"<(?i)style ", "<style nonce=\"" + nonce + "\" ");
-			content = content.replaceAll(
-				"<(?i)style>", "<style nonce=\"" + nonce + "\">");
+			String content = _updateContent(
+				contentSecurityPolicyHttpServletResponse.getContent(), nonce);
 
 			printWriter.write(content);
 
@@ -155,6 +149,64 @@ public class ContentSecurityPolicyFilter extends BasePortalFilter {
 		}
 
 		return false;
+	}
+
+	private String _updateContent(String content, String nonce) {
+		String nonceAttribute = "nonce=\"" + nonce + "\"";
+		String escapedNonceAttribute = "nonce=\\\"" + nonce + "\\\"";
+
+		content = content.replaceAll(
+			"<(?i)link ", "<link " + nonceAttribute + " ");
+		content = content.replaceAll(
+			"<(?i)link>", "<link " + nonceAttribute + "");
+		content = content.replaceAll(
+			"<(?i)style ", "<style " + nonceAttribute + " ");
+		content = content.replaceAll(
+			"<(?i)style>", "<style " + nonceAttribute + ">");
+
+		Pattern pattern = Pattern.compile(
+			"\\{.*nonce=\".{" + nonce.length() + "}\".*\\}");
+
+		Matcher matcher = pattern.matcher(content);
+
+		while (matcher.find()) {
+			String matcherGroup = matcher.group();
+
+			String[] matcherArray = StringUtil.split(
+				matcherGroup, nonceAttribute);
+
+			StringBundler sb = new StringBundler((matcherArray.length * 2) - 1);
+
+			int open = 0;
+			boolean overwrite = false;
+
+			for (int i = 0; i < (matcherArray.length - 1); i++) {
+				open += StringUtil.count(
+					matcherArray[i], CharPool.OPEN_CURLY_BRACE);
+				open -= StringUtil.count(
+					matcherArray[i], CharPool.CLOSE_CURLY_BRACE);
+
+				sb.append(matcherArray[i]);
+
+				if (open > 0) {
+					overwrite = true;
+
+					sb.append(escapedNonceAttribute);
+				}
+				else {
+					sb.append(nonceAttribute);
+				}
+			}
+
+			if (overwrite) {
+				sb.append(matcherArray[matcherArray.length - 1]);
+
+				content = StringUtil.replace(
+					content, matcherGroup, sb.toString());
+			}
+		}
+
+		return content;
 	}
 
 	private static final String[] _INTERNALLY_EXCLUDED_PATHS = {

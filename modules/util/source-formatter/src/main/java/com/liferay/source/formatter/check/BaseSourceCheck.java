@@ -21,6 +21,7 @@ import com.liferay.portal.tools.ToolsUtil;
 import com.liferay.source.formatter.BNDSettings;
 import com.liferay.source.formatter.SourceFormatterExcludes;
 import com.liferay.source.formatter.SourceFormatterMessage;
+import com.liferay.source.formatter.check.util.BNDSourceUtil;
 import com.liferay.source.formatter.check.util.JSPSourceUtil;
 import com.liferay.source.formatter.check.util.SourceUtil;
 import com.liferay.source.formatter.parser.JavaClass;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,24 +74,6 @@ public abstract class BaseSourceCheck implements SourceCheck {
 	@Override
 	public int getWeight() {
 		return _weight;
-	}
-
-	public boolean hasParameterTypes(
-		String content, String fileContent, String fileName,
-		String[] parameterList, String[] parameterTypes) {
-
-		for (int i = 0; i < parameterTypes.length; i++) {
-			String variableTypeName = getVariableTypeName(
-				content, null, fileContent, fileName, parameterList[i], true);
-
-			if ((variableTypeName == null) ||
-				!parameterTypes[i].equals(variableTypeName)) {
-
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	@Override
@@ -334,6 +318,19 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		}
 	}
 
+	protected synchronized Map<String, String> getBundleSymbolicNamesMap(
+		String absolutePath) {
+
+		if (_bundleSymbolicNamesMap != null) {
+			return _bundleSymbolicNamesMap;
+		}
+
+		_bundleSymbolicNamesMap = BNDSourceUtil.getBundleSymbolicNamesMap(
+			SourceUtil.getRootDirName(absolutePath));
+
+		return _bundleSymbolicNamesMap;
+	}
+
 	protected String getContent(String fileName, int level) throws IOException {
 		File file = getFile(fileName, level);
 
@@ -460,6 +457,10 @@ public abstract class BaseSourceCheck implements SourceCheck {
 
 	protected int getMaxLineLength() {
 		return _maxLineLength;
+	}
+
+	protected Object[] getModelInformation(String packagePath) {
+		return _modelInformationsMap.get(packagePath);
 	}
 
 	protected String getModulesPropertiesContent(String absolutePath)
@@ -635,19 +636,22 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		String variableName) {
 
 		return getVariableTypeName(
-			content, javaTerm, fileContent, fileName, variableName, false);
+			content, javaTerm, fileContent, fileName, variableName, false,
+			false);
 	}
 
 	protected String getVariableTypeName(
 		String content, JavaTerm javaTerm, String fileContent, String fileName,
-		String variableName, boolean includeArrayOrCollectionTypes) {
+		String variableName, boolean includeArrayOrCollectionTypes,
+		boolean includeFullyQualifiedName) {
 
 		if (variableName == null) {
 			return null;
 		}
 
 		String variableTypeName = _getVariableTypeName(
-			content, variableName, includeArrayOrCollectionTypes);
+			content, variableName, includeArrayOrCollectionTypes,
+			includeFullyQualifiedName);
 
 		if ((variableTypeName != null) || content.equals(fileContent)) {
 			return variableTypeName;
@@ -670,7 +674,8 @@ public abstract class BaseSourceCheck implements SourceCheck {
 
 					variableTypeName = _getVariableTypeName(
 						variableContent, variableName,
-						includeArrayOrCollectionTypes);
+						includeArrayOrCollectionTypes,
+						includeFullyQualifiedName);
 
 					if (variableTypeName != null) {
 						return variableTypeName;
@@ -696,7 +701,7 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		}
 
 		String variableTypeName = getVariableTypeName(
-			content, null, fileContent, fileName, variable.trim(), true);
+			content, null, fileContent, fileName, variable.trim(), true, false);
 
 		if ((variableTypeName != null) &&
 			variableTypeName.startsWith(className)) {
@@ -805,6 +810,65 @@ public abstract class BaseSourceCheck implements SourceCheck {
 		return _subrepository;
 	}
 
+	protected synchronized void populateModelInformations() throws IOException {
+		if (_modelInformationsMap != null) {
+			return;
+		}
+
+		_modelInformationsMap = new HashMap<>();
+
+		File portalDir = getPortalDir();
+
+		if (portalDir == null) {
+			return;
+		}
+
+		List<String> serviceXMLFileNames = SourceFormatterUtil.scanForFileNames(
+			portalDir.getCanonicalPath(), new String[] {"**/service.xml"});
+
+		for (String serviceXMLFileName : serviceXMLFileNames) {
+			Document serviceXMLDocument = SourceUtil.readXML(
+				FileUtil.read(new File(serviceXMLFileName)));
+
+			if (serviceXMLDocument == null) {
+				continue;
+			}
+
+			Element serviceXMLElement = serviceXMLDocument.getRootElement();
+
+			serviceXMLFileName = StringUtil.replace(
+				serviceXMLFileName, CharPool.BACK_SLASH, CharPool.SLASH);
+
+			String packagePath = serviceXMLElement.attributeValue(
+				"api-package-path");
+
+			if (packagePath == null) {
+				packagePath = serviceXMLElement.attributeValue("package-path");
+			}
+
+			if (packagePath == null) {
+				continue;
+			}
+
+			String tablesSQLFilePath = "";
+
+			if (serviceXMLFileName.contains("/portal-impl/")) {
+				tablesSQLFilePath = portalDir + "/sql/portal-tables.sql";
+			}
+			else {
+				int x = serviceXMLFileName.lastIndexOf("/");
+
+				tablesSQLFilePath =
+					serviceXMLFileName.substring(0, x) +
+						"/src/main/resources/META-INF/sql/tables.sql";
+			}
+
+			_modelInformationsMap.put(
+				packagePath,
+				new Object[] {serviceXMLElement, tablesSQLFilePath});
+		}
+	}
+
 	protected String stripQuotes(String s) {
 		return stripQuotes(s, CharPool.APOSTROPHE, CharPool.QUOTE);
 	}
@@ -872,10 +936,19 @@ public abstract class BaseSourceCheck implements SourceCheck {
 
 	private String _getVariableTypeName(
 		String content, String variableName,
-		boolean includeArrayOrCollectionTypes) {
+		boolean includeArrayOrCollectionTypes,
+		boolean includeFullyQualifiedName) {
 
-		Pattern pattern = Pattern.compile(
-			"\\W(\\w+)\\s+" + variableName + "\\s*[;=),:]");
+		Pattern pattern = null;
+
+		if (includeFullyQualifiedName) {
+			pattern = Pattern.compile(
+				"\\W((\\w+\\.)*\\w+)\\s+" + variableName + "\\s*[;=),:]");
+		}
+		else {
+			pattern = Pattern.compile(
+				"\\W(\\w+)\\s+" + variableName + "\\s*[;=),:]");
+		}
 
 		Matcher matcher = pattern.matcher(content);
 
@@ -934,6 +1007,7 @@ public abstract class BaseSourceCheck implements SourceCheck {
 	private String _baseDirName;
 	private final Map<String, BNDSettings> _bndSettingsMap =
 		new ConcurrentHashMap<>();
+	private Map<String, String> _bundleSymbolicNamesMap;
 	private JSONObject _excludesJSONObject;
 	private final Map<String, List<String>> _excludesValuesMap =
 		new ConcurrentHashMap<>();
@@ -941,6 +1015,7 @@ public abstract class BaseSourceCheck implements SourceCheck {
 	private List<String> _filterCheckNames;
 	private int _maxDirLevel;
 	private int _maxLineLength;
+	private Map<String, Object[]> _modelInformationsMap;
 	private List<String> _pluginsInsideModulesDirectoryNames;
 	private Document _portalCustomSQLDocument;
 	private boolean _portalSource;

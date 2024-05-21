@@ -46,9 +46,7 @@ definition {
 
 		Button.clickSave();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Inventory");
+		CommerceInventory.openInventoryAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -139,9 +137,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Inventory");
+		CommerceInventory.openInventoryAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "MIN00673");
 
@@ -248,9 +244,7 @@ definition {
 		}
 
 		task ("And warehouse eligibility is set to No Channel for Minium Portal Channel") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Warehouses");
+			CommerceNavigator.goToWarehousesAdmin();
 
 			for (var warehouseName : list "Italy,United States - Northeast,United States - Southwest") {
 				CommerceNavigator.gotoEntry(entryName = ${warehouseName});
@@ -278,9 +272,7 @@ definition {
 		}
 
 		task ("And Minium 2 Portal Channel is eligible by default for the warehouses while Minium Portal Channel is not listed as eligible") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Warehouses");
+			CommerceNavigator.goToWarehousesAdmin();
 
 			for (var warehouseName : list "Italy,United States - Northeast,United States - Southwest") {
 				CommerceNavigator.gotoEntry(entryName = ${warehouseName});
@@ -358,9 +350,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Italy");
 
@@ -414,9 +404,7 @@ definition {
 		}
 
 		task ("When the admin navigates into a warehouse entry") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Warehouses");
+			CommerceNavigator.goToWarehousesAdmin();
 
 			CommerceNavigator.gotoEntry(entryName = "Italy");
 		}
@@ -463,9 +451,7 @@ definition {
 		}
 
 		task ("And on Italy Warehouse, View permission is removed for User and Guest, given to Power User") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Warehouses");
+			CommerceNavigator.goToWarehousesAdmin();
 
 			Click(
 				key_value = "Italy",
@@ -533,9 +519,7 @@ definition {
 		}
 
 		task ("And on Italy Warehouse, View permission is removed for User and Guest, and verify Power User does not have it") {
-			CommerceNavigator.gotoPortlet(
-				category = "Inventory Management",
-				portlet = "Warehouses");
+			CommerceNavigator.goToWarehousesAdmin();
 
 			Click(
 				key_value = "Italy",
@@ -595,9 +579,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "ABS Sensor");
 
@@ -637,10 +619,7 @@ definition {
 			userLastName = "User",
 			userScreenName = "buyeruser");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		CommerceLogin.editPasswordCP(
 			newPassword = "ttest",
@@ -676,14 +655,9 @@ definition {
 
 		User.logoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -718,9 +692,7 @@ definition {
 
 		Refresh();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "ABS Sensor");
 
@@ -792,10 +764,7 @@ definition {
 			userLastName = "User",
 			userScreenName = "buyeruser");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		CommerceLogin.editPasswordCP(
 			newPassword = "ttest",
@@ -829,14 +798,9 @@ definition {
 
 		User.logoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -905,9 +869,7 @@ definition {
 		var fieldLatitudeNumber = "12345.0";
 		var fieldLongitudeNumber = "12345.0";
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		Click(locator1 = "AnalyticsCloudConnection#ADD_NEW_PROPERTY_BUTTON");
 
@@ -1069,9 +1031,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceNavigator.searchEntry(entryName = "ABS Sensor");
 
@@ -1089,6 +1049,9 @@ definition {
 
 		for (var warehouse : list "Italy,United States - Northeast,United States - Southwest") {
 			var key_inventoryName = ${warehouse};
+
+			WaitForElementPresent(locator1 = "CommerceEntry#INVENTORY_INPUT");
+
 			var inventoryValue = selenium.getElementValue("CommerceEntry#INVENTORY_INPUT");
 
 			var quantity = ${quantity} + ${inventoryValue};
@@ -1126,9 +1089,7 @@ definition {
 			siteName = "Minium2",
 			siteTemplateName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		AppBuilderAdmin.searchByItem(itemName = "ABS Sensor");
 
@@ -1159,9 +1120,7 @@ definition {
 
 		Refresh();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Italy");
 
@@ -1225,9 +1184,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		AppBuilderAdmin.searchByItem(itemName = "ABS Sensor");
 
@@ -1257,9 +1214,7 @@ definition {
 
 		Refresh();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Inventory");
+		CommerceInventory.openInventoryAdmin();
 
 		AppBuilderAdmin.searchByItem(itemName = "MIN93015");
 
@@ -1275,9 +1230,7 @@ definition {
 
 		// TODO Review
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -1285,9 +1238,7 @@ definition {
 
 		Button.clickSave();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Master",
@@ -1320,9 +1271,7 @@ definition {
 
 		Refresh();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Inventory");
+		CommerceInventory.openInventoryAdmin();
 
 		Click(
 			key_entryName = "MIN00000",
@@ -1342,9 +1291,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Italy");
 
@@ -1366,17 +1313,13 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Italy");
 
 		Open.openInTheNewTab(value1 = ${portalURL});
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Italy");
 
@@ -1410,10 +1353,7 @@ definition {
 
 		var key_inventoryName = "test new warehouse";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Inventory Management",
-			panel = "Commerce",
-			portlet = "Warehouses");
+		CommerceNavigator.goToWarehousesAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -1435,10 +1375,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Product Management",
-			panel = "Commerce",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productCatalog = "Master",
@@ -1465,10 +1402,7 @@ definition {
 
 		SelectFrame.selectFrameTop();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Inventory Management",
-			panel = "Commerce",
-			portlet = "Inventory");
+		CommerceInventory.openInventoryAdmin();
 
 		Search.searchCP(searchTerm = "default");
 

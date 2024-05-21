@@ -6,7 +6,7 @@
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import {ClayTooltipProvider} from '@clayui/tooltip';
-import {getLocalizableLabel} from '@liferay/object-js-components-web';
+import {stringUtils} from '@liferay/object-js-components-web';
 import classNames from 'classnames';
 import React from 'react';
 
@@ -19,13 +19,11 @@ import './EditObjectFolderHeader.scss';
 interface EditObjectFolderHeaderProps {
 	hasDraftObjectDefinitions: boolean;
 	selectedObjectFolder: ObjectFolder;
-	setShowModal: (value: React.SetStateAction<ModelBuilderModals>) => void;
 }
 
 export default function EditObjectFolderHeader({
 	hasDraftObjectDefinitions,
 	selectedObjectFolder,
-	setShowModal,
 }: EditObjectFolderHeaderProps) {
 	const [
 		{showChangesSaved, showSidebars},
@@ -50,14 +48,14 @@ export default function EditObjectFolderHeader({
 									Liferay.Language.get(
 										'object-folder-label'
 									) +
-									`: ${getLocalizableLabel(
+									`: ${stringUtils.getLocalizableLabel(
 										defaultLanguageId,
 										selectedObjectFolder.label,
 										selectedObjectFolder.name
 									)}`
 								}
 							>
-								{getLocalizableLabel(
+								{stringUtils.getLocalizableLabel(
 									defaultLanguageId,
 									selectedObjectFolder.label,
 									selectedObjectFolder.name
@@ -99,23 +97,24 @@ export default function EditObjectFolderHeader({
 						</span>
 					</ClayTooltipProvider>
 
-					{selectedObjectFolder.externalReferenceCode !==
-						'uncategorized' &&
+					{selectedObjectFolder.externalReferenceCode !== 'default' &&
 						selectedObjectFolder.actions?.update && (
 							<ClayButtonWithIcon
 								aria-label={Liferay.Language.get(
 									'edit-label-and-erc'
 								)}
 								displayType="unstyled"
+								name="editObjectFolderButton"
 								onClick={() =>
-									setShowModal(
-										(
-											previousState: ModelBuilderModals
-										) => ({
-											...previousState,
-											editObjectFolder: true,
-										})
-									)
+									dispatch({
+										payload: {
+											updatedModelBuilderModals: {
+												editObjectFolder: true,
+											},
+										},
+										type:
+											TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+									})
 								}
 								symbol="pencil"
 							/>
@@ -150,12 +149,15 @@ export default function EditObjectFolderHeader({
 						disabled={!hasDraftObjectDefinitions}
 						displayType="primary"
 						onClick={() => {
-							setShowModal(
-								(previousState: ModelBuilderModals) => ({
-									...previousState,
-									publishObjectDefinitions: true,
-								})
-							);
+							dispatch({
+								payload: {
+									updatedModelBuilderModals: {
+										publishObjectDefinitions: true,
+									},
+								},
+								type:
+									TYPES.UPDATE_VISIBILITY_MODEL_BUILDER_MODALS,
+							});
 						}}
 						size="sm"
 					>

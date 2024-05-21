@@ -121,7 +121,7 @@ definition {
 
 		echo("THE NUMBER OF FACETED LABELS IS ${count}");
 
-		if (${count} != ${expectedLabels}) {
+		while ((${count} != ${expectedLabels}) && (maxIterations = "10")) {
 			CommerceProducts.openProductsAdmin();
 
 			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
@@ -870,6 +870,14 @@ definition {
 				key_fieldValue = ${accountDetails},
 				locator1 = "CommerceWidget#ASSERT_ACCOUNT_DETAILS_AT_SIDEBAR");
 		}
+	}
+
+	@summary = "Default summary"
+	macro viewCheckboxNotChecked(fieldName = null, fieldValue = null) {
+		AssertNotChecked.assertNotCheckedNotVisible(
+			key_fieldName = ${fieldName},
+			key_fieldValue = ${fieldValue},
+			locator1 = "FormViewBuilder#CHECKBOX_LABEL");
 	}
 
 	@summary = "This macro can be used for asserting user information from Organization Management Chart"

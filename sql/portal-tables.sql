@@ -32,13 +32,15 @@ create table Address (
 
 create table AnnouncementsDelivery (
 	mvccVersion LONG default 0 not null,
-	deliveryId LONG not null primary key,
+	ctCollectionId LONG default 0 not null,
+	deliveryId LONG not null,
 	companyId LONG,
 	userId LONG,
 	type_ VARCHAR(75) null,
 	email BOOLEAN,
 	sms BOOLEAN,
-	website BOOLEAN
+	website BOOLEAN,
+	primary key (deliveryId, ctCollectionId)
 );
 
 create table AnnouncementsEntry (
@@ -330,6 +332,7 @@ create table DLFileEntry (
 	custom1ImageId LONG,
 	custom2ImageId LONG,
 	manualCheckInRequired BOOLEAN,
+	displayDate DATE null,
 	expirationDate DATE null,
 	reviewDate DATE null,
 	lastPublishDate DATE null,
@@ -429,6 +432,7 @@ create table DLFileVersion (
 	size_ LONG,
 	checksum VARCHAR(75) null,
 	storeUUID VARCHAR(255) null,
+	displayDate DATE null,
 	expirationDate DATE null,
 	reviewDate DATE null,
 	lastPublishDate DATE null,
@@ -812,8 +816,13 @@ create table LayoutSetPrototype (
 
 create table ListType (
 	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
 	listTypeId LONG not null primary key,
 	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
 	name VARCHAR(75) null,
 	type_ VARCHAR(75) null
 );
@@ -931,7 +940,7 @@ create table PasswordTracker (
 	companyId LONG,
 	userId LONG,
 	createDate DATE null,
-	password_ VARCHAR(75) null
+	password_ VARCHAR(255) null
 );
 
 create table Phone (
@@ -969,7 +978,7 @@ create table PortalPreferenceValue (
 	companyId LONG,
 	portalPreferencesId LONG,
 	index_ INTEGER,
-	key_ VARCHAR(255) null,
+	key_ VARCHAR(1024) null,
 	largeValue TEXT null,
 	namespace VARCHAR(255) null,
 	smallValue VARCHAR(255) null
@@ -1405,7 +1414,7 @@ create table Ticket (
 	createDate DATE null,
 	classNameId LONG,
 	classPK LONG,
-	key_ VARCHAR(75) null,
+	key_ VARCHAR(255) null,
 	type_ INTEGER,
 	extraInfo TEXT null,
 	expirationDate DATE null
@@ -1433,7 +1442,7 @@ create table User_ (
 	createDate DATE null,
 	modifiedDate DATE null,
 	contactId LONG,
-	password_ VARCHAR(75) null,
+	password_ VARCHAR(255) null,
 	passwordEncrypted BOOLEAN,
 	passwordReset BOOLEAN,
 	passwordModifiedDate DATE null,

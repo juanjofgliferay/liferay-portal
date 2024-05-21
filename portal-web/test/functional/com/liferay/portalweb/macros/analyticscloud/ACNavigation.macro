@@ -58,6 +58,10 @@ definition {
 	@summary = "Default summary"
 	macro goToEventAnalysis() {
 		ACNavigation.goToSidebarOption(sidebarOption = "event-analysis");
+
+		WaitForElementPresent(
+			key_definitionsOptions = "event-analysis/create",
+			locator1 = "ACSettings#DEFINITIONS_OPTIONS");
 	}
 
 	@summary = "Default summary"
@@ -90,6 +94,15 @@ definition {
 	@summary = "Default summary"
 	macro goToTests() {
 		ACNavigation.goToSidebarOption(sidebarOption = "tests");
+	}
+
+	@summary = "Click to access the first item of the list"
+	macro openFirstItem() {
+		while ((IsElementNotPresent(locator1 = "ACNavigation#OPEN_FIRST_ITEM")) && (maxIterations = "50")) {
+			TestUtils.hardRefresh();
+		}
+
+		Click(locator1 = "ACNavigation#OPEN_FIRST_ITEM");
 	}
 
 	@summary = "Default summary"

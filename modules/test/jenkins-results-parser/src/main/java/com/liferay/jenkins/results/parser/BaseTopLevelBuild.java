@@ -993,43 +993,33 @@ public abstract class BaseTopLevelBuild
 			System.out.println(sb.toString());
 		}
 
-		Map<Build, Element> downstreamBuildFailureMessages =
-			getDownstreamBuildMessages(failedDownstreamBuilds);
+		List<Element> downstreamBuildMessageElements =
+			getDownstreamBuildMessageElements(failedDownstreamBuilds);
+
+		System.out.println(
+			"Collected " + downstreamBuildMessageElements.size() +
+				" downstream failure messages");
 
 		List<Element> allCurrentBuildFailureElements = new ArrayList<>();
 		List<Element> upstreamBuildFailureElements = new ArrayList<>();
 
 		int maxFailureCount = 5;
 
-		for (Map.Entry<Build, Element> entry :
-				downstreamBuildFailureMessages.entrySet()) {
+		for (Build failedDownstreamBuild : failedDownstreamBuilds) {
+			Element gitHubMessageElement =
+				failedDownstreamBuild.getGitHubMessageElement();
 
-			Build failedDownstreamBuild = entry.getKey();
-
-			Element failureElement = entry.getValue();
-
-			if (failureElement != null) {
-				if (!failedDownstreamBuild.isUniqueFailure()) {
-					upstreamBuildFailureElements.add(failureElement);
-
-					continue;
-				}
-
-				if (isHighPriorityBuildFailureElement(failureElement)) {
-					allCurrentBuildFailureElements.add(0, failureElement);
-
-					continue;
-				}
-
-				allCurrentBuildFailureElements.add(failureElement);
+			if (gitHubMessageElement != null) {
+				allCurrentBuildFailureElements.add(gitHubMessageElement);
 			}
 
-			Element upstreamJobFailureElement =
+			Element gitHubMessageUpstreamJobFailureElement =
 				failedDownstreamBuild.
 					getGitHubMessageUpstreamJobFailureElement();
 
-			if (upstreamJobFailureElement != null) {
-				upstreamBuildFailureElements.add(upstreamJobFailureElement);
+			if (gitHubMessageUpstreamJobFailureElement != null) {
+				upstreamBuildFailureElements.add(
+					gitHubMessageUpstreamJobFailureElement);
 			}
 		}
 

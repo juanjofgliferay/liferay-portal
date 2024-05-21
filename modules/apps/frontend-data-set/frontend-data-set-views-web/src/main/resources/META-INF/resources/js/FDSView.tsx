@@ -10,15 +10,19 @@ import {IClientExtensionRenderer} from '@liferay/frontend-data-set-web';
 import {fetch} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
-import {API_URL, OBJECT_RELATIONSHIP} from './Constants';
 import {FDSViewType} from './FDSViews';
 import Actions from './fds_view/Actions';
 import Details from './fds_view/Details';
-import Filters from './fds_view/Filters';
 import Pagination from './fds_view/Pagination';
+import Settings from './fds_view/Settings';
 import Sorting from './fds_view/Sorting';
-import Fields from './fds_view/fields/Fields';
+import SortingDeprecated from './fds_view/SortingDeprecated';
+import Filters from './fds_view/filters/Filters';
+import VisualizationModes from './fds_view/visualization_modes/VisualizationModes';
+import {API_URL, OBJECT_RELATIONSHIP} from './utils/constants';
+import getFields from './utils/getFields';
 import openDefaultFailureToast from './utils/openDefaultFailureToast';
+import {IFieldTreeItem} from './utils/types';
 
 const NAVIGATION_BAR_ITEMS = [
 	{
@@ -26,17 +30,22 @@ const NAVIGATION_BAR_ITEMS = [
 		label: Liferay.Language.get('details'),
 	},
 	{
-		Component: Fields,
-		label: Liferay.Language.get('fields'),
+		Component: VisualizationModes,
+		label: Liferay.Language.get('visualization-modes'),
 	},
 	{
 		Component: Filters,
 		label: Liferay.Language.get('filters'),
 	},
-	{
-		Component: Sorting,
-		label: Liferay.Language.get('sorting'),
-	},
+	Liferay.FeatureFlags['LPD-19465']
+		? {
+				Component: Sorting,
+				label: Liferay.Language.get('sorting'),
+		  }
+		: {
+				Component: SortingDeprecated,
+				label: Liferay.Language.get('sorting'),
+		  },
 	{
 		Component: Actions,
 		label: Liferay.Language.get('actions'),
@@ -45,6 +54,10 @@ const NAVIGATION_BAR_ITEMS = [
 		Component: Pagination,
 		label: Liferay.Language.get('pagination'),
 	},
+	{
+		Component: Settings,
+		label: Liferay.Language.get('settings'),
+	},
 ];
 
 interface IFDSViewSectionProps {
@@ -52,7 +65,9 @@ interface IFDSViewSectionProps {
 	fdsFilterClientExtensions: IClientExtensionRenderer[];
 	fdsView: FDSViewType;
 	fdsViewsURL: string;
+	fieldTreeItems: Array<IFieldTreeItem>;
 	namespace: string;
+	onActiveSectionChange: (section: number) => void;
 	onFDSViewUpdate: (data: FDSViewType) => void;
 	saveFDSFieldsURL: string;
 	spritemap: string;
@@ -79,6 +94,9 @@ const FDSView = ({
 }: IFDSViewProps) => {
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [fdsView, setFDSView] = useState<FDSViewType>();
+	const [fieldTreeItems, setFieldTreeItems] = useState<Array<IFieldTreeItem>>(
+		[]
+	);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
@@ -97,7 +115,11 @@ const FDSView = ({
 			if (responseJSON?.id) {
 				setFDSView(responseJSON);
 
-				setLoading(false);
+				getFields(responseJSON).then((fields) => {
+					setFieldTreeItems(fields);
+
+					setLoading(false);
+				});
 			}
 			else {
 				openDefaultFailureToast();
@@ -110,7 +132,7 @@ const FDSView = ({
 	const Content = NAVIGATION_BAR_ITEMS[activeIndex].Component;
 
 	return (
-		<>
+		<div className="cadmin fds-view">
 			<ClayNavigationBar
 				triggerLabel={NAVIGATION_BAR_ITEMS[activeIndex].label}
 			>
@@ -137,7 +159,9 @@ const FDSView = ({
 						fdsFilterClientExtensions={fdsFilterClientExtensions}
 						fdsView={fdsView}
 						fdsViewsURL={fdsViewsURL}
+						fieldTreeItems={fieldTreeItems}
 						namespace={namespace}
+						onActiveSectionChange={(tab) => setActiveIndex(tab)}
 						onFDSViewUpdate={(updatedFdsViewData) => {
 							setFDSView({...fdsView, ...updatedFdsViewData});
 						}}
@@ -146,7 +170,7 @@ const FDSView = ({
 					/>
 				)
 			)}
-		</>
+		</div>
 	);
 };
 
