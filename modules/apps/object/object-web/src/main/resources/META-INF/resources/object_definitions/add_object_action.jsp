@@ -17,9 +17,11 @@ ObjectDefinitionsActionsDisplayContext objectDefinitionsActionsDisplayContext = 
 </liferay-portlet:resourceURL>
 
 <react:component
-	module="js/components/ObjectAction/AddObjectAction"
+	module="{AddObjectAction} from object-web"
 	props='<%=
 		HashMapBuilder.<String, Object>put(
+			"allowScriptContentToBeExecutedOrIncluded", objectDefinitionsActionsDisplayContext.isAllowScriptContentToBeExecutedOrIncluded()
+		).put(
 			"apiURL", objectDefinitionsActionsDisplayContext.getAPIURL()
 		).put(
 			"objectActionCodeEditorElements", objectDefinitionsActionsDisplayContext.getObjectActionCodeEditorElements()
@@ -33,6 +35,8 @@ ObjectDefinitionsActionsDisplayContext objectDefinitionsActionsDisplayContext = 
 			"objectDefinitionId", objectDefinitionsActionsDisplayContext.getObjectDefinitionId()
 		).put(
 			"objectDefinitionsRelationshipsURL", objectDefinitionsActionsDisplayContext.getObjectDefinitionsRelationshipsURL()
+		).put(
+			"objectFields", objectDefinitionsActionsDisplayContext.getObjectFields()
 		).put(
 			"systemObject", objectDefinition.isSystem()
 		).put(

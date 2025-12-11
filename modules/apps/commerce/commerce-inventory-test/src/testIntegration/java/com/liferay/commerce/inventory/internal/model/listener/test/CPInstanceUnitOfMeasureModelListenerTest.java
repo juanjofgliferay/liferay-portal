@@ -30,7 +30,6 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -52,7 +51,6 @@ import org.junit.runner.RunWith;
 /**
  * @author Stefano Motta
  */
-@FeatureFlags("COMMERCE-11287")
 @RunWith(Arquillian.class)
 public class CPInstanceUnitOfMeasureModelListenerTest {
 
@@ -125,7 +123,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -133,7 +132,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -191,14 +191,15 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		_cpInstanceUnitOfMeasure =
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -224,8 +225,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -266,7 +267,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -274,14 +276,15 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		_cpInstanceUnitOfMeasure =
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, RandomTestUtil.randomString(),
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemLocalService.
@@ -334,7 +337,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -342,7 +346,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
 			_commerceInventoryWarehouseItemLocalService.
@@ -396,7 +401,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			addCommerceInventoryWarehouseItem(
 				RandomTestUtil.randomString(), _user.getUserId(),
 				_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				BigDecimal.TEN, _cpInstance.getSku(), StringPool.BLANK);
+				BigDecimal.TEN, BigDecimal.ZERO, _cpInstance.getSku(),
+				StringPool.BLANK);
 
 		String key = RandomTestUtil.randomString();
 
@@ -404,7 +410,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.addCPInstanceUnitOfMeasure(
 				_user.getUserId(), _cpInstance.getCPInstanceId(), true,
 				BigDecimal.ONE, key, RandomTestUtil.randomLocaleStringMap(), 2,
-				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
+				BigDecimal.ZERO, true, 0.0, BigDecimal.ONE,
+				_cpInstance.getSku());
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
 			_commerceInventoryWarehouseItemLocalService.
@@ -425,8 +432,8 @@ public class CPInstanceUnitOfMeasureModelListenerTest {
 			_cpInstanceUnitOfMeasureLocalService.updateCPInstanceUnitOfMeasure(
 				_cpInstanceUnitOfMeasure.getCPInstanceUnitOfMeasureId(),
 				_cpInstance.getCPInstanceId(), true, BigDecimal.ONE, key,
-				RandomTestUtil.randomLocaleStringMap(), 2, true, 0.0,
-				BigDecimal.ONE, _cpInstance.getSku());
+				RandomTestUtil.randomLocaleStringMap(), 2, BigDecimal.ZERO,
+				true, 0.0, BigDecimal.ONE, _cpInstance.getSku());
 
 		commerceInventoryWarehouseItem =
 			_commerceInventoryWarehouseItemLocalService.

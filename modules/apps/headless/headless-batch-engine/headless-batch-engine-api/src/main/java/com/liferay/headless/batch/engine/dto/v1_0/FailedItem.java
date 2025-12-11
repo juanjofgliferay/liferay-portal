@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Ivica Cardic
@@ -47,56 +46,81 @@ public class FailedItem implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FailedItem.class, json);
 	}
 
-	@Schema(description = "The item which failed to be imported.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The item which failed to be imported."
+	)
 	public String getItem() {
+		if (_itemSupplier != null) {
+			item = _itemSupplier.get();
+
+			_itemSupplier = null;
+		}
+
 		return item;
 	}
 
 	public void setItem(String item) {
 		this.item = item;
+
+		_itemSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setItem(UnsafeSupplier<String, Exception> itemUnsafeSupplier) {
-		try {
-			item = itemUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemSupplier = () -> {
+			try {
+				return itemUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The item which failed to be imported.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String item;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _itemSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Position of the item in the import file. For CSV file it will represent a line number, for JSON file it will represent an array index etc."
 	)
 	public Integer getItemIndex() {
+		if (_itemIndexSupplier != null) {
+			itemIndex = _itemIndexSupplier.get();
+
+			_itemIndexSupplier = null;
+		}
+
 		return itemIndex;
 	}
 
 	public void setItemIndex(Integer itemIndex) {
 		this.itemIndex = itemIndex;
+
+		_itemIndexSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setItemIndex(
 		UnsafeSupplier<Integer, Exception> itemIndexUnsafeSupplier) {
 
-		try {
-			itemIndex = itemIndexUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemIndexSupplier = () -> {
+			try {
+				return itemIndexUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -105,28 +129,43 @@ public class FailedItem implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer itemIndex;
 
-	@Schema(description = "Message describing the reason of import failure.")
+	@JsonIgnore
+	private Supplier<Integer> _itemIndexSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Message describing the reason of import failure."
+	)
 	public String getMessage() {
+		if (_messageSupplier != null) {
+			message = _messageSupplier.get();
+
+			_messageSupplier = null;
+		}
+
 		return message;
 	}
 
 	public void setMessage(String message) {
 		this.message = message;
+
+		_messageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMessage(
 		UnsafeSupplier<String, Exception> messageUnsafeSupplier) {
 
-		try {
-			message = messageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_messageSupplier = () -> {
+			try {
+				return messageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -134,6 +173,9 @@ public class FailedItem implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String message;
+
+	@JsonIgnore
+	private Supplier<String> _messageSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -162,6 +204,8 @@ public class FailedItem implements Serializable {
 
 		sb.append("{");
 
+		String item = getItem();
+
 		if (item != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -176,6 +220,8 @@ public class FailedItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer itemIndex = getItemIndex();
+
 		if (itemIndex != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -185,6 +231,8 @@ public class FailedItem implements Serializable {
 
 			sb.append(itemIndex);
 		}
+
+		String message = getMessage();
 
 		if (message != null) {
 			if (sb.length() > 1) {
@@ -205,8 +253,8 @@ public class FailedItem implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.batch.engine.dto.v1_0.FailedItem",
 		name = "x-class-name"
 	)
@@ -252,7 +300,10 @@ public class FailedItem implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

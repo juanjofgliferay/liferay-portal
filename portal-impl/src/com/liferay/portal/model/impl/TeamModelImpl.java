@@ -100,6 +100,9 @@ public class TeamModelImpl extends BaseModelImpl<Team> implements TeamModel {
 
 	public static final String ORDER_BY_SQL = " ORDER BY Team.name ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY team.name ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -182,7 +185,7 @@ public class TeamModelImpl extends BaseModelImpl<Team> implements TeamModel {
 	public static final boolean FINDER_CACHE_ENABLED_USERGROUPS_TEAMS = true;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.Team"));
 
 	public TeamModelImpl() {

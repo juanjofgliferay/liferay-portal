@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Petteri Karttunen
@@ -49,14 +48,22 @@ public class SearchRequestBody implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SearchRequestBody.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getAttributes() {
+		if (_attributesSupplier != null) {
+			attributes = _attributesSupplier.get();
+
+			_attributesSupplier = null;
+		}
+
 		return attributes;
 	}
 
 	public void setAttributes(Map<String, Object> attributes) {
 		this.attributes = attributes;
+
+		_attributesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -64,24 +71,35 @@ public class SearchRequestBody implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			attributesUnsafeSupplier) {
 
-		try {
-			attributes = attributesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attributesSupplier = () -> {
+			try {
+				return attributesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> attributes;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _attributesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public FacetConfiguration[] getFacetConfigurations() {
+		if (_facetConfigurationsSupplier != null) {
+			facetConfigurations = _facetConfigurationsSupplier.get();
+
+			_facetConfigurationsSupplier = null;
+		}
+
 		return facetConfigurations;
 	}
 
@@ -89,6 +107,8 @@ public class SearchRequestBody implements Serializable {
 		FacetConfiguration[] facetConfigurations) {
 
 		this.facetConfigurations = facetConfigurations;
+
+		_facetConfigurationsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -96,20 +116,25 @@ public class SearchRequestBody implements Serializable {
 		UnsafeSupplier<FacetConfiguration[], Exception>
 			facetConfigurationsUnsafeSupplier) {
 
-		try {
-			facetConfigurations = facetConfigurationsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_facetConfigurationsSupplier = () -> {
+			try {
+				return facetConfigurationsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FacetConfiguration[] facetConfigurations;
+
+	@JsonIgnore
+	private Supplier<FacetConfiguration[]> _facetConfigurationsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -138,6 +163,8 @@ public class SearchRequestBody implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Object> attributes = getAttributes();
+
 		if (attributes != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -147,6 +174,8 @@ public class SearchRequestBody implements Serializable {
 
 			sb.append(_toJSON(attributes));
 		}
+
+		FacetConfiguration[] facetConfigurations = getFacetConfigurations();
 
 		if (facetConfigurations != null) {
 			if (sb.length() > 1) {
@@ -173,8 +202,8 @@ public class SearchRequestBody implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.search.rest.dto.v1_0.SearchRequestBody",
 		name = "x-class-name"
 	)
@@ -220,7 +249,10 @@ public class SearchRequestBody implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

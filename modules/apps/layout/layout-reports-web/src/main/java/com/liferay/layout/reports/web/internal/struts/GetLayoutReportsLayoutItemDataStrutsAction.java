@@ -35,7 +35,6 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
@@ -49,15 +48,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.taglib.servlet.PageContextFactoryUtil;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -85,8 +84,12 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 			return null;
 		}
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
 		LayoutPermissionUtil.checkLayoutUpdatePermission(
-			GuestOrUserUtil.getPermissionChecker(), layout);
+			themeDisplay.getPermissionChecker(), layout);
 
 		LayoutStructure layoutStructure =
 			_layoutStructureProvider.getLayoutStructure(
@@ -119,10 +122,6 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 
 			return null;
 		}
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
 
 		for (LayoutStructureRenderer.LayoutStructureItemRenderTime
 				layoutStructureItemRenderTime :
@@ -304,11 +303,13 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 			return null;
 		}
 
-		long fragmentEntryId = fragmentEntryLink.getFragmentEntryId();
+		String fragmentEntryERC = fragmentEntryLink.getFragmentEntryERC();
 
-		if (fragmentEntryId > 0) {
-			return _fragmentEntryLocalService.fetchFragmentEntry(
-				fragmentEntryId);
+		if (Validator.isNotNull(fragmentEntryERC)) {
+			return _fragmentEntryLocalService.
+				fetchFragmentEntryByExternalReferenceCode(
+					fragmentEntryERC,
+					fragmentEntryLink.getFragmentEntryGroupId());
 		}
 
 		String rendererKey = fragmentEntryLink.getRendererKey();
@@ -353,7 +354,7 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 		}
 
 		if (Validator.isNotNull(fragmentEntryLink.getRendererKey()) ||
-			(fragmentEntryLink.getFragmentEntryId() > 0)) {
+			Validator.isNotNull(fragmentEntryLink.getFragmentEntryERC())) {
 
 			return _fragmentEntryLinkHelper.getFragmentEntryName(
 				fragmentEntryLink, locale);
@@ -455,8 +456,7 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 			return StringPool.BLANK;
 		}
 
-		JSONObject jsonObject = _jsonFactory.createJSONObject(
-			fragmentEntryLink.getEditableValues());
+		JSONObject jsonObject = fragmentEntryLink.getEditableValuesJSONObject();
 
 		return jsonObject.getString("portletId");
 	}

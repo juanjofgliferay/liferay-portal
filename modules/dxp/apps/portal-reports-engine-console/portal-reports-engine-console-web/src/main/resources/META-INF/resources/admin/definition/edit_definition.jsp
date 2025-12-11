@@ -102,9 +102,9 @@ else {
 				</aui:select>
 
 				<aui:field-wrapper>
-					<aui:input cssClass="template-report" name="templateReport" style='<%= Validator.isNull(reportName) ? "display: block;" : "display: none;" %>' type="file" />
+					<aui:input cssClass='<%= "lfr-reports__template-report-input " + (Validator.isNull(reportName) ? "display-block" : "display-none") %>' name="templateReport" type="file" />
 
-					<span class="existing-report" style="<%= Validator.isNull(reportName) ? "display: none;" : "display: block;" %>">
+					<span class="lfr-reports__template-report-name <%= Validator.isNull(reportName) ? "display-none" : "display-block" %>">
 						<%= HtmlUtil.escape(reportName) %>
 
 						<img class="remove-existing-report" src="<%= themeDisplay.getPathThemeImages() %>/arrows/02_x.png" />
@@ -112,7 +112,7 @@ else {
 						<aui:input name="reportName" type="hidden" value="<%= reportName %>" />
 					</span>
 
-					<aui:button cssClass="cancel-update-template-report" style="display: none;" value="cancel" />
+					<aui:button cssClass="cancel-update-template-report" value="cancel" />
 				</aui:field-wrapper>
 			</aui:fieldset>
 
@@ -161,18 +161,17 @@ else {
 					</clay:col>
 
 					<clay:col
+						cssClass="align-items-center d-flex"
 						md="2"
 					>
-						<aui:button-row cssClass="add-parameter">
-							<aui:button value="add-parameter" />
+						<aui:button-row cssClass="c-mt-1">
+							<aui:button cssClass="add-parameter" value="add-parameter" />
 						</aui:button-row>
 					</clay:col>
 				</clay:row>
 
 				<aui:field-wrapper>
-					<clay:col>
-						<div class="report-tags"></div>
-					</clay:col>
+					<div class="report-tags" />
 				</aui:field-wrapper>
 			</aui:fieldset>
 
@@ -208,15 +207,18 @@ else {
 	</aui:button-row>
 </aui:form>
 
-<aui:script>
-	AUI().ready((A) => {
-		Liferay.Report.initialize({
-			namespace: '<portlet:namespace />',
-			parameters:
-				'<%= HtmlUtil.escapeJS(BeanParamUtil.getString(definition, request, "reportParameters")) %>',
-		});
-	});
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"namespace", liferayPortletResponse.getNamespace()
+		).put(
+			"parameters", reportsEngineDisplayContext.getReportParameters()
+		).build()
+	%>'
+	module="{reportParameters} from portal-reports-engine-console-web"
+/>
 
+<aui:script>
 	function <portlet:namespace />addReport() {
 		submitForm(
 			document.<portlet:namespace />fm,

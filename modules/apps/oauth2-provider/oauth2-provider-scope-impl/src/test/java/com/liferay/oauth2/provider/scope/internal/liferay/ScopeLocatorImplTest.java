@@ -6,7 +6,6 @@
 package com.liferay.oauth2.provider.scope.internal.liferay;
 
 import com.liferay.oauth2.provider.scope.internal.configuration.ScopeLocatorConfiguration;
-import com.liferay.oauth2.provider.scope.internal.liferay.ScopeLocatorImpl.ScopeLocatorConfigurationProvider;
 import com.liferay.oauth2.provider.scope.internal.spi.scope.matcher.StrictScopeMatcherFactory;
 import com.liferay.oauth2.provider.scope.liferay.LiferayOAuth2Scope;
 import com.liferay.oauth2.provider.scope.spi.prefix.handler.PrefixHandler;
@@ -19,10 +18,8 @@ import com.liferay.osgi.service.tracker.collections.map.ScopedServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.remote.jaxrs.whiteboard.lifecycle.JAXRSLifecycle;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-import com.liferay.portal.util.PropsImpl;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,8 +59,6 @@ public class ScopeLocatorImplTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		PropsUtil.setProps(new PropsImpl());
-
 		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
 		Mockito.when(
@@ -81,12 +76,6 @@ public class ScopeLocatorImplTest {
 				PrefixHandlerFactory.class,
 				Mockito.mock(PrefixHandlerFactory.class), properties);
 
-		_scopeLocatorConfigurationProviderServiceRegistration =
-			bundleContext.registerService(
-				ScopeLocatorConfigurationProvider.class,
-				Mockito.mock(ScopeLocatorConfigurationProvider.class),
-				properties);
-
 		_scopeMapperServiceRegistration = bundleContext.registerService(
 			ScopeMapper.class, Mockito.mock(ScopeMapper.class), properties);
 	}
@@ -95,7 +84,6 @@ public class ScopeLocatorImplTest {
 	public static void tearDownClass() {
 		_frameworkUtilMockedStatic.close();
 		_prefixHandlerFactoryServiceRegistration.unregister();
-		_scopeLocatorConfigurationProviderServiceRegistration.unregister();
 		_scopeMapperServiceRegistration.unregister();
 	}
 
@@ -407,8 +395,6 @@ public class ScopeLocatorImplTest {
 		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
 	private static ServiceRegistration<PrefixHandlerFactory>
 		_prefixHandlerFactoryServiceRegistration;
-	private static ServiceRegistration<ScopeLocatorConfigurationProvider>
-		_scopeLocatorConfigurationProviderServiceRegistration;
 	private static ServiceRegistration<ScopeMapper>
 		_scopeMapperServiceRegistration;
 
@@ -443,13 +429,6 @@ public class ScopeLocatorImplTest {
 					});
 			}
 
-			if (!_scopeLocatorConfigurationProvidersInitialized) {
-				withScopeLocatorConfigurationProviders(
-					() -> new TestScopeLocatorConfiguration(),
-					registrator -> {
-					});
-			}
-
 			ReflectionTestUtil.setFieldValue(
 				_scopeLocatorImpl, "_jaxrsLifecycle",
 				new JAXRSLifecycle() {
@@ -459,6 +438,9 @@ public class ScopeLocatorImplTest {
 					}
 
 				});
+			ReflectionTestUtil.setFieldValue(
+				_scopeLocatorImpl, "_scopeLocatorConfiguration",
+				new TestScopeLocatorConfiguration());
 
 			return _scopeLocatorImpl;
 		}
@@ -518,24 +500,6 @@ public class ScopeLocatorImplTest {
 				});
 
 			_scopeFindersInitialized = true;
-
-			return this;
-		}
-
-		public Builder withScopeLocatorConfigurationProviders(
-				ScopeLocatorConfigurationProvider
-					defaultScopeLocatorConfigurationProvider,
-				CompanyAndKeyConfigurator<ScopeLocatorConfigurationProvider>
-					configurator)
-			throws IllegalAccessException {
-
-			_scopeLocatorImpl.
-				setScopeLocatorConfigurationProvidersScopedServiceTrackerMap(
-					_prepareScopedServiceTrackerMapMock(
-						defaultScopeLocatorConfigurationProvider,
-						configurator));
-
-			_scopeLocatorConfigurationProvidersInitialized = true;
 
 			return this;
 		}
@@ -613,7 +577,6 @@ public class ScopeLocatorImplTest {
 
 		private boolean _prefixHandlerFactoriesInitialized;
 		private boolean _scopeFindersInitialized;
-		private boolean _scopeLocatorConfigurationProvidersInitialized;
 		private final ScopeLocatorImpl _scopeLocatorImpl =
 			new ScopeLocatorImpl();
 		private boolean _scopeMappersInitialized;

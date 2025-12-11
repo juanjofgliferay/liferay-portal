@@ -48,14 +48,11 @@ export function ModalAddDefaultSortColumn({
 		dispatch,
 	] = useViewContext();
 
-	const [availableViewColumns, setAvailableViewColumns] = useState<
-		TObjectViewColumn[]
-	>(objectViewColumns);
+	const [availableViewColumns, setAvailableViewColumns] =
+		useState<TObjectViewColumn[]>(objectViewColumns);
 
-	const [
-		selectedObjectSortColumnName,
-		setSelectedObjectSortColumnValueName,
-	] = useState<string>();
+	const [selectedObjectSortColumnName, setSelectedObjectSortColumnValueName] =
+		useState<string>();
 	const [selectedObjetSortValue, setSelectedObjetSortValue] = useState('asc');
 
 	const objectSortColumnItems = useMemo(() => {
@@ -131,7 +128,11 @@ export function ModalAddDefaultSortColumn({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={onSubmit}>
-				<ClayModal.Header>{header}</ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
+					{header}
+				</ClayModal.Header>
 
 				<ClayModal.Body>
 					<SingleSelect

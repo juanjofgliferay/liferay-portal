@@ -6,11 +6,13 @@
 package com.liferay.object.exception;
 
 import com.liferay.object.model.ObjectState;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 
 import java.io.Serializable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -120,10 +122,13 @@ public class ObjectEntryValuesException extends PortalException {
 
 		public ExceedsMaxFileSize(long maxFileSize, String objectFieldName) {
 			super(
+				Arrays.asList(maxFileSize, objectFieldName),
 				String.format(
 					"File exceeds the maximum permitted size of %s MB for " +
 						"object field \"%s\"",
-					maxFileSize, objectFieldName));
+					maxFileSize, objectFieldName),
+				"file-exceeds-the-maximum-permitted-size-of-x-mb-for-object-" +
+					"field-x");
 
 			_maxFileSize = maxFileSize;
 			_objectFieldName = objectFieldName;
@@ -176,9 +181,10 @@ public class ObjectEntryValuesException extends PortalException {
 			String fileExtension, String objectFieldName) {
 
 			super(
-				String.format(
-					"The file extension %s is invalid for object field \"%s\"",
-					fileExtension, objectFieldName));
+				StringBundler.concat(
+					"The file extension \"", fileExtension,
+					"\" is invalid for object field \"", objectFieldName,
+					"\""));
 
 			_fileExtension = fileExtension;
 			_objectFieldName = objectFieldName;
@@ -251,6 +257,12 @@ public class ObjectEntryValuesException extends PortalException {
 			_objectFieldName = objectFieldName;
 		}
 
+		public InvalidValue(String message, String objectFieldName) {
+			super(message);
+
+			_objectFieldName = objectFieldName;
+		}
+
 		public String getObjectFieldName() {
 			return _objectFieldName;
 		}
@@ -287,6 +299,20 @@ public class ObjectEntryValuesException extends PortalException {
 
 	}
 
+	public static class NoSuchRelatedObjectEntry
+		extends ObjectEntryValuesException {
+
+		public NoSuchRelatedObjectEntry(String relationshipObjectFieldName) {
+			super(
+				Collections.singletonList(relationshipObjectFieldName),
+				String.format(
+					"The value for %s does not exist",
+					relationshipObjectFieldName),
+				"the-value-for-x-does-not-exist");
+		}
+
+	}
+
 	public static class OneToOneConstraintViolation
 		extends ObjectEntryValuesException {
 
@@ -317,6 +343,18 @@ public class ObjectEntryValuesException extends PortalException {
 		}
 
 		private String _objectFieldName;
+
+	}
+
+	public static class RequiredLanguageId extends ObjectEntryValuesException {
+
+		public RequiredLanguageId(String languageId, String objectFieldName) {
+			super(
+				String.format(
+					"No value was provided for the language ID \"%s\" in the " +
+						"required object field \"%s\".",
+					languageId, objectFieldName));
+		}
 
 	}
 

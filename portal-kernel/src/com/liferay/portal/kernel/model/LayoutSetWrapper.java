@@ -444,7 +444,7 @@ public class LayoutSetWrapper
 	 configured, the returned map will be empty.
 	 */
 	@Override
-	public java.util.TreeMap<String, String> getVirtualHostnames() {
+	public java.util.NavigableMap<String, String> getVirtualHostnames() {
 		return model.getVirtualHostnames();
 	}
 
@@ -471,6 +471,11 @@ public class LayoutSetWrapper
 	@Override
 	public boolean isLayoutSetPrototypeUpdateable() {
 		return model.isLayoutSetPrototypeUpdateable();
+	}
+
+	@Override
+	public boolean isLayoutSetReadyForPropagation() {
+		return model.isLayoutSetReadyForPropagation();
 	}
 
 	@Override
@@ -689,7 +694,7 @@ public class LayoutSetWrapper
 	 */
 	@Override
 	public void setVirtualHostnames(
-		java.util.TreeMap<String, String> virtualHostnames) {
+		java.util.NavigableMap<String, String> virtualHostnames) {
 
 		model.setVirtualHostnames(virtualHostnames);
 	}

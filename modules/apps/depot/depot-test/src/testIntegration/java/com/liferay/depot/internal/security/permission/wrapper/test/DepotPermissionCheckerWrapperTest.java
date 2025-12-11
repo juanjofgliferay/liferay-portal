@@ -6,6 +6,7 @@
 package com.liferay.depot.internal.security.permission.wrapper.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.constants.DepotRolesConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
@@ -330,7 +331,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupAdminWithGroup0AndNoOmniAdmin() throws Exception {
+	public void testIsGroupAdminWithGroup0AndNoOmniadmin() throws Exception {
 		DepotTestUtil.withRegularUser(
 			(user, role) -> {
 				PermissionChecker permissionChecker =
@@ -353,7 +354,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupAdminWithOmniAdmin() throws PortalException {
+	public void testIsGroupAdminWithOmniadmin() throws PortalException {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			TestPropsValues.getUser());
 
@@ -440,7 +441,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupMemberWithGroup0AndNoOmniAdmin() throws Exception {
+	public void testIsGroupMemberWithGroup0AndNoOmniadmin() throws Exception {
 		DepotTestUtil.withRegularUser(
 			(user, role) -> {
 				PermissionChecker permissionChecker =
@@ -463,7 +464,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupMemberWithOmniAdmin() throws PortalException {
+	public void testIsGroupMemberWithOmniadmin() throws PortalException {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			TestPropsValues.getUser());
 
@@ -552,7 +553,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupOwnerWithGroup0AndNoOmniAdmin() throws Exception {
+	public void testIsGroupOwnerWithGroup0AndNoOmniadmin() throws Exception {
 		DepotTestUtil.withRegularUser(
 			(user, role) -> {
 				PermissionChecker permissionChecker =
@@ -575,7 +576,7 @@ public class DepotPermissionCheckerWrapperTest {
 	}
 
 	@Test
-	public void testIsGroupOwnerWithOmniAdmin() throws PortalException {
+	public void testIsGroupOwnerWithOmniadmin() throws PortalException {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			TestPropsValues.getUser());
 
@@ -701,7 +702,7 @@ public class DepotPermissionCheckerWrapperTest {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()
 			).build(),
-			Collections.emptyMap(),
+			Collections.emptyMap(), DepotConstants.TYPE_ASSET_LIBRARY,
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId(), userId));
 
@@ -717,7 +718,7 @@ public class DepotPermissionCheckerWrapperTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringUtil.randomString(),
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 

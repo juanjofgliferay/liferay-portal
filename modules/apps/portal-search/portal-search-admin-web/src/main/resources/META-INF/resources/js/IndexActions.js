@@ -8,7 +8,8 @@ import ClayLayout from '@clayui/layout';
 import ClayList from '@clayui/list';
 import {ClayModalProvider, Context as ClayModalContext} from '@clayui/modal';
 import ClayProgressBar from '@clayui/progress-bar';
-import {fetch, localStorage, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, localStorage} from 'frontend-js-web';
 import React, {
 	useCallback,
 	useContext,
@@ -78,11 +79,6 @@ function IndexerListItem({
 
 function IndexActions({
 	controlMenuCategoryKey,
-	elasticSearchDiskSpace = {
-		availableDiskSpace: 0,
-		currentDiskSpaceUsed: 0,
-		isLowOnDiskSpace: false,
-	},
 	indexersMap = {},
 	initialCompanyIds,
 	initialExecutionMode,
@@ -90,9 +86,15 @@ function IndexActions({
 	concurrentModeSupported = true,
 	virtualInstances = [],
 	indexReindexerNames = [],
+	omniadmin,
 	portletNamespace,
 	redirectURL = '',
 	reindexURL = '',
+	searchEngineDiskSpace = {
+		availableDiskSpace: 0,
+		isLowOnDiskSpace: false,
+		usedDiskSpace: 0,
+	},
 }) {
 	const [backgroundTaskMap, setBackgroundTaskMap] = useState({});
 	const [executionMode, setExecutionMode] = useState(
@@ -114,6 +116,10 @@ function IndexActions({
 	 * `executionScope` and `selectedCompanyIds`.
 	 */
 	const _getCompanyIds = () => {
+		if (!omniadmin) {
+			return [Liferay.ThemeDisplay.getCompanyId()];
+		}
+
 		return executionScope === SCOPES.ALL
 			? virtualInstances.map(({id}) => id)
 			: selectedCompanyIds;
@@ -198,11 +204,12 @@ function IndexActions({
 							text,
 							'text/html'
 						);
-						const backgroundTaskMapString = htmlDocument.documentElement
-							.querySelector(
-								`#${portletNamespace}classNameToBackgroundTaskMap`
-							)
-							?.innerHTML?.trim();
+						const backgroundTaskMapString =
+							htmlDocument.documentElement
+								.querySelector(
+									`#${portletNamespace}classNameToBackgroundTaskMap`
+								)
+								?.innerHTML?.trim();
 
 						const newBackgroundTaskMap =
 							JSON.parse(backgroundTaskMapString) || {};
@@ -298,7 +305,7 @@ function IndexActions({
 			executionMode === EXECUTION_MODES.CONCURRENT.value;
 
 		const status =
-			isConcurrentMode && elasticSearchDiskSpace.isLowOnDiskSpace
+			isConcurrentMode && searchEngineDiskSpace.isLowOnDiskSpace
 				? 'warning'
 				: 'info';
 
@@ -309,24 +316,22 @@ function IndexActions({
 
 		if (
 			!hideModal ||
-			(isConcurrentMode && elasticSearchDiskSpace.isLowOnDiskSpace)
+			(isConcurrentMode && searchEngineDiskSpace.isLowOnDiskSpace)
 		) {
 			dispatch({
 				payload: {
 					body: (
 						<ConfirmationModalBody
 							availableDiskSpace={
-								elasticSearchDiskSpace.availableDiskSpace
+								searchEngineDiskSpace.availableDiskSpace
 							}
 							cmd={data.cmd}
-							currentDiskSpaceUsed={
-								elasticSearchDiskSpace.currentDiskSpaceUsed
-							}
 							executionMode={executionMode}
 							isLowOnDiskSpace={
-								elasticSearchDiskSpace.isLowOnDiskSpace
+								searchEngineDiskSpace.isLowOnDiskSpace
 							}
 							portletNamespace={portletNamespace}
+							usedDiskSpace={searchEngineDiskSpace.usedDiskSpace}
 						/>
 					),
 					footer: [
@@ -358,20 +363,22 @@ function IndexActions({
 					],
 					header:
 						isConcurrentMode &&
-						elasticSearchDiskSpace.isLowOnDiskSpace
-							? Liferay.Language.get(
-									'reindex-elasticsearch-disk-space-warning'
-							  )
+						searchEngineDiskSpace.isLowOnDiskSpace
+							? Liferay.Language.get('reindex-disk-space-warning')
 							: data.id === 'spellCheckDictionaries'
-							? Liferay.Language.get(
-									'reindex-spell-check-dictionaries'
-							  )
-							: data.id === 'portal'
-							? Liferay.Language.get('reindex-search-indexes')
-							: Liferay.Util.sub(
-									Liferay.Language.get('reindex-type-x'),
-									'<' + data.displayName + '>'
-							  ),
+								? Liferay.Language.get(
+										'reindex-spell-check-dictionaries'
+									)
+								: data.id === 'portal'
+									? Liferay.Language.get(
+											'reindex-search-indexes'
+										)
+									: Liferay.Util.sub(
+											Liferay.Language.get(
+												'reindex-type-x'
+											),
+											'<' + data.displayName + '>'
+										),
 					size: 'md',
 					status,
 				},
@@ -497,6 +504,7 @@ function IndexActions({
 							concurrentModeSupported={concurrentModeSupported}
 							executionMode={executionMode}
 							executionScope={executionScope}
+							omniadmin={omniadmin}
 							onExecutionModeChange={_handleExecutionModeChange}
 							onExecutionScopeChange={_handleExecutionScopeChange}
 							onSelectedCompanyIdsChange={
@@ -509,7 +517,7 @@ function IndexActions({
 					</ClayLayout.Col>
 
 					<ClayLayout.Col size={8}>
-						<div className="sheet sheet-lg">
+						<div className="index-actions-sheet sheet sheet-lg">
 							<h2 className="sheet-title">
 								{Liferay.Language.get('actions')}
 							</h2>
@@ -644,12 +652,13 @@ export default function ({
 	const {
 		concurrentModeSupported,
 		controlMenuCategoryKey,
-		elasticSearchDiskSpace,
 		indexReindexerNames,
 		indexersMap,
 		initialCompanyIds,
 		initialExecutionMode,
 		initialScope,
+		omniadmin,
+		searchEngineDiskSpace,
 		virtualInstances,
 	} = data;
 
@@ -658,15 +667,16 @@ export default function ({
 			<IndexActions
 				concurrentModeSupported={concurrentModeSupported}
 				controlMenuCategoryKey={controlMenuCategoryKey}
-				elasticSearchDiskSpace={elasticSearchDiskSpace}
 				indexReindexerNames={indexReindexerNames}
 				indexersMap={indexersMap}
 				initialCompanyIds={initialCompanyIds}
 				initialExecutionMode={initialExecutionMode}
 				initialScope={initialScope}
+				omniadmin={omniadmin}
 				portletNamespace={portletNamespace}
 				redirectURL={redirectURL}
 				reindexURL={reindexURL}
+				searchEngineDiskSpace={searchEngineDiskSpace}
 				virtualInstances={virtualInstances}
 			/>
 		</ClayModalProvider>

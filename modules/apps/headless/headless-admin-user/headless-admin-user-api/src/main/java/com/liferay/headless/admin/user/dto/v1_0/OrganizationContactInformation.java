@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,16 +53,24 @@ public class OrganizationContactInformation implements Serializable {
 			OrganizationContactInformation.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's email addresses, with one optionally marked as primary."
 	)
 	@Valid
 	public EmailAddress[] getEmailAddresses() {
+		if (_emailAddressesSupplier != null) {
+			emailAddresses = _emailAddressesSupplier.get();
+
+			_emailAddressesSupplier = null;
+		}
+
 		return emailAddresses;
 	}
 
 	public void setEmailAddresses(EmailAddress[] emailAddresses) {
 		this.emailAddresses = emailAddresses;
+
+		_emailAddressesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -71,15 +78,17 @@ public class OrganizationContactInformation implements Serializable {
 		UnsafeSupplier<EmailAddress[], Exception>
 			emailAddressesUnsafeSupplier) {
 
-		try {
-			emailAddresses = emailAddressesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_emailAddressesSupplier = () -> {
+			try {
+				return emailAddressesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -88,16 +97,27 @@ public class OrganizationContactInformation implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected EmailAddress[] emailAddresses;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<EmailAddress[]> _emailAddressesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's postal addresses, with one optionally marked as primary."
 	)
 	@Valid
 	public PostalAddress[] getPostalAddresses() {
+		if (_postalAddressesSupplier != null) {
+			postalAddresses = _postalAddressesSupplier.get();
+
+			_postalAddressesSupplier = null;
+		}
+
 		return postalAddresses;
 	}
 
 	public void setPostalAddresses(PostalAddress[] postalAddresses) {
 		this.postalAddresses = postalAddresses;
+
+		_postalAddressesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -105,15 +125,17 @@ public class OrganizationContactInformation implements Serializable {
 		UnsafeSupplier<PostalAddress[], Exception>
 			postalAddressesUnsafeSupplier) {
 
-		try {
-			postalAddresses = postalAddressesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_postalAddressesSupplier = () -> {
+			try {
+				return postalAddressesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -122,31 +144,44 @@ public class OrganizationContactInformation implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected PostalAddress[] postalAddresses;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<PostalAddress[]> _postalAddressesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's phones numbers, with one optionally marked as primary."
 	)
 	@Valid
 	public Phone[] getTelephones() {
+		if (_telephonesSupplier != null) {
+			telephones = _telephonesSupplier.get();
+
+			_telephonesSupplier = null;
+		}
+
 		return telephones;
 	}
 
 	public void setTelephones(Phone[] telephones) {
 		this.telephones = telephones;
+
+		_telephonesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTelephones(
 		UnsafeSupplier<Phone[], Exception> telephonesUnsafeSupplier) {
 
-		try {
-			telephones = telephonesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_telephonesSupplier = () -> {
+			try {
+				return telephonesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -155,31 +190,44 @@ public class OrganizationContactInformation implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Phone[] telephones;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Phone[]> _telephonesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's web URLs, with one optionally marked as primary."
 	)
 	@Valid
 	public WebUrl[] getWebUrls() {
+		if (_webUrlsSupplier != null) {
+			webUrls = _webUrlsSupplier.get();
+
+			_webUrlsSupplier = null;
+		}
+
 		return webUrls;
 	}
 
 	public void setWebUrls(WebUrl[] webUrls) {
 		this.webUrls = webUrls;
+
+		_webUrlsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWebUrls(
 		UnsafeSupplier<WebUrl[], Exception> webUrlsUnsafeSupplier) {
 
-		try {
-			webUrls = webUrlsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_webUrlsSupplier = () -> {
+			try {
+				return webUrlsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -187,6 +235,9 @@ public class OrganizationContactInformation implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected WebUrl[] webUrls;
+
+	@JsonIgnore
+	private Supplier<WebUrl[]> _webUrlsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -217,6 +268,8 @@ public class OrganizationContactInformation implements Serializable {
 
 		sb.append("{");
 
+		EmailAddress[] emailAddresses = getEmailAddresses();
+
 		if (emailAddresses != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -236,6 +289,8 @@ public class OrganizationContactInformation implements Serializable {
 
 			sb.append("]");
 		}
+
+		PostalAddress[] postalAddresses = getPostalAddresses();
 
 		if (postalAddresses != null) {
 			if (sb.length() > 1) {
@@ -257,6 +312,8 @@ public class OrganizationContactInformation implements Serializable {
 			sb.append("]");
 		}
 
+		Phone[] telephones = getTelephones();
+
 		if (telephones != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -276,6 +333,8 @@ public class OrganizationContactInformation implements Serializable {
 
 			sb.append("]");
 		}
+
+		WebUrl[] webUrls = getWebUrls();
 
 		if (webUrls != null) {
 			if (sb.length() > 1) {
@@ -302,8 +361,8 @@ public class OrganizationContactInformation implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.OrganizationContactInformation",
 		name = "x-class-name"
 	)
@@ -349,7 +408,10 @@ public class OrganizationContactInformation implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

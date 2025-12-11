@@ -17,20 +17,24 @@ import com.liferay.petra.function.UnsafeTriConsumer;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
@@ -43,9 +47,13 @@ import com.liferay.portal.workflow.metrics.rest.client.pagination.Pagination;
 import com.liferay.portal.workflow.metrics.rest.client.resource.v1_0.InstanceResource;
 import com.liferay.portal.workflow.metrics.rest.client.serdes.v1_0.InstanceSerDes;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,12 +65,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
+import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -86,7 +89,7 @@ public abstract class BaseInstanceResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -100,10 +103,15 @@ public abstract class BaseInstanceResourceTestCase {
 
 		_instanceResource.setContextCompany(testCompany);
 
-		InstanceResource.Builder builder = InstanceResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		instanceResource = builder.authentication(
-			"test@liferay.com", "test"
+		instanceResource = InstanceResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -117,7 +125,32 @@ public abstract class BaseInstanceResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Instance instance1 = randomInstance();
+
+		String json = objectMapper.writeValueAsString(instance1);
+
+		Instance instance2 = InstanceSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(instance1, instance2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Instance instance = randomInstance();
+
+		String json1 = objectMapper.writeValueAsString(instance);
+		String json2 = InstanceSerDes.toJSON(instance);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -132,40 +165,6 @@ public abstract class BaseInstanceResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		Instance instance1 = randomInstance();
-
-		String json = objectMapper.writeValueAsString(instance1);
-
-		Instance instance2 = InstanceSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(instance1, instance2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		Instance instance = randomInstance();
-
-		String json1 = objectMapper.writeValueAsString(instance);
-		String json2 = InstanceSerDes.toJSON(instance);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -189,6 +188,273 @@ public abstract class BaseInstanceResourceTestCase {
 		Assert.assertEquals(regex, instance.getAssetType());
 		Assert.assertEquals(regex, instance.getClassName());
 		Assert.assertEquals(regex, instance.getProcessVersion());
+	}
+
+	@Test
+	public void testDeleteProcessInstance() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Instance instance = testDeleteProcessInstance_addInstance();
+
+		assertHttpResponseStatusCode(
+			204,
+			instanceResource.deleteProcessInstanceHttpResponse(
+				testDeleteProcessInstance_getProcessId(instance),
+				instance.getId()));
+
+		assertHttpResponseStatusCode(
+			404,
+			instanceResource.getProcessInstanceHttpResponse(
+				testDeleteProcessInstance_getProcessId(instance),
+				instance.getId()));
+		assertHttpResponseStatusCode(
+			404,
+			instanceResource.getProcessInstanceHttpResponse(
+				testDeleteProcessInstance_getProcessId(instance), 0L));
+	}
+
+	protected Instance testDeleteProcessInstance_addInstance()
+		throws Exception {
+
+		return testPostProcessInstance_addInstance(randomInstance());
+	}
+
+	protected Long testDeleteProcessInstance_getProcessId(Instance instance)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteProcessInstance() throws Exception {
+
+		// No namespace
+
+		Instance instance1 = testGraphQLDeleteProcessInstance_addInstance();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteProcessInstance",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"processId",
+									testGraphQLDeleteProcessInstance_getProcessId(
+										instance1));
+								put("instanceId", instance1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteProcessInstance"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"processInstance",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"processId",
+								testGraphQLDeleteProcessInstance_getProcessId(
+									instance1));
+							put("instanceId", instance1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace portalWorkflowMetrics_v1_0
+
+		Instance instance2 = testGraphQLDeleteProcessInstance_addInstance();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"portalWorkflowMetrics_v1_0",
+						new GraphQLField(
+							"deleteProcessInstance",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"processId",
+										testGraphQLDeleteProcessInstance_getProcessId(
+											instance2));
+									put("instanceId", instance2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/portalWorkflowMetrics_v1_0",
+				"Object/deleteProcessInstance"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"portalWorkflowMetrics_v1_0",
+					new GraphQLField(
+						"processInstance",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"processId",
+									testGraphQLDeleteProcessInstance_getProcessId(
+										instance2));
+								put("instanceId", instance2.getId());
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Long testGraphQLDeleteProcessInstance_getProcessId(
+			Instance instance)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Instance testGraphQLDeleteProcessInstance_addInstance()
+		throws Exception {
+
+		return testGraphQLInstance_addInstance();
+	}
+
+	@Test
+	public void testGetProcessInstance() throws Exception {
+		Instance postInstance = testGetProcessInstance_addInstance();
+
+		Instance getInstance = instanceResource.getProcessInstance(
+			testGetProcessInstance_getProcessId(postInstance),
+			postInstance.getId());
+
+		assertEquals(postInstance, getInstance);
+		assertValid(getInstance);
+	}
+
+	protected Instance testGetProcessInstance_addInstance() throws Exception {
+		return testPostProcessInstance_addInstance(randomInstance());
+	}
+
+	protected Long testGetProcessInstance_getProcessId(Instance instance)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetProcessInstance() throws Exception {
+		Instance instance = testGraphQLGetProcessInstance_addInstance();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				instance,
+				InstanceSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"processInstance",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"processId",
+											testGraphQLGetProcessInstance_getProcessId(
+												instance));
+										put("instanceId", instance.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/processInstance"))));
+
+		// Using the namespace portalWorkflowMetrics_v1_0
+
+		Assert.assertTrue(
+			equals(
+				instance,
+				InstanceSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"portalWorkflowMetrics_v1_0",
+								new GraphQLField(
+									"processInstance",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"processId",
+												testGraphQLGetProcessInstance_getProcessId(
+													instance));
+											put("instanceId", instance.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/portalWorkflowMetrics_v1_0",
+						"Object/processInstance"))));
+	}
+
+	protected Long testGraphQLGetProcessInstance_getProcessId(Instance instance)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetProcessInstanceNotFound() throws Exception {
+		Long irrelevantProcessId = RandomTestUtil.randomLong();
+		Long irrelevantInstanceId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"processInstance",
+						new HashMap<String, Object>() {
+							{
+								put("processId", irrelevantProcessId);
+								put("instanceId", irrelevantInstanceId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace portalWorkflowMetrics_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"portalWorkflowMetrics_v1_0",
+						new GraphQLField(
+							"processInstance",
+							new HashMap<String, Object>() {
+								{
+									put("processId", irrelevantProcessId);
+									put("instanceId", irrelevantInstanceId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected Instance testGraphQLGetProcessInstance_addInstance()
+		throws Exception {
+
+		return testGraphQLInstance_addInstance();
 	}
 
 	@Test
@@ -262,10 +528,10 @@ public abstract class BaseInstanceResourceTestCase {
 	public void testGetProcessInstancesPageWithPagination() throws Exception {
 		Long processId = testGetProcessInstancesPage_getProcessId();
 
-		Page<Instance> instancePage = instanceResource.getProcessInstancesPage(
+		Page<Instance> instancesPage = instanceResource.getProcessInstancesPage(
 			processId, null, null, null, null, null, null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(instancePage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(instancesPage.getTotalCount());
 
 		Instance instance1 = testGetProcessInstancesPage_addInstance(
 			processId, randomInstance());
@@ -276,32 +542,68 @@ public abstract class BaseInstanceResourceTestCase {
 		Instance instance3 = testGetProcessInstancesPage_addInstance(
 			processId, randomInstance());
 
-		Page<Instance> page1 = instanceResource.getProcessInstancesPage(
-			processId, null, null, null, null, null, null, null,
-			Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Instance> instances1 = (List<Instance>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			instances1.toString(), totalCount + 2, instances1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Instance> page1 = instanceResource.getProcessInstancesPage(
+				processId, null, null, null, null, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Instance> page2 = instanceResource.getProcessInstancesPage(
-			processId, null, null, null, null, null, null, null,
-			Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(instance1, (List<Instance>)page1.getItems());
 
-		List<Instance> instances2 = (List<Instance>)page2.getItems();
+			Page<Instance> page2 = instanceResource.getProcessInstancesPage(
+				processId, null, null, null, null, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(instances2.toString(), 1, instances2.size());
+			assertContains(instance2, (List<Instance>)page2.getItems());
 
-		Page<Instance> page3 = instanceResource.getProcessInstancesPage(
-			processId, null, null, null, null, null, null, null,
-			Pagination.of(1, (int)totalCount + 3), null);
+			Page<Instance> page3 = instanceResource.getProcessInstancesPage(
+				processId, null, null, null, null, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(instance1, (List<Instance>)page3.getItems());
-		assertContains(instance2, (List<Instance>)page3.getItems());
-		assertContains(instance3, (List<Instance>)page3.getItems());
+			assertContains(instance3, (List<Instance>)page3.getItems());
+		}
+		else {
+			Page<Instance> page1 = instanceResource.getProcessInstancesPage(
+				processId, null, null, null, null, null, null, null,
+				Pagination.of(1, totalCount + 2), null);
+
+			List<Instance> instances1 = (List<Instance>)page1.getItems();
+
+			Assert.assertEquals(
+				instances1.toString(), totalCount + 2, instances1.size());
+
+			Page<Instance> page2 = instanceResource.getProcessInstancesPage(
+				processId, null, null, null, null, null, null, null,
+				Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Instance> instances2 = (List<Instance>)page2.getItems();
+
+			Assert.assertEquals(instances2.toString(), 1, instances2.size());
+
+			Page<Instance> page3 = instanceResource.getProcessInstancesPage(
+				processId, null, null, null, null, null, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(instance1, (List<Instance>)page3.getItems());
+			assertContains(instance2, (List<Instance>)page3.getItems());
+			assertContains(instance3, (List<Instance>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -311,7 +613,7 @@ public abstract class BaseInstanceResourceTestCase {
 			(entityField, instance1, instance2) -> {
 				BeanTestUtil.setProperty(
 					instance1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -454,6 +756,141 @@ public abstract class BaseInstanceResourceTestCase {
 	}
 
 	@Test
+	public void testGraphQLGetProcessInstancesPage() throws Exception {
+		Long processId = testGetProcessInstancesPage_getProcessId();
+
+		GraphQLField graphQLField = new GraphQLField(
+			"processInstances",
+			new HashMap<String, Object>() {
+				{
+					put("processId", processId);
+					put("dateEnd", getGraphQLValue(RandomTestUtil.nextDate()));
+					put(
+						"dateStart",
+						getGraphQLValue(RandomTestUtil.nextDate()));
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		// No namespace
+
+		JSONObject processInstancesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/processInstances");
+
+		long totalCount = processInstancesJSONObject.getLong("totalCount");
+
+		Instance instance1 = testGraphQLProcessInstance_addInstance(
+			processId, randomInstance());
+
+		Instance instance2 = testGraphQLProcessInstance_addInstance(
+			processId, randomInstance());
+
+		processInstancesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/processInstances");
+
+		Assert.assertEquals(
+			totalCount + 2, processInstancesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			instance1,
+			Arrays.asList(
+				InstanceSerDes.toDTOs(
+					processInstancesJSONObject.getString("items"))));
+		assertContains(
+			instance2,
+			Arrays.asList(
+				InstanceSerDes.toDTOs(
+					processInstancesJSONObject.getString("items"))));
+
+		// Using the namespace portalWorkflowMetrics_v1_0
+
+		processInstancesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("portalWorkflowMetrics_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/portalWorkflowMetrics_v1_0",
+			"JSONObject/processInstances");
+
+		Assert.assertEquals(
+			totalCount + 2, processInstancesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			instance1,
+			Arrays.asList(
+				InstanceSerDes.toDTOs(
+					processInstancesJSONObject.getString("items"))));
+		assertContains(
+			instance2,
+			Arrays.asList(
+				InstanceSerDes.toDTOs(
+					processInstancesJSONObject.getString("items"))));
+	}
+
+	@Test
+	public void testPatchProcessInstance() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Instance instance = testPatchProcessInstance_addInstance();
+
+		assertHttpResponseStatusCode(
+			204,
+			instanceResource.patchProcessInstanceHttpResponse(
+				testPatchProcessInstance_getProcessId(instance),
+				instance.getId(), instance));
+
+		assertHttpResponseStatusCode(
+			404,
+			instanceResource.patchProcessInstanceHttpResponse(
+				testPatchProcessInstance_getProcessId(instance), 0L, instance));
+	}
+
+	protected Long testPatchProcessInstance_getProcessId(Instance instance)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Instance testPatchProcessInstance_addInstance() throws Exception {
+		return testPostProcessInstance_addInstance(randomInstance());
+	}
+
+	@Test
+	public void testPatchProcessInstanceComplete() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Instance instance = testPatchProcessInstanceComplete_addInstance();
+
+		assertHttpResponseStatusCode(
+			204,
+			instanceResource.patchProcessInstanceCompleteHttpResponse(
+				testPatchProcessInstanceComplete_getProcessId(instance),
+				instance.getId(), instance));
+
+		assertHttpResponseStatusCode(
+			404,
+			instanceResource.patchProcessInstanceCompleteHttpResponse(
+				testPatchProcessInstanceComplete_getProcessId(instance), 0L,
+				instance));
+	}
+
+	protected Long testPatchProcessInstanceComplete_getProcessId(
+			Instance instance)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Instance testPatchProcessInstanceComplete_addInstance()
+		throws Exception {
+
+		return testPostProcessInstance_addInstance(randomInstance());
+	}
+
+	@Test
 	public void testPostProcessInstance() throws Exception {
 		Instance randomInstance = randomInstance();
 
@@ -472,35 +909,18 @@ public abstract class BaseInstanceResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteProcessInstance() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Instance instance = testDeleteProcessInstance_addInstance();
+	public void testGraphQLPostProcessInstance() throws Exception {
+		Instance randomInstance = randomInstance();
 
-		assertHttpResponseStatusCode(
-			204,
-			instanceResource.deleteProcessInstanceHttpResponse(
-				testDeleteProcessInstance_getProcessId(instance),
-				instance.getId()));
+		Instance instance = testGraphQLProcessInstance_addInstance(
+			testGraphQLPostProcessInstance_getProcessId(randomInstance),
+			randomInstance);
 
-		assertHttpResponseStatusCode(
-			404,
-			instanceResource.getProcessInstanceHttpResponse(
-				testDeleteProcessInstance_getProcessId(instance),
-				instance.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			instanceResource.getProcessInstanceHttpResponse(
-				testDeleteProcessInstance_getProcessId(instance), 0L));
+		Assert.assertTrue(equals(randomInstance, instance));
 	}
 
-	protected Long testDeleteProcessInstance_getProcessId(Instance instance)
-		throws Exception {
-
-		return instance.getProcessId();
-	}
-
-	protected Instance testDeleteProcessInstance_addInstance()
+	protected Long testGraphQLPostProcessInstance_getProcessId(
+			Instance instance)
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -508,135 +928,135 @@ public abstract class BaseInstanceResourceTestCase {
 	}
 
 	@Test
-	public void testGetProcessInstance() throws Exception {
-		Instance postInstance = testGetProcessInstance_addInstance();
-
-		Instance getInstance = instanceResource.getProcessInstance(
-			testGetProcessInstance_getProcessId(postInstance),
-			postInstance.getId());
-
-		assertEquals(postInstance, getInstance);
-		assertValid(getInstance);
-	}
-
-	protected Long testGetProcessInstance_getProcessId(Instance instance)
-		throws Exception {
-
-		return instance.getProcessId();
-	}
-
-	protected Instance testGetProcessInstance_addInstance() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetProcessInstance() throws Exception {
-		Instance instance = testGraphQLGetProcessInstance_addInstance();
-
-		Assert.assertTrue(
-			equals(
-				instance,
-				InstanceSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"processInstance",
-								new HashMap<String, Object>() {
-									{
-										put(
-											"processId",
-											testGraphQLGetProcessInstance_getProcessId(
-												instance));
-
-										put("instanceId", instance.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/processInstance"))));
-	}
-
-	protected Long testGraphQLGetProcessInstance_getProcessId(Instance instance)
-		throws Exception {
-
-		return instance.getProcessId();
-	}
-
-	@Test
-	public void testGraphQLGetProcessInstanceNotFound() throws Exception {
-		Long irrelevantProcessId = RandomTestUtil.randomLong();
-		Long irrelevantInstanceId = RandomTestUtil.randomLong();
-
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"processInstance",
-						new HashMap<String, Object>() {
-							{
-								put("processId", irrelevantProcessId);
-								put("instanceId", irrelevantInstanceId);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
-	}
-
-	protected Instance testGraphQLGetProcessInstance_addInstance()
-		throws Exception {
-
-		return testGraphQLInstance_addInstance();
-	}
-
-	@Test
-	public void testPatchProcessInstance() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Instance instance = testPatchProcessInstance_addInstance();
-
-		assertHttpResponseStatusCode(
-			204,
-			instanceResource.patchProcessInstanceHttpResponse(
-				instance.getProcessId(), instance.getId(), instance));
-
-		assertHttpResponseStatusCode(
-			404,
-			instanceResource.patchProcessInstanceHttpResponse(
-				instance.getProcessId(), 0L, instance));
-	}
-
-	protected Instance testPatchProcessInstance_addInstance() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testPatchProcessInstanceComplete() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Instance instance = testPatchProcessInstanceComplete_addInstance();
-
-		assertHttpResponseStatusCode(
-			204,
-			instanceResource.patchProcessInstanceCompleteHttpResponse(
-				instance.getProcessId(), instance.getId(), instance));
-
-		assertHttpResponseStatusCode(
-			404,
-			instanceResource.patchProcessInstanceCompleteHttpResponse(
-				instance.getProcessId(), 0L, instance));
-	}
-
-	protected Instance testPatchProcessInstanceComplete_addInstance()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Assert.assertTrue(true);
 	}
 
 	protected Instance testGraphQLInstance_addInstance() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	protected Instance testGraphQLProcessInstance_addInstance()
+		throws Exception {
+
+		return testGraphQLProcessInstance_addInstance(
+			testGraphQLProcessInstance_getProcessId(), randomInstance());
+	}
+
+	protected Long testGraphQLProcessInstance_getProcessId() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Instance testGraphQLProcessInstance_addInstance(
+			Long processId, Instance instance)
+		throws Exception {
+
+		JSONDeserializer<Instance> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field :
+				getDeclaredFields(Instance.class)) {
+
+			if (getGraphQLValue(field.get(instance)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(instance)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createProcessInstance",
+						new HashMap<String, Object>() {
+							{
+								put("processId", processId);
+								put("instance", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createProcessInstance"),
+			Instance.class);
+	}
+
+	protected String getGraphQLValue(Object value) throws Exception {
+		if (value == null) {
+			return null;
+		}
+		else if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		else if (value instanceof Date date) {
+			return "\"" +
+				DateUtil.getDate(
+					date, "yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.getDefault(),
+					TimeZone.getTimeZone("UTC")) + "\"";
+		}
+		else if (value instanceof Enum<?> enm) {
+			return enm.name();
+		}
+		else if (value instanceof Map<?, ?> map) {
+			List<String> entries = new ArrayList<>();
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String graphQLValue = getGraphQLValue(entry.getValue());
+
+				if (graphQLValue != null) {
+					entries.add(entry.getKey() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
+		else if (value instanceof Object[] array) {
+			List<String> entries = new ArrayList<>();
+
+			for (Object entry : array) {
+				String graphQLValue = getGraphQLValue(entry);
+
+				if (graphQLValue != null) {
+					entries.add(graphQLValue);
+				}
+			}
+
+			return "[" + String.join(", ", entries) + "]";
+		}
+		else if (value instanceof String) {
+			return "\"" + value + "\"";
+		}
+		else {
+			List<String> entries = new ArrayList<>();
+
+			Class<?> clazz = value.getClass();
+			java.lang.reflect.Field[] declaredFields = getDeclaredFields(clazz);
+
+			if (declaredFields.length == 0) {
+				declaredFields = getDeclaredFields(clazz.getSuperclass());
+			}
+
+			for (java.lang.reflect.Field field : declaredFields) {
+				String graphQLValue = getGraphQLValue(field.get(value));
+
+				if (graphQLValue != null) {
+					entries.add(field.getName() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
 	}
 
 	protected void assertContains(Instance instance, List<Instance> instances) {
@@ -920,6 +1340,8 @@ public abstract class BaseInstanceResourceTestCase {
 
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
+
+		graphQLFields.add(new GraphQLField("id"));
 
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
@@ -1232,6 +1654,10 @@ public abstract class BaseInstanceResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1473,21 +1899,18 @@ public abstract class BaseInstanceResourceTestCase {
 
 		if (entityFieldName.equals("dateCompletion")) {
 			if (operator.equals("between")) {
+				Date date = instance.getDateCompletion();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							instance.getDateCompletion(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(instance.getDateCompletion(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1497,7 +1920,7 @@ public abstract class BaseInstanceResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(instance.getDateCompletion()));
+				sb.append(_format.format(instance.getDateCompletion()));
 			}
 
 			return sb.toString();
@@ -1505,20 +1928,18 @@ public abstract class BaseInstanceResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = instance.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(instance.getDateCreated(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(instance.getDateCreated(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1528,7 +1949,7 @@ public abstract class BaseInstanceResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(instance.getDateCreated()));
+				sb.append(_format.format(instance.getDateCreated()));
 			}
 
 			return sb.toString();
@@ -1536,20 +1957,18 @@ public abstract class BaseInstanceResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = instance.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(instance.getDateModified(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(instance.getDateModified(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1559,7 +1978,7 @@ public abstract class BaseInstanceResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(instance.getDateModified()));
+				sb.append(_format.format(instance.getDateModified()));
 			}
 
 			return sb.toString();
@@ -1660,7 +2079,8 @@ public abstract class BaseInstanceResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1722,21 +2142,21 @@ public abstract class BaseInstanceResourceTestCase {
 	}
 
 	protected InstanceResource instanceResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1745,11 +2165,16 @@ public abstract class BaseInstanceResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1781,6 +2206,24 @@ public abstract class BaseInstanceResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1802,16 +2245,6 @@ public abstract class BaseInstanceResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1909,7 +2342,9 @@ public abstract class BaseInstanceResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseInstanceResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private

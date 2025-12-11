@@ -7,6 +7,7 @@ package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -125,7 +126,7 @@ public class CPDefinitionServiceUtil {
 	}
 
 	public static CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId,
+			String externalReferenceCode, long cpDefinitionId, long groupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> shortDescriptionMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -156,19 +157,19 @@ public class CPDefinitionServiceUtil {
 		throws PortalException {
 
 		return getService().addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, nameMap, shortDescriptionMap,
-			descriptionMap, urlTitleMap, metaTitleMap, metaDescriptionMap,
-			metaKeywordsMap, productTypeName, ignoreSKUCombinations, shippable,
-			freeShipping, shipSeparately, shippingExtraPrice, width, height,
-			depth, weight, cpTaxCategoryId, taxExempt, telcoOrElectronics,
-			ddmStructureKey, published, displayDateMonth, displayDateDay,
-			displayDateYear, displayDateHour, displayDateMinute,
-			expirationDateMonth, expirationDateDay, expirationDateYear,
-			expirationDateHour, expirationDateMinute, neverExpire, defaultSku,
-			subscriptionEnabled, subscriptionLength, subscriptionType,
-			subscriptionTypeSettingsUnicodeProperties, maxSubscriptionCycles,
-			deliverySubscriptionEnabled, deliverySubscriptionLength,
-			deliverySubscriptionType,
+			externalReferenceCode, cpDefinitionId, groupId, nameMap,
+			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
+			metaDescriptionMap, metaKeywordsMap, productTypeName,
+			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
+			shippingExtraPrice, width, height, depth, weight, cpTaxCategoryId,
+			taxExempt, telcoOrElectronics, ddmStructureKey, published,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, expirationDateMonth, expirationDateDay,
+			expirationDateYear, expirationDateHour, expirationDateMinute,
+			neverExpire, defaultSku, subscriptionEnabled, subscriptionLength,
+			subscriptionType, subscriptionTypeSettingsUnicodeProperties,
+			maxSubscriptionCycles, deliverySubscriptionEnabled,
+			deliverySubscriptionLength, deliverySubscriptionType,
 			deliverySubscriptionTypeSettingsUnicodeProperties,
 			deliveryMaxSubscriptionCycles, status, serviceContext);
 	}
@@ -481,13 +482,11 @@ public class CPDefinitionServiceUtil {
 	}
 
 	public static CPDefinitionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CPDefinitionService service) {
-		_service = service;
-	}
-
-	private static volatile CPDefinitionService _service;
+	private static final Snapshot<CPDefinitionService> _serviceSnapshot =
+		new Snapshot<>(
+			CPDefinitionServiceUtil.class, CPDefinitionService.class);
 
 }

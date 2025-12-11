@@ -7,12 +7,8 @@ import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
-import {
-	createActionURL,
-	createResourceURL,
-	fetch,
-	openToast,
-} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {createActionURL, createResourceURL, fetch} from 'frontend-js-web';
 import React, {useContext, useEffect, useState} from 'react';
 
 import {AppContext} from '../../AppContext';
@@ -60,7 +56,7 @@ const EnvelopeDetail = ({
 			/>
 		</div>
 
-		<QuestionLine question={Liferay.Language.get('to')}>
+		<QuestionLine question={Liferay.Language.get('to[recipient]')}>
 			{concatValues(recipients?.signers.map(({email}) => email))}
 		</QuestionLine>
 
@@ -150,6 +146,7 @@ function EnvelopeView({
 		if (envelopeId) {
 			getEnvelope();
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [envelopeId]);
 
@@ -175,7 +172,7 @@ function EnvelopeView({
 				type="hidden"
 				value={createActionURL(baseResourceURL, {
 					'dsEnvelopeId': envelopeId,
-					'javax.portlet.action':
+					'jakarta.portlet.action':
 						'/digital_signature/delete_ds_envelope',
 					'p_auth': Liferay.authToken,
 				})}

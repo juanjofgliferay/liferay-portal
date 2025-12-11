@@ -24,6 +24,7 @@ import com.liferay.osb.faro.engine.client.model.Asset;
 import com.liferay.osb.faro.engine.client.model.Author;
 import com.liferay.osb.faro.engine.client.model.BlockedKeyword;
 import com.liferay.osb.faro.engine.client.model.Channel;
+import com.liferay.osb.faro.engine.client.model.ChannelDataSource;
 import com.liferay.osb.faro.engine.client.model.Credentials;
 import com.liferay.osb.faro.engine.client.model.DXPGroup;
 import com.liferay.osb.faro.engine.client.model.DXPOrganization;
@@ -46,6 +47,7 @@ import com.liferay.osb.faro.engine.client.model.IndividualTransformation;
 import com.liferay.osb.faro.engine.client.model.Interest;
 import com.liferay.osb.faro.engine.client.model.PageVisited;
 import com.liferay.osb.faro.engine.client.model.PagedModel;
+import com.liferay.osb.faro.engine.client.model.ProjectUsageMetric;
 import com.liferay.osb.faro.engine.client.model.Provider;
 import com.liferay.osb.faro.engine.client.model.Rels;
 import com.liferay.osb.faro.engine.client.model.Results;
@@ -65,12 +67,10 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -392,7 +392,9 @@ public class ContactsEngineClientImpl
 
 		post(
 			faroProject, Collections.emptyMap(), "/projects",
-			Collections.emptyMap(), new AsahProject(projectId), Void.class);
+			Collections.emptyMap(),
+			new AsahProject(projectId, faroProject.getLastAnniversaryDate()),
+			Void.class);
 
 		return projectId;
 	}
@@ -486,8 +488,10 @@ public class ContactsEngineClientImpl
 	}
 
 	@Override
-	public void deleteIndividualSegment(FaroProject faroProject, String id) {
-		delete(faroProject, Rels.INDIVIDUAL_SEGMENT, id);
+	public void deleteIndividualSegments(
+		FaroProject faroProject, List<String> ids) {
+
+		delete(faroProject, Rels.INDIVIDUAL_SEGMENTS, ids);
 	}
 
 	@Override
@@ -520,6 +524,15 @@ public class ContactsEngineClientImpl
 		throws FaroEngineClientException {
 
 		post(faroProject, Rels.DATA_SOURCE_DISCONNECT, id, Void.class);
+	}
+
+	@Override
+	public void disconnectDataSources(FaroProject faroProject)
+		throws FaroEngineClientException {
+
+		post(
+			faroProject, Rels.DATA_SOURCE_DISCONNECT_ALL, null, Void.class,
+			getUriVariables(faroProject));
 	}
 
 	@Override
@@ -967,6 +980,27 @@ public class ContactsEngineClientImpl
 		uriVariables.put("expand", "data-sources");
 
 		return get(faroProject, Rels.CHANNEL, id, Channel.class, uriVariables);
+	}
+
+	public Results<ChannelDataSource> getChannelDataSources(
+		FaroProject faroProject, Long dataSourceId, Boolean enabled,
+		String name, int cur, int delta, List<OrderByField> orderByFields) {
+
+		Map<String, Object> uriVariables = getUriVariables(
+			faroProject, cur, delta, orderByFields);
+
+		uriVariables.put("enabled", enabled);
+		uriVariables.put("id", dataSourceId);
+		uriVariables.put("name", name);
+
+		PagedModel<?, ChannelDataSource> pagedModel = get(
+			faroProject, Rels.CHANNEL_DATA_SOURCES,
+			new ParameterizedTypeReference
+				<EntityModelPagedModel<ChannelDataSource>>() {
+			},
+			uriVariables);
+
+		return pagedModel.getResults();
 	}
 
 	@Override
@@ -1664,6 +1698,21 @@ public class ContactsEngineClientImpl
 	}
 
 	@Override
+	public long getIdentitiesCount(FaroProject faroProject) {
+		RestTemplate restTemplate = getRestTemplate(faroProject);
+
+		ResponseEntity<Long> responseEntity = restTemplate.exchange(
+			getTemplatedURL(faroProject, Rels.IDENTITIES_COUNT), HttpMethod.GET,
+			HttpEntity.EMPTY, Long.class, getUriVariables(faroProject));
+
+		if (Validator.isNotNull(responseEntity.getBody())) {
+			return responseEntity.getBody();
+		}
+
+		return 0L;
+	}
+
+	@Override
 	public Individual getIndividual(
 			FaroProject faroProject, String id, String channelId)
 		throws FaroEngineClientException {
@@ -1907,24 +1956,26 @@ public class ContactsEngineClientImpl
 	}
 
 	@Override
-	public long getIndividualsCount(
-		FaroProject faroProject, boolean includeAnonymousUsers) {
+	public long getIndividualsCreatedBetweenCount(
+		FaroProject faroProject, Date endDate, Date startDate) {
 
 		Map<String, Object> uriVariables = getUriVariables(faroProject);
 
-		uriVariables.put("includeAnonymousUsers", includeAnonymousUsers);
+		uriVariables.put("endDate", endDate);
+		uriVariables.put("startDate", startDate);
 
 		RestTemplate restTemplate = getRestTemplate(faroProject);
 
 		ResponseEntity<Long> responseEntity = restTemplate.exchange(
-			getTemplatedURL(faroProject, Rels.INDIVIDUALS_COUNT),
+			getTemplatedURL(
+				faroProject, Rels.INDIVIDUALS_CREATED_BETWEEN_COUNT),
 			HttpMethod.GET, HttpEntity.EMPTY, Long.class, uriVariables);
 
-		if (Validator.isNotNull(responseEntity.getBody())) {
-			return responseEntity.getBody();
+		if (responseEntity.getBody() == null) {
+			return 0L;
 		}
 
-		return 0L;
+		return responseEntity.getBody();
 	}
 
 	@Override
@@ -2093,9 +2144,9 @@ public class ContactsEngineClientImpl
 	@Override
 	public Results<IndividualSegment> getIndividualSegments(
 		FaroProject faroProject, String channelId, String dataSourceId,
-		String query, List<String> fields, String name, String segmentType,
-		String state, String status, int cur, int delta,
-		List<OrderByField> orderByFields) {
+		String query, List<String> fields, String name,
+		List<String> segmentTypes, String state, String status, int cur,
+		int delta, List<OrderByField> orderByFields) {
 
 		PagedModel<?, IndividualSegment> pagedModel = null;
 
@@ -2119,12 +2170,23 @@ public class ContactsEngineClientImpl
 		}
 
 		filterBuilder.addFilter(
-			"type", FilterConstants.COMPARISON_OPERATOR_EQUALS, segmentType);
-		filterBuilder.addFilter(
 			"state", FilterConstants.COMPARISON_OPERATOR_EQUALS, state);
 		filterBuilder.addFilter(
 			"status", FilterConstants.COMPARISON_OPERATOR_EQUALS, status);
-		filterBuilder.addSearchFilter(query, fields, null);
+
+		if (segmentTypes != null) {
+			FilterBuilder segmentTypeFilterBuilder = new FilterBuilder();
+
+			for (String segmentType : segmentTypes) {
+				segmentTypeFilterBuilder.addFilter(
+					"type", FilterConstants.COMPARISON_OPERATOR_EQUALS,
+					segmentType, false);
+			}
+
+			filterBuilder.addFilter(segmentTypeFilterBuilder.build());
+		}
+
+		filterBuilder.addSearchFilter(query, fields, null, true);
 
 		uriVariables.put("filter", filterBuilder.build());
 
@@ -2194,11 +2256,13 @@ public class ContactsEngineClientImpl
 
 	@Override
 	public Results<String> getInterestKeywords(
-		FaroProject faroProject, String query, int cur, int delta) {
+		String channelId, FaroProject faroProject, String query, int cur,
+		int delta) {
 
 		Map<String, Object> uriVariables = getUriVariables(
 			faroProject, cur, delta, null);
 
+		uriVariables.put("channelId", channelId);
 		uriVariables.put("name", query);
 
 		PagedModel<?, String> pagedModel = get(
@@ -2235,6 +2299,13 @@ public class ContactsEngineClientImpl
 			uriVariables);
 
 		return pagedModel.getResults();
+	}
+
+	@Override
+	public Date getLastSeenDate(FaroProject faroProject) {
+		return get(
+			faroProject, Rels.PROJECTS_LAST_SEEN_DATE,
+			faroProject.getProjectId(), Date.class);
 	}
 
 	@Override
@@ -2278,6 +2349,80 @@ public class ContactsEngineClientImpl
 	}
 
 	@Override
+	public Results<ProjectUsageMetric> getProjectUsageMetrics(
+		FaroProject faroProject, Date sinceDate) {
+
+		PagedModel<?, ProjectUsageMetric> pagedModel = get(
+			faroProject, Rels.PROJECT_USAGE_METRICS,
+			new ParameterizedTypeReference
+				<EntityModelPagedModel<ProjectUsageMetric>>() {
+			},
+			HashMapBuilder.<String, Object>put(
+				"createDate", sinceDate
+			).build());
+
+		return pagedModel.getResults();
+	}
+
+	@Override
+	public long getReportsExportCSVCount(
+			FaroProject faroProject, String path,
+			Map<String, List<String>> queryParameters)
+		throws Exception {
+
+		return get(
+			faroProject, Collections.emptyMap(), path, queryParameters,
+			Long.class);
+	}
+
+	@Override
+	public long getSalesforceAccountsCount(
+		String dataSourceId, FaroProject faroProject) {
+
+		RestTemplate restTemplate = getRestTemplate(faroProject);
+
+		Map<String, Object> uriVariables = getUriVariables(faroProject);
+
+		if (!Validator.isBlank(dataSourceId)) {
+			uriVariables.put("dataSourceId", dataSourceId);
+		}
+
+		ResponseEntity<Long> responseEntity = restTemplate.exchange(
+			getTemplatedURL(
+				faroProject, Rels.SALESFORCE_ENTITIES_ACCOUNTS_COUNT),
+			HttpMethod.GET, HttpEntity.EMPTY, Long.class, uriVariables);
+
+		if (responseEntity.getBody() == null) {
+			return 0L;
+		}
+
+		return responseEntity.getBody();
+	}
+
+	@Override
+	public long getSalesforceUsersCount(
+		String dataSourceId, FaroProject faroProject) {
+
+		RestTemplate restTemplate = getRestTemplate(faroProject);
+
+		Map<String, Object> uriVariables = getUriVariables(faroProject);
+
+		if (!Validator.isBlank(dataSourceId)) {
+			uriVariables.put("dataSourceId", dataSourceId);
+		}
+
+		ResponseEntity<Long> responseEntity = restTemplate.exchange(
+			getTemplatedURL(faroProject, Rels.SALESFORCE_ENTITIES_USERS_COUNT),
+			HttpMethod.GET, HttpEntity.EMPTY, Long.class, uriVariables);
+
+		if (responseEntity.getBody() == null) {
+			return 0L;
+		}
+
+		return responseEntity.getBody();
+	}
+
+	@Override
 	public Results<String> getSessionValues(
 		FaroProject faroProject, String channelId, String fieldName,
 		String filter, String query, int cur, int delta) {
@@ -2314,6 +2459,25 @@ public class ContactsEngineClientImpl
 		List<OrderByField> orderByFields) {
 
 		return new Results<>();
+	}
+
+	@Override
+	public long getSyncedIndividualsCount(FaroProject faroProject) {
+		RestTemplate restTemplate = getRestTemplate(faroProject);
+
+		Map<String, Object> uriVariables = getUriVariables(faroProject);
+
+		uriVariables.put("includeSuppressed", true);
+
+		ResponseEntity<Long> responseEntity = restTemplate.exchange(
+			getTemplatedURL(faroProject, Rels.INDIVIDUALS_COUNT),
+			HttpMethod.GET, HttpEntity.EMPTY, Long.class, uriVariables);
+
+		if (responseEntity.getBody() == null) {
+			return 0L;
+		}
+
+		return responseEntity.getBody();
 	}
 
 	@Override
@@ -2371,6 +2535,24 @@ public class ContactsEngineClientImpl
 			uriVariables);
 
 		return pagedModel.getResults();
+	}
+
+	@Override
+	public void insertBQProjects(List<FaroProject> faroProjects)
+		throws Exception {
+
+		List<AsahProject> asahProjects = new ArrayList<>();
+
+		for (FaroProject faroProject : faroProjects) {
+			asahProjects.add(
+				new AsahProject(
+					faroProject.getProjectId(), faroProject.getStartDate()));
+		}
+
+		post(
+			faroProjects.get(0), Collections.emptyMap(), "/bq-projects",
+			Collections.emptyMap(), new AsahProject(asahProjects), Void.class,
+			Collections.emptyMap());
 	}
 
 	@Override
@@ -2541,6 +2723,17 @@ public class ContactsEngineClientImpl
 
 		return post(
 			faroProject, Rels.DATA_SOURCE_REFRESH_LIFERAY, null, List.class);
+	}
+
+	@Override
+	public void updateBQProject(FaroProject faroProject, Date startDate)
+		throws Exception {
+
+		patch(
+			faroProject, Collections.emptyMap(), "/bq-projects",
+			Collections.emptyMap(),
+			new AsahProject(faroProject.getProjectId(), startDate), Void.class,
+			Collections.emptyMap());
 	}
 
 	@Override
@@ -2724,12 +2917,6 @@ public class ContactsEngineClientImpl
 	private static final String _FARO_TEMP_FIELD = "faro_temp_field";
 
 	private static final int _PAYLOAD_MAX_BYTE_SIZE = 200000;
-
-	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference
 	private UserLocalService _userLocalService;

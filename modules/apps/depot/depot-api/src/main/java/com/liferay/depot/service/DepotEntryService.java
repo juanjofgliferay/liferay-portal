@@ -6,6 +6,7 @@
 package com.liferay.depot.service;
 
 import com.liferay.depot.model.DepotEntry;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
@@ -33,6 +34,7 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @AccessControlled
+@CTAware
 @JSONWebService
 @ProviderType
 @Transactional(
@@ -48,15 +50,18 @@ public interface DepotEntryService extends BaseService {
 	 */
 	public DepotEntry addDepotEntry(
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			ServiceContext serviceContext)
+			int type, ServiceContext serviceContext)
 		throws PortalException;
 
 	public DepotEntry deleteDepotEntry(long depotEntryId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DepotEntry fetchGroupDepotEntry(long groupId) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DepotEntry> getCurrentAndGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -69,11 +74,11 @@ public interface DepotEntryService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DepotEntry> getGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getGroupConnectedDepotEntriesCount(long groupId)
+	public int getGroupConnectedDepotEntriesCount(long groupId, int type)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)

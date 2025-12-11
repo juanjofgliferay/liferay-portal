@@ -31,6 +31,7 @@ import com.liferay.exportimport.kernel.lar.ManifestSummary;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerControl;
+import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelModifiedDateComparator;
@@ -42,7 +43,6 @@ import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalConstants;
 import com.liferay.journal.constants.JournalFolderConstants;
-import com.liferay.journal.internal.exportimport.creation.strategy.JournalCreationStrategy;
 import com.liferay.journal.internal.util.JournalUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalArticleResource;
@@ -57,7 +57,6 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -84,7 +83,6 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlEscapableObject;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -523,16 +521,18 @@ public class JournalArticleStagedModelDataHandler
 			articleElement.addAttribute("preloaded", "true");
 		}
 
-		if (FeatureFlagManagerUtil.isEnabled("LPS-165481")) {
-			ManifestSummary manifestSummary =
-				portletDataContext.getManifestSummary();
+		ManifestSummary manifestSummary =
+			portletDataContext.getManifestSummary();
 
-			manifestSummary.addAssetTitle(
-				JournalArticle.class.getName(),
-				article.getTitle(article.getDefaultLanguageId()));
+		manifestSummary.addAssetTitle(
+			JournalArticle.class.getName(),
+			article.getTitle(article.getDefaultLanguageId()));
+
+		if (!GetterUtil.getBoolean(
+				articleElement.attributeValue("articleAdded"))) {
+
+			_exportAssetDisplayPage(portletDataContext, article);
 		}
-
-		_exportAssetDisplayPage(portletDataContext, article);
 
 		_exportFriendlyURLEntries(portletDataContext, article);
 
@@ -622,13 +622,6 @@ public class JournalArticleStagedModelDataHandler
 
 		long userId = portletDataContext.getUserId(article.getUserUuid());
 
-		long authorId = _journalCreationStrategy.getAuthorUserId(
-			portletDataContext, article);
-
-		if (authorId != JournalCreationStrategy.USE_DEFAULT_USER_ID_STRATEGY) {
-			userId = authorId;
-		}
-
 		User user = _userLocalService.getUser(userId);
 
 		Map<Long, Long> folderIds =
@@ -662,18 +655,6 @@ public class JournalArticleStagedModelDataHandler
 
 			articleId = newArticleId;
 			autoArticleId = false;
-		}
-
-		String externalReferenceCode = article.getExternalReferenceCode();
-
-		JournalArticle articleByERC =
-			_journalArticleLocalService.
-				fetchLatestArticleByExternalReferenceCode(
-					portletDataContext.getScopeGroupId(),
-					externalReferenceCode);
-
-		if (articleByERC != null) {
-			externalReferenceCode = newArticleId;
 		}
 
 		String content = portletDataContext.getZipEntryAsString(
@@ -954,7 +935,7 @@ public class JournalArticleStagedModelDataHandler
 
 				if (existingArticleVersion == null) {
 					importedArticle = _journalArticleLocalService.addArticle(
-						externalReferenceCode, userId,
+						article.getExternalReferenceCode(), userId,
 						portletDataContext.getScopeGroupId(), folderId,
 						article.getClassNameId(), classPK, articleId,
 						autoArticleId, article.getVersion(),
@@ -1005,7 +986,11 @@ public class JournalArticleStagedModelDataHandler
 				}
 			}
 			else {
+				String externalReferenceCode =
+					article.getExternalReferenceCode();
+
 				if (Validator.isNull(newArticleId)) {
+					externalReferenceCode = StringPool.BLANK;
 					articleId = StringPool.BLANK;
 					autoArticleId = true;
 				}
@@ -1076,16 +1061,6 @@ public class JournalArticleStagedModelDataHandler
 					replaceImportContentReferences(
 						portletDataContext, article, content);
 
-			String newContent = _journalCreationStrategy.getTransformedContent(
-				portletDataContext, article);
-
-			if (!Objects.equals(
-					newContent,
-					JournalCreationStrategy.ARTICLE_CONTENT_UNCHANGED)) {
-
-				replacedContent = newContent;
-			}
-
 			if (!StringUtil.equals(replacedContent, content)) {
 				importedArticle = _journalArticleLocalService.updateArticle(
 					userId, importedArticle.getGroupId(), folderId,
@@ -1104,11 +1079,34 @@ public class JournalArticleStagedModelDataHandler
 					serviceContext);
 			}
 
-			_journalArticleLocalService.updateAsset(
-				userId, importedArticle, serviceContext.getAssetCategoryIds(),
-				serviceContext.getAssetTagNames(),
-				serviceContext.getAssetLinkEntryIds(),
-				serviceContext.getAssetPriority());
+			importedArticle.setModifiedDate(article.getModifiedDate());
+
+			if (!StringUtil.equals(
+					PortletDataHandlerKeys.DATA_STRATEGY_COPY_AS_NEW,
+					portletDataContext.getDataStrategy())) {
+
+				importedArticle.setExternalReferenceCode(
+					article.getExternalReferenceCode());
+			}
+
+			importedArticle.setStatusByUserId(article.getStatusByUserId());
+			importedArticle.setStatusByUserName(article.getStatusByUserName());
+
+			importedArticle = _journalArticleLocalService.updateJournalArticle(
+				importedArticle);
+
+			if (_isUpdateAsset(
+					importedArticle.getGroupId(),
+					importedArticle.getArticleId(),
+					importedArticle.getVersion())) {
+
+				_journalArticleLocalService.updateAsset(
+					userId, importedArticle,
+					serviceContext.getAssetCategoryIds(),
+					serviceContext.getAssetTagNames(),
+					serviceContext.getAssetLinkEntryIds(),
+					serviceContext.getAssetPriority());
+			}
 
 			if (article.isExpired() || importedArticle.isExpired()) {
 				_journalArticleLocalService.expireArticle(
@@ -1414,21 +1412,6 @@ public class JournalArticleStagedModelDataHandler
 		articleNewPrimaryKeys.put(
 			article.getResourcePrimKey(), importedArticle.getResourcePrimKey());
 
-		if (ListUtil.isEmpty(assetDisplayPageEntryElements)) {
-			AssetDisplayPageEntry existingAssetDisplayPageEntry =
-				_assetDisplayPageEntryLocalService.fetchAssetDisplayPageEntry(
-					importedArticle.getGroupId(),
-					_portal.getClassNameId(JournalArticle.class.getName()),
-					importedArticle.getResourcePrimKey());
-
-			if (existingAssetDisplayPageEntry != null) {
-				_assetDisplayPageEntryLocalService.deleteAssetDisplayPageEntry(
-					existingAssetDisplayPageEntry);
-			}
-
-			return;
-		}
-
 		for (Element assetDisplayPageEntryElement :
 				assetDisplayPageEntryElements) {
 
@@ -1541,6 +1524,19 @@ public class JournalArticleStagedModelDataHandler
 		return false;
 	}
 
+	private boolean _isUpdateAsset(
+		long groupId, String articleId, double version) {
+
+		JournalArticle article = _journalArticleLocalService.fetchLatestArticle(
+			groupId, articleId, WorkflowConstants.STATUS_APPROVED);
+
+		if ((article == null) || (version >= article.getVersion())) {
+			return true;
+		}
+
+		return false;
+	}
+
 	private void _sendUndeliveredUserNotificationEvents(
 		JournalArticle article, JournalArticle importedArticle,
 		ServiceContext serviceContext) {
@@ -1577,8 +1573,6 @@ public class JournalArticleStagedModelDataHandler
 						jsonObject.getString("className"));
 					subscriptionSender.setClassPK(
 						jsonObject.getLong("classPK"));
-					subscriptionSender.setCompanyId(
-						userNotificationEvent.getCompanyId());
 
 					Map<String, HashMap<String, Object>> contextMap =
 						(Map)_jsonFactory.looseDeserialize(
@@ -1812,9 +1806,6 @@ public class JournalArticleStagedModelDataHandler
 	@Reference
 	private JournalArticleResourceLocalService
 		_journalArticleResourceLocalService;
-
-	@Reference
-	private JournalCreationStrategy _journalCreationStrategy;
 
 	@Reference
 	private JSONFactory _jsonFactory;

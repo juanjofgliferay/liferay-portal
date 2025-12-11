@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -53,14 +52,24 @@ public class DisplayPageTemplate implements Serializable {
 			DisplayPageTemplate.class, json);
 	}
 
-	@Schema(description = "The display page template's content subtype.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The display page template's content subtype."
+	)
 	@Valid
 	public ContentSubtype getContentSubtype() {
+		if (_contentSubtypeSupplier != null) {
+			contentSubtype = _contentSubtypeSupplier.get();
+
+			_contentSubtypeSupplier = null;
+		}
+
 		return contentSubtype;
 	}
 
 	public void setContentSubtype(ContentSubtype contentSubtype) {
 		this.contentSubtype = contentSubtype;
+
+		_contentSubtypeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -68,74 +77,104 @@ public class DisplayPageTemplate implements Serializable {
 		UnsafeSupplier<ContentSubtype, Exception>
 			contentSubtypeUnsafeSupplier) {
 
-		try {
-			contentSubtype = contentSubtypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentSubtypeSupplier = () -> {
+			try {
+				return contentSubtypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The display page template's content subtype.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentSubtype contentSubtype;
 
-	@Schema(description = "The type of content.")
+	@JsonIgnore
+	private Supplier<ContentSubtype> _contentSubtypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The type of content."
+	)
 	@Valid
 	public ContentType getContentType() {
+		if (_contentTypeSupplier != null) {
+			contentType = _contentTypeSupplier.get();
+
+			_contentTypeSupplier = null;
+		}
+
 		return contentType;
 	}
 
 	public void setContentType(ContentType contentType) {
 		this.contentType = contentType;
+
+		_contentTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentType(
 		UnsafeSupplier<ContentType, Exception> contentTypeUnsafeSupplier) {
 
-		try {
-			contentType = contentTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentTypeSupplier = () -> {
+			try {
+				return contentTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The type of content.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentType contentType;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<ContentType> _contentTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Specifies if the page template should be the default for the given content type/subtype."
 	)
 	public Boolean getDefaultTemplate() {
+		if (_defaultTemplateSupplier != null) {
+			defaultTemplate = _defaultTemplateSupplier.get();
+
+			_defaultTemplateSupplier = null;
+		}
+
 		return defaultTemplate;
 	}
 
 	public void setDefaultTemplate(Boolean defaultTemplate) {
 		this.defaultTemplate = defaultTemplate;
+
+		_defaultTemplateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultTemplate(
 		UnsafeSupplier<Boolean, Exception> defaultTemplateUnsafeSupplier) {
 
-		try {
-			defaultTemplate = defaultTemplateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultTemplateSupplier = () -> {
+			try {
+				return defaultTemplateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -144,57 +183,90 @@ public class DisplayPageTemplate implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean defaultTemplate;
 
-	@Schema(description = "The display page template's key.")
+	@JsonIgnore
+	private Supplier<Boolean> _defaultTemplateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The display page template's key."
+	)
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The display page template's key.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String key;
 
-	@Schema(description = "The display page template's name.")
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The display page template's name."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The display page template's name.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
+
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -223,6 +295,8 @@ public class DisplayPageTemplate implements Serializable {
 
 		sb.append("{");
 
+		ContentSubtype contentSubtype = getContentSubtype();
+
 		if (contentSubtype != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -232,6 +306,8 @@ public class DisplayPageTemplate implements Serializable {
 
 			sb.append(String.valueOf(contentSubtype));
 		}
+
+		ContentType contentType = getContentType();
 
 		if (contentType != null) {
 			if (sb.length() > 1) {
@@ -243,6 +319,8 @@ public class DisplayPageTemplate implements Serializable {
 			sb.append(String.valueOf(contentType));
 		}
 
+		Boolean defaultTemplate = getDefaultTemplate();
+
 		if (defaultTemplate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -252,6 +330,8 @@ public class DisplayPageTemplate implements Serializable {
 
 			sb.append(defaultTemplate);
 		}
+
+		String key = getKey();
 
 		if (key != null) {
 			if (sb.length() > 1) {
@@ -266,6 +346,8 @@ public class DisplayPageTemplate implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -286,8 +368,8 @@ public class DisplayPageTemplate implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.DisplayPageTemplate",
 		name = "x-class-name"
 	)
@@ -333,7 +415,10 @@ public class DisplayPageTemplate implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

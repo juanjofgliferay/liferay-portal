@@ -2,6 +2,7 @@ create table SegmentsEntry (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	segmentsEntryId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -15,7 +16,6 @@ create table SegmentsEntry (
 	active_ BOOLEAN,
 	criteria TEXT null,
 	source VARCHAR(75) null,
-	type_ VARCHAR(75) null,
 	lastPublishDate DATE null,
 	primary key (segmentsEntryId, ctCollectionId)
 );
@@ -54,6 +54,7 @@ create table SegmentsExperience (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	segmentsExperienceId LONG not null,
 	groupId LONG,
 	companyId LONG,

@@ -29,16 +29,21 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.zip.ZipWriter;
 import com.liferay.portal.kernel.zip.ZipWriterFactory;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporter;
 import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporterRegistry;
 import com.liferay.translation.web.internal.helper.InfoItemHelper;
 import com.liferay.translation.web.internal.helper.TranslationRequestHelper;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -46,11 +51,6 @@ import java.io.InputStream;
 
 import java.util.Locale;
 import java.util.Set;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;

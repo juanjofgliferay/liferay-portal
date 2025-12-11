@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,114 +49,166 @@ public class ObjectFieldSetting implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ObjectFieldSetting.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getObjectFieldId() {
+		if (_objectFieldIdSupplier != null) {
+			objectFieldId = _objectFieldIdSupplier.get();
+
+			_objectFieldIdSupplier = null;
+		}
+
 		return objectFieldId;
 	}
 
 	public void setObjectFieldId(Long objectFieldId) {
 		this.objectFieldId = objectFieldId;
+
+		_objectFieldIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setObjectFieldId(
 		UnsafeSupplier<Long, Exception> objectFieldIdUnsafeSupplier) {
 
-		try {
-			objectFieldId = objectFieldIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectFieldIdSupplier = () -> {
+			try {
+				return objectFieldIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long objectFieldId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _objectFieldIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getValue() {
+		if (_valueSupplier != null) {
+			value = _valueSupplier.get();
+
+			_valueSupplier = null;
+		}
+
 		return value;
 	}
 
 	public void setValue(Object value) {
 		this.value = value;
+
+		_valueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValue(
 		UnsafeSupplier<Object, Exception> valueUnsafeSupplier) {
 
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valueSupplier = () -> {
+			try {
+				return valueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object value;
+
+	@JsonIgnore
+	private Supplier<Object> _valueSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -186,6 +237,8 @@ public class ObjectFieldSetting implements Serializable {
 
 		sb.append("{");
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -195,6 +248,8 @@ public class ObjectFieldSetting implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -210,6 +265,8 @@ public class ObjectFieldSetting implements Serializable {
 			sb.append("\"");
 		}
 
+		Long objectFieldId = getObjectFieldId();
+
 		if (objectFieldId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -219,6 +276,8 @@ public class ObjectFieldSetting implements Serializable {
 
 			sb.append(objectFieldId);
 		}
+
+		Object value = getValue();
 
 		if (value != null) {
 			if (sb.length() > 1) {
@@ -245,8 +304,8 @@ public class ObjectFieldSetting implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.object.admin.rest.dto.v1_0.ObjectFieldSetting",
 		name = "x-class-name"
 	)
@@ -292,7 +351,10 @@ public class ObjectFieldSetting implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -578,6 +578,15 @@ public class MicroblogsEntryPersistenceImpl
 			return findByCompanyId(companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCompanyId(
+					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -615,7 +624,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -811,7 +821,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -931,6 +942,15 @@ public class MicroblogsEntryPersistenceImpl
 	public int filterCountByCompanyId(long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByCompanyId(companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByCompanyId(
+				companyId);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(2);
@@ -1451,6 +1471,15 @@ public class MicroblogsEntryPersistenceImpl
 			return findByUserId(userId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUserId(
+					userId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -1488,7 +1517,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -1684,7 +1714,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -1804,6 +1835,14 @@ public class MicroblogsEntryPersistenceImpl
 	public int filterCountByUserId(long userId) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByUserId(userId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByUserId(userId);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(2);
@@ -2363,6 +2402,15 @@ public class MicroblogsEntryPersistenceImpl
 			return findByU_T(userId, type, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByU_T(
+					userId, type, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -2402,7 +2450,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -2605,7 +2654,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -2734,6 +2784,14 @@ public class MicroblogsEntryPersistenceImpl
 	public int filterCountByU_T(long userId, int type) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByU_T(userId, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByU_T(userId, type);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -3322,6 +3380,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCCNI_CCPK(
+					creatorClassNameId, creatorClassPK, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -3361,7 +3428,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -3567,7 +3635,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -3677,6 +3746,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCCNI_CCPK(
+					creatorClassNameId, creatorClassPKs, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		if (creatorClassPKs == null) {
 			creatorClassPKs = new long[0];
 		}
@@ -3728,7 +3806,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -4139,6 +4218,15 @@ public class MicroblogsEntryPersistenceImpl
 			return countByCCNI_CCPK(creatorClassNameId, creatorClassPK);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByCCNI_CCPK(
+				creatorClassNameId, creatorClassPK);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
+		}
+
 		StringBundler sb = new StringBundler(3);
 
 		sb.append(_FILTER_SQL_COUNT_MICROBLOGSENTRY_WHERE);
@@ -4192,6 +4280,14 @@ public class MicroblogsEntryPersistenceImpl
 
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByCCNI_CCPK(creatorClassNameId, creatorClassPKs);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries =
+				InlineSQLHelperUtil.filter(
+					findByCCNI_CCPK(creatorClassNameId, creatorClassPKs));
+
+			return microblogsEntries.size();
 		}
 
 		if (creatorClassPKs == null) {
@@ -4789,6 +4885,15 @@ public class MicroblogsEntryPersistenceImpl
 				creatorClassNameId, type, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCCNI_T(
+					creatorClassNameId, type, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -4828,7 +4933,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -5032,7 +5138,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -5162,6 +5269,15 @@ public class MicroblogsEntryPersistenceImpl
 	public int filterCountByCCNI_T(long creatorClassNameId, int type) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByCCNI_T(creatorClassNameId, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByCCNI_T(
+				creatorClassNameId, type);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -5741,6 +5857,15 @@ public class MicroblogsEntryPersistenceImpl
 				type, parentMicroblogsEntryId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByT_P(
+					type, parentMicroblogsEntryId, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -5780,7 +5905,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -5985,7 +6111,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -6115,6 +6242,15 @@ public class MicroblogsEntryPersistenceImpl
 	public int filterCountByT_P(int type, long parentMicroblogsEntryId) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByT_P(type, parentMicroblogsEntryId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByT_P(
+				type, parentMicroblogsEntryId);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -6736,6 +6872,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_CCNI_CCPK(
+					companyId, creatorClassNameId, creatorClassPK,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -6777,7 +6922,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -6988,7 +7134,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -7105,6 +7252,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_CCNI_CCPK(
+					companyId, creatorClassNameId, creatorClassPKs,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		if (creatorClassPKs == null) {
 			creatorClassPKs = new long[0];
 		}
@@ -7158,7 +7314,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -7601,6 +7758,15 @@ public class MicroblogsEntryPersistenceImpl
 				companyId, creatorClassNameId, creatorClassPK);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByC_CCNI_CCPK(
+				companyId, creatorClassNameId, creatorClassPK);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
+		}
+
 		StringBundler sb = new StringBundler(4);
 
 		sb.append(_FILTER_SQL_COUNT_MICROBLOGSENTRY_WHERE);
@@ -7660,6 +7826,15 @@ public class MicroblogsEntryPersistenceImpl
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_CCNI_CCPK(
 				companyId, creatorClassNameId, creatorClassPKs);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries =
+				InlineSQLHelperUtil.filter(
+					findByC_CCNI_CCPK(
+						companyId, creatorClassNameId, creatorClassPKs));
+
+			return microblogsEntries.size();
 		}
 
 		if (creatorClassPKs == null) {
@@ -8298,6 +8473,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_CCNI_T(
+					companyId, creatorClassNameId, type, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -8339,7 +8523,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -8549,7 +8734,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -8696,6 +8882,15 @@ public class MicroblogsEntryPersistenceImpl
 
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_CCNI_T(companyId, creatorClassNameId, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByC_CCNI_T(
+				companyId, creatorClassNameId, type);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(4);
@@ -9323,6 +9518,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCCNI_CCPK_T(
+					creatorClassNameId, creatorClassPK, type, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -9364,7 +9568,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -9575,7 +9780,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -9691,6 +9897,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCCNI_CCPK_T(
+					creatorClassNameId, creatorClassPKs, type,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		if (creatorClassPKs == null) {
 			creatorClassPKs = new long[0];
 		}
@@ -9746,7 +9961,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -10189,6 +10405,15 @@ public class MicroblogsEntryPersistenceImpl
 			return countByCCNI_CCPK_T(creatorClassNameId, creatorClassPK, type);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByCCNI_CCPK_T(
+				creatorClassNameId, creatorClassPK, type);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
+		}
+
 		StringBundler sb = new StringBundler(4);
 
 		sb.append(_FILTER_SQL_COUNT_MICROBLOGSENTRY_WHERE);
@@ -10248,6 +10473,15 @@ public class MicroblogsEntryPersistenceImpl
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByCCNI_CCPK_T(
 				creatorClassNameId, creatorClassPKs, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries =
+				InlineSQLHelperUtil.filter(
+					findByCCNI_CCPK_T(
+						creatorClassNameId, creatorClassPKs, type));
+
+			return microblogsEntries.size();
 		}
 
 		if (creatorClassPKs == null) {
@@ -10936,6 +11170,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_CCNI_CCPK_T(
+					companyId, creatorClassNameId, creatorClassPK, type,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -10979,7 +11222,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -11195,7 +11439,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -11319,6 +11564,15 @@ public class MicroblogsEntryPersistenceImpl
 				end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_CCNI_CCPK_T(
+					companyId, creatorClassNameId, creatorClassPKs, type,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		if (creatorClassPKs == null) {
 			creatorClassPKs = new long[0];
 		}
@@ -11376,7 +11630,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -11854,6 +12109,15 @@ public class MicroblogsEntryPersistenceImpl
 				companyId, creatorClassNameId, creatorClassPK, type);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByC_CCNI_CCPK_T(
+				companyId, creatorClassNameId, creatorClassPK, type);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
+		}
+
 		StringBundler sb = new StringBundler(5);
 
 		sb.append(_FILTER_SQL_COUNT_MICROBLOGSENTRY_WHERE);
@@ -11919,6 +12183,15 @@ public class MicroblogsEntryPersistenceImpl
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_CCNI_CCPK_T(
 				companyId, creatorClassNameId, creatorClassPKs, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries =
+				InlineSQLHelperUtil.filter(
+					findByC_CCNI_CCPK_T(
+						companyId, creatorClassNameId, creatorClassPKs, type));
+
+			return microblogsEntries.size();
 		}
 
 		if (creatorClassPKs == null) {
@@ -12629,6 +12902,15 @@ public class MicroblogsEntryPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByU_C_T_S(
+					userId, createDate, type, socialRelationType,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -12681,7 +12963,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -12908,7 +13191,8 @@ public class MicroblogsEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(MicroblogsEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					MicroblogsEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(MicroblogsEntryModelImpl.ORDER_BY_SQL);
@@ -13077,6 +13361,15 @@ public class MicroblogsEntryPersistenceImpl
 
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByU_C_T_S(userId, createDate, type, socialRelationType);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<MicroblogsEntry> microblogsEntries = findByU_C_T_S(
+				userId, createDate, type, socialRelationType);
+
+			microblogsEntries = InlineSQLHelperUtil.filter(microblogsEntries);
+
+			return microblogsEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(5);

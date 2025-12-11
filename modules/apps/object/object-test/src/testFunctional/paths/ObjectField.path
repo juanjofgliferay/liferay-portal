@@ -13,8 +13,18 @@
 		<td></td>
 	</tr>
 	<tr>
+		<td>BUTTON_FIELD_ENTRY_LANGUAGE</td>
+		<td>//button[contains(@class, 'dropdown-toggle btn btn-monospaced btn-secondary')]//span[contains(.,'${key_buttonFieldEntryLanguage}')]</td>
+		<td></td>
+	</tr>
+	<tr>
 		<td>DOCUMENT_NAME</td>
 		<td>//p[contains(@class,'card-title text-truncate')]//a</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENABLE_ENTRY_TRANSLATION_TOGGLE</td>
+		<td>//input[@name="enableEntryTranslations"]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -154,7 +164,7 @@
 	</tr>
 	<tr>
 		<td>SOURCE_FIELD</td>
-		<td>//div[contains(@class, 'dnd-tr') and contains(., '${key_label}') and contains(., '${key_source}')]</td>
+		<td>//tr[contains(., '${key_label}') and contains(., '${key_source}')]</td>
 		<td></td>
 	</tr>
 	<tr>

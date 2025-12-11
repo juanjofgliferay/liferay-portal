@@ -25,13 +25,19 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -48,7 +54,6 @@ import java.lang.reflect.InvocationHandler;
 
 import java.sql.Timestamp;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -600,6 +605,15 @@ public class CommerceDiscountPersistenceImpl
 			return findByUuid(uuid, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid(
+					uuid, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -648,7 +662,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -858,7 +873,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -994,6 +1010,14 @@ public class CommerceDiscountPersistenceImpl
 	public int filterCountByUuid(String uuid) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByUuid(uuid);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByUuid(uuid);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -1605,6 +1629,15 @@ public class CommerceDiscountPersistenceImpl
 			return findByUuid_C(uuid, companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid_C(
+					uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -1655,7 +1688,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -1872,7 +1906,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -2019,6 +2054,15 @@ public class CommerceDiscountPersistenceImpl
 	public int filterCountByUuid_C(String uuid, long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByUuid_C(uuid, companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByUuid_C(
+				uuid, companyId);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -2576,6 +2620,15 @@ public class CommerceDiscountPersistenceImpl
 			return findByCompanyId(companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCompanyId(
+					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -2613,7 +2666,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -2810,7 +2864,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -2932,6 +2987,15 @@ public class CommerceDiscountPersistenceImpl
 	public int filterCountByCompanyId(long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByCompanyId(companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByCompanyId(
+				companyId);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
 		}
 
 		StringBundler sb = new StringBundler(2);
@@ -3523,6 +3587,15 @@ public class CommerceDiscountPersistenceImpl
 				companyId, couponCode, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_C(
+					companyId, couponCode, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		couponCode = Objects.toString(couponCode, "");
 
 		StringBundler sb = null;
@@ -3573,7 +3646,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -3791,7 +3865,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -3938,6 +4013,15 @@ public class CommerceDiscountPersistenceImpl
 	public int filterCountByC_C(long companyId, String couponCode) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_C(companyId, couponCode);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByC_C(
+				companyId, couponCode);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
 		}
 
 		couponCode = Objects.toString(couponCode, "");
@@ -4538,6 +4622,15 @@ public class CommerceDiscountPersistenceImpl
 				displayDate, status, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByLtD_S(
+					displayDate, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -4586,7 +4679,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -4801,7 +4895,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -4946,6 +5041,15 @@ public class CommerceDiscountPersistenceImpl
 	public int filterCountByLtD_S(Date displayDate, int status) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByLtD_S(displayDate, status);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByLtD_S(
+				displayDate, status);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -5544,6 +5648,15 @@ public class CommerceDiscountPersistenceImpl
 				expirationDate, status, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByLtE_S(
+					expirationDate, status, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -5592,7 +5705,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -5807,7 +5921,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -5954,6 +6069,15 @@ public class CommerceDiscountPersistenceImpl
 			return countByLtE_S(expirationDate, status);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByLtE_S(
+				expirationDate, status);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
+		}
+
 		StringBundler sb = new StringBundler(3);
 
 		sb.append(_FILTER_SQL_COUNT_COMMERCEDISCOUNT_WHERE);
@@ -6015,7 +6139,6 @@ public class CommerceDiscountPersistenceImpl
 		"commerceDiscount.status = ?";
 
 	private FinderPath _finderPathFetchByC_C_A;
-	private FinderPath _finderPathCountByC_C_A;
 
 	/**
 	 * Returns the commerce discount where companyId = &#63; and couponCode = &#63; and active = &#63; or throws a <code>NoSuchDiscountException</code> if it could not be found.
@@ -6163,23 +6286,6 @@ public class CommerceDiscountPersistenceImpl
 					}
 				}
 				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
-
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {
-									companyId, couponCode, active
-								};
-							}
-
-							_log.warn(
-								"CommerceDiscountPersistenceImpl.fetchByC_C_A(long, String, boolean, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
-						}
-					}
-
 					CommerceDiscount commerceDiscount = list.get(0);
 
 					result = commerceDiscount;
@@ -6232,66 +6338,14 @@ public class CommerceDiscountPersistenceImpl
 	 */
 	@Override
 	public int countByC_C_A(long companyId, String couponCode, boolean active) {
-		couponCode = Objects.toString(couponCode, "");
+		CommerceDiscount commerceDiscount = fetchByC_C_A(
+			companyId, couponCode, active);
 
-		FinderPath finderPath = _finderPathCountByC_C_A;
-
-		Object[] finderArgs = new Object[] {companyId, couponCode, active};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_COMMERCEDISCOUNT_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_C_A_COMPANYID_2);
-
-			boolean bindCouponCode = false;
-
-			if (couponCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_C_A_COUPONCODE_3);
-			}
-			else {
-				bindCouponCode = true;
-
-				sb.append(_FINDER_COLUMN_C_C_A_COUPONCODE_2);
-			}
-
-			sb.append(_FINDER_COLUMN_C_C_A_ACTIVE_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindCouponCode) {
-					queryPos.add(StringUtil.toLowerCase(couponCode));
-				}
-
-				queryPos.add(active);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceDiscount == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_C_A_COMPANYID_2 =
@@ -6922,6 +6976,15 @@ public class CommerceDiscountPersistenceImpl
 				orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_L_A_S(
+					companyId, level, active, status, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		level = Objects.toString(level, "");
 
 		StringBundler sb = null;
@@ -6976,7 +7039,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -7206,7 +7270,8 @@ public class CommerceDiscountPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(CommerceDiscountModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					CommerceDiscountModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(CommerceDiscountModelImpl.ORDER_BY_SQL);
@@ -7379,6 +7444,15 @@ public class CommerceDiscountPersistenceImpl
 			return countByC_L_A_S(companyId, level, active, status);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<CommerceDiscount> commerceDiscounts = findByC_L_A_S(
+				companyId, level, active, status);
+
+			commerceDiscounts = InlineSQLHelperUtil.filter(commerceDiscounts);
+
+			return commerceDiscounts.size();
+		}
+
 		level = Objects.toString(level, "");
 
 		StringBundler sb = new StringBundler(5);
@@ -7465,7 +7539,6 @@ public class CommerceDiscountPersistenceImpl
 		"commerceDiscount.status = ?";
 
 	private FinderPath _finderPathFetchByERC_C;
-	private FinderPath _finderPathCountByERC_C;
 
 	/**
 	 * Returns the commerce discount where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchDiscountException</code> if it could not be found.
@@ -7653,62 +7726,14 @@ public class CommerceDiscountPersistenceImpl
 	 */
 	@Override
 	public int countByERC_C(String externalReferenceCode, long companyId) {
-		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+		CommerceDiscount commerceDiscount = fetchByERC_C(
+			externalReferenceCode, companyId);
 
-		FinderPath finderPath = _finderPathCountByERC_C;
-
-		Object[] finderArgs = new Object[] {externalReferenceCode, companyId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COMMERCEDISCOUNT_WHERE);
-
-			boolean bindExternalReferenceCode = false;
-
-			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
-			}
-			else {
-				bindExternalReferenceCode = true;
-
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
-			}
-
-			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindExternalReferenceCode) {
-					queryPos.add(externalReferenceCode);
-				}
-
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceDiscount == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
@@ -7844,7 +7869,6 @@ public class CommerceDiscountPersistenceImpl
 			commerceDiscountModelImpl.isActive()
 		};
 
-		finderCache.putResult(_finderPathCountByC_C_A, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByC_C_A, args, commerceDiscountModelImpl);
 
@@ -7853,7 +7877,6 @@ public class CommerceDiscountPersistenceImpl
 			commerceDiscountModelImpl.getCompanyId()
 		};
 
-		finderCache.putResult(_finderPathCountByERC_C, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByERC_C, args, commerceDiscountModelImpl);
 	}
@@ -8001,6 +8024,40 @@ public class CommerceDiscountPersistenceImpl
 				commerceDiscount.getUuid());
 		}
 		else {
+			if (!Objects.equals(
+					commerceDiscountModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					commerceDiscount.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = commerceDiscount.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = commerceDiscount.getPrimaryKey();
+					}
+
+					try {
+						commerceDiscount.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								CommerceDiscount.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								commerceDiscount.getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
 			CommerceDiscount ercCommerceDiscount = fetchByERC_C(
 				commerceDiscount.getExternalReferenceCode(),
 				commerceDiscount.getCompanyId());
@@ -8473,14 +8530,6 @@ public class CommerceDiscountPersistenceImpl
 			},
 			new String[] {"companyId", "couponCode", "active_"}, true);
 
-		_finderPathCountByC_C_A = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C_A",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				Boolean.class.getName()
-			},
-			new String[] {"companyId", "couponCode", "active_"}, false);
-
 		_finderPathWithPaginationFindByC_L_A_S = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_L_A_S",
 			new String[] {
@@ -8512,11 +8561,6 @@ public class CommerceDiscountPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"externalReferenceCode", "companyId"}, true);
-
-		_finderPathCountByERC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByERC_C",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"externalReferenceCode", "companyId"}, false);
 
 		CommerceDiscountUtil.setPersistence(this);
 	}

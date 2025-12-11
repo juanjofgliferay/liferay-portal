@@ -10,14 +10,14 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.portal.kernel.exception.PortalException;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Iván Zaera
@@ -47,6 +47,8 @@ public interface DLViewFileVersionDisplayContext extends DLDisplayContext {
 	public default String getIconFileMimeType() {
 		return "document-default";
 	}
+
+	public boolean hasApprovedVersion();
 
 	public default boolean hasCustomThumbnail() {
 		return false;

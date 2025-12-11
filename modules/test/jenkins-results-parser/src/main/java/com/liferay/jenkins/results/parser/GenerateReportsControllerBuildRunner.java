@@ -13,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Kenji Heigel
@@ -125,49 +129,61 @@ public class GenerateReportsControllerBuildRunner
 		_updateBuildDescription(reportNames);
 	}
 
-	private String _getBuildDescription(Build build) {
-		String buildDescription = build.getBuildDescription();
+	private Map<String, JSONObject> _getBuildJSONObjectsMap() {
+		Map<String, JSONObject> buildJSONObjectsMap = new HashMap<>();
 
-		if (buildDescription == null) {
-			return "";
-		}
-
-		return buildDescription;
-	}
-
-	private List<Build> _getBuildHistory() {
 		BuildData buildData = getBuildData();
 
-		Build build = BuildFactory.newBuild(buildData.getBuildURL(), null);
+		StringBuilder sb = new StringBuilder();
 
-		Job job = JobFactory.newJob(buildData.getJobName());
+		sb.append(JenkinsResultsParserUtil.getLocalURL(buildData.getJobURL()));
+		sb.append("/api/json?tree=builds[description,timestamp,url]");
 
-		return job.getBuildHistory(build.getJenkinsMaster());
+		try {
+			JSONObject jsonObject = JenkinsResultsParserUtil.toJSONObject(
+				sb.toString(), false);
+
+			JSONArray buildsJSONArray = jsonObject.getJSONArray("builds");
+
+			for (int i = 0; i < buildsJSONArray.length(); i++) {
+				JSONObject buildJSONObject = buildsJSONArray.getJSONObject(i);
+
+				buildJSONObjectsMap.put(
+					buildJSONObject.getString("url"), buildJSONObject);
+			}
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException("Unable to get job JSON", ioException);
+		}
+
+		return buildJSONObjectsMap;
 	}
 
 	private Map<String, Long> _getLatestReportUpdateTimes() {
-		List<Build> builds = _getBuildHistory();
+		Map<String, Long> latestReportUpdateTimes = new HashMap<>();
+
+		Map<String, JSONObject> buildJSONObjectsMap = _getBuildJSONObjectsMap();
 
 		BuildData buildData = getBuildData();
 
-		Build currentBuild = BuildFactory.newBuild(
-			buildData.getBuildURL(), null);
-
-		builds.remove(currentBuild);
-
-		Map<String, Long> latestReportUpdateTimes = new HashMap<>();
+		buildJSONObjectsMap.remove(buildData.getBuildURL());
 
 		for (GenerateReportsBuildRunner.Report report :
 				GenerateReportsBuildRunner.Report.values()) {
 
 			String reportName = report.toString();
 
-			for (Build build : builds) {
-				String buildDescription = _getBuildDescription(build);
+			for (Map.Entry<String, JSONObject> entry :
+					buildJSONObjectsMap.entrySet()) {
+
+				JSONObject buildJSONObject = entry.getValue();
+
+				String buildDescription = buildJSONObject.optString(
+					"description", "");
 
 				if (buildDescription.contains(reportName)) {
 					latestReportUpdateTimes.put(
-						reportName, build.getStartTime());
+						reportName, buildJSONObject.getLong("timestamp"));
 
 					break;
 				}
@@ -179,9 +195,11 @@ public class GenerateReportsControllerBuildRunner
 
 			String reportName = report.toString();
 
+			long defaultStartTime =
+				buildData.getStartTime() - _getReportStaleDuration(reportName);
+
 			if (!latestReportUpdateTimes.containsKey(reportName)) {
-				latestReportUpdateTimes.put(
-					reportName, _getReportStaleDuration(reportName));
+				latestReportUpdateTimes.put(reportName, defaultStartTime);
 			}
 		}
 
@@ -206,7 +224,7 @@ public class GenerateReportsControllerBuildRunner
 			return _DEFAULT_REPORT_STALE_DURATION;
 		}
 
-		return Long.parseLong(reportStaleDuration);
+		return TimeUnit.MINUTES.toMillis(Long.parseLong(reportStaleDuration));
 	}
 
 	private List<String> _getSelectedReportNames() {
@@ -231,6 +249,15 @@ public class GenerateReportsControllerBuildRunner
 			long reportStaleDuration = startTime - entry.getValue();
 
 			if (reportStaleDuration >= _getReportStaleDuration(reportName)) {
+				System.out.println(
+					JenkinsResultsParserUtil.combine(
+						reportName, " was last generated ",
+						JenkinsResultsParserUtil.toDurationString(
+							reportStaleDuration),
+						" ago which exceeds the stale duration of ",
+						JenkinsResultsParserUtil.toDurationString(
+							_getReportStaleDuration(reportName))));
+
 				_selectedReportNames.add(reportName);
 			}
 		}

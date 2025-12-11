@@ -37,6 +37,8 @@ public class ServiceBuilderAddressUtil {
 		Address address = AddressLocalServiceUtil.createAddress(
 			GetterUtil.getLong(postalAddress.getId()));
 
+		address.setExternalReferenceCode(
+			postalAddress.getExternalReferenceCode());
 		address.setCountryId(countryId);
 		address.setListTypeId(
 			ServiceBuilderListTypeUtil.toServiceBuilderListTypeId(
@@ -46,10 +48,12 @@ public class ServiceBuilderAddressUtil {
 				postalAddress.getAddressRegion(), countryId));
 		address.setCity(city);
 		address.setMailing(true);
+		address.setName(postalAddress.getName());
 		address.setPrimary(GetterUtil.getBoolean(postalAddress.getPrimary()));
 		address.setStreet1(street1);
 		address.setStreet2(street2);
 		address.setStreet3(street3);
+		address.setSubtype(postalAddress.getAddressSubtype());
 		address.setZip(zip);
 
 		return address;

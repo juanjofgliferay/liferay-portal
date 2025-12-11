@@ -40,6 +40,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -173,6 +174,7 @@ import net.sf.jsqlparser.statement.truncate.Truncate;
 import net.sf.jsqlparser.statement.update.Update;
 import net.sf.jsqlparser.statement.upsert.Upsert;
 import net.sf.jsqlparser.statement.values.ValuesStatement;
+import net.sf.jsqlparser.util.TablesNamesFinder;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -197,12 +199,11 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 
 		_readTransformedSQLsFile();
 
-		_ctServiceServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				_bundleContext, (Class<CTService<?>>)(Class<?>)CTService.class,
-				null,
-				ServiceReferenceMapperFactory.createFromFunction(
-					_bundleContext, CTService::getModelClass));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			_bundleContext, (Class<CTService<?>>)(Class<?>)CTService.class,
+			null,
+			ServiceReferenceMapperFactory.createFromFunction(
+				_bundleContext, CTService::getModelClass));
 
 		_releaseServiceTracker = new ServiceTracker<>(
 			_bundleContext,
@@ -220,19 +221,13 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 	public void deactivate() {
 		_writeTransformedSQLsFile();
 
-		_ctServiceServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 
 		_releaseServiceTracker.close();
 	}
 
 	@Override
 	public String transform(String sql) {
-		if (CTSQLModeThreadLocal.getCTSQLMode() ==
-				CTSQLModeThreadLocal.CTSQLMode.CT_ALL) {
-
-			return sql;
-		}
-
 		long ctCollectionId = CTCollectionThreadLocal.getCTCollectionId();
 
 		String transformedSQL = null;
@@ -422,11 +417,10 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 	private static final JSqlParser _jSqlParser = new CCJSqlParserManager();
 
 	private BundleContext _bundleContext;
-	private ServiceTrackerMap<Class<?>, CTService<?>>
-		_ctServiceServiceTrackerMap;
 	private PortalCache<String, String> _ctTransformedSQLsPortalCache;
 	private PortalCache<String, String> _productionTransformedSQLsPortalCache;
 	private ServiceTracker<?, ?> _releaseServiceTracker;
+	private ServiceTrackerMap<Class<?>, CTService<?>> _serviceTrackerMap;
 
 	private abstract static class BaseStatementVisitor
 		implements ExpressionVisitor, FromItemVisitor, ItemsListVisitor,
@@ -1157,6 +1151,38 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 		protected boolean allowNull;
 		protected final long ctCollectionId;
 
+		private boolean _includeCTExpression(
+			Expression whereExpression, TableWrapper tableWrapper) {
+
+			Iterator<TableWrapper> iterator = _tableWrappers.iterator();
+
+			if (iterator.hasNext()) {
+				TableWrapper fromTableWrapper = iterator.next();
+
+				if (fromTableWrapper.equals(tableWrapper)) {
+					return true;
+				}
+			}
+
+			if (whereExpression == null) {
+				return false;
+			}
+
+			List<String> tableNames = _tablesNamesFinder.getTableList(
+				whereExpression);
+
+			Table table = tableWrapper._table;
+
+			if (tableNames.contains(table.getName()) ||
+				tableNames.contains(
+					StringUtil.trim(String.valueOf(table.getAlias())))) {
+
+				return true;
+			}
+
+			return false;
+		}
+
 		private void _visit(BinaryExpression binaryExpression) {
 			Deque<Expression> deque = new LinkedList<>();
 
@@ -1180,6 +1206,8 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 		}
 
 		private Expression _visit(Expression whereExpression) {
+			Expression originalWhereExpression = whereExpression;
+
 			if (whereExpression != null) {
 				whereExpression.accept(this);
 			}
@@ -1190,7 +1218,10 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 				CTModelRegistration ctModelRegistration =
 					CTModelRegistry.getCTModelRegistration(table.getName());
 
-				if (ctModelRegistration != null) {
+				if ((ctModelRegistration != null) &&
+					_includeCTExpression(
+						originalWhereExpression, tableWrapper)) {
+
 					Expression ctExpression = getWhereExpression(
 						table, ctModelRegistration);
 
@@ -1207,6 +1238,8 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 			return whereExpression;
 		}
 
+		private final TablesNamesFinder _tablesNamesFinder =
+			new TablesNamesFinder();
 		private final Set<TableWrapper> _tableWrappers = new LinkedHashSet<>();
 
 	}
@@ -1361,7 +1394,7 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 
 			SelectBody selectBody = ctEntryPlainSelect;
 
-			CTService<?> ctService = _ctServiceServiceTrackerMap.getService(
+			CTService<?> ctService = _serviceTrackerMap.getService(
 				ctModelRegistration.getModelClass());
 
 			List<String[]> uniqueIndexColumnNames = Collections.emptyList();
@@ -1476,11 +1509,12 @@ public class CTSQLTransformerImpl implements CTSQLTransformer {
 					equalsTo(
 						new Column(table, "ctCollectionId"),
 						new LongValue(ctCollectionId)),
-					new AndExpression(
-						equalsTo(
-							new Column(table, "ctCollectionId"),
-							new LongValue("0")),
-						inExpression)));
+					new Parenthesis(
+						new AndExpression(
+							equalsTo(
+								new Column(table, "ctCollectionId"),
+								new LongValue("0")),
+							inExpression))));
 		}
 
 		private final CTSQLModeThreadLocal.CTSQLMode _ctSQLMode;

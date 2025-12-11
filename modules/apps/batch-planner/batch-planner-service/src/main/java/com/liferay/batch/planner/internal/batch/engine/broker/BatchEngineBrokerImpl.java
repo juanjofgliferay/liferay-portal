@@ -29,6 +29,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 
+import jakarta.ws.rs.core.UriInfo;
+
 import java.io.File;
 import java.io.FileInputStream;
 
@@ -38,8 +40,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -179,7 +179,7 @@ public class BatchEngineBrokerImpl implements BatchEngineBroker {
 
 		_exportTaskResource.postExportTask(
 			batchPlannerPlan.getInternalClassName(),
-			batchPlannerPlan.getExternalType(), null,
+			batchPlannerPlan.getExternalType(), null, null,
 			String.valueOf(batchPlannerPlan.getBatchPlannerPlanId()),
 			StringUtil.merge(
 				_getHeaderNames(
@@ -193,14 +193,17 @@ public class BatchEngineBrokerImpl implements BatchEngineBroker {
 	private void _submitImportTask(BatchPlannerPlan batchPlannerPlan)
 		throws Exception {
 
-		_importTaskResource.setContextCompany(
-			_companyLocalService.getCompany(batchPlannerPlan.getCompanyId()));
-		_importTaskResource.setContextUriInfo(
+		ImportTaskResource importTaskResource = _factory.create(
+		).uriInfo(
 			_getUriInfo(
 				batchPlannerPlan,
-				BatchPlannerPolicyConstants.importPlanPolicyNameTypes));
-		_importTaskResource.setContextUser(
-			_userLocalService.getUser(batchPlannerPlan.getUserId()));
+				BatchPlannerPolicyConstants.importPlanPolicyNameTypes)
+		).user(
+			_userLocalService.getUser(batchPlannerPlan.getUserId())
+		).build();
+
+		importTaskResource.setContextCompany(
+			_companyLocalService.getCompany(batchPlannerPlan.getCompanyId()));
 
 		File file = _getFile(batchPlannerPlan.getBatchPlannerPlanId());
 
@@ -218,8 +221,8 @@ public class BatchEngineBrokerImpl implements BatchEngineBroker {
 			if ((createStrategy == CreateStrategy.INSERT) ||
 				(createStrategy == CreateStrategy.UPSERT)) {
 
-				_importTaskResource.postImportTask(
-					batchPlannerPlan.getInternalClassName(), null,
+				importTaskResource.postImportTask(
+					batchPlannerPlan.getInternalClassName(), null, null, null,
 					createStrategy.name(),
 					String.valueOf(batchPlannerPlan.getBatchPlannerPlanId()),
 					_getFieldNameMapping(
@@ -241,7 +244,7 @@ public class BatchEngineBrokerImpl implements BatchEngineBroker {
 				return;
 			}
 
-			_importTaskResource.putImportTask(
+			importTaskResource.putImportTask(
 				batchPlannerPlan.getInternalClassName(), null,
 				String.valueOf(batchPlannerPlan.getBatchPlannerPlanId()),
 				_getImportErrorStrategy(batchPlannerPlan),
@@ -274,10 +277,10 @@ public class BatchEngineBrokerImpl implements BatchEngineBroker {
 	private ExportTaskResource _exportTaskResource;
 
 	@Reference
-	private com.liferay.portal.kernel.util.File _file;
+	private ImportTaskResource.Factory _factory;
 
 	@Reference
-	private ImportTaskResource _importTaskResource;
+	private com.liferay.portal.kernel.util.File _file;
 
 	@Reference
 	private UserLocalService _userLocalService;

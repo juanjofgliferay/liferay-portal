@@ -11,10 +11,10 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.BaseBodyTagSupport;
 import com.liferay.taglib.util.PortalIncludeUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.tagext.BodyTag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.tagext.BodyTag;
 
 /**
  * @author Brian Wing Shun Chan
@@ -75,8 +75,8 @@ public class IconListTag extends BaseBodyTagSupport implements BodyTag {
 				if (!FileAvailabilityUtil.isAvailable(
 						pageContext.getServletContext(), getStartPage())) {
 
-					jspWriter.write(
-						"<ul class=\"list-unstyled taglib-icon-list\">");
+					jspWriter.write("<ul class=\"list-unstyled ");
+					jspWriter.write("taglib-icon-list\" role=\"menu\">");
 				}
 				else {
 					PortalIncludeUtil.include(pageContext, _startPage);

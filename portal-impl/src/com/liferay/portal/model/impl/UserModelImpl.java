@@ -8,8 +8,10 @@ package com.liferay.portal.model.impl;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
@@ -26,6 +28,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -139,7 +143,7 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table User_ (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,userId LONG not null,companyId LONG,createDate DATE null,modifiedDate DATE null,contactId LONG,password_ VARCHAR(75) null,passwordEncrypted BOOLEAN,passwordReset BOOLEAN,passwordModifiedDate DATE null,digest VARCHAR(255) null,reminderQueryQuestion VARCHAR(75) null,reminderQueryAnswer VARCHAR(75) null,graceLoginCount INTEGER,screenName VARCHAR(75) null,emailAddress VARCHAR(254) null,facebookId LONG,googleUserId VARCHAR(75) null,ldapServerId LONG,openId VARCHAR(1024) null,portraitId LONG,languageId VARCHAR(75) null,timeZoneId VARCHAR(75) null,greeting VARCHAR(255) null,comments STRING null,firstName VARCHAR(75) null,middleName VARCHAR(75) null,lastName VARCHAR(75) null,jobTitle VARCHAR(100) null,loginDate DATE null,loginIP VARCHAR(75) null,lastLoginDate DATE null,lastLoginIP VARCHAR(75) null,lastFailedLoginDate DATE null,failedLoginAttempts INTEGER,lockout BOOLEAN,lockoutDate DATE null,agreedToTermsOfUse BOOLEAN,emailAddressVerified BOOLEAN,type_ INTEGER,status INTEGER,primary key (userId, ctCollectionId))";
+		"create table User_ (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,userId LONG not null,companyId LONG,createDate DATE null,modifiedDate DATE null,contactId LONG,password_ VARCHAR(255) null,passwordEncrypted BOOLEAN,passwordReset BOOLEAN,passwordModifiedDate DATE null,digest VARCHAR(255) null,reminderQueryQuestion VARCHAR(75) null,reminderQueryAnswer VARCHAR(75) null,graceLoginCount INTEGER,screenName VARCHAR(75) null,emailAddress VARCHAR(254) null,facebookId LONG,googleUserId VARCHAR(75) null,ldapServerId LONG,openId VARCHAR(1024) null,portraitId LONG,languageId VARCHAR(75) null,timeZoneId VARCHAR(75) null,greeting VARCHAR(255) null,comments STRING null,firstName VARCHAR(75) null,middleName VARCHAR(75) null,lastName VARCHAR(75) null,jobTitle VARCHAR(100) null,loginDate DATE null,loginIP VARCHAR(75) null,lastLoginDate DATE null,lastLoginIP VARCHAR(75) null,lastFailedLoginDate DATE null,failedLoginAttempts INTEGER,lockout BOOLEAN,lockoutDate DATE null,agreedToTermsOfUse BOOLEAN,emailAddressVerified BOOLEAN,type_ INTEGER,status INTEGER,primary key (userId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table User_";
 
@@ -211,55 +215,43 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GOOGLEUSERID_COLUMN_BITMASK = 64L;
+	public static final long MODIFIEDDATE_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MODIFIEDDATE_COLUMN_BITMASK = 128L;
+	public static final long PORTRAITID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OPENID_COLUMN_BITMASK = 256L;
+	public static final long SCREENNAME_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PORTRAITID_COLUMN_BITMASK = 512L;
+	public static final long STATUS_COLUMN_BITMASK = 512L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SCREENNAME_COLUMN_BITMASK = 1024L;
+	public static final long TYPE_COLUMN_BITMASK = 1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 2048L;
+	public static final long USERID_COLUMN_BITMASK = 2048L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 4096L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 8192L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 16384L;
+	public static final long UUID_COLUMN_BITMASK = 4096L;
 
 	public static final String MAPPING_TABLE_USERS_GROUPS_NAME = "Users_Groups";
 
@@ -343,7 +335,7 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 	public static final boolean FINDER_CACHE_ENABLED_USERS_USERGROUPS = true;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.User"));
 
 	public UserModelImpl() {
@@ -1103,15 +1095,6 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 		_googleUserId = googleUserId;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalGoogleUserId() {
-		return getColumnOriginalValue("googleUserId");
-	}
-
 	@JSON
 	@Override
 	public long getLdapServerId() {
@@ -1145,15 +1128,6 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 		}
 
 		_openId = openId;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalOpenId() {
-		return getColumnOriginalValue("openId");
 	}
 
 	@JSON
@@ -1567,6 +1541,27 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 	public int getOriginalStatus() {
 		return GetterUtil.getInteger(
 			this.<Integer>getColumnOriginalValue("status"));
+	}
+
+	public long getGroupId() {
+		return 0;
+	}
+
+	public void setGroupId(long groupId) {
+	}
+
+	public boolean getLayoutsUpdated() {
+		return false;
+	}
+
+	public void setLayoutsUpdated(boolean layoutsUpdated) {
+	}
+
+	public long[] getUserGroupIds() {
+		return null;
+	}
+
+	public void setUserGroupIds(long[] userGroupIds) {
 	}
 
 	@Override
@@ -2094,6 +2089,21 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 
 		userCacheModel.status = getStatus();
 
+		try {
+			userCacheModel.groupId = (long)_groupIdMethodHandle.invokeExact(
+				(UserImpl)this);
+
+			userCacheModel.layoutsUpdated =
+				(boolean)_layoutsUpdatedMethodHandle.invokeExact(
+					(UserImpl)this);
+
+			userCacheModel.userGroupIds =
+				(long[])_userGroupIdsMethodHandle.invokeExact((UserImpl)this);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+
 		return userCacheModel;
 	}
 
@@ -2396,6 +2406,67 @@ public class UserModelImpl extends BaseModelImpl<User> implements UserModel {
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer<User, Long>
+		groupIdUpdateEntityCacheBiConsumer = (user, groupId) -> {
+			UserCacheModel userCacheModel = EntityCacheUtil.fetchCacheModel(
+				UserImpl.class, user.getPrimaryKey(), UserCacheModel.class);
+
+			if ((userCacheModel != null) &&
+				(userCacheModel.getMvccVersion() == user.getMvccVersion())) {
+
+				userCacheModel.groupId = groupId;
+			}
+		};
+
+	private static final MethodHandle _groupIdMethodHandle;
+
+	protected static final BiConsumer<User, Boolean>
+		layoutsUpdatedUpdateEntityCacheBiConsumer = (user, layoutsUpdated) -> {
+			UserCacheModel userCacheModel = EntityCacheUtil.fetchCacheModel(
+				UserImpl.class, user.getPrimaryKey(), UserCacheModel.class);
+
+			if ((userCacheModel != null) &&
+				(userCacheModel.getMvccVersion() == user.getMvccVersion())) {
+
+				userCacheModel.layoutsUpdated = layoutsUpdated;
+			}
+		};
+
+	private static final MethodHandle _layoutsUpdatedMethodHandle;
+
+	protected static final BiConsumer<User, long[]>
+		userGroupIdsUpdateEntityCacheBiConsumer = (user, userGroupIds) -> {
+			UserCacheModel userCacheModel = EntityCacheUtil.fetchCacheModel(
+				UserImpl.class, user.getPrimaryKey(), UserCacheModel.class);
+
+			if ((userCacheModel != null) &&
+				(userCacheModel.getMvccVersion() == user.getMvccVersion())) {
+
+				userCacheModel.userGroupIds = userGroupIds;
+			}
+		};
+
+	private static final MethodHandle _userGroupIdsMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_groupIdMethodHandle = lookup.findGetter(
+				UserImpl.class, "_groupId", long.class);
+
+			_layoutsUpdatedMethodHandle = lookup.findGetter(
+				UserImpl.class, "_layoutsUpdated", boolean.class);
+
+			_userGroupIdsMethodHandle = lookup.findGetter(
+				UserImpl.class, "_userGroupIds", long[].class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private User _escapedModel;
 
 }

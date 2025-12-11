@@ -75,6 +75,10 @@ public class ValidationBuild extends BaseBuild {
 
 	@Override
 	public Element getGitHubMessageElement() {
+		if (_gitHubMessageElement != null) {
+			return _gitHubMessageElement;
+		}
+
 		update();
 
 		Element rootElement = Dom4JUtil.getNewElement(
@@ -146,7 +150,9 @@ public class ValidationBuild extends BaseBuild {
 				getFullConsoleClickHereElement());
 		}
 
-		return rootElement;
+		_gitHubMessageElement = rootElement;
+
+		return _gitHubMessageElement;
 	}
 
 	@Override
@@ -180,16 +186,20 @@ public class ValidationBuild extends BaseBuild {
 
 		JSONObject testReportJSONObject = getTestReportJSONObject(false);
 
+		if (testReportJSONObject.isEmpty()) {
+			return new ArrayList<>();
+		}
+
 		return getTestResults(
 			this, testReportJSONObject.getJSONArray("suites"), testStatus);
 	}
 
-	protected ValidationBuild(String url) {
-		this(url, null);
+	protected ValidationBuild(String buildURL) {
+		this(buildURL, null);
 	}
 
-	protected ValidationBuild(String url, TopLevelBuild topLevelBuild) {
-		super(url, topLevelBuild);
+	protected ValidationBuild(String buildURL, TopLevelBuild topLevelBuild) {
+		super(buildURL, topLevelBuild);
 	}
 
 	protected Element getBaseBranchDetailsElement() {
@@ -418,5 +428,7 @@ public class ValidationBuild extends BaseBuild {
 
 	private static final Pattern _consoleResultPattern = Pattern.compile(
 		"Subrepository task (FAILED|SUCCESSFUL)");
+
+	private Element _gitHubMessageElement;
 
 }

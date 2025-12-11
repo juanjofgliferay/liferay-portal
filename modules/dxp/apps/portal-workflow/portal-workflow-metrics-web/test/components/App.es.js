@@ -6,7 +6,7 @@
 import {act, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 import App from '../../src/main/resources/META-INF/resources/js/components/App.es';
 import FetchMock, {fetchMockResponse} from '../mock/fetch.es';
@@ -38,14 +38,14 @@ const fetchMock = new FetchMock({
 			items: processItems,
 			totalCount: processItems.length,
 		}),
+
 		// eslint-disable-next-line sort-keys
 		'/o/portal-workflow-metrics/v1.0/indexes': fetchMockResponse({
 			items: [],
 			totalCount: 0,
 		}),
-		'/o/portal-workflow-metrics/v1.0/processes/1234/metrics': fetchMockResponse(
-			pending
-		),
+		'/o/portal-workflow-metrics/v1.0/processes/1234/metrics':
+			fetchMockResponse(pending),
 		'default': fetchMockResponse({items: [], totalCount: 0}),
 	},
 });
@@ -80,7 +80,7 @@ describe('The App component should', () => {
 		findByText = renderResult.findByText;
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 	});
 
@@ -93,8 +93,9 @@ describe('The App component should', () => {
 	});
 
 	it('Navigate to settings indexes page', async () => {
-		const kebabButton = document.getElementById('headerKebab').children[0]
-			.children[0].children[0];
+		const kebabButton =
+			document.getElementById('headerKebab').children[0].children[0]
+				.children[0];
 
 		fireEvent.click(kebabButton);
 
@@ -109,7 +110,7 @@ describe('The App component should', () => {
 		fireEvent.click(document.getElementById('backButton').children[0]);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 	});
 
@@ -124,7 +125,7 @@ describe('The App component should', () => {
 		fireEvent.click(processNameLink);
 
 		await act(async () => {
-			jest.runAllTimers();
+			jest.advanceTimersByTime(100);
 		});
 	});
 

@@ -12,7 +12,7 @@ import React, {useState} from 'react';
 
 import './index.scss';
 import {NotificationTemplate} from '../../utils/api';
-import {ModalEditExternalReferenceCode} from './ModalEditExternalReferenceCode';
+import {ModalEditObjectDefinitionExternalReferenceCode} from './ModalEditObjectDefinitionExternalReferenceCode';
 
 export type Entity = NotificationTemplate | ObjectDefinition;
 
@@ -23,14 +23,17 @@ interface ManagementToolbarProps {
 	className?: string;
 	enableBoxShadow?: boolean;
 	entityId: number;
-	externalReferenceCode: string;
-	externalReferenceCodeSaveURL: string;
 	hasPublishPermission: boolean;
 	hasUpdatePermission: boolean;
 	helpMessage: string;
+	inheritanceClassName?: string;
+	inheritanceLabel?: string;
 	isApproved?: boolean;
 	isRootDescendantNode?: boolean;
 	label: string;
+	loading?: boolean;
+	objectDefinitionExternalReferenceCode: string;
+	objectDefinitionExternalReferenceCodeSaveURL: string;
 	onExternalReferenceCodeChange?: (value: string) => void;
 	onGetEntity: () => Promise<Entity>;
 	onSubmit: (props: boolean) => void;
@@ -46,14 +49,18 @@ export function ManagementToolbar({
 	className,
 	enableBoxShadow = true,
 	entityId,
-	externalReferenceCode: initialExternalReferenceCode,
-	externalReferenceCodeSaveURL,
 	hasPublishPermission,
 	hasUpdatePermission,
 	helpMessage,
+	inheritanceClassName,
+	inheritanceLabel,
 	isApproved,
 	isRootDescendantNode,
 	label,
+	loading,
+	objectDefinitionExternalReferenceCode:
+		initialObjectDefinitionExternalReferenceCode,
+	objectDefinitionExternalReferenceCodeSaveURL,
 	onExternalReferenceCodeChange,
 	onGetEntity,
 	onSubmit,
@@ -61,22 +68,11 @@ export function ManagementToolbar({
 	screenNavigationCategoryKey,
 	showEntityDetails = true,
 }: ManagementToolbarProps) {
-	const [externalReferenceCode, setExternalReferenceCode] = useState(
-		initialExternalReferenceCode
-	);
+	const [
+		objectDefinitionExternalReferenceCode,
+		setObjectDefinitionExternalReferenceCode,
+	] = useState(initialObjectDefinitionExternalReferenceCode);
 	const [visibleModal, setVisibleModal] = useState<boolean>(false);
-
-	const [disabled, setDisabled] = useState(!hasPublishPermission);
-
-	const onPublish = () => {
-		onSubmit(false);
-
-		setDisabled(true);
-
-		setTimeout(() => {
-			setDisabled(false);
-		}, 1000);
-	};
 
 	return (
 		<>
@@ -85,10 +81,20 @@ export function ManagementToolbar({
 					`lfr__management-toolbar ${className}`,
 					enableBoxShadow && 'lfr__management-toolbar--box-shadow'
 				)}
+				fluidSize="xxxl"
 			>
 				<ClayManagementToolbar.ItemList>
 					<div className="border-right ml-sm-2 mr-3 pr-3">
 						<h3 className="mb-0 text-truncate">{label}</h3>
+
+						{Liferay.FeatureFlags['LPD-34594'] &&
+							inheritanceLabel && (
+								<strong
+									className={`${inheritanceClassName} label`}
+								>
+									{inheritanceLabel}
+								</strong>
+							)}
 
 						{badgeLabel && (
 							<strong className={`${badgeClassName} label`}>
@@ -113,7 +119,7 @@ export function ManagementToolbar({
 								</span>
 
 								<strong className="ml-2">
-									{externalReferenceCode}
+									{objectDefinitionExternalReferenceCode}
 								</strong>
 
 								<span
@@ -155,7 +161,7 @@ export function ManagementToolbar({
 							</ClayButton>
 
 							<ClayButton
-								disabled={!hasUpdatePermission}
+								disabled={!hasUpdatePermission || loading}
 								displayType={
 									isApproved ||
 									isApproved === undefined ||
@@ -170,36 +176,36 @@ export function ManagementToolbar({
 								{Liferay.Language.get('save')}
 							</ClayButton>
 
-							{isApproved !== undefined &&
-								!isApproved &&
-								!isRootDescendantNode && (
-									<ClayButton
-										disabled={
-											!hasUpdatePermission || disabled
-										}
-										id={`${portletNamespace}publish`}
-										name="publish"
-										onClick={() => onPublish()}
-									>
-										{Liferay.Language.get('publish')}
-									</ClayButton>
-								)}
+							{isApproved !== undefined && !isApproved && (
+								<ClayButton
+									disabled={!hasPublishPermission || loading}
+									id={`${portletNamespace}publish`}
+									name="publish"
+									onClick={() => onSubmit(false)}
+								>
+									{Liferay.Language.get('publish')}
+								</ClayButton>
+							)}
 						</ClayButton.Group>
 					</ClayManagementToolbar.ItemList>
 				)}
 			</ClayManagementToolbar>
 
 			{visibleModal && (
-				<ModalEditExternalReferenceCode
-					externalReferenceCode={externalReferenceCode}
+				<ModalEditObjectDefinitionExternalReferenceCode
 					handleOnClose={() => setVisibleModal(false)}
 					helpMessage={helpMessage}
-					onExternalReferenceCodeChange={
-						onExternalReferenceCodeChange
+					objectDefinitionExternalReferenceCode={
+						objectDefinitionExternalReferenceCode
 					}
 					onGetEntity={onGetEntity}
-					saveURL={externalReferenceCodeSaveURL}
-					setExternalReferenceCode={setExternalReferenceCode}
+					onObjectDefinitionExternalReferenceCodeChange={
+						onExternalReferenceCodeChange
+					}
+					saveURL={objectDefinitionExternalReferenceCodeSaveURL}
+					setObjectDefinitionExternalReferenceCode={
+						setObjectDefinitionExternalReferenceCode
+					}
 				/>
 			)}
 		</>

@@ -12,6 +12,7 @@ import com.liferay.commerce.payment.exception.NoSuchPaymentMethodGroupRelExcepti
 import com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel;
 import com.liferay.commerce.payment.service.base.CommercePaymentMethodGroupRelLocalServiceBaseImpl;
 import com.liferay.commerce.service.CommerceAddressRestrictionLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -28,7 +29,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.File;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -101,9 +101,9 @@ public class CommercePaymentMethodGroupRelLocalServiceImpl
 		commercePaymentMethodGroupRel.setUserId(user.getUserId());
 		commercePaymentMethodGroupRel.setUserName(user.getFullName());
 
-		commercePaymentMethodGroupRel.setActive(active);
-		commercePaymentMethodGroupRel.setDescriptionMap(descriptionMap);
 		commercePaymentMethodGroupRel.setNameMap(nameMap);
+		commercePaymentMethodGroupRel.setDescriptionMap(descriptionMap);
+		commercePaymentMethodGroupRel.setActive(active);
 
 		if (imageFile != null) {
 			commercePaymentMethodGroupRel.setImageId(
@@ -293,30 +293,26 @@ public class CommercePaymentMethodGroupRelLocalServiceImpl
 		getCommercePaymentMethodGroupRels(
 			long groupId, long countryId, boolean active) {
 
-		List<CommercePaymentMethodGroupRel>
-			filteredCommercePaymentMethodGroupRels = new ArrayList<>();
-
 		List<CommercePaymentMethodGroupRel> commercePaymentMethodGroupRels =
 			commercePaymentMethodGroupRelPersistence.findByG_A(groupId, active);
 
-		for (CommercePaymentMethodGroupRel commercePaymentMethodGroupRel :
-				commercePaymentMethodGroupRels) {
+		return TransformUtil.transform(
+			commercePaymentMethodGroupRels,
+			commercePaymentMethodGroupRel -> {
+				boolean restricted =
+					_commerceAddressRestrictionLocalService.
+						isCommerceAddressRestricted(
+							CommercePaymentMethodGroupRel.class.getName(),
+							commercePaymentMethodGroupRel.
+								getCommercePaymentMethodGroupRelId(),
+							countryId);
 
-			boolean restricted =
-				_commerceAddressRestrictionLocalService.
-					isCommerceAddressRestricted(
-						CommercePaymentMethodGroupRel.class.getName(),
-						commercePaymentMethodGroupRel.
-							getCommercePaymentMethodGroupRelId(),
-						countryId);
+				if (!restricted) {
+					return commercePaymentMethodGroupRel;
+				}
 
-			if (!restricted) {
-				filteredCommercePaymentMethodGroupRels.add(
-					commercePaymentMethodGroupRel);
-			}
-		}
-
-		return filteredCommercePaymentMethodGroupRels;
+				return null;
+			});
 	}
 
 	@Override
@@ -342,6 +338,14 @@ public class CommercePaymentMethodGroupRelLocalServiceImpl
 				commercePaymentMethodGroupRelId);
 
 		commercePaymentMethodGroupRel.setActive(active);
+
+		return commercePaymentMethodGroupRelPersistence.update(
+			commercePaymentMethodGroupRel);
+	}
+
+	@Override
+	public CommercePaymentMethodGroupRel updateCommercePaymentMethodGroupRel(
+		CommercePaymentMethodGroupRel commercePaymentMethodGroupRel) {
 
 		return commercePaymentMethodGroupRelPersistence.update(
 			commercePaymentMethodGroupRel);
@@ -385,6 +389,7 @@ public class CommercePaymentMethodGroupRelLocalServiceImpl
 
 		if (imageFile != null) {
 			_imageLocalService.updateImage(
+				commercePaymentMethodGroupRel.getCompanyId(),
 				commercePaymentMethodGroupRel.getImageId(), imageFile);
 		}
 

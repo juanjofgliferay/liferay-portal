@@ -70,20 +70,20 @@ public class SegmentsExperimentServiceWrapper
 
 	@Override
 	public SegmentsExperiment fetchSegmentsExperiment(
-			long groupId, long segmentsExperienceId, long plid)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _segmentsExperimentService.fetchSegmentsExperiment(
-			groupId, segmentsExperienceId, plid);
-	}
-
-	@Override
-	public SegmentsExperiment fetchSegmentsExperiment(
 			long groupId, String segmentsExperimentKey)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsExperimentService.fetchSegmentsExperiment(
 			groupId, segmentsExperimentKey);
+	}
+
+	@Override
+	public SegmentsExperiment fetchSegmentsExperiment(
+			long groupId, String segmentsExperienceKey, long plid)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _segmentsExperimentService.fetchSegmentsExperiment(
+			groupId, segmentsExperienceKey, plid);
 	}
 
 	/**
@@ -116,23 +116,25 @@ public class SegmentsExperimentServiceWrapper
 	@Override
 	public SegmentsExperiment runSegmentsExperiment(
 			long segmentsExperimentId, double confidenceLevel,
-			java.util.Map<Long, Double> segmentsExperienceIdSplitMap)
+			java.util.Map<Long, Double> segmentsExperienceIdSplitMap,
+			String type)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsExperimentService.runSegmentsExperiment(
-			segmentsExperimentId, confidenceLevel,
-			segmentsExperienceIdSplitMap);
+			segmentsExperimentId, confidenceLevel, segmentsExperienceIdSplitMap,
+			type);
 	}
 
 	@Override
 	public SegmentsExperiment runSegmentsExperiment(
 			String segmentsExperimentKey, double confidenceLevel,
-			java.util.Map<String, Double> segmentsExperienceKeySplitMap)
+			java.util.Map<String, Double> segmentsExperienceKeySplitMap,
+			String type)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsExperimentService.runSegmentsExperiment(
 			segmentsExperimentKey, confidenceLevel,
-			segmentsExperienceKeySplitMap);
+			segmentsExperienceKeySplitMap, type);
 	}
 
 	@Override

@@ -16,30 +16,23 @@ $btn-size: 28px;
 		right: 0;
 		top: 0;
 		z-index: 100;
+
+		& ~ .org-char-info-panel {
+			z-index: 100;
+		}
+	}
+
+	.subnav-tbar-primary {
+		padding-left: 3rem;
+		padding-right: 3rem;
+		position: fixed;
+		width: 100%;
 	}
 
 	.zoom-controls {
 		bottom: $spacer;
+		left: $spacer;
 		position: absolute;
-		right: $spacer;
-
-		.btn.btn-secondary {
-			background-color: $white;
-		}
-
-		.btn-group {
-			.btn {
-				&:not(:first-child) {
-					border-bottom-left-radius: 0;
-					border-top-left-radius: 0;
-				}
-				&:not(:last-child) {
-					border-bottom-right-radius: 0;
-					border-right: 0;
-					border-top-right-radius: 0;
-				}
-			}
-		}
 	}
 
 	.svg-chart {
@@ -65,7 +58,9 @@ $btn-size: 28px;
 		fill: white;
 		stroke: $secondary-l2;
 		stroke-width: 1.5;
-		transition: fill 0.2s ease-in, stroke 0.2s ease-in;
+		transition:
+			fill 0.2s ease-in,
+			stroke 0.2s ease-in;
 	}
 
 	.dnd-handle-content {
@@ -303,15 +298,11 @@ $btn-size: 28px;
 			y: 6;
 		}
 	}
-
-	.org-chart-result-helper {
-		background-color: #b3cdff;
-		line-height: 48px;
-		padding: 0 12px;
-	}
 }
 
 .org-chart-management-toolbar {
+	z-index: 10;
+
 	.navbar-nav {
 		padding: 0 12px;
 		width: 100%;
@@ -350,10 +341,6 @@ $btn-size: 28px;
 			top: 0;
 			z-index: 10;
 
-			& > svg {
-				font-size: 20px;
-			}
-
 			& + .info-panel-content .sidebar-header > .autofit-row {
 				width: auto;
 			}
@@ -374,14 +361,62 @@ $btn-size: 28px;
 
 		.logo-selector-default-img,
 		img {
+			height: 100px;
 			max-height: 100px;
 			max-width: 100px;
+			object-fit: cover;
+			width: 100px;
 		}
 
 		.logo-selector-default-img {
 			background: $gray-200;
 			fill: $gray-600;
 			padding: 20px;
+		}
+
+		.sidebar-dd {
+			white-space: pre;
+		}
+	}
+}
+
+.org-management-portlet-wrapper.expanded {
+	height: 100vh;
+	left: 0;
+	position: fixed;
+	top: 0;
+	width: 100vw;
+	z-index: 990;
+}
+
+.org-chart-container.expanded ~ .org-char-info-panel {
+	top: 48px;
+}
+
+.admin-portlet {
+	.org-char-info-panel {
+		position: fixed;
+		top: calc(var(--control-menu-container-height) + 112px);
+	}
+}
+
+.org-chart-root {
+	overflow-x: hidden;
+}
+
+.root-organizations-filter .inline-scroller {
+	margin: 1rem 1rem 0.25rem 0;
+
+	&::-webkit-scrollbar {
+		width: 5px;
+
+		&-track {
+			background-color: transparent;
+		}
+
+		&-thumb {
+			background-color: #e7e7ed;
+			border-radius: 2px;
 		}
 	}
 }

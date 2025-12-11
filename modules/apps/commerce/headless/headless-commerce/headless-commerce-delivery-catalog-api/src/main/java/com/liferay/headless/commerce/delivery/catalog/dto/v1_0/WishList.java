@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -49,114 +48,166 @@ public class WishList implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(WishList.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getDefaultWishList() {
+		if (_defaultWishListSupplier != null) {
+			defaultWishList = _defaultWishListSupplier.get();
+
+			_defaultWishListSupplier = null;
+		}
+
 		return defaultWishList;
 	}
 
 	public void setDefaultWishList(Boolean defaultWishList) {
 		this.defaultWishList = defaultWishList;
+
+		_defaultWishListSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultWishList(
 		UnsafeSupplier<Boolean, Exception> defaultWishListUnsafeSupplier) {
 
-		try {
-			defaultWishList = defaultWishListUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultWishListSupplier = () -> {
+			try {
+				return defaultWishListUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean defaultWishList;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _defaultWishListSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public WishListItem[] getWishListItems() {
+		if (_wishListItemsSupplier != null) {
+			wishListItems = _wishListItemsSupplier.get();
+
+			_wishListItemsSupplier = null;
+		}
+
 		return wishListItems;
 	}
 
 	public void setWishListItems(WishListItem[] wishListItems) {
 		this.wishListItems = wishListItems;
+
+		_wishListItemsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWishListItems(
 		UnsafeSupplier<WishListItem[], Exception> wishListItemsUnsafeSupplier) {
 
-		try {
-			wishListItems = wishListItemsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_wishListItemsSupplier = () -> {
+			try {
+				return wishListItemsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected WishListItem[] wishListItems;
+
+	@JsonIgnore
+	private Supplier<WishListItem[]> _wishListItemsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -185,6 +236,8 @@ public class WishList implements Serializable {
 
 		sb.append("{");
 
+		Boolean defaultWishList = getDefaultWishList();
+
 		if (defaultWishList != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -195,6 +248,8 @@ public class WishList implements Serializable {
 			sb.append(defaultWishList);
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -204,6 +259,8 @@ public class WishList implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -218,6 +275,8 @@ public class WishList implements Serializable {
 
 			sb.append("\"");
 		}
+
+		WishListItem[] wishListItems = getWishListItems();
 
 		if (wishListItems != null) {
 			if (sb.length() > 1) {
@@ -244,8 +303,8 @@ public class WishList implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.catalog.dto.v1_0.WishList",
 		name = "x-class-name"
 	)
@@ -291,7 +350,10 @@ public class WishList implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

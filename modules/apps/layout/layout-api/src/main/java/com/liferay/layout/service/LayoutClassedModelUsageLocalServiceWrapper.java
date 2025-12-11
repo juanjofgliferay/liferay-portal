@@ -54,13 +54,12 @@ public class LayoutClassedModelUsageLocalServiceWrapper
 
 	@Override
 	public LayoutClassedModelUsage addLayoutClassedModelUsage(
-		long groupId, long classNameId, long classPK,
-		String classedModelExternalReferenceCode, String containerKey,
-		long containerType, long plid,
+		long groupId, String classExternalReferenceCode, long classNameId,
+		long classPK, String containerKey, long containerType, long plid,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
-			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			groupId, classExternalReferenceCode, classNameId, classPK,
 			containerKey, containerType, plid, serviceContext);
 	}
 
@@ -274,13 +273,12 @@ public class LayoutClassedModelUsageLocalServiceWrapper
 
 	@Override
 	public LayoutClassedModelUsage fetchLayoutClassedModelUsage(
-		long classNameId, long classPK,
-		String classedModelExternalReferenceCode, String containerKey,
-		long containerType, long plid) {
+		long groupId, String classExternalReferenceCode, long classNameId,
+		long classPK, String containerKey, long containerType, long plid) {
 
 		return _layoutClassedModelUsageLocalService.
 			fetchLayoutClassedModelUsage(
-				classNameId, classPK, classedModelExternalReferenceCode,
+				groupId, classExternalReferenceCode, classNameId, classPK,
 				containerKey, containerType, plid);
 	}
 
@@ -523,6 +521,18 @@ public class LayoutClassedModelUsageLocalServiceWrapper
 
 		return _layoutClassedModelUsageLocalService.
 			updateLayoutClassedModelUsage(layoutClassedModelUsage);
+	}
+
+	@Override
+	public LayoutClassedModelUsage updateLayoutClassedModelUsage(
+			long classNameId, long classPK, String containerKey,
+			long containerType, long layoutClassedModelUsageId, long plid)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutClassedModelUsageLocalService.
+			updateLayoutClassedModelUsage(
+				classNameId, classPK, containerKey, containerType,
+				layoutClassedModelUsageId, plid);
 	}
 
 	@Override

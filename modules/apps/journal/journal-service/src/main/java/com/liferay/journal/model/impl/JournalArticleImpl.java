@@ -59,11 +59,11 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -177,16 +177,16 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 			return getSmallImageURL();
 		}
 
-		if (getSmallImageSource() ==
+		if (getSmallImageSource() !=
 				JournalArticleConstants.SMALL_IMAGE_SOURCE_USER_COMPUTER) {
 
-			return StringBundler.concat(
-				themeDisplay.getPathImage(), "/journal/article?img_id=",
-				getSmallImageId(), "&t=",
-				WebServerServletTokenUtil.getToken(getSmallImageId()));
+			return null;
 		}
 
-		return null;
+		return StringBundler.concat(
+			themeDisplay.getPathImage(), "/journal/article?img_id=",
+			getSmallImageId(), "&t=",
+			WebServerServletTokenUtil.getToken(getSmallImageId()));
 	}
 
 	@Override
@@ -208,7 +208,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 
 		availableLanguageIds.addAll(
 			JournalArticleLocalServiceUtil.getArticleLocalizationLanguageIds(
-				getId()));
+				getCompanyId(), getId()));
 
 		List<DDMFieldAttribute> ddmFieldAttributes =
 			DDMFieldLocalServiceUtil.getDDMFieldAttributes(
@@ -248,7 +248,11 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 
 	@Override
 	public DDMFormValues getDDMFormValues() {
-		return getDDMFormValues(true);
+		if (_ddmFormValues == null) {
+			_ddmFormValues = getDDMFormValues(false);
+		}
+
+		return _ddmFormValues;
 	}
 
 	@Override
@@ -281,6 +285,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 		return DDMStructureLocalServiceUtil.fetchStructure(getDDMStructureId());
 	}
 
+	@Override
 	public String getDDMStructureKey() {
 		DDMStructure ddmStructure = getDDMStructure();
 
@@ -304,7 +309,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 	public String getDescription() {
 		String description =
 			JournalArticleLocalServiceUtil.getArticleDescription(
-				getId(), getDefaultLanguageId());
+				getCompanyId(), getId(), getDefaultLanguageId());
 
 		if (description == null) {
 			return StringPool.BLANK;
@@ -317,7 +322,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 	public String getDescription(Locale locale) {
 		String description =
 			JournalArticleLocalServiceUtil.getArticleDescription(
-				getId(), locale);
+				getCompanyId(), getId(), locale);
 
 		if (description == null) {
 			return getDescription();
@@ -344,7 +349,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 	public String getDescription(String languageId, boolean useDefault) {
 		String description =
 			JournalArticleLocalServiceUtil.getArticleDescription(
-				getId(), languageId);
+				getCompanyId(), getId(), languageId);
 
 		if (description != null) {
 			return description;
@@ -371,7 +376,8 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 		}
 
 		_descriptionMap =
-			JournalArticleLocalServiceUtil.getArticleDescriptionMap(getId());
+			JournalArticleLocalServiceUtil.getArticleDescriptionMap(
+				getCompanyId(), getId());
 
 		return _descriptionMap;
 	}
@@ -499,14 +505,14 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 				locale, friendlyURLEntryLocalization.getUrlTitle());
 		}
 
-		Locale defaultSiteLocale = LocaleUtil.getSiteDefault();
+		Locale defaultLocale = LocaleUtil.fromLanguageId(
+			getDefaultLanguageId());
 
-		if (Validator.isNull(friendlyURLMap.get(defaultSiteLocale))) {
-			Locale defaultLocale = LocaleUtil.fromLanguageId(
-				getDefaultLanguageId());
+		if (Validator.isNull(friendlyURLMap.get(defaultLocale))) {
+			Locale defaultSiteLocale = LocaleUtil.getSiteDefault();
 
 			friendlyURLMap.put(
-				defaultSiteLocale, friendlyURLMap.get(defaultLocale));
+				defaultLocale, friendlyURLMap.get(defaultSiteLocale));
 		}
 
 		return friendlyURLMap;
@@ -645,7 +651,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 	@Override
 	public String getTitle() {
 		String title = JournalArticleLocalServiceUtil.getArticleTitle(
-			getId(), getDefaultLanguageId());
+			getCompanyId(), getId(), getDefaultLanguageId());
 
 		if (title == null) {
 			return StringPool.BLANK;
@@ -657,7 +663,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 	@Override
 	public String getTitle(Locale locale) {
 		String title = JournalArticleLocalServiceUtil.getArticleTitle(
-			getId(), locale);
+			getCompanyId(), getId(), locale);
 
 		if (title == null) {
 			return getTitle();
@@ -683,7 +689,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 	@Override
 	public String getTitle(String languageId, boolean useDefault) {
 		String title = JournalArticleLocalServiceUtil.getArticleTitle(
-			getId(), languageId);
+			getCompanyId(), getId(), languageId);
 
 		if (title != null) {
 			return title;
@@ -709,7 +715,8 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 			return _titleMap;
 		}
 
-		_titleMap = JournalArticleLocalServiceUtil.getArticleTitleMap(getId());
+		_titleMap = JournalArticleLocalServiceUtil.getArticleTitleMap(
+			getCompanyId(), getId());
 
 		return _titleMap;
 	}
@@ -829,6 +836,7 @@ public class JournalArticleImpl extends JournalArticleBaseImpl {
 		_ddmFormValuesToFieldsConverter;
 	private static volatile JournalConverter _journalConverter;
 
+	private DDMFormValues _ddmFormValues;
 	private Map<Locale, String> _descriptionMap;
 	private Document _document;
 	private Map<String, Document> _documentMap;

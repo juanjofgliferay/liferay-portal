@@ -6,17 +6,21 @@
 package com.liferay.osb.faro.web.internal.model.display.main;
 
 import com.liferay.osb.faro.constants.FaroProjectConstants;
-import com.liferay.osb.faro.engine.client.CerebroEngineClient;
-import com.liferay.osb.faro.engine.client.ContactsEngineClient;
 import com.liferay.osb.faro.model.FaroProject;
+import com.liferay.osb.faro.model.FaroProjectUsageTable;
 import com.liferay.osb.faro.provisioning.client.constants.ProductConstants;
 import com.liferay.osb.faro.provisioning.client.model.OSBAccountEntry;
 import com.liferay.osb.faro.provisioning.client.model.OSBOfferingEntry;
+import com.liferay.osb.faro.service.FaroProjectUsageLocalService;
 import com.liferay.osb.faro.web.internal.constants.FaroSubscriptionConstants;
 import com.liferay.osb.faro.web.internal.subscription.FaroSubscriptionPlan;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.DateUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,17 +33,6 @@ import org.apache.commons.lang3.time.DateUtils;
  */
 @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
 public class FaroSubscriptionDisplay {
-
-	public static Date getLastAnniversaryDate(Date createDate) {
-		Date lastAnniversaryDate = DateUtils.setYears(
-			createDate, DateUtil.getYear(new Date()));
-
-		if (DateUtil.compareTo(new Date(), lastAnniversaryDate) > 0) {
-			return lastAnniversaryDate;
-		}
-
-		return DateUtils.setYears(createDate, DateUtil.getYear(new Date()) - 1);
-	}
 
 	public FaroSubscriptionDisplay() {
 	}
@@ -64,7 +57,13 @@ public class FaroSubscriptionDisplay {
 		_endDate = baseOSBOfferingEntry.getSupportEndDate();
 		_name = ProductConstants.getProductName(
 			baseOSBOfferingEntry.getProductEntryId());
+
 		_startDate = baseOSBOfferingEntry.getStartDate();
+
+		if (_startDate != null) {
+			_lastAnniversaryDate = _getLastAnniversaryDate(
+				_isBasicSubscription(_name), _startDate);
+		}
 
 		FaroSubscriptionPlan baseFaroSubscriptionPlan =
 			FaroSubscriptionConstants.getFaroSubscriptionPlanByProductEntryId(
@@ -98,18 +97,6 @@ public class FaroSubscriptionDisplay {
 		}
 	}
 
-	public Date geLastAnniversaryDate() {
-		if (_lastAnniversaryDate == null) {
-			return null;
-		}
-
-		return new Date(_lastAnniversaryDate.getTime());
-	}
-
-	public long getIndividualsCount() {
-		return _individualsCount;
-	}
-
 	public long getIndividualsCountSinceLastAnniversary() {
 		return _individualsCountSinceLastAnniversary;
 	}
@@ -118,12 +105,20 @@ public class FaroSubscriptionDisplay {
 		return _individualsLimit;
 	}
 
-	public String getName() {
-		return _name;
+	public int getIndividualsStatus() {
+		return _individualsStatus;
 	}
 
-	public long getPageViewsCount() {
-		return _pageViewsCount;
+	public Date getLastAnniversaryDate() {
+		if (_lastAnniversaryDate == null) {
+			return null;
+		}
+
+		return new Date(_lastAnniversaryDate.getTime());
+	}
+
+	public String getName() {
+		return _name;
 	}
 
 	public long getPageViewsCountSinceLastAnniversary() {
@@ -134,6 +129,10 @@ public class FaroSubscriptionDisplay {
 		return _pageViewsLimit;
 	}
 
+	public int getPageViewsStatus() {
+		return _pageViewsStatus;
+	}
+
 	public Date getStartDate() {
 		if (_startDate == null) {
 			return null;
@@ -142,13 +141,17 @@ public class FaroSubscriptionDisplay {
 		return new Date(_startDate.getTime());
 	}
 
+	public long getSyncedIndividualsCount() {
+		return _syncedIndividualsCount;
+	}
+
 	public boolean isActive() {
 		return _active;
 	}
 
 	public void setCounts(
-			FaroProject faroProject, CerebroEngineClient cerebroEngineClient,
-			ContactsEngineClient contactsEngineClient)
+			FaroProject faroProject,
+			FaroProjectUsageLocalService faroProjectUsageLocalService)
 		throws Exception {
 
 		if ((faroProject == null) ||
@@ -158,28 +161,59 @@ public class FaroSubscriptionDisplay {
 			return;
 		}
 
-		_individualsCount = contactsEngineClient.getIndividualsCount(
-			faroProject, false);
-
-		if (_startDate != null) {
-			_lastAnniversaryDate = getLastAnniversaryDate(_startDate);
+		if (_startDate == null) {
+			_startDate = _getStartDate(faroProject);
 		}
 
-		_individualsCountSinceLastAnniversary =
-			contactsEngineClient.getIndividualsCreatedSinceCount(
-				faroProject, _lastAnniversaryDate);
+		if (_lastAnniversaryDate == null) {
+			_lastAnniversaryDate = _getLastAnniversaryDate(
+				_isBasicSubscription(faroProject), _startDate);
+		}
 
-		_individualsStatus = getStatus(_individualsCount, _individualsLimit);
+		FaroProjectUsageTable faroProjectUsageTable =
+			FaroProjectUsageTable.INSTANCE;
 
-		_pageViewsCount = GetterUtil.getInteger(
-			cerebroEngineClient.getPageViews(
-				faroProject, _startDate, new Date()));
+		List<Object[]> results = faroProjectUsageLocalService.dslQuery(
+			DSLQueryFactoryUtil.select(
+				DSLFunctionFactoryUtil.sum(
+					faroProjectUsageTable.knownIndividualsCount
+				).as(
+					"knownIndividualsCount"
+				),
+				DSLFunctionFactoryUtil.sum(
+					faroProjectUsageTable.pageViewsCount
+				).as(
+					"pageViewsCount"
+				),
+				faroProjectUsageTable.faroProjectId
+			).from(
+				faroProjectUsageTable
+			).where(
+				faroProjectUsageTable.faroProjectId.eq(
+					faroProject.getFaroProjectId()
+				).and(
+					faroProjectUsageTable.usageTime.gte(
+						_lastAnniversaryDate.getTime())
+				)
+			).groupBy(
+				faroProjectUsageTable.faroProjectId
+			));
 
-		_pageViewsCountSinceLastAnniversary = GetterUtil.getInteger(
-			cerebroEngineClient.getPageViews(
-				faroProject, _lastAnniversaryDate, new Date()));
+		if (results.isEmpty()) {
+			return;
+		}
 
-		_pageViewsStatus = getStatus(_pageViewsCount, _pageViewsLimit);
+		Object[] objects = results.get(0);
+
+		_individualsCountSinceLastAnniversary = (long)objects[0];
+
+		_individualsStatus = getStatus(
+			_individualsCountSinceLastAnniversary, _individualsLimit);
+
+		_pageViewsCountSinceLastAnniversary = (long)objects[1];
+
+		_pageViewsStatus = getStatus(
+			_pageViewsCountSinceLastAnniversary, _pageViewsLimit);
 	}
 
 	public static class AddOn {
@@ -272,11 +306,44 @@ public class FaroSubscriptionDisplay {
 		return baseOSBOfferingEntry;
 	}
 
+	private Date _getLastAnniversaryDate(
+		boolean basicSubscription, Date startDate) {
+
+		if (basicSubscription) {
+			return new Date(startDate.getTime() / Time.DAY * Time.DAY);
+		}
+
+		Date lastAnniversaryDate = DateUtils.setYears(
+			startDate, DateUtil.getYear(new Date()));
+
+		if (DateUtil.compareTo(new Date(), lastAnniversaryDate) <= 0) {
+			lastAnniversaryDate = DateUtils.setYears(
+				startDate, DateUtil.getYear(new Date()) - 1);
+		}
+
+		return new Date(lastAnniversaryDate.getTime() / Time.DAY * Time.DAY);
+	}
+
+	private Date _getStartDate(FaroProject faroProject) throws Exception {
+		if (_isBasicSubscription(faroProject)) {
+			return new Date(faroProject.getCreateTime());
+		}
+
+		return new Date(faroProject.getSubscriptionModifiedTime());
+	}
+
 	private boolean _isAfter(
 		OSBOfferingEntry baseOSBOfferingEntry,
 		OSBOfferingEntry osbOfferingEntry) {
 
 		int value = DateUtil.compareTo(
+			osbOfferingEntry.getStartDate(), DateUtil.newDate());
+
+		if (value > 0) {
+			return false;
+		}
+
+		value = DateUtil.compareTo(
 			osbOfferingEntry.getStartDate(),
 			baseOSBOfferingEntry.getStartDate());
 
@@ -287,19 +354,40 @@ public class FaroSubscriptionDisplay {
 		return false;
 	}
 
+	private boolean _isBasicSubscription(FaroProject faroProject)
+		throws Exception {
+
+		JSONObject subscriptionJSONObject = JSONFactoryUtil.createJSONObject(
+			faroProject.getSubscription());
+
+		return _isBasicSubscription(subscriptionJSONObject.getString("name"));
+	}
+
+	private boolean _isBasicSubscription(String subscriptionProductName) {
+		if (StringUtil.equals(
+				subscriptionProductName, ProductConstants.BASIC_PRODUCT_NAME) ||
+			StringUtil.equals(
+				subscriptionProductName,
+				ProductConstants.LXC_PRO_PRODUCT_NAME)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private boolean _active;
 	private final List<AddOn> _addOns = new ArrayList<>();
 	private Date _endDate;
-	private long _individualsCount;
 	private long _individualsCountSinceLastAnniversary;
 	private long _individualsLimit;
 	private int _individualsStatus;
 	private Date _lastAnniversaryDate;
 	private String _name;
-	private long _pageViewsCount;
 	private long _pageViewsCountSinceLastAnniversary;
 	private long _pageViewsLimit;
 	private int _pageViewsStatus;
 	private Date _startDate;
+	private long _syncedIndividualsCount;
 
 }

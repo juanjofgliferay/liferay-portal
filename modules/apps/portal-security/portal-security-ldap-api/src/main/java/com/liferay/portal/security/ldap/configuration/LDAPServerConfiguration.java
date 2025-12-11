@@ -16,7 +16,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ExtendedObjectClassDefinition(
 	category = "ldap", factoryInstanceLabelAttribute = "ldapServerId",
-	scope = ExtendedObjectClassDefinition.Scope.COMPANY
+	scope = ExtendedObjectClassDefinition.Scope.COMPANY,
+	visibilityControllerKey = "ldap-server"
 )
 @Meta.OCD(
 	factory = true,
@@ -160,5 +161,8 @@ public interface LDAPServerConfiguration {
 		name = "group-default-object-classes", required = false
 	)
 	public String[] groupDefaultObjectClasses();
+
+	@Meta.AD(deflt = "", name = "modified-date", required = false)
+	public String modifiedDate();
 
 }

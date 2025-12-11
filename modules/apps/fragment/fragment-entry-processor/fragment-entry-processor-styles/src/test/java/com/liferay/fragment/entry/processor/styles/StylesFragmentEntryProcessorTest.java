@@ -14,16 +14,15 @@ import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocal
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.util.Collections;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -82,6 +81,12 @@ public class StylesFragmentEntryProcessorTest {
 
 		String html = "<div data-lfr-styles><span>Test</span>Fragment</div>";
 
+		Mockito.when(
+			fragmentEntryLink.getHtml()
+		).thenReturn(
+			html
+		);
+
 		Document document = _getDocument(html);
 
 		_stylesDocumentFragmentEntryProcessor.processFragmentEntryLinkHTML(
@@ -94,8 +99,8 @@ public class StylesFragmentEntryProcessorTest {
 		String layoutStructureItemUniqueCssClass =
 			fragmentStyledLayoutStructureItem.getUniqueCssClass();
 
-		Elements elements = document.select(
-			StringPool.PERIOD + layoutStructureItemUniqueCssClass);
+		Elements elements = document.getElementsByClass(
+			layoutStructureItemUniqueCssClass);
 
 		Assert.assertEquals(1, elements.size());
 	}

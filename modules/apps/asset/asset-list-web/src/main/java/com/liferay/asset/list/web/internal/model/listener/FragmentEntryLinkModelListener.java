@@ -50,7 +50,8 @@ public class FragmentEntryLinkModelListener
 
 		_assetListEntryUsageLocalService.deleteAssetListEntryUsages(
 			String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-			_getFragmentEntryLinkClassNameId(), fragmentEntryLink.getPlid());
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
+			fragmentEntryLink.getPlid());
 	}
 
 	@Override
@@ -64,7 +65,7 @@ public class FragmentEntryLinkModelListener
 
 	private void _addAssetListEntryUsage(
 		long classNameId, long fragmentEntryLinkId, long groupId, String key,
-		long plid) {
+		long plid, long userId) {
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
@@ -75,24 +76,14 @@ public class FragmentEntryLinkModelListener
 
 		try {
 			_assetListEntryUsageLocalService.addAssetListEntryUsage(
-				serviceContext.getUserId(), groupId, classNameId,
+				userId, groupId, classNameId,
 				String.valueOf(fragmentEntryLinkId),
-				_getFragmentEntryLinkClassNameId(), key, plid, serviceContext);
+				_portal.getClassNameId(FragmentEntryLink.class.getName()), key,
+				plid, serviceContext);
 		}
 		catch (PortalException portalException) {
 			_log.error(portalException);
 		}
-	}
-
-	private long _getAssetListEntryClassNameId() {
-		if (_assetListEntryClassNameId != null) {
-			return _assetListEntryClassNameId;
-		}
-
-		_assetListEntryClassNameId = _portal.getClassNameId(
-			AssetListEntry.class.getName());
-
-		return _assetListEntryClassNameId;
 	}
 
 	private List<FragmentConfigurationField>
@@ -101,31 +92,9 @@ public class FragmentEntryLinkModelListener
 
 		return ListUtil.filter(
 			_fragmentEntryConfigurationParser.getFragmentConfigurationFields(
-				fragmentEntryLink.getConfiguration()),
+				fragmentEntryLink.getConfigurationJSONObject()),
 			fragmentConfigurationField -> Objects.equals(
 				fragmentConfigurationField.getType(), "collectionSelector"));
-	}
-
-	private long _getFragmentEntryLinkClassNameId() {
-		if (_fragmentEntryLinkClassNameId != null) {
-			return _fragmentEntryLinkClassNameId;
-		}
-
-		_fragmentEntryLinkClassNameId = _portal.getClassNameId(
-			FragmentEntryLink.class.getName());
-
-		return _fragmentEntryLinkClassNameId;
-	}
-
-	private long _getInfoCollectionProviderClassNameId() {
-		if (_infoCollectionProviderClassNameId != null) {
-			return _infoCollectionProviderClassNameId;
-		}
-
-		_infoCollectionProviderClassNameId = _portal.getClassNameId(
-			InfoCollectionProvider.class.getName());
-
-		return _infoCollectionProviderClassNameId;
 	}
 
 	private void _updateAssetListEntryUsages(
@@ -133,7 +102,8 @@ public class FragmentEntryLinkModelListener
 
 		_assetListEntryUsageLocalService.deleteAssetListEntryUsages(
 			String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-			_getFragmentEntryLinkClassNameId(), fragmentEntryLink.getPlid());
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
+			fragmentEntryLink.getPlid());
 
 		List<FragmentConfigurationField> fragmentConfigurationFields =
 			_getCollectionSelectorFragmentConfigurationFields(
@@ -143,8 +113,8 @@ public class FragmentEntryLinkModelListener
 				fragmentConfigurationFields) {
 
 			Object fieldValue = _fragmentEntryConfigurationParser.getFieldValue(
-				fragmentEntryLink.getConfiguration(),
-				fragmentEntryLink.getEditableValues(),
+				fragmentEntryLink.getConfigurationJSONObject(),
+				fragmentEntryLink.getEditableValuesJSONObject(),
 				LocaleUtil.getMostRelevantLocale(),
 				fragmentConfigurationField.getName());
 
@@ -156,20 +126,21 @@ public class FragmentEntryLinkModelListener
 
 			if (fieldValueJSONObject.has("key")) {
 				_addAssetListEntryUsage(
-					_getInfoCollectionProviderClassNameId(),
+					_portal.getClassNameId(
+						InfoCollectionProvider.class.getName()),
 					fragmentEntryLink.getFragmentEntryLinkId(),
 					fragmentEntryLink.getGroupId(),
 					fieldValueJSONObject.getString("key"),
-					fragmentEntryLink.getPlid());
+					fragmentEntryLink.getPlid(), fragmentEntryLink.getUserId());
 			}
 
 			if (fieldValueJSONObject.has("classPK")) {
 				_addAssetListEntryUsage(
-					_getAssetListEntryClassNameId(),
+					_portal.getClassNameId(AssetListEntry.class.getName()),
 					fragmentEntryLink.getFragmentEntryLinkId(),
 					fragmentEntryLink.getGroupId(),
 					fieldValueJSONObject.getString("classPK"),
-					fragmentEntryLink.getPlid());
+					fragmentEntryLink.getPlid(), fragmentEntryLink.getUserId());
 			}
 		}
 	}
@@ -177,16 +148,11 @@ public class FragmentEntryLinkModelListener
 	private static final Log _log = LogFactoryUtil.getLog(
 		FragmentEntryLinkModelListener.class);
 
-	private Long _assetListEntryClassNameId;
-
 	@Reference
 	private AssetListEntryUsageLocalService _assetListEntryUsageLocalService;
 
 	@Reference
 	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
-
-	private Long _fragmentEntryLinkClassNameId;
-	private Long _infoCollectionProviderClassNameId;
 
 	@Reference
 	private Portal _portal;

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,97 +48,144 @@ public class ElementDefinition implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ElementDefinition.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getCategory() {
+		if (_categorySupplier != null) {
+			category = _categorySupplier.get();
+
+			_categorySupplier = null;
+		}
+
 		return category;
 	}
 
 	public void setCategory(String category) {
 		this.category = category;
+
+		_categorySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCategory(
 		UnsafeSupplier<String, Exception> categoryUnsafeSupplier) {
 
-		try {
-			category = categoryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categorySupplier = () -> {
+			try {
+				return categoryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String category;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _categorySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Configuration getConfiguration() {
+		if (_configurationSupplier != null) {
+			configuration = _configurationSupplier.get();
+
+			_configurationSupplier = null;
+		}
+
 		return configuration;
 	}
 
 	public void setConfiguration(Configuration configuration) {
 		this.configuration = configuration;
+
+		_configurationSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setConfiguration(
 		UnsafeSupplier<Configuration, Exception> configurationUnsafeSupplier) {
 
-		try {
-			configuration = configurationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_configurationSupplier = () -> {
+			try {
+				return configurationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Configuration configuration;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Configuration> _configurationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getIcon() {
+		if (_iconSupplier != null) {
+			icon = _iconSupplier.get();
+
+			_iconSupplier = null;
+		}
+
 		return icon;
 	}
 
 	public void setIcon(String icon) {
 		this.icon = icon;
+
+		_iconSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setIcon(UnsafeSupplier<String, Exception> iconUnsafeSupplier) {
-		try {
-			icon = iconUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_iconSupplier = () -> {
+			try {
+				return iconUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String icon;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _iconSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public UiConfiguration getUiConfiguration() {
+		if (_uiConfigurationSupplier != null) {
+			uiConfiguration = _uiConfigurationSupplier.get();
+
+			_uiConfigurationSupplier = null;
+		}
+
 		return uiConfiguration;
 	}
 
 	public void setUiConfiguration(UiConfiguration uiConfiguration) {
 		this.uiConfiguration = uiConfiguration;
+
+		_uiConfigurationSupplier = null;
 	}
 
 	@JsonIgnore
@@ -147,20 +193,25 @@ public class ElementDefinition implements Serializable {
 		UnsafeSupplier<UiConfiguration, Exception>
 			uiConfigurationUnsafeSupplier) {
 
-		try {
-			uiConfiguration = uiConfigurationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_uiConfigurationSupplier = () -> {
+			try {
+				return uiConfigurationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected UiConfiguration uiConfiguration;
+
+	@JsonIgnore
+	private Supplier<UiConfiguration> _uiConfigurationSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -189,6 +240,8 @@ public class ElementDefinition implements Serializable {
 
 		sb.append("{");
 
+		String category = getCategory();
+
 		if (category != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -203,6 +256,8 @@ public class ElementDefinition implements Serializable {
 			sb.append("\"");
 		}
 
+		Configuration configuration = getConfiguration();
+
 		if (configuration != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -212,6 +267,8 @@ public class ElementDefinition implements Serializable {
 
 			sb.append(String.valueOf(configuration));
 		}
+
+		String icon = getIcon();
 
 		if (icon != null) {
 			if (sb.length() > 1) {
@@ -226,6 +283,8 @@ public class ElementDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		UiConfiguration uiConfiguration = getUiConfiguration();
 
 		if (uiConfiguration != null) {
 			if (sb.length() > 1) {
@@ -242,8 +301,8 @@ public class ElementDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.ElementDefinition",
 		name = "x-class-name"
 	)
@@ -289,7 +348,10 @@ public class ElementDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

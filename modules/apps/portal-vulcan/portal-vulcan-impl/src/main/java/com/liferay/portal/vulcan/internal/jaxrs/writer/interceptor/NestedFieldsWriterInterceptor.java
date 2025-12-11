@@ -13,6 +13,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.fields.NestedFieldsContext;
@@ -20,6 +21,19 @@ import com.liferay.portal.vulcan.fields.NestedFieldsContextThreadLocal;
 import com.liferay.portal.vulcan.internal.fields.servlet.NestedFieldsHttpServletRequestWrapper;
 import com.liferay.portal.vulcan.internal.jaxrs.message.exchange.ExchangeWrapper;
 import com.liferay.portal.vulcan.pagination.Page;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
 
 import java.io.IOException;
 
@@ -31,26 +45,12 @@ import java.lang.reflect.Parameter;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.ext.WriterInterceptorContext;
 
 import org.apache.cxf.jaxrs.ext.ContextProvider;
 import org.apache.cxf.jaxrs.impl.UriInfoImpl;
@@ -84,7 +84,7 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			NestedFieldsContextThreadLocal.getNestedFieldsContext();
 
 		if ((nestedFieldsContext == null) ||
-			ListUtil.isEmpty(nestedFieldsContext.getFieldNames())) {
+			ListUtil.isEmpty(nestedFieldsContext.getNestedFields())) {
 
 			writerInterceptorContext.proceed();
 
@@ -94,7 +94,7 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 		try {
 			_setFieldValues(
 				writerInterceptorContext.getEntity(),
-				nestedFieldsContext.getFieldNames(), nestedFieldsContext);
+				nestedFieldsContext.getNestedFields(), nestedFieldsContext);
 		}
 		catch (Exception exception) {
 			_log.error(exception);
@@ -306,6 +306,11 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 				Map.Entry<String, Class<?>> resourceMethodArgNameTypeEntry)
 			throws Exception {
 
+			String argName = resourceMethodArgNameTypeEntry.getKey();
+
+			String methodName =
+				"get" + StringUtil.upperCaseFirstLetter(argName);
+
 			List<Class<?>> itemClasses = new ArrayList<>();
 
 			Class<?> itemClass = item.getClass();
@@ -315,19 +320,14 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			itemClasses.add(itemClass.getSuperclass());
 
 			for (Class<?> curItemClass : itemClasses) {
-				try {
-					Field itemField = curItemClass.getDeclaredField(
-						resourceMethodArgNameTypeEntry.getKey());
+				for (Method method : curItemClass.getMethods()) {
+					if (StringUtil.equals(method.getName(), methodName) &&
+						Objects.equals(
+							method.getReturnType(),
+							resourceMethodArgNameTypeEntry.getValue()) &&
+						(method.getParameterCount() == 0)) {
 
-					if (itemField != null) {
-						itemField.setAccessible(true);
-
-						return itemField.get(item);
-					}
-				}
-				catch (NoSuchFieldException noSuchFieldException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchFieldException);
+						return method.invoke(item);
 					}
 				}
 			}
@@ -583,21 +583,18 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 	}
 
 	private Field _getField(Class<?> entityClass, String fieldName) {
-		List<Field> fields = new ArrayList<>(
-			Arrays.asList(entityClass.getDeclaredFields()));
+		Class<?> clazz = entityClass;
 
-		Class<?> superClass = entityClass.getSuperclass();
+		while ((clazz != null) && (clazz != Object.class)) {
+			for (Field field : clazz.getDeclaredFields()) {
+				if (Objects.equals(field.getName(), fieldName) ||
+					Objects.equals(field.getName(), "_" + fieldName)) {
 
-		if (superClass != null) {
-			Collections.addAll(fields, superClass.getDeclaredFields());
-		}
-
-		for (Field field : fields) {
-			if (Objects.equals(field.getName(), fieldName) ||
-				Objects.equals(field.getName(), "_" + fieldName)) {
-
-				return field;
+					return field;
+				}
 			}
+
+			clazz = clazz.getSuperclass();
 		}
 
 		return null;
@@ -629,9 +626,15 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			String fieldName, Class<?> itemClass,
 			NestedFieldsContext nestedFieldsContext) {
 
-		Class<?>[] parentClasses = new Class<?>[] {
-			Void.class, itemClass, itemClass.getSuperclass()
-		};
+		List<Class<?>> parentClasses = ListUtil.fromArray(Void.class);
+
+		Class<?> clazz = itemClass;
+
+		while ((clazz != null) && (clazz != Object.class)) {
+			parentClasses.add(clazz);
+
+			clazz = clazz.getSuperclass();
+		}
 
 		for (Class<?> parentClass : parentClasses) {
 			FactoryKey factoryKey = new FactoryKey(
@@ -658,27 +661,27 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 	}
 
 	private void _setFieldValues(
-			Object entity, List<String> fieldNames,
+			Object entity, List<String> nestedFields,
 			NestedFieldsContext nestedFieldsContext)
 		throws Exception {
 
 		List<Object> items = _getItems(entity);
 
-		for (String fieldName : fieldNames) {
-			String nestedField = null;
+		for (String nestedField : nestedFields) {
+			String childNestedField = null;
 
-			int index = fieldName.indexOf(".");
+			int index = nestedField.indexOf(".");
 
 			if (index != -1) {
-				nestedField = fieldName.substring(index + 1);
+				childNestedField = nestedField.substring(index + 1);
 
-				fieldName = fieldName.substring(0, index);
+				nestedField = nestedField.substring(0, index);
 			}
 
 			for (Object item : items) {
 				Class<?> itemClass = item.getClass();
 
-				Field field = _getField(itemClass, fieldName);
+				Field field = _getField(itemClass, nestedField);
 
 				if (field == null) {
 					continue;
@@ -688,7 +691,7 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 
 				UnsafeTriFunction<String, Object, NestedFieldsContext, Object>
 					unsafeTriFunction = _getUnsafeTriFunction(
-						fieldName, itemClass, nestedFieldsContext);
+						nestedField, itemClass, nestedFieldsContext);
 
 				if (unsafeTriFunction == null) {
 					continue;
@@ -697,13 +700,13 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 				Object value = _adaptToFieldType(
 					field.getType(),
 					unsafeTriFunction.apply(
-						fieldName, item, nestedFieldsContext));
+						nestedField, item, nestedFieldsContext));
 
 				field.set(item, value);
 
-				if (nestedField != null) {
+				if (childNestedField != null) {
 					_setFieldValues(
-						value, Collections.singletonList(nestedField),
+						value, Collections.singletonList(childNestedField),
 						nestedFieldsContext);
 				}
 			}

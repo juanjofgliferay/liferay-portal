@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -528,10 +528,7 @@ definition {
 		}
 
 		task ("When the user changes the value of the "Guest Upload Maximum File Size" setting to 5 in the Instance Settings") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
+			PortalSettings.openInstanceSettingsAdmin();
 
 			SystemSettings.gotoConfiguration(
 				configurationCategory = "Forms",

@@ -16,11 +16,11 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Locale;
 
@@ -48,12 +48,12 @@ public class FragmentEntryLinkCTDisplayRender
 		String name = _fragmentEntryLinkHelper.getFragmentEntryName(
 			fragmentEntryLink, locale);
 
-		if ((layout != null) && !name.equals(StringPool.BLANK)) {
-			return _language.format(
-				locale, "x-for-x", new String[] {name, layout.getName(locale)});
+		if ((layout == null) || name.equals(StringPool.BLANK)) {
+			return null;
 		}
 
-		return null;
+		return _language.format(
+			locale, "x-for-x", new String[] {name, layout.getName(locale)});
 	}
 
 	@Override
@@ -72,16 +72,8 @@ public class FragmentEntryLinkCTDisplayRender
 			}
 		}
 
-		if (fragmentEntryLink.getOriginalFragmentEntryLinkId() == 0) {
-			return false;
-		}
-
-		return true;
-	}
-
-	@Override
-	public boolean isMovable(FragmentEntryLink fragmentEntryLink) {
-		return false;
+		return Validator.isNotNull(
+			fragmentEntryLink.getOriginalFragmentEntryLinkERC());
 	}
 
 	@Override
@@ -121,8 +113,8 @@ public class FragmentEntryLinkCTDisplayRender
 		).display(
 			"editable-values",
 			() -> {
-				JSONObject jsonObject = _jsonFactory.createJSONObject(
-					fragmentEntryLink.getEditableValues());
+				JSONObject jsonObject =
+					fragmentEntryLink.getEditableValuesJSONObject();
 
 				return jsonObject.toString(4);
 			},
@@ -135,9 +127,6 @@ public class FragmentEntryLinkCTDisplayRender
 
 	@Reference
 	private FragmentRendererController _fragmentRendererController;
-
-	@Reference
-	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Language _language;

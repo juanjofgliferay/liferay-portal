@@ -5,13 +5,15 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.google.common.collect.Lists;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +29,20 @@ import org.dom4j.Element;
  */
 public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 
+	@Override
+	public void addCachedDownstreamBuild(Build build) {
+		if ((build == null) || _downstreamBuilds.contains(build)) {
+			return;
+		}
+
+		build.setBuildCached(true);
+
+		build.saveBuildURLInBuildDatabase();
+
+		addDownstreamBuild(build);
+	}
+
+	@Override
 	public void addDownstreamBuilds(Map<String, String> urlAxisNames) {
 		if (urlAxisNames.isEmpty()) {
 			return;
@@ -68,7 +84,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 						public Build call() {
 							try {
 								return BuildFactory.newBuild(
-									buildURL, thisBuild, axisName);
+									buildURL, axisName, thisBuild);
 							}
 							catch (RuntimeException runtimeException) {
 								if (!isFromArchive()) {
@@ -77,7 +93,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 											"\nBuild URL: " +
 												thisBuild.getBuildURL(),
 										"ci-notifications",
-										"Build Object Failure");
+										"Build object failure");
 								}
 
 								return null;
@@ -347,18 +363,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			downstreamBuilds = getDownstreamBuilds(status);
 		}
 
-		for (Build downstreamBuild : downstreamBuilds) {
-			if (!(downstreamBuild instanceof ParentBuild)) {
-				continue;
-			}
-
-			ParentBuild parentBuild = (ParentBuild)downstreamBuild;
-
-			totalSlavesUsedCount += parentBuild.getTotalSlavesUsedCount(
-				status, modifiedBuildsOnly);
-		}
-
-		return totalSlavesUsedCount;
+		return totalSlavesUsedCount + downstreamBuilds.size();
 	}
 
 	@Override
@@ -471,11 +476,23 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			return;
 		}
 
-		List<Build> downstreamBuilds = getDownstreamBuilds(null);
+		int buildThreadSpawnFrequency = 0;
 
+		try {
+			buildThreadSpawnFrequency = Integer.parseInt(
+				JenkinsResultsParserUtil.getBuildProperty(
+					"build.thread.spawn.frequency"));
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(
+				"Unable to parse property \"build.thread.spawn.frequency\"",
+				ioException);
+		}
+
+		Map<String, Integer> callableGroupCounter = new HashMap<>();
 		List<Callable<Object>> callables = new ArrayList<>();
 
-		for (final Build downstreamBuild : downstreamBuilds) {
+		for (final Build downstreamBuild : getDownstreamBuilds(null)) {
 			String status = downstreamBuild.getStatus();
 
 			if (status.equals("completed")) {
@@ -484,30 +501,79 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 
 			JenkinsMaster jenkinsMaster = downstreamBuild.getJenkinsMaster();
 
-			ParallelExecutor.SequentialCallable<Object> callable =
-				new ParallelExecutor.SequentialCallable<Object>(
-					jenkinsMaster.getName()) {
+			String jenkinsMasterName = jenkinsMaster.getName();
 
-					@Override
-					public Object call() {
-						downstreamBuild.update();
+			if (!callableGroupCounter.containsKey(jenkinsMasterName)) {
+				callableGroupCounter.put(jenkinsMasterName, 0);
+			}
 
-						return null;
-					}
+			Integer buildCounter = callableGroupCounter.get(jenkinsMasterName);
 
-				};
+			String sequentialCallableGroupName = jenkinsMasterName;
 
-			callables.add(callable);
+			try {
+				if (buildCounter >= buildThreadSpawnFrequency) {
+					int groupNumber = buildCounter / buildThreadSpawnFrequency;
+
+					sequentialCallableGroupName =
+						JenkinsResultsParserUtil.combine(
+							sequentialCallableGroupName, "_",
+							String.valueOf(groupNumber));
+				}
+
+				callableGroupCounter.put(
+					sequentialCallableGroupName, buildCounter + 1);
+
+				ParallelExecutor.SequentialCallable<Object> callable =
+					new ParallelExecutor.SequentialCallable<Object>(
+						sequentialCallableGroupName) {
+
+						@Override
+						public Object call() {
+							downstreamBuild.update();
+
+							return null;
+						}
+
+					};
+
+				callables.add(callable);
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
 		}
 
-		ParallelExecutor<Object> parallelExecutor = new ParallelExecutor<>(
-			callables, getExecutorService(), "update");
+		List<List<Callable<Object>>> callablesList = Lists.partition(
+			callables, _getInvokedGroupSize());
 
-		try {
-			parallelExecutor.execute();
-		}
-		catch (TimeoutException timeoutException) {
-			throw new RuntimeException(timeoutException);
+		for (int i = 0; i < callablesList.size(); i++) {
+			ParallelExecutor<Object> parallelExecutor = new ParallelExecutor<>(
+				callablesList.get(i), getExecutorService(), "update-" + i);
+
+			try {
+				long buildUpdateTimeout = 60 * 90;
+
+				String buildUpdateTimeoutString =
+					JenkinsResultsParserUtil.getBuildProperty(
+						"build.update.timeout", getBranchName(), getJobName(),
+						getTestSuiteName());
+
+				if (JenkinsResultsParserUtil.isInteger(
+						buildUpdateTimeoutString)) {
+
+					buildUpdateTimeout = Long.parseLong(
+						buildUpdateTimeoutString);
+				}
+				else if (Objects.equals(getJobName(), "test-portal-release")) {
+					buildUpdateTimeout = 60 * 240;
+				}
+
+				parallelExecutor.execute(buildUpdateTimeout);
+			}
+			catch (IOException | TimeoutException exception) {
+				throw new RuntimeException(exception);
+			}
 		}
 
 		findDownstreamBuilds();
@@ -515,12 +581,28 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 		super.update();
 	}
 
-	protected BaseParentBuild(String url) {
-		super(url);
+	protected BaseParentBuild(String buildURL) {
+		super(buildURL);
 	}
 
-	protected BaseParentBuild(String url, Build parentBuild) {
-		super(url, parentBuild);
+	protected BaseParentBuild(String buildURL, Build parentBuild) {
+		super(buildURL, parentBuild);
+	}
+
+	protected void addDownstreamBuild(Build build) {
+		if (build == null) {
+			return;
+		}
+
+		if (_downstreamBuilds == null) {
+			getDownstreamBuilds();
+		}
+
+		if (build.isBuildCached() && _downstreamBuilds.contains(build)) {
+			return;
+		}
+
+		_downstreamBuilds.add(build);
 	}
 
 	protected void addDownstreamBuilds(Collection<Build> builds) {
@@ -528,13 +610,9 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			return;
 		}
 
-		builds.removeAll(Collections.singleton(null));
-
-		if (_downstreamBuilds == null) {
-			getDownstreamBuilds();
+		for (Build build : builds) {
+			addDownstreamBuild(build);
 		}
-
-		_downstreamBuilds.addAll(builds);
 	}
 
 	protected void addDownstreamBuildsTimelineData(TimelineData timelineData) {
@@ -585,7 +663,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 		return count;
 	}
 
-	protected Map<Build, Element> getDownstreamBuildMessages(
+	protected List<Element> getDownstreamBuildMessageElements(
 		List<Build> downstreamBuilds) {
 
 		List<Callable<Element>> callables = new ArrayList<>();
@@ -610,15 +688,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 			callables, getExecutorService(), "getDownstreamBuildMessages");
 
 		try {
-			List<Element> elements = parallelExecutor.execute();
-
-			Map<Build, Element> elementsMap = new LinkedHashMap<>();
-
-			for (int i = 0; i < elements.size(); i++) {
-				elementsMap.put(downstreamBuilds.get(i), elements.get(i));
-			}
-
-			return elementsMap;
+			return parallelExecutor.execute();
 		}
 		catch (TimeoutException timeoutException) {
 			throw new RuntimeException(timeoutException);
@@ -636,6 +706,7 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 		return failedDownstreamBuilds;
 	}
 
+	@Override
 	protected List<Element> getJenkinsReportTableRowElements(
 		String result, String status) {
 
@@ -691,6 +762,24 @@ public abstract class BaseParentBuild extends BaseBuild implements ParentBuild {
 		Collections.sort(
 			_downstreamBuilds, new BaseBuild.BuildDisplayNameComparator());
 	}
+
+	private int _getInvokedGroupSize() {
+		try {
+			String invokedGroupSize = JenkinsResultsParserUtil.getBuildProperty(
+				"test.batch.invoked.group.size");
+
+			if (JenkinsResultsParserUtil.isInteger(invokedGroupSize)) {
+				return Integer.parseInt(invokedGroupSize);
+			}
+		}
+		catch (IOException ioException) {
+			return _INVOKED_GROUP_SIZE_DEFAULT;
+		}
+
+		return _INVOKED_GROUP_SIZE_DEFAULT;
+	}
+
+	private static final int _INVOKED_GROUP_SIZE_DEFAULT = 500;
 
 	private static final Pattern _buildURLPattern = Pattern.compile(
 		"http[s]?\\:\\/\\/(?<hostname>[^\\/]+)\\/.*");

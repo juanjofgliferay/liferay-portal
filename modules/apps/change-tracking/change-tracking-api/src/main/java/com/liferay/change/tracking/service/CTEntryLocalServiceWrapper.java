@@ -99,6 +99,14 @@ public class CTEntryLocalServiceWrapper
 		return _ctEntryLocalService.deleteCTEntry(ctEntry);
 	}
 
+	@Override
+	public com.liferay.change.tracking.model.CTEntry deleteCTEntry(
+			com.liferay.change.tracking.model.CTEntry ctEntry, boolean force)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ctEntryLocalService.deleteCTEntry(ctEntry, force);
+	}
+
 	/**
 	 * Deletes the ct entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -326,6 +334,13 @@ public class CTEntryLocalServiceWrapper
 			ctCollectionId, modelClassNameId);
 	}
 
+	@Override
+	public java.util.List<com.liferay.change.tracking.model.CTEntry>
+		getCTEntries(long[] ctEntryIds) {
+
+		return _ctEntryLocalService.getCTEntries(ctEntryIds);
+	}
+
 	/**
 	 * Returns the number of ct entries.
 	 *
@@ -443,6 +458,14 @@ public class CTEntryLocalServiceWrapper
 
 		return _ctEntryLocalService.hasCTEntry(
 			ctCollectionId, modelClassNameId, modelClassPK);
+	}
+
+	@Override
+	public boolean hasUnpublishedCTEntries(
+		long modelClassNameId, long modelClassPK, int changeType) {
+
+		return _ctEntryLocalService.hasUnpublishedCTEntries(
+			modelClassNameId, modelClassPK, changeType);
 	}
 
 	/**

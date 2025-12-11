@@ -31,10 +31,8 @@ public class OracleSQLTransformerLogicTest
 
 	@Override
 	public String getDropTableIfExistsTextTransformedSQL() {
-		return StringBundler.concat(
-			"BEGIN\n", "EXECUTE IMMEDIATE 'DROP TABLE Foo';\n", "EXCEPTION\n",
-			"WHEN OTHERS THEN\n", "IF SQLCODE != -942 THEN\n", "RAISE;\n",
-			"END IF;\n", "END;\n", "/");
+		return "BEGIN\nEXECUTE IMMEDIATE 'DROP TABLE Foo';\nEXCEPTION\nWHEN " +
+			"OTHERS THEN\nIF SQLCODE != -942 THEN\nRAISE;\nEND IF;\nEND;\n/";
 	}
 
 	@Override
@@ -43,13 +41,6 @@ public class OracleSQLTransformerLogicTest
 		Assert.assertEquals(
 			getBitwiseCheckTransformedSQL(),
 			sqlTransformer.transform(getBitwiseCheckOriginalSQL()));
-	}
-
-	@Test
-	public void testReplaceCastText() {
-		Assert.assertEquals(
-			"select CAST(foo AS VARCHAR(4000)) from Foo",
-			sqlTransformer.transform(getCastTextOriginalSQL()));
 	}
 
 	@Test
@@ -75,13 +66,29 @@ public class OracleSQLTransformerLogicTest
 	}
 
 	@Override
+	protected String getBitwiseOrTransformedSQL() {
+		return "select (foo + bar - BITAND(foo, bar)) from Foo";
+	}
+
+	@Override
 	protected String getBooleanTransformedSQL() {
 		return "select * from Foo where foo = FALSE and bar = TRUE";
 	}
 
 	@Override
 	protected String getCastClobTextTransformedSQL() {
-		return "select DBMS_LOB.SUBSTR(foo, 4000, 1) from Foo";
+		return StringBundler.concat(
+			"select DBMS_LOB.SUBSTR(foo || (DBMS_LOB.SUBSTR(foo, 4000, 1) || ",
+			"(bar || foo)), 4000, 1), DBMS_LOB.SUBSTR(foo || (bar || foo), ",
+			"4000, 1) from Foo");
+	}
+
+	@Override
+	protected String getCastTextTransformedSQL() {
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS VARCHAR(4000)) || (bar || foo)) ",
+			"AS VARCHAR(4000)), CAST(foo || (bar || foo) AS VARCHAR(4000)) ",
+			"from Foo");
 	}
 
 	@Override

@@ -9,6 +9,8 @@
 
 <%
 LayoutPrototypeDisplayContext layoutPrototypeDisplayContext = new LayoutPrototypeDisplayContext(request, renderRequest, renderResponse);
+
+portletDisplay.setShowStagingIcon(false);
 %>
 
 <clay:navigation-bar
@@ -22,14 +24,14 @@ LayoutPrototypeManagementToolbarDisplayContext layoutPrototypeManagementToolbarD
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= layoutPrototypeManagementToolbarDisplayContext %>"
-	propsTransformer="js/propsTransformers/LayoutPrototypeManagementToolbarPropsTransformer"
+	propsTransformer="{LayoutPrototypeManagementToolbarPropsTransformer} from layout-page-template-admin-web"
 />
 
 <portlet:actionURL name="/layout_page_template_admin/delete_layout_prototype" var="deleteLayoutPrototypesURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteLayoutPrototypesURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteLayoutPrototypesURL %>" cssClass="container-fluid container-fluid-max-xxxl" name="fm">
 	<liferay-ui:error embed="<%= false %>" exception="<%= RequiredLayoutPrototypeException.class %>" message="you-cannot-delete-page-templates-that-are-used-by-a-page" />
 
 	<liferay-ui:search-container
@@ -53,7 +55,7 @@ LayoutPrototypeManagementToolbarDisplayContext layoutPrototypeManagementToolbarD
 
 			<liferay-ui:search-container-column-text>
 				<clay:vertical-card
-					propsTransformer="js/propsTransformers/LayoutPrototypeDropdownPropsTransformer"
+					propsTransformer="{LayoutPrototypeDropdownPropsTransformer} from layout-page-template-admin-web"
 					verticalCard="<%= new LayoutPrototypeVerticalCard(layoutPrototype, renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 				/>
 			</liferay-ui:search-container-column-text>

@@ -5,8 +5,10 @@
 
 package com.liferay.portal.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
@@ -159,109 +161,111 @@ public class CountryPersistenceImpl
 		String uuid, int start, int end,
 		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid;
+					finderArgs = new Object[] {uuid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid;
+				finderArgs = new Object[] {uuid, start, end, orderByComparator};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if (!uuid.equals(country.getUuid())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if (!uuid.equals(country.getUuid())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-				cacheResult(list);
+				boolean bindUuid = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
+
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -558,71 +562,64 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid;
-
-			finderArgs = new Object[] {uuid};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			boolean bindUuid = false;
+				boolean bindUuid = false;
 
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_UUID_2 = "country.uuid = ?";
@@ -710,117 +707,119 @@ public class CountryPersistenceImpl
 		String uuid, long companyId, int start, int end,
 		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_C;
+					finderArgs = new Object[] {uuid, companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C;
+				finderArgs = new Object[] {
+					uuid, companyId, start, end, orderByComparator
+				};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if (!uuid.equals(country.getUuid()) ||
-						(companyId != country.getCompanyId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if (!uuid.equals(country.getUuid()) ||
+							(companyId != country.getCompanyId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1143,75 +1142,68 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C;
-
-			finderArgs = new Object[] {uuid, companyId};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			boolean bindUuid = false;
+				boolean bindUuid = false;
 
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_C_UUID_2 =
@@ -1296,98 +1288,100 @@ public class CountryPersistenceImpl
 		long companyId, int start, int end,
 		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByCompanyId;
-				finderArgs = new Object[] {companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByCompanyId;
+					finderArgs = new Object[] {companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByCompanyId;
-			finderArgs = new Object[] {
-				companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByCompanyId;
+				finderArgs = new Object[] {
+					companyId, start, end, orderByComparator
+				};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if (companyId != country.getCompanyId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if (companyId != country.getCompanyId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1673,58 +1667,51 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByCompanyId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByCompanyId;
-
-			finderArgs = new Object[] {companyId};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_COMPANYID_COMPANYID_2 =
@@ -1802,96 +1789,100 @@ public class CountryPersistenceImpl
 		boolean active, int start, int end,
 		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByActive;
-				finderArgs = new Object[] {active};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByActive;
+					finderArgs = new Object[] {active};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByActive;
-			finderArgs = new Object[] {active, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByActive;
+				finderArgs = new Object[] {
+					active, start, end, orderByComparator
+				};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if (active != country.isActive()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if (active != country.isActive()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_ACTIVE_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_ACTIVE_ACTIVE_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2176,65 +2167,57 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByActive(boolean active) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByActive;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {active};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByActive;
-
-			finderArgs = new Object[] {active};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_ACTIVE_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_ACTIVE_ACTIVE_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_ACTIVE_ACTIVE_2 =
 		"country.active = ?";
 
 	private FinderPath _finderPathFetchByC_A2;
-	private FinderPath _finderPathCountByC_A2;
 
 	/**
 	 * Returns the country where companyId = &#63; and a2 = &#63; or throws a <code>NoSuchCountryException</code> if it could not be found.
@@ -2297,106 +2280,100 @@ public class CountryPersistenceImpl
 	public Country fetchByC_A2(
 		long companyId, String a2, boolean useFinderCache) {
 
-		a2 = Objects.toString(a2, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		Object[] finderArgs = null;
+			a2 = Objects.toString(a2, "");
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {companyId, a2};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_A2, finderArgs, this);
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		if (result instanceof Country) {
-			Country country = (Country)result;
-
-			if ((companyId != country.getCompanyId()) ||
-				!Objects.equals(a2, country.getA2())) {
-
-				result = null;
-			}
-			else if (!CTPersistenceHelperUtil.isProductionMode(
-						Country.class, country.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_A2_COMPANYID_2);
-
-			boolean bindA2 = false;
-
-			if (a2.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_A2_A2_3);
-			}
-			else {
-				bindA2 = true;
-
-				sb.append(_FINDER_COLUMN_C_A2_A2_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {companyId, a2};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_A2, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof Country) {
+				Country country = (Country)result;
 
-				Query query = session.createQuery(sql);
+				if ((companyId != country.getCompanyId()) ||
+					!Objects.equals(a2, country.getA2())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindA2) {
-					queryPos.add(a2);
+					result = null;
 				}
+			}
 
-				List<Country> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_A2, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A2_COMPANYID_2);
+
+				boolean bindA2 = false;
+
+				if (a2.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_A2_A2_3);
 				}
 				else {
-					Country country = list.get(0);
+					bindA2 = true;
 
-					result = country;
+					sb.append(_FINDER_COLUMN_C_A2_A2_2);
+				}
 
-					cacheResult(country);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					if (bindA2) {
+						queryPos.add(a2);
+					}
+
+					List<Country> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_A2, finderArgs, list);
+						}
+					}
+					else {
+						Country country = list.get(0);
+
+						result = country;
+
+						cacheResult(country);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Country)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Country)result;
+			}
 		}
 	}
 
@@ -2425,75 +2402,13 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByC_A2(long companyId, String a2) {
-		a2 = Objects.toString(a2, "");
+		Country country = fetchByC_A2(companyId, a2);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_A2;
-
-			finderArgs = new Object[] {companyId, a2};
-
-			count = (Long)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+		if (country == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_A2_COMPANYID_2);
-
-			boolean bindA2 = false;
-
-			if (a2.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_A2_A2_3);
-			}
-			else {
-				bindA2 = true;
-
-				sb.append(_FINDER_COLUMN_C_A2_A2_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindA2) {
-					queryPos.add(a2);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_A2_COMPANYID_2 =
@@ -2505,7 +2420,6 @@ public class CountryPersistenceImpl
 		"(country.a2 IS NULL OR country.a2 = '')";
 
 	private FinderPath _finderPathFetchByC_A3;
-	private FinderPath _finderPathCountByC_A3;
 
 	/**
 	 * Returns the country where companyId = &#63; and a3 = &#63; or throws a <code>NoSuchCountryException</code> if it could not be found.
@@ -2568,106 +2482,100 @@ public class CountryPersistenceImpl
 	public Country fetchByC_A3(
 		long companyId, String a3, boolean useFinderCache) {
 
-		a3 = Objects.toString(a3, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		Object[] finderArgs = null;
+			a3 = Objects.toString(a3, "");
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {companyId, a3};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_A3, finderArgs, this);
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		if (result instanceof Country) {
-			Country country = (Country)result;
-
-			if ((companyId != country.getCompanyId()) ||
-				!Objects.equals(a3, country.getA3())) {
-
-				result = null;
-			}
-			else if (!CTPersistenceHelperUtil.isProductionMode(
-						Country.class, country.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_A3_COMPANYID_2);
-
-			boolean bindA3 = false;
-
-			if (a3.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_A3_A3_3);
-			}
-			else {
-				bindA3 = true;
-
-				sb.append(_FINDER_COLUMN_C_A3_A3_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {companyId, a3};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_A3, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof Country) {
+				Country country = (Country)result;
 
-				Query query = session.createQuery(sql);
+				if ((companyId != country.getCompanyId()) ||
+					!Objects.equals(a3, country.getA3())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindA3) {
-					queryPos.add(a3);
+					result = null;
 				}
+			}
 
-				List<Country> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_A3, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A3_COMPANYID_2);
+
+				boolean bindA3 = false;
+
+				if (a3.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_A3_A3_3);
 				}
 				else {
-					Country country = list.get(0);
+					bindA3 = true;
 
-					result = country;
+					sb.append(_FINDER_COLUMN_C_A3_A3_2);
+				}
 
-					cacheResult(country);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					if (bindA3) {
+						queryPos.add(a3);
+					}
+
+					List<Country> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_A3, finderArgs, list);
+						}
+					}
+					else {
+						Country country = list.get(0);
+
+						result = country;
+
+						cacheResult(country);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Country)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Country)result;
+			}
 		}
 	}
 
@@ -2696,75 +2604,13 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByC_A3(long companyId, String a3) {
-		a3 = Objects.toString(a3, "");
+		Country country = fetchByC_A3(companyId, a3);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_A3;
-
-			finderArgs = new Object[] {companyId, a3};
-
-			count = (Long)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+		if (country == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_A3_COMPANYID_2);
-
-			boolean bindA3 = false;
-
-			if (a3.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_A3_A3_3);
-			}
-			else {
-				bindA3 = true;
-
-				sb.append(_FINDER_COLUMN_C_A3_A3_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindA3) {
-					queryPos.add(a3);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_A3_COMPANYID_2 =
@@ -2855,104 +2701,106 @@ public class CountryPersistenceImpl
 		long companyId, boolean active, int start, int end,
 		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByC_Active;
-				finderArgs = new Object[] {companyId, active};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_Active;
+					finderArgs = new Object[] {companyId, active};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByC_Active;
-			finderArgs = new Object[] {
-				companyId, active, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_Active;
+				finderArgs = new Object[] {
+					companyId, active, start, end, orderByComparator
+				};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if ((companyId != country.getCompanyId()) ||
-						(active != country.isActive())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if ((companyId != country.getCompanyId()) ||
+							(active != country.isActive())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_ACTIVE_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_ACTIVE_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_ACTIVE_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_C_ACTIVE_ACTIVE_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -3262,62 +3110,55 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByC_Active(long companyId, boolean active) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_Active;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId, active};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_Active;
-
-			finderArgs = new Object[] {companyId, active};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_ACTIVE_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_ACTIVE_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_ACTIVE_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_C_ACTIVE_ACTIVE_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_C_ACTIVE_COMPANYID_2 =
@@ -3327,7 +3168,6 @@ public class CountryPersistenceImpl
 		"country.active = ?";
 
 	private FinderPath _finderPathFetchByC_Name;
-	private FinderPath _finderPathCountByC_Name;
 
 	/**
 	 * Returns the country where companyId = &#63; and name = &#63; or throws a <code>NoSuchCountryException</code> if it could not be found.
@@ -3390,106 +3230,100 @@ public class CountryPersistenceImpl
 	public Country fetchByC_Name(
 		long companyId, String name, boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		Object[] finderArgs = null;
+			name = Objects.toString(name, "");
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {companyId, name};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_Name, finderArgs, this);
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		if (result instanceof Country) {
-			Country country = (Country)result;
-
-			if ((companyId != country.getCompanyId()) ||
-				!Objects.equals(name, country.getName())) {
-
-				result = null;
-			}
-			else if (!CTPersistenceHelperUtil.isProductionMode(
-						Country.class, country.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_NAME_COMPANYID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_NAME_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_C_NAME_NAME_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {companyId, name};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_Name, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof Country) {
+				Country country = (Country)result;
 
-				Query query = session.createQuery(sql);
+				if ((companyId != country.getCompanyId()) ||
+					!Objects.equals(name, country.getName())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindName) {
-					queryPos.add(name);
+					result = null;
 				}
+			}
 
-				List<Country> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_Name, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_NAME_COMPANYID_2);
+
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_NAME_NAME_3);
 				}
 				else {
-					Country country = list.get(0);
+					bindName = true;
 
-					result = country;
+					sb.append(_FINDER_COLUMN_C_NAME_NAME_2);
+				}
 
-					cacheResult(country);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					List<Country> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_Name, finderArgs, list);
+						}
+					}
+					else {
+						Country country = list.get(0);
+
+						result = country;
+
+						cacheResult(country);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Country)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Country)result;
+			}
 		}
 	}
 
@@ -3518,75 +3352,13 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByC_Name(long companyId, String name) {
-		name = Objects.toString(name, "");
+		Country country = fetchByC_Name(companyId, name);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_Name;
-
-			finderArgs = new Object[] {companyId, name};
-
-			count = (Long)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+		if (country == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_NAME_COMPANYID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_NAME_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_C_NAME_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_NAME_COMPANYID_2 =
@@ -3599,7 +3371,6 @@ public class CountryPersistenceImpl
 		"(country.name IS NULL OR country.name = '')";
 
 	private FinderPath _finderPathFetchByC_Number;
-	private FinderPath _finderPathCountByC_Number;
 
 	/**
 	 * Returns the country where companyId = &#63; and number = &#63; or throws a <code>NoSuchCountryException</code> if it could not be found.
@@ -3662,106 +3433,100 @@ public class CountryPersistenceImpl
 	public Country fetchByC_Number(
 		long companyId, String number, boolean useFinderCache) {
 
-		number = Objects.toString(number, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		Object[] finderArgs = null;
+			number = Objects.toString(number, "");
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {companyId, number};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_Number, finderArgs, this);
-		}
-
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		if (result instanceof Country) {
-			Country country = (Country)result;
-
-			if ((companyId != country.getCompanyId()) ||
-				!Objects.equals(number, country.getNumber())) {
-
-				result = null;
-			}
-			else if (!CTPersistenceHelperUtil.isProductionMode(
-						Country.class, country.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_NUMBER_COMPANYID_2);
-
-			boolean bindNumber = false;
-
-			if (number.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_NUMBER_NUMBER_3);
-			}
-			else {
-				bindNumber = true;
-
-				sb.append(_FINDER_COLUMN_C_NUMBER_NUMBER_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {companyId, number};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_Number, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof Country) {
+				Country country = (Country)result;
 
-				Query query = session.createQuery(sql);
+				if ((companyId != country.getCompanyId()) ||
+					!Objects.equals(number, country.getNumber())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindNumber) {
-					queryPos.add(number);
+					result = null;
 				}
+			}
 
-				List<Country> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_Number, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_NUMBER_COMPANYID_2);
+
+				boolean bindNumber = false;
+
+				if (number.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_NUMBER_NUMBER_3);
 				}
 				else {
-					Country country = list.get(0);
+					bindNumber = true;
 
-					result = country;
+					sb.append(_FINDER_COLUMN_C_NUMBER_NUMBER_2);
+				}
 
-					cacheResult(country);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					if (bindNumber) {
+						queryPos.add(number);
+					}
+
+					List<Country> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_Number, finderArgs, list);
+						}
+					}
+					else {
+						Country country = list.get(0);
+
+						result = country;
+
+						cacheResult(country);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Country)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Country)result;
+			}
 		}
 	}
 
@@ -3790,75 +3555,13 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countByC_Number(long companyId, String number) {
-		number = Objects.toString(number, "");
+		Country country = fetchByC_Number(companyId, number);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_Number;
-
-			finderArgs = new Object[] {companyId, number};
-
-			count = (Long)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+		if (country == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_NUMBER_COMPANYID_2);
-
-			boolean bindNumber = false;
-
-			if (number.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_NUMBER_NUMBER_3);
-			}
-			else {
-				bindNumber = true;
-
-				sb.append(_FINDER_COLUMN_C_NUMBER_NUMBER_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindNumber) {
-					queryPos.add(number);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_NUMBER_COMPANYID_2 =
@@ -3960,109 +3663,114 @@ public class CountryPersistenceImpl
 		int end, OrderByComparator<Country> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByC_A_B;
-				finderArgs = new Object[] {companyId, active, billingAllowed};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_A_B;
+					finderArgs = new Object[] {
+						companyId, active, billingAllowed
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByC_A_B;
-			finderArgs = new Object[] {
-				companyId, active, billingAllowed, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_A_B;
+				finderArgs = new Object[] {
+					companyId, active, billingAllowed, start, end,
+					orderByComparator
+				};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if ((companyId != country.getCompanyId()) ||
-						(active != country.isActive()) ||
-						(billingAllowed != country.isBillingAllowed())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if ((companyId != country.getCompanyId()) ||
+							(active != country.isActive()) ||
+							(billingAllowed != country.isBillingAllowed())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_A_B_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_A_B_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_A_B_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_C_A_B_ACTIVE_2);
 
-			sb.append(_FINDER_COLUMN_C_A_B_BILLINGALLOWED_2);
+				sb.append(_FINDER_COLUMN_C_A_B_BILLINGALLOWED_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				queryPos.add(billingAllowed);
+					queryPos.add(billingAllowed);
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4398,66 +4106,61 @@ public class CountryPersistenceImpl
 	public int countByC_A_B(
 		long companyId, boolean active, boolean billingAllowed) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_A_B;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				companyId, active, billingAllowed
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_A_B;
-
-			finderArgs = new Object[] {companyId, active, billingAllowed};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_A_B_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_A_B_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_A_B_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_C_A_B_ACTIVE_2);
 
-			sb.append(_FINDER_COLUMN_C_A_B_BILLINGALLOWED_2);
+				sb.append(_FINDER_COLUMN_C_A_B_BILLINGALLOWED_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				queryPos.add(billingAllowed);
+					queryPos.add(billingAllowed);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_C_A_B_COMPANYID_2 =
@@ -4560,110 +4263,114 @@ public class CountryPersistenceImpl
 		int end, OrderByComparator<Country> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByC_A_S;
-				finderArgs = new Object[] {companyId, active, shippingAllowed};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_A_S;
+					finderArgs = new Object[] {
+						companyId, active, shippingAllowed
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByC_A_S;
-			finderArgs = new Object[] {
-				companyId, active, shippingAllowed, start, end,
-				orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_A_S;
+				finderArgs = new Object[] {
+					companyId, active, shippingAllowed, start, end,
+					orderByComparator
+				};
+			}
 
-		List<Country> list = null;
+			List<Country> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Country country : list) {
-					if ((companyId != country.getCompanyId()) ||
-						(active != country.isActive()) ||
-						(shippingAllowed != country.isShippingAllowed())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if ((companyId != country.getCompanyId()) ||
+							(active != country.isActive()) ||
+							(shippingAllowed != country.isShippingAllowed())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_COUNTRY_WHERE);
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_A_S_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_A_S_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_A_S_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_C_A_S_ACTIVE_2);
 
-			sb.append(_FINDER_COLUMN_C_A_S_SHIPPINGALLOWED_2);
+				sb.append(_FINDER_COLUMN_C_A_S_SHIPPINGALLOWED_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(CountryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				queryPos.add(shippingAllowed);
+					queryPos.add(shippingAllowed);
 
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4999,66 +4706,61 @@ public class CountryPersistenceImpl
 	public int countByC_A_S(
 		long companyId, boolean active, boolean shippingAllowed) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_A_S;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				companyId, active, shippingAllowed
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_A_S;
-
-			finderArgs = new Object[] {companyId, active, shippingAllowed};
-
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				finderPath, finderArgs, this);
-		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			sb.append(_SQL_COUNT_COUNTRY_WHERE);
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_A_S_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_A_S_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_A_S_ACTIVE_2);
+				sb.append(_FINDER_COLUMN_C_A_S_ACTIVE_2);
 
-			sb.append(_FINDER_COLUMN_C_A_S_SHIPPINGALLOWED_2);
+				sb.append(_FINDER_COLUMN_C_A_S_SHIPPINGALLOWED_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(active);
+					queryPos.add(active);
 
-				queryPos.add(shippingAllowed);
+					queryPos.add(shippingAllowed);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_C_A_S_COMPANYID_2 =
@@ -5068,6 +4770,1471 @@ public class CountryPersistenceImpl
 		"country.active = ? AND ";
 
 	private static final String _FINDER_COLUMN_C_A_S_SHIPPINGALLOWED_2 =
+		"country.shippingAllowed = ?";
+
+	private FinderPath _finderPathWithPaginationFindByC_A_B_G;
+	private FinderPath _finderPathWithoutPaginationFindByC_A_B_G;
+	private FinderPath _finderPathCountByC_A_B_G;
+
+	/**
+	 * Returns all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @return the matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled) {
+
+		return findByC_A_B_G(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @return the range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, int start, int end) {
+
+		return findByC_A_B_G(
+			countryId, active, billingAllowed, groupFilterEnabled, start, end,
+			null);
+	}
+
+	/**
+	 * Returns an ordered range of all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, int start, int end,
+		OrderByComparator<Country> orderByComparator) {
+
+		return findByC_A_B_G(
+			countryId, active, billingAllowed, groupFilterEnabled, start, end,
+			orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, int start, int end,
+		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_A_B_G;
+					finderArgs = new Object[] {
+						countryId, active, billingAllowed, groupFilterEnabled
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_A_B_G;
+				finderArgs = new Object[] {
+					countryId, active, billingAllowed, groupFilterEnabled,
+					start, end, orderByComparator
+				};
+			}
+
+			List<Country> list = null;
+
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if ((countryId != country.getCountryId()) ||
+							(active != country.isActive()) ||
+							(billingAllowed != country.isBillingAllowed()) ||
+							(groupFilterEnabled !=
+								country.isGroupFilterEnabled())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
+
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_COUNTRYID_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_ACTIVE_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_BILLINGALLOWED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_GROUPFILTERENABLED_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(countryId);
+
+					queryPos.add(active);
+
+					queryPos.add(billingAllowed);
+
+					queryPos.add(groupFilterEnabled);
+
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching country
+	 * @throws NoSuchCountryException if a matching country could not be found
+	 */
+	@Override
+	public Country findByC_A_B_G_First(
+			long countryId, boolean active, boolean billingAllowed,
+			boolean groupFilterEnabled,
+			OrderByComparator<Country> orderByComparator)
+		throws NoSuchCountryException {
+
+		Country country = fetchByC_A_B_G_First(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			orderByComparator);
+
+		if (country != null) {
+			return country;
+		}
+
+		StringBundler sb = new StringBundler(10);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("countryId=");
+		sb.append(countryId);
+
+		sb.append(", active=");
+		sb.append(active);
+
+		sb.append(", billingAllowed=");
+		sb.append(billingAllowed);
+
+		sb.append(", groupFilterEnabled=");
+		sb.append(groupFilterEnabled);
+
+		sb.append("}");
+
+		throw new NoSuchCountryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching country, or <code>null</code> if a matching country could not be found
+	 */
+	@Override
+	public Country fetchByC_A_B_G_First(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled,
+		OrderByComparator<Country> orderByComparator) {
+
+		List<Country> list = findByC_A_B_G(
+			countryId, active, billingAllowed, groupFilterEnabled, 0, 1,
+			orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching country
+	 * @throws NoSuchCountryException if a matching country could not be found
+	 */
+	@Override
+	public Country findByC_A_B_G_Last(
+			long countryId, boolean active, boolean billingAllowed,
+			boolean groupFilterEnabled,
+			OrderByComparator<Country> orderByComparator)
+		throws NoSuchCountryException {
+
+		Country country = fetchByC_A_B_G_Last(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			orderByComparator);
+
+		if (country != null) {
+			return country;
+		}
+
+		StringBundler sb = new StringBundler(10);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("countryId=");
+		sb.append(countryId);
+
+		sb.append(", active=");
+		sb.append(active);
+
+		sb.append(", billingAllowed=");
+		sb.append(billingAllowed);
+
+		sb.append(", groupFilterEnabled=");
+		sb.append(groupFilterEnabled);
+
+		sb.append("}");
+
+		throw new NoSuchCountryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching country, or <code>null</code> if a matching country could not be found
+	 */
+	@Override
+	public Country fetchByC_A_B_G_Last(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled,
+		OrderByComparator<Country> orderByComparator) {
+
+		int count = countByC_A_B_G(
+			countryId, active, billingAllowed, groupFilterEnabled);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<Country> list = findByC_A_B_G(
+			countryId, active, billingAllowed, groupFilterEnabled, count - 1,
+			count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Removes all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; from the database.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 */
+	@Override
+	public void removeByC_A_B_G(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled) {
+
+		for (Country country :
+				findByC_A_B_G(
+					countryId, active, billingAllowed, groupFilterEnabled,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			remove(country);
+		}
+	}
+
+	/**
+	 * Returns the number of countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @return the number of matching countries
+	 */
+	@Override
+	public int countByC_A_B_G(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
+
+			FinderPath finderPath = _finderPathCountByC_A_B_G;
+
+			Object[] finderArgs = new Object[] {
+				countryId, active, billingAllowed, groupFilterEnabled
+			};
+
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
+
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_COUNTRYID_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_ACTIVE_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_BILLINGALLOWED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_GROUPFILTERENABLED_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(countryId);
+
+					queryPos.add(active);
+
+					queryPos.add(billingAllowed);
+
+					queryPos.add(groupFilterEnabled);
+
+					count = (Long)query.uniqueResult();
+
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_C_A_B_G_COUNTRYID_2 =
+		"country.countryId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_ACTIVE_2 =
+		"country.active = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_BILLINGALLOWED_2 =
+		"country.billingAllowed = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_GROUPFILTERENABLED_2 =
+		"country.groupFilterEnabled = ?";
+
+	private FinderPath _finderPathWithPaginationFindByC_A_G_S;
+	private FinderPath _finderPathWithoutPaginationFindByC_A_G_S;
+	private FinderPath _finderPathCountByC_A_G_S;
+
+	/**
+	 * Returns all the countries where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @return the matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_G_S(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed) {
+
+		return findByC_A_G_S(
+			countryId, active, groupFilterEnabled, shippingAllowed,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the countries where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @return the range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_G_S(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed, int start, int end) {
+
+		return findByC_A_G_S(
+			countryId, active, groupFilterEnabled, shippingAllowed, start, end,
+			null);
+	}
+
+	/**
+	 * Returns an ordered range of all the countries where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_G_S(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed, int start, int end,
+		OrderByComparator<Country> orderByComparator) {
+
+		return findByC_A_G_S(
+			countryId, active, groupFilterEnabled, shippingAllowed, start, end,
+			orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the countries where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_G_S(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed, int start, int end,
+		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_A_G_S;
+					finderArgs = new Object[] {
+						countryId, active, groupFilterEnabled, shippingAllowed
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_A_G_S;
+				finderArgs = new Object[] {
+					countryId, active, groupFilterEnabled, shippingAllowed,
+					start, end, orderByComparator
+				};
+			}
+
+			List<Country> list = null;
+
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if ((countryId != country.getCountryId()) ||
+							(active != country.isActive()) ||
+							(groupFilterEnabled !=
+								country.isGroupFilterEnabled()) ||
+							(shippingAllowed != country.isShippingAllowed())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
+
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_COUNTRYID_2);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_ACTIVE_2);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_GROUPFILTERENABLED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_SHIPPINGALLOWED_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(countryId);
+
+					queryPos.add(active);
+
+					queryPos.add(groupFilterEnabled);
+
+					queryPos.add(shippingAllowed);
+
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first country in the ordered set where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching country
+	 * @throws NoSuchCountryException if a matching country could not be found
+	 */
+	@Override
+	public Country findByC_A_G_S_First(
+			long countryId, boolean active, boolean groupFilterEnabled,
+			boolean shippingAllowed,
+			OrderByComparator<Country> orderByComparator)
+		throws NoSuchCountryException {
+
+		Country country = fetchByC_A_G_S_First(
+			countryId, active, groupFilterEnabled, shippingAllowed,
+			orderByComparator);
+
+		if (country != null) {
+			return country;
+		}
+
+		StringBundler sb = new StringBundler(10);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("countryId=");
+		sb.append(countryId);
+
+		sb.append(", active=");
+		sb.append(active);
+
+		sb.append(", groupFilterEnabled=");
+		sb.append(groupFilterEnabled);
+
+		sb.append(", shippingAllowed=");
+		sb.append(shippingAllowed);
+
+		sb.append("}");
+
+		throw new NoSuchCountryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first country in the ordered set where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching country, or <code>null</code> if a matching country could not be found
+	 */
+	@Override
+	public Country fetchByC_A_G_S_First(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed, OrderByComparator<Country> orderByComparator) {
+
+		List<Country> list = findByC_A_G_S(
+			countryId, active, groupFilterEnabled, shippingAllowed, 0, 1,
+			orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last country in the ordered set where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching country
+	 * @throws NoSuchCountryException if a matching country could not be found
+	 */
+	@Override
+	public Country findByC_A_G_S_Last(
+			long countryId, boolean active, boolean groupFilterEnabled,
+			boolean shippingAllowed,
+			OrderByComparator<Country> orderByComparator)
+		throws NoSuchCountryException {
+
+		Country country = fetchByC_A_G_S_Last(
+			countryId, active, groupFilterEnabled, shippingAllowed,
+			orderByComparator);
+
+		if (country != null) {
+			return country;
+		}
+
+		StringBundler sb = new StringBundler(10);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("countryId=");
+		sb.append(countryId);
+
+		sb.append(", active=");
+		sb.append(active);
+
+		sb.append(", groupFilterEnabled=");
+		sb.append(groupFilterEnabled);
+
+		sb.append(", shippingAllowed=");
+		sb.append(shippingAllowed);
+
+		sb.append("}");
+
+		throw new NoSuchCountryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last country in the ordered set where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching country, or <code>null</code> if a matching country could not be found
+	 */
+	@Override
+	public Country fetchByC_A_G_S_Last(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed, OrderByComparator<Country> orderByComparator) {
+
+		int count = countByC_A_G_S(
+			countryId, active, groupFilterEnabled, shippingAllowed);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<Country> list = findByC_A_G_S(
+			countryId, active, groupFilterEnabled, shippingAllowed, count - 1,
+			count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Removes all the countries where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63; from the database.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 */
+	@Override
+	public void removeByC_A_G_S(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed) {
+
+		for (Country country :
+				findByC_A_G_S(
+					countryId, active, groupFilterEnabled, shippingAllowed,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			remove(country);
+		}
+	}
+
+	/**
+	 * Returns the number of countries where countryId = &#63; and active = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @return the number of matching countries
+	 */
+	@Override
+	public int countByC_A_G_S(
+		long countryId, boolean active, boolean groupFilterEnabled,
+		boolean shippingAllowed) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
+
+			FinderPath finderPath = _finderPathCountByC_A_G_S;
+
+			Object[] finderArgs = new Object[] {
+				countryId, active, groupFilterEnabled, shippingAllowed
+			};
+
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
+
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_COUNTRYID_2);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_ACTIVE_2);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_GROUPFILTERENABLED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_G_S_SHIPPINGALLOWED_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(countryId);
+
+					queryPos.add(active);
+
+					queryPos.add(groupFilterEnabled);
+
+					queryPos.add(shippingAllowed);
+
+					count = (Long)query.uniqueResult();
+
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_C_A_G_S_COUNTRYID_2 =
+		"country.countryId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_G_S_ACTIVE_2 =
+		"country.active = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_G_S_GROUPFILTERENABLED_2 =
+		"country.groupFilterEnabled = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_G_S_SHIPPINGALLOWED_2 =
+		"country.shippingAllowed = ?";
+
+	private FinderPath _finderPathWithPaginationFindByC_A_B_G_S;
+	private FinderPath _finderPathWithoutPaginationFindByC_A_B_G_S;
+	private FinderPath _finderPathCountByC_A_B_G_S;
+
+	/**
+	 * Returns all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @return the matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G_S(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed) {
+
+		return findByC_A_B_G_S(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @return the range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G_S(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed, int start,
+		int end) {
+
+		return findByC_A_B_G_S(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G_S(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed, int start, int end,
+		OrderByComparator<Country> orderByComparator) {
+
+		return findByC_A_B_G_S(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CountryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param start the lower bound of the range of countries
+	 * @param end the upper bound of the range of countries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching countries
+	 */
+	@Override
+	public List<Country> findByC_A_B_G_S(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed, int start, int end,
+		OrderByComparator<Country> orderByComparator, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_A_B_G_S;
+					finderArgs = new Object[] {
+						countryId, active, billingAllowed, groupFilterEnabled,
+						shippingAllowed
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_A_B_G_S;
+				finderArgs = new Object[] {
+					countryId, active, billingAllowed, groupFilterEnabled,
+					shippingAllowed, start, end, orderByComparator
+				};
+			}
+
+			List<Country> list = null;
+
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (Country country : list) {
+						if ((countryId != country.getCountryId()) ||
+							(active != country.isActive()) ||
+							(billingAllowed != country.isBillingAllowed()) ||
+							(groupFilterEnabled !=
+								country.isGroupFilterEnabled()) ||
+							(shippingAllowed != country.isShippingAllowed())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						7 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(7);
+				}
+
+				sb.append(_SQL_SELECT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_COUNTRYID_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_ACTIVE_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_BILLINGALLOWED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_GROUPFILTERENABLED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_SHIPPINGALLOWED_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(CountryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(countryId);
+
+					queryPos.add(active);
+
+					queryPos.add(billingAllowed);
+
+					queryPos.add(groupFilterEnabled);
+
+					queryPos.add(shippingAllowed);
+
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching country
+	 * @throws NoSuchCountryException if a matching country could not be found
+	 */
+	@Override
+	public Country findByC_A_B_G_S_First(
+			long countryId, boolean active, boolean billingAllowed,
+			boolean groupFilterEnabled, boolean shippingAllowed,
+			OrderByComparator<Country> orderByComparator)
+		throws NoSuchCountryException {
+
+		Country country = fetchByC_A_B_G_S_First(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, orderByComparator);
+
+		if (country != null) {
+			return country;
+		}
+
+		StringBundler sb = new StringBundler(12);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("countryId=");
+		sb.append(countryId);
+
+		sb.append(", active=");
+		sb.append(active);
+
+		sb.append(", billingAllowed=");
+		sb.append(billingAllowed);
+
+		sb.append(", groupFilterEnabled=");
+		sb.append(groupFilterEnabled);
+
+		sb.append(", shippingAllowed=");
+		sb.append(shippingAllowed);
+
+		sb.append("}");
+
+		throw new NoSuchCountryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching country, or <code>null</code> if a matching country could not be found
+	 */
+	@Override
+	public Country fetchByC_A_B_G_S_First(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed,
+		OrderByComparator<Country> orderByComparator) {
+
+		List<Country> list = findByC_A_B_G_S(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching country
+	 * @throws NoSuchCountryException if a matching country could not be found
+	 */
+	@Override
+	public Country findByC_A_B_G_S_Last(
+			long countryId, boolean active, boolean billingAllowed,
+			boolean groupFilterEnabled, boolean shippingAllowed,
+			OrderByComparator<Country> orderByComparator)
+		throws NoSuchCountryException {
+
+		Country country = fetchByC_A_B_G_S_Last(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, orderByComparator);
+
+		if (country != null) {
+			return country;
+		}
+
+		StringBundler sb = new StringBundler(12);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("countryId=");
+		sb.append(countryId);
+
+		sb.append(", active=");
+		sb.append(active);
+
+		sb.append(", billingAllowed=");
+		sb.append(billingAllowed);
+
+		sb.append(", groupFilterEnabled=");
+		sb.append(groupFilterEnabled);
+
+		sb.append(", shippingAllowed=");
+		sb.append(shippingAllowed);
+
+		sb.append("}");
+
+		throw new NoSuchCountryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last country in the ordered set where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching country, or <code>null</code> if a matching country could not be found
+	 */
+	@Override
+	public Country fetchByC_A_B_G_S_Last(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed,
+		OrderByComparator<Country> orderByComparator) {
+
+		int count = countByC_A_B_G_S(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<Country> list = findByC_A_B_G_S(
+			countryId, active, billingAllowed, groupFilterEnabled,
+			shippingAllowed, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Removes all the countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63; from the database.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 */
+	@Override
+	public void removeByC_A_B_G_S(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed) {
+
+		for (Country country :
+				findByC_A_B_G_S(
+					countryId, active, billingAllowed, groupFilterEnabled,
+					shippingAllowed, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					null)) {
+
+			remove(country);
+		}
+	}
+
+	/**
+	 * Returns the number of countries where countryId = &#63; and active = &#63; and billingAllowed = &#63; and groupFilterEnabled = &#63; and shippingAllowed = &#63;.
+	 *
+	 * @param countryId the country ID
+	 * @param active the active
+	 * @param billingAllowed the billing allowed
+	 * @param groupFilterEnabled the group filter enabled
+	 * @param shippingAllowed the shipping allowed
+	 * @return the number of matching countries
+	 */
+	@Override
+	public int countByC_A_B_G_S(
+		long countryId, boolean active, boolean billingAllowed,
+		boolean groupFilterEnabled, boolean shippingAllowed) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
+
+			FinderPath finderPath = _finderPathCountByC_A_B_G_S;
+
+			Object[] finderArgs = new Object[] {
+				countryId, active, billingAllowed, groupFilterEnabled,
+				shippingAllowed
+			};
+
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(6);
+
+				sb.append(_SQL_COUNT_COUNTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_COUNTRYID_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_ACTIVE_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_BILLINGALLOWED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_GROUPFILTERENABLED_2);
+
+				sb.append(_FINDER_COLUMN_C_A_B_G_S_SHIPPINGALLOWED_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(countryId);
+
+					queryPos.add(active);
+
+					queryPos.add(billingAllowed);
+
+					queryPos.add(groupFilterEnabled);
+
+					queryPos.add(shippingAllowed);
+
+					count = (Long)query.uniqueResult();
+
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_C_A_B_G_S_COUNTRYID_2 =
+		"country.countryId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_S_ACTIVE_2 =
+		"country.active = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_S_BILLINGALLOWED_2 =
+		"country.billingAllowed = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_S_GROUPFILTERENABLED_2 =
+		"country.groupFilterEnabled = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_A_B_G_S_SHIPPINGALLOWED_2 =
 		"country.shippingAllowed = ?";
 
 	public CountryPersistenceImpl() {
@@ -5095,29 +6262,33 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(Country country) {
-		if (country.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					country.getCtCollectionId())) {
+
+			EntityCacheUtil.putResult(
+				CountryImpl.class, country.getPrimaryKey(), country);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_A2,
+				new Object[] {country.getCompanyId(), country.getA2()},
+				country);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_A3,
+				new Object[] {country.getCompanyId(), country.getA3()},
+				country);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_Name,
+				new Object[] {country.getCompanyId(), country.getName()},
+				country);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_Number,
+				new Object[] {country.getCompanyId(), country.getNumber()},
+				country);
 		}
-
-		EntityCacheUtil.putResult(
-			CountryImpl.class, country.getPrimaryKey(), country);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_A2,
-			new Object[] {country.getCompanyId(), country.getA2()}, country);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_A3,
-			new Object[] {country.getCompanyId(), country.getA3()}, country);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_Name,
-			new Object[] {country.getCompanyId(), country.getName()}, country);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_Number,
-			new Object[] {country.getCompanyId(), country.getNumber()},
-			country);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -5137,14 +6308,15 @@ public class CountryPersistenceImpl
 		}
 
 		for (Country country : countries) {
-			if (country.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						country.getCtCollectionId())) {
 
-			if (EntityCacheUtil.getResult(
-					CountryImpl.class, country.getPrimaryKey()) == null) {
+				if (EntityCacheUtil.getResult(
+						CountryImpl.class, country.getPrimaryKey()) == null) {
 
-				cacheResult(country);
+					cacheResult(country);
+				}
 			}
 		}
 	}
@@ -5192,41 +6364,38 @@ public class CountryPersistenceImpl
 	}
 
 	protected void cacheUniqueFindersCache(CountryModelImpl countryModelImpl) {
-		Object[] args = new Object[] {
-			countryModelImpl.getCompanyId(), countryModelImpl.getA2()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					countryModelImpl.getCtCollectionId())) {
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_A2, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_A2, args, countryModelImpl);
+			Object[] args = new Object[] {
+				countryModelImpl.getCompanyId(), countryModelImpl.getA2()
+			};
 
-		args = new Object[] {
-			countryModelImpl.getCompanyId(), countryModelImpl.getA3()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_A2, args, countryModelImpl);
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_A3, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_A3, args, countryModelImpl);
+			args = new Object[] {
+				countryModelImpl.getCompanyId(), countryModelImpl.getA3()
+			};
 
-		args = new Object[] {
-			countryModelImpl.getCompanyId(), countryModelImpl.getName()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_A3, args, countryModelImpl);
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_Name, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_Name, args, countryModelImpl);
+			args = new Object[] {
+				countryModelImpl.getCompanyId(), countryModelImpl.getName()
+			};
 
-		args = new Object[] {
-			countryModelImpl.getCompanyId(), countryModelImpl.getNumber()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_Name, args, countryModelImpl);
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_Number, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_Number, args, countryModelImpl);
+			args = new Object[] {
+				countryModelImpl.getCompanyId(), countryModelImpl.getNumber()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_Number, args, countryModelImpl);
+		}
 	}
 
 	/**
@@ -5414,16 +6583,6 @@ public class CountryPersistenceImpl
 			closeSession(session);
 		}
 
-		if (country.getCtCollectionId() != 0) {
-			if (isNew) {
-				country.setNew(false);
-			}
-
-			country.resetOriginalValues();
-
-			return country;
-		}
-
 		EntityCacheUtil.putResult(
 			CountryImpl.class, countryModelImpl, false, true);
 
@@ -5488,10 +6647,20 @@ public class CountryPersistenceImpl
 		if (CTPersistenceHelperUtil.isProductionMode(
 				Country.class, primaryKey)) {
 
-			return super.fetchByPrimaryKey(primaryKey);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		Country country = null;
+		Country country = (Country)EntityCacheUtil.getResult(
+			CountryImpl.class, primaryKey);
+
+		if (country != null) {
+			return country;
+		}
 
 		Session session = null;
 
@@ -5530,7 +6699,12 @@ public class CountryPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (CTPersistenceHelperUtil.isProductionMode(Country.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -5550,6 +6724,33 @@ public class CountryPersistenceImpl
 				map.put(primaryKey, country);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+						Country.class, primaryKey)) {
+
+				Country country = (Country)EntityCacheUtil.getResult(
+					CountryImpl.class, primaryKey);
+
+				if (country == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, country);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -5678,78 +6879,80 @@ public class CountryPersistenceImpl
 		int start, int end, OrderByComparator<Country> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<Country> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<Country>)FinderCacheUtil.getResult(
-				finderPath, finderArgs, this);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_COUNTRY);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_COUNTRY;
-
-				sql = sql.concat(CountryModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<Country>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<Country> list = null;
+
+			if (useFinderCache) {
+				list = (List<Country>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_COUNTRY);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_COUNTRY;
+
+					sql = sql.concat(CountryModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<Country>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -5770,40 +6973,36 @@ public class CountryPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Country.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Country.class)) {
 
-		Long count = null;
-
-		if (productionMode) {
-			count = (Long)FinderCacheUtil.getResult(
+			Long count = (Long)FinderCacheUtil.getResult(
 				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
-		}
 
-		if (count == null) {
-			Session session = null;
+			if (count == null) {
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(_SQL_COUNT_COUNTRY);
+					Query query = session.createQuery(_SQL_COUNT_COUNTRY);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -5881,14 +7080,14 @@ public class CountryPersistenceImpl
 		ctMergeColumnNames.add("a3");
 		ctMergeColumnNames.add("active_");
 		ctMergeColumnNames.add("billingAllowed");
-		ctStrictColumnNames.add("groupFilterEnabled");
+		ctMergeColumnNames.add("groupFilterEnabled");
 		ctMergeColumnNames.add("idd_");
 		ctMergeColumnNames.add("name");
 		ctMergeColumnNames.add("number_");
 		ctMergeColumnNames.add("position");
 		ctMergeColumnNames.add("shippingAllowed");
 		ctMergeColumnNames.add("subjectToVAT");
-		ctStrictColumnNames.add("zipRequired");
+		ctMergeColumnNames.add("zipRequired");
 		ctMergeColumnNames.add("lastPublishDate");
 
 		_ctColumnNamesMap.put(
@@ -6007,20 +7206,10 @@ public class CountryPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "a2"}, true);
 
-		_finderPathCountByC_A2 = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_A2",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "a2"}, false);
-
 		_finderPathFetchByC_A3 = new FinderPath(
 			FINDER_CLASS_NAME_ENTITY, "fetchByC_A3",
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "a3"}, true);
-
-		_finderPathCountByC_A3 = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_A3",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "a3"}, false);
 
 		_finderPathWithPaginationFindByC_Active = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_Active",
@@ -6046,20 +7235,10 @@ public class CountryPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "name"}, true);
 
-		_finderPathCountByC_Name = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_Name",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "name"}, false);
-
 		_finderPathFetchByC_Number = new FinderPath(
 			FINDER_CLASS_NAME_ENTITY, "fetchByC_Number",
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "number_"}, true);
-
-		_finderPathCountByC_Number = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_Number",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "number_"}, false);
 
 		_finderPathWithPaginationFindByC_A_B = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_A_B",
@@ -6110,6 +7289,116 @@ public class CountryPersistenceImpl
 				Boolean.class.getName()
 			},
 			new String[] {"companyId", "active_", "shippingAllowed"}, false);
+
+		_finderPathWithPaginationFindByC_A_B_G = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_A_B_G",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "billingAllowed", "groupFilterEnabled"
+			},
+			true);
+
+		_finderPathWithoutPaginationFindByC_A_B_G = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_A_B_G",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "billingAllowed", "groupFilterEnabled"
+			},
+			true);
+
+		_finderPathCountByC_A_B_G = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_A_B_G",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "billingAllowed", "groupFilterEnabled"
+			},
+			false);
+
+		_finderPathWithPaginationFindByC_A_G_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_A_G_S",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "groupFilterEnabled", "shippingAllowed"
+			},
+			true);
+
+		_finderPathWithoutPaginationFindByC_A_G_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_A_G_S",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "groupFilterEnabled", "shippingAllowed"
+			},
+			true);
+
+		_finderPathCountByC_A_G_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_A_G_S",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "groupFilterEnabled", "shippingAllowed"
+			},
+			false);
+
+		_finderPathWithPaginationFindByC_A_B_G_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_A_B_G_S",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "billingAllowed", "groupFilterEnabled",
+				"shippingAllowed"
+			},
+			true);
+
+		_finderPathWithoutPaginationFindByC_A_B_G_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_A_B_G_S",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "billingAllowed", "groupFilterEnabled",
+				"shippingAllowed"
+			},
+			true);
+
+		_finderPathCountByC_A_B_G_S = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_A_B_G_S",
+			new String[] {
+				Long.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName(), Boolean.class.getName(),
+				Boolean.class.getName()
+			},
+			new String[] {
+				"countryId", "active_", "billingAllowed", "groupFilterEnabled",
+				"shippingAllowed"
+			},
+			false);
 
 		CountryUtil.setPersistence(this);
 	}

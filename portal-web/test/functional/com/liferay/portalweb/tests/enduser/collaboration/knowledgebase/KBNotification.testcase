@@ -1,4 +1,4 @@
-@component-name = "portal-knowledge-base"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column";
@@ -125,7 +125,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
@@ -139,7 +139,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
@@ -151,7 +151,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Notifications.viewBadgeCount(notificationCount = 1);
@@ -173,10 +173,7 @@ definition {
 			groupName = "Guest",
 			layoutName = "Knowledge Base Display Page");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -193,19 +190,13 @@ definition {
 
 		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.editUserSiteCP(
 			siteName = ${siteName},
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignSiteRoleCP(
 			siteRoleName = "Site Administrator",
@@ -224,7 +215,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
@@ -234,7 +225,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		JSONKnowledgeBase.addkBArticle(
@@ -245,7 +236,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
@@ -259,7 +250,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Navigator.gotoPage(pageName = "Knowledge Base Display Page");

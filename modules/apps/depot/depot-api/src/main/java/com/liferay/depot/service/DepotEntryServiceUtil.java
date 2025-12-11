@@ -7,6 +7,7 @@ package com.liferay.depot.service;
 
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 import java.util.Map;
@@ -32,12 +33,12 @@ public class DepotEntryServiceUtil {
 	 */
 	public static DepotEntry addDepotEntry(
 			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
+			Map<java.util.Locale, String> descriptionMap, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addDepotEntry(
-			nameMap, descriptionMap, serviceContext);
+			nameMap, descriptionMap, type, serviceContext);
 	}
 
 	public static DepotEntry deleteDepotEntry(long depotEntryId)
@@ -46,12 +47,18 @@ public class DepotEntryServiceUtil {
 		return getService().deleteDepotEntry(depotEntryId);
 	}
 
+	public static DepotEntry fetchGroupDepotEntry(long groupId)
+		throws PortalException {
+
+		return getService().fetchGroupDepotEntry(groupId);
+	}
+
 	public static List<DepotEntry> getCurrentAndGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException {
 
 		return getService().getCurrentAndGroupConnectedDepotEntries(
-			groupId, start, end);
+			groupId, type, start, end);
 	}
 
 	public static DepotEntry getDepotEntry(long depotEntryId)
@@ -69,16 +76,17 @@ public class DepotEntryServiceUtil {
 	}
 
 	public static List<DepotEntry> getGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException {
 
-		return getService().getGroupConnectedDepotEntries(groupId, start, end);
+		return getService().getGroupConnectedDepotEntries(
+			groupId, type, start, end);
 	}
 
-	public static int getGroupConnectedDepotEntriesCount(long groupId)
+	public static int getGroupConnectedDepotEntriesCount(long groupId, int type)
 		throws PortalException {
 
-		return getService().getGroupConnectedDepotEntriesCount(groupId);
+		return getService().getGroupConnectedDepotEntriesCount(groupId, type);
 	}
 
 	public static DepotEntry getGroupDepotEntry(long groupId)
@@ -111,13 +119,10 @@ public class DepotEntryServiceUtil {
 	}
 
 	public static DepotEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(DepotEntryService service) {
-		_service = service;
-	}
-
-	private static volatile DepotEntryService _service;
+	private static final Snapshot<DepotEntryService> _serviceSnapshot =
+		new Snapshot<>(DepotEntryServiceUtil.class, DepotEntryService.class);
 
 }

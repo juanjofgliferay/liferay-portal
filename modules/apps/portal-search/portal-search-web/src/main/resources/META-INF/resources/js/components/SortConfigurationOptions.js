@@ -134,9 +134,8 @@ function Inputs({index, onInputSetItemChange, value}) {
 					<ClayTooltipProvider>
 						<span
 							className="c-ml-2"
-							data-title={Liferay.Language.get(
-								'indexed-field-help'
-							)}
+							tabIndex={0}
+							title={Liferay.Language.get('indexed-field-help')}
 						>
 							<ClayIcon symbol="question-circle-full" />
 						</span>
@@ -287,8 +286,8 @@ function SortConfigurationOptions({
 		});
 
 		autoFieldFormRows.forEach((item) => {
-			const field = item.getElementsByClassName('sort-field-input')[0]
-				.value;
+			const field =
+				item.getElementsByClassName('sort-field-input')[0].value;
 			const label = item.getElementsByClassName('label-input')[0].value;
 
 			newFields.push({
@@ -319,7 +318,7 @@ function SortConfigurationOptions({
 					? [
 							{field: '', label: relevanceLabel},
 							...addOrdersToFieldNames(removeEmptyFields(fields)),
-					  ]
+						]
 					: addOrdersToFieldNames(removeEmptyFields(fields))
 			);
 
@@ -410,6 +409,7 @@ function SortConfigurationOptions({
 						</ClayForm.Group>
 
 						{fields.map((valueItem, valueIndex) => (
+
 							// eslint-disable-next-line react/jsx-key
 							<InputSets.Item
 								{...getInputSetItemProps(valueItem, valueIndex)}
@@ -448,10 +448,10 @@ function SortConfigurationOptions({
 										...addOrdersToFieldNames(
 											removeEmptyFields(fields)
 										),
-								  ]
+									]
 								: addOrdersToFieldNames(
 										removeEmptyFields(fields)
-								  )
+									)
 						)}
 					/>
 				</>

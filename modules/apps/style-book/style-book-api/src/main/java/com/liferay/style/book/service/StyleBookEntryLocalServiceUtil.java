@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.style.book.model.StyleBookEntry;
 
@@ -36,22 +37,15 @@ public class StyleBookEntryLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addStyleBookEntry(
-			userId, groupId, name, styleBookEntryKey, serviceContext);
-	}
-
-	public static StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addStyleBookEntry(
-			userId, groupId, frontendTokensValues, name, styleBookEntryKey,
+			externalReferenceCode, userId, groupId, defaultStyleBookEntry,
+			frontendTokensValues, name, styleBookEntryKey, themeId,
 			serviceContext);
 	}
 
@@ -128,6 +122,12 @@ public class StyleBookEntryLocalServiceUtil {
 		return getService().deletePersistedModel(persistedModel);
 	}
 
+	public static void deleteStyleBookEntries(long groupId)
+		throws PortalException {
+
+		getService().deleteStyleBookEntries(groupId);
+	}
+
 	/**
 	 * Deletes the style book entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -143,6 +143,14 @@ public class StyleBookEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteStyleBookEntry(styleBookEntryId);
+	}
+
+	public static StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteStyleBookEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -257,8 +265,10 @@ public class StyleBookEntryLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static StyleBookEntry fetchDefaultStyleBookEntry(long groupId) {
-		return getService().fetchDefaultStyleBookEntry(groupId);
+	public static StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId) {
+
+		return getService().fetchDefaultStyleBookEntry(groupId, themeId);
 	}
 
 	public static StyleBookEntry fetchDraft(long primaryKey) {
@@ -291,6 +301,20 @@ public class StyleBookEntryLocalServiceUtil {
 		long groupId, String styleBookEntryKey) {
 
 		return getService().fetchStyleBookEntry(groupId, styleBookEntryKey);
+	}
+
+	public static StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	public static StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId, boolean head) {
+
+		return getService().fetchStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId, head);
 	}
 
 	public static StyleBookEntry fetchStyleBookEntryByUuidAndGroupId(
@@ -378,6 +402,12 @@ public class StyleBookEntryLocalServiceUtil {
 	}
 
 	public static List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId) {
+
+		return getService().getStyleBookEntries(groupId, themeId);
+	}
+
+	public static List<StyleBookEntry> getStyleBookEntries(
 		long groupId, String name, int start, int end,
 		OrderByComparator<StyleBookEntry> orderByComparator) {
 
@@ -420,6 +450,22 @@ public class StyleBookEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getStyleBookEntry(styleBookEntryId);
+	}
+
+	public static StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	public static StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId, boolean head)
+		throws PortalException {
+
+		return getService().getStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId, head);
 	}
 
 	public static com.liferay.style.book.model.StyleBookEntryVersion getVersion(
@@ -531,13 +577,12 @@ public class StyleBookEntryLocalServiceUtil {
 	}
 
 	public static StyleBookEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(StyleBookEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile StyleBookEntryLocalService _service;
+	private static final Snapshot<StyleBookEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			StyleBookEntryLocalServiceUtil.class,
+			StyleBookEntryLocalService.class);
 
 }

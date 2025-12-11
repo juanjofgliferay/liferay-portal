@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
@@ -44,9 +44,19 @@ describe('ChangeDefaultLanguage', () => {
 	});
 
 	it('render', () => {
+		Liferay.FeatureFlags['LPD-11228'] = true;
+
 		const {getByText} = _renderChangeDefaultLanguageComponent();
 
+		expect(
+			getByText(
+				"changing-the-default-language-will-reset-the-article's-history-making-previous-changes-untrackable"
+			)
+		).toBeInTheDocument();
+
 		expect(getByText('change')).toBeTruthy();
+
+		Liferay.FeatureFlags['LPD-11228'] = false;
 	});
 
 	it('render the default language', () => {
@@ -58,11 +68,8 @@ describe('ChangeDefaultLanguage', () => {
 	});
 
 	it('change default language', async () => {
-		const {
-			findByText,
-			getByText,
-			getByTitle,
-		} = _renderChangeDefaultLanguageComponent();
+		const {findByText, getByText, getByTitle} =
+			_renderChangeDefaultLanguageComponent();
 
 		fireEvent.click(getByTitle('es_ES'));
 

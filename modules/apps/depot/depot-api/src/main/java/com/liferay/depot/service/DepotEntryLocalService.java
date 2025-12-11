@@ -7,7 +7,9 @@ package com.liferay.depot.service;
 
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -22,6 +24,8 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -46,13 +50,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see DepotEntryLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface DepotEntryLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<DepotEntry>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -78,7 +84,7 @@ public interface DepotEntryLocalService
 
 	public DepotEntry addDepotEntry(
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			ServiceContext serviceContext)
+			int type, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -239,6 +245,9 @@ public interface DepotEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DepotEntry> getDepotEntries(int start, int end);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DepotEntry> getDepotEntries(long companyId, int type);
+
 	/**
 	 * Returns all the depot entries matching the UUID and company.
 	 *
@@ -273,6 +282,9 @@ public interface DepotEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getDepotEntriesCount();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getDepotEntriesCount(long companyId, int type);
+
 	/**
 	 * Returns the depot entry with the primary key.
 	 *
@@ -295,6 +307,17 @@ public interface DepotEntryLocalService
 	public DepotEntry getDepotEntryByUuidAndGroupId(String uuid, long groupId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Long> getDepotEntryGroupIds(long companyId, int type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Long> getDepotEntryGroupIds(
+		long companyId, long userId, int type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Long> getDepotEntryGroupIds(
+		long companyId, long userId, int type, boolean userGroupsOnly);
+
 	/**
 	 * @deprecated As of Cavanaugh (7.4.x)
 	 */
@@ -314,11 +337,11 @@ public interface DepotEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DepotEntry> getGroupConnectedDepotEntries(
-			long groupId, int start, int end)
+			long groupId, int type, int start, int end)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getGroupConnectedDepotEntriesCount(long groupId);
+	public int getGroupConnectedDepotEntriesCount(long groupId, int type);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DepotEntry getGroupDepotEntry(long groupId) throws PortalException;
@@ -361,5 +384,20 @@ public interface DepotEntryLocalService
 			UnicodeProperties typeSettingsUnicodeProperties,
 			ServiceContext serviceContext)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<DepotEntry> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<DepotEntry> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<DepotEntry>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

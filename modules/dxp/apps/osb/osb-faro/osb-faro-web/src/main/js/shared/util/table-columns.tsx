@@ -88,7 +88,7 @@ export const activityAssetsListColumns = {
 		cellRenderer: NameCell,
 		cellRendererProps: {
 			renderSecondaryInfo: ({dataSourceAssetPK}) => (
-				<TextTruncate title={dataSourceAssetPK} />
+				<TextTruncate title={decodeURIComponent(dataSourceAssetPK)} />
 			)
 		},
 		className: 'table-cell-expand',
@@ -415,15 +415,16 @@ export const eventListColumns = {
 	hidden: {
 		accessor: 'hidden',
 		cellRenderer: ({data: {hidden}}) => (
-			<td>
+			<td className='text-right'>
 				{hidden && (
 					<ClayIcon
 						className={getCN('icon-root', Colors.Secondary)}
-						symbol='ac-hidden'
+						symbol='ac_hidden'
 					/>
 				)}
 			</td>
-		)
+		),
+		sortable: false
 	},
 	lastSeenURL: {
 		accessor: 'lastSeenURL',
@@ -711,6 +712,12 @@ export const metricsListColumns = {
 		label,
 		sortable: false
 	}),
+	impressionMadeMetric: {
+		accessor: 'impressionMadeMetric',
+		className: 'table-column-text-end',
+		dataFormatter: data => data.toLocaleString(),
+		label: Liferay.Language.get('impressions')
+	},
 	modifiedDate: {
 		accessor: 'modifiedDate',
 		cellRenderer: ({data: {modifiedByUserName, modifiedDate}}) => {
@@ -729,12 +736,6 @@ export const metricsListColumns = {
 			);
 		},
 		label: Liferay.Language.get('last-modified')
-	},
-	previewsMetric: {
-		accessor: 'previewsMetric',
-		className: 'table-column-text-end',
-		dataFormatter: data => data.toLocaleString(),
-		label: Liferay.Language.get('previews')
 	},
 	ratingsMetric: {
 		accessor: 'ratingsMetric',
@@ -802,7 +803,7 @@ export const sitePagesListColumns = {
 		cellRendererProps: {
 			nameKey: 'assetTitle',
 			renderSecondaryInfo: ({assetId}) => (
-				<TextTruncate title={assetId} />
+				<TextTruncate title={decodeURIComponent(assetId)} />
 			),
 			routeFn: ({data: {assetId, assetTitle}}) =>
 				setUriQueryValues(
@@ -810,9 +811,9 @@ export const sitePagesListColumns = {
 					toRoute(route, {
 						channelId,
 						groupId,
-						touchpoint: encodeURIComponent(assetId),
+						touchpoint: assetId,
 						...(assetTitle && {
-							title: encodeURIComponent(assetTitle)
+							title: assetTitle
 						})
 					})
 				)
@@ -906,7 +907,6 @@ export const segmentsListColumns = {
 		accessor: 'name',
 		cellRenderer: NameCell,
 		cellRendererProps: {
-			renderIcon: SegmentSticker,
 			routeFn: ({data: {id}}) =>
 				toRoute(Routes.CONTACTS_SEGMENT, {
 					channelId,

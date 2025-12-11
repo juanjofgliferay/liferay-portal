@@ -27,12 +27,6 @@ public interface VelocityEngineConfiguration {
 	public boolean directiveIfToStringNullCheck();
 
 	@Meta.AD(
-		deflt = "60000", name = "resource-modification-check-interval",
-		required = false
-	)
-	public int resourceModificationCheckInterval();
-
-	@Meta.AD(
 		deflt = "true", name = "include-navigation-items-in-the-context",
 		required = false
 	)
@@ -57,7 +51,7 @@ public interface VelocityEngineConfiguration {
 	public String[] restrictedPackages();
 
 	@Meta.AD(
-		deflt = "httpUtilUnsafe|serviceLocator|staticFieldGetter",
+		deflt = "httpUtil|httpUtilUnsafe|serviceLocator|staticFieldGetter",
 		name = "restricted-variables", required = false
 	)
 	public String[] restrictedVariables();

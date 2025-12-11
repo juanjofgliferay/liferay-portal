@@ -1,4 +1,4 @@
-import {CHART_COLOR_NAMES} from 'shared/components/Chart';
+import {CHART_COLOR_NAMES} from 'shared/util/charts';
 import {DataPoint, Empty} from './types';
 import {getPercentage} from 'shared/util/util';
 import {IHTMLBarChartProps} from '../HTMLBarChart';
@@ -70,7 +70,7 @@ const getSegmentsData = (
 	let items = segments.slice(0, MAX_BARS).map(({value, valueKey}) => ({
 		columns: [
 			{
-				icon: 'ac-segment',
+				icon: 'ac_segment',
 				label: valueKey
 			}
 		],
@@ -103,7 +103,7 @@ const getSegmentsData = (
 			{
 				columns: [
 					{
-						icon: 'ac-segment',
+						icon: 'ac_segment',
 						label: sub(Liferay.Language.get('x-more-segments'), [
 							totalOthers - (MAX_BARS - 1)
 						])

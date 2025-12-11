@@ -5,12 +5,10 @@
 
 package com.liferay.segments.internal.provider;
 
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
@@ -20,15 +18,11 @@ import com.liferay.segments.context.Context;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.odata.matcher.ODataMatcher;
-import com.liferay.segments.odata.retriever.ODataRetriever;
 import com.liferay.segments.provider.SegmentsEntryProvider;
 
 import java.util.Map;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -44,19 +38,6 @@ import org.osgi.service.component.annotations.Reference;
 public class ReferredSegmentsEntryProvider
 	extends BaseSegmentsEntryProvider implements SegmentsEntryProvider {
 
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext,
-			(Class<ODataRetriever<BaseModel<?>>>)(Class<?>)ODataRetriever.class,
-			"model.class.name");
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		serviceTrackerMap.close();
-	}
-
 	@Override
 	protected String getSource() {
 		return SegmentsEntryConstants.SOURCE_REFERRED;
@@ -65,7 +46,8 @@ public class ReferredSegmentsEntryProvider
 	@Override
 	protected boolean isMember(
 		String className, long classPK, Context context,
-		SegmentsEntry segmentsEntry, long[] segmentsEntryIds) {
+		SegmentsEntry segmentsEntry, long[] segmentsEntryIds,
+		Map<String, Object> userAttributes) {
 
 		Criteria criteria = segmentsEntry.getCriteriaObj();
 
@@ -79,7 +61,8 @@ public class ReferredSegmentsEntryProvider
 			segmentsEntry, Criteria.Type.REFERRED);
 
 		boolean member = super.isMember(
-			className, classPK, context, segmentsEntry, segmentsEntryIds);
+			className, classPK, context, segmentsEntry, segmentsEntryIds,
+			userAttributes);
 
 		if (ArrayUtil.isEmpty(segmentsEntryIds) ||
 			Validator.isNull(referredFilterString) ||

@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,13 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMax;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,61 +49,87 @@ public class ExperimentVariant implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ExperimentVariant.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
 
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
 	@DecimalMax("99")
 	@DecimalMin("1")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getTrafficSplit() {
+		if (_trafficSplitSupplier != null) {
+			trafficSplit = _trafficSplitSupplier.get();
+
+			_trafficSplitSupplier = null;
+		}
+
 		return trafficSplit;
 	}
 
 	public void setTrafficSplit(Double trafficSplit) {
 		this.trafficSplit = trafficSplit;
+
+		_trafficSplitSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTrafficSplit(
 		UnsafeSupplier<Double, Exception> trafficSplitUnsafeSupplier) {
 
-		try {
-			trafficSplit = trafficSplitUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_trafficSplitSupplier = () -> {
+			try {
+				return trafficSplitUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double trafficSplit;
+
+	@JsonIgnore
+	private Supplier<Double> _trafficSplitSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -133,6 +158,8 @@ public class ExperimentVariant implements Serializable {
 
 		sb.append("{");
 
+		String id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -146,6 +173,8 @@ public class ExperimentVariant implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Double trafficSplit = getTrafficSplit();
 
 		if (trafficSplit != null) {
 			if (sb.length() > 1) {
@@ -162,8 +191,8 @@ public class ExperimentVariant implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.segments.asah.rest.dto.v1_0.ExperimentVariant",
 		name = "x-class-name"
 	)
@@ -209,7 +238,10 @@ public class ExperimentVariant implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

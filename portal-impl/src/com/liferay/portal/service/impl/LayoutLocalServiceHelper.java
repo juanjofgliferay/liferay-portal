@@ -32,6 +32,7 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutFriendlyURLEntryValidator;
@@ -49,6 +50,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.comparator.LayoutPriorityComparator;
@@ -172,8 +174,8 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 	}
 
 	public int getNextPriority(
-		long groupId, boolean privateLayout, long parentLayoutId,
-		String sourcePrototypeLayoutUuid, int defaultPriority) {
+		long groupId, String layoutSetPrototypeLayoutERC, boolean privateLayout,
+		long parentLayoutId, int defaultPriority) {
 
 		int priority = defaultPriority;
 
@@ -190,7 +192,7 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 		}
 
 		if ((priority < _PRIORITY_BUFFER) &&
-			Validator.isNull(sourcePrototypeLayoutUuid)) {
+			Validator.isNull(layoutSetPrototypeLayoutERC)) {
 
 			LayoutSet layoutSet = layoutSetPersistence.fetchByG_P(
 				groupId, privateLayout);
@@ -291,7 +293,7 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 				groupId, privateLayout, parentLayoutId);
 
 			if (((layout == null) ||
-				 Validator.isNull(layout.getSourcePrototypeLayoutUuid())) &&
+				 Validator.isNull(layout.getLayoutSetPrototypeLayoutERC())) &&
 				!_isDraftLayout(classNameId, classPK, type) &&
 				((layout instanceof VirtualLayout) ||
 				 !parentLayout.isLayoutSortable())) {
@@ -453,16 +455,37 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 			throw layoutFriendlyURLException;
 		}
 
-		String[] urlSeparators =
-			FriendlyURLResolverRegistryUtil.getURLSeparators();
+		String keywordConflict = null;
 
-		for (String urlSeparator : urlSeparators) {
-			if (urlSeparator.contains(friendlyURL)) {
+		for (FriendlyURLResolver friendlyURLResolver :
+				FriendlyURLResolverRegistryUtil.
+					getFriendlyURLResolversAsCollection()) {
+
+			String urlSeparator = friendlyURLResolver.getURLSeparator();
+
+			if (urlSeparator.contains(friendlyURL) ||
+				friendlyURL.startsWith(urlSeparator)) {
+
+				keywordConflict = urlSeparator;
+			}
+
+			String defaultURLSeparator =
+				friendlyURLResolver.getDefaultURLSeparator();
+
+			if (Validator.isNull(keywordConflict) &&
+				friendlyURLResolver.isURLSeparatorConfigurable() &&
+				(defaultURLSeparator.contains(friendlyURL) ||
+				 friendlyURL.startsWith(defaultURLSeparator))) {
+
+				keywordConflict = defaultURLSeparator;
+			}
+
+			if (Validator.isNotNull(keywordConflict)) {
 				LayoutFriendlyURLException layoutFriendlyURLException =
 					new LayoutFriendlyURLException(
 						LayoutFriendlyURLException.KEYWORD_CONFLICT);
 
-				layoutFriendlyURLException.setKeywordConflict(urlSeparator);
+				layoutFriendlyURLException.setKeywordConflict(keywordConflict);
 
 				throw layoutFriendlyURLException;
 			}
@@ -492,9 +515,10 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 			}
 		}
 
-		for (Locale locale : LanguageUtil.getAvailableLocales()) {
-			String languageId = StringUtil.toLowerCase(
-				LocaleUtil.toLanguageId(locale));
+		for (String languageId : PropsValues.LOCALES) {
+			languageId = StringUtil.toLowerCase(languageId);
+
+			Locale locale = LocaleUtil.fromLanguageId(languageId, false);
 
 			String i18nPathLanguageId =
 				StringPool.SLASH +
@@ -620,7 +644,7 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 		// Layout cannot become a child of a layout that is not sortable because
 		// it is linked to a layout set prototype
 
-		if ((Validator.isNull(layout.getSourcePrototypeLayoutUuid()) &&
+		if ((Validator.isNull(layout.getLayoutSetPrototypeLayoutERC()) &&
 			 (layout instanceof VirtualLayout)) ||
 			!parentLayout.isLayoutSortable()) {
 
@@ -703,8 +727,8 @@ public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 		long classNameId, long classPK, String type) {
 
 		if (!Objects.equals(type, LayoutConstants.TYPE_ASSET_DISPLAY) &&
-			!Objects.equals(type, LayoutConstants.TYPE_COLLECTION) &&
-			!Objects.equals(type, LayoutConstants.TYPE_CONTENT)) {
+			!Objects.equals(type, LayoutConstants.TYPE_CONTENT) &&
+			!Objects.equals(type, LayoutConstants.TYPE_UTILITY)) {
 
 			return false;
 		}

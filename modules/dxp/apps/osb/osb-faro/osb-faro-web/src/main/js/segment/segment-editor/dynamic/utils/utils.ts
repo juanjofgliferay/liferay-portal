@@ -9,6 +9,7 @@ import {
 	SUPPORTED_OPERATORS_MAP
 } from './constants';
 import {Criteria, Criterion, CriterionGroup, Operator} from './types';
+import {EntityType, ReferencedEntities} from '../context/referencedObjects';
 import {Event} from 'event-analysis/utils/types';
 import {every, isBoolean, isString, isUndefined} from 'lodash';
 import {FieldContexts, FieldOwnerTypes} from 'shared/util/constants';
@@ -260,12 +261,11 @@ export const convertFieldMappingToAccountProperty = (
 				displayName: string;
 				id: string;
 				name: string;
+				ownerType: string;
 				rawType: string;
+				type: string;
 		  }
 ): Property => {
-	const context = isMap(fieldMapping)
-		? fieldMapping.get('context')
-		: fieldMapping.context;
 	const displayName = isMap(fieldMapping)
 		? fieldMapping.get('displayName')
 		: fieldMapping.displayName;
@@ -277,17 +277,13 @@ export const convertFieldMappingToAccountProperty = (
 		? fieldMapping.get('rawType')
 		: fieldMapping.rawType;
 
-	const CUSTOM_REGEX = /custom-/;
-
 	return new Property({
 		entityName: Liferay.Language.get('account'),
 		id,
 		label: displayName || name,
-		name: context ? `${context}/${id}/value` : id,
+		name: id,
 		propertyKey: FieldOwnerTypes.Account,
-		type: CUSTOM_REGEX.test(type)
-			? type.toLowerCase()
-			: `account-${type.toLowerCase()}`
+		type: `account-${type.toLowerCase()}` as PropertyTypes
 	});
 };
 
@@ -371,18 +367,20 @@ export const convertEventToProperty = (
 	const displayName = isMap(eventDefinition)
 		? eventDefinition.get('displayName')
 		: eventDefinition.displayName;
-	const id = isMap(eventDefinition)
-		? eventDefinition.get('id')
-		: eventDefinition.id;
 	const name = isMap(eventDefinition)
 		? eventDefinition.get('name')
 		: eventDefinition.name;
 
+	const hidden = isMap(eventDefinition)
+		? eventDefinition.get('hidden')
+		: eventDefinition.hidden;
+
 	return new Property({
 		entityName: Liferay.Language.get('event'),
-		id,
+		id: name,
 		label: displayName || name,
-		name: id,
+		name,
+		options: [{label: 'hidden', value: hidden}],
 		propertyKey: 'event',
 		type: PropertyTypes.Event
 	});
@@ -428,6 +426,7 @@ export const convertReferencedObjectsToProperties = (
 
 	const eventProperties = referencedObjectsIMap
 		.get('event', Map())
+		.merge(referencedObjectsIMap.get('custom-events'))
 		.map(convertEventToProperty);
 
 	return fieldMappingProperties.merge(fromJS({event: eventProperties}));
@@ -478,6 +477,28 @@ export const invalidateCriterionWithMissingProperty = (
 				  )
 		};
 	}
+};
+
+export const parseReferencedEntityId = (
+	id: string,
+	referencedEntities: ReferencedEntities,
+	type: EntityType
+) => {
+	let parsedId = id;
+
+	if (
+		type === EntityType.Assets &&
+		parsedId &&
+		parsedId.indexOf('_') === -1
+	) {
+		const keys = Object.keys(
+			referencedEntities.getIn([EntityType.Assets]).toObject()
+		);
+
+		parsedId = keys.find(key => key.includes(id));
+	}
+
+	return parsedId;
 };
 
 /**

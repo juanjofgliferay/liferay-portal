@@ -146,11 +146,21 @@ public class CommerceDiscountRelLocalServiceImpl
 
 	@Override
 	public CommerceDiscountRel fetchCommerceDiscountRel(
+		long commerceDiscountId, String className, long classPK) {
+
+		return commerceDiscountRelPersistence.fetchByCD_CN_CPK_First(
+			commerceDiscountId,
+			_classNameLocalService.getClassNameId(className), classPK,
+			CommerceDiscountRelCreateDateComparator.getInstance(false));
+	}
+
+	@Override
+	public CommerceDiscountRel fetchCommerceDiscountRel(
 		String className, long classPK) {
 
 		return commerceDiscountRelPersistence.fetchByCN_CPK_First(
 			_classNameLocalService.getClassNameId(className), classPK,
-			new CommerceDiscountRelCreateDateComparator());
+			CommerceDiscountRelCreateDateComparator.getInstance(false));
 	}
 
 	@Override

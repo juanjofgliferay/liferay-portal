@@ -105,6 +105,7 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 			companyId, sku, unitOfMeasureKey);
 	}
 
+	@Override
 	public CommerceInventoryReplenishmentItem
 		fetchCommerceInventoryReplenishmentItem(
 			long companyId, String sku, String unitOfMeasureKey,
@@ -125,6 +126,7 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 				commerceInventoryWarehouseId, start, end);
 	}
 
+	@Override
 	public List<CommerceInventoryReplenishmentItem>
 		getCommerceInventoryReplenishmentItemsByCompanyIdSkuAndUnitOfMeasureKey(
 			long companyId, String sku, String unitOfMeasureKey, int start,
@@ -144,7 +146,14 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 			CommerceInventoryReplenishmentItemTable.INSTANCE.companyId.eq(
 				companyId
 			).and(
-				CommerceInventoryReplenishmentItemTable.INSTANCE.sku.eq(sku)
+				() -> {
+					if (Validator.isNull(sku)) {
+						return null;
+					}
+
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.sku.
+						eq(sku);
+				}
 			).and(
 				() -> {
 					if (Validator.isNull(unitOfMeasureKey)) {

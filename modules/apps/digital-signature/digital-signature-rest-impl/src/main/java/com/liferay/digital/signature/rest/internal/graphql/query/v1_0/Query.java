@@ -9,9 +9,9 @@ import com.liferay.digital.signature.rest.dto.v1_0.DSEnvelope;
 import com.liferay.digital.signature.rest.resource.v1_0.DSEnvelopeResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
@@ -19,17 +19,17 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Map;
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -51,26 +51,6 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {dSEnvelopes(page: ___, pageSize: ___, siteKey: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public DSEnvelopePage dSEnvelopes(
-			@GraphQLName("siteKey") @NotEmpty String siteKey,
-			@GraphQLName("pageSize") int pageSize,
-			@GraphQLName("page") int page)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dsEnvelopeResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dsEnvelopeResource -> new DSEnvelopePage(
-				dsEnvelopeResource.getSiteDSEnvelopesPage(
-					Long.valueOf(siteKey), Pagination.of(page, pageSize))));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {dSEnvelope(dsEnvelopeId: ___, siteKey: ___){dateCreated, dateModified, dsDocument, dsRecipient, emailBlurb, emailSubject, id, name, senderEmailAddress, siteId, status}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
@@ -84,6 +64,31 @@ public class Query {
 			this::_populateResourceContext,
 			dsEnvelopeResource -> dsEnvelopeResource.getSiteDSEnvelope(
 				Long.valueOf(siteKey), dsEnvelopeId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {dSEnvelopes(fromDate: ___, keywords: ___, order: ___, page: ___, pageSize: ___, siteKey: ___, status: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public DSEnvelopePage dSEnvelopes(
+			@GraphQLName("siteKey") @NotEmpty String siteKey,
+			@GraphQLName("fromDate") String fromDate,
+			@GraphQLName("keywords") String keywords,
+			@GraphQLName("order") String order,
+			@GraphQLName("status") String status,
+			@GraphQLName("pageSize") int pageSize,
+			@GraphQLName("page") int page)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dsEnvelopeResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dsEnvelopeResource -> new DSEnvelopePage(
+				dsEnvelopeResource.getSiteDSEnvelopesPage(
+					Long.valueOf(siteKey), fromDate, keywords, order, status,
+					Pagination.of(page, pageSize))));
 	}
 
 	@GraphQLName("DSEnvelopePage")
@@ -148,6 +153,10 @@ public class Query {
 		dsEnvelopeResource.setContextUriInfo(_uriInfo);
 		dsEnvelopeResource.setContextUser(_user);
 		dsEnvelopeResource.setGroupLocalService(_groupLocalService);
+		dsEnvelopeResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		dsEnvelopeResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		dsEnvelopeResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -156,12 +165,17 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
+	private ResourceActionLocalService _resourceActionLocalService;
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 

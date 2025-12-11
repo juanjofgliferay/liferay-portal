@@ -15,7 +15,6 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -64,7 +63,7 @@ public class LayoutClassedModelUsageStagedModelDataHandlerTest
 	@After
 	@Override
 	public void tearDown() throws Exception {
-		super.setUp();
+		super.tearDown();
 
 		_classNameLocalService.deleteClassName(
 			_classNameLocalService.getClassName(_CLASS_NAME));
@@ -137,9 +136,9 @@ public class LayoutClassedModelUsageStagedModelDataHandlerTest
 		Layout layout = (Layout)layoutDependentStagedModels.get(0);
 
 		return _layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
-			group.getGroupId(),
+			group.getGroupId(), StringPool.BLANK,
 			_classNameLocalService.getClassNameId(_CLASS_NAME), _classPK,
-			StringPool.BLANK, _containerKey,
+			_containerKey,
 			_classNameLocalService.getClassNameId(_CLASS_NAME_CONTAINER_TYPE),
 			layout.getPlid(),
 			ServiceContextTestUtil.getServiceContext(
@@ -157,7 +156,7 @@ public class LayoutClassedModelUsageStagedModelDataHandlerTest
 
 	@Override
 	protected Class<? extends StagedModel> getStagedModelClass() {
-		return Role.class;
+		return LayoutClassedModelUsage.class;
 	}
 
 	private static final String _CLASS_NAME = RandomTestUtil.randomString();

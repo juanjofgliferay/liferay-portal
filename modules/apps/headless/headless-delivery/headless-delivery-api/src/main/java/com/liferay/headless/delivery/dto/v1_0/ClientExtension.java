@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -51,9 +50,15 @@ public class ClientExtension implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ClientExtension.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getClientExtensionConfig() {
+		if (_clientExtensionConfigSupplier != null) {
+			clientExtensionConfig = _clientExtensionConfigSupplier.get();
+
+			_clientExtensionConfigSupplier = null;
+		}
+
 		return clientExtensionConfig;
 	}
 
@@ -61,6 +66,8 @@ public class ClientExtension implements Serializable {
 		Map<String, String> clientExtensionConfig) {
 
 		this.clientExtensionConfig = clientExtensionConfig;
+
+		_clientExtensionConfigSupplier = null;
 	}
 
 	@JsonIgnore
@@ -68,43 +75,60 @@ public class ClientExtension implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			clientExtensionConfigUnsafeSupplier) {
 
-		try {
-			clientExtensionConfig = clientExtensionConfigUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_clientExtensionConfigSupplier = () -> {
+			try {
+				return clientExtensionConfigUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> clientExtensionConfig;
 
-	@Schema(description = "The client extension's external reference code.")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _clientExtensionConfigSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The client extension's external reference code."
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -113,31 +137,49 @@ public class ClientExtension implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
-	@Schema(description = "The client extension's name.")
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The client extension's name."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The client extension's name.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
+
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -166,6 +208,8 @@ public class ClientExtension implements Serializable {
 
 		sb.append("{");
 
+		Map<String, String> clientExtensionConfig = getClientExtensionConfig();
+
 		if (clientExtensionConfig != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -175,6 +219,8 @@ public class ClientExtension implements Serializable {
 
 			sb.append(_toJSON(clientExtensionConfig));
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -189,6 +235,8 @@ public class ClientExtension implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -209,8 +257,8 @@ public class ClientExtension implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ClientExtension",
 		name = "x-class-name"
 	)
@@ -256,7 +304,10 @@ public class ClientExtension implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

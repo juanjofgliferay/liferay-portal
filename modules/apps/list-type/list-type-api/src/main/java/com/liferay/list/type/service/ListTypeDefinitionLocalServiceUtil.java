@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -54,21 +55,23 @@ public class ListTypeDefinitionLocalServiceUtil {
 	}
 
 	public static ListTypeDefinition addListTypeDefinition(
-			String externalReferenceCode, long userId)
+			String externalReferenceCode, long userId, boolean system)
 		throws PortalException {
 
 		return getService().addListTypeDefinition(
-			externalReferenceCode, userId);
+			externalReferenceCode, userId, system);
 	}
 
 	public static ListTypeDefinition addListTypeDefinition(
 			String externalReferenceCode, long userId,
 			Map<java.util.Locale, String> nameMap, boolean system,
-			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addListTypeDefinition(
-			externalReferenceCode, userId, nameMap, system, listTypeEntries);
+			externalReferenceCode, userId, nameMap, system, listTypeEntries,
+			serviceContext);
 	}
 
 	/**
@@ -375,22 +378,29 @@ public class ListTypeDefinitionLocalServiceUtil {
 	public static ListTypeDefinition updateListTypeDefinition(
 			String externalReferenceCode, long listTypeDefinitionId,
 			long userId, Map<java.util.Locale, String> nameMap,
-			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateListTypeDefinition(
 			externalReferenceCode, listTypeDefinitionId, userId, nameMap,
-			listTypeEntries);
+			listTypeEntries, serviceContext);
+	}
+
+	public static void updateUserId(
+			long companyId, long oldUserId, long newUserId)
+		throws PortalException {
+
+		getService().updateUserId(companyId, oldUserId, newUserId);
 	}
 
 	public static ListTypeDefinitionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ListTypeDefinitionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ListTypeDefinitionLocalService _service;
+	private static final Snapshot<ListTypeDefinitionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ListTypeDefinitionLocalServiceUtil.class,
+			ListTypeDefinitionLocalService.class);
 
 }

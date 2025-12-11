@@ -1,26 +1,25 @@
 import * as API from 'shared/api';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
+import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayLink from '@clayui/link';
 import EmbeddedAlertList from 'shared/components/EmbeddedAlertList';
 import Label from 'shared/components/Label';
 import ListComponent from 'shared/hoc/ListComponent';
-import Nav from 'shared/components/Nav';
 import NoResultsDisplay, {
 	getFormattedTitle
 } from 'shared/components/NoResultsDisplay';
 import React, {useEffect, useState} from 'react';
 import URLConstants from 'shared/util/url-constants';
-import {compose, withCurrentUser} from 'shared/hoc';
-import {connect, ConnectedProps} from 'react-redux';
+import {ClayDropDownWithItems} from '@clayui/drop-down';
 import {
 	CREATE_DATE,
 	createOrderIOMap,
 	NAME,
 	PROVIDER_TYPE
 } from 'shared/util/pagination';
-import {DataSource, User} from 'shared/util/records';
+import {DataSource} from 'shared/util/records';
 import {
 	DataSourceStates,
 	DataSourceStatuses,
@@ -35,26 +34,28 @@ import {
 	validAnalyticsConfig,
 	validContactsConfig
 } from 'shared/util/data-sources';
-import {Link} from 'react-router-dom';
-import {RootState} from 'shared/store';
+import {Link, useHistory, useParams} from 'react-router-dom';
 import {Routes, toRoute} from 'shared/util/router';
 import {sub} from 'shared/util/lang';
-import {useQueryPagination, useRequest} from 'shared/hooks';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useRequest} from 'shared/hooks/useRequest';
+import {useTimeZone} from 'shared/hooks/useTimeZone';
 
 interface ICellProps {
 	data: {[key: string]: any};
 }
 
-const AnalyticsCell: React.FC<ICellProps> = ({data}) => (
-	<td>
+const AnalyticsDataCell: React.FC<ICellProps> = ({data}) => (
+	<td className='text-center'>
 		{validAnalyticsConfig(new DataSource(fromJS(data))) && (
 			<ClayIcon className='icon-root' symbol='check' />
 		)}
 	</td>
 );
 
-const ContactsCell: React.FC<ICellProps> = ({data}) => (
-	<td>
+const IndividualsDataCell: React.FC<ICellProps> = ({data}) => (
+	<td className='text-center'>
 		{validContactsConfig(new DataSource(fromJS(data))) &&
 			data.status === DataSourceStatuses.Active && (
 				<ClayIcon className='icon-root' symbol='check' />
@@ -88,8 +89,7 @@ export const DataSourceName: React.FC<IDataSourceNameProps> = ({
 
 export const StatusRenderer: React.FC<ICellProps> = ({data}) => {
 	const {display, label} = getDataSourceDisplayObject(
-		new DataSource(fromJS(data)),
-		true
+		new DataSource(fromJS(data))
 	);
 
 	return (
@@ -165,31 +165,14 @@ const typeFormatter = (type: DataSourceTypes): string => {
 	}
 };
 
-const connector = connect((store: RootState, {groupId}: {groupId: string}) => ({
-	timeZoneId: store.getIn([
-		'projects',
-		groupId,
-		'data',
-		'timeZone',
-		'timeZoneId'
-	])
-}));
+interface IDataSourceListProps extends React.HTMLAttributes<HTMLElement> {}
 
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-interface IDataSourceListProps extends PropsFromRedux {
-	className: string;
-	currentUser: User;
-	groupId: string;
-}
-
-const DataSourceList: React.FC<IDataSourceListProps> = ({
-	className,
-	currentUser,
-	groupId,
-	timeZoneId
-}) => {
+const DataSourceList: React.FC<IDataSourceListProps> = ({className}) => {
+	const currentUser = useCurrentUser();
+	const history = useHistory();
+	const {groupId} = useParams();
 	const [alerts, setAlerts] = useState([]);
+	const {timeZoneId} = useTimeZone();
 
 	const {delta, orderIOMap, page, query} = useQueryPagination({
 		initialOrderIOMap: createOrderIOMap(NAME)
@@ -240,29 +223,42 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 		}
 	});
 
-	const renderNav = () => (
-		<Nav>
-			<Nav.Item>
-				<ClayLink
-					button
-					className='button-root'
-					displayType='primary'
-					href={toRoute(Routes.SETTINGS_ADD_DATA_SOURCE, {
-						groupId
-					})}
-					onClick={() => {
-						analytics.track(
-							'Clicked Add Data Source - TEST',
-							null,
-							{ip: '0'}
+	const renderDataSourcesDropdown = () => (
+		<ClayDropDownWithItems
+			items={[
+				{
+					label: Liferay.Language.get('liferay-dxp'),
+
+					onClick: () => {
+						history.push(
+							toRoute(Routes.SETTINGS_DATA_SOURCE_ONBOARDING, {
+								groupId,
+								id: DataSourceTypes.Liferay
+							})
 						);
-					}}
-					small
-				>
+					}
+				},
+				{
+					label: Liferay.Language.get('salesforce'),
+
+					onClick: () => {
+						history.push(
+							toRoute(Routes.SETTINGS_DATA_SOURCE_ONBOARDING, {
+								groupId,
+								id: DataSourceTypes.Salesforce
+							})
+						);
+					}
+				}
+			]}
+			trigger={
+				<ClayButton displayType='primary' size='sm'>
 					{Liferay.Language.get('add-data-source')}
-				</ClayLink>
-			</Nav.Item>
-		</Nav>
+
+					<ClayIcon className='ml-2' symbol='caret-bottom' />
+				</ClayButton>
+			}
+		/>
 	);
 
 	const renderNoResults = () => {
@@ -272,7 +268,7 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 			<>
 				{Liferay.Language.get('add-a-data-source-to-get-started')}
 
-				<a
+				<ClayLink
 					className='d-block mb-3'
 					href={URLConstants.DataSourceConnection}
 					key='DOCUMENTATION'
@@ -281,7 +277,7 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 					{Liferay.Language.get(
 						'access-our-documentation-to-learn-more'
 					)}
-				</a>
+				</ClayLink>
 			</>
 		) : (
 			Liferay.Language.get(
@@ -305,7 +301,7 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 					icon={{
 						border: false,
 						size: Sizes.XXXLarge,
-						symbol: 'ac-satellite'
+						symbol: 'ac_satellite'
 					}}
 					primary
 					title={Liferay.Language.get('no-data-sources-connected')}
@@ -317,16 +313,15 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 	return (
 		<BasePage
 			className={className}
-			groupId={groupId}
 			key='dataSourceListpage'
 			pageDescription={Liferay.Language.get(
-				'manage-data-sources-that-are-synced-with-analytics-cloud'
+				'manage-and-connect-data-sources-to-bring-in-data-from-various-sources-into-liferay-analytics-cloud'
 			)}
 			pageTitle={Liferay.Language.get('data-sources')}
 		>
 			<EmbeddedAlertList alerts={alerts} />
 
-			<Card pageDisplay>
+			<Card>
 				<ListComponent
 					checkDisabled={disableRow}
 					columns={[
@@ -340,21 +335,26 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 										id: dataSource.id
 									})
 							},
-							label: Liferay.Language.get('name')
+							label: Liferay.Language.get('data-source-name')
 						},
 						{
 							accessor: PROVIDER_TYPE,
 							dataFormatter: typeFormatter,
-							label: Liferay.Language.get('source')
+							label: Liferay.Language.get('type')
 						},
 						{
-							cellRenderer: ContactsCell,
-							label: Liferay.Language.get('contacts'),
+							cellRenderer: StatusRenderer,
+							label: Liferay.Language.get('status'),
 							sortable: false
 						},
 						{
-							cellRenderer: AnalyticsCell,
-							label: Liferay.Language.get('analytics'),
+							cellRenderer: IndividualsDataCell,
+							label: Liferay.Language.get('individuals-data'),
+							sortable: false
+						},
+						{
+							cellRenderer: AnalyticsDataCell,
+							label: Liferay.Language.get('analytics-data'),
 							sortable: false
 						},
 						{
@@ -362,11 +362,6 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 							dataFormatter: date =>
 								dateFormatter(date, timeZoneId),
 							label: Liferay.Language.get('date-added')
-						},
-						{
-							cellRenderer: StatusRenderer,
-							label: Liferay.Language.get('status'),
-							sortable: false
 						}
 					]}
 					delta={delta}
@@ -392,7 +387,9 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 					orderIOMap={orderIOMap}
 					page={page}
 					query={query}
-					renderNav={currentUser.isAdmin() ? renderNav : null}
+					renderNav={
+						currentUser.isAdmin() ? renderDataSourcesDropdown : null
+					}
 					rowIdentifier='id'
 					showCheckbox={false}
 					total={data?.total}
@@ -402,4 +399,4 @@ const DataSourceList: React.FC<IDataSourceListProps> = ({
 	);
 };
 
-export default compose(withCurrentUser, connector)(DataSourceList);
+export default DataSourceList;

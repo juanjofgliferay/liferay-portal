@@ -8,13 +8,13 @@ package com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0.SkuOption;
 import com.liferay.headless.commerce.delivery.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -94,6 +94,16 @@ public class SkuOptionSerDes {
 			sb.append(_escape(skuOption.getQuantity()));
 
 			sb.append("\"");
+		}
+
+		if (skuOption.getRequired() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"required\": ");
+
+			sb.append(skuOption.getRequired());
 		}
 
 		if (skuOption.getSkuId() != null) {
@@ -180,11 +190,7 @@ public class SkuOptionSerDes {
 			for (int i = 0; i < skuOption.getSkuOptionValueNames().length;
 				 i++) {
 
-				sb.append("\"");
-
-				sb.append(_escape(skuOption.getSkuOptionValueNames()[i]));
-
-				sb.append("\"");
+				sb.append(_toJSON(skuOption.getSkuOptionValueNames()[i]));
 
 				if ((i + 1) < skuOption.getSkuOptionValueNames().length) {
 					sb.append(", ");
@@ -248,6 +254,13 @@ public class SkuOptionSerDes {
 		}
 		else {
 			map.put("quantity", String.valueOf(skuOption.getQuantity()));
+		}
+
+		if (skuOption.getRequired() == null) {
+			map.put("required", null);
+		}
+		else {
+			map.put("required", String.valueOf(skuOption.getRequired()));
 		}
 
 		if (skuOption.getSkuId() == null) {
@@ -330,6 +343,53 @@ public class SkuOptionSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "key")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "price")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "quantity")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "required")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuOptionId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuOptionKey")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuOptionName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuOptionValueId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuOptionValueKey")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "skuOptionValueNames")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "value")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			SkuOption skuOption, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -353,6 +413,11 @@ public class SkuOptionSerDes {
 			else if (Objects.equals(jsonParserFieldName, "quantity")) {
 				if (jsonParserFieldValue != null) {
 					skuOption.setQuantity((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "required")) {
+				if (jsonParserFieldValue != null) {
+					skuOption.setRequired((Boolean)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "skuId")) {
@@ -435,36 +500,7 @@ public class SkuOptionSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -474,6 +510,42 @@ public class SkuOptionSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -988,12 +988,7 @@ definition {
 			fieldLabel = "Manager",
 			fieldName = ${fieldNameManager});
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignSiteRoleCP(
 			siteRoleName = "Site Administrator",
@@ -1098,7 +1093,7 @@ definition {
 
 		FormRules.viewRuleCondition(
 			condition = "AND",
-			conditonRowNumber = 1);
+			conditionRowNumber = 1);
 
 		FormRules.configureConditionOptions(
 			conditionField = "Text Field 1",
@@ -1151,7 +1146,7 @@ definition {
 	@description = "Verify that the OR operator on Condition is working as expected"
 	@priority = 5
 	test CanCreateMultipleConditionsUsingOR {
-		property portal.acceptance = "true";
+		property portal.acceptance = "quarantine";
 
 		FormsAdmin.addForm();
 

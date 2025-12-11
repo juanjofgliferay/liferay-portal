@@ -8,24 +8,33 @@
 <%@ include file="/init.jsp" %>
 
 <%
-String backURL = ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL()));
-
 ObjectDefinition objectDefinition = (ObjectDefinition)request.getAttribute(ObjectWebKeys.OBJECT_DEFINITION);
 
 ObjectDefinitionsValidationsDisplayContext objectDefinitionsValidationsDisplayContext = (ObjectDefinitionsValidationsDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBack(
+	ParamUtil.getString(
+		request, "backURL",
+		URLBuilder.create(
+			String.valueOf(renderResponse.createRenderURL())
+		).setParameter(
+			"objectFolderName", objectDefinitionsValidationsDisplayContext.getObjectFolderName()
+		).build()));
 
 renderResponse.setTitle(objectDefinition.getLabel(locale, true));
 %>
 
 <div>
 	<react:component
-		module="js/components/ObjectValidation/Validations"
+		module="{Validations} from object-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
+				"allowScriptContentToBeExecutedOrIncluded", objectDefinitionsValidationsDisplayContext.isAllowScriptContentToBeExecutedOrIncluded()
+			).put(
 				"apiURL", objectDefinitionsValidationsDisplayContext.getAPIURL()
+			).put(
+				"backURL", portletDisplay.getURLBack()
 			).put(
 				"creationMenu", objectDefinitionsValidationsDisplayContext.getCreationMenu()
 			).put(
@@ -49,12 +58,12 @@ renderResponse.setTitle(objectDefinition.getLabel(locale, true));
 
 <div>
 	<react:component
-		module="js/components/ModalSelectObjectFields"
+		module="{ModalSelectObjectFields} from object-web"
 	/>
 </div>
 
 <div>
 	<react:component
-		module="js/components/ModalObjectFieldDeletionNotAllowed"
+		module="{ModalDeletionNotAllowed} from object-web"
 	/>
 </div>

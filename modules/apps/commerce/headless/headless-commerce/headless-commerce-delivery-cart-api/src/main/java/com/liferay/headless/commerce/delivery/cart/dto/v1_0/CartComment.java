@@ -16,18 +16,21 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -47,143 +50,372 @@ public class CartComment implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(CartComment.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getAuthor() {
+		if (_authorSupplier != null) {
+			author = _authorSupplier.get();
+
+			_authorSupplier = null;
+		}
+
 		return author;
 	}
 
 	public void setAuthor(String author) {
 		this.author = author;
+
+		_authorSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAuthor(
 		UnsafeSupplier<String, Exception> authorUnsafeSupplier) {
 
-		try {
-			author = authorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_authorSupplier = () -> {
+			try {
+				return authorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String author;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _authorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Long getAuthorId() {
+		if (_authorIdSupplier != null) {
+			authorId = _authorIdSupplier.get();
+
+			_authorIdSupplier = null;
+		}
+
+		return authorId;
+	}
+
+	public void setAuthorId(Long authorId) {
+		this.authorId = authorId;
+
+		_authorIdSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAuthorId(
+		UnsafeSupplier<Long, Exception> authorIdUnsafeSupplier) {
+
+		_authorIdSupplier = () -> {
+			try {
+				return authorIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Long authorId;
+
+	@JsonIgnore
+	private Supplier<Long> _authorIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getAuthorPortraitURL() {
+		if (_authorPortraitURLSupplier != null) {
+			authorPortraitURL = _authorPortraitURLSupplier.get();
+
+			_authorPortraitURLSupplier = null;
+		}
+
+		return authorPortraitURL;
+	}
+
+	public void setAuthorPortraitURL(String authorPortraitURL) {
+		this.authorPortraitURL = authorPortraitURL;
+
+		_authorPortraitURLSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAuthorPortraitURL(
+		UnsafeSupplier<String, Exception> authorPortraitURLUnsafeSupplier) {
+
+		_authorPortraitURLSupplier = () -> {
+			try {
+				return authorPortraitURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String authorPortraitURL;
+
+	@JsonIgnore
+	private Supplier<String> _authorPortraitURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getContent() {
+		if (_contentSupplier != null) {
+			content = _contentSupplier.get();
+
+			_contentSupplier = null;
+		}
+
 		return content;
 	}
 
 	public void setContent(String content) {
 		this.content = content;
+
+		_contentSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContent(
 		UnsafeSupplier<String, Exception> contentUnsafeSupplier) {
 
-		try {
-			content = contentUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentSupplier = () -> {
+			try {
+				return contentUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String content;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _contentSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Date getModifiedDate() {
+		if (_modifiedDateSupplier != null) {
+			modifiedDate = _modifiedDateSupplier.get();
+
+			_modifiedDateSupplier = null;
+		}
+
+		return modifiedDate;
+	}
+
+	public void setModifiedDate(Date modifiedDate) {
+		this.modifiedDate = modifiedDate;
+
+		_modifiedDateSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setModifiedDate(
+		UnsafeSupplier<Date, Exception> modifiedDateUnsafeSupplier) {
+
+		_modifiedDateSupplier = () -> {
+			try {
+				return modifiedDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Date modifiedDate;
+
+	@JsonIgnore
+	private Supplier<Date> _modifiedDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getOrderId() {
+		if (_orderIdSupplier != null) {
+			orderId = _orderIdSupplier.get();
+
+			_orderIdSupplier = null;
+		}
+
 		return orderId;
 	}
 
 	public void setOrderId(Long orderId) {
 		this.orderId = orderId;
+
+		_orderIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderId(
 		UnsafeSupplier<Long, Exception> orderIdUnsafeSupplier) {
 
-		try {
-			orderId = orderIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderIdSupplier = () -> {
+			try {
+				return orderIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long orderId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _orderIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getRestricted() {
+		if (_restrictedSupplier != null) {
+			restricted = _restrictedSupplier.get();
+
+			_restrictedSupplier = null;
+		}
+
 		return restricted;
 	}
 
 	public void setRestricted(Boolean restricted) {
 		this.restricted = restricted;
+
+		_restrictedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRestricted(
 		UnsafeSupplier<Boolean, Exception> restrictedUnsafeSupplier) {
 
-		try {
-			restricted = restrictedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_restrictedSupplier = () -> {
+			try {
+				return restrictedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean restricted;
+
+	@JsonIgnore
+	private Supplier<Boolean> _restrictedSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -212,6 +444,11 @@ public class CartComment implements Serializable {
 
 		sb.append("{");
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		String author = getAuthor();
+
 		if (author != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -225,6 +462,36 @@ public class CartComment implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long authorId = getAuthorId();
+
+		if (authorId != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"authorId\": ");
+
+			sb.append(authorId);
+		}
+
+		String authorPortraitURL = getAuthorPortraitURL();
+
+		if (authorPortraitURL != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"authorPortraitURL\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(authorPortraitURL));
+
+			sb.append("\"");
+		}
+
+		String content = getContent();
 
 		if (content != null) {
 			if (sb.length() > 1) {
@@ -240,6 +507,24 @@ public class CartComment implements Serializable {
 			sb.append("\"");
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -250,6 +535,24 @@ public class CartComment implements Serializable {
 			sb.append(id);
 		}
 
+		Date modifiedDate = getModifiedDate();
+
+		if (modifiedDate != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"modifiedDate\": ");
+
+			sb.append("\"");
+
+			sb.append(liferayToJSONDateFormat.format(modifiedDate));
+
+			sb.append("\"");
+		}
+
+		Long orderId = getOrderId();
+
 		if (orderId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -259,6 +562,8 @@ public class CartComment implements Serializable {
 
 			sb.append(orderId);
 		}
+
+		Boolean restricted = getRestricted();
 
 		if (restricted != null) {
 			if (sb.length() > 1) {
@@ -275,8 +580,8 @@ public class CartComment implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.cart.dto.v1_0.CartComment",
 		name = "x-class-name"
 	)
@@ -322,7 +627,10 @@ public class CartComment implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

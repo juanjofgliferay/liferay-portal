@@ -13,11 +13,29 @@ import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.service.AssetListEntryLocalService;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
+import com.liferay.dynamic.data.mapping.constants.DDMStructureConstants;
+import com.liferay.dynamic.data.mapping.io.DDMFormDeserializer;
+import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeRequest;
+import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeResponse;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.storage.StorageType;
+import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestHelper;
 import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
+import com.liferay.info.collection.provider.RepeatableFieldInfoItemCollectionProvider;
+import com.liferay.info.field.InfoField;
+import com.liferay.info.field.InfoFieldSet;
+import com.liferay.info.field.type.TextInfoFieldType;
 import com.liferay.info.list.provider.item.selector.criterion.InfoListProviderItemSelectorReturnType;
+import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.info.pagination.InfoPage;
+import com.liferay.info.test.util.MockInfoServiceRegistrationHolder;
+import com.liferay.info.test.util.model.MockObject;
 import com.liferay.item.selector.criteria.InfoListItemSelectorReturnType;
+import com.liferay.journal.constants.JournalFolderConstants;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
@@ -34,6 +52,7 @@ import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
@@ -43,14 +62,17 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -63,10 +85,10 @@ import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.test.util.SegmentsTestUtil;
 
-import java.util.Locale;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Locale;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -155,7 +177,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -167,7 +189,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				"type", InfoListProviderItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 1, 20, 0,
-			"regular",
+			"regular", _group.getGroupId(),
 			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
 				_layout.getPlid()),
 			StringPool.BLANK);
@@ -198,7 +220,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -210,7 +232,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				"type", InfoListProviderItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 1, 20, 0,
-			"regular",
+			"regular", _group.getGroupId(),
 			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
 				_layout.getPlid()),
 			StringPool.BLANK);
@@ -235,7 +257,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addDynamicAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				"Collection Title", _getTypeSettings(), _serviceContext);
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
@@ -244,7 +266,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -260,7 +282,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 2, 20, 0,
-			"regular",
+			"regular", _group.getGroupId(),
 			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
 				_layout.getPlid()),
 			StringPool.BLANK);
@@ -292,7 +314,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addDynamicAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				"Collection Title", _getTypeSettings(), _serviceContext);
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
@@ -301,7 +323,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -317,7 +339,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 1, 1, 1,
-			"regular",
+			"regular", _group.getGroupId(),
 			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
 				_layout.getPlid()),
 			StringPool.BLANK);
@@ -335,6 +357,88 @@ public class GetCollectionFieldMVCResourceCommandTest {
 	}
 
 	@Test
+	public void testGetCollectionFieldFromRepeatableFieldInfoItemCollectionProvider()
+		throws Exception {
+
+		DDMStructureTestHelper ddmStructureTestHelper =
+			new DDMStructureTestHelper(
+				_portal.getClassNameId(JournalArticle.class), _group);
+
+		DDMStructure ddmStructure = ddmStructureTestHelper.addStructure(
+			_portal.getClassNameId(JournalArticle.class),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			_deserialize(_read("structure_with_repeatable_fieldset.json")),
+			StorageType.DEFAULT.getValue(), DDMStructureConstants.TYPE_DEFAULT);
+
+		JournalArticle journalArticle =
+			JournalTestUtil.addArticleWithXMLContent(
+				_group.getGroupId(),
+				JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+				PortalUtil.getClassNameId(DDMStructure.class),
+				ddmStructure.getStructureId(),
+				_read("repeatable_fieldset_content.xml"),
+				ddmStructure.getStructureKey(), null,
+				LocaleUtil.getSiteDefault());
+
+		MockHttpServletRequest mockHttpServletRequest =
+			(MockHttpServletRequest)_getHttpServletRequest();
+
+		mockHttpServletRequest.setParameter(
+			"classNameId",
+			String.valueOf(
+				_portal.getClassNameId(JournalArticle.class.getName())));
+		mockHttpServletRequest.setParameter(
+			"classPK", String.valueOf(journalArticle.getResourcePrimKey()));
+
+		JSONObject jsonObject = ReflectionTestUtil.invoke(
+			_mvcResourceCommand, "_getCollectionFieldsJSONObject",
+			new Class<?>[] {
+				HttpServletRequest.class, HttpServletResponse.class, int.class,
+				boolean.class, boolean.class, String.class, String.class,
+				String.class, String.class, String.class, int.class, int.class,
+				int.class, String.class, long.class, long.class, String.class
+			},
+			mockHttpServletRequest, new MockHttpServletResponse(), 0, false,
+			false, LocaleUtil.toLanguageId(LocaleUtil.SPAIN),
+			JSONUtil.put(
+				"fieldName", "Fieldset"
+			).put(
+				"itemSubType", String.valueOf(ddmStructure.getStructureId())
+			).put(
+				"itemType", JournalArticle.class.getName()
+			).put(
+				"key", RepeatableFieldInfoItemCollectionProvider.class.getName()
+			).put(
+				"type", InfoListProviderItemSelectorReturnType.class.getName()
+			).toString(),
+			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 3, 3, 1,
+			"regular", _group.getGroupId(),
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				_layout.getPlid()),
+			StringPool.BLANK);
+
+		Assert.assertEquals(3, jsonObject.getInt("length"));
+		Assert.assertEquals(3, jsonObject.getInt("totalNumberOfItems"));
+
+		JSONArray jsonArray = jsonObject.getJSONArray("items");
+
+		JSONObject itemJSONObject1 = jsonArray.getJSONObject(0);
+
+		Assert.assertEquals("text1uno", itemJSONObject1.getString("Text1"));
+		Assert.assertEquals("text2uno", itemJSONObject1.getString("Text2"));
+
+		JSONObject itemJSONObject2 = jsonArray.getJSONObject(1);
+
+		Assert.assertEquals("text1dos", itemJSONObject2.getString("Text1"));
+		Assert.assertEquals("text2dos", itemJSONObject2.getString("Text2"));
+
+		JSONObject itemJSONObject3 = jsonArray.getJSONObject(2);
+
+		Assert.assertEquals("text1tres", itemJSONObject3.getString("Text1"));
+		Assert.assertEquals("text2tres", itemJSONObject3.getString("Text2"));
+	}
+
+	@Test
 	public void testGetCollectionFieldWithDifferentSegmentsExperiences()
 		throws Exception {
 
@@ -345,7 +449,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		SegmentsExperience segmentsExperience1 =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				TestPropsValues.getUserId(), layout.getGroupId(),
+				null, TestPropsValues.getUserId(), layout.getGroupId(),
 				segmentsEntry1.getSegmentsEntryId(), layout.getPlid(),
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()
@@ -357,7 +461,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		SegmentsExperience segmentsExperience2 =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				TestPropsValues.getUserId(), layout.getGroupId(),
+				null, TestPropsValues.getUserId(), layout.getGroupId(),
 				segmentsEntry2.getSegmentsEntryId(), layout.getPlid(),
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), RandomTestUtil.randomString()
@@ -366,7 +470,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryLocalService.addAssetListEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				"Manual title", AssetListEntryTypeConstants.TYPE_MANUAL, null,
 				_serviceContext);
 
@@ -409,7 +513,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -419,12 +523,13 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			).put(
 				"classPK", assetListEntry.getAssetListEntryId()
 			).put(
-				"itemType", AssetEntry.class.getName()
+				"itemType", BlogsEntry.class.getName()
 			).put(
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 1, 1, 1,
-			"regular", defaultSegmentsExperienceId, StringPool.BLANK);
+			"regular", _group.getGroupId(), defaultSegmentsExperienceId,
+			StringPool.BLANK);
 
 		Assert.assertEquals(1, jsonObject.getInt("length"));
 
@@ -434,7 +539,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -444,13 +549,13 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			).put(
 				"classPK", assetListEntry.getAssetListEntryId()
 			).put(
-				"itemType", AssetEntry.class.getName()
+				"itemType", BlogsEntry.class.getName()
 			).put(
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 1, 1, 1,
-			"regular", segmentsExperience1.getSegmentsExperienceId(),
-			StringPool.BLANK);
+			"regular", _group.getGroupId(),
+			segmentsExperience1.getSegmentsExperienceId(), StringPool.BLANK);
 
 		Assert.assertEquals(3, jsonObject.getInt("length"));
 
@@ -460,7 +565,7 @@ public class GetCollectionFieldMVCResourceCommandTest {
 				HttpServletRequest.class, HttpServletResponse.class, int.class,
 				boolean.class, boolean.class, String.class, String.class,
 				String.class, String.class, String.class, int.class, int.class,
-				int.class, String.class, long.class, String.class
+				int.class, String.class, long.class, long.class, String.class
 			},
 			_getHttpServletRequest(), new MockHttpServletResponse(), 0, false,
 			false, LocaleUtil.toLanguageId(LocaleUtil.US),
@@ -470,15 +575,63 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			).put(
 				"classPK", assetListEntry.getAssetListEntryId()
 			).put(
-				"itemType", AssetEntry.class.getName()
+				"itemType", BlogsEntry.class.getName()
 			).put(
 				"type", InfoListItemSelectorReturnType.class.getName()
 			).toString(),
 			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, 1, 1, 1,
-			"regular", segmentsExperience2.getSegmentsExperienceId(),
-			StringPool.BLANK);
+			"regular", _group.getGroupId(),
+			segmentsExperience2.getSegmentsExperienceId(), StringPool.BLANK);
 
 		Assert.assertEquals(1, jsonObject.getInt("length"));
+	}
+
+	@Test
+	@TestInfo("LPD-61012")
+	public void testGetInfoFieldWithERCInfoItemIdentifier() throws Exception {
+		MockObject mockObject = new MockObject(
+			RandomTestUtil.randomLong(), false, true);
+
+		try (MockInfoServiceRegistrationHolder
+				mockInfoServiceRegistrationHolder =
+					new MockInfoServiceRegistrationHolder(
+						InfoFieldSet.builder(
+						).infoFieldSetEntries(
+							ListUtil.fromArray(
+								InfoField.builder(
+								).infoFieldType(
+									TextInfoFieldType.INSTANCE
+								).namespace(
+									RandomTestUtil.randomString()
+								).name(
+									RandomTestUtil.randomString()
+								).labelInfoLocalizedValue(
+									InfoLocalizedValue.singleValue(
+										RandomTestUtil.randomString())
+								).localizable(
+									true
+								).build())
+						).build(),
+						mockObject, _portal)) {
+
+			MockHttpServletRequest mockHttpServletRequest =
+				new MockHttpServletRequest();
+
+			mockHttpServletRequest.setParameter(
+				"classNameId",
+				String.valueOf(_portal.getClassNameId(MockObject.class)));
+			mockHttpServletRequest.setParameter(
+				"classPK", String.valueOf(mockObject.getClassPK()));
+			mockHttpServletRequest.setParameter(
+				"externalReferenceCode", RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				mockObject,
+				ReflectionTestUtil.invoke(
+					_mvcResourceCommand, "_getInfoItem",
+					new Class<?>[] {HttpServletRequest.class},
+					mockHttpServletRequest));
+		}
 	}
 
 	@Rule
@@ -498,28 +651,36 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			Criteria.Conjunction.AND);
 
 		return SegmentsTestUtil.addSegmentsEntry(
-			_group.getGroupId(), CriteriaSerializer.serialize(criteria),
-			User.class.getName());
+			_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+	}
+
+	private DDMForm _deserialize(String content) {
+		DDMFormDeserializerDeserializeRequest.Builder builder =
+			DDMFormDeserializerDeserializeRequest.Builder.newBuilder(content);
+
+		DDMFormDeserializerDeserializeResponse
+			ddmFormDeserializerDeserializeResponse =
+				_jsonDDMFormDeserializer.deserialize(builder.build());
+
+		return ddmFormDeserializerDeserializeResponse.getDDMForm();
 	}
 
 	private HttpServletRequest _getHttpServletRequest() throws Exception {
-		HttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
+		HttpServletRequest httpServletRequest = new MockHttpServletRequest();
 
-		mockHttpServletRequest.setAttribute(WebKeys.LAYOUT, _layout);
+		httpServletRequest.setAttribute(WebKeys.LAYOUT, _layout);
 
 		ThemeDisplay themeDisplay = ContentLayoutTestUtil.getThemeDisplay(
 			_companyLocalService.fetchCompany(_group.getCompanyId()), _group,
 			_layout);
 
-		themeDisplay.setRequest(mockHttpServletRequest);
+		themeDisplay.setRequest(httpServletRequest);
 
-		mockHttpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, themeDisplay);
+		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
 
-		mockHttpServletRequest.setAttribute(WebKeys.USER_ID, _user.getUserId());
+		httpServletRequest.setAttribute(WebKeys.USER_ID, _user.getUserId());
 
-		return mockHttpServletRequest;
+		return httpServletRequest;
 	}
 
 	private String _getTypeSettings() {
@@ -542,6 +703,16 @@ public class GetCollectionFieldMVCResourceCommandTest {
 			"orderByType2", "ASC"
 		).buildString();
 	}
+
+	private String _read(String fileName) throws Exception {
+		Class<?> clazz = getClass();
+
+		return StringUtil.read(
+			clazz.getResourceAsStream("dependencies/" + fileName));
+	}
+
+	@Inject(filter = "ddm.form.deserializer.type=json")
+	private static DDMFormDeserializer _jsonDDMFormDeserializer;
 
 	@Inject
 	private AssetEntryLocalService _assetEntryLocalService;

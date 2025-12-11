@@ -15,16 +15,16 @@ import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsPortletKeys;
-import com.liferay.segments.item.selector.criterion.SegmentsEntryItemSelectorCriterion;
+import com.liferay.segments.item.selector.SegmentsEntryItemSelectorCriterion;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryLocalService;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Stefan Tanasie
@@ -65,7 +65,6 @@ public class SegmentsEntryDisplayContext {
 		segmentEntrySearchContainer.setResultsAndTotal(
 			_segmentsEntryLocalService.searchSegmentsEntries(
 				_themeDisplay.getCompanyId(), _getGroupId(), _getKeywords(),
-				true,
 				LinkedHashMapBuilder.<String, Object>put(
 					"excludedSegmentsEntryIds",
 					_segmentsEntryItemSelectorCriterion.
@@ -139,19 +138,14 @@ public class SegmentsEntryDisplayContext {
 			orderByAsc = true;
 		}
 
-		Sort sort = null;
-
 		if (Objects.equals(_getOrderByCol(), "name")) {
-			sort = new Sort(
+			return new Sort(
 				Field.getSortableFieldName(
 					"localized_name_".concat(_themeDisplay.getLanguageId())),
 				Sort.STRING_TYPE, !orderByAsc);
 		}
-		else {
-			sort = new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, !orderByAsc);
-		}
 
-		return sort;
+		return new Sort(Field.MODIFIED_DATE, Sort.LONG_TYPE, !orderByAsc);
 	}
 
 	private long _groupId;

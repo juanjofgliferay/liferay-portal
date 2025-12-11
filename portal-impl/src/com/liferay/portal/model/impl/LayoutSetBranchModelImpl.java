@@ -110,6 +110,9 @@ public class LayoutSetBranchModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY LayoutSetBranch.name ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY layoutSetBranch.name ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -159,7 +162,7 @@ public class LayoutSetBranchModelImpl
 	public static final long PRIVATELAYOUT_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutSetBranch"));
 
 	public LayoutSetBranchModelImpl() {

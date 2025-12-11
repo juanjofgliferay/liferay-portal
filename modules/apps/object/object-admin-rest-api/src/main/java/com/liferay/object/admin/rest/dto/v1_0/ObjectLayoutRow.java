@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -49,35 +48,54 @@ public class ObjectLayoutRow implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ObjectLayoutRow.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public ObjectLayoutColumn[] getObjectLayoutColumns() {
+		if (_objectLayoutColumnsSupplier != null) {
+			objectLayoutColumns = _objectLayoutColumnsSupplier.get();
+
+			_objectLayoutColumnsSupplier = null;
+		}
+
 		return objectLayoutColumns;
 	}
 
@@ -85,6 +103,8 @@ public class ObjectLayoutRow implements Serializable {
 		ObjectLayoutColumn[] objectLayoutColumns) {
 
 		this.objectLayoutColumns = objectLayoutColumns;
+
+		_objectLayoutColumnsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -92,48 +112,66 @@ public class ObjectLayoutRow implements Serializable {
 		UnsafeSupplier<ObjectLayoutColumn[], Exception>
 			objectLayoutColumnsUnsafeSupplier) {
 
-		try {
-			objectLayoutColumns = objectLayoutColumnsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectLayoutColumnsSupplier = () -> {
+			try {
+				return objectLayoutColumnsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ObjectLayoutColumn[] objectLayoutColumns;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<ObjectLayoutColumn[]> _objectLayoutColumnsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Integer priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Integer, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer priority;
+
+	@JsonIgnore
+	private Supplier<Integer> _prioritySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -162,6 +200,8 @@ public class ObjectLayoutRow implements Serializable {
 
 		sb.append("{");
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -171,6 +211,8 @@ public class ObjectLayoutRow implements Serializable {
 
 			sb.append(id);
 		}
+
+		ObjectLayoutColumn[] objectLayoutColumns = getObjectLayoutColumns();
 
 		if (objectLayoutColumns != null) {
 			if (sb.length() > 1) {
@@ -192,6 +234,8 @@ public class ObjectLayoutRow implements Serializable {
 			sb.append("]");
 		}
 
+		Integer priority = getPriority();
+
 		if (priority != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -207,8 +251,8 @@ public class ObjectLayoutRow implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.object.admin.rest.dto.v1_0.ObjectLayoutRow",
 		name = "x-class-name"
 	)
@@ -254,7 +298,10 @@ public class ObjectLayoutRow implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

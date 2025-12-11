@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alejandro Tardín
@@ -51,9 +50,15 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 			TaxonomyCategoryBulkSelection.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public DocumentBulkSelection getDocumentBulkSelection() {
+		if (_documentBulkSelectionSupplier != null) {
+			documentBulkSelection = _documentBulkSelectionSupplier.get();
+
+			_documentBulkSelectionSupplier = null;
+		}
+
 		return documentBulkSelection;
 	}
 
@@ -61,6 +66,8 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 		DocumentBulkSelection documentBulkSelection) {
 
 		this.documentBulkSelection = documentBulkSelection;
+
+		_documentBulkSelectionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -68,28 +75,41 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 		UnsafeSupplier<DocumentBulkSelection, Exception>
 			documentBulkSelectionUnsafeSupplier) {
 
-		try {
-			documentBulkSelection = documentBulkSelectionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_documentBulkSelectionSupplier = () -> {
+			try {
+				return documentBulkSelectionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DocumentBulkSelection documentBulkSelection;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<DocumentBulkSelection> _documentBulkSelectionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getTaxonomyCategoryIdsToAdd() {
+		if (_taxonomyCategoryIdsToAddSupplier != null) {
+			taxonomyCategoryIdsToAdd = _taxonomyCategoryIdsToAddSupplier.get();
+
+			_taxonomyCategoryIdsToAddSupplier = null;
+		}
+
 		return taxonomyCategoryIdsToAdd;
 	}
 
 	public void setTaxonomyCategoryIdsToAdd(Long[] taxonomyCategoryIdsToAdd) {
 		this.taxonomyCategoryIdsToAdd = taxonomyCategoryIdsToAdd;
+
+		_taxonomyCategoryIdsToAddSupplier = null;
 	}
 
 	@JsonIgnore
@@ -97,24 +117,35 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 		UnsafeSupplier<Long[], Exception>
 			taxonomyCategoryIdsToAddUnsafeSupplier) {
 
-		try {
-			taxonomyCategoryIdsToAdd =
-				taxonomyCategoryIdsToAddUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxonomyCategoryIdsToAddSupplier = () -> {
+			try {
+				return taxonomyCategoryIdsToAddUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] taxonomyCategoryIdsToAdd;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long[]> _taxonomyCategoryIdsToAddSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getTaxonomyCategoryIdsToRemove() {
+		if (_taxonomyCategoryIdsToRemoveSupplier != null) {
+			taxonomyCategoryIdsToRemove =
+				_taxonomyCategoryIdsToRemoveSupplier.get();
+
+			_taxonomyCategoryIdsToRemoveSupplier = null;
+		}
+
 		return taxonomyCategoryIdsToRemove;
 	}
 
@@ -122,6 +153,8 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 		Long[] taxonomyCategoryIdsToRemove) {
 
 		this.taxonomyCategoryIdsToRemove = taxonomyCategoryIdsToRemove;
+
+		_taxonomyCategoryIdsToRemoveSupplier = null;
 	}
 
 	@JsonIgnore
@@ -129,21 +162,25 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 		UnsafeSupplier<Long[], Exception>
 			taxonomyCategoryIdsToRemoveUnsafeSupplier) {
 
-		try {
-			taxonomyCategoryIdsToRemove =
-				taxonomyCategoryIdsToRemoveUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxonomyCategoryIdsToRemoveSupplier = () -> {
+			try {
+				return taxonomyCategoryIdsToRemoveUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] taxonomyCategoryIdsToRemove;
+
+	@JsonIgnore
+	private Supplier<Long[]> _taxonomyCategoryIdsToRemoveSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -174,6 +211,9 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 
 		sb.append("{");
 
+		DocumentBulkSelection documentBulkSelection =
+			getDocumentBulkSelection();
+
 		if (documentBulkSelection != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -183,6 +223,8 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 
 			sb.append(String.valueOf(documentBulkSelection));
 		}
+
+		Long[] taxonomyCategoryIdsToAdd = getTaxonomyCategoryIdsToAdd();
 
 		if (taxonomyCategoryIdsToAdd != null) {
 			if (sb.length() > 1) {
@@ -203,6 +245,8 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 
 			sb.append("]");
 		}
+
+		Long[] taxonomyCategoryIdsToRemove = getTaxonomyCategoryIdsToRemove();
 
 		if (taxonomyCategoryIdsToRemove != null) {
 			if (sb.length() > 1) {
@@ -229,8 +273,8 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.bulk.rest.dto.v1_0.TaxonomyCategoryBulkSelection",
 		name = "x-class-name"
 	)
@@ -276,7 +320,10 @@ public class TaxonomyCategoryBulkSelection implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

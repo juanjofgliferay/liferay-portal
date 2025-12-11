@@ -12,7 +12,13 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Localization;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -24,22 +30,32 @@ import org.osgi.service.component.annotations.Reference;
 public class AddLayoutPrototypeInitialRequestPortalInstanceLifecycleListener
 	extends InitialRequestPortalInstanceLifecycleListener {
 
+	@Activate
+	@Override
+	protected void activate(BundleContext bundleContext) {
+		super.activate(bundleContext);
+
+		_searchLayoutFactory = new SearchLayoutFactory(
+			_groupLocalService, _layoutLocalService,
+			_layoutPrototypeLocalService, _localization, _userLocalService);
+	}
+
 	@Override
 	protected void doPortalInstanceRegistered(long companyId) throws Exception {
-		Layout layout = searchLayoutFactory.createSearchLayoutPrototype(
+		Layout layout = _searchLayoutFactory.createSearchLayoutPrototype(
 			companyId);
 
 		if (layout == null) {
 			return;
 		}
 
-		Group guestGroup = groupLocalService.getGroup(
+		Group guestGroup = _groupLocalService.getGroup(
 			companyId, GroupConstants.GUEST);
 
 		try {
 			MergeLayoutPrototypesThreadLocal.setInProgress(true);
 
-			searchLayoutFactory.createSearchLayout(guestGroup);
+			_searchLayoutFactory.createSearchLayout(guestGroup);
 		}
 		finally {
 			MergeLayoutPrototypesThreadLocal.setInProgress(false);
@@ -47,9 +63,20 @@ public class AddLayoutPrototypeInitialRequestPortalInstanceLifecycleListener
 	}
 
 	@Reference
-	protected GroupLocalService groupLocalService;
+	private GroupLocalService _groupLocalService;
 
 	@Reference
-	protected SearchLayoutFactory searchLayoutFactory;
+	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutPrototypeLocalService _layoutPrototypeLocalService;
+
+	@Reference
+	private Localization _localization;
+
+	private SearchLayoutFactory _searchLayoutFactory;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

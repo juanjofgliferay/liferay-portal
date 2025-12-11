@@ -112,7 +112,7 @@ public class ObjectActionModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ObjectAction (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,objectActionId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectDefinitionId LONG,active_ BOOLEAN,conditionExpression TEXT null,description VARCHAR(75) null,errorMessage STRING null,label STRING null,name VARCHAR(75) null,objectActionExecutorKey VARCHAR(255) null,objectActionTriggerKey VARCHAR(75) null,parameters TEXT null,system_ BOOLEAN,status INTEGER)";
+		"create table ObjectAction (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,objectActionId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectDefinitionId LONG,active_ BOOLEAN,conditionExpression TEXT null,description STRING null,errorMessage STRING null,label STRING null,name VARCHAR(75) null,objectActionExecutorKey VARCHAR(255) null,objectActionTriggerKey VARCHAR(75) null,parameters TEXT null,system_ BOOLEAN,status INTEGER)";
 
 	public static final String TABLE_SQL_DROP = "drop table ObjectAction";
 
@@ -156,26 +156,32 @@ public class ObjectActionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTACTIONTRIGGERKEY_COLUMN_BITMASK = 16L;
+	public static final long OBJECTACTIONEXECUTORKEY_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTDEFINITIONID_COLUMN_BITMASK = 32L;
+	public static final long OBJECTACTIONTRIGGERKEY_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 64L;
+	public static final long OBJECTDEFINITIONID_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTACTIONID_COLUMN_BITMASK = 128L;
+	public static final long OBJECTACTIONID_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -981,6 +987,15 @@ public class ObjectActionModelImpl
 		}
 
 		_objectActionExecutorKey = objectActionExecutorKey;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalObjectActionExecutorKey() {
+		return getColumnOriginalValue("objectActionExecutorKey");
 	}
 
 	@JSON

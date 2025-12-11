@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.delivery.client.dto.v1_0.BlogPostingImage;
 import com.liferay.headless.delivery.client.dto.v1_0.Field;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
@@ -20,6 +23,7 @@ import com.liferay.headless.delivery.client.pagination.Page;
 import com.liferay.headless.delivery.client.pagination.Pagination;
 import com.liferay.headless.delivery.client.resource.v1_0.BlogPostingImageResource;
 import com.liferay.headless.delivery.client.serdes.v1_0.BlogPostingImageSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
@@ -30,28 +34,52 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.io.File;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,15 +88,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
+import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -77,6 +101,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Javier Gamarra
@@ -87,12 +114,14 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -106,11 +135,25 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 		_blogPostingImageResource.setContextCompany(testCompany);
 
-		BlogPostingImageResource.Builder builder =
-			BlogPostingImageResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		blogPostingImageResource = builder.authentication(
-			"test@liferay.com", "test"
+		blogPostingImageResource = BlogPostingImageResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -124,7 +167,32 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		BlogPostingImage blogPostingImage1 = randomBlogPostingImage();
+
+		String json = objectMapper.writeValueAsString(blogPostingImage1);
+
+		BlogPostingImage blogPostingImage2 = BlogPostingImageSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(blogPostingImage1, blogPostingImage2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		BlogPostingImage blogPostingImage = randomBlogPostingImage();
+
+		String json1 = objectMapper.writeValueAsString(blogPostingImage);
+		String json2 = BlogPostingImageSerDes.toJSON(blogPostingImage);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -139,40 +207,6 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		BlogPostingImage blogPostingImage1 = randomBlogPostingImage();
-
-		String json = objectMapper.writeValueAsString(blogPostingImage1);
-
-		BlogPostingImage blogPostingImage2 = BlogPostingImageSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(blogPostingImage1, blogPostingImage2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		BlogPostingImage blogPostingImage = randomBlogPostingImage();
-
-		String json1 = objectMapper.writeValueAsString(blogPostingImage);
-		String json2 = BlogPostingImageSerDes.toJSON(blogPostingImage);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -184,6 +218,7 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		blogPostingImage.setContentUrl(regex);
 		blogPostingImage.setContentValue(regex);
 		blogPostingImage.setEncodingFormat(regex);
+		blogPostingImage.setExternalReferenceCode(regex);
 		blogPostingImage.setFileExtension(regex);
 		blogPostingImage.setTitle(regex);
 
@@ -196,6 +231,7 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		Assert.assertEquals(regex, blogPostingImage.getContentUrl());
 		Assert.assertEquals(regex, blogPostingImage.getContentValue());
 		Assert.assertEquals(regex, blogPostingImage.getEncodingFormat());
+		Assert.assertEquals(regex, blogPostingImage.getExternalReferenceCode());
 		Assert.assertEquals(regex, blogPostingImage.getFileExtension());
 		Assert.assertEquals(regex, blogPostingImage.getTitle());
 	}
@@ -215,7 +251,6 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			404,
 			blogPostingImageResource.getBlogPostingImageHttpResponse(
 				blogPostingImage.getId()));
-
 		assertHttpResponseStatusCode(
 			404, blogPostingImageResource.getBlogPostingImageHttpResponse(0L));
 	}
@@ -230,7 +265,10 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteBlogPostingImage() throws Exception {
-		BlogPostingImage blogPostingImage =
+
+		// No namespace
+
+		BlogPostingImage blogPostingImage1 =
 			testGraphQLDeleteBlogPostingImage_addBlogPostingImage();
 
 		Assert.assertTrue(
@@ -242,23 +280,66 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 							{
 								put(
 									"blogPostingImageId",
-									blogPostingImage.getId());
+									blogPostingImage1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteBlogPostingImage"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"blogPostingImage",
 					new HashMap<String, Object>() {
 						{
-							put("blogPostingImageId", blogPostingImage.getId());
+							put(
+								"blogPostingImageId",
+								blogPostingImage1.getId());
 						}
 					},
-					new GraphQLField("id"))),
+					getGraphQLFields())),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		BlogPostingImage blogPostingImage2 =
+			testGraphQLDeleteBlogPostingImage_addBlogPostingImage();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteBlogPostingImage",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"blogPostingImageId",
+										blogPostingImage2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteBlogPostingImage"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"blogPostingImage",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"blogPostingImageId",
+									blogPostingImage2.getId());
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected BlogPostingImage
@@ -266,6 +347,217 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		throws Exception {
 
 		return testGraphQLBlogPostingImage_addBlogPostingImage();
+	}
+
+	@Test
+	public void testDeleteBlogPostingImageBatch() throws Exception {
+		BlogPostingImage blogPostingImage1 =
+			testDeleteBlogPostingImageBatch_addBlogPostingImage();
+
+		testDeleteBlogPostingImageBatch_deleteBlogPostingImage(
+			202, null, blogPostingImage1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingImageResource.getBlogPostingImageHttpResponse(
+				blogPostingImage1.getId()));
+	}
+
+	protected BlogPostingImage
+			testDeleteBlogPostingImageBatch_addBlogPostingImage()
+		throws Exception {
+
+		return testDeleteBlogPostingImage_addBlogPostingImage();
+	}
+
+	protected void testDeleteBlogPostingImageBatch_deleteBlogPostingImage(
+			int expectedStatusCode, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			blogPostingImageResource.deleteBlogPostingImageBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		waitForFinish(
+			"COMPLETED",
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteSiteBlogPostingImageByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		BlogPostingImage blogPostingImage =
+			testDeleteSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage();
+
+		assertHttpResponseStatusCode(
+			204,
+			blogPostingImageResource.
+				deleteSiteBlogPostingImageByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId(),
+					blogPostingImage.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingImageResource.
+				getSiteBlogPostingImageByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId(),
+					blogPostingImage.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingImageResource.
+				getSiteBlogPostingImageByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId(),
+					"-"));
+	}
+
+	protected BlogPostingImage
+			testDeleteSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage()
+		throws Exception {
+
+		return blogPostingImageResource.postSiteBlogPostingImage(
+			testGroup.getGroupId(), randomBlogPostingImage(),
+			getMultipartFiles());
+	}
+
+	protected Long
+			testDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	@Test
+	public void testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		BlogPostingImage blogPostingImage1 =
+			testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteSiteBlogPostingImageByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" +
+										blogPostingImage1.
+											getExternalReferenceCode() + "\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteSiteBlogPostingImageByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"blogPostingImageByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"siteKey",
+								"\"" +
+									testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId() +
+										"\"");
+							put(
+								"externalReferenceCode",
+								"\"" +
+									blogPostingImage1.
+										getExternalReferenceCode() + "\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		BlogPostingImage blogPostingImage2 =
+			testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteSiteBlogPostingImageByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" +
+											testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId() +
+												"\"");
+									put(
+										"externalReferenceCode",
+										"\"" +
+											blogPostingImage2.
+												getExternalReferenceCode() +
+													"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteSiteBlogPostingImageByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"blogPostingImageByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" +
+										blogPostingImage2.
+											getExternalReferenceCode() + "\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Long
+			testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected BlogPostingImage
+			testGraphQLDeleteSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage()
+		throws Exception {
+
+		return testGraphQLSiteBlogPostingImage_addBlogPostingImage();
 	}
 
 	@Test
@@ -281,6 +573,198 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		assertValid(getBlogPostingImage);
 	}
 
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		BlogPostingImage postBlogPostingImage =
+			testGetBlogPostingImage_addBlogPostingImage();
+
+		BlogPostingImage getBlogPostingImage =
+			blogPostingImageResource.getBlogPostingImage(
+				postBlogPostingImage.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.delivery.dto.v1_0.BlogPostingImage"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(
+			postBlogPostingImage.getId());
+
+		assertEquals(
+			getBlogPostingImage, BlogPostingImageSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
 	protected BlogPostingImage testGetBlogPostingImage_addBlogPostingImage()
 		throws Exception {
 
@@ -293,6 +777,8 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 	public void testGraphQLGetBlogPostingImage() throws Exception {
 		BlogPostingImage blogPostingImage =
 			testGraphQLGetBlogPostingImage_addBlogPostingImage();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -311,11 +797,36 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/blogPostingImage"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				blogPostingImage,
+				BlogPostingImageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"blogPostingImage",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"blogPostingImageId",
+												blogPostingImage.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/blogPostingImage"))));
 	}
 
 	@Test
 	public void testGraphQLGetBlogPostingImageNotFound() throws Exception {
 		Long irrelevantBlogPostingImageId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -333,6 +844,27 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"blogPostingImage",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"blogPostingImageId",
+										irrelevantBlogPostingImageId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected BlogPostingImage
@@ -340,6 +872,176 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		throws Exception {
 
 		return testGraphQLBlogPostingImage_addBlogPostingImage();
+	}
+
+	@Test
+	public void testGetSiteBlogPostingImageByExternalReferenceCode()
+		throws Exception {
+
+		BlogPostingImage postBlogPostingImage =
+			testGetSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage();
+
+		BlogPostingImage getBlogPostingImage =
+			blogPostingImageResource.
+				getSiteBlogPostingImageByExternalReferenceCode(
+					testGetSiteBlogPostingImageByExternalReferenceCode_getSiteId(),
+					postBlogPostingImage.getExternalReferenceCode());
+
+		assertEquals(postBlogPostingImage, getBlogPostingImage);
+		assertValid(getBlogPostingImage);
+	}
+
+	protected BlogPostingImage
+			testGetSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage()
+		throws Exception {
+
+		return blogPostingImageResource.postSiteBlogPostingImage(
+			testGroup.getGroupId(), randomBlogPostingImage(),
+			getMultipartFiles());
+	}
+
+	protected Long
+			testGetSiteBlogPostingImageByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	@Test
+	public void testGraphQLGetSiteBlogPostingImageByExternalReferenceCode()
+		throws Exception {
+
+		BlogPostingImage blogPostingImage =
+			testGraphQLGetSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				blogPostingImage,
+				BlogPostingImageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"blogPostingImageByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"siteKey",
+											"\"" +
+												testGraphQLGetSiteBlogPostingImageByExternalReferenceCode_getSiteId() +
+													"\"");
+										put(
+											"externalReferenceCode",
+											"\"" +
+												blogPostingImage.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/blogPostingImageByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				blogPostingImage,
+				BlogPostingImageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"blogPostingImageByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteBlogPostingImageByExternalReferenceCode_getSiteId() +
+														"\"");
+											put(
+												"externalReferenceCode",
+												"\"" +
+													blogPostingImage.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/blogPostingImageByExternalReferenceCode"))));
+	}
+
+	protected Long
+			testGraphQLGetSiteBlogPostingImageByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	@Test
+	public void testGraphQLGetSiteBlogPostingImageByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"blogPostingImageByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" + irrelevantGroup.getGroupId() + "\"");
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"blogPostingImageByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected BlogPostingImage
+			testGraphQLGetSiteBlogPostingImageByExternalReferenceCode_addBlogPostingImage()
+		throws Exception {
+
+		return testGraphQLSiteBlogPostingImage_addBlogPostingImage();
 	}
 
 	@Test
@@ -523,12 +1225,12 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 		Long siteId = testGetSiteBlogPostingImagesPage_getSiteId();
 
-		Page<BlogPostingImage> blogPostingImagePage =
+		Page<BlogPostingImage> blogPostingImagesPage =
 			blogPostingImageResource.getSiteBlogPostingImagesPage(
 				siteId, null, null, null, null, null);
 
 		int totalCount = GetterUtil.getInteger(
-			blogPostingImagePage.getTotalCount());
+			blogPostingImagesPage.getTotalCount());
 
 		BlogPostingImage blogPostingImage1 =
 			testGetSiteBlogPostingImagesPage_addBlogPostingImage(
@@ -542,42 +1244,84 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			testGetSiteBlogPostingImagesPage_addBlogPostingImage(
 				siteId, randomBlogPostingImage());
 
-		Page<BlogPostingImage> page1 =
-			blogPostingImageResource.getSiteBlogPostingImagesPage(
-				siteId, null, null, null, Pagination.of(1, totalCount + 2),
-				null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<BlogPostingImage> blogPostingImages1 =
-			(List<BlogPostingImage>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			blogPostingImages1.toString(), totalCount + 2,
-			blogPostingImages1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<BlogPostingImage> page1 =
+				blogPostingImageResource.getSiteBlogPostingImagesPage(
+					siteId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<BlogPostingImage> page2 =
-			blogPostingImageResource.getSiteBlogPostingImagesPage(
-				siteId, null, null, null, Pagination.of(2, totalCount + 2),
-				null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				blogPostingImage1, (List<BlogPostingImage>)page1.getItems());
 
-		List<BlogPostingImage> blogPostingImages2 =
-			(List<BlogPostingImage>)page2.getItems();
+			Page<BlogPostingImage> page2 =
+				blogPostingImageResource.getSiteBlogPostingImagesPage(
+					siteId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			blogPostingImages2.toString(), 1, blogPostingImages2.size());
+			assertContains(
+				blogPostingImage2, (List<BlogPostingImage>)page2.getItems());
 
-		Page<BlogPostingImage> page3 =
-			blogPostingImageResource.getSiteBlogPostingImagesPage(
-				siteId, null, null, null, Pagination.of(1, (int)totalCount + 3),
-				null);
+			Page<BlogPostingImage> page3 =
+				blogPostingImageResource.getSiteBlogPostingImagesPage(
+					siteId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(
-			blogPostingImage1, (List<BlogPostingImage>)page3.getItems());
-		assertContains(
-			blogPostingImage2, (List<BlogPostingImage>)page3.getItems());
-		assertContains(
-			blogPostingImage3, (List<BlogPostingImage>)page3.getItems());
+			assertContains(
+				blogPostingImage3, (List<BlogPostingImage>)page3.getItems());
+		}
+		else {
+			Page<BlogPostingImage> page1 =
+				blogPostingImageResource.getSiteBlogPostingImagesPage(
+					siteId, null, null, null, Pagination.of(1, totalCount + 2),
+					null);
+
+			List<BlogPostingImage> blogPostingImages1 =
+				(List<BlogPostingImage>)page1.getItems();
+
+			Assert.assertEquals(
+				blogPostingImages1.toString(), totalCount + 2,
+				blogPostingImages1.size());
+
+			Page<BlogPostingImage> page2 =
+				blogPostingImageResource.getSiteBlogPostingImagesPage(
+					siteId, null, null, null, Pagination.of(2, totalCount + 2),
+					null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<BlogPostingImage> blogPostingImages2 =
+				(List<BlogPostingImage>)page2.getItems();
+
+			Assert.assertEquals(
+				blogPostingImages2.toString(), 1, blogPostingImages2.size());
+
+			Page<BlogPostingImage> page3 =
+				blogPostingImageResource.getSiteBlogPostingImagesPage(
+					siteId, null, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(
+				blogPostingImage1, (List<BlogPostingImage>)page3.getItems());
+			assertContains(
+				blogPostingImage2, (List<BlogPostingImage>)page3.getItems());
+			assertContains(
+				blogPostingImage3, (List<BlogPostingImage>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -589,7 +1333,7 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			(entityField, blogPostingImage1, blogPostingImage2) -> {
 				BeanTestUtil.setProperty(
 					blogPostingImage1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -763,14 +1507,16 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			"blogPostingImages",
 			new HashMap<String, Object>() {
 				{
+					put("siteKey", "\"" + siteId + "\"");
+					put("search", null);
 					put("page", 1);
 					put("pageSize", 10);
-
-					put("siteKey", "\"" + siteId + "\"");
 				}
 			},
 			new GraphQLField("items", getGraphQLFields()),
 			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		// No namespace
 
 		JSONObject blogPostingImagesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -779,9 +1525,12 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		long totalCount = blogPostingImagesJSONObject.getLong("totalCount");
 
 		BlogPostingImage blogPostingImage1 =
-			testGraphQLGetSiteBlogPostingImagesPage_addBlogPostingImage();
+			testGraphQLSiteBlogPostingImage_addBlogPostingImage(
+				siteId, randomBlogPostingImage());
+
 		BlogPostingImage blogPostingImage2 =
-			testGraphQLGetSiteBlogPostingImagesPage_addBlogPostingImage();
+			testGraphQLSiteBlogPostingImage_addBlogPostingImage(
+				siteId, randomBlogPostingImage());
 
 		blogPostingImagesJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
@@ -800,13 +1549,28 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			Arrays.asList(
 				BlogPostingImageSerDes.toDTOs(
 					blogPostingImagesJSONObject.getString("items"))));
-	}
 
-	protected BlogPostingImage
-			testGraphQLGetSiteBlogPostingImagesPage_addBlogPostingImage()
-		throws Exception {
+		// Using the namespace headlessDelivery_v1_0
 
-		return testGraphQLBlogPostingImage_addBlogPostingImage();
+		blogPostingImagesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+			"JSONObject/blogPostingImages");
+
+		Assert.assertEquals(
+			totalCount + 2, blogPostingImagesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			blogPostingImage1,
+			Arrays.asList(
+				BlogPostingImageSerDes.toDTOs(
+					blogPostingImagesJSONObject.getString("items"))));
+		assertContains(
+			blogPostingImage2,
+			Arrays.asList(
+				BlogPostingImageSerDes.toDTOs(
+					blogPostingImagesJSONObject.getString("items"))));
 	}
 
 	@Test
@@ -834,63 +1598,74 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			multipartFiles);
 	}
 
-	@Rule
-	public SearchTestRule searchTestRule = new SearchTestRule();
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		BlogPostingImage blogPostingImage1 =
+			testBatchEngineDeleteImportTask_addBlogPostingImage();
 
-	protected void appendGraphQLFieldValue(StringBuilder sb, Object value)
+		testBatchEngineDeleteImportTask_deleteBlogPostingImage(
+			200, null, blogPostingImage1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingImageResource.getBlogPostingImageHttpResponse(
+				blogPostingImage1.getId()));
+	}
+
+	protected BlogPostingImage
+			testBatchEngineDeleteImportTask_addBlogPostingImage()
 		throws Exception {
 
-		if (value instanceof Object[]) {
-			StringBuilder arraySB = new StringBuilder("[");
+		return testDeleteBlogPostingImage_addBlogPostingImage();
+	}
 
-			for (Object object : (Object[])value) {
-				if (arraySB.length() > 1) {
-					arraySB.append(", ");
-				}
+	protected void testBatchEngineDeleteImportTask_deleteBlogPostingImage(
+			int expectedStatusCode, String externalReferenceCode, Long id,
+			String... parameters)
+		throws Exception {
 
-				arraySB.append("{");
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).parameters(
+			parameters
+		).build();
 
-				Class<?> clazz = object.getClass();
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.delivery.dto.v1_0.BlogPostingImage", null,
+				null, null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
 
-				for (java.lang.reflect.Field field :
-						getDeclaredFields(clazz.getSuperclass())) {
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
 
-					arraySB.append(field.getName());
-					arraySB.append(": ");
-
-					appendGraphQLFieldValue(arraySB, field.get(object));
-
-					arraySB.append(", ");
-				}
-
-				arraySB.setLength(arraySB.length() - 2);
-
-				arraySB.append("}");
-			}
-
-			arraySB.append("]");
-
-			sb.append(arraySB.toString());
-		}
-		else if (value instanceof String) {
-			sb.append("\"");
-			sb.append(value);
-			sb.append("\"");
-		}
-		else {
-			sb.append(value);
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
 		}
 	}
+
+	@Rule
+	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	protected BlogPostingImage testGraphQLBlogPostingImage_addBlogPostingImage()
 		throws Exception {
 
 		return testGraphQLBlogPostingImage_addBlogPostingImage(
-			randomBlogPostingImage());
+			testGroup.getGroupId(), randomBlogPostingImage());
 	}
 
 	protected BlogPostingImage testGraphQLBlogPostingImage_addBlogPostingImage(
-			BlogPostingImage blogPostingImage)
+			Long siteId, BlogPostingImage blogPostingImage)
 		throws Exception {
 
 		JSONDeserializer<BlogPostingImage> jsonDeserializer =
@@ -901,27 +1676,20 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(BlogPostingImage.class)) {
 
-			if (!ArrayUtil.contains(
-					getAdditionalAssertFieldNames(), field.getName())) {
+			if (getGraphQLValue(field.get(blogPostingImage)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
 
-				continue;
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(blogPostingImage)));
 			}
-
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append(field.getName());
-			sb.append(": ");
-
-			appendGraphQLFieldValue(sb, field.get(blogPostingImage));
 		}
 
 		sb.append("}");
 
 		List<GraphQLField> graphQLFields = getGraphQLFields();
-
-		graphQLFields.add(new GraphQLField("id"));
 
 		return jsonDeserializer.deserialize(
 			JSONUtil.getValueAsString(
@@ -930,15 +1698,132 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 						"createSiteBlogPostingImage",
 						new HashMap<String, Object>() {
 							{
-								put(
-									"siteKey",
-									"\"" + testGroup.getGroupId() + "\"");
+								put("siteKey", "\"" + siteId + "\"");
 								put("blogPostingImage", sb.toString());
 							}
 						},
 						graphQLFields)),
 				"JSONObject/data", "JSONObject/createSiteBlogPostingImage"),
 			BlogPostingImage.class);
+	}
+
+	protected BlogPostingImage
+			testGraphQLSiteBlogPostingImage_addBlogPostingImage()
+		throws Exception {
+
+		return testGraphQLSiteBlogPostingImage_addBlogPostingImage(
+			testGroup.getGroupId(), randomBlogPostingImage());
+	}
+
+	protected BlogPostingImage
+			testGraphQLSiteBlogPostingImage_addBlogPostingImage(
+				Long siteId, BlogPostingImage blogPostingImage)
+		throws Exception {
+
+		JSONDeserializer<BlogPostingImage> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field :
+				getDeclaredFields(BlogPostingImage.class)) {
+
+			if (getGraphQLValue(field.get(blogPostingImage)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(blogPostingImage)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createSiteBlogPostingImage",
+						new HashMap<String, Object>() {
+							{
+								put("siteKey", "\"" + siteId + "\"");
+								put("blogPostingImage", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createSiteBlogPostingImage"),
+			BlogPostingImage.class);
+	}
+
+	protected String getGraphQLValue(Object value) throws Exception {
+		if (value == null) {
+			return null;
+		}
+		else if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		else if (value instanceof Date date) {
+			return "\"" +
+				DateUtil.getDate(
+					date, "yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.getDefault(),
+					TimeZone.getTimeZone("UTC")) + "\"";
+		}
+		else if (value instanceof Enum<?> enm) {
+			return enm.name();
+		}
+		else if (value instanceof Map<?, ?> map) {
+			List<String> entries = new ArrayList<>();
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String graphQLValue = getGraphQLValue(entry.getValue());
+
+				if (graphQLValue != null) {
+					entries.add(entry.getKey() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
+		else if (value instanceof Object[] array) {
+			List<String> entries = new ArrayList<>();
+
+			for (Object entry : array) {
+				String graphQLValue = getGraphQLValue(entry);
+
+				if (graphQLValue != null) {
+					entries.add(graphQLValue);
+				}
+			}
+
+			return "[" + String.join(", ", entries) + "]";
+		}
+		else if (value instanceof String) {
+			return "\"" + value + "\"";
+		}
+		else {
+			List<String> entries = new ArrayList<>();
+
+			Class<?> clazz = value.getClass();
+			java.lang.reflect.Field[] declaredFields = getDeclaredFields(clazz);
+
+			if (declaredFields.length == 0) {
+				declaredFields = getDeclaredFields(clazz.getSuperclass());
+			}
+
+			for (java.lang.reflect.Field field : declaredFields) {
+				String graphQLValue = getGraphQLValue(field.get(value));
+
+				if (graphQLValue != null) {
+					entries.add(field.getName() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
 	}
 
 	protected void assertContains(
@@ -1052,6 +1937,16 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (blogPostingImage.getExternalReferenceCode() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("fileExtension", additionalAssertFieldName)) {
 				if (blogPostingImage.getFileExtension() == null) {
 					valid = false;
@@ -1151,6 +2046,10 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
 
+		graphQLFields.add(new GraphQLField("externalReferenceCode"));
+
+		graphQLFields.add(new GraphQLField("id"));
+
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
 					com.liferay.headless.delivery.dto.v1_0.BlogPostingImage.
@@ -1239,6 +2138,19 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 				if (!Objects.deepEquals(
 						blogPostingImage1.getEncodingFormat(),
 						blogPostingImage2.getEncodingFormat())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						blogPostingImage1.getExternalReferenceCode(),
+						blogPostingImage2.getExternalReferenceCode())) {
 
 					return false;
 				}
@@ -1336,6 +2248,10 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -1542,6 +2458,52 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			return sb.toString();
 		}
 
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = blogPostingImage.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("fileExtension")) {
 			Object object = blogPostingImage.getFileExtension();
 
@@ -1668,7 +2630,8 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1704,6 +2667,8 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 					RandomTestUtil.randomString());
 				encodingFormat = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				fileExtension = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
@@ -1726,22 +2691,45 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 		return randomBlogPostingImage();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected BlogPostingImageResource blogPostingImageResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1750,11 +2738,16 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1786,6 +2779,24 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1807,16 +2818,6 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1914,10 +2915,34 @@ public abstract class BaseBlogPostingImageResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseBlogPostingImageResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.delivery.resource.v1_0.BlogPostingImageResource
 		_blogPostingImageResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

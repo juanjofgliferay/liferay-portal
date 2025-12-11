@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -47,33 +46,46 @@ public class SearchRequest implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SearchRequest.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getQueryString() {
+		if (_queryStringSupplier != null) {
+			queryString = _queryStringSupplier.get();
+
+			_queryStringSupplier = null;
+		}
+
 		return queryString;
 	}
 
 	public void setQueryString(String queryString) {
 		this.queryString = queryString;
+
+		_queryStringSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setQueryString(
 		UnsafeSupplier<String, Exception> queryStringUnsafeSupplier) {
 
-		try {
-			queryString = queryStringUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_queryStringSupplier = () -> {
+			try {
+				return queryStringUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String queryString;
+
+	@JsonIgnore
+	private Supplier<String> _queryStringSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -102,6 +114,8 @@ public class SearchRequest implements Serializable {
 
 		sb.append("{");
 
+		String queryString = getQueryString();
+
 		if (queryString != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -121,8 +135,8 @@ public class SearchRequest implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.SearchRequest",
 		name = "x-class-name"
 	)
@@ -168,7 +182,10 @@ public class SearchRequest implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

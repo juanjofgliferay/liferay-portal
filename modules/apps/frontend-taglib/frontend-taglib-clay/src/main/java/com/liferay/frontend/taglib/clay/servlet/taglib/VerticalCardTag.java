@@ -14,12 +14,12 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Julien Castelain
@@ -200,14 +200,20 @@ public class VerticalCardTag extends BaseCardTag {
 	}
 
 	public String getTitle() {
+		String title = _title;
+
 		VerticalCard verticalCard = getVerticalCard();
 
 		if ((_title == null) && (verticalCard != null)) {
-			return verticalCard.getTitle();
+			title = verticalCard.getTitle();
 		}
 
-		return LanguageUtil.get(
-			TagResourceBundleUtil.getResourceBundle(pageContext), _title);
+		if (_isTranslated()) {
+			title = LanguageUtil.get(
+				TagResourceBundleUtil.getResourceBundle(pageContext), title);
+		}
+
+		return title;
 	}
 
 	public VerticalCard getVerticalCard() {
@@ -339,6 +345,10 @@ public class VerticalCardTag extends BaseCardTag {
 		_title = title;
 	}
 
+	public void setTranslated(Boolean translated) {
+		_translated = translated;
+	}
+
 	public void setVerticalCard(VerticalCard verticalCard) {
 		setCardModel(verticalCard);
 	}
@@ -365,6 +375,7 @@ public class VerticalCardTag extends BaseCardTag {
 		_stickerTitle = null;
 		_subtitle = null;
 		_title = null;
+		_translated = null;
 	}
 
 	@Override
@@ -592,6 +603,7 @@ public class VerticalCardTag extends BaseCardTag {
 			linkTag.setCssClass("text-truncate");
 			linkTag.setHref(href);
 			linkTag.setLabel(title);
+			linkTag.setTranslated(_isTranslated());
 
 			linkTag.doTag(pageContext);
 		}
@@ -613,7 +625,7 @@ public class VerticalCardTag extends BaseCardTag {
 			jspWriter.write("<p class=\"card-subtitle\"><span class=\"");
 			jspWriter.write("text-truncate-inline\"><span class=\"");
 			jspWriter.write("text-truncate\">");
-			jspWriter.write(subtitle);
+			jspWriter.write(HtmlUtil.escape(subtitle));
 			jspWriter.write("</span></span></p>");
 		}
 
@@ -684,6 +696,20 @@ public class VerticalCardTag extends BaseCardTag {
 		return "file";
 	}
 
+	private boolean _isTranslated() {
+		if (_translated != null) {
+			return _translated;
+		}
+
+		VerticalCard verticalCard = getVerticalCard();
+
+		if (verticalCard == null) {
+			return true;
+		}
+
+		return verticalCard.isTranslated();
+	}
+
 	private static final String _ATTRIBUTE_NAMESPACE = "clay:verticalcard:";
 
 	private String _ariaLabel;
@@ -704,5 +730,6 @@ public class VerticalCardTag extends BaseCardTag {
 	private String _stickerTitle;
 	private String _subtitle;
 	private String _title;
+	private Boolean _translated;
 
 }

@@ -16,10 +16,13 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Localization;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,23 +39,78 @@ public class FileEntryInfoItemFormVariationsProvider
 	public InfoItemFormVariation getInfoItemFormVariation(
 		long groupId, String formVariationKey) {
 
+		long dlFileEntryTypeId = GetterUtil.getLong(formVariationKey, -1);
+
+		if (dlFileEntryTypeId < 0) {
+			return null;
+		}
+
+		if (dlFileEntryTypeId ==
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT) {
+
+			return _getBasicDocumentInfoItemFormVariation();
+		}
+
 		DLFileEntryType dlFileEntryType =
 			_dlFileEntryTypeLocalService.fetchDLFileEntryType(
-				GetterUtil.getLong(formVariationKey));
+				dlFileEntryTypeId);
 
 		if (dlFileEntryType == null) {
 			return null;
 		}
 
 		return new InfoItemFormVariation(
-			groupId, String.valueOf(dlFileEntryType.getFileEntryTypeId()),
+			dlFileEntryType.getFileEntryTypeKey(), groupId,
+			String.valueOf(dlFileEntryType.getFileEntryTypeId()),
 			InfoLocalizedValue.<String>builder(
 			).defaultLocale(
 				LocaleUtil.fromLanguageId(
 					dlFileEntryType.getDefaultLanguageId())
 			).values(
-				dlFileEntryType.getNameMap()
+				_localization.getLocalizationMap(
+					dlFileEntryType.getName(), true)
 			).build());
+	}
+
+	@Override
+	public InfoItemFormVariation
+		getInfoItemFormVariationByExternalReferenceCode(
+			String externalReferenceCode, long groupId) {
+
+		try {
+			if (Objects.equals(
+					externalReferenceCode,
+					StringUtil.toUpperCase(
+						DLFileEntryTypeConstants.NAME_BASIC_DOCUMENT))) {
+
+				return _getBasicDocumentInfoItemFormVariation();
+			}
+
+			DLFileEntryType dlFileEntryType =
+				_getDLFileEntryTypeByFileEntryTypeKey(
+					externalReferenceCode, groupId);
+
+			if (dlFileEntryType != null) {
+				return new InfoItemFormVariation(
+					dlFileEntryType.getFileEntryTypeKey(),
+					dlFileEntryType.getGroupId(),
+					String.valueOf(dlFileEntryType.getFileEntryTypeId()),
+					InfoLocalizedValue.<String>builder(
+					).defaultLocale(
+						LocaleUtil.fromLanguageId(
+							dlFileEntryType.getDefaultLanguageId())
+					).values(
+						_localization.getLocalizationMap(
+							dlFileEntryType.getName(), true)
+					).build());
+			}
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(
+				"An unexpected error occurred", portalException);
+		}
+
+		return null;
 	}
 
 	@Override
@@ -82,6 +140,7 @@ public class FileEntryInfoItemFormVariationsProvider
 
 			infoItemFormVariations.add(
 				new InfoItemFormVariation(
+					dlFileEntryType.getFileEntryTypeKey(),
 					dlFileEntryType.getGroupId(),
 					String.valueOf(dlFileEntryType.getFileEntryTypeId()),
 					InfoLocalizedValue.<String>builder(
@@ -89,7 +148,38 @@ public class FileEntryInfoItemFormVariationsProvider
 						LocaleUtil.fromLanguageId(
 							dlFileEntryType.getDefaultLanguageId())
 					).values(
-						dlFileEntryType.getNameMap()
+						_localization.getLocalizationMap(
+							dlFileEntryType.getName(), true)
+					).build()));
+		}
+
+		return infoItemFormVariations;
+	}
+
+	@Override
+	public Collection<InfoItemFormVariation>
+		getInfoItemFormVariationsByCompanyId(long companyId) {
+
+		List<InfoItemFormVariation> infoItemFormVariations = new ArrayList<>();
+
+		infoItemFormVariations.add(_getBasicDocumentInfoItemFormVariation());
+
+		for (DLFileEntryType dlFileEntryType :
+				_dlFileEntryTypeLocalService.getFileEntryTypesByCompanyId(
+					companyId)) {
+
+			infoItemFormVariations.add(
+				new InfoItemFormVariation(
+					dlFileEntryType.getFileEntryTypeKey(),
+					dlFileEntryType.getGroupId(),
+					String.valueOf(dlFileEntryType.getFileEntryTypeId()),
+					InfoLocalizedValue.<String>builder(
+					).defaultLocale(
+						LocaleUtil.fromLanguageId(
+							dlFileEntryType.getDefaultLanguageId())
+					).values(
+						_localization.getLocalizationMap(
+							dlFileEntryType.getName(), true)
 					).build()));
 		}
 
@@ -102,6 +192,7 @@ public class FileEntryInfoItemFormVariationsProvider
 				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT);
 
 		return new InfoItemFormVariation(
+			basicDocumentDLFileEntryType.getFileEntryTypeKey(),
 			basicDocumentDLFileEntryType.getGroupId(),
 			String.valueOf(basicDocumentDLFileEntryType.getFileEntryTypeId()),
 			InfoLocalizedValue.localize(
@@ -113,10 +204,31 @@ public class FileEntryInfoItemFormVariationsProvider
 		throws PortalException {
 
 		return SiteConnectedGroupGroupProviderUtil.
-			getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true);
+			getCurrentAndAncestorSiteAndDepotGroupIds(groupId, false, true);
+	}
+
+	private DLFileEntryType _getDLFileEntryTypeByFileEntryTypeKey(
+			String fileEntryTypeKey, long groupId)
+		throws PortalException {
+
+		for (DLFileEntryType dlFileEntryType :
+				_dlFileEntryTypeLocalService.getFileEntryTypes(
+					_getCurrentAndAncestorSiteGroupIds(groupId))) {
+
+			if (Objects.equals(
+					fileEntryTypeKey, dlFileEntryType.getFileEntryTypeKey())) {
+
+				return dlFileEntryType;
+			}
+		}
+
+		return null;
 	}
 
 	@Reference
 	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
+
+	@Reference
+	private Localization _localization;
 
 }

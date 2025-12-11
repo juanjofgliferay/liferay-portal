@@ -48,7 +48,6 @@ import com.liferay.segments.test.util.SegmentsTestUtil;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -82,22 +81,6 @@ public class SegmentsEntryStagedModelDataHandlerTest
 					StagedExpandoColumn.class.getName());
 	}
 
-	@After
-	@Override
-	public void tearDown() throws Exception {
-		super.tearDown();
-
-		if (_importedSegmentsEntry != null) {
-			_segmentsEntryLocalService.deleteSegmentsEntry(
-				_importedSegmentsEntry.getSegmentsEntryId());
-		}
-
-		if (_segmentsEntry != null) {
-			_segmentsEntryLocalService.deleteSegmentsEntry(
-				_segmentsEntry.getSegmentsEntryId());
-		}
-	}
-
 	@Test
 	public void testExportImportSegmentsEntryWithEntityFieldCustomField()
 		throws Exception {
@@ -122,8 +105,7 @@ public class SegmentsEntryStagedModelDataHandlerTest
 			columnValue);
 
 		_segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			stagingGroup.getGroupId(), _getCriteria(filterString),
-			User.class.getName());
+			stagingGroup.getGroupId(), _getCriteria(filterString));
 
 		StagedModelDataHandlerUtil.exportStagedModel(
 			portletDataContext, _segmentsEntry);
@@ -186,8 +168,7 @@ public class SegmentsEntryStagedModelDataHandlerTest
 			"(teamIds eq '%s')", team.getTeamId());
 
 		_segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
-			stagingGroup.getGroupId(), _getCriteria(filterString),
-			User.class.getName());
+			stagingGroup.getGroupId(), _getCriteria(filterString));
 
 		StagedModelDataHandlerUtil.exportStagedModel(
 			portletDataContext, _segmentsEntry);

@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,13 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -38,8 +37,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("DiscountRule")
+@io.swagger.v3.oas.annotations.media.Schema(requiredProperties = {"type"})
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"type"})
 @XmlRootElement(name = "DiscountRule")
 public class DiscountRule implements Serializable {
 
@@ -52,81 +51,117 @@ public class DiscountRule implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getDiscountId() {
+		if (_discountIdSupplier != null) {
+			discountId = _discountIdSupplier.get();
+
+			_discountIdSupplier = null;
+		}
+
 		return discountId;
 	}
 
 	public void setDiscountId(Long discountId) {
 		this.discountId = discountId;
+
+		_discountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountId(
 		UnsafeSupplier<Long, Exception> discountIdUnsafeSupplier) {
 
-		try {
-			discountId = discountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountIdSupplier = () -> {
+			try {
+				return discountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountId;
 
+	@JsonIgnore
+	private Supplier<Long> _discountIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(example = "cart-total")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "cart-total")
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -134,33 +169,49 @@ public class DiscountRule implements Serializable {
 	@NotEmpty
 	protected String type;
 
-	@Schema(example = "22.50")
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "22.50")
 	public String getTypeSettings() {
+		if (_typeSettingsSupplier != null) {
+			typeSettings = _typeSettingsSupplier.get();
+
+			_typeSettingsSupplier = null;
+		}
+
 		return typeSettings;
 	}
 
 	public void setTypeSettings(String typeSettings) {
 		this.typeSettings = typeSettings;
+
+		_typeSettingsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTypeSettings(
 		UnsafeSupplier<String, Exception> typeSettingsUnsafeSupplier) {
 
-		try {
-			typeSettings = typeSettingsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSettingsSupplier = () -> {
+			try {
+				return typeSettingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String typeSettings;
+
+	@JsonIgnore
+	private Supplier<String> _typeSettingsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -189,6 +240,8 @@ public class DiscountRule implements Serializable {
 
 		sb.append("{");
 
+		Long discountId = getDiscountId();
+
 		if (discountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -199,6 +252,8 @@ public class DiscountRule implements Serializable {
 			sb.append(discountId);
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -208,6 +263,8 @@ public class DiscountRule implements Serializable {
 
 			sb.append(id);
 		}
+
+		String type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -222,6 +279,8 @@ public class DiscountRule implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String typeSettings = getTypeSettings();
 
 		if (typeSettings != null) {
 			if (sb.length() > 1) {
@@ -242,8 +301,8 @@ public class DiscountRule implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v1_0.DiscountRule",
 		name = "x-class-name"
 	)
@@ -289,7 +348,10 @@ public class DiscountRule implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

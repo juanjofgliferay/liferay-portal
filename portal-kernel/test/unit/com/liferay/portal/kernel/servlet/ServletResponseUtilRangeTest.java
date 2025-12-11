@@ -5,16 +5,19 @@
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.MimeTypes;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -28,13 +31,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
@@ -79,8 +81,11 @@ public class ServletResponseUtilRangeTest {
 			}
 		);
 
-		PropsTestUtil.setProps(
-			PropsKeys.WEB_SERVER_SERVLET_MAX_RANGE_FIELDS, "10");
+		_propsUtilMockedStatic.when(
+			() -> PropsUtil.get(PropsKeys.WEB_SERVER_SERVLET_MAX_RANGE_FIELDS)
+		).thenReturn(
+			"10"
+		);
 
 		MimeTypes mimeTypes = Mockito.mock(MimeTypes.class);
 
@@ -99,6 +104,8 @@ public class ServletResponseUtilRangeTest {
 	@AfterClass
 	public static void tearDownClass() {
 		_serviceRegistration.unregister();
+
+		_propsUtilMockedStatic.close();
 	}
 
 	@Test
@@ -270,7 +277,8 @@ public class ServletResponseUtilRangeTest {
 			contentType.startsWith(_CONTENT_TYPE_BOUNDARY_PREFACE));
 
 		String boundary = contentType.substring(
-			_CONTENT_TYPE_BOUNDARY_PREFACE.length());
+			_CONTENT_TYPE_BOUNDARY_PREFACE.length(),
+			contentType.lastIndexOf(CharPool.SEMICOLON));
 
 		String responseBody = mockHttpServletResponse.getContentAsString();
 
@@ -312,6 +320,8 @@ public class ServletResponseUtilRangeTest {
 	private static final String _CONTENT_TYPE_BOUNDARY_PREFACE =
 		"multipart/byteranges; boundary=";
 
+	private static final MockedStatic<PropsUtil> _propsUtilMockedStatic =
+		Mockito.mockStatic(PropsUtil.class);
 	private static ServiceRegistration<MimeTypes> _serviceRegistration;
 
 	private final HttpServletRequest _httpServletRequest = Mockito.mock(

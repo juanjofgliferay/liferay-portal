@@ -52,6 +52,8 @@ public interface Rels {
 
 	public static final String CHANNEL_CLEAR = "channel-clear";
 
+	public static final String CHANNEL_DATA_SOURCES = "channel-data-sources";
+
 	public static final String CHANNELS = "channels";
 
 	public static final String CSV_INDIVIDUALS = "csv-individuals";
@@ -60,6 +62,9 @@ public interface Rels {
 
 	public static final String DATA_SOURCE_DISCONNECT =
 		"data-source-disconnect";
+
+	public static final String DATA_SOURCE_DISCONNECT_ALL =
+		"data-source-disconnect-all";
 
 	public static final String DATA_SOURCE_DXP_GROUPS =
 		"data-source-dxp-groups";
@@ -102,6 +107,8 @@ public interface Rels {
 
 	public static final String FIELDS = "fields";
 
+	public static final String IDENTITIES_COUNT = "identities-count";
+
 	public static final String INDIVIDUAL = "individual";
 
 	public static final String INDIVIDUAL_INDIVIDUAL_SEGMENTS =
@@ -138,6 +145,9 @@ public interface Rels {
 	public static final String INDIVIDUALS = "individuals";
 
 	public static final String INDIVIDUALS_COUNT = "individuals-count";
+
+	public static final String INDIVIDUALS_CREATED_BETWEEN_COUNT =
+		"individuals-created-between-count";
 
 	public static final String INDIVIDUALS_CREATED_SINCE_COUNT =
 		"individuals-created-since-count";
@@ -184,6 +194,20 @@ public interface Rels {
 
 	public static final String PREVIEW_DISABLED_SEGMENTS =
 		"preview-disabled-segments";
+
+	public static final String PROJECT_USAGE_METRICS = "project-usage-metrics";
+
+	public static final String PROJECTS_LAST_SEEN_DATE =
+		"projects-last-seen-date";
+
+	public static final String REPORTS_EXPORT_CSV_COUNT =
+		"reports-export-csv-count";
+
+	public static final String SALESFORCE_ENTITIES_ACCOUNTS_COUNT =
+		"salesforce-entities-accounts-count";
+
+	public static final String SALESFORCE_ENTITIES_USERS_COUNT =
+		"salesforce-entities-users-count";
 
 	public static final String SESSION_VALUES = "session-values";
 

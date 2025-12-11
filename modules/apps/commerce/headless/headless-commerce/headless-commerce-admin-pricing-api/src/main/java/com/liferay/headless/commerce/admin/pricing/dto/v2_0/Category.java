@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -50,111 +49,163 @@ public class Category implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(example = "simple")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "simple")
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
 
-	@Schema(example = "simple")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "simple")
 	public String getPath() {
+		if (_pathSupplier != null) {
+			path = _pathSupplier.get();
+
+			_pathSupplier = null;
+		}
+
 		return path;
 	}
 
 	public void setPath(String path) {
 		this.path = path;
+
+		_pathSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPath(UnsafeSupplier<String, Exception> pathUnsafeSupplier) {
-		try {
-			path = pathUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_pathSupplier = () -> {
+			try {
+				return pathUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String path;
 
-	@Schema(example = "Default Vocabulary")
+	@JsonIgnore
+	private Supplier<String> _pathSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "Default Vocabulary")
 	public String getVocabulary() {
+		if (_vocabularySupplier != null) {
+			vocabulary = _vocabularySupplier.get();
+
+			_vocabularySupplier = null;
+		}
+
 		return vocabulary;
 	}
 
 	public void setVocabulary(String vocabulary) {
 		this.vocabulary = vocabulary;
+
+		_vocabularySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVocabulary(
 		UnsafeSupplier<String, Exception> vocabularyUnsafeSupplier) {
 
-		try {
-			vocabulary = vocabularyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_vocabularySupplier = () -> {
+			try {
+				return vocabularyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String vocabulary;
+
+	@JsonIgnore
+	private Supplier<String> _vocabularySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -183,6 +234,8 @@ public class Category implements Serializable {
 
 		sb.append("{");
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -192,6 +245,8 @@ public class Category implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -207,6 +262,8 @@ public class Category implements Serializable {
 			sb.append("\"");
 		}
 
+		String path = getPath();
+
 		if (path != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -220,6 +277,8 @@ public class Category implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String vocabulary = getVocabulary();
 
 		if (vocabulary != null) {
 			if (sb.length() > 1) {
@@ -240,8 +299,8 @@ public class Category implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.Category",
 		name = "x-class-name"
 	)
@@ -287,7 +346,10 @@ public class Category implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

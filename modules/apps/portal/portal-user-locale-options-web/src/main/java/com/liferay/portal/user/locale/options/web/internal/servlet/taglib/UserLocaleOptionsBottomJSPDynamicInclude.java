@@ -13,17 +13,16 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Locale;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -102,9 +101,6 @@ public class UserLocaleOptionsBottomJSPDynamicInclude
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserLocaleOptionsBottomJSPDynamicInclude.class);
-
-	@Reference
-	private Portal _portal;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.portal.user.locale.options.web)"

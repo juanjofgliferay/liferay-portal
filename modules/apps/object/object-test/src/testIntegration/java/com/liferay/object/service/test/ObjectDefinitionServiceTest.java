@@ -10,6 +10,7 @@ import com.liferay.object.constants.ObjectActionKeys;
 import com.liferay.object.constants.ObjectConstants;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectFolderConstants;
 import com.liferay.object.field.builder.TextObjectFieldBuilder;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
@@ -17,8 +18,8 @@ import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectFolder;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectDefinitionService;
-import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFolderLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
@@ -30,8 +31,11 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.AssertUtils;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -40,9 +44,12 @@ import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+import com.liferay.site.cms.site.initializer.test.util.CMSTestUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -64,7 +71,9 @@ public class ObjectDefinitionServiceTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -125,6 +134,49 @@ public class ObjectDefinitionServiceTest {
 		_testAddCustomObjectDefinition(0, _adminUser);
 		_testAddCustomObjectDefinition(
 			_objectFolder.getObjectFolderId(), _adminUser);
+	}
+
+	@FeatureFlag("LPD-17564")
+	@Test
+	@TestInfo("LPD-66895")
+	public void testAddCustomObjectDefinitionByCMSAdministratorRole()
+		throws Exception {
+
+		CMSTestUtil.getOrAddGroup(ObjectDefinitionServiceTest.class);
+
+		User user = UserTestUtil.addUser();
+
+		Role role = RoleLocalServiceUtil.getRole(
+			user.getCompanyId(), RoleConstants.CMS_ADMINISTRATOR);
+
+		UserLocalServiceUtil.addRoleUser(role.getRoleId(), user);
+
+		_testAddCustomObjectDefinition(0, user);
+
+		ObjectFolder objectFolder =
+			_objectFolderLocalService.getObjectFolderByExternalReferenceCode(
+				ObjectFolderConstants.
+					EXTERNAL_REFERENCE_CODE_CONTENT_STRUCTURES,
+				user.getCompanyId());
+
+		_testAddCustomObjectDefinition(objectFolder.getObjectFolderId(), user);
+
+		objectFolder =
+			_objectFolderLocalService.getObjectFolderByExternalReferenceCode(
+				ObjectFolderConstants.EXTERNAL_REFERENCE_CODE_FILE_TYPES,
+				user.getCompanyId());
+
+		_testAddCustomObjectDefinition(objectFolder.getObjectFolderId(), user);
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", user.getUserId(),
+				" must have ADD_OBJECT_DEFINITION permission for ",
+				"com.liferay.object.model.ObjectFolder ",
+				_objectFolder.getObjectFolderId()),
+			() -> _testAddCustomObjectDefinition(
+				_objectFolder.getObjectFolderId(), user));
 	}
 
 	@Test
@@ -224,6 +276,25 @@ public class ObjectDefinitionServiceTest {
 			_addCustomObjectDefinition(_adminUser), _adminUser);
 	}
 
+	@FeatureFlag("LPD-17564")
+	@Test
+	@TestInfo("LPD-66895")
+	public void testPublishCustomObjectDefinitionByCMSAdministratorRole()
+		throws Exception {
+
+		CMSTestUtil.getOrAddGroup(ObjectDefinitionServiceTest.class);
+
+		User user = UserTestUtil.addUser();
+
+		Role role = RoleLocalServiceUtil.getRole(
+			user.getCompanyId(), RoleConstants.CMS_ADMINISTRATOR);
+
+		UserLocalServiceUtil.addRoleUser(role.getRoleId(), user);
+
+		_testPublishCustomObjectDefinition(
+			_addCustomObjectDefinition(_adminUser), user);
+	}
+
 	@Test
 	public void testUpdateCustomObjectDefinition() throws Exception {
 		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
@@ -255,26 +326,6 @@ public class ObjectDefinitionServiceTest {
 			_objectFolder.getObjectFolderId(), _adminUser);
 		_testUpdateCustomObjectDefinition(
 			_addCustomObjectDefinition(_user1), 0, _user1);
-	}
-
-	@Test
-	public void testUpdateRootObjectDefinitionId() throws Exception {
-		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
-			_adminUser);
-
-		AssertUtils.assertFailure(
-			PrincipalException.MustHavePermission.class,
-			StringBundler.concat(
-				"User ", _user1.getUserId(),
-				" must have UPDATE permission for ",
-				"com.liferay.object.model.ObjectDefinition ",
-				objectDefinition.getObjectDefinitionId()),
-			() -> _testUpdateRootObjectDefinitionId(objectDefinition, _user1));
-
-		_testUpdateRootObjectDefinitionId(
-			_addCustomObjectDefinition(_adminUser), _adminUser);
-		_testUpdateRootObjectDefinitionId(
-			_addCustomObjectDefinition(_user1), _user1);
 	}
 
 	@Test
@@ -345,17 +396,20 @@ public class ObjectDefinitionServiceTest {
 			user.getUserId(), objectDefinition.getObjectDefinitionId());*/
 
 		return _objectDefinitionLocalService.addCustomObjectDefinition(
-			user.getUserId(), 0, false, false, false,
+			null, user.getUserId(), 0, null, false, true, false, true, false,
+			false, false, false, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			"A" + RandomTestUtil.randomString(), null, null,
+			ObjectDefinitionTestUtil.getRandomName(), null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			true, ObjectDefinitionConstants.SCOPE_COMPANY,
 			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+			Collections.emptyList(),
 			Arrays.asList(
 				ObjectFieldUtil.createObjectField(
 					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 					ObjectFieldConstants.DB_TYPE_STRING,
-					RandomTestUtil.randomString(), StringUtil.randomId())));
+					RandomTestUtil.randomString(), StringUtil.randomId())),
+			Collections.emptyList());
 	}
 
 	private ObjectDefinition _addSystemObjectDefinition(
@@ -366,16 +420,18 @@ public class ObjectDefinitionServiceTest {
 
 		return _objectDefinitionService.addSystemObjectDefinition(
 			RandomTestUtil.randomString(), user.getUserId(), objectFolderId,
-			false,
+			null, false, true, false, true, false, false, false, false, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			"Test", null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			ObjectDefinitionConstants.SCOPE_COMPANY,
+			false, ObjectDefinitionConstants.SCOPE_COMPANY,
+			Collections.emptyList(),
 			Arrays.asList(
 				ObjectFieldUtil.createObjectField(
 					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 					ObjectFieldConstants.DB_TYPE_STRING,
-					RandomTestUtil.randomString(), StringUtil.randomId())));
+					RandomTestUtil.randomString(), StringUtil.randomId())),
+			Collections.emptyList());
 	}
 
 	private void _setUser(User user) {
@@ -395,20 +451,23 @@ public class ObjectDefinitionServiceTest {
 
 			objectDefinition =
 				_objectDefinitionService.addCustomObjectDefinition(
-					objectFolderId, false, false, false,
+					null, objectFolderId, null, false, true, false, true, false,
+					false, false, false, null,
 					LocalizedMapUtil.getLocalizedMap(
 						RandomTestUtil.randomString()),
-					"A" + RandomTestUtil.randomString(), null, null,
+					ObjectDefinitionTestUtil.getRandomName(), null, null,
 					LocalizedMapUtil.getLocalizedMap(
 						RandomTestUtil.randomString()),
 					true, ObjectDefinitionConstants.SCOPE_COMPANY,
 					ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+					Collections.emptyList(),
 					Collections.singletonList(
 						ObjectFieldUtil.createObjectField(
 							ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 							ObjectFieldConstants.DB_TYPE_STRING,
 							RandomTestUtil.randomString(),
-							StringUtil.randomId())));
+							StringUtil.randomId())),
+					Collections.emptyList());
 
 			objectDefinition =
 				_objectDefinitionLocalService.publishCustomObjectDefinition(
@@ -431,7 +490,8 @@ public class ObjectDefinitionServiceTest {
 			_setUser(user);
 
 			objectDefinition = _objectDefinitionService.addObjectDefinition(
-				RandomTestUtil.randomString(), objectFolderId, true, false);
+				RandomTestUtil.randomString(), objectFolderId, true,
+				ObjectDefinitionConstants.SCOPE_COMPANY, false);
 		}
 		finally {
 			if (objectDefinition != null) {
@@ -527,38 +587,17 @@ public class ObjectDefinitionServiceTest {
 			objectDefinition =
 				_objectDefinitionService.updateCustomObjectDefinition(
 					null, objectDefinition.getObjectDefinitionId(), 0, 0,
-					objectFolderId, 0, false, objectDefinition.isActive(), true,
-					false, false, false, false,
-					LocalizedMapUtil.getLocalizedMap("Able"), "Able", null,
-					null, false, LocalizedMapUtil.getLocalizedMap("Ables"),
-					objectDefinition.getScope());
+					objectFolderId, 0, false, objectDefinition.isActive(), null,
+					true, false, true, false, true, false, false, false, false,
+					false, null, LocalizedMapUtil.getLocalizedMap("Able"),
+					"Able", null, null, false,
+					LocalizedMapUtil.getLocalizedMap("Ables"),
+					objectDefinition.getScope(), objectDefinition.getStatus(),
+					Collections.emptyList(), Collections.emptyList(),
+					Collections.emptyList());
 		}
 		finally {
 			if (objectDefinition != null) {
-				_objectDefinitionLocalService.deleteObjectDefinition(
-					objectDefinition);
-			}
-		}
-	}
-
-	private void _testUpdateRootObjectDefinitionId(
-			ObjectDefinition objectDefinition, User user)
-		throws Exception {
-
-		try {
-			_setUser(user);
-
-			objectDefinition =
-				_objectDefinitionService.updateRootObjectDefinitionId(
-					objectDefinition.getObjectDefinitionId(),
-					objectDefinition.getObjectDefinitionId());
-		}
-		finally {
-			if (objectDefinition != null) {
-				objectDefinition =
-					_objectDefinitionService.updateRootObjectDefinitionId(
-						objectDefinition.getObjectDefinitionId(), 0);
-
 				_objectDefinitionLocalService.deleteObjectDefinition(
 					objectDefinition);
 			}
@@ -576,7 +615,9 @@ public class ObjectDefinitionServiceTest {
 				_objectDefinitionService.updateSystemObjectDefinition(
 					RandomTestUtil.randomString(),
 					objectDefinition.getObjectDefinitionId(), objectFolderId,
-					objectDefinition.getTitleObjectFieldId());
+					objectDefinition.getTitleObjectFieldId(),
+					Collections.emptyList(), Collections.emptyList(),
+					Collections.emptyList());
 		}
 		finally {
 			if (objectDefinition != null) {
@@ -626,9 +667,6 @@ public class ObjectDefinitionServiceTest {
 
 	@Inject
 	private ObjectDefinitionService _objectDefinitionService;
-
-	@Inject
-	private ObjectFieldLocalService _objectFieldLocalService;
 
 	@DeleteAfterTestRun
 	private ObjectFolder _objectFolder;

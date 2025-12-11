@@ -16,7 +16,7 @@ import {Attributes, Breakdowns, Filters} from 'event-analysis/utils/types';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 
-const MAX_ATTRIBUTES = 3;
+const MAX_ATTRIBUTES = 5;
 
 interface IAttributeBreakdownSectionProps {
 	addBreakdown: AddBreakdown;
@@ -50,17 +50,6 @@ export const AttributeBreakdownSection: React.FC<IAttributeBreakdownSectionProps
 		params: AddBreakdownParams
 	) => {
 		addBreakdown(params);
-
-		const {
-			attribute: {displayName, name, type},
-			breakdown: {attributeType}
-		} = params;
-
-		analytics.track('Event Analysis Editor - Selected a Breakdown', {
-			attributeName: displayName || name,
-			attributeType,
-			type
-		});
 	};
 
 	return (

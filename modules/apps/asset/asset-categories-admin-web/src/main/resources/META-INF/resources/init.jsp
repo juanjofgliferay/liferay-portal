@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -23,6 +23,7 @@ taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 <%@ page import="com.liferay.asset.categories.admin.web.internal.constants.AssetCategoriesConstants" %><%@
 page import="com.liferay.asset.categories.admin.web.internal.display.context.AssetCategoriesDisplayContext" %><%@
 page import="com.liferay.asset.categories.admin.web.internal.display.context.AssetCategoriesManagementToolbarDisplayContext" %><%@
+page import="com.liferay.asset.categories.admin.web.internal.display.context.EditVocabularySettingsDisplayContext" %><%@
 page import="com.liferay.asset.categories.admin.web.internal.servlet.taglib.util.AssetCategoryActionDropdownItemsProvider" %><%@
 page import="com.liferay.asset.categories.admin.web.internal.servlet.taglib.util.AssetVocabularyActionDropdownItemsProvider" %><%@
 page import="com.liferay.asset.categories.admin.web.internal.util.AssetCategoryUtil" %><%@
@@ -33,31 +34,30 @@ page import="com.liferay.asset.category.property.model.AssetCategoryProperty" %>
 page import="com.liferay.asset.category.property.service.AssetCategoryPropertyLocalServiceUtil" %><%@
 page import="com.liferay.asset.category.property.service.AssetCategoryPropertyServiceUtil" %><%@
 page import="com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalServiceUtil" %><%@
-page import="com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil" %><%@
 page import="com.liferay.asset.kernel.NoSuchClassTypeException" %><%@
 page import="com.liferay.asset.kernel.exception.AssetCategoryLimitException" %><%@
 page import="com.liferay.asset.kernel.exception.AssetCategoryNameException" %><%@
 page import="com.liferay.asset.kernel.exception.DuplicateCategoryException" %><%@
+page import="com.liferay.asset.kernel.exception.DuplicateCategoryExternalReferenceCodeException" %><%@
 page import="com.liferay.asset.kernel.exception.DuplicateVocabularyException" %><%@
+page import="com.liferay.asset.kernel.exception.DuplicateVocabularyExternalReferenceCodeException" %><%@
 page import="com.liferay.asset.kernel.exception.NoSuchCategoryException" %><%@
 page import="com.liferay.asset.kernel.exception.NoSuchVocabularyException" %><%@
 page import="com.liferay.asset.kernel.exception.VocabularyNameException" %><%@
 page import="com.liferay.asset.kernel.model.AssetCategory" %><%@
-page import="com.liferay.asset.kernel.model.AssetCategoryConstants" %><%@
 page import="com.liferay.asset.kernel.model.AssetRendererFactory" %><%@
 page import="com.liferay.asset.kernel.model.AssetVocabulary" %><%@
 page import="com.liferay.asset.kernel.model.AssetVocabularyConstants" %><%@
-page import="com.liferay.asset.kernel.model.ClassType" %><%@
-page import="com.liferay.asset.kernel.model.ClassTypeReader" %><%@
 page import="com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil" %><%@
 page import="com.liferay.asset.kernel.service.AssetVocabularyServiceUtil" %><%@
+page import="com.liferay.change.tracking.spi.history.util.CTTimelineUtil" %><%@
 page import="com.liferay.frontend.taglib.servlet.taglib.util.EmptyResultMessageKeys" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
+page import="com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.model.Group" %><%@
 page import="com.liferay.portal.kernel.model.ModelHintsUtil" %><%@
-page import="com.liferay.portal.kernel.security.permission.ResourceActionsUtil" %><%@
 page import="com.liferay.portal.kernel.service.GroupLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.servlet.MultiSessionMessages" %><%@
 page import="com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry" %><%@
@@ -70,16 +70,15 @@ page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
-page import="com.liferay.portlet.asset.util.AssetVocabularySettingsHelper" %><%@
 page import="com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntriesUtil" %>
+
+<%@ page import="jakarta.portlet.PortletURL" %>
 
 <%@ page import="java.util.ArrayList" %><%@
 page import="java.util.Collections" %><%@
 page import="java.util.List" %><%@
 page import="java.util.Map" %><%@
 page import="java.util.Objects" %>
-
-<%@ page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 

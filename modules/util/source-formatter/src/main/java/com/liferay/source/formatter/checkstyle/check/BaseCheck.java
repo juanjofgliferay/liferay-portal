@@ -42,7 +42,6 @@ import com.puppycrawl.tools.checkstyle.api.FullIdent;
 import com.puppycrawl.tools.checkstyle.api.TokenTypes;
 
 import java.io.File;
-import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,6 +100,41 @@ public abstract class BaseCheck extends AbstractCheck {
 			clazz.getSimpleName(), endTime - startTime);
 	}
 
+	protected boolean containsVariableName(
+		DetailAST detailAST, String variableName) {
+
+		List<DetailAST> identDetailASTs = getAllChildTokens(
+			detailAST, true, TokenTypes.IDENT);
+
+		return containsVariableName(identDetailASTs, variableName);
+	}
+
+	protected boolean containsVariableName(
+		List<DetailAST> identDetailASTs, String variableName) {
+
+		if (variableName == null) {
+			return false;
+		}
+
+		for (DetailAST identDetailAST : identDetailASTs) {
+			if (!variableName.equals(identDetailAST.getText())) {
+				continue;
+			}
+
+			DetailAST parentDetailAST = identDetailAST.getParent();
+
+			if (parentDetailAST.getType() == TokenTypes.VARIABLE_DEF) {
+				return false;
+			}
+
+			if (!isMethodNameDetailAST(identDetailAST)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	protected abstract void doVisitToken(DetailAST detailAST);
 
 	protected boolean equals(DetailAST detailAST1, DetailAST detailAST2) {
@@ -126,13 +160,12 @@ public abstract class BaseCheck extends AbstractCheck {
 	protected DetailAST getAnnotationMemberValuePairDetailAST(
 		DetailAST annotationDetailAST, String key) {
 
-		List<DetailAST> annotationMemberValuePairDetailASTList =
-			getAllChildTokens(
-				annotationDetailAST, false,
-				TokenTypes.ANNOTATION_MEMBER_VALUE_PAIR);
+		List<DetailAST> annotationMemberValuePairDetailASTs = getAllChildTokens(
+			annotationDetailAST, false,
+			TokenTypes.ANNOTATION_MEMBER_VALUE_PAIR);
 
 		for (DetailAST annotationMemberValuePairDetailAST :
-				annotationMemberValuePairDetailASTList) {
+				annotationMemberValuePairDetailASTs) {
 
 			DetailAST firstChildDetailAST =
 				annotationMemberValuePairDetailAST.getFirstChild();
@@ -259,29 +292,36 @@ public abstract class BaseCheck extends AbstractCheck {
 		return s.substring(0, x);
 	}
 
-	protected List<DetailAST> getDependentIdentDetailASTList(
+	protected List<DetailAST> getDependentIdentDetailASTs(
 		DetailAST variableDefinitionDetailAST, int lineNumber) {
 
-		return getDependentIdentDetailASTList(
+		return getDependentIdentDetailASTs(
 			variableDefinitionDetailAST, lineNumber, false);
 	}
 
-	protected List<DetailAST> getDependentIdentDetailASTList(
+	protected List<DetailAST> getDependentIdentDetailASTs(
 		DetailAST variableDefinitionDetailAST, int lineNumber,
 		boolean includeGetters) {
 
 		List<Variable> variables = _getVariables(
 			variableDefinitionDetailAST, includeGetters);
 
-		List<DetailAST> dependentIdentDetailASTList = new ArrayList<>();
+		List<DetailAST> dependentIdentDetailASTs = new ArrayList<>();
 
-		return _addDependentIdentDetailASTList(
-			dependentIdentDetailASTList,
+		return _addDependentIdentDetailASTs(
+			dependentIdentDetailASTs,
 			variableDefinitionDetailAST.getNextSibling(), variables, lineNumber,
 			includeGetters);
 	}
 
 	protected int getEndLineNumber(DetailAST detailAST) {
+		DetailAST topLevelMethodCallDetailAST = getTopLevelMethodCallDetailAST(
+			detailAST);
+
+		if (topLevelMethodCallDetailAST != null) {
+			detailAST = topLevelMethodCallDetailAST;
+		}
+
 		int endLineNumber = detailAST.getLineNo();
 
 		for (DetailAST childDetailAST :
@@ -293,6 +333,19 @@ public abstract class BaseCheck extends AbstractCheck {
 		}
 
 		return endLineNumber;
+	}
+
+	protected DetailAST getFirstParameterExprDetailAST(
+		DetailAST methodCallDetailAST) {
+
+		List<DetailAST> parameterExprDetailASTs = getParameterExprDetailASTs(
+			methodCallDetailAST);
+
+		if (parameterExprDetailASTs.isEmpty()) {
+			return null;
+		}
+
+		return parameterExprDetailASTs.get(0);
 	}
 
 	protected String getFullyQualifiedTypeName(
@@ -442,10 +495,10 @@ public abstract class BaseCheck extends AbstractCheck {
 
 		List<DetailAST> list = new ArrayList<>();
 
-		List<DetailAST> methodCallDetailASTList = getAllChildTokens(
+		List<DetailAST> methodCallDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.METHOD_CALL);
 
-		for (DetailAST methodCallDetailAST : methodCallDetailASTList) {
+		for (DetailAST methodCallDetailAST : methodCallDetailASTs) {
 			DetailAST dotDetailAST = methodCallDetailAST.findFirstToken(
 				TokenTypes.DOT);
 
@@ -551,18 +604,13 @@ public abstract class BaseCheck extends AbstractCheck {
 			parametersDetailAST, false, TokenTypes.PARAMETER_DEF);
 	}
 
-	protected DetailAST getParameterDetailAST(DetailAST methodCallDetailAST) {
+	protected List<DetailAST> getParameterExprDetailASTs(
+		DetailAST methodCallDetailAST) {
+
 		DetailAST elistDetailAST = methodCallDetailAST.findFirstToken(
 			TokenTypes.ELIST);
 
-		DetailAST exprDetailAST = elistDetailAST.findFirstToken(
-			TokenTypes.EXPR);
-
-		if (exprDetailAST == null) {
-			return null;
-		}
-
-		return exprDetailAST.getFirstChild();
+		return getAllChildTokens(elistDetailAST, false, TokenTypes.EXPR);
 	}
 
 	protected List<String> getParameterNames(DetailAST detailAST) {
@@ -607,17 +655,17 @@ public abstract class BaseCheck extends AbstractCheck {
 		DetailAST parametersDetailAST = detailAST.findFirstToken(
 			TokenTypes.PARAMETERS);
 
-		List<DetailAST> parameterDefinitionDetailASTList = getAllChildTokens(
+		List<DetailAST> parameterDefinitionDetailASTs = getAllChildTokens(
 			parametersDetailAST, false, TokenTypes.PARAMETER_DEF);
 
-		if (parameterDefinitionDetailASTList.isEmpty()) {
+		if (parameterDefinitionDetailASTs.isEmpty()) {
 			sb.append(CharPool.CLOSE_PARENTHESIS);
 
 			return sb.toString();
 		}
 
 		for (DetailAST parameterDefinitionDetailAST :
-				parameterDefinitionDetailASTList) {
+				parameterDefinitionDetailASTs) {
 
 			sb.append(getTypeName(parameterDefinitionDetailAST, true));
 			sb.append(CharPool.COMMA);
@@ -642,6 +690,43 @@ public abstract class BaseCheck extends AbstractCheck {
 		}
 
 		return startLineNumber;
+	}
+
+	protected String getTokenTypeName(DetailAST detailAST) {
+		String lowerCaseTokenTypeName = StringUtil.toLowerCase(
+			detailAST.getText());
+
+		String[] parts = lowerCaseTokenTypeName.split("_", 2);
+
+		return parts[0];
+	}
+
+	protected DetailAST getTopLevelMethodCallDetailAST(DetailAST detailAST) {
+		if ((detailAST.getType() != TokenTypes.DOT) &&
+			(detailAST.getType() != TokenTypes.METHOD_CALL)) {
+
+			return null;
+		}
+
+		DetailAST topLevelMethodCallDetailAST = detailAST;
+
+		while (true) {
+			DetailAST parentDetailAST = topLevelMethodCallDetailAST.getParent();
+
+			if (parentDetailAST.getType() != TokenTypes.DOT) {
+				break;
+			}
+
+			parentDetailAST = parentDetailAST.getParent();
+
+			if (parentDetailAST.getType() != TokenTypes.METHOD_CALL) {
+				break;
+			}
+
+			topLevelMethodCallDetailAST = parentDetailAST;
+		}
+
+		return topLevelMethodCallDetailAST;
 	}
 
 	protected DetailAST getTypeArgumentsDetailAST(DetailAST detailAST) {
@@ -757,10 +842,10 @@ public abstract class BaseCheck extends AbstractCheck {
 
 		sb.append(CharPool.LESS_THAN);
 
-		List<DetailAST> typeArgumentDetailASTList = getAllChildTokens(
+		List<DetailAST> typeArgumentDetailASTs = getAllChildTokens(
 			typeArgumentsDetailAST, false, TokenTypes.TYPE_ARGUMENT);
 
-		for (DetailAST typeArgumentDetailAST : typeArgumentDetailASTList) {
+		for (DetailAST typeArgumentDetailAST : typeArgumentDetailASTs) {
 			sb.append(
 				getTypeName(
 					typeArgumentDetailAST, includeTypeArguments,
@@ -819,7 +904,7 @@ public abstract class BaseCheck extends AbstractCheck {
 		return new Tuple(jsonObject, typeNamesFile);
 	}
 
-	protected List<DetailAST> getVariableCallerDetailASTList(
+	protected List<DetailAST> getVariableCallerDetailASTs(
 		DetailAST variableDefinitionDetailAST) {
 
 		DetailAST identDetailAST = variableDefinitionDetailAST.findFirstToken(
@@ -829,14 +914,14 @@ public abstract class BaseCheck extends AbstractCheck {
 			return Collections.emptyList();
 		}
 
-		return getVariableCallerDetailASTList(
+		return getVariableCallerDetailASTs(
 			variableDefinitionDetailAST, identDetailAST.getText());
 	}
 
-	protected List<DetailAST> getVariableCallerDetailASTList(
+	protected List<DetailAST> getVariableCallerDetailASTs(
 		DetailAST variableDefinitionDetailAST, String variableName) {
 
-		List<DetailAST> variableCallerDetailASTList = new ArrayList<>();
+		List<DetailAST> variableCallerDetailASTs = new ArrayList<>();
 
 		DetailAST parentDetailAST = variableDefinitionDetailAST.getParent();
 
@@ -866,13 +951,13 @@ public abstract class BaseCheck extends AbstractCheck {
 			(rangeDetailAST.getType() != TokenTypes.OBJBLOCK) &&
 			(rangeDetailAST.getType() != TokenTypes.SLIST)) {
 
-			return variableCallerDetailASTList;
+			return variableCallerDetailASTs;
 		}
 
-		List<DetailAST> nameDetailASTList = getAllChildTokens(
+		List<DetailAST> nameDetailASTs = getAllChildTokens(
 			rangeDetailAST, true, TokenTypes.IDENT);
 
-		for (DetailAST nameDetailAST : nameDetailASTList) {
+		for (DetailAST nameDetailAST : nameDetailASTs) {
 			if (!variableName.equals(nameDetailAST.getText())) {
 				continue;
 			}
@@ -890,15 +975,15 @@ public abstract class BaseCheck extends AbstractCheck {
 				if (globalVariable ||
 					equals(parentDetailAST.getFirstChild(), nameDetailAST)) {
 
-					variableCallerDetailASTList.add(nameDetailAST);
+					variableCallerDetailASTs.add(nameDetailAST);
 				}
 			}
 			else {
-				variableCallerDetailASTList.add(nameDetailAST);
+				variableCallerDetailASTs.add(nameDetailAST);
 			}
 		}
 
-		return variableCallerDetailASTList;
+		return variableCallerDetailASTs;
 	}
 
 	protected DetailAST getVariableDefinitionDetailAST(
@@ -922,12 +1007,12 @@ public abstract class BaseCheck extends AbstractCheck {
 				DetailAST objBlockDetailAST = previousDetailAST.findFirstToken(
 					TokenTypes.OBJBLOCK);
 
-				List<DetailAST> variableDefinitionDetailASTList =
+				List<DetailAST> variableDefinitionDetailASTs =
 					getAllChildTokens(
 						objBlockDetailAST, false, TokenTypes.VARIABLE_DEF);
 
 				for (DetailAST variableDefinitionDetailAST :
-						variableDefinitionDetailASTList) {
+						variableDefinitionDetailASTs) {
 
 					if (variableName.equals(
 							_getVariableName(variableDefinitionDetailAST))) {
@@ -940,12 +1025,12 @@ public abstract class BaseCheck extends AbstractCheck {
 						TokenTypes.FOR_EACH_CLAUSE) ||
 					 (previousDetailAST.getType() == TokenTypes.FOR_INIT)) {
 
-				List<DetailAST> variableDefinitionDetailASTList =
+				List<DetailAST> variableDefinitionDetailASTs =
 					getAllChildTokens(
 						previousDetailAST, false, TokenTypes.VARIABLE_DEF);
 
 				for (DetailAST variableDefinitionDetailAST :
-						variableDefinitionDetailASTList) {
+						variableDefinitionDetailASTs) {
 
 					if (variableName.equals(
 							_getVariableName(variableDefinitionDetailAST))) {
@@ -958,12 +1043,12 @@ public abstract class BaseCheck extends AbstractCheck {
 						TokenTypes.LITERAL_CATCH) ||
 					 (previousDetailAST.getType() == TokenTypes.PARAMETERS)) {
 
-				List<DetailAST> parameterDefinitionDetailASTList =
+				List<DetailAST> parameterDefinitionDetailASTs =
 					getAllChildTokens(
 						previousDetailAST, false, TokenTypes.PARAMETER_DEF);
 
 				for (DetailAST parameterDefinitionDetailAST :
-						parameterDefinitionDetailASTList) {
+						parameterDefinitionDetailASTs) {
 
 					if (variableName.equals(
 							_getVariableName(parameterDefinitionDetailAST))) {
@@ -978,10 +1063,10 @@ public abstract class BaseCheck extends AbstractCheck {
 				DetailAST recourcesDetailAST = previousDetailAST.findFirstToken(
 					TokenTypes.RESOURCES);
 
-				List<DetailAST> resourceDetailASTList = getAllChildTokens(
+				List<DetailAST> resourceDetailASTs = getAllChildTokens(
 					recourcesDetailAST, false, TokenTypes.RESOURCE);
 
-				for (DetailAST resourceDetailAST : resourceDetailASTList) {
+				for (DetailAST resourceDetailAST : resourceDetailASTs) {
 					if (variableName.equals(
 							_getVariableName(resourceDetailAST))) {
 
@@ -1028,8 +1113,18 @@ public abstract class BaseCheck extends AbstractCheck {
 		DetailAST dotDetailAST = methodCallDetailAST.findFirstToken(
 			TokenTypes.DOT);
 
-		if (dotDetailAST == null) {
-			return null;
+		while (true) {
+			if (dotDetailAST == null) {
+				return null;
+			}
+
+			DetailAST firstChildDetailAST = dotDetailAST.getFirstChild();
+
+			if (firstChildDetailAST.getType() != TokenTypes.METHOD_CALL) {
+				break;
+			}
+
+			dotDetailAST = firstChildDetailAST.findFirstToken(TokenTypes.DOT);
 		}
 
 		return getName(dotDetailAST);
@@ -1352,22 +1447,22 @@ public abstract class BaseCheck extends AbstractCheck {
 
 	}
 
-	private List<DetailAST> _addDependentIdentDetailASTList(
-		List<DetailAST> dependentIdentDetailASTList, DetailAST detailAST,
+	private List<DetailAST> _addDependentIdentDetailASTs(
+		List<DetailAST> dependentIdentDetailASTs, DetailAST detailAST,
 		List<Variable> variables, int lineNumber, boolean includeGetters) {
 
 		if (detailAST == null) {
-			return dependentIdentDetailASTList;
+			return dependentIdentDetailASTs;
 		}
 
-		int count = dependentIdentDetailASTList.size();
+		int count = dependentIdentDetailASTs.size();
 
-		List<DetailAST> identDetailASTList = getAllChildTokens(
+		List<DetailAST> identDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.IDENT);
 
-		for (DetailAST identDetailAST : identDetailASTList) {
+		for (DetailAST identDetailAST : identDetailASTs) {
 			if (isMethodNameDetailAST(identDetailAST) ||
-				dependentIdentDetailASTList.contains(identDetailAST)) {
+				dependentIdentDetailASTs.contains(identDetailAST)) {
 
 				continue;
 			}
@@ -1387,14 +1482,14 @@ public abstract class BaseCheck extends AbstractCheck {
 						identDetailAST, includeGetters) ||
 					variable.hasPossibleValueChangeOperation()) {
 
-					dependentIdentDetailASTList.add(identDetailAST);
+					dependentIdentDetailASTs.add(identDetailAST);
 
 					break;
 				}
 			}
 
 			if ((detailAST.getLineNo() < lineNumber) &&
-				(count != dependentIdentDetailASTList.size())) {
+				(count != dependentIdentDetailASTs.size())) {
 
 				if (getEndLineNumber(detailAST) < lineNumber) {
 					variables.addAll(_getVariables(detailAST, false));
@@ -1439,8 +1534,8 @@ public abstract class BaseCheck extends AbstractCheck {
 			}
 		}
 
-		return _addDependentIdentDetailASTList(
-			dependentIdentDetailASTList, detailAST.getNextSibling(), variables,
+		return _addDependentIdentDetailASTs(
+			dependentIdentDetailASTs, detailAST.getNextSibling(), variables,
 			lineNumber, includeGetters);
 	}
 
@@ -1501,17 +1596,10 @@ public abstract class BaseCheck extends AbstractCheck {
 		File file = new File(fileName);
 
 		if (file.exists()) {
-			try {
-				List<String> curImportNames =
-					JSPImportsFormatter.getImportNames(FileUtil.read(file));
+			List<String> curImportNames = JSPImportsFormatter.getImportNames(
+				FileUtil.read(file));
 
-				importNames.addAll(curImportNames);
-			}
-			catch (IOException ioException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(ioException);
-				}
-			}
+			importNames.addAll(curImportNames);
 		}
 
 		int x = directoryName.lastIndexOf(CharPool.SLASH);
@@ -1540,10 +1628,10 @@ public abstract class BaseCheck extends AbstractCheck {
 
 		List<Variable> variables = new ArrayList<>();
 
-		List<DetailAST> identDetailASTList = getAllChildTokens(
+		List<DetailAST> identDetailASTs = getAllChildTokens(
 			detailAST, true, TokenTypes.IDENT);
 
-		for (DetailAST identDetailAST : identDetailASTList) {
+		for (DetailAST identDetailAST : identDetailASTs) {
 			if (isMethodNameDetailAST(identDetailAST)) {
 				continue;
 			}

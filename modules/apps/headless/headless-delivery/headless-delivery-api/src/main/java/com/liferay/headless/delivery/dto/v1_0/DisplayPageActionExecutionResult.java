@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,29 +53,41 @@ public class DisplayPageActionExecutionResult implements Serializable {
 			DisplayPageActionExecutionResult.class, json);
 	}
 
-	@Schema(description = "The mapping of the display page action result.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The mapping of the display page action result."
+	)
 	@Valid
 	public Mapping getMapping() {
+		if (_mappingSupplier != null) {
+			mapping = _mappingSupplier.get();
+
+			_mappingSupplier = null;
+		}
+
 		return mapping;
 	}
 
 	public void setMapping(Mapping mapping) {
 		this.mapping = mapping;
+
+		_mappingSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMapping(
 		UnsafeSupplier<Mapping, Exception> mappingUnsafeSupplier) {
 
-		try {
-			mapping = mappingUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_mappingSupplier = () -> {
+			try {
+				return mappingUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -84,6 +95,9 @@ public class DisplayPageActionExecutionResult implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Mapping mapping;
+
+	@JsonIgnore
+	private Supplier<Mapping> _mappingSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -114,6 +128,8 @@ public class DisplayPageActionExecutionResult implements Serializable {
 
 		sb.append("{");
 
+		Mapping mapping = getMapping();
+
 		if (mapping != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -129,8 +145,8 @@ public class DisplayPageActionExecutionResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.DisplayPageActionExecutionResult",
 		name = "x-class-name"
 	)
@@ -176,7 +192,10 @@ public class DisplayPageActionExecutionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

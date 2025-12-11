@@ -464,6 +464,17 @@ public class SearchRequestBuilderImpl implements SearchRequestBuilder {
 	}
 
 	@Override
+	public SearchRequestBuilder retainFacetSelections(
+		boolean retainFacetSelections) {
+
+		_withSearchRequestImpl(
+			searchRequestImpl -> searchRequestImpl.setRetainFacetSelections(
+				retainFacetSelections));
+
+		return this;
+	}
+
+	@Override
 	public SearchRequestBuilder size(Integer size) {
 		_withSearchRequestImpl(
 			searchRequestImpl -> searchRequestImpl.setSize(size));
@@ -484,6 +495,15 @@ public class SearchRequestBuilderImpl implements SearchRequestBuilder {
 		_withSearchRequestImpl(
 			searchRequestImpl -> searchRequestImpl.setStatsRequests(
 				statsRequests));
+
+		return this;
+	}
+
+	@Override
+	public SearchRequestBuilder storedFields(String... storedFields) {
+		_withSearchRequestImpl(
+			searchRequestImpl -> searchRequestImpl.setStoredFields(
+				storedFields));
 
 		return this;
 	}

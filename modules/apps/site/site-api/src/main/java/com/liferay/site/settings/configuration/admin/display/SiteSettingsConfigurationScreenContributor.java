@@ -11,16 +11,25 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Locale;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.Serializable;
+
+import java.util.Dictionary;
+import java.util.Locale;
 
 /**
  * @author Eudaldo Alonso
  */
 public interface SiteSettingsConfigurationScreenContributor {
+
+	public default Dictionary<String, Object> exportProperties(
+		Serializable scopePK) {
+
+		return null;
+	}
 
 	public String getCategoryKey();
 
@@ -37,6 +46,11 @@ public interface SiteSettingsConfigurationScreenContributor {
 	}
 
 	public ServletContext getServletContext();
+
+	public default void importProperties(
+			Dictionary<String, Object> properties, Serializable scopePK)
+		throws Exception {
+	}
 
 	public default boolean isVisible(Group group) {
 		return true;

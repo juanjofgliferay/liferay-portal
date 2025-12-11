@@ -21,33 +21,47 @@ import com.liferay.data.engine.rest.resource.exception.DataLayoutValidationExcep
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataLayoutTestUtil;
-import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.ModelResourceActionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.TestDataDefinitionContentType;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -73,9 +87,8 @@ public class DataDefinitionResourceTest
 	}
 
 	@AfterClass
-	public static void tearDownClass() {
-		ModelResourceActionTestUtil.deleteModelResourceAction(
-			_resourceActionLocalService, _resourceActions);
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
 	}
 
 	@Override
@@ -122,6 +135,16 @@ public class DataDefinitionResourceTest
 
 	@Override
 	@Test
+	public DataDefinition
+			testDeleteSiteDataDefinitionByContentTypeByExternalReferenceCode_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
+	}
+
+	@Override
+	@Test
 	public void testGetDataDefinitionDataDefinitionFieldFieldTypes()
 		throws Exception {
 
@@ -143,6 +166,16 @@ public class DataDefinitionResourceTest
 				postDataDefinition.getId(), RoleConstants.GUEST);
 
 		Assert.assertNotNull(page);
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testGetSiteDataDefinitionByContentTypeByExternalReferenceCode_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
 	}
 
 	@Override
@@ -188,6 +221,26 @@ public class DataDefinitionResourceTest
 					null, Pagination.of(1, 2), null);
 
 		Assert.assertEquals(1, page.getTotalCount());
+
+		List<DataDefinition> dataDefinitions = ListUtil.fromCollection(
+			page.getItems());
+
+		DataDefinition dataDefinition = dataDefinitions.get(0);
+
+		Map<String, DataDefinitionField> dataDefinitionFields = new HashMap<>();
+
+		ListUtil.isNotEmptyForEach(
+			ListUtil.fromArray(dataDefinition.getDataDefinitionFields()),
+			dataDefinitionField -> dataDefinitionFields.put(
+				dataDefinitionField.getName(), dataDefinitionField));
+
+		DataDefinitionField richTextDataDefinitionField =
+			dataDefinitionFields.get("RichText");
+
+		Map<String, Object> customProperties =
+			richTextDataDefinitionField.getCustomProperties();
+
+		Assert.assertTrue(customProperties.containsKey("editorConfig"));
 	}
 
 	@Override
@@ -271,6 +324,40 @@ public class DataDefinitionResourceTest
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+	}
+
+	@Override
+	@Test
+	public void testGraphQLGetSiteDataDefinitionByContentTypeByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"dataDefinitionByContentTypeByExternalReferenceCode",
+						HashMapBuilder.<String, Object>put(
+							"contentType", "\"" + _CONTENT_TYPE + "\""
+						).put(
+							"externalReferenceCode",
+							"\"" + RandomTestUtil.randomString() + "\""
+						).put(
+							"siteKey",
+							"\"" + irrelevantGroup.getGroupId() + "\""
+						).build(),
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	@Override
+	@Test
+	public DataDefinition testGraphQLSiteDataDefinition_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
 	}
 
 	@Override
@@ -473,7 +560,8 @@ public class DataDefinitionResourceTest
 			dataDefinitionResource.postDataDefinitionByContentType(
 				"INVALID",
 				DataDefinition.toDTO(
-					DataDefinitionTestUtil.read("data-definition.json")));
+					DataDefinitionTestUtil.read(
+						"localized-data-definition.json")));
 
 			Assert.fail("An exception must be thrown");
 		}
@@ -528,7 +616,7 @@ public class DataDefinitionResourceTest
 				problem.getType());
 		}
 
-		// Provide default layout name when none is informed
+		// Provide default data layout name when no name is provided
 
 		DataDefinition dataDefinition =
 			dataDefinitionResource.postSiteDataDefinitionByContentType(
@@ -540,6 +628,41 @@ public class DataDefinitionResourceTest
 		DataLayout dataLayout = dataDefinition.getDefaultDataLayout();
 
 		Assert.assertEquals(dataDefinition.getName(), dataLayout.getName());
+
+		dataDefinitionResource.deleteDataDefinition(dataDefinition.getId());
+
+		// Provide empty string as the data definition field default value when
+		// no default value is provided
+
+		dataDefinition = DataDefinition.toDTO(
+			DataDefinitionTestUtil.read("data-definition-basic.json"));
+
+		DataDefinitionField[] dataDefinitionFields =
+			dataDefinition.getDataDefinitionFields();
+
+		Assert.assertEquals(
+			Arrays.toString(dataDefinitionFields), 1,
+			dataDefinitionFields.length);
+
+		DataDefinitionField dataDefinitionField = dataDefinitionFields[0];
+
+		Assert.assertNull(dataDefinitionField.getDefaultValue());
+
+		dataDefinition =
+			dataDefinitionResource.postSiteDataDefinitionByContentType(
+				testGroup.getGroupId(), _CONTENT_TYPE, dataDefinition);
+
+		dataDefinitionFields = dataDefinition.getDataDefinitionFields();
+
+		dataDefinitionField = dataDefinitionFields[0];
+
+		Assert.assertEquals(
+			HashMapBuilder.<String, Object>put(
+				"en_US", StringPool.BLANK
+			).build(),
+			dataDefinitionField.getDefaultValue());
+
+		dataDefinitionResource.deleteDataDefinition(dataDefinition.getId());
 	}
 
 	@Override
@@ -600,6 +723,117 @@ public class DataDefinitionResourceTest
 	@Override
 	@Test
 	public void testPutDataDefinition() throws Exception {
+		Queue<Long> queue = new LinkedList<>();
+
+		ReflectionTestUtil.setFieldValue(
+			_dataDefinitionResource, "_ddmStructureLocalService",
+			ProxyUtil.newProxyInstance(
+				DDMStructureLocalService.class.getClassLoader(),
+				new Class<?>[] {DDMStructureLocalService.class},
+				(proxy, method, arguments) -> {
+					if (Objects.equals(method.getName(), "updateStructure")) {
+						queue.add((Long)arguments[1]);
+					}
+
+					return method.invoke(_ddmStructureLocalService, arguments);
+				}));
+
+		String originalName = PrincipalThreadLocal.getName();
+
+		try {
+			PrincipalThreadLocal.setName(TestPropsValues.getUserId());
+
+			DataDefinition dataDefinition1 =
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					testGroup.getGroupId(), _CONTENT_TYPE,
+					DataDefinition.toDTO(
+						DataDefinitionTestUtil.read("data-definition-1.json")));
+			DataDefinition dataDefinition2 =
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					testGroup.getGroupId(), _CONTENT_TYPE,
+					DataDefinition.toDTO(
+						DataDefinitionTestUtil.read(
+							"data-definition-2-linked-to-data-definition-1." +
+								"json")));
+			DataDefinition dataDefinition3 =
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					testGroup.getGroupId(), _CONTENT_TYPE,
+					DataDefinition.toDTO(
+						DataDefinitionTestUtil.read(
+							"data-definition-3-linked-to-data-definition-2." +
+								"json")));
+
+			_setUpDataDefinitionResource(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUser());
+
+			_dataDefinitionResource.putDataDefinition(
+				dataDefinition1.getId(),
+				com.liferay.data.engine.rest.dto.v2_0.DataDefinition.toDTO(
+					dataDefinition1.toString()));
+
+			Assert.assertEquals(3, queue.size());
+
+			dataDefinitionResource.deleteDataDefinition(
+				dataDefinition2.getId());
+			dataDefinitionResource.deleteDataDefinition(
+				dataDefinition3.getId());
+
+			queue.clear();
+
+			JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"domain", "able.com"
+				).put(
+					"portalInstanceId", "able.com"
+				).put(
+					"virtualHost", "www.able.com"
+				).toString(),
+				"headless-portal-instances/v1.0/portal-instances",
+				Http.Method.POST);
+
+			long companyId = jsonObject.getLong("companyId");
+
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						companyId)) {
+
+				User user = UserTestUtil.getAdminUser(companyId);
+
+				PrincipalThreadLocal.setName(user.getUserId());
+
+				_setUpDataDefinitionResource(companyId, user);
+
+				Group group = GroupTestUtil.addGroup(
+					companyId, user.getUserId(), 0);
+
+				DataDefinitionField dataDefinitionField =
+					dataDefinition2.getDataDefinitionFields()[0];
+
+				Map<String, Object> customProperties =
+					dataDefinitionField.getCustomProperties();
+
+				customProperties.put("ddmStructureId", dataDefinition1.getId());
+
+				_dataDefinitionResource.postSiteDataDefinitionByContentType(
+					group.getGroupId(), _CONTENT_TYPE,
+					com.liferay.data.engine.rest.dto.v2_0.DataDefinition.toDTO(
+						dataDefinition2.toString()));
+			}
+
+			_setUpDataDefinitionResource(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUser());
+
+			_dataDefinitionResource.putDataDefinition(
+				dataDefinition1.getId(),
+				com.liferay.data.engine.rest.dto.v2_0.DataDefinition.toDTO(
+					dataDefinition1.toString()));
+
+			Assert.assertEquals(1, queue.size());
+		}
+		finally {
+			PrincipalThreadLocal.setName(originalName);
+		}
+
 		DataDefinition postDataDefinition =
 			testPutDataDefinition_addDataDefinition();
 
@@ -623,6 +857,26 @@ public class DataDefinitionResourceTest
 
 		assertEquals(randomDataDefinition, getDataDefinition);
 		assertValid(getDataDefinition);
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testPutSiteDataDefinitionByContentTypeByExternalReferenceCode_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testPutSiteDataDefinitionByContentTypeByExternalReferenceCode_createDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
 	}
 
 	@Rule
@@ -851,6 +1105,14 @@ public class DataDefinitionResourceTest
 		return dataLayoutColumnFieldNames;
 	}
 
+	private void _setUpDataDefinitionResource(long companyId, User user)
+		throws Exception {
+
+		_dataDefinitionResource.setContextCompany(
+			_companyLocalService.getCompany(companyId));
+		_dataDefinitionResource.setContextUser(user);
+	}
+
 	private void _testCopiedDataDefinitionDataLayout(
 		DataLayout dataLayout1, DataLayout dataLayout2) {
 
@@ -944,10 +1206,13 @@ public class DataDefinitionResourceTest
 	private static final String _CONTENT_TYPE = "test";
 
 	@Inject
-	private static ResourceActionLocalService _resourceActionLocalService;
+	private static ResourceActions _resourceActions;
 
 	@Inject
-	private static ResourceActions _resourceActions;
+	private CompanyLocalService _companyLocalService;
+
+	@Inject
+	private DataDefinitionResource _dataDefinitionResource;
 
 	@Inject
 	private DataDefinitionResource.Factory _dataDefinitionResourceFactory;

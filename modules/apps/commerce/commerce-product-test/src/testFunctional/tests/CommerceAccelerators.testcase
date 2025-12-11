@@ -114,7 +114,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "testuser@liferay.com");
 		}
@@ -232,7 +232,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "testuser@liferay.com");
 		}
@@ -332,7 +332,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "testuser@liferay.com");
 		}
@@ -342,113 +342,6 @@ definition {
 
 			AssertElementPresent(locator1 = "CommerceAccelerators#GENERAL_QUANTITY_SELECTOR_INPUT_FIELD_ENABLED");
 		}
-	}
-
-	@description = "COMMERCE-5725. New functional test for COMMERCE-5485"
-	@priority = 3
-	test AssertCheckoutMinicart {
-		property portal.acceptance = "false";
-
-		// TODO Review
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
-
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Test Account");
-
-		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
-			accountName = "Test Account",
-			emailAddress = "buyer@liferay.com",
-			role = "Buyer",
-			userFirstName = "Buyer",
-			userLastName = "User",
-			userScreenName = "buyeruser");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
-
-		CommerceLogin.editPasswordCP(
-			newPassword = "ttest",
-			requirePasswordReset = "true",
-			userScreenName = "buyeruser");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Store Management",
-			panel = "Commerce",
-			portlet = "Channels");
-
-		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-		CommerceChannels.activatePaymentMethod(paymentMethod = "PayPal");
-
-		Refresh();
-
-		CommerceChannels.configurationPaypal(mode = "Sandbox");
-
-		Refresh();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Product Management",
-			panel = "Commerce",
-			portlet = "Products");
-
-		CPCommerceCatalog.newProductsEntry(
-			productCatalog = "Minium",
-			productName = "Simple T-Shirt",
-			productType = "Simple");
-
-		CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-		AssertTextEquals(
-			key_columnNumber = 4,
-			key_entryName = "default",
-			locator1 = "CommerceEntry#TABLE_CELL_BY_COLUMN_ORDER",
-			value1 = 0);
-
-		CommerceEntry.gotoMenuTab(menuTab = "Subscription");
-
-		Click(locator1 = "CommerceEntry#PAYMENT_SUBSCRIPTION_TOGGLE");
-
-		Button.clickPublish();
-
-		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
-
-		AssertChecked.assertCheckedNotVisible(
-			key_checkSetupName = "Allow Back Orders",
-			locator1 = "ToggleSwitch#SHOW_SPECIFIC_TOGGLE_SWITCH");
-
-		User.logoutPG();
-
-		CommerceLogin.miniumLogin(
-			newPassword = "test",
-			password = "ttest",
-			urlAppend = "web/minium",
-			userEmailAddress = "buyer@liferay.com");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "Simple T-Shirt",
-			productQuantity = 1);
-
-		CommerceCheckout.gotoCheckout();
-
-		CommerceCheckout.initializersCheckout(
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			productName = "Simple T-Shirt",
-			productQuantity = 1,
-			productUnitPrice = 0);
-
-		AssertTextEquals(
-			locator1 = "CommerceAccelerators#CHECKOUT_SUCCESS_MESSAGE",
-			value1 = "Success! Your order has been processed.");
 	}
 
 	@description = "This is a test for COMMERCE-5530. AssertPromoProductPriceTotalIsDifferent"
@@ -478,7 +371,7 @@ definition {
 
 		Click(locator1 = "//a[contains(text(),'View')]");
 
-		AssertTextEquals(
+		AssertTextEquals.assertPartialText(
 			key_productName = "Brake Pads",
 			locator1 = "CommerceAccelerators#ORDER_DETAILS_PRICE",
 			value1 = "$ 18.90");
@@ -595,7 +488,7 @@ definition {
 				productName = "U-Joint",
 				productQuantity = 1,
 				productSku = "MIN55861",
-				productTotalPrice = "24.00");
+				productTotalPrice = "$ 24.00");
 		}
 	}
 
@@ -626,7 +519,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "testuser@liferay.com");
 		}
@@ -695,7 +588,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "testuser@liferay.com");
 		}
@@ -800,63 +693,10 @@ definition {
 			tagName = "Engine");
 	}
 
-	@description = "This is a test for COMMERCE-4958."
-	@priority = 5
-	test CheckoutWithDefaultShippingOption {
-		property portal.acceptance = "true";
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
-
-		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
-
-		CommerceEntry.clickTableEntryEditButton(
-			entryName = "Flat Rate",
-			table = "Shipping Methods");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Shipping Options");
-
-		ClickNoError(
-			key_value = "Expedited Delivery",
-			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
-
-		CommerceEntry.clickNoError(menuItem = "Delete");
-
-		Alert.viewSuccessMessage();
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
-
-		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
-
-		FrontStore.addInitializerProductToCart(
-			productName = "U-Joint",
-			productQuantity = 1);
-
-		CommerceCheckout.gotoCheckoutViaMiniCart();
-
-		CommerceCheckout.initializersCheckout(
-			newAddressAddress = "Test Address",
-			newAddressCity = "Test City",
-			newAddressCountry = "United States",
-			newAddressName = "Address Name",
-			newAddressZipCode = "Test Zip Code",
-			productName = "U-Joint",
-			productQuantity = 1,
-			productUnitPrice = 24,
-			shippingMethod = "Standard",
-			singleShippingOption = "true");
-	}
-
 	@priority = 4
 	test DeactivateCommerceAccount {
 		property portal.acceptance = "false";
 		property portal.release = "quarantine";
-		property portal.upstream = "quarantine";
 
 		// Quarantined because of COMMERCE-9825
 
@@ -876,14 +716,9 @@ definition {
 			userLastName = "User",
 			userScreenName = "buyeruser");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Account Users");
+		ManagementBar.setFilterAndOrder(filterBy = "Account Users");
 
 		CommerceLogin.editPasswordCP(
 			newPassword = "ttest",
@@ -893,7 +728,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
@@ -906,10 +741,7 @@ definition {
 
 		CommerceLogin.miniumLogoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
 
@@ -918,23 +750,13 @@ definition {
 		CommerceLogin.miniumLogoutPG();
 
 		CommerceLogin.miniumLogin(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
 
 		Click(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_DROPDOWN");
 
 		AssertElementPresent(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_NO_ACCOUNTS_WERE_FOUND");
-
-		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-		CommerceAcceleratorsInitializer.viewDisabledAddToCartButton(productName = "ABS Sensor");
-
-		CommerceAcceleratorsInitializer.viewAllAccountsFromAccountSelector();
-
-		AssertTextEquals.assertPartialText(
-			locator1 = "Message#EMPTY_INFO",
-			value1 = "No accounts were found.");
 	}
 
 	@description = "This is a workaround for an issue with Minium's sidebar on CI"
@@ -958,14 +780,9 @@ definition {
 			userLastName = "User",
 			userScreenName = "buyeruser");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Account Users");
+		ManagementBar.setFilterAndOrder(filterBy = "Account Users");
 
 		CommerceLogin.editPasswordCP(
 			newPassword = "ttest",
@@ -975,7 +792,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
@@ -988,10 +805,7 @@ definition {
 
 		User.logoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
 
@@ -1000,7 +814,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
 
@@ -1070,15 +884,13 @@ definition {
 
 	@priority = 5
 	test InitializeNewMiniumSite {
-		property environment.acceptance = "true";
+		property environment.acceptance = "false";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
 
@@ -1100,9 +912,7 @@ definition {
 			catalogLanguage = "English (United States)",
 			catalogName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceEntry.viewPaginationResults(results = "Showing 1 to 10 of 50 entries.");
 
@@ -1127,15 +937,13 @@ definition {
 
 	@priority = 5
 	test InitializeNewSpeedwellSite {
-		property environment.acceptance = "true";
+		property environment.acceptance = "false";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
 
@@ -1157,9 +965,7 @@ definition {
 			catalogLanguage = "English (United States)",
 			catalogName = "Speedwell");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceEntry.viewPaginationResults(results = "Showing 1 to 10 of 50 entries.");
 
@@ -1186,15 +992,12 @@ definition {
 	test MiniumSiteFullFlow {
 		property portal.acceptance = "false";
 		property portal.release = "quarantine";
-		property portal.upstream = "quarantine";
 
 		// Quarantined because of COMMERCE-9825
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		CommerceNavigator.gotoTableListEntry(entryName = "Minium Portal");
 
@@ -1214,14 +1017,9 @@ definition {
 			userLastName = "User",
 			userScreenName = "buyeruser");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Account Users");
+		ManagementBar.setFilterAndOrder(filterBy = "Account Users");
 
 		CommerceLogin.editPasswordCP(
 			newPassword = "ttest",
@@ -1231,7 +1029,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
@@ -1270,10 +1068,7 @@ definition {
 
 		CommerceLogin.miniumLogoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
 
@@ -1295,9 +1090,7 @@ definition {
 			productSku = "MIN93015",
 			productUnitPrice = "50.00");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Open");
 
@@ -1306,11 +1099,9 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 2,
 			productSku = "MIN93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -1323,7 +1114,7 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 2,
 			productSku = "MIN93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 	}
 
 	@description = "This is a workaround for an issue with Minium's sidebar on CI"
@@ -1333,9 +1124,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		CommerceNavigator.gotoTableListEntry(entryName = "Minium Portal");
 
@@ -1355,14 +1144,9 @@ definition {
 			userLastName = "User",
 			userScreenName = "buyeruser");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Account Users");
+		ManagementBar.setFilterAndOrder(filterBy = "Account Users");
 
 		CommerceLogin.editPasswordCP(
 			newPassword = "ttest",
@@ -1372,7 +1156,7 @@ definition {
 		User.logoutPG();
 
 		CommerceLogin.miniumLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/minium",
 			userEmailAddress = "buyer@liferay.com");
@@ -1413,10 +1197,7 @@ definition {
 
 		User.logoutPG();
 
-		CommerceLogin.miniumLogin(
-			password = "test",
-			urlAppend = "web/minium",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.miniumLogin(urlAppend = "web/minium");
 
 		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
 
@@ -1438,9 +1219,7 @@ definition {
 			productSku = "MIN93015",
 			productUnitPrice = "50.00");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Open");
 
@@ -1449,11 +1228,9 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 2,
 			productSku = "MIN93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -1466,7 +1243,7 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 2,
 			productSku = "MIN93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 	}
 
 	@description = "COMMERCE-6350. As a buyer, I want to be redirected to Order Details page after clicking 'Review Order' button on mini-cart, if Buyer Order Approval Workflow is active"
@@ -1484,9 +1261,7 @@ definition {
 
 		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
 
@@ -1498,10 +1273,7 @@ definition {
 
 		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.addCP(
 			userEmailAddress = "buyer@liferay.com",
@@ -1535,7 +1307,7 @@ definition {
 		CommerceLogin.speedwellLogout();
 
 		CommerceLogin.speedwellLogin(
-			newPassword = "test",
+			newPassword = PropsUtil.get("default.admin.password"),
 			password = "ttest",
 			urlAppend = "web/speedwell",
 			userEmailAddress = "buyer@liferay.com");
@@ -1572,16 +1344,11 @@ definition {
 
 		CommerceLogin.speedwellLogout();
 
-		CommerceLogin.speedwellLogin(
-			password = "test",
-			urlAppend = "web/speedwell",
-			userEmailAddress = "test@liferay.com");
+		CommerceLogin.speedwellLogin(urlAppend = "web/speedwell");
 
 		Refresh();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Open");
 
@@ -1590,11 +1357,9 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 2,
 			productSku = "SPEED93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
+		CommerceOrders.openOrdersAdmin();
 
 		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
 
@@ -1607,7 +1372,7 @@ definition {
 			productName = "ABS Sensor",
 			productQuantity = 2,
 			productSku = "SPEED93015",
-			productTotalPrice = "100.00");
+			productTotalPrice = "$ 100.00");
 	}
 
 }

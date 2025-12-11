@@ -11,6 +11,7 @@ import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.osb.faro.contacts.model.constants.ContactsConstants;
 import com.liferay.osb.faro.engine.client.constants.FieldMappingConstants;
 import com.liferay.osb.faro.engine.client.exception.InvalidFilterException;
+import com.liferay.osb.faro.engine.client.model.ChannelDataSource;
 import com.liferay.osb.faro.engine.client.model.Credentials;
 import com.liferay.osb.faro.engine.client.model.DXPGroup;
 import com.liferay.osb.faro.engine.client.model.DXPOrganization;
@@ -44,6 +45,7 @@ import com.liferay.osb.faro.web.internal.controller.FaroController;
 import com.liferay.osb.faro.web.internal.exception.FaroException;
 import com.liferay.osb.faro.web.internal.exception.FaroValidationException;
 import com.liferay.osb.faro.web.internal.model.display.FaroResultsDisplay;
+import com.liferay.osb.faro.web.internal.model.display.contacts.ChannelDataSourceDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.DXPGroupDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.DXPOrganizationDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.DXPUserGroupDisplay;
@@ -70,15 +72,30 @@ import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -97,23 +114,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;
@@ -170,6 +170,10 @@ public class DataSourceController extends BaseFaroController {
 			_tokenManager.clearToken(token);
 		}
 
+		faroProject.setDataSourceConnected(true);
+
+		faroProject = faroProjectLocalService.updateFaroProject(faroProject);
+
 		TokenCredentials tokenCredentials =
 			(TokenCredentials)dataSource.getCredentials();
 
@@ -191,45 +195,6 @@ public class DataSourceController extends BaseFaroController {
 		).put(
 			"publicKey", tokenCredentials.getPublicKey()
 		).build();
-	}
-
-	@Path("/csv")
-	@POST
-	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
-	public DataSourceDisplay createTypeCSV(
-			@PathParam("groupId") long groupId,
-			@FormParam("channelId") String channelId,
-			@FormParam("name") String name,
-			@FormParam("fileVersionId") long fileVersionId,
-			@FormParam("staticIndividualSegmentId") String
-				staticIndividualSegmentId,
-			@FormParam("event") Event event,
-			@DefaultValue(StringPool.BLANK) @FormParam("fieldMappingMaps")
-				FaroParam<List<FieldMappingMap>> fieldMappingMapsFaroParam)
-		throws Exception {
-
-		DataSourceDisplay dataSourceDisplay = create(
-			groupId, null, new CSVProvider(), name, null, event,
-			DataSource.Status.ACTIVE.name());
-
-		createFieldMappings(
-			faroProjectLocalService.getFaroProjectByGroupId(groupId),
-			dataSourceDisplay.getId(),
-			FieldMappingConstants.CONTEXT_DEMOGRAPHICS,
-			FieldMappingConstants.OWNER_TYPE_INDIVIDUAL,
-			fieldMappingMapsFaroParam.getValue());
-
-		List<String> individualSegmentIds = new ArrayList<>();
-
-		if (Validator.isNotNull(staticIndividualSegmentId)) {
-			individualSegmentIds.add(staticIndividualSegmentId);
-		}
-
-		addCSVIndividuals(
-			faroProjectLocalService.getFaroProjectByGroupId(groupId), channelId,
-			dataSourceDisplay.getId(), fileVersionId, individualSegmentIds);
-
-		return dataSourceDisplay;
 	}
 
 	@Path("/liferay")
@@ -268,6 +233,9 @@ public class DataSourceController extends BaseFaroController {
 			@DefaultValue(StringPool.BLANK) @FormParam("accountsConfiguration")
 				FaroParam<SalesforceProvider.AccountsConfiguration>
 					accountsConfigurationFaroParam,
+			@DefaultValue(StringPool.BLANK) @FormParam("channelsConfiguration")
+				FaroParam<SalesforceProvider.ChannelsConfiguration>
+					channelsConfigurationFaroParam,
 			@DefaultValue(StringPool.BLANK) @FormParam("contactsConfiguration")
 				FaroParam<SalesforceProvider.ContactsConfiguration>
 					contactsConfigurationFaroParam,
@@ -278,27 +246,13 @@ public class DataSourceController extends BaseFaroController {
 
 		salesforceProvider.setAccountsConfiguration(
 			accountsConfigurationFaroParam.getValue());
+		salesforceProvider.setChannelsConfiguration(
+			channelsConfigurationFaroParam.getValue());
 		salesforceProvider.setContactsConfiguration(
 			contactsConfigurationFaroParam.getValue());
 
-		DataSourceDisplay dataSourceDisplay = create(
+		return create(
 			groupId, credentials, salesforceProvider, name, url, null, status);
-
-		FaroProject faroProject =
-			faroProjectLocalService.getFaroProjectByGroupId(groupId);
-
-		createFieldMappings(
-			faroProject, dataSourceDisplay.getId(),
-			FieldMappingConstants.CONTEXT_ORGANIZATION,
-			FieldMappingConstants.OWNER_TYPE_ACCOUNT,
-			FieldMappingConstants.getSalesforceAccountFieldMappingMaps());
-		createFieldMappings(
-			faroProject, dataSourceDisplay.getId(),
-			FieldMappingConstants.CONTEXT_DEMOGRAPHICS,
-			FieldMappingConstants.OWNER_TYPE_INDIVIDUAL,
-			FieldMappingConstants.getSalesforceIndividualFieldMappingMaps());
-
-		return dataSourceDisplay;
 	}
 
 	@DELETE
@@ -372,10 +326,54 @@ public class DataSourceController extends BaseFaroController {
 		contactsEngineClient.disconnectDataSource(faroProject, id);
 	}
 
+	@Path("/disconnect-all")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
+	public void disconnectAll(@PathParam("groupId") long groupId)
+		throws Exception {
+
+		FaroProject faroProject =
+			faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		contactsEngineClient.disconnectDataSources(faroProject);
+
+		faroProject.setDataSourceConnected(false);
+
+		faroProjectLocalService.updateFaroProject(faroProject);
+	}
+
+	@GET
+	@Path("/{id}/channel-data-sources")
+	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
+	public FaroResultsDisplay getChannelDataSourceDisplay(
+			@PathParam("groupId") long groupId, @PathParam("id") String id,
+			@QueryParam("enabled") Boolean enabled,
+			@QueryParam("name") String name, @QueryParam("cur") int cur,
+			@DefaultValue("20") @QueryParam("delta") int delta,
+			@DefaultValue(StringPool.BLANK) @QueryParam("orderByFields")
+				FaroParam<List<OrderByField>> orderByFieldsFaroParam)
+		throws Exception {
+
+		FaroProject faroProject =
+			faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		Results<ChannelDataSource> results =
+			contactsEngineClient.getChannelDataSources(
+				faroProject, Long.valueOf(id), enabled, name, cur, delta,
+				orderByFieldsFaroParam.getValue());
+		Function<ChannelDataSource, ChannelDataSourceDisplay> function =
+			channelDataSource -> new ChannelDataSourceDisplay(
+				contactsEngineClient.getChannel(
+					faroProject, channelDataSource.getChannelId()),
+				channelDataSource);
+
+		return new FaroResultsDisplay(results, function);
+	}
+
 	@GET
 	@Path("/{id}")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public DataSourceDisplay get(
+	public DataSourceDisplay getDataSourceDisplay(
 			@PathParam("groupId") long groupId, @PathParam("id") String id)
 		throws Exception {
 
@@ -409,175 +407,9 @@ public class DataSourceController extends BaseFaroController {
 	}
 
 	@GET
-	@Path("/{id}/delete_preview")
-	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
-	public Map<Integer, Integer> getDeletePreview(
-			@PathParam("groupId") long groupId, @PathParam("id") String id)
-		throws Exception {
-
-		FaroProject faroProject =
-			faroProjectLocalService.getFaroProjectByGroupId(groupId);
-
-		return HashMapBuilder.put(
-			FaroConstants.TYPE_INDIVIDUAL,
-			() -> {
-				Results<Individual> individualResults =
-					contactsEngineClient.getIndividuals(
-						faroProject, null, null, id, null, null, null, null,
-						null, null, false, 1, 0, null);
-
-				return individualResults.getTotal();
-			}
-		).put(
-			FaroConstants.TYPE_SEGMENT_INDIVIDUALS,
-			() -> {
-				Results<IndividualSegment> individualSegmentResults =
-					contactsEngineClient.getIndividualSegments(
-						faroProject, null, id, null, null, null, null, null,
-						IndividualSegment.Status.ACTIVE.name(), 1, 0, null);
-
-				return individualSegmentResults.getTotal();
-			}
-		).build();
-	}
-
-	@Override
-	public int[] getEntityTypes() {
-		return _ENTITY_TYPES.clone();
-	}
-
-	@GET
-	@Path("/field_values")
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public List<FieldValuesDisplay> getFieldValues(
-			@PathParam("groupId") long groupId, @QueryParam("id") String id,
-			@QueryParam("fileVersionId") long fileVersionId,
-			@QueryParam("fieldName") String fieldName,
-			@DefaultValue(FieldMappingConstants.CONTEXT_DEMOGRAPHICS)
-			@QueryParam("context")
-			String context,
-			@QueryParam("count") int count)
-		throws Exception {
-
-		List<DataSourceField> dataSourceFields = null;
-
-		FaroProject faroProject =
-			faroProjectLocalService.getFaroProjectByGroupId(groupId);
-
-		if (Validator.isNotNull(id)) {
-			DataSource dataSource = contactsEngineClient.getDataSource(
-				faroProject, id);
-
-			Provider provider = dataSource.getProvider();
-
-			String providerType = provider.getType();
-
-			if (providerType.equals(CSVProvider.TYPE)) {
-				Repository repository =
-					_portletFileRepository.getPortletRepository(
-						groupId, ContactsConstants.SERVICE_NAME);
-
-				DLFileEntry dlFileEntry =
-					_dlFileEntryLocalService.fetchFileEntry(
-						groupId, repository.getDlFolderId(), id);
-
-				if (dlFileEntry != null) {
-					DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
-
-					fileVersionId = dlFileVersion.getFileVersionId();
-				}
-			}
-		}
-
-		if (fileVersionId > 0) {
-			dataSourceFields = _contactsCSVHelper.getDataSourceFields(
-				fileVersionId, fieldName, count, true);
-		}
-		else {
-			dataSourceFields = contactsEngineClient.getDataSourceFields(
-				faroProject, id, context, count);
-		}
-
-		List<FieldValuesDisplay> fieldValuesDisplays = new ArrayList<>();
-
-		for (DataSourceField dataSourceField : dataSourceFields) {
-			if (Validator.isNull(fieldName) ||
-				StringUtil.equals(dataSourceField.getName(), fieldName)) {
-
-				fieldValuesDisplays.add(
-					new FieldValuesDisplay(
-						dataSourceField.getName(),
-						dataSourceField.getValues()));
-			}
-		}
-
-		return fieldValuesDisplays;
-	}
-
-	@Path("/{id}/groups_by_ids")
-	@POST
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public List<DXPGroupDisplay> getGroups(
-			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@DefaultValue(StringPool.BLANK) @FormParam("groupIds") FaroParam
-				<List<Long>> groupIdsFaroParam)
-		throws Exception {
-
-		return TransformUtil.transform(
-			contactsEngineClient.getDataSourceDXPGroups(
-				faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
-				groupIdsFaroParam.getValue()),
-			DXPGroupDisplay::new);
-	}
-
-	@GET
-	@Path("/{id}/groups")
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public FaroResultsDisplay getGroups(
-			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@DefaultValue("-1") @QueryParam("parentGroupId") long parentGroupId,
-			@DefaultValue("true") @QueryParam("site") boolean site,
-			@DefaultValue(StringPool.BLANK) @QueryParam("name") String name,
-			@QueryParam("cur") int cur, @QueryParam("delta") int delta)
-		throws Exception {
-
-		FaroProject faroProject =
-			faroProjectLocalService.getFaroProjectByGroupId(groupId);
-
-		Results<DXPGroup> results = contactsEngineClient.getDataSourceDXPGroups(
-			faroProject, id, parentGroupId, site, name, cur, delta);
-
-		Function<DXPGroup, DXPGroupDisplay> function = DXPGroupDisplay::new;
-
-		if (results.getTotal() > 0) {
-			return new FaroResultsDisplay(results, function);
-		}
-
-		results = contactsEngineClient.getDataSourceDXPGroups(
-			faroProject, id, parentGroupId, site, null, cur, delta);
-
-		return new FaroResultsDisplay(results, function, true);
-	}
-
-	@Path("/{id}/liferay/sync_counts")
-	@POST
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public LiferaySyncCountsDisplay getLiferaySyncCounts(
-			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@DefaultValue(StringPool.BLANK) @FormParam("contactsConfiguration")
-				FaroParam<LiferayProvider.ContactsConfiguration>
-					contactsConfigurationFaroParam)
-		throws Exception {
-
-		return new LiferaySyncCountsDisplay(
-			faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
-			contactsConfigurationFaroParam.getValue(), contactsEngineClient);
-	}
-
-	@GET
 	@Path("/mappings")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public List<DataSourceMappingDisplay> getMappings(
+	public List<DataSourceMappingDisplay> getDataSourceMappingDisplays(
 			@PathParam("groupId") long groupId, @QueryParam("id") String id,
 			@QueryParam("fileVersionId") long fileVersionId)
 		throws Exception {
@@ -585,7 +417,7 @@ public class DataSourceController extends BaseFaroController {
 		List<DataSourceMappingDisplay> dataSourceMappingDisplays =
 			new ArrayList<>();
 
-		List<FieldValuesDisplay> fieldValuesDisplays = getFieldValues(
+		List<FieldValuesDisplay> fieldValuesDisplays = getFieldValuesDisplays(
 			groupId, id, fileVersionId, null,
 			FieldMappingConstants.CONTEXT_DEMOGRAPHICS, 1);
 
@@ -706,7 +538,7 @@ public class DataSourceController extends BaseFaroController {
 	@GET
 	@Path("/{id}/mappings/lite")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public List<DataSourceMappingDisplay> getMappingsLite(
+	public List<DataSourceMappingDisplay> getDataSourceMappingDisplaysLite(
 			@PathParam("groupId") long groupId, @PathParam("id") String id,
 			@DefaultValue(FieldMappingConstants.CONTEXT_DEMOGRAPHICS)
 			@QueryParam("context")
@@ -715,7 +547,7 @@ public class DataSourceController extends BaseFaroController {
 
 		Map<String, FieldValuesDisplay> fieldValuesDisplayMap = new HashMap<>();
 
-		List<FieldValuesDisplay> fieldValuesDisplays = getFieldValues(
+		List<FieldValuesDisplay> fieldValuesDisplays = getFieldValuesDisplays(
 			groupId, id, 0, null, context, 1);
 
 		for (FieldValuesDisplay fieldValuesDisplay : fieldValuesDisplays) {
@@ -767,6 +599,196 @@ public class DataSourceController extends BaseFaroController {
 						item, fieldsMap.get(item.getFieldName())),
 					Collections.emptyList());
 			});
+	}
+
+	@GET
+	@Path("/{id}/progress")
+	public Map<String, DataSourceProgress> getDataSourceProgress(
+			@PathParam("groupId") long groupId, @PathParam("id") String id)
+		throws Exception {
+
+		return contactsEngineClient.getDataSourceProgressMap(
+			faroProjectLocalService.getFaroProjectByGroupId(groupId), id);
+	}
+
+	@GET
+	@Path("/{id}/delete_preview")
+	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
+	public Map<Integer, Integer> getDeletePreview(
+			@PathParam("groupId") long groupId, @PathParam("id") String id)
+		throws Exception {
+
+		FaroProject faroProject =
+			faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		return HashMapBuilder.put(
+			FaroConstants.TYPE_INDIVIDUAL,
+			() -> {
+				Results<Individual> individualResults =
+					contactsEngineClient.getIndividuals(
+						faroProject, null, null, id, null, null, null, null,
+						null, null, false, 1, 0, null);
+
+				return individualResults.getTotal();
+			}
+		).put(
+			FaroConstants.TYPE_SEGMENT_INDIVIDUALS,
+			() -> {
+				Results<IndividualSegment> individualSegmentResults =
+					contactsEngineClient.getIndividualSegments(
+						faroProject, null, id, null, null, null, null, null,
+						IndividualSegment.Status.ACTIVE.name(), 1, 0, null);
+
+				return individualSegmentResults.getTotal();
+			}
+		).build();
+	}
+
+	@Path("/{id}/groups_by_ids")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public List<DXPGroupDisplay> getDXPGroupDisplays(
+			@PathParam("groupId") long groupId, @PathParam("id") String id,
+			@DefaultValue(StringPool.BLANK) @FormParam("groupIds") FaroParam
+				<List<Long>> groupIdsFaroParam)
+		throws Exception {
+
+		return TransformUtil.transform(
+			contactsEngineClient.getDataSourceDXPGroups(
+				faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
+				groupIdsFaroParam.getValue()),
+			DXPGroupDisplay::new);
+	}
+
+	@Path("/{id}/user_groups_by_ids")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public List<DXPUserGroupDisplay> getDXPUserGroupDisplays(
+			@PathParam("groupId") long groupId, @PathParam("id") String id,
+			@DefaultValue(StringPool.BLANK) @FormParam("userGroupIds") FaroParam
+				<List<Long>> userGroupIdsFaroParam)
+		throws Exception {
+
+		return TransformUtil.transform(
+			contactsEngineClient.getDataSourceDXPUserGroups(
+				faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
+				userGroupIdsFaroParam.getValue()),
+			DXPUserGroupDisplay::new);
+	}
+
+	@Override
+	public int[] getEntityTypes() {
+		return _ENTITY_TYPES.clone();
+	}
+
+	@GET
+	@Path("/field_values")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public List<FieldValuesDisplay> getFieldValuesDisplays(
+			@PathParam("groupId") long groupId, @QueryParam("id") String id,
+			@QueryParam("fileVersionId") long fileVersionId,
+			@QueryParam("fieldName") String fieldName,
+			@DefaultValue(FieldMappingConstants.CONTEXT_DEMOGRAPHICS)
+			@QueryParam("context")
+			String context,
+			@QueryParam("count") int count)
+		throws Exception {
+
+		List<DataSourceField> dataSourceFields = null;
+
+		FaroProject faroProject =
+			faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		if (Validator.isNotNull(id)) {
+			DataSource dataSource = contactsEngineClient.getDataSource(
+				faroProject, id);
+
+			Provider provider = dataSource.getProvider();
+
+			String providerType = provider.getType();
+
+			if (providerType.equals(CSVProvider.TYPE)) {
+				Repository repository =
+					_portletFileRepository.getPortletRepository(
+						groupId, ContactsConstants.SERVICE_NAME);
+
+				DLFileEntry dlFileEntry =
+					_dlFileEntryLocalService.fetchFileEntry(
+						groupId, repository.getDlFolderId(), id);
+
+				if (dlFileEntry != null) {
+					DLFileVersion dlFileVersion = dlFileEntry.getFileVersion();
+
+					fileVersionId = dlFileVersion.getFileVersionId();
+				}
+			}
+		}
+
+		if (fileVersionId > 0) {
+			dataSourceFields = _contactsCSVHelper.getDataSourceFields(
+				fileVersionId, fieldName, count, true);
+		}
+		else {
+			dataSourceFields = contactsEngineClient.getDataSourceFields(
+				faroProject, id, context, count);
+		}
+
+		return TransformUtil.transform(
+			dataSourceFields,
+			dataSourceField -> {
+				if (Validator.isNotNull(fieldName) &&
+					!StringUtil.equals(dataSourceField.getName(), fieldName)) {
+
+					return null;
+				}
+
+				return new FieldValuesDisplay(
+					dataSourceField.getName(), dataSourceField.getValues());
+			});
+	}
+
+	@GET
+	@Path("/{id}/groups")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public FaroResultsDisplay getGroups(
+			@PathParam("groupId") long groupId, @PathParam("id") String id,
+			@DefaultValue("-1") @QueryParam("parentGroupId") long parentGroupId,
+			@DefaultValue("true") @QueryParam("site") boolean site,
+			@DefaultValue(StringPool.BLANK) @QueryParam("name") String name,
+			@QueryParam("cur") int cur, @QueryParam("delta") int delta)
+		throws Exception {
+
+		FaroProject faroProject =
+			faroProjectLocalService.getFaroProjectByGroupId(groupId);
+
+		Results<DXPGroup> results = contactsEngineClient.getDataSourceDXPGroups(
+			faroProject, id, parentGroupId, site, name, cur, delta);
+
+		Function<DXPGroup, DXPGroupDisplay> function = DXPGroupDisplay::new;
+
+		if (results.getTotal() > 0) {
+			return new FaroResultsDisplay(results, function);
+		}
+
+		results = contactsEngineClient.getDataSourceDXPGroups(
+			faroProject, id, parentGroupId, site, null, cur, delta);
+
+		return new FaroResultsDisplay(results, function, true);
+	}
+
+	@Path("/{id}/liferay/sync_counts")
+	@POST
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public LiferaySyncCountsDisplay getLiferaySyncCountsDisplay(
+			@PathParam("groupId") long groupId, @PathParam("id") String id,
+			@DefaultValue(StringPool.BLANK) @FormParam("contactsConfiguration")
+				FaroParam<LiferayProvider.ContactsConfiguration>
+					contactsConfigurationFaroParam)
+		throws Exception {
+
+		return new LiferaySyncCountsDisplay(
+			faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
+			contactsConfigurationFaroParam.getValue(), contactsEngineClient);
 	}
 
 	@GET
@@ -846,16 +868,6 @@ public class DataSourceController extends BaseFaroController {
 	}
 
 	@GET
-	@Path("/{id}/progress")
-	public Map<String, DataSourceProgress> getProgress(
-			@PathParam("groupId") long groupId, @PathParam("id") String id)
-		throws Exception {
-
-		return contactsEngineClient.getDataSourceProgressMap(
-			faroProjectLocalService.getFaroProjectByGroupId(groupId), id);
-	}
-
-	@GET
 	@Path("/token")
 	@Produces(MediaType.TEXT_PLAIN)
 	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
@@ -882,22 +894,6 @@ public class DataSourceController extends BaseFaroController {
 			faroProjectLocalService.getFaroProjectByGroupId(groupId);
 
 		return getToken(uriInfo, id, faroProject.getFaroProjectId());
-	}
-
-	@Path("/{id}/user_groups_by_ids")
-	@POST
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public List<DXPUserGroupDisplay> getUserGroups(
-			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@DefaultValue(StringPool.BLANK) @FormParam("userGroupIds") FaroParam
-				<List<Long>> userGroupIdsFaroParam)
-		throws Exception {
-
-		return TransformUtil.transform(
-			contactsEngineClient.getDataSourceDXPUserGroups(
-				faroProjectLocalService.getFaroProjectByGroupId(groupId), id,
-				userGroupIdsFaroParam.getValue()),
-			DXPUserGroupDisplay::new);
 	}
 
 	@GET
@@ -948,6 +944,9 @@ public class DataSourceController extends BaseFaroController {
 			@DefaultValue(StringPool.BLANK) @FormParam("analyticsConfiguration")
 				FaroParam<LiferayProvider.AnalyticsConfiguration>
 					analyticsConfigurationFaroParam,
+			@DefaultValue(StringPool.BLANK) @FormParam("channelsConfiguration")
+				FaroParam<LiferayProvider.ChannelsConfiguration>
+					channelsConfigurationFaroParam,
 			@DefaultValue(StringPool.BLANK) @FormParam("contactsConfiguration")
 				FaroParam<LiferayProvider.ContactsConfiguration>
 					contactsConfigurationFaroParam,
@@ -960,18 +959,23 @@ public class DataSourceController extends BaseFaroController {
 
 		LiferayProvider.AnalyticsConfiguration analyticsConfiguration =
 			analyticsConfigurationFaroParam.getValue();
+		LiferayProvider.ChannelsConfiguration channelsConfiguration =
+			channelsConfigurationFaroParam.getValue();
 		LiferayProvider.ContactsConfiguration contactsConfiguration =
 			contactsConfigurationFaroParam.getValue();
 
 		if ((analyticsConfiguration != null) &&
+			(channelsConfiguration != null) &&
 			(contactsConfiguration != null)) {
 
 			liferayProvider = new LiferayProvider();
 
 			liferayProvider.setAnalyticsConfiguration(analyticsConfiguration);
+			liferayProvider.setChannelsConfiguration(channelsConfiguration);
 			liferayProvider.setContactsConfiguration(contactsConfiguration);
 		}
 		else if ((analyticsConfiguration != null) ||
+				 (channelsConfiguration != null) ||
 				 (contactsConfiguration != null)) {
 
 			DataSource dataSource = contactsEngineClient.getDataSource(
@@ -982,6 +986,10 @@ public class DataSourceController extends BaseFaroController {
 			if (analyticsConfiguration != null) {
 				liferayProvider.setAnalyticsConfiguration(
 					analyticsConfiguration);
+			}
+
+			if (channelsConfiguration != null) {
+				liferayProvider.setChannelsConfiguration(channelsConfiguration);
 			}
 
 			if (contactsConfiguration != null) {
@@ -1005,6 +1013,9 @@ public class DataSourceController extends BaseFaroController {
 			@DefaultValue(StringPool.BLANK) @FormParam("accountsConfiguration")
 				FaroParam<SalesforceProvider.AccountsConfiguration>
 					accountsConfigurationFaroParam,
+			@DefaultValue(StringPool.BLANK) @FormParam("channelsConfiguration")
+				FaroParam<SalesforceProvider.ChannelsConfiguration>
+					channelsConfigurationFaroParam,
 			@DefaultValue(StringPool.BLANK) @FormParam("contactsConfiguration")
 				FaroParam<SalesforceProvider.ContactsConfiguration>
 					contactsConfigurationFaroParam,
@@ -1015,18 +1026,23 @@ public class DataSourceController extends BaseFaroController {
 
 		SalesforceProvider.AccountsConfiguration accountsConfiguration =
 			accountsConfigurationFaroParam.getValue();
+		SalesforceProvider.ChannelsConfiguration channelsConfiguration =
+			channelsConfigurationFaroParam.getValue();
 		SalesforceProvider.ContactsConfiguration contactsConfiguration =
 			contactsConfigurationFaroParam.getValue();
 
 		if ((accountsConfiguration != null) &&
+			(channelsConfiguration != null) &&
 			(contactsConfiguration != null)) {
 
 			salesforceProvider = new SalesforceProvider();
 
 			salesforceProvider.setAccountsConfiguration(accountsConfiguration);
+			salesforceProvider.setChannelsConfiguration(channelsConfiguration);
 			salesforceProvider.setContactsConfiguration(contactsConfiguration);
 		}
 		else if ((accountsConfiguration != null) ||
+				 (channelsConfiguration != null) ||
 				 (contactsConfiguration != null)) {
 
 			DataSource dataSource = contactsEngineClient.getDataSource(
@@ -1037,6 +1053,11 @@ public class DataSourceController extends BaseFaroController {
 			if (accountsConfiguration != null) {
 				salesforceProvider.setAccountsConfiguration(
 					accountsConfiguration);
+			}
+
+			if (channelsConfiguration != null) {
+				salesforceProvider.setChannelsConfiguration(
+					channelsConfiguration);
 			}
 
 			if (contactsConfiguration != null) {
@@ -1183,6 +1204,9 @@ public class DataSourceController extends BaseFaroController {
 			@DefaultValue(StringPool.BLANK) @FormParam("accountsConfiguration")
 				FaroParam<SalesforceProvider.AccountsConfiguration>
 					accountsConfigurationFaroParam,
+			@DefaultValue(StringPool.BLANK) @FormParam("channelsConfiguration")
+				FaroParam<SalesforceProvider.ChannelsConfiguration>
+					channelsConfigurationFaroParam,
 			@DefaultValue(StringPool.BLANK) @FormParam("contactsConfiguration")
 				FaroParam<SalesforceProvider.ContactsConfiguration>
 					contactsConfigurationFaroParam,
@@ -1193,6 +1217,8 @@ public class DataSourceController extends BaseFaroController {
 
 		salesforceProvider.setAccountsConfiguration(
 			accountsConfigurationFaroParam.getValue());
+		salesforceProvider.setChannelsConfiguration(
+			channelsConfigurationFaroParam.getValue());
 		salesforceProvider.setContactsConfiguration(
 			contactsConfigurationFaroParam.getValue());
 
@@ -1230,29 +1256,6 @@ public class DataSourceController extends BaseFaroController {
 
 		return _contactsCSVHelper.addContactsCSV(
 			id, groupId, getUserId(), fileName, file);
-	}
-
-	protected void addCSVIndividuals(
-			FaroProject faroProject, String channelId, String dataSourceId,
-			long fileVersionId, List<String> individualSegmentIds)
-		throws Exception {
-
-		IndividualSegment individualSegment =
-			contactsEngineClient.addIndividualSegment(
-				faroProject, getUserId(), channelId, null, false,
-				String.valueOf(fileVersionId),
-				IndividualSegment.Type.STATIC.name(),
-				IndividualSegment.Status.INACTIVE.name());
-
-		individualSegmentIds.add(individualSegment.getId());
-
-		contactsEngineClient.addCSVIndividuals(
-			faroProject,
-			_contactsCSVHelper.getIndividualFieldsMaps(fileVersionId),
-			dataSourceId, individualSegmentIds);
-
-		_contactsCSVHelper.updateFileEntry(
-			getUserId(), fileVersionId, dataSourceId);
 	}
 
 	protected DataSourceDisplay create(
@@ -1421,21 +1424,6 @@ public class DataSourceController extends BaseFaroController {
 				event, status);
 		}
 
-		if (fileVersionId > 0) {
-			Results<IndividualSegment> results =
-				contactsEngineClient.getIndividualSegments(
-					faroProject, null, null, null, null,
-					String.valueOf(fileVersionId),
-					IndividualSegment.Type.STATIC.name(), null,
-					IndividualSegment.Status.INACTIVE.name(), 1, 1, null);
-
-			if (results.getTotal() == 0) {
-				addCSVIndividuals(
-					faroProject, null, id, fileVersionId,
-					Collections.emptyList());
-			}
-		}
-
 		return new DataSourceDisplay(groupId, dataSource);
 	}
 
@@ -1572,9 +1560,6 @@ public class DataSourceController extends BaseFaroController {
 	private ClamAVScanner _clamAVScanner;
 
 	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
 	private ContactsCSVHelper _contactsCSVHelper;
 
 	@Reference
@@ -1588,9 +1573,6 @@ public class DataSourceController extends BaseFaroController {
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference
 	private PortletFileRepository _portletFileRepository;

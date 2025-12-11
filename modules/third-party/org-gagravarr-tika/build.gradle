@@ -27,12 +27,15 @@ deployJar {
 	}
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
 	}
 
 	fileNames "org/gagravarr/tika/OggAudioParser.java"
-
 	originalLibModuleName = "vorbis-java-tika"
 }

@@ -8,7 +8,7 @@
 <%@ include file="/init.jsp" %>
 
 <%
-JournalEditDDMStructuresDisplayContext journalEditDDMStructuresDisplayContext = new JournalEditDDMStructuresDisplayContext(request, liferayPortletResponse);
+JournalEditDDMStructuresDisplayContext journalEditDDMStructuresDisplayContext = (JournalEditDDMStructuresDisplayContext)request.getAttribute(JournalEditDDMStructuresDisplayContext.class.getName());
 
 DDMStructure ddmStructure = journalEditDDMStructuresDisplayContext.getDDMStructure();
 
@@ -20,8 +20,6 @@ if (ddmStructure != null) {
 %>
 
 <aui:model-context bean="<%= ddmStructure %>" model="<%= DDMStructure.class %>" />
-
-<aui:input name="storageType" type="hidden" value="<%= journalEditDDMStructuresDisplayContext.getStorageType() %>" />
 
 <aui:input disabled="<%= journalEditDDMStructuresDisplayContext.isStructureKeyInputDisabled() %>" name="structureKey" />
 

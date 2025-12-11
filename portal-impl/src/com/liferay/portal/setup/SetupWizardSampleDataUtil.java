@@ -38,9 +38,9 @@ import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.security.DefaultAdminUtil;
 import com.liferay.portal.security.auth.ScreenNameGeneratorFactory;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -99,26 +99,24 @@ public class SetupWizardSampleDataUtil {
 			organization.getGroupId(), "/main");
 
 		Layout extranetLayout = LayoutLocalServiceUtil.addLayout(
-			guestUser.getUserId(), organization.getGroupId(), false,
+			null, guestUser.getUserId(), organization.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			company.getLegalName() + " Extranet", null, null,
 			LayoutConstants.TYPE_PORTLET, false, "/extranet",
 			new ServiceContext());
 
-		LayoutLocalServiceUtil.updateLayout(
-			extranetLayout.getGroupId(), false, extranetLayout.getLayoutId(),
-			extranetLayout.getTypeSettings());
+		LayoutLocalServiceUtil.updateTypeSettings(
+			extranetLayout, extranetLayout.getTypeSettings());
 
 		Layout intranetLayout = LayoutLocalServiceUtil.addLayout(
-			guestUser.getUserId(), organization.getGroupId(), true,
+			null, guestUser.getUserId(), organization.getGroupId(), true,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			company.getLegalName() + " Intranet", null, null,
 			LayoutConstants.TYPE_PORTLET, false, "/intranet",
 			new ServiceContext());
 
-		LayoutLocalServiceUtil.updateLayout(
-			intranetLayout.getGroupId(), true, intranetLayout.getLayoutId(),
-			intranetLayout.getTypeSettings());
+		LayoutLocalServiceUtil.updateTypeSettings(
+			intranetLayout, intranetLayout.getTypeSettings());
 
 		OrganizationLocalServiceUtil.addUserOrganization(
 			adminUser.getUserId(), organization);

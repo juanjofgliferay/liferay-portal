@@ -1,4 +1,4 @@
-@component-name = "portal-object"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -124,35 +124,70 @@ definition {
 		}
 	}
 
-	@description = "LPS-146755 - Verify fields cannot be set as translatable if the object definition doesn't have translations enabled"
-	@priority = 3
-	test CannotSetFieldAsTranslatableIfTranslationsIsDisabled {
-		task ("Given a custom object with translation not enabled") {
+	@description = "LPS-198382 - Verify an object entry can contain translations and be restricted by unique values"
+	@priority = 4
+	test CanUseUniqueValue {
+		task ("Given an object definition with translatable fields enabled") {
 			ObjectAdmin.addObjectViaAPI(
-				labelName = "Custom Object 186673",
-				objectName = "CustomObject186673",
-				pluralLabelName = "Custom Objects 186673");
-		}
+				labelName = "Custom Object 198382",
+				objectName = "CustomObject198382",
+				pluralLabelName = "Custom Objects 198382");
 
-		task ("When the user adds a rich text field") {
 			ObjectAdmin.openObjectAdmin();
 
-			ObjectPortlet.selectSystemObject(label = "Custom Object 186673");
+			ObjectPortlet.selectCustomObject(label = "Custom Object 198382");
 
+			CreateObject.saveObject();
+		}
+
+		task ("and Given a text field with translations and unique values enabled") {
 			ObjectAdmin.goToFieldsTab();
 
 			ObjectAdmin.addObjectFieldViaUI(
-				fieldLabel = "Custom Field",
-				fieldName = "customField",
+				acceptUniqueValuesOnly = "true",
+				enableEntryTranslations = "true",
+				fieldLabel = "Text Field",
 				fieldType = "Text");
 		}
 
-		task ("Then the field cannot be set as translatable") {
-			ObjectAdmin.goToFieldsDetails(label = "Custom Field");
+		task ("and Given an object entry with a translation") {
+			ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject198382");
 
-			AssertElementPresent(
-				key_fieldLabel = "Enable Entry Translation",
-				locator1 = "FormFields#FIELD_DISABLED_TEXT");
+			ObjectAdmin.goToCustomObject(objectName = "CustomObject198382");
+
+			ObjectField.addTranslatableTextEntryViaUI(
+				buttonFieldEntryLanguage = "en-us",
+				fieldLabel = "Text Field",
+				locale = "português (Brasil)",
+				mainEntryValue = "Entry",
+				translatedEntryValue = "Entrada");
+		}
+
+		task ("When the user attempts to add another object entry with the same translation") {
+			ObjectAdmin.goToCustomObject(objectName = "CustomObject198382");
+
+			LexiconEntry.gotoAdd();
+
+			Type(
+				key_fieldLabel = "Text Field",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = "Entry");
+
+			Button.clickSave();
+		}
+
+		task ("Then an error is displayed and the object entry isn't created") {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR",
+				value1 = "The Text Field is already in use. Please enter a unique Text Field.");
+
+			ObjectAdmin.goToCustomObject(objectName = "CustomObject198382");
+
+			AssertElementNotPresent(
+				key_tableCell = 2,
+				key_tableRow = 2,
+				key_tableValue = "Entry",
+				locator1 = "CreateObject#VIEW_ENTRY_FIELD_BY_INDEX");
 		}
 	}
 

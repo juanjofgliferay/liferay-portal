@@ -7,6 +7,7 @@ package com.liferay.object.internal.field.business.type;
 
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.exception.NoSuchObjectFieldException;
 import com.liferay.object.exception.NoSuchObjectRelationshipException;
 import com.liferay.object.exception.ObjectFieldSettingNameException;
@@ -55,7 +56,9 @@ public class AggregationObjectFieldBusinessType
 	@Override
 	public Set<String> getAllowedObjectFieldSettingsNames() {
 		return SetUtil.fromArray(
-			"filters", "function", "objectFieldName", "objectRelationshipName");
+			"filters", ObjectFieldSettingConstants.NAME_FUNCTION,
+			ObjectFieldSettingConstants.NAME_OBJECT_FIELD_NAME,
+			ObjectFieldSettingConstants.NAME_OBJECT_RELATIONSHIP_NAME);
 	}
 
 	@Override
@@ -85,8 +88,9 @@ public class AggregationObjectFieldBusinessType
 
 	@Override
 	public Map<String, Object> getProperties(
-		ObjectField objectField,
-		ObjectFieldRenderingContext objectFieldRenderingContext) {
+			ObjectField objectField,
+			ObjectFieldRenderingContext objectFieldRenderingContext)
+		throws PortalException {
 
 		return HashMapBuilder.<String, Object>put(
 			"readOnly", true
@@ -105,7 +109,14 @@ public class AggregationObjectFieldBusinessType
 		ObjectField objectField) {
 
 		return SetUtil.fromArray(
-			"function", "objectFieldName", "objectRelationshipName");
+			ObjectFieldSettingConstants.NAME_FUNCTION,
+			ObjectFieldSettingConstants.NAME_OBJECT_FIELD_NAME,
+			ObjectFieldSettingConstants.NAME_OBJECT_RELATIONSHIP_NAME);
+	}
+
+	@Override
+	public boolean isLocalizationSupported(ObjectField objectField) {
+		return false;
 	}
 
 	@Override
@@ -136,17 +147,22 @@ public class AggregationObjectFieldBusinessType
 		}
 
 		String function = GetterUtil.getString(
-			objectFieldSettingsValuesMap.get("function"));
+			objectFieldSettingsValuesMap.get(
+				ObjectFieldSettingConstants.NAME_FUNCTION));
 
 		Set<String> requiredObjectFieldSettingsNames =
 			getRequiredObjectFieldSettingsNames(objectField);
 
 		if (!ArrayUtil.contains(_FUNCTION, function)) {
 			throw new ObjectFieldSettingValueException.InvalidValue(
-				objectField.getName(), "function", function);
+				objectField.getName(),
+				ObjectFieldSettingConstants.NAME_FUNCTION, function);
 		}
-		else if (Objects.equals(function, "COUNT")) {
-			requiredObjectFieldSettingsNames.remove("objectFieldName");
+		else if (Objects.equals(
+					function, ObjectFieldSettingConstants.VALUE_COUNT)) {
+
+			requiredObjectFieldSettingsNames.remove(
+				ObjectFieldSettingConstants.NAME_OBJECT_FIELD_NAME);
 		}
 
 		Set<String> missingRequiredObjectFieldSettingsNames = new HashSet<>();
@@ -187,29 +203,36 @@ public class AggregationObjectFieldBusinessType
 					objectField.getObjectDefinitionId(),
 					GetterUtil.getString(
 						objectFieldSettingsValuesMap.get(
-							"objectRelationshipName")));
+							ObjectFieldSettingConstants.
+								NAME_OBJECT_RELATIONSHIP_NAME)));
 
 			ObjectDefinition objectDefinition =
 				_objectDefinitionLocalService.fetchObjectDefinition(
 					objectRelationship.getObjectDefinitionId2());
 
-			if (!Objects.equals(function, "COUNT")) {
+			if (!Objects.equals(
+					function, ObjectFieldSettingConstants.VALUE_COUNT)) {
+
 				ObjectField objectField1 =
-					_objectFieldLocalService.getObjectField(
+					_objectFieldLocalService.fetchObjectField(
 						objectDefinition.getObjectDefinitionId(),
 						GetterUtil.getString(
 							objectFieldSettingsValuesMap.get(
-								"objectFieldName")));
+								ObjectFieldSettingConstants.
+									NAME_OBJECT_FIELD_NAME)));
 
-				if (!ArrayUtil.contains(
+				if ((objectField1 != null) &&
+					!ArrayUtil.contains(
 						_NUMERIC_BUSINESS_TYPES,
 						objectField1.getBusinessType())) {
 
 					throw new ObjectFieldSettingValueException.InvalidValue(
-						objectField.getName(), "objectFieldName",
+						objectField.getName(),
+						ObjectFieldSettingConstants.NAME_OBJECT_FIELD_NAME,
 						GetterUtil.getString(
 							objectFieldSettingsValuesMap.get(
-								"objectFieldName")));
+								ObjectFieldSettingConstants.
+									NAME_OBJECT_FIELD_NAME)));
 				}
 			}
 
@@ -220,18 +243,23 @@ public class AggregationObjectFieldBusinessType
 		}
 		catch (NoSuchObjectFieldException noSuchObjectFieldException) {
 			throw new ObjectFieldSettingValueException.InvalidValue(
-				objectField.getName(), "objectFieldName",
+				objectField.getName(),
+				ObjectFieldSettingConstants.NAME_OBJECT_FIELD_NAME,
 				GetterUtil.getString(
-					objectFieldSettingsValuesMap.get("objectFieldName")),
+					objectFieldSettingsValuesMap.get(
+						ObjectFieldSettingConstants.NAME_OBJECT_FIELD_NAME)),
 				noSuchObjectFieldException);
 		}
 		catch (NoSuchObjectRelationshipException
 					noSuchObjectRelationshipException) {
 
 			throw new ObjectFieldSettingValueException.InvalidValue(
-				objectField.getName(), "objectRelationshipName",
+				objectField.getName(),
+				ObjectFieldSettingConstants.NAME_OBJECT_RELATIONSHIP_NAME,
 				GetterUtil.getString(
-					objectFieldSettingsValuesMap.get("objectRelationshipName")),
+					objectFieldSettingsValuesMap.get(
+						ObjectFieldSettingConstants.
+							NAME_OBJECT_RELATIONSHIP_NAME)),
 				noSuchObjectRelationshipException);
 		}
 		catch (PortalException portalException) {
@@ -270,11 +298,11 @@ public class AggregationObjectFieldBusinessType
 				objectDefinition.getObjectDefinitionId(),
 				GetterUtil.getString(objectFilter.getFilterBy()));
 
-			if ((objectField == null) ||
-				objectField.compareBusinessType(
+			if ((objectField != null) &&
+				(objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_AGGREGATION) ||
-				objectField.compareBusinessType(
-					ObjectFieldConstants.BUSINESS_TYPE_FORMULA)) {
+				 objectField.compareBusinessType(
+					 ObjectFieldConstants.BUSINESS_TYPE_FORMULA))) {
 
 				throw new ObjectFieldSettingValueException.InvalidValue(
 					objectFieldName, "filterBy",
@@ -293,7 +321,11 @@ public class AggregationObjectFieldBusinessType
 	}
 
 	private static final String[] _FUNCTION = {
-		"AVERAGE", "COUNT", "MAX", "MIN", "SUM"
+		ObjectFieldSettingConstants.VALUE_AVERAGE,
+		ObjectFieldSettingConstants.VALUE_COUNT,
+		ObjectFieldSettingConstants.VALUE_MAX,
+		ObjectFieldSettingConstants.VALUE_MIN,
+		ObjectFieldSettingConstants.VALUE_SUM
 	};
 
 	private static final String[] _NUMERIC_BUSINESS_TYPES = {

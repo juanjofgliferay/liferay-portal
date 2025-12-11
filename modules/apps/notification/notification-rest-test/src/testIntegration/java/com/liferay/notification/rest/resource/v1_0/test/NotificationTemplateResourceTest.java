@@ -5,18 +5,40 @@
 
 package com.liferay.notification.rest.resource.v1_0.test;
 
+import com.liferay.account.constants.AccountRoleConstants;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.notification.constants.NotificationConstants;
 import com.liferay.notification.constants.NotificationRecipientConstants;
+import com.liferay.notification.constants.NotificationRecipientSettingConstants;
+import com.liferay.notification.constants.NotificationTemplateConstants;
 import com.liferay.notification.rest.client.dto.v1_0.NotificationTemplate;
+import com.liferay.notification.rest.resource.v1_0.NotificationTemplateResource;
+import com.liferay.notification.service.NotificationTemplateLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.odata.entity.EntityField;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 /**
  * @author Gabriel Albuquerque
@@ -78,6 +100,72 @@ public class NotificationTemplateResourceTest
 	@Override
 	@Test
 	public void testGraphQLGetNotificationTemplatesPage() throws Exception {
+	}
+
+	@Override
+	@Test
+	public void testPostNotificationTemplate() throws Exception {
+		super.testPostNotificationTemplate();
+
+		// Notification template recipient type email
+
+		_testPostNotificationTemplate(
+			JSONUtil.put(
+				"to", JSONUtil.put("en_US", RandomTestUtil.randomString())
+			).put(
+				"toType", NotificationRecipientConstants.TYPE_EMAIL
+			));
+
+		// Notification template recipient type role
+
+		_testPostNotificationTemplate(
+			JSONUtil.put(
+				"to",
+				JSONUtil.putAll(
+					JSONUtil.put(
+						NotificationRecipientSettingConstants.NAME_ROLE_NAME,
+						AccountRoleConstants.
+							REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR),
+					JSONUtil.put(
+						NotificationRecipientSettingConstants.NAME_ROLE_NAME,
+						AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MEMBER),
+					JSONUtil.put(
+						NotificationRecipientSettingConstants.NAME_ROLE_NAME,
+						RoleConstants.ORGANIZATION_ADMINISTRATOR),
+					JSONUtil.put(
+						NotificationRecipientSettingConstants.NAME_ROLE_NAME,
+						RoleConstants.ORGANIZATION_OWNER))
+			).put(
+				"toType", NotificationRecipientConstants.TYPE_ROLE
+			));
+
+		// Notification template recipient type subscribers
+
+		_testPostNotificationTemplate(
+			JSONUtil.put(
+				"toType", NotificationRecipientConstants.TYPE_SUBSCRIBERS));
+	}
+
+	@Override
+	@Test
+	public void testPostNotificationTemplateCopy() throws Exception {
+		super.testPostNotificationTemplateCopy();
+
+		NotificationTemplate systemNotificationTemplate =
+			randomNotificationTemplate();
+
+		systemNotificationTemplate.setSystem(true);
+
+		systemNotificationTemplate = _addNotificationTemplate(
+			systemNotificationTemplate);
+
+		Assert.assertTrue(systemNotificationTemplate.getSystem());
+
+		NotificationTemplate notificationTemplate =
+			notificationTemplateResource.postNotificationTemplateCopy(
+				systemNotificationTemplate.getId());
+
+		Assert.assertFalse(notificationTemplate.getSystem());
 	}
 
 	@Override
@@ -194,8 +282,78 @@ public class NotificationTemplateResourceTest
 			NotificationTemplate notificationTemplate)
 		throws Exception {
 
-		return notificationTemplateResource.postNotificationTemplate(
-			notificationTemplate);
+		notificationTemplate =
+			notificationTemplateResource.postNotificationTemplate(
+				notificationTemplate);
+
+		_notificationTemplates.add(
+			_notificationTemplateLocalService.fetchNotificationTemplate(
+				notificationTemplate.getId()));
+
+		return notificationTemplate;
 	}
+
+	private void _testPostNotificationTemplate(JSONObject recipientJSONObject)
+		throws Exception {
+
+		recipientJSONObject.put(
+			"from", RandomTestUtil.randomString()
+		).put(
+			"fromName", JSONUtil.put("en_US", RandomTestUtil.randomString())
+		);
+
+		JSONObject notificationTemplateJSONObject = JSONUtil.put(
+			"editorType", NotificationTemplateConstants.EDITOR_TYPE_RICH_TEXT
+		).put(
+			"name", RandomTestUtil.randomString()
+		).put(
+			"recipients", JSONUtil.putAll(recipientJSONObject)
+		).put(
+			"subject",
+			JSONUtil.put(
+				LocaleUtil.toLanguageId(LocaleUtil.getDefault()),
+				RandomTestUtil.randomString())
+		).put(
+			"type", NotificationConstants.TYPE_EMAIL
+		);
+
+		JSONAssert.assertEquals(
+			recipientJSONObject.toString(),
+			JSONUtil.getValueAsString(
+				HTTPTestUtil.invokeToJSONObject(
+					notificationTemplateJSONObject.toString(),
+					"notification/v1.0/notification-templates",
+					Http.Method.POST),
+				"JSONArray/recipients", "JSONObject/0"),
+			JSONCompareMode.NON_EXTENSIBLE);
+
+		NotificationTemplateResource.Builder
+			notificationTemplateResourceBuilder =
+				_notificationTemplateResourceFactory.create();
+
+		NotificationTemplateResource notificationTemplateResource =
+			notificationTemplateResourceBuilder.user(
+				TestPropsValues.getUser()
+			).build();
+
+		Assert.assertNotNull(
+			notificationTemplateResource.postNotificationTemplate(
+				com.liferay.notification.rest.dto.v1_0.NotificationTemplate.
+					toDTO(notificationTemplateJSONObject.toString())));
+	}
+
+	@Inject
+	private JSONFactory _jsonFactory;
+
+	@Inject
+	private NotificationTemplateLocalService _notificationTemplateLocalService;
+
+	@Inject
+	private NotificationTemplateResource.Factory
+		_notificationTemplateResourceFactory;
+
+	@DeleteAfterTestRun
+	private List<com.liferay.notification.model.NotificationTemplate>
+		_notificationTemplates = new ArrayList<>();
 
 }

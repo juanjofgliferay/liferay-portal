@@ -42,7 +42,6 @@ import ${apiPackagePath}.model.${entity.name}Soap;
 	<#assign versionEntity = entity.versionEntity />
 
 	import ${apiPackagePath}.model.${versionEntity.name};
-
 <#elseif entity.versionedEntity??>
 	<#assign versionedEntity = entity.versionedEntity />
 
@@ -54,7 +53,9 @@ import ${apiPackagePath}.service.${entity.name}LocalServiceUtil;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -62,6 +63,7 @@ import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ContainerModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.User;
@@ -81,6 +83,8 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
@@ -208,6 +212,26 @@ public class ${entity.name}ModelImpl extends BaseModelImpl<${entity.name}> imple
 	</#list>
 
 	public static final String ORDER_BY_SQL = " ORDER BY ${orderBySQL}";
+
+	<#if entity.isPermissionCheckEnabled() && serviceBuilder.isVersionGTE_7_4_0()>
+		<#assign orderBySQLInlineDistinct = "" />
+
+		<#list orderList as order>
+			<#assign orderBySQLInlineDistinct = orderBySQLInlineDistinct + entity.alias + "." + order.DBName />
+
+			<#if order.isOrderByAscending()>
+				<#assign orderBySQLInlineDistinct = orderBySQLInlineDistinct + " ASC" />
+			<#else>
+				<#assign orderBySQLInlineDistinct = orderBySQLInlineDistinct + " DESC" />
+			</#if>
+
+			<#if order_has_next>
+				<#assign orderBySQLInlineDistinct = orderBySQLInlineDistinct + ", " />
+			</#if>
+		</#list>
+
+		public static final String ORDER_BY_SQL_INLINE_DISTINCT = " ORDER BY ${orderBySQLInlineDistinct}";
+	</#if>
 
 	public static final String DATA_SOURCE = "${entity.dataSource}";
 
@@ -1083,6 +1107,7 @@ public class ${entity.name}ModelImpl extends BaseModelImpl<${entity.name}> imple
 			variableName = serviceBuilder.getVariableName(cacheField)
 			methodName = serviceBuilder.getCacheFieldMethodName(cacheField)
 			typeGenericsName = serviceBuilder.getTypeGenericsName(cacheField.getType())
+			typeWrapperName = serviceBuilder.getPrimitiveObj(typeGenericsName)
 		/>
 
 		<#if !stringUtil.equals(methodName, "DefaultLanguageId")>
@@ -1757,12 +1782,14 @@ public class ${entity.name}ModelImpl extends BaseModelImpl<${entity.name}> imple
 		</#list>
 
 		<#list cacheFields as cacheField>
-			<#assign
-				variableName = serviceBuilder.getVariableName(cacheField)
-				methodName = serviceBuilder.getCacheFieldMethodName(cacheField)
-			/>
+			<#if !serviceBuilder.isCacheFieldPermanent(cacheField)>
+				<#assign
+					variableName = serviceBuilder.getVariableName(cacheField)
+					methodName = serviceBuilder.getCacheFieldMethodName(cacheField)
+				/>
 
-			set${methodName}(null);
+				set${methodName}(null);
+			</#if>
 		</#list>
 
 		<#if columnBitmaskEnabled>
@@ -1813,13 +1840,26 @@ public class ${entity.name}ModelImpl extends BaseModelImpl<${entity.name}> imple
 			</#if>
 		</#list>
 
-		<#list cacheFields as cacheField>
-			<#assign methodName = serviceBuilder.getCacheFieldMethodName(cacheField) />
+		<#if cacheFields?size != 0>
+			try {
+				<#list cacheFields as cacheField>
+					<#assign
+						methodName = serviceBuilder.getCacheFieldMethodName(cacheField)
+						typeGenericsName = serviceBuilder.getTypeGenericsName(cacheField.getType())
+						variableName = serviceBuilder.getVariableName(cacheField)
+					/>
 
-			set${methodName}(null);
+					<#if !serviceBuilder.isCacheFieldPermanent(cacheField)>
+						set${methodName}(null);
+					</#if>
 
-			${entity.variableName}CacheModel.${cacheField.name} = get${methodName}();
-		</#list>
+					${entity.variableName}CacheModel.${variableName} = (${typeGenericsName})_${variableName}MethodHandle.invokeExact((${entity.name}Impl)this);
+				</#list>
+			}
+			catch (Throwable throwable) {
+				ReflectionUtil.throwException(throwable);
+			}
+		</#if>
 
 		return ${entity.variableName}CacheModel;
 	}
@@ -1978,7 +2018,7 @@ public class ${entity.name}ModelImpl extends BaseModelImpl<${entity.name}> imple
 
 	<#list entity.databaseRegularEntityColumns as entityColumn>
 		<#if stringUtil.equals(entityColumn.type, "Blob") && entityColumn.lazy>
-			private ${entity.name}${entityColumn.methodName}BlobModel _${entityColumn.name}BlobModel;
+			private transient ${entity.name}${entityColumn.methodName}BlobModel _${entityColumn.name}BlobModel;
 		<#else>
 			private ${entityColumn.genericizedType} _${entityColumn.name};
 
@@ -2090,6 +2130,47 @@ public class ${entity.name}ModelImpl extends BaseModelImpl<${entity.name}> imple
 		</#if>
 
 		private long _columnBitmask;
+	</#if>
+
+	<#list cacheFields as cacheField>
+		<#assign
+			typeWrapperName = serviceBuilder.getPrimitiveObj(serviceBuilder.getTypeGenericsName(cacheField.getType()))
+			variableName = serviceBuilder.getVariableName(cacheField)
+		/>
+
+		protected static final BiConsumer<${entity.name}, ${typeWrapperName}> ${variableName}UpdateEntityCacheBiConsumer = (${entity.variableName}, ${variableName}) -> {
+			${entity.name}CacheModel ${entity.variableName}CacheModel =
+				EntityCacheUtil.fetchCacheModel(${entity.name}Impl.class, ${entity.variableName}.getPrimaryKey(), ${entity.name}CacheModel.class);
+
+			if ((${entity.variableName}CacheModel != null)
+				<#if entity.isMvccEnabled()>
+					&& (${entity.variableName}CacheModel.getMvccVersion() == ${entity.variableName}.getMvccVersion())
+				</#if>
+			) {
+				${entity.variableName}CacheModel.${variableName} = ${variableName};
+			}
+		};
+
+		private static final MethodHandle _${variableName}MethodHandle;
+	</#list>
+
+	<#if cacheFields?size != 0>
+		static {
+			MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+			try {
+				<#list cacheFields as cacheField>
+					<#assign
+						variableName = serviceBuilder.getVariableName(cacheField)
+					/>
+
+					_${variableName}MethodHandle = lookup.findGetter(${entity.name}Impl.class, "${cacheField.name}", ${cacheField.type.canonicalName}.class);
+				</#list>
+			}
+			catch (ReflectiveOperationException reflectiveOperationException) {
+				throw new ExceptionInInitializerError(reflectiveOperationException);
+			}
+		}
 	</#if>
 
 	private ${entity.name} _escapedModel;

@@ -19,7 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.gradle.api.UncheckedIOException;
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.SourceSet;
 
 /**
@@ -30,7 +32,15 @@ public class FileUtil extends com.liferay.gradle.util.FileUtil {
 	public static File getJavaClassesDir(SourceSet sourceSet) {
 		SourceDirectorySet sourceDirectorySet = sourceSet.getJava();
 
-		return sourceDirectorySet.getOutputDir();
+		Provider<Directory> provider = sourceDirectorySet.getClassesDirectory();
+
+		Directory directory = provider.getOrNull();
+
+		if (directory == null) {
+			return null;
+		}
+
+		return directory.getAsFile();
 	}
 
 	public static List<String> getRelativePaths(
@@ -101,11 +111,7 @@ public class FileUtil extends com.liferay.gradle.util.FileUtil {
 			return false;
 		}
 
-		if (excludes.contains(dirName)) {
-			return true;
-		}
-
-		return false;
+		return excludes.contains(dirName);
 	}
 
 	private static void _moveTree(

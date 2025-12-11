@@ -7,6 +7,7 @@ package com.liferay.commerce.discount.service;
 
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -46,6 +47,14 @@ public class CommerceDiscountRelServiceUtil {
 		throws PortalException {
 
 		getService().deleteCommerceDiscountRel(commerceDiscountRelId);
+	}
+
+	public static CommerceDiscountRel fetchCommerceDiscountRel(
+			long commerceDiscountId, String className, long classPK)
+		throws PortalException {
+
+		return getService().fetchCommerceDiscountRel(
+			commerceDiscountId, className, classPK);
 	}
 
 	public static CommerceDiscountRel fetchCommerceDiscountRel(
@@ -170,13 +179,12 @@ public class CommerceDiscountRelServiceUtil {
 	}
 
 	public static CommerceDiscountRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceDiscountRelService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceDiscountRelService _service;
+	private static final Snapshot<CommerceDiscountRelService> _serviceSnapshot =
+		new Snapshot<>(
+			CommerceDiscountRelServiceUtil.class,
+			CommerceDiscountRelService.class);
 
 }

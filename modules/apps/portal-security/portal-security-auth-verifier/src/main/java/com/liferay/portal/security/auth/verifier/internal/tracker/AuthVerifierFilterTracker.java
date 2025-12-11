@@ -18,22 +18,23 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.servlet.filters.authverifier.AuthVerifierFilter;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -56,6 +57,8 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 		"default.registration.property=filter.init.auth.verifier.PortalSessionAuthVerifier.urls.includes=*",
 		"default.registration.property=filter.init.guest.allowed=true",
 		"default.remote.access.filter.service.ranking:Integer=-10",
+		"default.whiteboard.property=" + HttpWhiteboardConstants.HTTP_WHITEBOARD_FILTER_DISPATCHER + "=" + HttpWhiteboardConstants.DISPATCHER_FORWARD,
+		"default.whiteboard.property=" + HttpWhiteboardConstants.HTTP_WHITEBOARD_FILTER_DISPATCHER + "=" + HttpWhiteboardConstants.DISPATCHER_REQUEST,
 		"default.whiteboard.property=" + HttpWhiteboardConstants.HTTP_WHITEBOARD_FILTER_SERVLET + "=cxf-servlet",
 		"servlet.context.helper.select.filter=(!(liferay.auth.verifier=false))"
 	},
@@ -123,7 +126,18 @@ public class AuthVerifierFilterTracker {
 				propertyValue = property.substring(index + 1);
 			}
 
-			dictionary.put(propertyKey, propertyValue);
+			Object existingPropertyValue = dictionary.get(propertyKey);
+
+			if (existingPropertyValue != null) {
+				List<String> strings = StringUtil.asList(existingPropertyValue);
+
+				strings.add(propertyValue);
+
+				dictionary.put(propertyKey, strings);
+			}
+			else {
+				dictionary.put(propertyKey, propertyValue);
+			}
 		}
 
 		return dictionary;

@@ -26,6 +26,8 @@ public interface Build {
 
 	public void addInvocation(Invocation invocation);
 
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL);
+
 	public void addTimelineData(TimelineData timelineData);
 
 	public void archive();
@@ -50,6 +52,8 @@ public interface Build {
 
 	public String getBranchName();
 
+	public BuildDatabase getBuildDatabase();
+
 	public String getBuildDescription();
 
 	public String getBuildDirPath();
@@ -63,6 +67,8 @@ public interface Build {
 	public int getBuildNumber();
 
 	public Job.BuildProfile getBuildProfile();
+
+	public JSONObject getBuildReportJSONObject();
 
 	public String getBuildURL();
 
@@ -85,8 +91,6 @@ public interface Build {
 	public Element getGitHubMessageBuildAnchorElement();
 
 	public Element getGitHubMessageElement();
-
-	public Element getGitHubMessageUpstreamJobFailureElement();
 
 	public Map<String, String> getInjectedEnvironmentVariablesMap()
 		throws IOException;
@@ -149,7 +153,7 @@ public interface Build {
 
 	public List<URL> getTestrayAttachmentURLs();
 
-	public List<URL> getTestrayS3AttachmentURLs();
+	public String getTestrayBuildDateString();
 
 	public JSONObject getTestReportJSONObject(boolean checkCache);
 
@@ -173,6 +177,10 @@ public interface Build {
 
 	public boolean hasMaximumInvocationCount();
 
+	public boolean isBuildCached();
+
+	public boolean isBuildCachingEnabled();
+
 	public boolean isBuildModified();
 
 	public boolean isCompareToUpstream();
@@ -191,9 +199,13 @@ public interface Build {
 
 	public void reset();
 
+	public void saveBuildURLInBuildDatabase();
+
 	public void setArchiveName(String archiveName);
 
 	public void setArchiveRootDir(File archiveRootDir);
+
+	public void setBuildCached(boolean buildCached);
 
 	public void setBuildURL(String buildURL);
 
@@ -226,6 +238,8 @@ public interface Build {
 		public String getSenderBranchName();
 
 		public String getSenderBranchSHA();
+
+		public String getSenderBranchSHAShort();
 
 		public RemoteGitRef getSenderRemoteGitRef();
 
@@ -275,6 +289,10 @@ public interface Build {
 			return _queueId;
 		}
 
+		public ReinvokeRule getReinvokeRule() {
+			return _reinvokeRule;
+		}
+
 		public void setBuildURL(String buildURL) {
 			_buildURL = buildURL;
 		}
@@ -287,10 +305,15 @@ public interface Build {
 			_queueId = queueId;
 		}
 
+		public void setReinvokeRule(ReinvokeRule reinvokeRule) {
+			_reinvokeRule = reinvokeRule;
+		}
+
 		private final Build _build;
 		private String _buildURL;
 		private JenkinsMaster _jenkinsMaster;
 		private long _queueId;
+		private ReinvokeRule _reinvokeRule;
 
 	}
 

@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,87 +49,132 @@ public class RelatedContent implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(RelatedContent.class, json);
 	}
 
-	@Schema(description = "The type of the content.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The type of the content."
+	)
 	public String getContentType() {
+		if (_contentTypeSupplier != null) {
+			contentType = _contentTypeSupplier.get();
+
+			_contentTypeSupplier = null;
+		}
+
 		return contentType;
 	}
 
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
+
+		_contentTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentType(
 		UnsafeSupplier<String, Exception> contentTypeUnsafeSupplier) {
 
-		try {
-			contentType = contentTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentTypeSupplier = () -> {
+			try {
+				return contentTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The type of the content.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentType;
 
-	@Schema(description = "The identifier of the resource.")
+	@JsonIgnore
+	private Supplier<String> _contentTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The identifier of the resource."
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The identifier of the resource.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema(description = "The title of the content.")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The title of the content."
+	)
 	public String getTitle() {
+		if (_titleSupplier != null) {
+			title = _titleSupplier.get();
+
+			_titleSupplier = null;
+		}
+
 		return title;
 	}
 
 	public void setTitle(String title) {
 		this.title = title;
+
+		_titleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTitle(
 		UnsafeSupplier<String, Exception> titleUnsafeSupplier) {
 
-		try {
-			title = titleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_titleSupplier = () -> {
+			try {
+				return titleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The title of the content.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String title;
+
+	@JsonIgnore
+	private Supplier<String> _titleSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -159,6 +203,8 @@ public class RelatedContent implements Serializable {
 
 		sb.append("{");
 
+		String contentType = getContentType();
+
 		if (contentType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -173,6 +219,8 @@ public class RelatedContent implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -182,6 +230,8 @@ public class RelatedContent implements Serializable {
 
 			sb.append(id);
 		}
+
+		String title = getTitle();
 
 		if (title != null) {
 			if (sb.length() > 1) {
@@ -202,8 +252,8 @@ public class RelatedContent implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.RelatedContent",
 		name = "x-class-name"
 	)
@@ -249,7 +299,10 @@ public class RelatedContent implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

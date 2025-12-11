@@ -166,7 +166,7 @@
 
 <tr>
 	<td>TOOLBAR_ANY_ITEM_BUTTON</td>
-	<td>//a[contains(@href,"${key_titleName}")]</td>
+	<td>//div[contains(@class, 'cke_balloontoolbar')]//a[contains(@href,"${key_titleName}")]</td>
 	<td></td>
 </tr>
 <tr>
@@ -334,6 +334,14 @@
 <tr>
 	<td>SOURCE_CODE_DIALOG</td>
 	<td>//*[contains(@class,'cke_dialog_contents')]//*[contains(@class,'CodeMirror-wrap')]</td>
+	<td></td>
+</tr>
+
+<!--MODAL-->
+
+<tr>
+	<td>MODAL_INPUT</td>
+	<td>//div[label[contains(.,'${key_text}')]]//input[contains(@class, 'cke_dialog_ui')]</td>
 	<td></td>
 </tr>
 </tbody>

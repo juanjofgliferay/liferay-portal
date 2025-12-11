@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,115 +48,167 @@ public class InnerHit implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(InnerHit.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public InnerCollapse getInnerCollapse() {
+		if (_innerCollapseSupplier != null) {
+			innerCollapse = _innerCollapseSupplier.get();
+
+			_innerCollapseSupplier = null;
+		}
+
 		return innerCollapse;
 	}
 
 	public void setInnerCollapse(InnerCollapse innerCollapse) {
 		this.innerCollapse = innerCollapse;
+
+		_innerCollapseSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInnerCollapse(
 		UnsafeSupplier<InnerCollapse, Exception> innerCollapseUnsafeSupplier) {
 
-		try {
-			innerCollapse = innerCollapseUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_innerCollapseSupplier = () -> {
+			try {
+				return innerCollapseUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected InnerCollapse innerCollapse;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<InnerCollapse> _innerCollapseSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getSize() {
+		if (_sizeSupplier != null) {
+			size = _sizeSupplier.get();
+
+			_sizeSupplier = null;
+		}
+
 		return size;
 	}
 
 	public void setSize(Integer size) {
 		this.size = size;
+
+		_sizeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSize(UnsafeSupplier<Integer, Exception> sizeUnsafeSupplier) {
-		try {
-			size = sizeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sizeSupplier = () -> {
+			try {
+				return sizeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer size;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _sizeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object[] getSorts() {
+		if (_sortsSupplier != null) {
+			sorts = _sortsSupplier.get();
+
+			_sortsSupplier = null;
+		}
+
 		return sorts;
 	}
 
 	public void setSorts(Object[] sorts) {
 		this.sorts = sorts;
+
+		_sortsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSorts(
 		UnsafeSupplier<Object[], Exception> sortsUnsafeSupplier) {
 
-		try {
-			sorts = sortsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sortsSupplier = () -> {
+			try {
+				return sortsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object[] sorts;
+
+	@JsonIgnore
+	private Supplier<Object[]> _sortsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -186,6 +237,8 @@ public class InnerHit implements Serializable {
 
 		sb.append("{");
 
+		InnerCollapse innerCollapse = getInnerCollapse();
+
 		if (innerCollapse != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -195,6 +248,8 @@ public class InnerHit implements Serializable {
 
 			sb.append(String.valueOf(innerCollapse));
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -210,6 +265,8 @@ public class InnerHit implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer size = getSize();
+
 		if (size != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -219,6 +276,8 @@ public class InnerHit implements Serializable {
 
 			sb.append(size);
 		}
+
+		Object[] sorts = getSorts();
 
 		if (sorts != null) {
 			if (sb.length() > 1) {
@@ -249,8 +308,8 @@ public class InnerHit implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.InnerHit",
 		name = "x-class-name"
 	)
@@ -296,7 +355,10 @@ public class InnerHit implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -5,16 +5,18 @@
 
 package com.liferay.commerce.product.definitions.web.internal.option;
 
+import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.option.CommerceOptionType;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductOption;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
@@ -22,12 +24,13 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.PrintWriter;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,17 +41,15 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"commerce.option.type.display.order:Integer=700",
-		"commerce.option.type.key=" + CheckboxCommerceOptionTypeImpl.KEY
+		"commerce.option.type.key=" + CPConstants.PRODUCT_OPTION_CHECKBOX_KEY
 	},
 	service = CommerceOptionType.class
 )
 public class CheckboxCommerceOptionTypeImpl implements CommerceOptionType {
 
-	public static final String KEY = "checkbox";
-
 	@Override
 	public String getKey() {
-		return KEY;
+		return CPConstants.PRODUCT_OPTION_CHECKBOX_KEY;
 	}
 
 	@Override
@@ -59,6 +60,17 @@ public class CheckboxCommerceOptionTypeImpl implements CommerceOptionType {
 	@Override
 	public boolean hasValues() {
 		return false;
+	}
+
+	@Override
+	public boolean isValid(
+		CPDefinitionOptionRel cpDefinitionOptionRel, String[] values) {
+
+		if (ArrayUtil.isEmpty(values) || Validator.isBlank(values[0])) {
+			return true;
+		}
+
+		return Objects.equals(values[0], cpDefinitionOptionRel.getKey());
 	}
 
 	@Override
@@ -77,9 +89,6 @@ public class CheckboxCommerceOptionTypeImpl implements CommerceOptionType {
 
 		printWriter.write("<div>");
 
-		String moduleName = _npmResolver.resolveModuleName(
-			"commerce-frontend-js");
-
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
@@ -88,8 +97,7 @@ public class CheckboxCommerceOptionTypeImpl implements CommerceOptionType {
 
 		_reactRenderer.renderReact(
 			new ComponentDescriptor(
-				moduleName +
-					"/components/product_options/ProductOptionCheckbox"),
+				"{ProductOptionCheckbox} from commerce-frontend-js"),
 			HashMapBuilder.<String, Object>put(
 				"componentId", StringUtil.randomId()
 			).put(
@@ -115,9 +123,6 @@ public class CheckboxCommerceOptionTypeImpl implements CommerceOptionType {
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

@@ -10,10 +10,19 @@
 <%
 String tabs3 = ParamUtil.getString(request, "tabs3", "new-export-process");
 
+String redirect = ParamUtil.getString(request, "redirect");
+
+if (Validator.isNotNull(redirect)) {
+	portletDisplay.setShowBackIcon(true);
+	portletDisplay.setURLBack(redirect);
+}
+
 PortletURL portletURL = PortletURLBuilder.createRenderURL(
 	renderResponse
 ).setMVCRenderCommandName(
 	"/export_import/export_import"
+).setRedirect(
+	redirect
 ).setPortletResource(
 	portletResource
 ).buildPortletURL();
@@ -67,6 +76,7 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 			<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.EXPORT %>" />
 			<portlet:param name="tabs2" value="export" />
 			<portlet:param name="tabs3" value="current-and-previous" />
+			<portlet:param name="redirect" value="<%= redirect %>" />
 			<portlet:param name="portletResource" value="<%= portletResource %>" />
 		</liferay-portlet:renderURL>
 
@@ -112,10 +122,34 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 
 													<aui:input label="configuration" name="<%= rootControlId %>" type="checkbox" value="<%= true %>" />
 
+													<ul class="hide" id="<portlet:namespace />showChangeConfiguration_<%= selPortlet.getRootPortletId() %>">
+														<li>
+															<span class="selected-labels" id="<portlet:namespace />selectedConfiguration_<%= selPortlet.getRootPortletId() %>"></span>
+
+															<clay:button
+																cssClass="configuration-link modify-link pr-1"
+																data-portletid="<%= selPortlet.getRootPortletId() %>"
+																displayType="link"
+																label="change"
+															/>
+
+															<span id="<portlet:namespace />rightConfigurationArrow_<%= selPortlet.getRootPortletId() %>">
+																<clay:icon
+																	symbol="angle-right-small"
+																/>
+															</span>
+															<span class="hide" id="<portlet:namespace />downConfigurationArrow_<%= selPortlet.getRootPortletId() %>">
+																<clay:icon
+																	symbol="angle-down-small"
+																/>
+															</span>
+														</li>
+													</ul>
+
 													<div class="hide" id="<portlet:namespace />configuration_<%= selPortlet.getRootPortletId() %>">
 														<ul class="lfr-tree list-unstyled">
 															<li class="tree-item">
-																<aui:fieldset cssClass="portlet-type-data-section" label="configuration">
+																<aui:fieldset cssClass="portlet-type-data-section" id="configuration">
 																	<ul class="lfr-tree list-unstyled">
 
 																		<%
@@ -132,25 +166,6 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 															</li>
 														</ul>
 													</div>
-
-													<ul class="hide" id="<portlet:namespace />showChangeConfiguration_<%= selPortlet.getRootPortletId() %>">
-														<li>
-															<span class="selected-labels" id="<portlet:namespace />selectedConfiguration_<%= selPortlet.getRootPortletId() %>"></span>
-
-															<aui:a
-																cssClass="configuration-link modify-link"
-																data='<%=
-																	HashMapBuilder.<String, Object>put(
-																		"portletid", selPortlet.getRootPortletId()
-																	).build()
-																%>'
-																href="javascript:void(0);"
-																label="change"
-																method="get"
-																role="button"
-															/>
-														</li>
-													</ul>
 
 													<aui:script>
 														Liferay.Util.toggleBoxes(
@@ -185,7 +200,7 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 								%>
 
 								<c:if test="<%= (exportModelCount != 0) || (modelDeletionCount != 0) || (startDate != null) || (endDate != null) %>">
-									<aui:fieldset collapsible="<%= true %>" cssClass="options-group" label="content">
+									<aui:fieldset collapsible="<%= true %>" cssClass="options-group" id="content">
 										<ul class="lfr-tree list-unstyled select-options">
 											<li class="tree-item">
 												<div id="<portlet:namespace />range">
@@ -335,10 +350,35 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 															%>
 
 															<c:if test="<%= ArrayUtil.isNotEmpty(exportControls) || ArrayUtil.isNotEmpty(metadataControls) %>">
+																<ul id="<portlet:namespace />showChangeContent_<%= selPortlet.getRootPortletId() %>">
+																	<li>
+																		<span class="selected-labels" id="<portlet:namespace />selectedContent_<%= selPortlet.getRootPortletId() %>"></span>
+
+																		<clay:button
+																			cssClass="content-link modify-link pr-1"
+																			data-portletid="<%= selPortlet.getRootPortletId() %>"
+																			displayType="link"
+																			id='<%= liferayPortletResponse.getNamespace() + "contentLink_" + selPortlet.getRootPortletId() %>'
+																			label="change"
+																		/>
+
+																		<span id="<portlet:namespace />rightContentArrow_<%= selPortlet.getRootPortletId() %>">
+																			<clay:icon
+																				symbol="angle-right-small"
+																			/>
+																		</span>
+																		<span class="hide" id="<portlet:namespace />downContentArrow_<%= selPortlet.getRootPortletId() %>">
+																			<clay:icon
+																				symbol="angle-down-small"
+																			/>
+																		</span>
+																	</li>
+																</ul>
+
 																<div class="hide" id="<portlet:namespace />content_<%= selPortlet.getRootPortletId() %>">
 																	<ul class="lfr-tree list-unstyled">
 																		<li class="tree-item">
-																			<aui:fieldset cssClass="portlet-type-data-section" label="content">
+																			<aui:fieldset cssClass="portlet-type-data-section" id="content">
 																				<c:if test="<%= exportControls != null %>">
 
 																					<%
@@ -389,26 +429,6 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 																	</ul>
 																</div>
 
-																<ul id="<portlet:namespace />showChangeContent_<%= selPortlet.getRootPortletId() %>">
-																	<li>
-																		<span class="selected-labels" id="<portlet:namespace />selectedContent_<%= selPortlet.getRootPortletId() %>"></span>
-
-																		<aui:a
-																			cssClass="content-link modify-link"
-																			data='<%=
-																				HashMapBuilder.<String, Object>put(
-																					"portletid", selPortlet.getRootPortletId()
-																				).build()
-																			%>'
-																			href="javascript:void(0);"
-																			id='<%= "contentLink_" + selPortlet.getRootPortletId() %>'
-																			label="change"
-																			method="get"
-																			role="button"
-																		/>
-																	</li>
-																</ul>
-
 																<aui:script>
 																	Liferay.Util.toggleBoxes(
 																		'<portlet:namespace /><%= PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE + selPortlet.getRootPortletId() %>',
@@ -420,10 +440,38 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 													</ul>
 
 													<ul>
-														<aui:fieldset cssClass="content-options" label="for-each-of-the-selected-content-types,-export-their">
+														<liferay-util:buffer
+															var="selectedContentOptionsLabel"
+														>
+															<liferay-ui:message key="for-each-of-the-selected-content-types,-export-their" />
+
+															<span aria-label="<%= LanguageUtil.get(request, "comments-associated-to-object-entries-are-currently-excluded-from-the-export") %>" class="lfr-portal-tooltip ml-1" title="<%= LanguageUtil.get(request, "comments-associated-to-object-entries-are-currently-excluded-from-the-export") %>">
+																<clay:icon
+																	symbol="question-circle-full"
+																/>
+															</span>
+														</liferay-util:buffer>
+
+														<aui:fieldset cssClass="content-options" label="<%= selectedContentOptionsLabel %>">
 															<span class="selected-labels" id="<portlet:namespace />selectedContentOptions"></span>
 
-															<aui:a cssClass="modify-link options-link" href="javascript:void(0);" id="contentOptionsLink" label="change" method="get" role="button" />
+															<clay:button
+																cssClass="modify-link options-link pr-1"
+																displayType="link"
+																id='<%= liferayPortletResponse.getNamespace() + "contentOptionsLink" %>'
+																label="change"
+															/>
+
+															<span id="<portlet:namespace />rightContentOptionsArrow">
+																<clay:icon
+																	symbol="angle-right-small"
+																/>
+															</span>
+															<span class="hide" id="<portlet:namespace />downContentOptionsArrow">
+																<clay:icon
+																	symbol="angle-down-small"
+																/>
+															</span>
 
 															<div class="hide" id="<portlet:namespace />contentOptions">
 																<ul class="lfr-tree list-unstyled">
@@ -459,14 +507,32 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 							</c:if>
 						</div>
 					</div>
+
+					<c:choose>
+						<c:when test='<%= FeatureFlagManagerUtil.isEnabled(company.getCompanyId(), "LPD-57655") %>'>
+							<aui:button-row cssClass="sheet-footer">
+								<aui:button type="submit" value="export" />
+
+								<clay:link
+									cssClass="btn btn-secondary"
+									href="<%= redirect %>"
+									label='<%= LanguageUtil.get(request, "cancel") %>'
+									role="button"
+								/>
+							</aui:button-row>
+						</c:when>
+					</c:choose>
 				</clay:container-fluid>
 			</div>
 
-			<aui:button-row>
-				<aui:button type="submit" value="export" />
-
-				<aui:button type="cancel" />
-			</aui:button-row>
+			<c:choose>
+				<c:when test='<%= !FeatureFlagManagerUtil.isEnabled(company.getCompanyId(), "LPD-57655") %>'>
+					<aui:button-row>
+						<aui:button type="submit" value="export" />
+						<aui:button type="cancel" />
+					</aui:button-row>
+				</c:when>
+			</c:choose>
 		</aui:form>
 
 		<aui:script use="aui-base">
@@ -505,7 +571,8 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 						}
 						%>
 
-						var blacklistCharJSONArray = <%= blacklistCharJSONArray.toJSONString() %>;
+						var blacklistCharJSONArray =
+							<%= blacklistCharJSONArray.toJSONString() %>;
 
 						for (var i = 0; i < blacklistCharJSONArray.length; i++) {
 							if (val.indexOf(blacklistCharJSONArray[i]) !== -1) {
@@ -545,6 +612,7 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 		<portlet:param name="<%= SearchContainer.DEFAULT_DELTA_PARAM %>" value="<%= ParamUtil.getString(request, SearchContainer.DEFAULT_DELTA_PARAM) %>" />
 		<portlet:param name="groupId" value="<%= String.valueOf(themeDisplay.getScopeGroupId()) %>" />
 		<portlet:param name="portletResource" value="<%= portletResource %>" />
+		<portlet:param name="redirect" value="<%= redirect %>" />
 	</liferay-portlet:resourceURL>
 
 	var exportImport = new Liferay.ExportImport({

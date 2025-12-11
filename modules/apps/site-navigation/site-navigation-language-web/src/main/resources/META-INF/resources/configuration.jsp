@@ -30,7 +30,7 @@
 				<liferay-template:template-selector
 					className="<%= LanguageEntry.class.getName() %>"
 					displayStyle="<%= siteNavigationLanguagePortletInstanceConfiguration.displayStyle() %>"
-					displayStyleGroupId="<%= siteNavigationLanguageDisplayContext.getDisplayStyleGroupId() %>"
+					displayStyleGroupKey="<%= siteNavigationLanguageDisplayContext.getDisplayStyleGroupKey() %>"
 					refreshURL="<%= configurationRenderURL %>"
 				/>
 			</div>
@@ -46,13 +46,13 @@
 			<aui:input name="preferences--languageIds--" type="hidden" />
 
 			<liferay-ui:input-move-boxes
-				leftBoxName="currentLanguageIds"
-				leftList="<%= siteNavigationLanguageDisplayContext.getCurrentLanguageIdKVPs() %>"
-				leftReorder="<%= Boolean.TRUE.toString() %>"
-				leftTitle="current"
-				rightBoxName="availableLanguageIds"
-				rightList="<%= siteNavigationLanguageDisplayContext.getAvailableLanguageIdKVPs() %>"
-				rightTitle="available"
+				leftBoxName="availableLanguageIds"
+				leftList="<%= siteNavigationLanguageDisplayContext.getAvailableLanguageIdKVPs() %>"
+				leftTitle="available"
+				rightBoxName="currentLanguageIds"
+				rightList="<%= siteNavigationLanguageDisplayContext.getCurrentLanguageIdKVPs() %>"
+				rightReorder="<%= Boolean.TRUE.toString() %>"
+				rightTitle="in-use"
 			/>
 		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
@@ -62,7 +62,7 @@
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
-<script>
+<aui:script>
 	function <portlet:namespace />saveConfiguration() {
 		var form = document.<portlet:namespace />fm;
 
@@ -81,4 +81,4 @@
 			});
 		}
 	}
-</script>
+</aui:script>

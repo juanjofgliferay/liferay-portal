@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,60 +51,90 @@ public class FragmentField implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FragmentField.class, json);
 	}
 
-	@Schema(description = "The fragment field's ID.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment field's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment field's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
 
-	@Schema(description = "The fragment field's value.")
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment field's value."
+	)
 	@Valid
 	public Object getValue() {
+		if (_valueSupplier != null) {
+			value = _valueSupplier.get();
+
+			_valueSupplier = null;
+		}
+
 		return value;
 	}
 
 	public void setValue(Object value) {
 		this.value = value;
+
+		_valueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValue(
 		UnsafeSupplier<Object, Exception> valueUnsafeSupplier) {
 
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valueSupplier = () -> {
+			try {
+				return valueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment field's value.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object value;
+
+	@JsonIgnore
+	private Supplier<Object> _valueSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -134,6 +163,8 @@ public class FragmentField implements Serializable {
 
 		sb.append("{");
 
+		String id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -147,6 +178,8 @@ public class FragmentField implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Object value = getValue();
 
 		if (value != null) {
 			if (sb.length() > 1) {
@@ -173,8 +206,8 @@ public class FragmentField implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentField",
 		name = "x-class-name"
 	)
@@ -220,7 +253,10 @@ public class FragmentField implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

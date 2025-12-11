@@ -51,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(property = "type=image", service = EditableElementParser.class)
-public class ImageEditableElementParser implements EditableElementParser {
+public class ImageEditableElementParser extends BaseEditableElementParser {
 
 	@Override
 	public JSONObject getFieldTemplateConfigJSONObject(
@@ -72,16 +72,8 @@ public class ImageEditableElementParser implements EditableElementParser {
 				alt = altJSONObject.getString(LocaleUtil.toLanguageId(locale));
 			}
 
-			if (fieldValueJSONObject.has("className") &&
-				fieldValueJSONObject.has("classPK")) {
-
-				fileEntryId = _fragmentEntryProcessorHelper.getFileEntryId(
-					fieldValueJSONObject.getString("className"),
-					fieldValueJSONObject.getLong("classPK"));
-			}
-			else if (fieldValueJSONObject.has("fileEntryId")) {
-				fileEntryId = fieldValueJSONObject.getLong("fileEntryId");
-			}
+			fileEntryId = _fragmentEntryProcessorHelper.getFileEntryId(
+				0, fieldValueJSONObject);
 		}
 		else if (fieldValue instanceof WebImage) {
 			WebImage webImage = (WebImage)fieldValue;
@@ -171,7 +163,8 @@ public class ImageEditableElementParser implements EditableElementParser {
 			try {
 				JSONObject jsonObject = _jsonFactory.createJSONObject(value);
 
-				fileEntryId = jsonObject.getLong("fileEntryId");
+				fileEntryId = _fragmentEntryProcessorHelper.getFileEntryId(
+					0, jsonObject);
 				value = jsonObject.getString("url");
 			}
 			catch (JSONException jsonException) {
@@ -182,16 +175,17 @@ public class ImageEditableElementParser implements EditableElementParser {
 			}
 		}
 		else {
-			fileEntryId = configJSONObject.getLong("fileEntryId");
+			fileEntryId = _fragmentEntryProcessorHelper.getFileEntryId(
+				0, configJSONObject);
 		}
 
 		value = value.trim();
 
 		if (fileEntryId > 0) {
-			String previewURL = _getPreviewURL(fileEntryId);
+			String imagePreviewURL = _getImagePreviewURL(fileEntryId);
 
-			if (Validator.isNotNull(previewURL)) {
-				value = previewURL;
+			if (Validator.isNotNull(imagePreviewURL)) {
+				value = imagePreviewURL;
 			}
 
 			replaceableElement.attr(
@@ -221,9 +215,15 @@ public class ImageEditableElementParser implements EditableElementParser {
 		if (Validator.isNotNull(alt) && JSONUtil.isJSONObject(alt)) {
 			JSONObject altJSONObject = configJSONObject.getJSONObject("alt");
 
-			Locale locale = LocaleThreadLocal.getThemeDisplayLocale();
+			String languageId = LocaleUtil.toLanguageId(
+				LocaleThreadLocal.getThemeDisplayLocale());
 
-			alt = altJSONObject.getString(LocaleUtil.toLanguageId(locale));
+			if (!altJSONObject.has(languageId)) {
+				languageId = LocaleUtil.toLanguageId(
+					LocaleThreadLocal.getSiteDefaultLocale());
+			}
+
+			alt = altJSONObject.getString(languageId);
 		}
 
 		if (Validator.isNotNull(alt)) {
@@ -276,9 +276,11 @@ public class ImageEditableElementParser implements EditableElementParser {
 					"each-editable-image-element-must-contain-an-img-tag",
 					new Object[] {"<em>", "</em>"}, false));
 		}
+
+		super.validate(element);
 	}
 
-	private String _getPreviewURL(long fileEntryId) {
+	private String _getImagePreviewURL(long fileEntryId) {
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -295,7 +297,15 @@ public class ImageEditableElementParser implements EditableElementParser {
 		try {
 			FileEntry fileEntry = _dlAppLocalService.getFileEntry(fileEntryId);
 
-			return _dlURLHelper.getPreviewURL(
+			String mimeType = fileEntry.getMimeType();
+
+			if (mimeType.startsWith("image")) {
+				return _dlURLHelper.getPreviewURL(
+					fileEntry, fileEntry.getFileVersion(), null,
+					StringPool.BLANK);
+			}
+
+			return _dlURLHelper.getImagePreviewURL(
 				fileEntry, fileEntry.getFileVersion(), themeDisplay,
 				StringPool.BLANK, false, false);
 		}

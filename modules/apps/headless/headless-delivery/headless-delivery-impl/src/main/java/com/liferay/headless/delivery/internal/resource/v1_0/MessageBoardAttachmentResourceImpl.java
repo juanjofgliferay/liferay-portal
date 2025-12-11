@@ -14,7 +14,7 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBMessageService;
 import com.liferay.message.boards.service.MBThreadLocalService;
-import com.liferay.portal.kernel.change.tracking.CTAware;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
@@ -24,9 +24,9 @@ import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 import com.liferay.portal.vulcan.pagination.Page;
 
-import java.util.Map;
+import jakarta.ws.rs.BadRequestException;
 
-import javax.ws.rs.BadRequestException;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +40,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	scope = ServiceScope.PROTOTYPE,
 	service = MessageBoardAttachmentResource.class
 )
-@CTAware
 public class MessageBoardAttachmentResourceImpl
 	extends BaseMessageBoardAttachmentResourceImpl {
 
@@ -184,7 +183,7 @@ public class MessageBoardAttachmentResourceImpl
 				MBMessage.class.getName(), mbMessage.getClassPK(),
 				MBConstants.SERVICE_NAME, folder.getFolderId(),
 				binaryFile.getInputStream(), binaryFile.getFileName(),
-				binaryFile.getFileName(), false));
+				StringPool.BLANK, false));
 	}
 
 	private Page<MessageBoardAttachment> _getMessageBoardAttachmentsPage(
@@ -204,18 +203,20 @@ public class MessageBoardAttachmentResourceImpl
 
 		return new MessageBoardAttachment() {
 			{
-				contentUrl = _dlURLHelper.getPreviewURL(
-					fileEntry, fileEntry.getFileVersion(), null, "", false,
-					false);
-				contentValue = ContentValueUtil.toContentValue(
-					"contentValue", fileEntry::getContentStream,
-					contextUriInfo);
-				encodingFormat = fileEntry.getMimeType();
-				externalReferenceCode = fileEntry.getExternalReferenceCode();
-				fileExtension = fileEntry.getExtension();
-				id = fileEntry.getFileEntryId();
-				sizeInBytes = fileEntry.getSize();
-				title = fileEntry.getTitle();
+				setContentUrl(
+					() -> _dlURLHelper.getPreviewURL(
+						fileEntry, fileEntry.getFileVersion(), null, "", true,
+						false));
+				setContentValue(
+					() -> ContentValueUtil.toContentValue(
+						"contentValue", fileEntry::getContentStream,
+						contextUriInfo));
+				setEncodingFormat(fileEntry::getMimeType);
+				setExternalReferenceCode(fileEntry::getExternalReferenceCode);
+				setFileExtension(fileEntry::getExtension);
+				setId(fileEntry::getFileEntryId);
+				setSizeInBytes(fileEntry::getSize);
+				setTitle(fileEntry::getTitle);
 			}
 		};
 	}

@@ -12,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -35,6 +37,7 @@ public class DepotEntryGroupRelWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("depotEntryGroupRelId", getDepotEntryGroupRelId());
 		attributes.put("groupId", getGroupId());
@@ -47,6 +50,7 @@ public class DepotEntryGroupRelWrapper
 		attributes.put("depotEntryId", getDepotEntryId());
 		attributes.put("searchable", isSearchable());
 		attributes.put("toGroupId", getToGroupId());
+		attributes.put("type", getType());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
 		return attributes;
@@ -58,6 +62,12 @@ public class DepotEntryGroupRelWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -134,6 +144,12 @@ public class DepotEntryGroupRelWrapper
 			setToGroupId(toGroupId);
 		}
 
+		Integer type = (Integer)attributes.get("type");
+
+		if (type != null) {
+			setType(type);
+		}
+
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
 
 		if (lastPublishDate != null) {
@@ -164,6 +180,16 @@ public class DepotEntryGroupRelWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this depot entry group rel.
+	 *
+	 * @return the ct collection ID of this depot entry group rel
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -267,6 +293,16 @@ public class DepotEntryGroupRelWrapper
 	}
 
 	/**
+	 * Returns the type of this depot entry group rel.
+	 *
+	 * @return the type of this depot entry group rel
+	 */
+	@Override
+	public int getType() {
+		return model.getType();
+	}
+
+	/**
 	 * Returns the user ID of this depot entry group rel.
 	 *
 	 * @return the user ID of this depot entry group rel
@@ -349,6 +385,16 @@ public class DepotEntryGroupRelWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this depot entry group rel.
+	 *
+	 * @param ctCollectionId the ct collection ID of this depot entry group rel
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -452,6 +498,16 @@ public class DepotEntryGroupRelWrapper
 	}
 
 	/**
+	 * Sets the type of this depot entry group rel.
+	 *
+	 * @param type the type of this depot entry group rel
+	 */
+	@Override
+	public void setType(int type) {
+		model.setType(type);
+	}
+
+	/**
 	 * Sets the user ID of this depot entry group rel.
 	 *
 	 * @param userId the user ID of this depot entry group rel
@@ -494,6 +550,20 @@ public class DepotEntryGroupRelWrapper
 	@Override
 	public String toXmlString() {
 		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<DepotEntryGroupRel, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<DepotEntryGroupRel, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

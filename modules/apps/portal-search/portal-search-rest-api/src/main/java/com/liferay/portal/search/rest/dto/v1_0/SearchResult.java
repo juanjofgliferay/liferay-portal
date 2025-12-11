@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -29,12 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Petteri Karttunen
@@ -54,173 +53,390 @@ public class SearchResult implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SearchResult.class, json);
 	}
 
-	@Schema(description = "The last time the item was changed.")
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
+		return actions;
+	}
+
+	public void setActions(Map<String, Map<String, String>> actions) {
+		this.actions = actions;
+
+		_actionsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setActions(
+		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
+			actionsUnsafeSupplier) {
+
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Map<String, Map<String, String>> actions;
+
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The time the item was created."
+	)
+	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
+		return dateCreated;
+	}
+
+	public void setDateCreated(Date dateCreated) {
+		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDateCreated(
+		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
+
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The time the item was created.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Date dateCreated;
+
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The last time the item was changed."
+	)
 	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
 		return dateModified;
 	}
 
 	public void setDateModified(Date dateModified) {
 		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateModified(
 		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
 
-		try {
-			dateModified = dateModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The last time the item was changed.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateModified;
 
-	@Schema(description = "The item's description.")
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The item's description."
+	)
 	public String getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(String description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDescription(
 		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The item's description.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String description;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getEmbedded() {
+		if (_embeddedSupplier != null) {
+			embedded = _embeddedSupplier.get();
+
+			_embeddedSupplier = null;
+		}
+
 		return embedded;
 	}
 
 	public void setEmbedded(Object embedded) {
 		this.embedded = embedded;
+
+		_embeddedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEmbedded(
 		UnsafeSupplier<Object, Exception> embeddedUnsafeSupplier) {
 
-		try {
-			embedded = embeddedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_embeddedSupplier = () -> {
+			try {
+				return embeddedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object embedded;
 
-	@Schema(description = "The link to the embedded item.")
+	@JsonIgnore
+	private Supplier<Object> _embeddedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The object entry class name."
+	)
+	public String getEntryClassName() {
+		if (_entryClassNameSupplier != null) {
+			entryClassName = _entryClassNameSupplier.get();
+
+			_entryClassNameSupplier = null;
+		}
+
+		return entryClassName;
+	}
+
+	public void setEntryClassName(String entryClassName) {
+		this.entryClassName = entryClassName;
+
+		_entryClassNameSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setEntryClassName(
+		UnsafeSupplier<String, Exception> entryClassNameUnsafeSupplier) {
+
+		_entryClassNameSupplier = () -> {
+			try {
+				return entryClassNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The object entry class name.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String entryClassName;
+
+	@JsonIgnore
+	private Supplier<String> _entryClassNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The link to the embedded item."
+	)
 	public String getItemURL() {
+		if (_itemURLSupplier != null) {
+			itemURL = _itemURLSupplier.get();
+
+			_itemURLSupplier = null;
+		}
+
 		return itemURL;
 	}
 
 	public void setItemURL(String itemURL) {
 		this.itemURL = itemURL;
+
+		_itemURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setItemURL(
 		UnsafeSupplier<String, Exception> itemURLUnsafeSupplier) {
 
-		try {
-			itemURL = itemURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemURLSupplier = () -> {
+			try {
+				return itemURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The link to the embedded item.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String itemURL;
 
-	@Schema(description = "The item's score.")
+	@JsonIgnore
+	private Supplier<String> _itemURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The item's score."
+	)
 	@Valid
 	public Float getScore() {
+		if (_scoreSupplier != null) {
+			score = _scoreSupplier.get();
+
+			_scoreSupplier = null;
+		}
+
 		return score;
 	}
 
 	public void setScore(Float score) {
 		this.score = score;
+
+		_scoreSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setScore(UnsafeSupplier<Float, Exception> scoreUnsafeSupplier) {
-		try {
-			score = scoreUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_scoreSupplier = () -> {
+			try {
+				return scoreUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The item's score.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float score;
 
-	@Schema(description = "The item's title.")
+	@JsonIgnore
+	private Supplier<Float> _scoreSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The item's title."
+	)
 	public String getTitle() {
+		if (_titleSupplier != null) {
+			title = _titleSupplier.get();
+
+			_titleSupplier = null;
+		}
+
 		return title;
 	}
 
 	public void setTitle(String title) {
 		this.title = title;
+
+		_titleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTitle(
 		UnsafeSupplier<String, Exception> titleUnsafeSupplier) {
 
-		try {
-			title = titleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_titleSupplier = () -> {
+			try {
+				return titleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The item's title.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String title;
+
+	@JsonIgnore
+	private Supplier<String> _titleSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -252,6 +468,36 @@ public class SearchResult implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Map<String, Map<String, String>> actions = getActions();
+
+		if (actions != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"actions\": ");
+
+			sb.append(_toJSON(actions));
+		}
+
+		Date dateCreated = getDateCreated();
+
+		if (dateCreated != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateCreated\": ");
+
+			sb.append("\"");
+
+			sb.append(liferayToJSONDateFormat.format(dateCreated));
+
+			sb.append("\"");
+		}
+
+		Date dateModified = getDateModified();
+
 		if (dateModified != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -266,6 +512,8 @@ public class SearchResult implements Serializable {
 			sb.append("\"");
 		}
 
+		String description = getDescription();
+
 		if (description != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -279,6 +527,8 @@ public class SearchResult implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Object embedded = getEmbedded();
 
 		if (embedded != null) {
 			if (sb.length() > 1) {
@@ -301,6 +551,24 @@ public class SearchResult implements Serializable {
 			}
 		}
 
+		String entryClassName = getEntryClassName();
+
+		if (entryClassName != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"entryClassName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(entryClassName));
+
+			sb.append("\"");
+		}
+
+		String itemURL = getItemURL();
+
 		if (itemURL != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -315,6 +583,8 @@ public class SearchResult implements Serializable {
 			sb.append("\"");
 		}
 
+		Float score = getScore();
+
 		if (score != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -324,6 +594,8 @@ public class SearchResult implements Serializable {
 
 			sb.append(score);
 		}
+
+		String title = getTitle();
 
 		if (title != null) {
 			if (sb.length() > 1) {
@@ -344,8 +616,8 @@ public class SearchResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.search.rest.dto.v1_0.SearchResult",
 		name = "x-class-name"
 	)
@@ -391,7 +663,10 @@ public class SearchResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

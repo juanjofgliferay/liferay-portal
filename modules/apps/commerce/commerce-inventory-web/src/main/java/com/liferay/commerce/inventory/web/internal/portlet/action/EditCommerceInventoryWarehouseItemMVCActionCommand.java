@@ -5,9 +5,12 @@
 
 package com.liferay.commerce.inventory.web.internal.portlet.action;
 
+import com.liferay.commerce.inventory.exception.CommerceInventoryWarehouseItemQuantityException;
 import com.liferay.commerce.inventory.exception.MVCCException;
+import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemService;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -17,10 +20,8 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.math.BigDecimal;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -30,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY,
 		"mvc.command.name=/commerce_inventory/edit_commerce_inventory_warehouse_item"
 	},
 	service = MVCActionCommand.class
@@ -54,7 +55,10 @@ public class EditCommerceInventoryWarehouseItemMVCActionCommand
 			}
 		}
 		catch (Exception exception) {
-			if (exception instanceof MVCCException) {
+			if (exception instanceof
+					CommerceInventoryWarehouseItemQuantityException ||
+				exception instanceof MVCCException) {
+
 				SessionErrors.add(actionRequest, exception.getClass());
 
 				hideDefaultErrorMessage(actionRequest);
@@ -82,21 +86,23 @@ public class EditCommerceInventoryWarehouseItemMVCActionCommand
 
 	private void _updateCommerceInventoryWarehouseItem(
 			ActionRequest actionRequest)
-		throws PortalException {
+		throws Exception {
 
 		long commerceInventoryWarehouseItemId = ParamUtil.getLong(
 			actionRequest, "commerceInventoryWarehouseItemId");
 
-		BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "quantity", BigDecimal.ZERO);
-		BigDecimal reservedQuantity = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "reservedQuantity", BigDecimal.ZERO);
-		long mvccVersion = ParamUtil.getLong(actionRequest, "mvccVersion");
-
 		_commerceInventoryWarehouseItemService.
 			updateCommerceInventoryWarehouseItem(
-				commerceInventoryWarehouseItemId, quantity, reservedQuantity,
-				mvccVersion);
+				commerceInventoryWarehouseItemId,
+				_commerceOrderItemQuantityFormatter.parse(
+					actionRequest,
+					CommerceInventoryWarehouseItem.class.getName(), "quantity"),
+				_commerceOrderItemQuantityFormatter.parse(
+					actionRequest,
+					CommerceInventoryWarehouseItem.class.getName(),
+					"reservedQuantity"),
+				ParamUtil.getString(actionRequest, "unitOfMeasureKey"),
+				ParamUtil.getLong(actionRequest, "mvccVersion"));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -105,5 +111,9 @@ public class EditCommerceInventoryWarehouseItemMVCActionCommand
 	@Reference
 	private CommerceInventoryWarehouseItemService
 		_commerceInventoryWarehouseItemService;
+
+	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 
 }

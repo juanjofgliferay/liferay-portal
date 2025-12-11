@@ -10,10 +10,10 @@ import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.commerce.product.catalog.CPQuery;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
-import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.model.CommerceChannelRel;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
@@ -21,7 +21,6 @@ import com.liferay.commerce.product.service.CPDefinitionOptionValueRelLocalServi
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.service.CommerceChannelRelLocalService;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
 import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.ConfigurableInfoCollectionProvider;
 import com.liferay.info.collection.provider.RelatedInfoItemCollectionProvider;
@@ -300,39 +299,43 @@ public class CPDefinitionOptionValueRelRelatedInfoItemCollectionProvider
 	}
 
 	private List<CPDefinitionOptionValueRel> _getCPDefinitionOptionValueRels(
+		CPDefinition cpDefinition) {
+
+		return TransformUtil.transform(
+			_cpInstanceLocalService.getCPDefinitionInstances(
+				cpDefinition.getCPDefinitionId(),
+				WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null),
+			cpInstance -> {
+				CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
+					_cpDefinitionOptionValueRelLocalService.
+						createCPDefinitionOptionValueRel(0);
+
+				cpDefinitionOptionValueRel.setCPInstanceUuid(
+					cpInstance.getCPInstanceUuid());
+
+				cpDefinitionOptionValueRel.setCProductId(
+					cpDefinition.getCProductId());
+				cpDefinitionOptionValueRel.setKey(
+					FriendlyURLNormalizerUtil.normalize(
+						cpDefinition.getName() + StringPool.DASH +
+							cpInstance.getSku()));
+				cpDefinitionOptionValueRel.setName(cpDefinition.getName());
+				cpDefinitionOptionValueRel.setQuantity(BigDecimal.ONE);
+
+				return cpDefinitionOptionValueRel;
+			});
+	}
+
+	private List<CPDefinitionOptionValueRel> _getCPDefinitionOptionValueRels(
 		List<CPDefinition> cpDefinitions) {
 
 		List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels =
 			new ArrayList<>();
 
 		for (CPDefinition cpDefinition : cpDefinitions) {
-			CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
-				_cpDefinitionOptionValueRelLocalService.
-					createCPDefinitionOptionValueRel(0);
-
-			List<CPInstance> cpInstances =
-				_cpInstanceLocalService.getCPDefinitionInstances(
-					cpDefinition.getCPDefinitionId(),
-					WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
-					QueryUtil.ALL_POS, null);
-
-			if (cpInstances.isEmpty() || (cpInstances.size() > 1)) {
-				continue;
-			}
-
-			CPInstance cpInstance = cpInstances.get(0);
-
-			cpDefinitionOptionValueRel.setCPInstanceUuid(
-				cpInstance.getCPInstanceUuid());
-
-			cpDefinitionOptionValueRel.setCProductId(
-				cpDefinition.getCProductId());
-			cpDefinitionOptionValueRel.setKey(
-				FriendlyURLNormalizerUtil.normalize(cpDefinition.getName()));
-			cpDefinitionOptionValueRel.setName(cpDefinition.getName());
-			cpDefinitionOptionValueRel.setQuantity(BigDecimal.ONE);
-
-			cpDefinitionOptionValueRels.add(cpDefinitionOptionValueRel);
+			cpDefinitionOptionValueRels.addAll(
+				_getCPDefinitionOptionValueRels(cpDefinition));
 		}
 
 		return cpDefinitionOptionValueRels;

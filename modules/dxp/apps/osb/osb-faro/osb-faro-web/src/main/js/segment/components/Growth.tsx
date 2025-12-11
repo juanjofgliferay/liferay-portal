@@ -6,6 +6,7 @@ import ChartTooltip, {
 	Alignments,
 	Weights
 } from 'shared/components/chart-tooltip';
+import ClayLink from '@clayui/link';
 import ComposedChartWithEmptyState from 'shared/components/ComposedChartWithEmptyState';
 import getCN from 'classnames';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
@@ -34,7 +35,7 @@ import {
 	changesListColumns,
 	individualsListColumns
 } from 'shared/util/table-columns';
-import {CHART_COLOR_NAMES} from 'shared/components/Chart';
+import {CHART_COLOR_NAMES} from 'shared/util/charts';
 import {createDateKeysIMap} from 'shared/util/intervals';
 import {DATE_CHANGED, NAME} from 'shared/util/pagination';
 import {formatUTCDateFromUnix} from 'shared/util/date';
@@ -46,7 +47,7 @@ import {OrderByDirections, RangeKeyTimeRanges} from 'shared/util/constants';
 import {OrderedMap} from 'immutable';
 import {OrderParams} from 'shared/util/records';
 import {sub} from 'shared/util/lang';
-import {useStatefulPagination} from 'shared/hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 const {
 	greyjoy: CHART_BLACK,
@@ -311,7 +312,7 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 						)}
 					</span>
 
-					<a
+					<ClayLink
 						href={URLConstants.SegmentsOverviewTabDocumentationLink}
 						key='DOCUMENTATION'
 						target='_blank'
@@ -319,7 +320,7 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 						{Liferay.Language.get(
 							'learn-more-about-segment-membership'
 						)}
-					</a>
+					</ClayLink>
 				</>
 			}
 			emptyTitle={Liferay.Language.get(
@@ -398,9 +399,9 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 					/>
 
 					<Legend
-						align='left'
+						align='right'
 						formatter={(value, {count}) => (
-							<span>
+							<span className='legend-text-color'>
 								{`${value}:`}
 
 								<b className='ml-1'>{count}</b>
@@ -434,7 +435,7 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 								value: Liferay.Language.get('total-members')
 							}
 						]}
-						verticalAlign='top'
+						verticalAlign='bottom'
 						wrapperStyle={{
 							color: AXIS.textColor,
 							fontSize: '14px',
@@ -543,7 +544,7 @@ export const SegmentGrowthChart: React.FC<ISegmentGrowthChartProps> = ({
 
 export const SelectedPointInfo: React.FC = () => (
 	<div className='selected-point-info'>
-		<h4>{Liferay.Language.get('known-members')}</h4>
+		<div className='h4'>{Liferay.Language.get('known-members')}</div>
 	</div>
 );
 
@@ -556,6 +557,7 @@ interface ISegmentGrowthWithList {
 	id: string;
 	individualCounts?: {anonymousCount: number; knownCount: number};
 	selectedPoint: number;
+	shouldShowMembershipList?: boolean;
 	timeZoneId: string;
 }
 
@@ -568,6 +570,7 @@ const SegmentGrowthWithList: React.FC<ISegmentGrowthWithList> = ({
 	id,
 	individualCounts,
 	selectedPoint,
+	shouldShowMembershipList = true,
 	timeZoneId
 }) => {
 	const [showMembershipList, setShowMembershipList] = useState(true);
@@ -642,7 +645,7 @@ const SegmentGrowthWithList: React.FC<ISegmentGrowthWithList> = ({
 				/>
 			</div>
 
-			{showMembershipList && (
+			{shouldShowMembershipList && showMembershipList && (
 				<>
 					<SelectedPointInfo />
 
@@ -676,7 +679,7 @@ const SegmentGrowthWithList: React.FC<ISegmentGrowthWithList> = ({
 												)}
 											</span>
 
-											<a
+											<ClayLink
 												href={
 													URLConstants.SegmentsMembershipDocumentationLink
 												}
@@ -686,7 +689,7 @@ const SegmentGrowthWithList: React.FC<ISegmentGrowthWithList> = ({
 												{Liferay.Language.get(
 													'learn-more-about-individuals'
 												)}
-											</a>
+											</ClayLink>
 										</>
 									}
 									spacer

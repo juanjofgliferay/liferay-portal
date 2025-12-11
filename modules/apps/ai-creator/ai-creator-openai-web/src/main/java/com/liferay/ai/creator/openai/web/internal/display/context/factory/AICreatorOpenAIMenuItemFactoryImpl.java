@@ -21,10 +21,9 @@ import com.liferay.portal.kernel.servlet.taglib.ui.JavaScriptMenuItem;
 import com.liferay.portal.kernel.servlet.taglib.ui.MenuItem;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.PortletMode;
+import jakarta.portlet.PortletMode;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -82,7 +81,7 @@ public class AICreatorOpenAIMenuItemFactoryImpl
 					).setParameter(
 						"folderId", folderId
 					).setParameter(
-						"getGenerations", true
+						"generations", true
 					).setParameter(
 						"repositoryId", repositoryId
 					).setPortletMode(
@@ -131,8 +130,5 @@ public class AICreatorOpenAIMenuItemFactoryImpl
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private Portal _portal;
 
 }

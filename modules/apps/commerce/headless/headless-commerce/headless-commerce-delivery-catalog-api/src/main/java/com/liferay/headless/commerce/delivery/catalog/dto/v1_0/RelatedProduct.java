@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -50,114 +49,211 @@ public class RelatedProduct implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(example = "1.2")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1.2")
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getProductExternalReferenceCode() {
+		if (_productExternalReferenceCodeSupplier != null) {
+			productExternalReferenceCode =
+				_productExternalReferenceCodeSupplier.get();
+
+			_productExternalReferenceCodeSupplier = null;
+		}
+
+		return productExternalReferenceCode;
+	}
+
+	public void setProductExternalReferenceCode(
+		String productExternalReferenceCode) {
+
+		this.productExternalReferenceCode = productExternalReferenceCode;
+
+		_productExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setProductExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			productExternalReferenceCodeUnsafeSupplier) {
+
+		_productExternalReferenceCodeSupplier = () -> {
+			try {
+				return productExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String productExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _productExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30129")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30129")
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long productId;
 
-	@Schema(example = "cross-sell")
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "cross-sell")
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String type;
+
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -186,6 +282,8 @@ public class RelatedProduct implements Serializable {
 
 		sb.append("{");
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -195,6 +293,8 @@ public class RelatedProduct implements Serializable {
 
 			sb.append(id);
 		}
+
+		Double priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -206,6 +306,24 @@ public class RelatedProduct implements Serializable {
 			sb.append(priority);
 		}
 
+		String productExternalReferenceCode = getProductExternalReferenceCode();
+
+		if (productExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"productExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(productExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -215,6 +333,8 @@ public class RelatedProduct implements Serializable {
 
 			sb.append(productId);
 		}
+
+		String type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -235,8 +355,8 @@ public class RelatedProduct implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.catalog.dto.v1_0.RelatedProduct",
 		name = "x-class-name"
 	)
@@ -282,7 +402,10 @@ public class RelatedProduct implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

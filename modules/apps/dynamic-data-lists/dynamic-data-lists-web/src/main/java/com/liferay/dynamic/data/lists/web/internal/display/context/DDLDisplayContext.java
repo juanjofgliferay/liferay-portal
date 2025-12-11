@@ -63,15 +63,15 @@ import com.liferay.portal.kernel.util.PrefsParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marcellus Tavares
@@ -189,7 +189,7 @@ public class DDLDisplayContext {
 		OrderByComparator<DDLRecordSet> orderByComparator = null;
 
 		if (orderByCol.equals("create-date")) {
-			orderByComparator = new DDLRecordSetCreateDateComparator(
+			orderByComparator = DDLRecordSetCreateDateComparator.getInstance(
 				orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
@@ -197,7 +197,8 @@ public class DDLDisplayContext {
 				orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new DDLRecordSetNameComparator(orderByAsc);
+			orderByComparator = DDLRecordSetNameComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;
@@ -224,8 +225,7 @@ public class DDLDisplayContext {
 
 			if (Validator.isNull(_ddlRecordDisplayStyle)) {
 				_ddlRecordDisplayStyle = portalPreferences.getValue(
-					DDLPortletKeys.DYNAMIC_DATA_LISTS, "display-style",
-					_ddlWebConfiguration.defaultDisplayView());
+					DDLPortletKeys.DYNAMIC_DATA_LISTS, "display-style", "list");
 			}
 			else if (ArrayUtil.contains(
 						getDisplayViews(), _ddlRecordDisplayStyle)) {
@@ -276,26 +276,6 @@ public class DDLDisplayContext {
 			recordSet.getDDMStructure(), _fetchFormDDMTemplate(), getLocale());
 	}
 
-	public List<DropdownItem> getFilterItemsDropdownItems() {
-		HttpServletRequest httpServletRequest = _ddlRequestHelper.getRequest();
-
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
-			}
-		).build();
-	}
-
 	public long getFormDDMTemplateId() {
 		return PrefsParamUtil.getLong(
 			_ddlRequestHelper.getPortletPreferences(),
@@ -337,6 +317,16 @@ public class DDLDisplayContext {
 			_renderRequest, DDLPortletKeys.DYNAMIC_DATA_LISTS, "asc");
 
 		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			getOrderByDropdownItem("create-date")
+		).add(
+			getOrderByDropdownItem("modified-date")
+		).add(
+			getOrderByDropdownItem("name")
+		).build();
 	}
 
 	public PortletURL getPortletURL() {
@@ -436,10 +426,12 @@ public class DDLDisplayContext {
 	}
 
 	public JSONArray getRecordsJSONArray(
-			List<DDLRecord> records, boolean latestRecordVersion, Locale locale)
+			List<DDLRecord> ddlRecords, boolean latestRecordVersion,
+			Locale locale)
 		throws Exception {
 
-		return _ddl.getRecordsJSONArray(records, latestRecordVersion, locale);
+		return _ddl.getRecordsJSONArray(
+			ddlRecords, latestRecordVersion, locale);
 	}
 
 	public SearchContainer<?> getSearchContainer() {
@@ -595,11 +587,7 @@ public class DDLDisplayContext {
 	}
 
 	public boolean isShowCancelButton() {
-		if (isFormView()) {
-			return false;
-		}
-
-		return true;
+		return !isFormView();
 	}
 
 	public boolean isShowConfigurationIcon() throws PortalException {
@@ -752,16 +740,6 @@ public class DDLDisplayContext {
 		};
 	}
 
-	protected List<DropdownItem> getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			getOrderByDropdownItem("create-date")
-		).add(
-			getOrderByDropdownItem("modified-date")
-		).add(
-			getOrderByDropdownItem("name")
-		).build();
-	}
-
 	protected PermissionChecker getPermissionChecker() {
 		return _ddlRequestHelper.getPermissionChecker();
 	}
@@ -783,11 +761,7 @@ public class DDLDisplayContext {
 	}
 
 	protected boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	private DDMTemplate _fetchDisplayDDMTemplate() {

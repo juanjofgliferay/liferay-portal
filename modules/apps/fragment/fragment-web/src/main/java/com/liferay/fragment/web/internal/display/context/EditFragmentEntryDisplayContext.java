@@ -15,10 +15,14 @@ import com.liferay.fragment.service.FragmentCollectionLocalServiceUtil;
 import com.liferay.fragment.service.FragmentCollectionServiceUtil;
 import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
 import com.liferay.fragment.web.internal.info.field.type.CaptchaInfoFieldType;
+import com.liferay.fragment.web.internal.info.field.type.FormButtonInfoFieldType;
+import com.liferay.fragment.web.internal.info.field.type.LocalizationSelectInfoFieldType;
+import com.liferay.fragment.web.internal.info.field.type.StepperInfoFieldType;
 import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.DateTimeInfoFieldType;
 import com.liferay.info.field.type.FileInfoFieldType;
+import com.liferay.info.field.type.FriendlyURLInfoFieldType;
 import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.InfoFieldType;
 import com.liferay.info.field.type.LongTextInfoFieldType;
@@ -27,6 +31,8 @@ import com.liferay.info.field.type.NumberInfoFieldType;
 import com.liferay.info.field.type.RelationshipInfoFieldType;
 import com.liferay.info.field.type.SelectInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
+import com.liferay.learn.LearnMessage;
+import com.liferay.learn.LearnMessageUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -48,6 +54,7 @@ import com.liferay.portal.kernel.template.TemplateManager;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -57,17 +64,17 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -413,6 +420,7 @@ public class EditFragmentEntryDisplayContext {
 		freeMarkerVariables.add("configuration");
 		freeMarkerVariables.add("fragmentElementId");
 		freeMarkerVariables.add("fragmentEntryLinkNamespace");
+		freeMarkerVariables.add("fragmentName");
 		freeMarkerVariables.add("layoutMode");
 
 		FragmentCollection fragmentCollection =
@@ -490,6 +498,15 @@ public class EditFragmentEntryDisplayContext {
 		).put(
 			"initialJS", _getJsContent()
 		).put(
+			"learnMessageHTML",
+			() -> {
+				LearnMessage learnMessage = LearnMessageUtil.getLearnMessage(
+					"deprecated-embedded-widgets",
+					_themeDisplay.getLanguageId(), "fragment-web");
+
+				return learnMessage.getHTML();
+			}
+		).put(
 			"name", getName()
 		).put(
 			"portletNamespace", _renderResponse.getNamespace()
@@ -544,9 +561,9 @@ public class EditFragmentEntryDisplayContext {
 					return HttpComponentsUtil.addParameters(
 						_themeDisplay.getPathMain() +
 							"/portal/fragment/render_fragment_entry",
-						"groupId", _themeDisplay.getScopeGroupId(),
-						"fragmentEntryId", fragmentEntry.getFragmentEntryId(),
-						"fragmentEntryKey",
+						"p_l_mode", Constants.PREVIEW, "groupId",
+						_themeDisplay.getScopeGroupId(), "fragmentEntryId",
+						fragmentEntry.getFragmentEntryId(), "fragmentEntryKey",
 						fragmentEntry.getFragmentEntryKey());
 				}
 			).build()
@@ -647,10 +664,13 @@ public class EditFragmentEntryDisplayContext {
 	private static final InfoFieldType[] _INFO_FIELD_TYPES = {
 		BooleanInfoFieldType.INSTANCE, CaptchaInfoFieldType.INSTANCE,
 		DateInfoFieldType.INSTANCE, DateTimeInfoFieldType.INSTANCE,
-		FileInfoFieldType.INSTANCE, HTMLInfoFieldType.INSTANCE,
+		FileInfoFieldType.INSTANCE, FormButtonInfoFieldType.INSTANCE,
+		FriendlyURLInfoFieldType.INSTANCE, HTMLInfoFieldType.INSTANCE,
+		LocalizationSelectInfoFieldType.INSTANCE,
 		LongTextInfoFieldType.INSTANCE, MultiselectInfoFieldType.INSTANCE,
 		NumberInfoFieldType.INSTANCE, RelationshipInfoFieldType.INSTANCE,
-		SelectInfoFieldType.INSTANCE, TextInfoFieldType.INSTANCE
+		SelectInfoFieldType.INSTANCE, StepperInfoFieldType.INSTANCE,
+		TextInfoFieldType.INSTANCE
 	};
 
 	private static final Log _log = LogFactoryUtil.getLog(

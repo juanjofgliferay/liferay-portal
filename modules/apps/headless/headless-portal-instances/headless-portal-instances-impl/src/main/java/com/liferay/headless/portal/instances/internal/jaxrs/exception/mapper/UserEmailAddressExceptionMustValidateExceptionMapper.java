@@ -9,8 +9,8 @@ import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -30,11 +30,10 @@ public class UserEmailAddressExceptionMustValidateExceptionMapper
 
 	@Override
 	protected Problem getProblem(
-		UserEmailAddressException.MustValidate userEmailAddressException) {
+		UserEmailAddressException.MustValidate mustValidate) {
 
 		return new Problem(
-			Response.Status.BAD_REQUEST,
-			userEmailAddressException.getMessage());
+			Response.Status.BAD_REQUEST, mustValidate.getMessage());
 	}
 
 }

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,89 +48,128 @@ public class SearchHits implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SearchHits.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Hit[] getHits() {
+		if (_hitsSupplier != null) {
+			hits = _hitsSupplier.get();
+
+			_hitsSupplier = null;
+		}
+
 		return hits;
 	}
 
 	public void setHits(Hit[] hits) {
 		this.hits = hits;
+
+		_hitsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHits(UnsafeSupplier<Hit[], Exception> hitsUnsafeSupplier) {
-		try {
-			hits = hitsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_hitsSupplier = () -> {
+			try {
+				return hitsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Hit[] hits;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Hit[]> _hitsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getMaxScore() {
+		if (_maxScoreSupplier != null) {
+			maxScore = _maxScoreSupplier.get();
+
+			_maxScoreSupplier = null;
+		}
+
 		return maxScore;
 	}
 
 	public void setMaxScore(Float maxScore) {
 		this.maxScore = maxScore;
+
+		_maxScoreSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMaxScore(
 		UnsafeSupplier<Float, Exception> maxScoreUnsafeSupplier) {
 
-		try {
-			maxScore = maxScoreUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_maxScoreSupplier = () -> {
+			try {
+				return maxScoreUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float maxScore;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _maxScoreSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getTotalHits() {
+		if (_totalHitsSupplier != null) {
+			totalHits = _totalHitsSupplier.get();
+
+			_totalHitsSupplier = null;
+		}
+
 		return totalHits;
 	}
 
 	public void setTotalHits(Long totalHits) {
 		this.totalHits = totalHits;
+
+		_totalHitsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTotalHits(
 		UnsafeSupplier<Long, Exception> totalHitsUnsafeSupplier) {
 
-		try {
-			totalHits = totalHitsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_totalHitsSupplier = () -> {
+			try {
+				return totalHitsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long totalHits;
+
+	@JsonIgnore
+	private Supplier<Long> _totalHitsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -160,6 +198,8 @@ public class SearchHits implements Serializable {
 
 		sb.append("{");
 
+		Hit[] hits = getHits();
+
 		if (hits != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -180,6 +220,8 @@ public class SearchHits implements Serializable {
 			sb.append("]");
 		}
 
+		Float maxScore = getMaxScore();
+
 		if (maxScore != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -189,6 +231,8 @@ public class SearchHits implements Serializable {
 
 			sb.append(maxScore);
 		}
+
+		Long totalHits = getTotalHits();
 
 		if (totalHits != null) {
 			if (sb.length() > 1) {
@@ -205,8 +249,8 @@ public class SearchHits implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.SearchHits",
 		name = "x-class-name"
 	)
@@ -252,7 +296,10 @@ public class SearchHits implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

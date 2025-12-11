@@ -110,6 +110,9 @@ public class LayoutPrototypeModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY LayoutPrototype.layoutPrototypeId ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY layoutPrototype.layoutPrototypeId ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -160,7 +163,7 @@ public class LayoutPrototypeModelImpl
 	public static final long LAYOUTPROTOTYPEID_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutPrototype"));
 
 	public LayoutPrototypeModelImpl() {

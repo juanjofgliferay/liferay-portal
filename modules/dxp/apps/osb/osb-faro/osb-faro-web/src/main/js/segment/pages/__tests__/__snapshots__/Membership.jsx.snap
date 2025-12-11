@@ -6,13 +6,20 @@ exports[`Membership should render 1`] = `
     class="card card-root segment-membership-root"
   >
     <div
-      class="card-header"
+      class="card-header align-items-center d-flex justify-content-between"
     >
-      <h5
+      <div
         class="card-title"
       >
-        Segment Membership
-      </h5>
+        Segment Membership Trend
+      </div>
+      <span
+        class="text-secondary text-uppercase"
+      >
+        <strong>
+          Last 30 days
+        </strong>
+      </span>
     </div>
     <div
       class="card-body segment-growth-root no-padding"
@@ -25,20 +32,18 @@ exports[`Membership should render 1`] = `
         >
           <div
             class="recharts-responsive-container"
-            style="width: 100%; height: 360px;"
-          >
-            <div
-              style="position: absolute; width: 0px; height: 0px; visibility: hidden; display: none;"
-            />
-          </div>
+            style="width: 100%; height: 360px; min-width: 0;"
+          />
         </div>
       </div>
       <div
         class="selected-point-info"
       >
-        <h4>
+        <div
+          class="h4"
+        >
           Known Members
-        </h4>
+        </div>
       </div>
       <div
         class="base-results-root d-flex flex-column flex-grow-1 searchable-table-root searchable-table-borderless"
@@ -55,29 +60,9 @@ exports[`Membership should render 1`] = `
               <ul
                 class="nav-root front-nav navbar-nav"
                 role="tablist"
-              >
-                <li
-                  class="nav-item"
-                  role="presentation"
-                >
-                  <button
-                    aria-label="Ascending"
-                    class="btn-root nav-link nav-link-monospaced btn btn-outline-borderless btn-outline-unstyled"
-                    type="button"
-                  >
-                    <svg
-                      class="lexicon-icon lexicon-icon-order-arrow-ascending icon-root"
-                      role="presentation"
-                    >
-                      <use
-                        xlink:href="#order-arrow-ascending"
-                      />
-                    </svg>
-                  </button>
-                </li>
-              </ul>
+              />
               <div
-                class="navbar-form navbar-form-autofit"
+                class="navbar-form navbar-form-autofit mx-2"
               >
                 <div
                   class="input-group search"
@@ -104,7 +89,7 @@ exports[`Membership should render 1`] = `
                           role="presentation"
                         >
                           <use
-                            xlink:href="#search"
+                            href="#search"
                           />
                         </svg>
                       </button>
@@ -116,10 +101,305 @@ exports[`Membership should render 1`] = `
           </nav>
         </div>
         <div
-          class="table-responsive table-root flex-grow-1"
+          class="flex-grow-1 mx-4 table-root"
+        >
+          <div
+            class="table-responsive"
+          >
+            <table
+              class="table table-autofit table-list table-nowrap table-head-bordered table-hover table-striped"
+            >
+              <thead>
+                <tr>
+                  <th
+                    class="table-head-title"
+                  >
+                    <button
+                      class="inline-item text-truncate-inline btn btn-unstyled"
+                      type="button"
+                    >
+                      <div
+                        class="align-items-center d-flex justify-content-between"
+                      >
+                        <div
+                          class="text-truncate"
+                        >
+                          Name
+                        </div>
+                        <button
+                          aria-label="Ascending"
+                          class="component-action ml-2 btn btn-sm btn-primary"
+                          type="button"
+                        >
+                          <svg
+                            class="lexicon-icon lexicon-icon-order_arrow_ascending icon-root"
+                            role="presentation"
+                          >
+                            <use
+                              href="#order_arrow_ascending"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </button>
+                  </th>
+                  <th
+                    class="table-head-title"
+                  >
+                    Email
+                  </th>
+                  <th
+                    class="table-head-title"
+                  >
+                    <button
+                      class="inline-item text-truncate-inline btn btn-unstyled"
+                      type="button"
+                    >
+                      <div
+                        class="align-items-center d-flex justify-content-between"
+                      >
+                        <div
+                          class="text-truncate"
+                        >
+                          First Seen
+                        </div>
+                        <button
+                          aria-label="Descending"
+                          class="component-action ml-2 btn btn-sm btn-primary"
+                          type="button"
+                        >
+                          <span
+                            class="opacity-25"
+                          >
+                            <svg
+                              class="lexicon-icon lexicon-icon-order-arrow icon-root"
+                              role="presentation"
+                            >
+                              <use
+                                href="#order-arrow"
+                              />
+                            </svg>
+                          </span>
+                        </button>
+                      </div>
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  class=""
+                >
+                  <td
+                    class="name-cell-root"
+                  >
+                    <div
+                      class="content-container"
+                    >
+                      <div
+                        class="text-truncate"
+                      >
+                        <div
+                          class="table-title text-truncate"
+                        >
+                          Foo Bar
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    -
+                  </td>
+                  <td>
+                    Jul 8, 2018
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <nav
+          class="navbar navbar-root pagination-bar-root"
+        >
+          <div
+            class="container-fluid"
+          >
+            <div
+              class="dropdown dropdown-root pagination-items-per-page"
+            >
+              <button
+                aria-controls="clay-dropdown-menu-1"
+                aria-expanded="false"
+                aria-haspopup="true"
+                class="dropdown-toggle button-root btn btn-sm btn-secondary"
+                type="button"
+              >
+                20 Items
+                <svg
+                  class="lexicon-icon lexicon-icon-caret-bottom ml-2"
+                  role="presentation"
+                >
+                  <use
+                    href="#caret-bottom"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div
+              class="pagination-results"
+            >
+              Showing 1 to 1 of 1 entry.
+            </div>
+            <ul
+              class="pagination pagination-root"
+            >
+              <li
+                class="page-item disabled"
+              >
+                <button
+                  class="button-root btn btn-unstyled page-link btn btn-primary"
+                  disabled=""
+                  href=""
+                  type="button"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-angle-left-small icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#angle-left-small"
+                    />
+                  </svg>
+                </button>
+              </li>
+              <li
+                class="page-item active"
+              >
+                <button
+                  class="button-root btn btn-unstyled page-link btn btn-primary"
+                  href=""
+                  type="button"
+                >
+                  1
+                </button>
+              </li>
+              <li
+                class="page-item disabled"
+              >
+                <button
+                  class="button-root btn btn-unstyled page-link btn btn-primary"
+                  disabled=""
+                  href=""
+                  type="button"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-angle-right-small icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#angle-right-small"
+                    />
+                  </svg>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MembershipChart should render 1`] = `
+<div>
+  <div
+    class="card-body segment-growth-root no-padding"
+  >
+    <div
+      class="segment-growth-chart-container"
+    >
+      <div
+        class="composed-chart-with-empty-state"
+      >
+        <div
+          class="recharts-responsive-container"
+          style="width: 100%; height: 360px; min-width: 0;"
+        />
+      </div>
+    </div>
+    <div
+      class="selected-point-info"
+    >
+      <div
+        class="h4"
+      >
+        Known Members
+      </div>
+    </div>
+    <div
+      class="base-results-root d-flex flex-column flex-grow-1 searchable-table-root searchable-table-borderless"
+    >
+      <div
+        class="toolbar-root"
+      >
+        <nav
+          class="navbar navbar-root management-bar management-bar-light navbar-expand"
+        >
+          <div
+            class="container-fluid"
+          >
+            <ul
+              class="nav-root front-nav navbar-nav"
+              role="tablist"
+            />
+            <div
+              class="navbar-form navbar-form-autofit mx-2"
+            >
+              <div
+                class="input-group search"
+              >
+                <div
+                  class="input-group-item"
+                >
+                  <input
+                    class="input-root form-control input-group-inset input-group-inset-after"
+                    placeholder="Search"
+                    type="text"
+                    value=""
+                  />
+                  <div
+                    class="input-group-inset-item input-group-inset-item-after"
+                  >
+                    <button
+                      aria-label="Search"
+                      class="button-root btn btn-unstyled"
+                      type="button"
+                    >
+                      <svg
+                        class="lexicon-icon lexicon-icon-search icon-root"
+                        role="presentation"
+                      >
+                        <use
+                          href="#search"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+      <div
+        class="flex-grow-1 mx-4 table-root"
+      >
+        <div
+          class="table-responsive"
         >
           <table
-            class="table table-autofit table-hover table-heading-nowrap table-nowrap"
+            class="table table-autofit table-list table-nowrap table-head-bordered table-hover table-striped"
           >
             <thead>
               <tr>
@@ -130,23 +410,29 @@ exports[`Membership should render 1`] = `
                     class="inline-item text-truncate-inline btn btn-unstyled"
                     type="button"
                   >
-                    <span
-                      class="text-truncate"
+                    <div
+                      class="align-items-center d-flex justify-content-between"
                     >
-                      Name
-                    </span>
-                    <span
-                      class="inline-item inline-item-after"
-                    >
-                      <svg
-                        class="lexicon-icon lexicon-icon-order-arrow-up icon-root"
-                        role="presentation"
+                      <div
+                        class="text-truncate"
                       >
-                        <use
-                          xlink:href="#order-arrow-up"
-                        />
-                      </svg>
-                    </span>
+                        Name
+                      </div>
+                      <button
+                        aria-label="Ascending"
+                        class="component-action ml-2 btn btn-sm btn-primary"
+                        type="button"
+                      >
+                        <svg
+                          class="lexicon-icon lexicon-icon-order_arrow_ascending icon-root"
+                          role="presentation"
+                        >
+                          <use
+                            href="#order_arrow_ascending"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </button>
                 </th>
                 <th
@@ -161,11 +447,33 @@ exports[`Membership should render 1`] = `
                     class="inline-item text-truncate-inline btn btn-unstyled"
                     type="button"
                   >
-                    <span
-                      class="text-truncate"
+                    <div
+                      class="align-items-center d-flex justify-content-between"
                     >
-                      First Seen
-                    </span>
+                      <div
+                        class="text-truncate"
+                      >
+                        First Seen
+                      </div>
+                      <button
+                        aria-label="Descending"
+                        class="component-action ml-2 btn btn-sm btn-primary"
+                        type="button"
+                      >
+                        <span
+                          class="opacity-25"
+                        >
+                          <svg
+                            class="lexicon-icon lexicon-icon-order-arrow icon-root"
+                            role="presentation"
+                          >
+                            <use
+                              href="#order-arrow"
+                            />
+                          </svg>
+                        </span>
+                      </button>
+                    </div>
                   </button>
                 </th>
               </tr>
@@ -201,97 +509,95 @@ exports[`Membership should render 1`] = `
             </tbody>
           </table>
         </div>
-        <nav
-          class="navbar navbar-root pagination-bar-root"
+      </div>
+      <nav
+        class="navbar navbar-root pagination-bar-root"
+      >
+        <div
+          class="container-fluid"
         >
           <div
-            class="container-fluid"
+            class="dropdown dropdown-root pagination-items-per-page"
           >
-            <div
-              class="dropdown dropdown-root pagination-items-per-page"
+            <button
+              aria-controls="clay-dropdown-menu-2"
+              aria-expanded="false"
+              aria-haspopup="true"
+              class="dropdown-toggle button-root btn btn-sm btn-secondary"
+              type="button"
+            >
+              20 Items
+              <svg
+                class="lexicon-icon lexicon-icon-caret-bottom ml-2"
+                role="presentation"
+              >
+                <use
+                  href="#caret-bottom"
+                />
+              </svg>
+            </button>
+          </div>
+          <div
+            class="pagination-results"
+          >
+            Showing 1 to 1 of 1 entry.
+          </div>
+          <ul
+            class="pagination pagination-root"
+          >
+            <li
+              class="page-item disabled"
             >
               <button
-                aria-controls="clay-dropdown-menu-1"
-                aria-expanded="false"
-                aria-haspopup="true"
-                class="dropdown-toggle button-root btn btn-sm btn-secondary"
+                class="button-root btn btn-unstyled page-link btn btn-primary"
+                disabled=""
+                href=""
                 type="button"
               >
-                20 Items
                 <svg
-                  class="lexicon-icon lexicon-icon-caret-bottom ml-2"
+                  class="lexicon-icon lexicon-icon-angle-left-small icon-root"
                   role="presentation"
                 >
                   <use
-                    xlink:href="#caret-bottom"
+                    href="#angle-left-small"
                   />
                 </svg>
               </button>
-            </div>
-            <div
-              class="pagination-results"
+            </li>
+            <li
+              class="page-item active"
             >
-              Showing 1 to 1 of 1 entry.
-            </div>
-            <ul
-              class="pagination pagination-root"
+              <button
+                class="button-root btn btn-unstyled page-link btn btn-primary"
+                href=""
+                type="button"
+              >
+                1
+              </button>
+            </li>
+            <li
+              class="page-item disabled"
             >
-              <li
-                class="page-item disabled"
+              <button
+                class="button-root btn btn-unstyled page-link btn btn-primary"
+                disabled=""
+                href=""
+                type="button"
               >
-                <button
-                  class="button-root btn btn-unstyled page-link btn btn-primary"
-                  disabled=""
-                  href=""
-                  type="button"
+                <svg
+                  class="lexicon-icon lexicon-icon-angle-right-small icon-root"
+                  role="presentation"
                 >
-                  <svg
-                    class="lexicon-icon lexicon-icon-angle-left-small icon-root"
-                    role="presentation"
-                  >
-                    <use
-                      xlink:href="#angle-left-small"
-                    />
-                  </svg>
-                </button>
-              </li>
-              <li
-                class="page-item active"
-              >
-                <button
-                  class="button-root btn btn-unstyled page-link btn btn-primary"
-                  href=""
-                  type="button"
-                >
-                  1
-                </button>
-              </li>
-              <li
-                class="page-item disabled"
-              >
-                <button
-                  class="button-root btn btn-unstyled page-link btn btn-primary"
-                  disabled=""
-                  href=""
-                  type="button"
-                >
-                  <svg
-                    class="lexicon-icon lexicon-icon-angle-right-small icon-root"
-                    role="presentation"
-                  >
-                    <use
-                      xlink:href="#angle-right-small"
-                    />
-                  </svg>
-                </button>
-              </li>
-            </ul>
-          </div>
-        </nav>
-      </div>
+                  <use
+                    href="#angle-right-small"
+                  />
+                </svg>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </nav>
     </div>
   </div>
 </div>
 `;
-
-exports[`MembershipChart should render 1`] = `<div />`;

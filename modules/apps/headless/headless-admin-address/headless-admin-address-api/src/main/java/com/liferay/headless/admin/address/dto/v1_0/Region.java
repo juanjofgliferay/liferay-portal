@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,13 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Drew Brokke
@@ -38,8 +37,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("Region")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"regionCode", "name"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"regionCode", "name"})
 @XmlRootElement(name = "Region")
 public class Region implements Serializable {
 
@@ -51,108 +52,157 @@ public class Region implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Region.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getActive() {
+		if (_activeSupplier != null) {
+			active = _activeSupplier.get();
+
+			_activeSupplier = null;
+		}
+
 		return active;
 	}
 
 	public void setActive(Boolean active) {
 		this.active = active;
+
+		_activeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActive(
 		UnsafeSupplier<Boolean, Exception> activeUnsafeSupplier) {
 
-		try {
-			active = activeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activeSupplier = () -> {
+			try {
+				return activeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean active;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _activeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getCountryId() {
+		if (_countryIdSupplier != null) {
+			countryId = _countryIdSupplier.get();
+
+			_countryIdSupplier = null;
+		}
+
 		return countryId;
 	}
 
 	public void setCountryId(Long countryId) {
 		this.countryId = countryId;
+
+		_countryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCountryId(
 		UnsafeSupplier<Long, Exception> countryIdUnsafeSupplier) {
 
-		try {
-			countryId = countryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_countryIdSupplier = () -> {
+			try {
+				return countryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long countryId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _countryIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -160,56 +210,82 @@ public class Region implements Serializable {
 	@NotEmpty
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getPosition() {
+		if (_positionSupplier != null) {
+			position = _positionSupplier.get();
+
+			_positionSupplier = null;
+		}
+
 		return position;
 	}
 
 	public void setPosition(Double position) {
 		this.position = position;
+
+		_positionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPosition(
 		UnsafeSupplier<Double, Exception> positionUnsafeSupplier) {
 
-		try {
-			position = positionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_positionSupplier = () -> {
+			try {
+				return positionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double position;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _positionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getRegionCode() {
+		if (_regionCodeSupplier != null) {
+			regionCode = _regionCodeSupplier.get();
+
+			_regionCodeSupplier = null;
+		}
+
 		return regionCode;
 	}
 
 	public void setRegionCode(String regionCode) {
 		this.regionCode = regionCode;
+
+		_regionCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRegionCode(
 		UnsafeSupplier<String, Exception> regionCodeUnsafeSupplier) {
 
-		try {
-			regionCode = regionCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_regionCodeSupplier = () -> {
+			try {
+				return regionCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -217,14 +293,25 @@ public class Region implements Serializable {
 	@NotEmpty
 	protected String regionCode;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _regionCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getTitle_i18n() {
+		if (_title_i18nSupplier != null) {
+			title_i18n = _title_i18nSupplier.get();
+
+			_title_i18nSupplier = null;
+		}
+
 		return title_i18n;
 	}
 
 	public void setTitle_i18n(Map<String, String> title_i18n) {
 		this.title_i18n = title_i18n;
+
+		_title_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -232,20 +319,25 @@ public class Region implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			title_i18nUnsafeSupplier) {
 
-		try {
-			title_i18n = title_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_title_i18nSupplier = () -> {
+			try {
+				return title_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> title_i18n;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _title_i18nSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -274,6 +366,8 @@ public class Region implements Serializable {
 
 		sb.append("{");
 
+		Boolean active = getActive();
+
 		if (active != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -283,6 +377,8 @@ public class Region implements Serializable {
 
 			sb.append(active);
 		}
+
+		Long countryId = getCountryId();
 
 		if (countryId != null) {
 			if (sb.length() > 1) {
@@ -294,6 +390,8 @@ public class Region implements Serializable {
 			sb.append(countryId);
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -303,6 +401,8 @@ public class Region implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -318,6 +418,8 @@ public class Region implements Serializable {
 			sb.append("\"");
 		}
 
+		Double position = getPosition();
+
 		if (position != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -327,6 +429,8 @@ public class Region implements Serializable {
 
 			sb.append(position);
 		}
+
+		String regionCode = getRegionCode();
 
 		if (regionCode != null) {
 			if (sb.length() > 1) {
@@ -341,6 +445,8 @@ public class Region implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Map<String, String> title_i18n = getTitle_i18n();
 
 		if (title_i18n != null) {
 			if (sb.length() > 1) {
@@ -357,8 +463,8 @@ public class Region implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.address.dto.v1_0.Region",
 		name = "x-class-name"
 	)
@@ -404,7 +510,10 @@ public class Region implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

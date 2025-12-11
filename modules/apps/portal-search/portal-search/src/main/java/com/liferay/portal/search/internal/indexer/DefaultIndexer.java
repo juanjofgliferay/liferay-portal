@@ -31,13 +31,13 @@ import com.liferay.portal.search.indexer.IndexerSummaryBuilder;
 import com.liferay.portal.search.indexer.IndexerWriter;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 /**
  * @author Michael C. Han
@@ -103,6 +103,11 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	}
 
 	@Override
+	public long getCompanyId() {
+		return _modelSearchSettings.getCompanyId();
+	}
+
+	@Override
 	public Document getDocument(T baseModel) throws SearchException {
 		return _indexerDocumentBuilder.getDocument(baseModel);
 	}
@@ -138,6 +143,13 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	@Override
 	public String getSortField(String orderByCol) {
 		return StringPool.BLANK;
+	}
+
+	@Override
+	public Summary getSummary(Document document, Locale locale, String snippet)
+		throws SearchException {
+
+		return _indexerSummaryBuilder.getSummary(document, snippet, locale);
 	}
 
 	@Override

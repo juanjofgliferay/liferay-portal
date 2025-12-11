@@ -1,4 +1,5 @@
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import getMetricsMapper from 'shared/hoc/mappers/metrics';
 import knownIndividualsListTouchpointQuery from 'shared/queries/knownIndividualsListTouchpointQuery';
 import React, {useState} from 'react';
@@ -34,19 +35,19 @@ const TableWithData = withBaseResults(withData, {
 				)}
 			</span>
 
-			<a
+			<ClayLink
 				href={URLConstants.IndividualsDashboardDocumentation}
 				key='DOCUMENTATION'
 				target='_blank'
 			>
 				{Liferay.Language.get('learn-more-about-individuals')}
-			</a>
+			</ClayLink>
 		</>
 	),
 	emptyIcon: {
 		border: false,
 		size: Sizes.XXXLarge,
-		symbol: 'ac-satellite'
+		symbol: 'ac_satellite'
 	},
 	emptyTitle: Liferay.Language.get('there-are-no-visitors-data-found'),
 	getColumns: ({
@@ -85,5 +86,5 @@ const KnownIndividualsListCard = ({
 
 export default compose(
 	withQueryPagination({initialOrderIOMap: createOrderIOMap(NAME)}),
-	withQueryRangeSelectors({})
+	withQueryRangeSelectors()
 )(KnownIndividualsListCard);

@@ -70,7 +70,7 @@ public class CPCompareContentCommerceHealthStatus
 		}
 
 		Layout layout = _layoutService.addLayout(
-			commerceChannel.getSiteGroupId(), privateLayout,
+			null, commerceChannel.getSiteGroupId(), privateLayout,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name, name, null,
 			LayoutConstants.TYPE_PORTLET, true, friendlyURL,
 			new ServiceContext());
@@ -78,11 +78,14 @@ public class CPCompareContentCommerceHealthStatus
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();
 
+		layoutTypePortlet.setLayoutTemplateId(
+			PrincipalThreadLocal.getUserId(), "1_column", false);
+
 		layoutTypePortlet.addPortletId(
 			PrincipalThreadLocal.getUserId(),
 			CPPortletKeys.CP_COMPARE_CONTENT_WEB);
 
-		_layoutService.updateLayout(
+		_layoutService.updateTypeSettings(
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
 			layout.getTypeSettings());
 	}

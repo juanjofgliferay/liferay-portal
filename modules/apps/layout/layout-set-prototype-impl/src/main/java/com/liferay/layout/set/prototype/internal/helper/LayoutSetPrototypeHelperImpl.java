@@ -127,7 +127,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 				).and(
 					LayoutTable.INSTANCE.system.eq(false)
 				).and(
-					LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.isNull()
+					LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.isNull()
 				)
 			));
 	}
@@ -181,7 +181,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 					tempLayoutTable.friendlyURL.eq(
 						LayoutTable.INSTANCE.friendlyURL)
 				).and(
-					tempLayoutTable.sourcePrototypeLayoutUuid.isNull()
+					tempLayoutTable.layoutSetPrototypeLayoutERC.isNull()
 				)
 			).where(
 				LayoutTable.INSTANCE.groupId.eq(
@@ -194,16 +194,16 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 
 	@Override
 	public boolean hasDuplicatedFriendlyURLs(
-			String layoutUuid, long groupId, boolean privateLayout,
-			String friendlyURL)
+			String layoutExternalReferenceCode, long groupId,
+			boolean privateLayout, String friendlyURL)
 		throws PortalException {
 
 		Group group = _groupLocalService.getGroup(groupId);
 
 		if (group.isLayoutSetPrototype()) {
 			long count = _getDuplicatedFriendlyURLSiteLayoutsCount(
-				layoutUuid, group.getCompanyId(), group.getGroupId(),
-				friendlyURL);
+				layoutExternalReferenceCode, group.getCompanyId(),
+				group.getGroupId(), friendlyURL);
 
 			if (count > 0) {
 				return true;
@@ -213,7 +213,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		}
 
 		return _hasDuplicatedFriendlyURLPrototypeLayout(
-			layoutUuid, groupId, privateLayout, friendlyURL);
+			layoutExternalReferenceCode, groupId, privateLayout, friendlyURL);
 	}
 
 	/**
@@ -280,7 +280,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		}
 
 		if (updateLayoutPrototypeLayout) {
-			_layoutService.updateLayout(
+			_layoutService.updateTypeSettings(
 				layoutPrototypeLayout.getGroupId(),
 				layoutPrototypeLayout.isPrivateLayout(),
 				layoutPrototypeLayout.getLayoutId(),
@@ -396,11 +396,12 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		Layout foundLayout = _layoutLocalService.getLayout(
 			layoutFriendlyURL.getPlid());
 
-		String sourcePrototypeLayoutUuid =
-			layout.getSourcePrototypeLayoutUuid();
+		String layoutSetPrototypeLayoutERC =
+			layout.getLayoutSetPrototypeLayoutERC();
 
-		if (Validator.isNotNull(layout.getSourcePrototypeLayoutUuid()) &&
-			sourcePrototypeLayoutUuid.equals(foundLayout.getUuid())) {
+		if (Validator.isNotNull(layout.getLayoutSetPrototypeLayoutERC()) &&
+			layoutSetPrototypeLayoutERC.equals(
+				foundLayout.getExternalReferenceCode())) {
 
 			return null;
 		}
@@ -411,63 +412,68 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 	private List<Layout> _getDuplicatedFriendlyURLSiteLayouts(Layout layout)
 		throws PortalException {
 
-		return _layoutLocalService.dslQuery(
-			DSLQueryFactoryUtil.selectDistinct(
-				LayoutTable.INSTANCE
-			).from(
-				LayoutTable.INSTANCE
-			).innerJoinON(
-				LayoutSetTable.INSTANCE,
-				LayoutSetTable.INSTANCE.companyId.eq(
-					LayoutTable.INSTANCE.companyId
-				).and(
-					LayoutSetTable.INSTANCE.groupId.eq(
-						LayoutTable.INSTANCE.groupId)
-				).and(
-					LayoutSetTable.INSTANCE.privateLayout.eq(
-						LayoutTable.INSTANCE.privateLayout)
-				)
-			).innerJoinON(
-				LayoutSetPrototypeTable.INSTANCE,
-				LayoutSetPrototypeTable.INSTANCE.companyId.eq(
-					LayoutSetTable.INSTANCE.companyId
-				).and(
-					LayoutSetPrototypeTable.INSTANCE.uuid.eq(
-						LayoutSetTable.INSTANCE.layoutSetPrototypeUuid)
-				)
-			).innerJoinON(
-				GroupTable.INSTANCE,
-				GroupTable.INSTANCE.companyId.eq(
-					LayoutSetPrototypeTable.INSTANCE.companyId
-				).and(
-					GroupTable.INSTANCE.classPK.eq(
-						LayoutSetPrototypeTable.INSTANCE.layoutSetPrototypeId)
-				)
-			).where(
-				LayoutSetTable.INSTANCE.companyId.eq(
-					layout.getCompanyId()
-				).and(
-					LayoutTable.INSTANCE.friendlyURL.eq(layout.getFriendlyURL())
-				).and(
-					LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.isNull()
-				).and(
-					GroupTable.INSTANCE.groupId.eq(layout.getGroupId())
-				)
-			));
+		return _layoutLocalService.getLayouts(
+			_layoutLocalService.dslQuery(
+				DSLQueryFactoryUtil.selectDistinct(
+					LayoutTable.INSTANCE.plid
+				).from(
+					LayoutTable.INSTANCE
+				).innerJoinON(
+					LayoutSetTable.INSTANCE,
+					LayoutSetTable.INSTANCE.companyId.eq(
+						LayoutTable.INSTANCE.companyId
+					).and(
+						LayoutSetTable.INSTANCE.groupId.eq(
+							LayoutTable.INSTANCE.groupId)
+					).and(
+						LayoutSetTable.INSTANCE.privateLayout.eq(
+							LayoutTable.INSTANCE.privateLayout)
+					)
+				).innerJoinON(
+					LayoutSetPrototypeTable.INSTANCE,
+					LayoutSetPrototypeTable.INSTANCE.companyId.eq(
+						LayoutSetTable.INSTANCE.companyId
+					).and(
+						LayoutSetPrototypeTable.INSTANCE.uuid.eq(
+							LayoutSetTable.INSTANCE.layoutSetPrototypeUuid)
+					)
+				).innerJoinON(
+					GroupTable.INSTANCE,
+					GroupTable.INSTANCE.companyId.eq(
+						LayoutSetPrototypeTable.INSTANCE.companyId
+					).and(
+						GroupTable.INSTANCE.classPK.eq(
+							LayoutSetPrototypeTable.INSTANCE.
+								layoutSetPrototypeId)
+					)
+				).where(
+					LayoutSetTable.INSTANCE.companyId.eq(
+						layout.getCompanyId()
+					).and(
+						LayoutTable.INSTANCE.friendlyURL.eq(
+							layout.getFriendlyURL())
+					).and(
+						LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.
+							isNull()
+					).and(
+						GroupTable.INSTANCE.groupId.eq(layout.getGroupId())
+					)
+				)));
 	}
 
 	private long _getDuplicatedFriendlyURLSiteLayoutsCount(
-			String layoutUuid, long companyId, long groupId, String friendlyURL)
+			String layoutExternalReferenceCode, long companyId, long groupId,
+			String friendlyURL)
 		throws PortalException {
 
-		Predicate sourcePrototypeLayoutUuidPredicate =
-			LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.isNull();
+		Predicate layoutSetPrototypeLayoutERCPredicate =
+			LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.isNull();
 
-		if (Validator.isNotNull(layoutUuid)) {
-			sourcePrototypeLayoutUuidPredicate = Predicate.withParentheses(
-				sourcePrototypeLayoutUuidPredicate.or(
-					LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.neq(
-						layoutUuid)));
+		if (Validator.isNotNull(layoutExternalReferenceCode)) {
+			layoutSetPrototypeLayoutERCPredicate = Predicate.withParentheses(
+				layoutSetPrototypeLayoutERCPredicate.or(
+					LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.neq(
+						layoutExternalReferenceCode)));
 		}
 
 		return _layoutLocalService.dslQuery(
@@ -509,13 +515,13 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 				).and(
 					LayoutTable.INSTANCE.friendlyURL.eq(friendlyURL)
 				).and(
-					sourcePrototypeLayoutUuidPredicate
+					layoutSetPrototypeLayoutERCPredicate
 				)
 			));
 	}
 
 	private boolean _hasDuplicatedFriendlyURLPrototypeLayout(
-			String sourcePrototypeLayoutUuid, long groupId,
+			String layoutSetPrototypeLayoutERC, long groupId,
 			boolean privateLayout, String friendlyURL)
 		throws PortalException {
 
@@ -546,8 +552,9 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		Layout foundLayout = _layoutLocalService.getLayout(
 			layoutFriendlyURL.getPlid());
 
-		if (Validator.isNotNull(sourcePrototypeLayoutUuid) &&
-			sourcePrototypeLayoutUuid.equals(foundLayout.getUuid())) {
+		if (Validator.isNotNull(layoutSetPrototypeLayoutERC) &&
+			layoutSetPrototypeLayoutERC.equals(
+				foundLayout.getExternalReferenceCode())) {
 
 			return false;
 		}

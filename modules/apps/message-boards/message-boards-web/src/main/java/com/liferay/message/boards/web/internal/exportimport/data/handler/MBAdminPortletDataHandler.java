@@ -28,12 +28,12 @@ import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBThreadFlagLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -46,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gergely Mathe
  */
 @Component(
-	property = "javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
+	property = "jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
 	service = PortletDataHandler.class
 )
 public class MBAdminPortletDataHandler extends BasePortletDataHandler {

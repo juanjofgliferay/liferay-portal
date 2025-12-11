@@ -7,6 +7,7 @@ package com.liferay.headless.delivery.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -19,7 +20,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -27,13 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -41,8 +41,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("CollectionConfig")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"collectionReference", "collectionType"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"collectionReference", "collectionType"})
 @XmlRootElement(name = "CollectionConfig")
 public class CollectionConfig implements Serializable {
 
@@ -54,29 +56,41 @@ public class CollectionConfig implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(CollectionConfig.class, json);
 	}
 
-	@Schema(description = "The page collection's reference.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page collection's reference."
+	)
 	@Valid
 	public Object getCollectionReference() {
+		if (_collectionReferenceSupplier != null) {
+			collectionReference = _collectionReferenceSupplier.get();
+
+			_collectionReferenceSupplier = null;
+		}
+
 		return collectionReference;
 	}
 
 	public void setCollectionReference(Object collectionReference) {
 		this.collectionReference = collectionReference;
+
+		_collectionReferenceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCollectionReference(
 		UnsafeSupplier<Object, Exception> collectionReferenceUnsafeSupplier) {
 
-		try {
-			collectionReference = collectionReferenceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_collectionReferenceSupplier = () -> {
+			try {
+				return collectionReferenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page collection's reference.")
@@ -84,16 +98,28 @@ public class CollectionConfig implements Serializable {
 	@NotNull
 	protected Object collectionReference;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Object> _collectionReferenceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The page collection's type (Collection, CollectionProvider)."
 	)
+	@JsonGetter("collectionType")
 	@Valid
 	public CollectionType getCollectionType() {
+		if (_collectionTypeSupplier != null) {
+			collectionType = _collectionTypeSupplier.get();
+
+			_collectionTypeSupplier = null;
+		}
+
 		return collectionType;
 	}
 
 	@JsonIgnore
 	public String getCollectionTypeAsString() {
+		CollectionType collectionType = getCollectionType();
+
 		if (collectionType == null) {
 			return null;
 		}
@@ -103,6 +129,8 @@ public class CollectionConfig implements Serializable {
 
 	public void setCollectionType(CollectionType collectionType) {
 		this.collectionType = collectionType;
+
+		_collectionTypeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -110,15 +138,17 @@ public class CollectionConfig implements Serializable {
 		UnsafeSupplier<CollectionType, Exception>
 			collectionTypeUnsafeSupplier) {
 
-		try {
-			collectionType = collectionTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_collectionTypeSupplier = () -> {
+			try {
+				return collectionTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -127,6 +157,9 @@ public class CollectionConfig implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected CollectionType collectionType;
+
+	@JsonIgnore
+	private Supplier<CollectionType> _collectionTypeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -155,6 +188,8 @@ public class CollectionConfig implements Serializable {
 
 		sb.append("{");
 
+		Object collectionReference = getCollectionReference();
+
 		if (collectionReference != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -177,6 +212,8 @@ public class CollectionConfig implements Serializable {
 			}
 		}
 
+		CollectionType collectionType = getCollectionType();
+
 		if (collectionType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -185,9 +222,7 @@ public class CollectionConfig implements Serializable {
 			sb.append("\"collectionType\": ");
 
 			sb.append("\"");
-
 			sb.append(collectionType);
-
 			sb.append("\"");
 		}
 
@@ -196,8 +231,8 @@ public class CollectionConfig implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.CollectionConfig",
 		name = "x-class-name"
 	)
@@ -281,7 +316,10 @@ public class CollectionConfig implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

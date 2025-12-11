@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -53,14 +52,22 @@ public class ObjectView implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ObjectView.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -68,162 +75,239 @@ public class ObjectView implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
 		return dateCreated;
 	}
 
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCreated(
 		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
 
-		try {
-			dateCreated = dateCreatedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateCreated;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
 		return dateModified;
 	}
 
 	public void setDateModified(Date dateModified) {
 		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateModified(
 		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
 
-		try {
-			dateModified = dateModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateModified;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getDefaultObjectView() {
+		if (_defaultObjectViewSupplier != null) {
+			defaultObjectView = _defaultObjectViewSupplier.get();
+
+			_defaultObjectViewSupplier = null;
+		}
+
 		return defaultObjectView;
 	}
 
 	public void setDefaultObjectView(Boolean defaultObjectView) {
 		this.defaultObjectView = defaultObjectView;
+
+		_defaultObjectViewSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultObjectView(
 		UnsafeSupplier<Boolean, Exception> defaultObjectViewUnsafeSupplier) {
 
-		try {
-			defaultObjectView = defaultObjectViewUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultObjectViewSupplier = () -> {
+			try {
+				return defaultObjectViewUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean defaultObjectView;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _defaultObjectViewSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, String> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getObjectDefinitionExternalReferenceCode() {
+		if (_objectDefinitionExternalReferenceCodeSupplier != null) {
+			objectDefinitionExternalReferenceCode =
+				_objectDefinitionExternalReferenceCodeSupplier.get();
+
+			_objectDefinitionExternalReferenceCodeSupplier = null;
+		}
+
 		return objectDefinitionExternalReferenceCode;
 	}
 
@@ -232,6 +316,8 @@ public class ObjectView implements Serializable {
 
 		this.objectDefinitionExternalReferenceCode =
 			objectDefinitionExternalReferenceCode;
+
+		_objectDefinitionExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -239,58 +325,84 @@ public class ObjectView implements Serializable {
 		UnsafeSupplier<String, Exception>
 			objectDefinitionExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			objectDefinitionExternalReferenceCode =
-				objectDefinitionExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectDefinitionExternalReferenceCodeSupplier = () -> {
+			try {
+				return objectDefinitionExternalReferenceCodeUnsafeSupplier.
+					get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String objectDefinitionExternalReferenceCode;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _objectDefinitionExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getObjectDefinitionId() {
+		if (_objectDefinitionIdSupplier != null) {
+			objectDefinitionId = _objectDefinitionIdSupplier.get();
+
+			_objectDefinitionIdSupplier = null;
+		}
+
 		return objectDefinitionId;
 	}
 
 	public void setObjectDefinitionId(Long objectDefinitionId) {
 		this.objectDefinitionId = objectDefinitionId;
+
+		_objectDefinitionIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setObjectDefinitionId(
 		UnsafeSupplier<Long, Exception> objectDefinitionIdUnsafeSupplier) {
 
-		try {
-			objectDefinitionId = objectDefinitionIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectDefinitionIdSupplier = () -> {
+			try {
+				return objectDefinitionIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long objectDefinitionId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _objectDefinitionIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public ObjectViewColumn[] getObjectViewColumns() {
+		if (_objectViewColumnsSupplier != null) {
+			objectViewColumns = _objectViewColumnsSupplier.get();
+
+			_objectViewColumnsSupplier = null;
+		}
+
 		return objectViewColumns;
 	}
 
 	public void setObjectViewColumns(ObjectViewColumn[] objectViewColumns) {
 		this.objectViewColumns = objectViewColumns;
+
+		_objectViewColumnsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -298,24 +410,35 @@ public class ObjectView implements Serializable {
 		UnsafeSupplier<ObjectViewColumn[], Exception>
 			objectViewColumnsUnsafeSupplier) {
 
-		try {
-			objectViewColumns = objectViewColumnsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectViewColumnsSupplier = () -> {
+			try {
+				return objectViewColumnsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ObjectViewColumn[] objectViewColumns;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<ObjectViewColumn[]> _objectViewColumnsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public ObjectViewFilterColumn[] getObjectViewFilterColumns() {
+		if (_objectViewFilterColumnsSupplier != null) {
+			objectViewFilterColumns = _objectViewFilterColumnsSupplier.get();
+
+			_objectViewFilterColumnsSupplier = null;
+		}
+
 		return objectViewFilterColumns;
 	}
 
@@ -323,6 +446,8 @@ public class ObjectView implements Serializable {
 		ObjectViewFilterColumn[] objectViewFilterColumns) {
 
 		this.objectViewFilterColumns = objectViewFilterColumns;
+
+		_objectViewFilterColumnsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -330,25 +455,35 @@ public class ObjectView implements Serializable {
 		UnsafeSupplier<ObjectViewFilterColumn[], Exception>
 			objectViewFilterColumnsUnsafeSupplier) {
 
-		try {
-			objectViewFilterColumns =
-				objectViewFilterColumnsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectViewFilterColumnsSupplier = () -> {
+			try {
+				return objectViewFilterColumnsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ObjectViewFilterColumn[] objectViewFilterColumns;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<ObjectViewFilterColumn[]> _objectViewFilterColumnsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public ObjectViewSortColumn[] getObjectViewSortColumns() {
+		if (_objectViewSortColumnsSupplier != null) {
+			objectViewSortColumns = _objectViewSortColumnsSupplier.get();
+
+			_objectViewSortColumnsSupplier = null;
+		}
+
 		return objectViewSortColumns;
 	}
 
@@ -356,6 +491,8 @@ public class ObjectView implements Serializable {
 		ObjectViewSortColumn[] objectViewSortColumns) {
 
 		this.objectViewSortColumns = objectViewSortColumns;
+
+		_objectViewSortColumnsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -363,20 +500,25 @@ public class ObjectView implements Serializable {
 		UnsafeSupplier<ObjectViewSortColumn[], Exception>
 			objectViewSortColumnsUnsafeSupplier) {
 
-		try {
-			objectViewSortColumns = objectViewSortColumnsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectViewSortColumnsSupplier = () -> {
+			try {
+				return objectViewSortColumnsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ObjectViewSortColumn[] objectViewSortColumns;
+
+	@JsonIgnore
+	private Supplier<ObjectViewSortColumn[]> _objectViewSortColumnsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -408,6 +550,8 @@ public class ObjectView implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -417,6 +561,8 @@ public class ObjectView implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		Date dateCreated = getDateCreated();
 
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
@@ -432,6 +578,8 @@ public class ObjectView implements Serializable {
 			sb.append("\"");
 		}
 
+		Date dateModified = getDateModified();
+
 		if (dateModified != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -446,6 +594,8 @@ public class ObjectView implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean defaultObjectView = getDefaultObjectView();
+
 		if (defaultObjectView != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -455,6 +605,8 @@ public class ObjectView implements Serializable {
 
 			sb.append(defaultObjectView);
 		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -466,6 +618,8 @@ public class ObjectView implements Serializable {
 			sb.append(id);
 		}
 
+		Map<String, String> name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -475,6 +629,9 @@ public class ObjectView implements Serializable {
 
 			sb.append(_toJSON(name));
 		}
+
+		String objectDefinitionExternalReferenceCode =
+			getObjectDefinitionExternalReferenceCode();
 
 		if (objectDefinitionExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -490,6 +647,8 @@ public class ObjectView implements Serializable {
 			sb.append("\"");
 		}
 
+		Long objectDefinitionId = getObjectDefinitionId();
+
 		if (objectDefinitionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -499,6 +658,8 @@ public class ObjectView implements Serializable {
 
 			sb.append(objectDefinitionId);
 		}
+
+		ObjectViewColumn[] objectViewColumns = getObjectViewColumns();
 
 		if (objectViewColumns != null) {
 			if (sb.length() > 1) {
@@ -520,6 +681,9 @@ public class ObjectView implements Serializable {
 			sb.append("]");
 		}
 
+		ObjectViewFilterColumn[] objectViewFilterColumns =
+			getObjectViewFilterColumns();
+
 		if (objectViewFilterColumns != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -539,6 +703,9 @@ public class ObjectView implements Serializable {
 
 			sb.append("]");
 		}
+
+		ObjectViewSortColumn[] objectViewSortColumns =
+			getObjectViewSortColumns();
 
 		if (objectViewSortColumns != null) {
 			if (sb.length() > 1) {
@@ -565,8 +732,8 @@ public class ObjectView implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.object.admin.rest.dto.v1_0.ObjectView",
 		name = "x-class-name"
 	)
@@ -612,7 +779,10 @@ public class ObjectView implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

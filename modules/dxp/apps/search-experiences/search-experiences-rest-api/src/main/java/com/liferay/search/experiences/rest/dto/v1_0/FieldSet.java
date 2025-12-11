@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,34 +48,47 @@ public class FieldSet implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FieldSet.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Field[] getFields() {
+		if (_fieldsSupplier != null) {
+			fields = _fieldsSupplier.get();
+
+			_fieldsSupplier = null;
+		}
+
 		return fields;
 	}
 
 	public void setFields(Field[] fields) {
 		this.fields = fields;
+
+		_fieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFields(
 		UnsafeSupplier<Field[], Exception> fieldsUnsafeSupplier) {
 
-		try {
-			fields = fieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldsSupplier = () -> {
+			try {
+				return fieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Field[] fields;
+
+	@JsonIgnore
+	private Supplier<Field[]> _fieldsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -105,6 +117,8 @@ public class FieldSet implements Serializable {
 
 		sb.append("{");
 
+		Field[] fields = getFields();
+
 		if (fields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -130,8 +144,8 @@ public class FieldSet implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.FieldSet",
 		name = "x-class-name"
 	)
@@ -177,7 +191,10 @@ public class FieldSet implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

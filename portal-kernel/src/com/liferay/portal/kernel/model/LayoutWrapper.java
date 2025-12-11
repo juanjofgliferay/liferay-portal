@@ -37,6 +37,7 @@ public class LayoutWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("plid", getPlid());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -63,16 +64,18 @@ public class LayoutWrapper
 		attributes.put("iconImageId", getIconImageId());
 		attributes.put("themeId", getThemeId());
 		attributes.put("colorSchemeId", getColorSchemeId());
-		attributes.put("styleBookEntryId", getStyleBookEntryId());
+		attributes.put("styleBookEntryERC", getStyleBookEntryERC());
 		attributes.put("css", getCss());
 		attributes.put("priority", getPriority());
 		attributes.put("faviconFileEntryId", getFaviconFileEntryId());
-		attributes.put("masterLayoutPlid", getMasterLayoutPlid());
+		attributes.put(
+			"masterLayoutPageTemplateEntryERC",
+			getMasterLayoutPageTemplateEntryERC());
 		attributes.put("layoutPrototypeUuid", getLayoutPrototypeUuid());
 		attributes.put(
 			"layoutPrototypeLinkEnabled", isLayoutPrototypeLinkEnabled());
 		attributes.put(
-			"sourcePrototypeLayoutUuid", getSourcePrototypeLayoutUuid());
+			"layoutSetPrototypeLayoutERC", getLayoutSetPrototypeLayoutERC());
 		attributes.put("publishDate", getPublishDate());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
@@ -101,6 +104,13 @@ public class LayoutWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long plid = (Long)attributes.get("plid");
@@ -259,10 +269,10 @@ public class LayoutWrapper
 			setColorSchemeId(colorSchemeId);
 		}
 
-		Long styleBookEntryId = (Long)attributes.get("styleBookEntryId");
+		String styleBookEntryERC = (String)attributes.get("styleBookEntryERC");
 
-		if (styleBookEntryId != null) {
-			setStyleBookEntryId(styleBookEntryId);
+		if (styleBookEntryERC != null) {
+			setStyleBookEntryERC(styleBookEntryERC);
 		}
 
 		String css = (String)attributes.get("css");
@@ -283,10 +293,12 @@ public class LayoutWrapper
 			setFaviconFileEntryId(faviconFileEntryId);
 		}
 
-		Long masterLayoutPlid = (Long)attributes.get("masterLayoutPlid");
+		String masterLayoutPageTemplateEntryERC = (String)attributes.get(
+			"masterLayoutPageTemplateEntryERC");
 
-		if (masterLayoutPlid != null) {
-			setMasterLayoutPlid(masterLayoutPlid);
+		if (masterLayoutPageTemplateEntryERC != null) {
+			setMasterLayoutPageTemplateEntryERC(
+				masterLayoutPageTemplateEntryERC);
 		}
 
 		String layoutPrototypeUuid = (String)attributes.get(
@@ -303,11 +315,11 @@ public class LayoutWrapper
 			setLayoutPrototypeLinkEnabled(layoutPrototypeLinkEnabled);
 		}
 
-		String sourcePrototypeLayoutUuid = (String)attributes.get(
-			"sourcePrototypeLayoutUuid");
+		String layoutSetPrototypeLayoutERC = (String)attributes.get(
+			"layoutSetPrototypeLayoutERC");
 
-		if (sourcePrototypeLayoutUuid != null) {
-			setSourcePrototypeLayoutUuid(sourcePrototypeLayoutUuid);
+		if (layoutSetPrototypeLayoutERC != null) {
+			setLayoutSetPrototypeLayoutERC(layoutSetPrototypeLayoutERC);
 		}
 
 		Date publishDate = (Date)attributes.get("publishDate");
@@ -663,6 +675,16 @@ public class LayoutWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this layout.
+	 *
+	 * @return the external reference code of this layout
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the favicon file entry ID of this layout.
 	 *
 	 * @return the favicon file entry ID of this layout
@@ -934,6 +956,16 @@ public class LayoutWrapper
 	}
 
 	/**
+	 * Returns the layout set prototype layout erc of this layout.
+	 *
+	 * @return the layout set prototype layout erc of this layout
+	 */
+	@Override
+	public String getLayoutSetPrototypeLayoutERC() {
+		return model.getLayoutSetPrototypeLayoutERC();
+	}
+
+	/**
 	 * Returns the current layout's {@link LayoutType}.
 	 *
 	 * @return the current layout's layout type
@@ -955,10 +987,15 @@ public class LayoutWrapper
 	}
 
 	/**
-	 * Returns the master layout plid of this layout.
+	 * Returns the master layout page template entry erc of this layout.
 	 *
-	 * @return the master layout plid of this layout
+	 * @return the master layout page template entry erc of this layout
 	 */
+	@Override
+	public String getMasterLayoutPageTemplateEntryERC() {
+		return model.getMasterLayoutPageTemplateEntryERC();
+	}
+
 	@Override
 	public long getMasterLayoutPlid() {
 		return model.getMasterLayoutPlid();
@@ -1132,7 +1169,7 @@ public class LayoutWrapper
 
 	@Override
 	public String getRegularURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getRegularURL(httpServletRequest);
@@ -1140,7 +1177,7 @@ public class LayoutWrapper
 
 	@Override
 	public String getResetLayoutURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getResetLayoutURL(httpServletRequest);
@@ -1148,7 +1185,7 @@ public class LayoutWrapper
 
 	@Override
 	public String getResetMaxStateURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getResetMaxStateURL(httpServletRequest);
@@ -1238,16 +1275,6 @@ public class LayoutWrapper
 	}
 
 	/**
-	 * Returns the source prototype layout uuid of this layout.
-	 *
-	 * @return the source prototype layout uuid of this layout
-	 */
-	@Override
-	public String getSourcePrototypeLayoutUuid() {
-		return model.getSourcePrototypeLayoutUuid();
-	}
-
-	/**
 	 * Returns the status of this layout.
 	 *
 	 * @return the status of this layout
@@ -1298,13 +1325,13 @@ public class LayoutWrapper
 	}
 
 	/**
-	 * Returns the style book entry ID of this layout.
+	 * Returns the style book entry erc of this layout.
 	 *
-	 * @return the style book entry ID of this layout
+	 * @return the style book entry erc of this layout
 	 */
 	@Override
-	public long getStyleBookEntryId() {
-		return model.getStyleBookEntryId();
+	public String getStyleBookEntryERC() {
+		return model.getStyleBookEntryERC();
 	}
 
 	/**
@@ -1553,8 +1580,8 @@ public class LayoutWrapper
 
 	@Override
 	public boolean includeLayoutContent(
-			javax.servlet.http.HttpServletRequest httpServletRequest,
-			javax.servlet.http.HttpServletResponse httpServletResponse)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest,
+			jakarta.servlet.http.HttpServletResponse httpServletResponse)
 		throws Exception {
 
 		return model.includeLayoutContent(
@@ -1853,11 +1880,6 @@ public class LayoutWrapper
 	}
 
 	@Override
-	public boolean isTypeCollection() {
-		return model.isTypeCollection();
-	}
-
-	@Override
 	public boolean isTypeContent() {
 		return model.isTypeContent();
 	}
@@ -1870,6 +1892,11 @@ public class LayoutWrapper
 	@Override
 	public boolean isTypeEmbedded() {
 		return model.isTypeEmbedded();
+	}
+
+	@Override
+	public boolean isTypeEmpty() {
+		return model.isTypeEmpty();
 	}
 
 	@Override
@@ -1893,13 +1920,18 @@ public class LayoutWrapper
 	}
 
 	@Override
+	public boolean isTypeUtility() {
+		return model.isTypeUtility();
+	}
+
+	@Override
 	public boolean isUnlocked(String mode, long userId) {
 		return model.isUnlocked(mode, userId);
 	}
 
 	@Override
 	public boolean matches(
-		javax.servlet.http.HttpServletRequest httpServletRequest,
+		jakarta.servlet.http.HttpServletRequest httpServletRequest,
 		String friendlyURL) {
 
 		return model.matches(httpServletRequest, friendlyURL);
@@ -2068,6 +2100,16 @@ public class LayoutWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this layout.
+	 *
+	 * @param externalReferenceCode the external reference code of this layout
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the favicon file entry ID of this layout.
 	 *
 	 * @param faviconFileEntryId the favicon file entry ID of this layout
@@ -2230,13 +2272,28 @@ public class LayoutWrapper
 	}
 
 	/**
-	 * Sets the master layout plid of this layout.
+	 * Sets the layout set prototype layout erc of this layout.
 	 *
-	 * @param masterLayoutPlid the master layout plid of this layout
+	 * @param layoutSetPrototypeLayoutERC the layout set prototype layout erc of this layout
 	 */
 	@Override
-	public void setMasterLayoutPlid(long masterLayoutPlid) {
-		model.setMasterLayoutPlid(masterLayoutPlid);
+	public void setLayoutSetPrototypeLayoutERC(
+		String layoutSetPrototypeLayoutERC) {
+
+		model.setLayoutSetPrototypeLayoutERC(layoutSetPrototypeLayoutERC);
+	}
+
+	/**
+	 * Sets the master layout page template entry erc of this layout.
+	 *
+	 * @param masterLayoutPageTemplateEntryERC the master layout page template entry erc of this layout
+	 */
+	@Override
+	public void setMasterLayoutPageTemplateEntryERC(
+		String masterLayoutPageTemplateEntryERC) {
+
+		model.setMasterLayoutPageTemplateEntryERC(
+			masterLayoutPageTemplateEntryERC);
 	}
 
 	/**
@@ -2458,16 +2515,6 @@ public class LayoutWrapper
 	}
 
 	/**
-	 * Sets the source prototype layout uuid of this layout.
-	 *
-	 * @param sourcePrototypeLayoutUuid the source prototype layout uuid of this layout
-	 */
-	@Override
-	public void setSourcePrototypeLayoutUuid(String sourcePrototypeLayoutUuid) {
-		model.setSourcePrototypeLayoutUuid(sourcePrototypeLayoutUuid);
-	}
-
-	/**
 	 * Sets the status of this layout.
 	 *
 	 * @param status the status of this layout
@@ -2518,13 +2565,13 @@ public class LayoutWrapper
 	}
 
 	/**
-	 * Sets the style book entry ID of this layout.
+	 * Sets the style book entry erc of this layout.
 	 *
-	 * @param styleBookEntryId the style book entry ID of this layout
+	 * @param styleBookEntryERC the style book entry erc of this layout
 	 */
 	@Override
-	public void setStyleBookEntryId(long styleBookEntryId) {
-		model.setStyleBookEntryId(styleBookEntryId);
+	public void setStyleBookEntryERC(String styleBookEntryERC) {
+		model.setStyleBookEntryERC(styleBookEntryERC);
 	}
 
 	/**

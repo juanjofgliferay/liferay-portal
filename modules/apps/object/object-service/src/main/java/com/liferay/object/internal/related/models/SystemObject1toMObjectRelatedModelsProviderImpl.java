@@ -24,13 +24,16 @@ import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.Table;
 import com.liferay.petra.sql.dsl.expression.Expression;
+import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.petra.sql.dsl.query.FromStep;
 import com.liferay.petra.sql.dsl.query.GroupByStep;
+import com.liferay.petra.sql.dsl.query.JoinStep;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -39,6 +42,7 @@ import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -68,6 +72,8 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 		_systemObjectDefinitionManagerRegistry =
 			systemObjectDefinitionManagerRegistry;
 
+		_localizationTable =
+			systemObjectDefinitionManager.getLocalizationTable();
 		_table = systemObjectDefinitionManager.getTable();
 	}
 
@@ -82,21 +88,20 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 				objectRelationshipId);
 
 		List<T> relatedModels = getRelatedModels(
-			groupId, objectRelationshipId, primaryKey, null, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
+			groupId, objectRelationshipId, null, false, primaryKey, null,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 		if (relatedModels.isEmpty()) {
 			return;
 		}
 
+		SystemObjectDefinitionManager systemObjectDefinitionManager =
+			_systemObjectDefinitionManagerRegistry.
+				getSystemObjectDefinitionManager(_objectDefinition.getName());
+
 		if (Objects.equals(
 				deletionType,
 				ObjectRelationshipConstants.DELETION_TYPE_CASCADE)) {
-
-			SystemObjectDefinitionManager systemObjectDefinitionManager =
-				_systemObjectDefinitionManagerRegistry.
-					getSystemObjectDefinitionManager(
-						_objectDefinition.getName());
 
 			for (BaseModel<T> baseModel : relatedModels) {
 				systemObjectDefinitionManager.deleteBaseModel(baseModel);
@@ -110,9 +115,16 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 				objectRelationship.getObjectFieldId2());
 
 			for (BaseModel<T> baseModel : relatedModels) {
+				Map<String, Object> modelAttributes =
+					baseModel.getModelAttributes();
+
+				Column<?, Long> primaryKeyColumn =
+					systemObjectDefinitionManager.getPrimaryKeyColumn();
+
 				_objectEntryLocalService.insertIntoOrUpdateExtensionTable(
 					userId, objectRelationship.getObjectDefinitionId2(),
-					GetterUtil.getLong(baseModel.getPrimaryKeyObj()),
+					GetterUtil.getLong(
+						modelAttributes.get(primaryKeyColumn.getName())),
 					HashMapBuilder.<String, Serializable>put(
 						objectField.getName(), 0
 					).build());
@@ -246,8 +258,9 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 
 	@Override
 	public List<T> getRelatedModels(
-			long groupId, long objectRelationshipId, long primaryKey,
-			String search, int start, int end)
+			long groupId, long objectRelationshipId, Predicate predicate,
+			boolean preferApproved, long primaryKey, String search, int start,
+			int end, Sort[] sorts)
 		throws PortalException {
 
 		PersistedModelLocalService persistedModelLocalService =
@@ -259,6 +272,9 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 			_getDynamicObjectDefinitionTable(),
 			DSLQueryFactoryUtil.selectDistinct(_table), groupId,
 			objectRelationshipId, primaryKey, search
+		).orderBy(
+			_systemObjectDefinitionManager.getPrimaryKeyColumn(
+			).ascending()
 		).limit(
 			start, end
 		);
@@ -268,8 +284,8 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 
 	@Override
 	public int getRelatedModelsCount(
-			long groupId, long objectRelationshipId, long primaryKey,
-			String search)
+			long groupId, long objectRelationshipId, Predicate predicate,
+			long primaryKey, String search)
 		throws PortalException {
 
 		DynamicObjectDefinitionTable dynamicObjectDefinitionTable =
@@ -291,12 +307,16 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 	@Override
 	public List<T> getUnrelatedModels(
 			long companyId, long groupId, ObjectDefinition objectDefinition,
-			long objectEntryId, long objectRelationshipId, int start, int end)
+			long objectEntryId, long objectRelationshipId, String search,
+			int start, int end)
 		throws PortalException {
 
 		DSLQuery dslQuery = _getUnrelatedModelsGroupByStep(
 			companyId, DSLQueryFactoryUtil.select(_table), groupId,
 			objectDefinition, objectRelationshipId
+		).orderBy(
+			_systemObjectDefinitionManager.getPrimaryKeyColumn(
+			).ascending()
 		).limit(
 			start, end
 		);
@@ -311,7 +331,7 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 	@Override
 	public int getUnrelatedModelsCount(
 			long companyId, long groupId, ObjectDefinition objectDefinition,
-			long objectEntryId, long objectRelationshipId)
+			long objectEntryId, long objectRelationshipId, String search)
 		throws PortalException {
 
 		DSLQuery dslQuery = _getUnrelatedModelsGroupByStep(
@@ -390,6 +410,9 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 		ObjectDefinition objectDefinition1 =
 			_objectDefinitionLocalService.getObjectDefinition(
 				objectRelationship.getObjectDefinitionId1());
+		ObjectDefinition objectDefinition2 =
+			_objectDefinitionLocalService.getObjectDefinition(
+				objectRelationship.getObjectDefinitionId2());
 
 		ObjectField objectField = _objectFieldLocalService.getObjectField(
 			objectRelationship.getObjectFieldId2());
@@ -405,7 +428,7 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 						objectField.getDBColumnName());
 		}
 
-		return fromStep.from(
+		JoinStep joinStep = fromStep.from(
 			_table
 		).innerJoinON(
 			dynamicObjectDefinitionTable,
@@ -413,7 +436,25 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 			).eq(
 				_systemObjectDefinitionManager.getPrimaryKeyColumn()
 			)
-		).where(
+		);
+
+		if (_localizationTable != null) {
+			joinStep = joinStep.leftJoinOn(
+				_localizationTable,
+				dynamicObjectDefinitionTable.getPrimaryKeyColumn(
+				).eq(
+					_localizationTable.getColumn(
+						dynamicObjectDefinitionTable.getPrimaryKeyColumnName())
+				).and(
+					_localizationTable.getColumn(
+						"languageId"
+					).eq(
+						ObjectEntrySearchUtil.getLanguageId()
+					)
+				));
+		}
+
+		return joinStep.where(
 			primaryKeyColumn.eq(
 				primaryKey
 			).and(
@@ -423,7 +464,10 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 					if ((groupIdColumn == null) ||
 						Objects.equals(
 							ObjectDefinitionConstants.SCOPE_COMPANY,
-							objectDefinition1.getScope())) {
+							objectDefinition1.getScope()) ||
+						Objects.equals(
+							ObjectDefinitionConstants.SCOPE_COMPANY,
+							objectDefinition2.getScope())) {
 
 						return null;
 					}
@@ -442,13 +486,22 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 					return companyIdColumn.eq(objectField.getCompanyId());
 				}
 			).and(
-				ObjectEntrySearchUtil.getRelatedModelsPredicate(
-					dynamicObjectDefinitionTable,
-					_objectDefinitionLocalService.fetchObjectDefinition(
-						objectRelationship.getObjectDefinitionId2()),
-					_objectFieldLocalService, search)
-			)
-		);
+				() -> {
+					ObjectField titleObjectField =
+						_objectFieldLocalService.getObjectField(
+							objectDefinition2.getTitleObjectFieldId());
+
+					if (titleObjectField.isLocalized()) {
+						return ObjectEntrySearchUtil.getRelatedModelsPredicate(
+							objectDefinition2, _objectFieldLocalService, search,
+							_localizationTable);
+					}
+
+					return ObjectEntrySearchUtil.getRelatedModelsPredicate(
+						objectDefinition2, _objectFieldLocalService, search,
+						dynamicObjectDefinitionTable);
+				}
+			));
 	}
 
 	private GroupByStep _getUnrelatedModelsGroupByStep(
@@ -480,6 +533,17 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 						Objects.equals(
 							ObjectDefinitionConstants.SCOPE_COMPANY,
 							objectDefinition1.getScope())) {
+
+						return null;
+					}
+
+					ObjectDefinition objectDefinition2 =
+						_objectDefinitionLocalService.getObjectDefinition(
+							objectRelationship.getObjectDefinitionId2());
+
+					if (Objects.equals(
+							ObjectDefinitionConstants.SCOPE_COMPANY,
+							objectDefinition2.getScope())) {
 
 						return null;
 					}
@@ -516,6 +580,7 @@ public class SystemObject1toMObjectRelatedModelsProviderImpl
 		);
 	}
 
+	private final Table _localizationTable;
 	private final ObjectDefinition _objectDefinition;
 	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
 	private final ObjectEntryLocalService _objectEntryLocalService;

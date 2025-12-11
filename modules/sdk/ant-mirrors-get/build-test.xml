@@ -23,42 +23,22 @@
 		<mirrors-get
 			dest="test"
 			force="true"
-			src="http://mirrors.lax.liferay.com/dtb5pzswcit1e.cloudfront.net/product_files/Pivotal-tc-Server/pivotal-tc-server-developer-3.1.2.RELEASE.zip"
-			trylocalnetwork="true"
+			src="abc"
 			verbose="true"
 		/>
 	</target>
 
 	<target name="test-3">
 		<mirrors-get
-			dest="test"
-			force="true"
-			src="http://dtb5pzswcit1e.cloudfront.net/product_files/Pivotal-tc-Server/pivotal-tc-server-developer-3.1.2.RELEASE.zip"
+			dest="mysql-connector-j-8.3.0.jar"
+			force="false"
+			src="https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.3.0/mysql-connector-j-8.3.0.jar"
 			trylocalnetwork="false"
 			verbose="true"
 		/>
 	</target>
 
 	<target name="test-4">
-		<mirrors-get
-			dest="test"
-			force="true"
-			src="abc"
-			verbose="true"
-		/>
-	</target>
-
-	<target name="test-5">
-		<mirrors-get
-			dest="mysql-connector-j-8.0.33.jar"
-			force="false"
-			src="https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar"
-			trylocalnetwork="false"
-			verbose="true"
-		/>
-	</target>
-
-	<target name="test-6">
 		<mirrors-get
 			dest="liferay-portal-tomcat-master-private.tar.gz"
 			force="true"

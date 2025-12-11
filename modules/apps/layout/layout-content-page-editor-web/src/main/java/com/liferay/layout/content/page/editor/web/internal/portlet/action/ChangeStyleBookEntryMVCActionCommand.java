@@ -5,16 +5,17 @@
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
+import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
 import com.liferay.layout.content.page.editor.web.internal.util.StyleBookEntryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
@@ -27,8 +28,8 @@ import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/change_style_book_entry"
 	},
 	service = MVCActionCommand.class
@@ -59,12 +60,9 @@ public class ChangeStyleBookEntryMVCActionCommand
 		LayoutPermissionUtil.checkLayoutRestrictedUpdatePermission(
 			themeDisplay.getPermissionChecker(), layout);
 
-		long styleBookEntryId = ParamUtil.getLong(
-			actionRequest, "styleBookEntryId");
-
-		Layout updatedLayout = _layoutLocalService.updateStyleBookEntryId(
+		Layout updatedLayout = _layoutLocalService.updateStyleBookEntryERC(
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
-			styleBookEntryId);
+			ParamUtil.getString(actionRequest, "styleBookEntryERC"));
 
 		if (layout.isDraftLayout()) {
 			UnicodeProperties layoutTypeSettingsUnicodeProperties =
@@ -74,30 +72,38 @@ public class ChangeStyleBookEntryMVCActionCommand
 				LayoutTypeSettingsConstants.KEY_DESIGN_CONFIGURATION_MODIFIED,
 				Boolean.TRUE.toString());
 
-			updatedLayout = _layoutLocalService.updateLayout(
-				layout.getGroupId(), layout.isPrivateLayout(),
-				layout.getLayoutId(),
-				layoutTypeSettingsUnicodeProperties.toString());
+			updatedLayout = _layoutLocalService.updateTypeSettings(
+				updatedLayout, layoutTypeSettingsUnicodeProperties.toString());
 		}
 
-		Group group = themeDisplay.getScopeGroup();
+		FrontendTokenDefinition frontendTokenDefinition = null;
 
-		LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-			themeDisplay.getSiteGroupId(), group.isLayoutSetPrototype());
+		if (FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-30204")) {
 
-		FrontendTokenDefinition frontendTokenDefinition =
-			_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
-
-		StyleBookEntry styleBookEntry = null;
-
-		if (styleBookEntryId == 0) {
-			styleBookEntry = DefaultStyleBookEntryUtil.getDefaultStyleBookEntry(
-				updatedLayout);
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					themeDisplay.getLayout());
 		}
 		else {
-			styleBookEntry = _styleBookEntryLocalService.fetchStyleBookEntry(
-				styleBookEntryId);
+			Group group = themeDisplay.getScopeGroup();
+
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					_layoutSetLocalService.fetchLayoutSet(
+						themeDisplay.getSiteGroupId(),
+						group.isLayoutSetPrototype()));
+		}
+
+		StyleBookEntry styleBookEntry =
+			_styleBookEntryLocalService.
+				fetchStyleBookEntryByExternalReferenceCode(
+					updatedLayout.getStyleBookEntryERC(),
+					_staging.getLiveGroupId(updatedLayout.getGroupId()));
+
+		if (styleBookEntry == null) {
+			styleBookEntry = DefaultStyleBookEntryUtil.getDefaultStyleBookEntry(
+				updatedLayout);
 		}
 
 		return JSONUtil.put(
@@ -120,6 +126,9 @@ public class ChangeStyleBookEntryMVCActionCommand
 
 	@Reference
 	private LayoutSetLocalService _layoutSetLocalService;
+
+	@Reference
+	private Staging _staging;
 
 	@Reference
 	private StyleBookEntryLocalService _styleBookEntryLocalService;

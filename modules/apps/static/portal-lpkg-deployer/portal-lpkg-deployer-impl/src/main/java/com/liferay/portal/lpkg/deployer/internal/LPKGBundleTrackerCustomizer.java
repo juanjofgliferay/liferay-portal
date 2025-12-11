@@ -22,7 +22,7 @@ import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.lpkg.deployer.internal.wrapper.bundle.URLStreamHandlerServiceServiceTrackerCustomizer;
+import com.liferay.portal.lpkg.deployer.internal.osgi.util.tracker.URLStreamHandlerServiceServiceTrackerCustomizer;
 import com.liferay.portal.lpkg.deployer.internal.wrapper.bundle.activator.WARBundleWrapperBundleActivator;
 
 import java.io.File;
@@ -613,7 +613,9 @@ public class LPKGBundleTrackerCustomizer
 	private void _processOutdatedBundle(Bundle bundle) throws Exception {
 		Path path = Paths.get(bundle.getLocation());
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(path, null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(
+				path, (ClassLoader)null)) {
+
 			Files.createFile(fileSystem.getPath(_FILE_NAME_LFR_OUTDATED));
 		}
 

@@ -9,13 +9,16 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionFixture;
+import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchFixture;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Collections;
@@ -81,18 +84,17 @@ public class CompanyIdIndexNameBuilderTest {
 	public void tearDown() throws Exception {
 		_elasticsearchFixture.tearDown();
 
-		if (_companyIndexFactory != null) {
-			ReflectionTestUtil.invoke(
-				_companyIndexFactory, "deactivate", new Class<?>[0]);
+		if (_indexFactory != null) {
+			_indexFactory.close();
 
-			_companyIndexFactory = null;
+			_indexFactory = null;
 		}
 
-		if (_companyIndexFactoryHelper != null) {
+		if (_companyIndexHelper != null) {
 			ReflectionTestUtil.invoke(
-				_companyIndexFactoryHelper, "deactivate", new Class<?>[0]);
+				_companyIndexHelper, "deactivate", new Class<?>[0]);
 
-			_companyIndexFactoryHelper = null;
+			_companyIndexHelper = null;
 		}
 	}
 
@@ -172,41 +174,34 @@ public class CompanyIdIndexNameBuilderTest {
 
 		companyIdIndexNameBuilder.setIndexNamePrefix(indexNamePrefix);
 
-		_companyIndexFactoryHelper = new CompanyIndexFactoryHelper();
+		_companyIndexHelper = new CompanyIndexHelper();
 
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactoryHelper, "_elasticsearchConfigurationWrapper",
+			_companyIndexHelper, "_elasticsearchConfigurationWrapper",
 			createElasticsearchConfigurationWrapper());
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactoryHelper, "_indexNameBuilder",
+			_companyIndexHelper, "_indexNameBuilder",
 			companyIdIndexNameBuilder);
 		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactoryHelper, "_jsonFactory", new JSONFactoryImpl());
+			_companyIndexHelper, "_jsonFactory", new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_companyIndexHelper, "_searchEngineInformation",
+			_createSearchEngineInformation());
 
 		ReflectionTestUtil.invoke(
-			_companyIndexFactoryHelper, "activate",
+			_companyIndexHelper, "activate",
 			new Class<?>[] {BundleContext.class},
 			SystemBundleUtil.getBundleContext());
 
-		_companyIndexFactory = new CompanyIndexFactory();
-
-		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactory, "_companyIndexFactoryHelper",
-			_companyIndexFactoryHelper);
-		ReflectionTestUtil.setFieldValue(
-			_companyIndexFactory, "_elasticsearchConfigurationWrapper",
-			createElasticsearchConfigurationWrapper());
-
-		ReflectionTestUtil.invoke(
-			_companyIndexFactory, "activate",
-			new Class<?>[] {BundleContext.class},
-			SystemBundleUtil.getBundleContext());
+		_indexFactory = new IndexFactory(
+			_companyIndexHelper, Mockito.mock(CompanyLocalService.class),
+			createElasticsearchConfigurationWrapper(),
+			Mockito.mock(ElasticsearchConnectionManager.class));
 
 		RestHighLevelClient restHighLevelClient =
 			_elasticsearchFixture.getRestHighLevelClient();
 
-		_companyIndexFactory.createIndices(
-			restHighLevelClient.indices(), companyId);
+		_indexFactory.initializeIndex(companyId, restHighLevelClient.indices());
 	}
 
 	private void _assertIndexNamePrefix(
@@ -226,11 +221,24 @@ public class CompanyIdIndexNameBuilderTest {
 			new String[] {expectedIndexName}, getIndexResponse.getIndices());
 	}
 
+	private SearchEngineInformation _createSearchEngineInformation() {
+		SearchEngineInformation searchEngineInformation = Mockito.mock(
+			SearchEngineInformation.class);
+
+		Mockito.when(
+			searchEngineInformation.getEmbeddingVectorDimensions()
+		).thenReturn(
+			new int[] {256}
+		);
+
+		return searchEngineInformation;
+	}
+
 	private static final MockedStatic<FrameworkUtil>
 		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
 
-	private CompanyIndexFactory _companyIndexFactory;
-	private CompanyIndexFactoryHelper _companyIndexFactoryHelper;
+	private CompanyIndexHelper _companyIndexHelper;
 	private ElasticsearchFixture _elasticsearchFixture;
+	private IndexFactory _indexFactory;
 
 }

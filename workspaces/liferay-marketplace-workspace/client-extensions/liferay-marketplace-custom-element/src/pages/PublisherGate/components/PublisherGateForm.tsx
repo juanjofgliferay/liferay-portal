@@ -4,50 +4,44 @@
  */
 
 import ClayButton from '@clayui/button';
-import DropDown from '@clayui/drop-down/lib/DropDown';
-import ClayForm from '@clayui/form';
+import DropDown from '@clayui/drop-down';
+import ClayForm, {ClayCheckbox} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
-import {useState} from 'react';
+import {Fragment, useState} from 'react';
 import {UseFormReturn} from 'react-hook-form';
 import {useNavigate} from 'react-router-dom';
 
 import {Header} from '../../../components/Header/Header';
 import FormInput from '../../../components/Input/formInput';
-import {getSiteURL} from '../../../components/InviteMemberModal/services';
+import {Tooltip} from '../../../components/Tooltip/Tooltip';
 import i18n from '../../../i18n';
 import {Liferay} from '../../../liferay/liferay';
-import {Phone, phones} from '../../PurchasedSolutions/PurchasedSolutionsUtil';
-import {StepType} from './PublisherGateSteps';
+import {phones} from '../../../utils/phones';
+import {getSiteURL} from '../../../utils/site';
+import {PublisherForm, PublisherGateStep} from './PublisherGateSteps';
 
 type PublisherGateFormProps = {
-	form: UseFormReturn<
-		{
-			emailAddress: string;
-			extension?: string | undefined;
-			firstName: string;
-			lastName: string;
-			phone?: {
-				code: string;
-				flag: string;
-			};
-			phoneNumber: string;
-			requestDescription: string;
-		},
-		any,
-		undefined
-	>;
-	setStep: React.Dispatch<React.SetStateAction<StepType>>;
+	form: UseFormReturn<PublisherForm, any>;
+	listTypeDefinition?: ListTypeDefinition;
+	setStep: React.Dispatch<React.SetStateAction<PublisherGateStep>>;
+};
+
+const tooltipText = {
+	appPublisher: 'Ability to publish DXP and Cloud - Free or Charged',
+	solutionPublisher:
+		'Solutions built on Liferay, requires existing Liferay Partnership',
 };
 
 const PublisherGateForm: React.FC<PublisherGateFormProps> = ({
 	form,
+	listTypeDefinition,
 	setStep,
 }) => {
+	const phone = form.watch('phone');
+	const [currentPhonesFlags, setCurrentPhonesFlags] = useState(phone);
 	const navigate = useNavigate();
 
-	const phone = form.watch('phone');
-
-	const [currentPhonesFlags, setCurrentPhonesFlags] = useState(phone);
+	const listTypeEntries = listTypeDefinition?.listTypeEntries ?? [];
 
 	const inputProps = {
 		errors: form.formState.errors,
@@ -56,7 +50,7 @@ const PublisherGateForm: React.FC<PublisherGateFormProps> = ({
 	};
 
 	return (
-		<div className="publisher-gate-page-container">
+		<>
 			<div className="publisher-gate-page-body">
 				<Header
 					description={i18n.translate(
@@ -122,9 +116,9 @@ const PublisherGateForm: React.FC<PublisherGateFormProps> = ({
 										</div>
 									}
 								>
-									<DropDown.ItemList items={phones}>
+									<DropDown.ItemList items={phones as any}>
 										{(item) => {
-											const phone = item as Phone;
+											const phone = item as any;
 
 											return (
 												<DropDown.Item
@@ -183,6 +177,47 @@ const PublisherGateForm: React.FC<PublisherGateFormProps> = ({
 						</div>
 					</ClayForm.Group>
 
+					<ClayForm.Group>
+						<label className="mb-4">
+							Select your desired publisher type
+						</label>
+
+						{listTypeEntries.map((listTypeEntry, index) => (
+							<Fragment key={index}>
+								<ClayCheckbox
+									aria-label={listTypeEntry.name}
+									checked={form
+										.watch('publisherType')
+										.includes(listTypeEntry.key)}
+									key={index}
+									label={
+										(
+											<div className="d-flex justify-content-between w-25">
+												{listTypeEntry.name}
+												{(tooltipText as any)[
+													listTypeEntry.key
+												] && (
+													<Tooltip
+														showTooltipBackground={
+															false
+														}
+														tooltip={
+															(
+																tooltipText as any
+															)[listTypeEntry.key]
+														}
+													/>
+												)}
+											</div>
+										) as any
+									}
+									value={listTypeEntry.key}
+									{...form.register('publisherType')}
+								/>
+							</Fragment>
+						))}
+					</ClayForm.Group>
+
 					<div className="form-group mb-5">
 						<FormInput
 							{...inputProps}
@@ -238,7 +273,9 @@ const PublisherGateForm: React.FC<PublisherGateFormProps> = ({
 
 							<ClayButton
 								disabled={!form.formState.isValid}
-								onClick={() => setStep(StepType.SUMMARY)}
+								onClick={() =>
+									setStep(PublisherGateStep.SUMMARY)
+								}
 							>
 								{i18n.translate('continue')}
 							</ClayButton>
@@ -246,7 +283,7 @@ const PublisherGateForm: React.FC<PublisherGateFormProps> = ({
 					</div>
 				</div>
 			</div>
-		</div>
+		</>
 	);
 };
 

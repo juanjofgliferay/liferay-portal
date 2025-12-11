@@ -9,7 +9,7 @@ import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.headless.delivery.dto.v1_0.ContentDocument;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.UriInfo;
 
 /**
  * @author Javier Gamarra
@@ -23,19 +23,21 @@ public class ContentDocumentUtil {
 
 		return new ContentDocument() {
 			{
-				contentType = "Document";
-				contentUrl = dlURLHelper.getPreviewURL(
-					fileEntry, fileEntry.getFileVersion(), null, "", false,
-					false);
-				contentValue = ContentValueUtil.toContentValue(
-					fieldName + ".contentValue", fileEntry::getContentStream,
-					uriInfo);
-				description = fileEntry.getDescription();
-				encodingFormat = fileEntry.getMimeType();
-				fileExtension = fileEntry.getExtension();
-				id = fileEntry.getFileEntryId();
-				sizeInBytes = fileEntry.getSize();
-				title = fileEntry.getTitle();
+				setContentType(() -> "Document");
+				setContentUrl(
+					() -> dlURLHelper.getPreviewURL(
+						fileEntry, fileEntry.getFileVersion(), null, "", true,
+						false));
+				setContentValue(
+					() -> ContentValueUtil.toContentValue(
+						fieldName + ".contentValue",
+						fileEntry::getContentStream, uriInfo));
+				setDescription(fileEntry::getDescription);
+				setEncodingFormat(fileEntry::getMimeType);
+				setFileExtension(fileEntry::getExtension);
+				setId(fileEntry::getFileEntryId);
+				setSizeInBytes(fileEntry::getSize);
+				setTitle(fileEntry::getTitle);
 			}
 		};
 	}

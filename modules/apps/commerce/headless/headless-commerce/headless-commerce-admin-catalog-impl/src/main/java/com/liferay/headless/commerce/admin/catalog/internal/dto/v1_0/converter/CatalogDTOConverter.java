@@ -5,6 +5,8 @@
 
 package com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Catalog;
@@ -37,23 +39,34 @@ public class CatalogDTOConverter
 			_commerceCatalogService.getCommerceCatalog(
 				(Long)dtoConverterContext.getId());
 
+		CommerceCurrency commerceCurrency =
+			_commerceCurrencyLocalService.getCommerceCurrency(
+				commerceCatalog.getCompanyId(),
+				commerceCatalog.getCommerceCurrencyCode());
+
 		return new Catalog() {
 			{
-				accountId = commerceCatalog.getAccountEntryId();
-				actions = dtoConverterContext.getActions();
-				currencyCode = commerceCatalog.getCommerceCurrencyCode();
-				defaultLanguageId =
-					commerceCatalog.getCatalogDefaultLanguageId();
-				externalReferenceCode =
-					commerceCatalog.getExternalReferenceCode();
-				id = commerceCatalog.getCommerceCatalogId();
-				name = commerceCatalog.getName();
-				system = commerceCatalog.isSystem();
+				setAccountId(commerceCatalog::getAccountEntryId);
+				setActions(dtoConverterContext::getActions);
+				setCurrencyCode(commerceCurrency::getCode);
+				setCurrencyExternalReferenceCode(
+					commerceCurrency::getExternalReferenceCode);
+				setCurrencyId(commerceCurrency::getCommerceCurrencyId);
+				setDefaultLanguageId(
+					commerceCatalog::getCatalogDefaultLanguageId);
+				setExternalReferenceCode(
+					commerceCatalog::getExternalReferenceCode);
+				setId(commerceCatalog::getCommerceCatalogId);
+				setName(commerceCatalog::getName);
+				setSystem(commerceCatalog::isSystem);
 			}
 		};
 	}
 
 	@Reference
 	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 }

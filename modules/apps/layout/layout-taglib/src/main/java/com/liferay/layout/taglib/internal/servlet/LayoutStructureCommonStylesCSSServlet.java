@@ -20,6 +20,7 @@ import com.liferay.layout.util.structure.StyledLayoutStructureItem;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -28,7 +29,6 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
@@ -49,6 +49,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -59,12 +65,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -139,8 +139,8 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 		}
 
 		if ((layout == null) ||
-			(!layout.isTypeAssetDisplay() && !layout.isTypeCollection() &&
-			 !layout.isTypeContent() &&
+			(!layout.isTypeAssetDisplay() && !layout.isTypeContent() &&
+			 !layout.isTypeUtility() &&
 			 ((layout.getMasterLayoutPlid() == 0) ||
 			  !layout.isTypePortlet()))) {
 
@@ -163,8 +163,11 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		printWriter.write(".lfr-layout-structure-item-container {padding: 0;}");
-		printWriter.write(".lfr-layout-structure-item-row {overflow: hidden;}");
+		printWriter.write(
+			".lfr-layout-structure-item-container {padding: 0;} ");
+		printWriter.write(
+			".lfr-layout-structure-item-row {overflow: hidden;} ");
+		printWriter.write(".portlet-borderless .portlet-content {padding: 0;}");
 
 		JSONObject frontendTokensJSONObject = _getFrontendTokensJSONObject(
 			layout.getGroupId(), layout,
@@ -274,15 +277,24 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 			return _jsonFactory.createJSONObject();
 		}
 
-		LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-			group.getGroupId(), group.isLayoutSetPrototype());
-
 		FrontendTokenDefinitionRegistry frontendTokenDefinitionRegistry =
 			ServletContextUtil.getFrontendTokenDefinitionRegistry();
 
-		FrontendTokenDefinition frontendTokenDefinition =
-			frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
+		FrontendTokenDefinition frontendTokenDefinition = null;
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				layout.getCompanyId(), "LPD-30204")) {
+
+			frontendTokenDefinition =
+				frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					layout);
+		}
+		else {
+			frontendTokenDefinition =
+				frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					_layoutSetLocalService.fetchLayoutSet(
+						group.getGroupId(), group.isLayoutSetPrototype()));
+		}
 
 		if (frontendTokenDefinition == null) {
 			return _jsonFactory.createJSONObject();
@@ -300,7 +312,8 @@ public class LayoutStructureCommonStylesCSSServlet extends HttpServlet {
 				continue;
 			}
 
-			String value = frontendToken.getDefaultValue();
+			String value = String.valueOf(
+				frontendToken.<Object>getDefaultValue());
 
 			JSONObject valueJSONObject =
 				frontendTokenValuesJSONObject.getJSONObject(

@@ -10,7 +10,7 @@ import {Observer} from '@clayui/modal/lib/types';
 import {
 	FormError,
 	Input,
-	REQUIRED_MSG,
+	constantsUtils,
 	useForm,
 } from '@liferay/object-js-components-web';
 import React from 'react';
@@ -58,7 +58,7 @@ export function ModalAddObjectLayoutBox({
 		const errors: FormError<TInitialValues> = {};
 
 		if (!values.name) {
-			errors.name = REQUIRED_MSG;
+			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -73,7 +73,9 @@ export function ModalAddObjectLayoutBox({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={handleSubmit}>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					{Liferay.Language.get('add-block')}
 				</ClayModal.Header>
 

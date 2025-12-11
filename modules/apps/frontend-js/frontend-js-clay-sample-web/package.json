@@ -1,14 +1,17 @@
 {
 	"dependencies": {
-		"@clayui/alert": "3.106.1",
-		"react": "16.12.0"
+		"@clayui/alert": "3.148.0",
+		"@clayui/date-picker": "3.155.0",
+		"@clayui/tabs": "3.151.0",
+		"frontend-js-web": "*",
+		"react": "18.2.0"
 	},
-	"main": "js/App.es",
+	"main": "js/App.js",
 	"name": "frontend-js-clay-sample-web",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format"
 	},
-	"version": "2.0.21"
+	"version": "2.0.43"
 }

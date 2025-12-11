@@ -288,10 +288,12 @@ public class JobFactory {
 				testSuiteName, upstreamBranchName);
 		}
 
-		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
+		if (jsonObject == null) {
+			BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
 
-		if ((jsonObject == null) && buildDatabase.hasJob(key)) {
-			return buildDatabase.getJob(key);
+			if (buildDatabase.hasJob(key)) {
+				return buildDatabase.getJob(key);
+			}
 		}
 
 		Job job = _jobs.get(key);
@@ -426,6 +428,17 @@ public class JobFactory {
 				job = new PortalAcceptancePullRequestJob(jsonObject);
 			}
 			else {
+				if (upstreamBranchName.contains("release")) {
+					String githubUpstreamBranchName = System.getenv(
+						"GITHUB_UPSTREAM_BRANCH_NAME");
+
+					if (!JenkinsResultsParserUtil.isNullOrEmpty(
+							githubUpstreamBranchName)) {
+
+						upstreamBranchName = githubUpstreamBranchName;
+					}
+				}
+
 				job = new PortalAcceptancePullRequestJob(
 					buildProfile, jobName, portalGitWorkingDirectory,
 					testSuiteName, upstreamBranchName);
@@ -548,8 +561,20 @@ public class JobFactory {
 			}
 		}
 
+		if (jobName.equals("test-portal-upstream")) {
+			if (jsonObject != null) {
+				job = new PortalUpstreamJob(jsonObject);
+			}
+			else {
+				job = new PortalUpstreamJob(
+					buildProfile, jobName, portalGitWorkingDirectory,
+					testSuiteName, upstreamBranchName);
+			}
+		}
+
 		if (jobName.startsWith("generate-reports") ||
 			jobName.startsWith("test-portal-testsuite-upstream-controller(") ||
+			jobName.startsWith("test-portal-upstream-controller(") ||
 			jobName.equals("test-poshi-release") ||
 			jobName.equals("test-results-consistency-report-controller") ||
 			jobName.startsWith(

@@ -18,7 +18,6 @@ import {
 	metricsListColumns,
 	sitePagesListColumns
 } from 'shared/util/table-columns';
-import {RangeKeyTimeRanges} from 'shared/util/constants';
 import {Routes} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 
@@ -55,7 +54,7 @@ const getTableWithData = useDB => {
 		emptyIcon: {
 			border: false,
 			size: Sizes.XXXLarge,
-			symbol: 'ac-satellite'
+			symbol: 'ac_satellite'
 		},
 		emptyTitle: Liferay.Language.get('there-are-no-pages-found'),
 		getColumns: ({
@@ -109,5 +108,5 @@ const Touchpoints = ({router, ...otherProps}) => {
 
 export default compose(
 	withQueryPagination({initialOrderIOMap: createOrderIOMap(VISITORS_METRIC)}),
-	withQueryRangeSelectors({rangeKey: RangeKeyTimeRanges.Last30Days})
+	withQueryRangeSelectors()
 )(Touchpoints);

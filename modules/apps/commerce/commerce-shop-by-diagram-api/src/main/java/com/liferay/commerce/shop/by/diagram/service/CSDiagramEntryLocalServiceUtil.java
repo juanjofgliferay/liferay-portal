@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -230,6 +231,13 @@ public class CSDiagramEntryLocalServiceUtil {
 		return getService().fetchCSDiagramEntry(cpDefinitionId, sequence);
 	}
 
+	public static CSDiagramEntry fetchCSDiagramEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchCSDiagramEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -306,6 +314,14 @@ public class CSDiagramEntryLocalServiceUtil {
 		return getService().getCSDiagramEntry(cpDefinitionId, sequence);
 	}
 
+	public static CSDiagramEntry getCSDiagramEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCSDiagramEntryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -359,13 +375,12 @@ public class CSDiagramEntryLocalServiceUtil {
 	}
 
 	public static CSDiagramEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CSDiagramEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CSDiagramEntryLocalService _service;
+	private static final Snapshot<CSDiagramEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CSDiagramEntryLocalServiceUtil.class,
+			CSDiagramEntryLocalService.class);
 
 }

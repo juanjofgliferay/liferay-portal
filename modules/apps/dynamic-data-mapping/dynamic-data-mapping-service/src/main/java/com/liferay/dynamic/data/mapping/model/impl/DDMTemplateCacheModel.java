@@ -7,6 +7,7 @@ package com.liferay.dynamic.data.mapping.model.impl;
 
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -15,6 +16,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
 import java.util.Date;
 
@@ -68,7 +72,7 @@ public class DDMTemplateCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(57);
+		StringBundler sb = new StringBundler(59);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -76,6 +80,8 @@ public class DDMTemplateCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", templateId=");
 		sb.append(templateId);
 		sb.append(", groupId=");
@@ -143,6 +149,13 @@ public class DDMTemplateCacheModel
 		}
 		else {
 			ddmTemplateImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			ddmTemplateImpl.setExternalReferenceCode("");
+		}
+		else {
+			ddmTemplateImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		ddmTemplateImpl.setTemplateId(templateId);
@@ -260,7 +273,13 @@ public class DDMTemplateCacheModel
 
 		ddmTemplateImpl.resetOriginalValues();
 
-		ddmTemplateImpl.setResourceClassName(_resourceClassName);
+		try {
+			_resourceClassNameMethodHandle.invokeExact(
+				ddmTemplateImpl, resourceClassName);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return ddmTemplateImpl;
 	}
@@ -273,6 +292,7 @@ public class DDMTemplateCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		templateId = objectInput.readLong();
 
@@ -310,7 +330,7 @@ public class DDMTemplateCacheModel
 		smallImageURL = objectInput.readUTF();
 		lastPublishDate = objectInput.readLong();
 
-		_resourceClassName = (String)objectInput.readObject();
+		resourceClassName = (String)objectInput.readObject();
 	}
 
 	@Override
@@ -324,6 +344,13 @@ public class DDMTemplateCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(templateId);
@@ -430,12 +457,13 @@ public class DDMTemplateCacheModel
 
 		objectOutput.writeLong(lastPublishDate);
 
-		objectOutput.writeObject(_resourceClassName);
+		objectOutput.writeObject(resourceClassName);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long templateId;
 	public long groupId;
 	public long companyId;
@@ -461,6 +489,20 @@ public class DDMTemplateCacheModel
 	public long smallImageId;
 	public String smallImageURL;
 	public long lastPublishDate;
-	public String _resourceClassName;
+	public volatile String resourceClassName;
+
+	private static final MethodHandle _resourceClassNameMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_resourceClassNameMethodHandle = lookup.findSetter(
+				DDMTemplateImpl.class, "_resourceClassName", String.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }

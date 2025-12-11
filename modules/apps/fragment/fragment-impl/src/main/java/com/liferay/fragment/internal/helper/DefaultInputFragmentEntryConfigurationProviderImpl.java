@@ -11,6 +11,7 @@ import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.DateInfoFieldType;
 import com.liferay.info.field.type.DateTimeInfoFieldType;
 import com.liferay.info.field.type.FileInfoFieldType;
+import com.liferay.info.field.type.FriendlyURLInfoFieldType;
 import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.LongTextInfoFieldType;
 import com.liferay.info.field.type.MultiselectInfoFieldType;
@@ -33,7 +34,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Objects;
 
-import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -134,6 +134,9 @@ public class DefaultInputFragmentEntryConfigurationProviderImpl
 			FileInfoFieldType.INSTANCE.getName(),
 			JSONUtil.put("key", "INPUTS-file-upload")
 		).put(
+			FriendlyURLInfoFieldType.INSTANCE.getName(),
+			JSONUtil.put("key", "INPUTS-friendly-url-input")
+		).put(
 			HTMLInfoFieldType.INSTANCE.getName(),
 			JSONUtil.put("key", "INPUTS-rich-text-input")
 		).put(
@@ -158,9 +161,6 @@ public class DefaultInputFragmentEntryConfigurationProviderImpl
 			TextInfoFieldType.INSTANCE.getName(),
 			JSONUtil.put("key", "INPUTS-text-input")
 		);
-
-	@Reference
-	private ConfigurationAdmin _configurationAdmin;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;

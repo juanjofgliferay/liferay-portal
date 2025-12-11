@@ -51,7 +51,7 @@ export default function Preview({activeSize, open, previewRef}: IPreviewProps) {
 								.height - 6,
 						width: previewWrapperRef.current.getBoundingClientRect()
 							.width,
-				  }
+					}
 				: activeSize.screenSize
 		);
 	}, [activeSize.id, activeSize.screenSize, open]);
@@ -67,6 +67,30 @@ export default function Preview({activeSize, open, previewRef}: IPreviewProps) {
 	// @ts-ignore
 
 	useEventListener('resize', handleWindowResize, false, window);
+
+	const handleIframeLoad = (
+		event: React.SyntheticEvent<HTMLIFrameElement>
+	) => {
+		const iframe = event.target as HTMLIFrameElement;
+
+		const iframeWin = iframe.contentWindow;
+		const iframeDoc = iframeWin?.document;
+
+		iframeDoc?.addEventListener('click', (event) => {
+			const target = event.target as HTMLElement;
+
+			const link = target.closest('a');
+
+			if (link && link.href) {
+				event.preventDefault();
+			}
+		});
+
+		(iframeWin as any)?.Liferay.on('beforeNavigate', (event: any) => {
+			event.preventDefault();
+			event.originalEvent.preventDefault();
+		});
+	};
 
 	if (!open) {
 		return null;
@@ -101,7 +125,9 @@ export default function Preview({activeSize, open, previewRef}: IPreviewProps) {
 			>
 				<iframe
 					className="border-0 h-100 w-100"
+					onLoad={handleIframeLoad}
 					src={createIframeURL()}
+					title={Liferay.Language.get('simulation-preview')}
 				/>
 			</div>
 		</div>

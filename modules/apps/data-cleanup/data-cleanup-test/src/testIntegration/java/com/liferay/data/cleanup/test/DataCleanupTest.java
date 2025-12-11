@@ -131,10 +131,28 @@ public class DataCleanupTest {
 	}
 
 	@Test
+	public void testDeprecatedModulesUpgradeFrontendImageEditor()
+		throws Exception {
+
+		_testDeprecatedModulesUpgrade(
+			"cleanUpFrontendImageEditorModuleData",
+			"com.liferay.frontend.image.editor.web", null,
+			"com_liferay_image_editor_web_portlet_ImageEditorPortlet", null);
+	}
+
+	@Test
 	public void testDeprecatedModulesUpgradeGoogleMaps() throws Exception {
 		_testDeprecatedModulesUpgrade(
 			"cleanUpGoogleMapsModuleData", "com.liferay.google.maps.web", null,
 			"com_liferay_google_maps_web_portlet_GoogleMapsPortlet", null);
+	}
+
+	@Test
+	public void testDeprecatedModulesUpgradeHelloVelocity() throws Exception {
+		_testDeprecatedModulesUpgrade(
+			"cleanUpHelloVelocityModuleData", "com.liferay.hello.velocity.web",
+			null, "com_liferay_hello_velocity_web_portlet_HelloVelocityPortlet",
+			null);
 	}
 
 	@Test
@@ -149,14 +167,6 @@ public class DataCleanupTest {
 		_testDeprecatedModulesUpgrade(
 			"cleanUpHTMLPreviewModuleData", "com.liferay.html.preview.service",
 			"dependencies/html-preview-tables.sql", null, null);
-	}
-
-	@Test
-	public void testDeprecatedModulesUpgradeImageEditor() throws Exception {
-		_testDeprecatedModulesUpgrade(
-			"cleanUpImageEditorModuleData",
-			"com.liferay.frontend.image.editor.web", null,
-			"com_liferay_image_editor_web_portlet_ImageEditorPortlet", null);
 	}
 
 	@Test
@@ -235,19 +245,6 @@ public class DataCleanupTest {
 	}
 
 	@Test
-	public void testDeprecatedModulesUpgradePrivateMessaging()
-		throws Exception {
-
-		_testDeprecatedModulesUpgrade(
-			"cleanUpPrivateMessagingModuleData",
-			"com.liferay.social.privatemessaging.service",
-			"dependencies/private-messaging-tables.sql",
-			"com_liferay_social_privatemessaging_web_portlet_" +
-				"PrivateMessagingPortlet",
-			null);
-	}
-
-	@Test
 	public void testDeprecatedModulesUpgradeQuickNote() throws Exception {
 		_testDeprecatedModulesUpgrade(
 			"cleanUpQuickNoteModuleData", "com.liferay.quick.note.web", null,
@@ -293,10 +290,23 @@ public class DataCleanupTest {
 	}
 
 	@Test
-	public void testDeprecatedModulesUpgradeSocialRequest() throws Exception {
+	public void testDeprecatedModulesUpgradeSocialPrivateMessaging()
+		throws Exception {
+
 		_testDeprecatedModulesUpgrade(
-			"cleanUpSocialRequestModuleData", "com.liferay.social.requests.web",
-			null,
+			"cleanUpSocialPrivateMessagingModuleData",
+			"com.liferay.social.privatemessaging.service",
+			"dependencies/social-private-messaging-tables.sql",
+			"com_liferay_social_privatemessaging_web_portlet_" +
+				"PrivateMessagingPortlet",
+			null);
+	}
+
+	@Test
+	public void testDeprecatedModulesUpgradeSocialRequests() throws Exception {
+		_testDeprecatedModulesUpgrade(
+			"cleanUpSocialRequestsModuleData",
+			"com.liferay.social.requests.web", null,
 			"com_liferay_social_requests_web_portlet_SocialRequestsPortlet",
 			null);
 	}
@@ -398,7 +408,7 @@ public class DataCleanupTest {
 
 				DB db = DBManagerUtil.getDB();
 
-				db.runSQLTemplateString(StringUtil.read(inputStream), true);
+				db.runSQLTemplate(StringUtil.read(inputStream), true);
 			}
 		}
 
@@ -518,10 +528,11 @@ public class DataCleanupTest {
 		"com.liferay.chat.service", "com.liferay.currency.converter.web",
 		"com.liferay.dictionary.web", "com.liferay.directory.web",
 		"com.liferay.frontend.image.editor.web", "com.liferay.google.maps.web",
-		"com.liferay.hello.world.web", "com.liferay.html.preview.service",
-		"com.liferay.invitation.web", "com.liferay.loan.calculator.web",
-		"com.liferay.mail.reader.service", "com.liferay.network.utilities.web",
-		"com.liferay.oauth.service", "com.liferay.password.generator.web",
+		"com.liferay.hello.velocity.web", "com.liferay.hello.world.web",
+		"com.liferay.html.preview.service", "com.liferay.invitation.web",
+		"com.liferay.loan.calculator.web", "com.liferay.mail.reader.service",
+		"com.liferay.network.utilities.web", "com.liferay.oauth.service",
+		"com.liferay.password.generator.web",
 		"com.liferay.portal.security.wedeploy.auth.service",
 		"com.liferay.quick.note.web", "com.liferay.recent.documents.web",
 		"com.liferay.shopping.service", "com.liferay.social.activity.web",

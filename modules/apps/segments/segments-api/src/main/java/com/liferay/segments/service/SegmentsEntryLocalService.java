@@ -86,14 +86,14 @@ public interface SegmentsEntryLocalService
 	public SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active, String criteria,
-			String type, ServiceContext serviceContext)
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active, String criteria,
-			String source, String type, ServiceContext serviceContext)
+			String source, ServiceContext serviceContext)
 		throws PortalException;
 
 	public void addSegmentsEntryClassPKs(
@@ -239,8 +239,11 @@ public interface SegmentsEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public SegmentsEntry fetchSegmentsEntry(
-		long groupId, String segmentsEntryKey,
-		boolean includeAncestorSegmentsEntries);
+		long groupId, String segmentsEntryKey);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SegmentsEntry fetchSegmentsEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the segments entry matching the UUID and group.
@@ -294,18 +297,17 @@ public interface SegmentsEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String type, int start, int end,
+		long groupId, int start, int end,
 		OrderByComparator<SegmentsEntry> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String source, String type, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator);
+		long groupId, String source, int start, int end,
+		OrderByComparator<SegmentsEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<SegmentsEntry> getSegmentsEntries(
+		long[] segmentsEntryIds, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SegmentsEntry> getSegmentsEntriesBySource(
@@ -347,8 +349,7 @@ public interface SegmentsEntryLocalService
 	public int getSegmentsEntriesCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getSegmentsEntriesCount(
-		long groupId, boolean includeAncestorSegmentsEntries);
+	public int getSegmentsEntriesCount(long groupId);
 
 	/**
 	 * Returns the segments entry with the primary key.
@@ -359,6 +360,11 @@ public interface SegmentsEntryLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public SegmentsEntry getSegmentsEntry(long segmentsEntryId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SegmentsEntry getSegmentsEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -377,13 +383,6 @@ public interface SegmentsEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<SegmentsEntry> searchSegmentsEntries(
 			long companyId, long groupId, String keywords,
-			boolean includeAncestorSegmentsEntries,
-			LinkedHashMap<String, Object> params, int start, int end, Sort sort)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public BaseModelSearchResult<SegmentsEntry> searchSegmentsEntries(
-			long companyId, String keywords,
 			LinkedHashMap<String, Object> params, int start, int end, Sort sort)
 		throws PortalException;
 

@@ -9,6 +9,7 @@ import {EVENT_TYPES} from '../actions/eventTypes.es';
 
 export default function formValidate({
 	activePage,
+	containerId,
 	defaultLanguageId,
 	editingLanguageId,
 	formId,
@@ -19,7 +20,14 @@ export default function formValidate({
 	viewMode,
 }) {
 	return (dispatch) => {
+		const ddmFormSubmitButton = document.getElementById('ddm-form-submit');
+
+		if (ddmFormSubmitButton) {
+			ddmFormSubmitButton.disabled = true;
+		}
+
 		return evaluate(null, {
+			containerId,
 			defaultLanguageId,
 			editingLanguageId,
 			formId,
@@ -52,7 +60,7 @@ export default function formValidate({
 				});
 			}
 
-			return Promise.resolve(validForm);
+			return Promise.resolve([ddmFormSubmitButton, validForm]);
 		});
 	};
 }

@@ -7,6 +7,7 @@ package com.liferay.list.type.service;
 
 import com.liferay.list.type.model.ListTypeDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 import java.util.Map;
@@ -33,11 +34,13 @@ public class ListTypeDefinitionServiceUtil {
 	public static ListTypeDefinition addListTypeDefinition(
 			String externalReferenceCode, Map<java.util.Locale, String> nameMap,
 			boolean system,
-			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addListTypeDefinition(
-			externalReferenceCode, nameMap, system, listTypeEntries);
+			externalReferenceCode, nameMap, system, listTypeEntries,
+			serviceContext);
 	}
 
 	public static ListTypeDefinition deleteListTypeDefinition(
@@ -101,22 +104,22 @@ public class ListTypeDefinitionServiceUtil {
 	public static ListTypeDefinition updateListTypeDefinition(
 			String externalReferenceCode, long listTypeDefinitionId,
 			Map<java.util.Locale, String> nameMap,
-			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateListTypeDefinition(
 			externalReferenceCode, listTypeDefinitionId, nameMap,
-			listTypeEntries);
+			listTypeEntries, serviceContext);
 	}
 
 	public static ListTypeDefinitionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ListTypeDefinitionService service) {
-		_service = service;
-	}
-
-	private static volatile ListTypeDefinitionService _service;
+	private static final Snapshot<ListTypeDefinitionService> _serviceSnapshot =
+		new Snapshot<>(
+			ListTypeDefinitionServiceUtil.class,
+			ListTypeDefinitionService.class);
 
 }

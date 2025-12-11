@@ -9,7 +9,7 @@ import {
 	MultiSelectItem,
 	MultipleSelect,
 	SingleSelect,
-	getLocalizableLabel,
+	stringUtils,
 } from '@liferay/object-js-components-web';
 import React, {useEffect, useState} from 'react';
 
@@ -39,8 +39,6 @@ export function Attachments({
 	const [selectedEntityValue, setSelectedEntityValue] = useState<string>();
 
 	const parseFields = (fields: ObjectField[]) => {
-		const parsedFields: MultiSelectItem[] = [];
-
 		const attachmentObjectFieldIds = new Set(
 			values?.attachmentObjectFieldIds as number[]
 		);
@@ -50,27 +48,33 @@ export function Attachments({
 				objectDefinition.externalReferenceCode === selectedEntityValue
 		);
 
-		fields.forEach(({id, label, name}) => {
-			parsedFields.push({
-				checked: attachmentObjectFieldIds.has(id as number),
-				label: getLocalizableLabel(
-					selectedObjectDefinitionItem?.defaultLanguageId as Locale,
-					label,
-					name
-				),
-				value: id?.toString() as string,
-			});
-		});
+		const parsedField = {
+			children: fields.map(({id, label, name}) => {
+				return {
+					checked: attachmentObjectFieldIds.has(id as number),
+					label: stringUtils.getLocalizableLabel({
+						fallbackLabel: name,
+						fallbackLanguageId:
+							selectedObjectDefinitionItem?.defaultLanguageId as Locale,
+						labels: label,
+					}),
+					value: id?.toString() as string,
+				};
+			}),
+			label: '',
+			value: 'attachmentsFields',
+		} as MultiSelectItem;
 
-		return parsedFields;
+		return [parsedField];
 	};
 
 	const getAttachmentFields = async function fetchObjectFields(
 		objectDefinitionExternalReferenceCode: string
 	) {
-		const items = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-			objectDefinitionExternalReferenceCode
-		);
+		const items =
+			await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
+				objectDefinitionExternalReferenceCode
+			);
 
 		const fields: ObjectField[] = items?.filter(
 			(field) => field.businessType === 'Attachment'
@@ -81,7 +85,9 @@ export function Attachments({
 
 	useEffect(() => {
 		const currentObjectDefinition = objectDefinitions?.find(
-			(item) => item.id === values.objectDefinitionId
+			(objectDefinition) =>
+				objectDefinition.externalReferenceCode ===
+				values.objectDefinitionExternalReferenceCode
 		);
 
 		const newObjectDefinitionItems: ObjectDefinitionItem[] = [];
@@ -98,25 +104,15 @@ export function Attachments({
 				if (!system) {
 					newObjectDefinitionItems.push({
 						id,
-						label: getLocalizableLabel(
-							defaultLanguageId,
-							label,
-							name
-						),
+						label: stringUtils.getLocalizableLabel({
+							fallbackLabel: name,
+							fallbackLanguageId: defaultLanguageId,
+							labels: label,
+						}),
 						value: externalReferenceCode,
 					});
 				}
 			}
-		);
-
-		setObjectDefinitionItems(newObjectDefinitionItems);
-
-		setSelectedEntityValue(currentObjectDefinition?.externalReferenceCode);
-	}, [objectDefinitions, values.objectDefinitionId]);
-
-	useEffect(() => {
-		const currentObjectDefinition = objectDefinitions?.find(
-			(item) => item.id === values.objectDefinitionId
 		);
 
 		if (!currentObjectDefinition) {
@@ -127,23 +123,28 @@ export function Attachments({
 			});
 		}
 
-		setSelectedEntityValue(currentObjectDefinition?.externalReferenceCode);
-
 		if (values.objectDefinitionId) {
 			getAttachmentFields(
 				values.objectDefinitionExternalReferenceCode as string
 			);
 		}
+
+		setObjectDefinitionItems(newObjectDefinitionItems);
+		setSelectedEntityValue(currentObjectDefinition?.externalReferenceCode);
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [values.objectDefinitionId]);
+	}, [objectDefinitions, values.objectDefinitionId]);
 
 	useEffect(() => {
-		setValues({
-			...values,
-			attachmentObjectFieldIds: attachmentsFields
-				.filter((field) => field.checked)
-				.map((field) => field.value) as string[],
-		});
+		if (attachmentsFields.length) {
+			setValues({
+				...values,
+				attachmentObjectFieldIds: attachmentsFields[0].children
+					.filter((field) => field.checked)
+					.map((field) => field.value) as string[],
+			});
+		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [attachmentsFields]);
 
@@ -171,15 +172,17 @@ export function Attachments({
 									externalReferenceCode as string
 								);
 
-								const selectedObjectDefinitionItem = objectDefinitionItems.find(
-									(objectDefinitionItem) =>
-										objectDefinitionItem.value ===
-										externalReferenceCode
-								);
+								const selectedObjectDefinitionItem =
+									objectDefinitionItems.find(
+										(objectDefinitionItem) =>
+											objectDefinitionItem.value ===
+											externalReferenceCode
+									);
 
 								setValues({
 									...values,
-									objectDefinitionExternalReferenceCode: externalReferenceCode as string,
+									objectDefinitionExternalReferenceCode:
+										externalReferenceCode as string,
 									objectDefinitionId:
 										selectedObjectDefinitionItem?.id,
 								});

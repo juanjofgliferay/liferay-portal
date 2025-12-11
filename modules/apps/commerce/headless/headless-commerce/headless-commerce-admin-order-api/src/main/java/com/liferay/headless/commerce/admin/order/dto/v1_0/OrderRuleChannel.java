@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
@@ -39,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("OrderRuleChannel")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"channelId", "orderRuleId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"channelId", "orderRuleId"})
 @XmlRootElement(name = "OrderRuleChannel")
 public class OrderRuleChannel implements Serializable {
 
@@ -52,14 +53,22 @@ public class OrderRuleChannel implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(OrderRuleChannel.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,52 +76,77 @@ public class OrderRuleChannel implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Channel getChannel() {
+		if (_channelSupplier != null) {
+			channel = _channelSupplier.get();
+
+			_channelSupplier = null;
+		}
+
 		return channel;
 	}
 
 	public void setChannel(Channel channel) {
 		this.channel = channel;
+
+		_channelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setChannel(
 		UnsafeSupplier<Channel, Exception> channelUnsafeSupplier) {
 
-		try {
-			channel = channelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_channelSupplier = () -> {
+			try {
+				return channelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Channel channel;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Channel> _channelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getChannelExternalReferenceCode() {
+		if (_channelExternalReferenceCodeSupplier != null) {
+			channelExternalReferenceCode =
+				_channelExternalReferenceCodeSupplier.get();
+
+			_channelExternalReferenceCodeSupplier = null;
+		}
+
 		return channelExternalReferenceCode;
 	}
 
@@ -120,6 +154,8 @@ public class OrderRuleChannel implements Serializable {
 		String channelExternalReferenceCode) {
 
 		this.channelExternalReferenceCode = channelExternalReferenceCode;
+
+		_channelExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -127,45 +163,59 @@ public class OrderRuleChannel implements Serializable {
 		UnsafeSupplier<String, Exception>
 			channelExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			channelExternalReferenceCode =
-				channelExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_channelExternalReferenceCodeSupplier = () -> {
+			try {
+				return channelExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String channelExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _channelExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getChannelId() {
+		if (_channelIdSupplier != null) {
+			channelId = _channelIdSupplier.get();
+
+			_channelIdSupplier = null;
+		}
+
 		return channelId;
 	}
 
 	public void setChannelId(Long channelId) {
 		this.channelId = channelId;
+
+		_channelIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setChannelId(
 		UnsafeSupplier<Long, Exception> channelIdUnsafeSupplier) {
 
-		try {
-			channelId = channelIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_channelIdSupplier = () -> {
+			try {
+				return channelIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -173,37 +223,60 @@ public class OrderRuleChannel implements Serializable {
 	@NotNull
 	protected Long channelId;
 
+	@JsonIgnore
+	private Supplier<Long> _channelIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getOrderRuleChannelId() {
+		if (_orderRuleChannelIdSupplier != null) {
+			orderRuleChannelId = _orderRuleChannelIdSupplier.get();
+
+			_orderRuleChannelIdSupplier = null;
+		}
+
 		return orderRuleChannelId;
 	}
 
 	public void setOrderRuleChannelId(Long orderRuleChannelId) {
 		this.orderRuleChannelId = orderRuleChannelId;
+
+		_orderRuleChannelIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderRuleChannelId(
 		UnsafeSupplier<Long, Exception> orderRuleChannelIdUnsafeSupplier) {
 
-		try {
-			orderRuleChannelId = orderRuleChannelIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderRuleChannelIdSupplier = () -> {
+			try {
+				return orderRuleChannelIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long orderRuleChannelId;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Long> _orderRuleChannelIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "PAB-34098-789-N")
 	public String getOrderRuleExternalReferenceCode() {
+		if (_orderRuleExternalReferenceCodeSupplier != null) {
+			orderRuleExternalReferenceCode =
+				_orderRuleExternalReferenceCodeSupplier.get();
+
+			_orderRuleExternalReferenceCodeSupplier = null;
+		}
+
 		return orderRuleExternalReferenceCode;
 	}
 
@@ -211,6 +284,8 @@ public class OrderRuleChannel implements Serializable {
 		String orderRuleExternalReferenceCode) {
 
 		this.orderRuleExternalReferenceCode = orderRuleExternalReferenceCode;
+
+		_orderRuleExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -218,51 +293,68 @@ public class OrderRuleChannel implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderRuleExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderRuleExternalReferenceCode =
-				orderRuleExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderRuleExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderRuleExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderRuleExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderRuleExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getOrderRuleId() {
+		if (_orderRuleIdSupplier != null) {
+			orderRuleId = _orderRuleIdSupplier.get();
+
+			_orderRuleIdSupplier = null;
+		}
+
 		return orderRuleId;
 	}
 
 	public void setOrderRuleId(Long orderRuleId) {
 		this.orderRuleId = orderRuleId;
+
+		_orderRuleIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderRuleId(
 		UnsafeSupplier<Long, Exception> orderRuleIdUnsafeSupplier) {
 
-		try {
-			orderRuleId = orderRuleIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderRuleIdSupplier = () -> {
+			try {
+				return orderRuleIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long orderRuleId;
+
+	@JsonIgnore
+	private Supplier<Long> _orderRuleIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -291,6 +383,8 @@ public class OrderRuleChannel implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -301,6 +395,8 @@ public class OrderRuleChannel implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		Channel channel = getChannel();
+
 		if (channel != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -310,6 +406,8 @@ public class OrderRuleChannel implements Serializable {
 
 			sb.append(String.valueOf(channel));
 		}
+
+		String channelExternalReferenceCode = getChannelExternalReferenceCode();
 
 		if (channelExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -325,6 +423,8 @@ public class OrderRuleChannel implements Serializable {
 			sb.append("\"");
 		}
 
+		Long channelId = getChannelId();
+
 		if (channelId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -335,6 +435,8 @@ public class OrderRuleChannel implements Serializable {
 			sb.append(channelId);
 		}
 
+		Long orderRuleChannelId = getOrderRuleChannelId();
+
 		if (orderRuleChannelId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -344,6 +446,9 @@ public class OrderRuleChannel implements Serializable {
 
 			sb.append(orderRuleChannelId);
 		}
+
+		String orderRuleExternalReferenceCode =
+			getOrderRuleExternalReferenceCode();
 
 		if (orderRuleExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -358,6 +463,8 @@ public class OrderRuleChannel implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long orderRuleId = getOrderRuleId();
 
 		if (orderRuleId != null) {
 			if (sb.length() > 1) {
@@ -374,8 +481,8 @@ public class OrderRuleChannel implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleChannel",
 		name = "x-class-name"
 	)
@@ -421,7 +528,10 @@ public class OrderRuleChannel implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

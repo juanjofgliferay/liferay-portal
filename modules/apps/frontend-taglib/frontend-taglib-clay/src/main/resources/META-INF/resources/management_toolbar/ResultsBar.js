@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayButton from '@clayui/button';
 import ClayLabel from '@clayui/label';
 import ClayLayout from '@clayui/layout';
-import ClayLink from '@clayui/link';
 import {ManagementToolbar} from 'frontend-js-components-web';
 import {navigate, sub} from 'frontend-js-web';
 import React, {useEffect, useRef} from 'react';
@@ -15,53 +15,35 @@ import React, {useEffect, useRef} from 'react';
  * 	same logic than the corresponding Java method.
  */
 function getResultText(searchValue, itemTotal, filterTotal) {
-	if (Liferay.FeatureFlags['LPS-198573']) {
-		if (!searchValue) {
-			if (filterTotal) {
-				if (itemTotal === 1) {
-					return Liferay.Language.get('x-result-found-with-filters');
-				}
-
-				return Liferay.Language.get('x-results-found-with-filters');
-			}
-
-			if (itemTotal === 1) {
-				return Liferay.Language.get('x-result-found');
-			}
-
-			return Liferay.Language.get('x-results-found');
-		}
-
+	if (!searchValue) {
 		if (filterTotal) {
 			if (itemTotal === 1) {
-				return Liferay.Language.get(
-					'x-result-found-for-x-with-filters'
-				);
+				return Liferay.Language.get('x-result-found-with-filters');
 			}
 
-			return Liferay.Language.get('x-results-found-for-x-with-filters');
+			return Liferay.Language.get('x-results-found-with-filters');
 		}
 
 		if (itemTotal === 1) {
-			return Liferay.Language.get('x-result-found-for-x');
+			return Liferay.Language.get('x-result-found');
 		}
 
-		return Liferay.Language.get('x-results-found-for-x');
+		return Liferay.Language.get('x-results-found');
 	}
 
-	if (!searchValue) {
+	if (filterTotal) {
 		if (itemTotal === 1) {
-			return Liferay.Language.get('x-result-for');
+			return Liferay.Language.get('x-result-found-for-x-with-filters');
 		}
 
-		return Liferay.Language.get('x-results-for');
+		return Liferay.Language.get('x-results-found-for-x-with-filters');
 	}
 
 	if (itemTotal === 1) {
-		return Liferay.Language.get('x-result-for-x');
+		return Liferay.Language.get('x-result-found-for-x');
 	}
 
-	return Liferay.Language.get('x-results-for-x');
+	return Liferay.Language.get('x-results-found-for-x');
 }
 
 const ResultsBar = ({
@@ -104,6 +86,7 @@ const ResultsBar = ({
 							`"${searchValue}"`
 						)}
 						className="component-text text-truncate-inline"
+						data-qa-id="searchResultText"
 						ref={resultsBarRef}
 						tabIndex={-1}
 					>
@@ -150,7 +133,7 @@ const ResultsBar = ({
 				))}
 
 				<ManagementToolbar.ResultsBarItem>
-					<ClayLink
+					<ClayButton
 						aria-label={sub(
 							itemsTotal === 1
 								? Liferay.Language.get('clear-x-result-for-x')
@@ -161,6 +144,7 @@ const ResultsBar = ({
 								: filterLabelItems?.map((item) => item.label)
 						)}
 						className="component-link tbar-link"
+						displayType="unstyled"
 						onClick={(event) => {
 							event.preventDefault();
 
@@ -168,13 +152,23 @@ const ResultsBar = ({
 
 							navigate(clearResultsURL);
 						}}
+						onKeyPress={(event) => {
+							if (event.key === 'Enter') {
+								event.preventDefault();
+
+								searchContainerRef.current?.fire('clearFilter');
+
+								navigate(clearResultsURL);
+							}
+						}}
+						tabIndex={0}
 					>
 						{Liferay.Language.get('clear')}
-					</ClayLink>
+					</ClayButton>
 				</ManagementToolbar.ResultsBarItem>
 			</ManagementToolbar.ResultsBar>
 
-			{Liferay.FeatureFlags['LPS-198573'] && Boolean(title) && (
+			{Boolean(title) && (
 				<ClayLayout.ContainerFluid className="c-mt-4" size="xl">
 					<h3>{title}</h3>
 				</ClayLayout.ContainerFluid>

@@ -16,17 +16,25 @@ import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.background.task.ReindexStatusMessageSenderUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.capabilities.SearchCapabilities;
+import com.liferay.portal.search.document.DocumentBuilderFactory;
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.index.SyncReindexManager;
 import com.liferay.portal.search.spi.reindexer.IndexReindexer;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexName;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexNameBuilder;
+import com.liferay.portal.search.tuning.rankings.constants.ResultRankingsConstants;
+import com.liferay.portal.search.tuning.rankings.index.Ranking;
+import com.liferay.portal.search.tuning.rankings.index.RankingBuilderFactory;
+import com.liferay.portal.search.tuning.rankings.index.RankingPinBuilderFactory;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexName;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexNameBuilder;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -67,9 +75,11 @@ public class RankingIndexReindexer implements IndexReindexer {
 			}
 
 			try {
-				rankingIndexCreator.deleteIfExists(rankingIndexName);
+				RankingIndexCreatorUtil.deleteIfExists(
+					_searchEngineAdapter, rankingIndexName);
 
-				rankingIndexCreator.create(rankingIndexName);
+				RankingIndexCreatorUtil.create(
+					_searchEngineAdapter, rankingIndexName);
 			}
 			catch (RuntimeException runtimeException) {
 				_log.error(
@@ -88,7 +98,7 @@ public class RankingIndexReindexer implements IndexReindexer {
 		int sendStatusInterval = Math.max(100, classPKs.size() / 20);
 
 		for (int i = 0; i < classPKs.size(); i++) {
-			rankingIndexWriter.create(
+			_rankingIndexWriter.create(
 				rankingIndexName, _buildRanking(classPKs.get(i)));
 
 			if ((i % sendStatusInterval) == 0) {
@@ -107,6 +117,12 @@ public class RankingIndexReindexer implements IndexReindexer {
 		}
 	}
 
+	@Activate
+	protected void activate() {
+		_rankingIndexWriter = new RankingIndexWriter(
+			_documentBuilderFactory, _searchEngineAdapter);
+	}
+
 	@Reference
 	protected ClassNameLocalService classNameLocalService;
 
@@ -114,13 +130,13 @@ public class RankingIndexReindexer implements IndexReindexer {
 	protected JSONStorageEntryLocalService jsonStorageEntryLocalService;
 
 	@Reference
-	protected RankingIndexCreator rankingIndexCreator;
+	protected RankingBuilderFactory rankingBuilderFactory;
 
 	@Reference
 	protected RankingIndexNameBuilder rankingIndexNameBuilder;
 
 	@Reference
-	protected RankingIndexWriter rankingIndexWriter;
+	protected RankingPinBuilderFactory rankingPinBuilderFactory;
 
 	@Reference
 	protected SearchCapabilities searchCapabilities;
@@ -129,7 +145,7 @@ public class RankingIndexReindexer implements IndexReindexer {
 		JSONObject jsonObject = jsonStorageEntryLocalService.getJSONObject(
 			classNameLocalService.getClassNameId(Ranking.class), classPK);
 
-		Ranking.RankingBuilder rankingBuilder = new Ranking.RankingBuilder();
+		Ranking.Builder rankingBuilder = rankingBuilderFactory.builder();
 
 		rankingBuilder.aliases(
 			JSONUtil.toStringList(jsonObject.getJSONArray("aliases"))
@@ -139,8 +155,6 @@ public class RankingIndexReindexer implements IndexReindexer {
 			JSONUtil.toStringList(jsonObject.getJSONArray("hiddenDocumentIds"))
 		).rankingDocumentId(
 			jsonObject.getString("rankingDocumentId")
-		).inactive(
-			jsonObject.getBoolean("inactive")
 		).indexName(
 			jsonObject.getString("indexName")
 		).name(
@@ -149,6 +163,8 @@ public class RankingIndexReindexer implements IndexReindexer {
 			_getPins(jsonObject.getJSONArray("pins"))
 		).queryString(
 			jsonObject.getString("queryString")
+		).status(
+			_getStatus(jsonObject)
 		).sxpBlueprintExternalReferenceCode(
 			jsonObject.getString("sxpBlueprintExternalReferenceCode")
 		);
@@ -162,11 +178,28 @@ public class RankingIndexReindexer implements IndexReindexer {
 		JSONUtil.toList(
 			jsonArray,
 			jsonObject -> pins.add(
-				new Ranking.Pin(
-					jsonObject.getInt("position"),
-					jsonObject.getString("documentId"))));
+				rankingPinBuilderFactory.builder(
+				).documentId(
+					jsonObject.getString("documentId")
+				).position(
+					jsonObject.getInt("position")
+				).build()));
 
 		return pins;
+	}
+
+	private String _getStatus(JSONObject jsonObject) {
+		String status = jsonObject.getString(RankingFields.STATUS);
+
+		if (!Validator.isBlank(status)) {
+			return status;
+		}
+
+		if (jsonObject.getBoolean("inactive")) {
+			return ResultRankingsConstants.STATUS_INACTIVE;
+		}
+
+		return ResultRankingsConstants.STATUS_ACTIVE;
 	}
 
 	private boolean _isExecuteSyncReindex(String executionMode) {
@@ -185,5 +218,13 @@ public class RankingIndexReindexer implements IndexReindexer {
 	private static final Snapshot<SyncReindexManager>
 		_syncReindexManagerSnapshot = new Snapshot<>(
 			RankingIndexReindexer.class, SyncReindexManager.class, null, true);
+
+	@Reference
+	private DocumentBuilderFactory _documentBuilderFactory;
+
+	private RankingIndexWriter _rankingIndexWriter;
+
+	@Reference
+	private SearchEngineAdapter _searchEngineAdapter;
 
 }

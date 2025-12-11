@@ -5,6 +5,7 @@
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
@@ -22,7 +23,6 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchFixture;
-import com.liferay.portal.search.elasticsearch7.internal.document.DefaultElasticsearchDocumentFactory;
 import com.liferay.portal.search.elasticsearch7.internal.document.ElasticsearchDocumentFactory;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
@@ -42,11 +42,9 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -55,6 +53,7 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.xcontent.XContentType;
 
@@ -473,7 +472,7 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
 		ElasticsearchDocumentFactory elasticsearchDocumentFactory =
-			new DefaultElasticsearchDocumentFactory();
+			new ElasticsearchDocumentFactory();
 
 		indexRequest.source(
 			elasticsearchDocumentFactory.getElasticsearchDocument(document),
@@ -525,15 +524,10 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		List<SuggestSearchResult.Entry.Option>
 			suggestSearchResultEntryOptions) {
 
-		List<String> options = new ArrayList<>();
-
-		for (SuggestSearchResult.Entry.Option suggestSearchResultEntryOption :
-				suggestSearchResultEntryOptions) {
-
-			options.add(suggestSearchResultEntryOption.getText());
-		}
-
-		return options;
+		return TransformUtil.transform(
+			suggestSearchResultEntryOptions,
+			suggestSearchResultEntryOption ->
+				suggestSearchResultEntryOption.getText());
 	}
 
 	private static final long _DEFAULT_COMPANY_ID = 12345;

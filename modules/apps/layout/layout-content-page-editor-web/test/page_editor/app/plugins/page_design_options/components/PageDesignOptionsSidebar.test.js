@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+// eslint-disable-next-line
+import {checkAccessibility} from '@liferay/layout-js-components-web/test/__lib__/index';
+
+import '@testing-library/jest-dom';
 import {act, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -28,9 +31,9 @@ jest.mock(
 const DEFAULT_CONFIG = {
 	layoutType: '0',
 	masterLayouts: [
-		{masterLayoutPlid: '0', name: 'Blank'},
+		{masterLayoutPageTemplateEntryERC: '', name: 'Blank'},
 		{
-			masterLayoutPlid: '15',
+			masterLayoutPageTemplateEntryERC: '15',
 			name: 'Pablo Master Layout',
 		},
 	],
@@ -39,9 +42,10 @@ const DEFAULT_CONFIG = {
 	styleBooks: [
 		{
 			name: 'Pablo Style',
-			styleBookEntryId: '3',
+			styleBookEntryERC: '3',
 		},
 	],
+	themeName: 'Test Theme',
 };
 
 const mockConfigGetter = jest.fn(() => DEFAULT_CONFIG);
@@ -55,13 +59,13 @@ jest.mock(
 	})
 );
 
-const renderComponent = ({masterLayoutPlid = '0'} = {}) => {
+const renderComponent = ({masterLayoutPageTemplateEntryERC = ''} = {}) => {
 	return render(
 		<StoreAPIContextProvider
 			dispatch={() => Promise.resolve({styleBook: {}})}
 			getState={() => ({
 				masterLayout: {
-					masterLayoutPlid,
+					masterLayoutPageTemplateEntryERC,
 				},
 				permissions: {
 					LOCKED_SEGMENTS_EXPERIMENT: true,
@@ -81,65 +85,50 @@ describe('PageDesignOptionsSidebar', () => {
 		expect(screen.getByText('page-design-options')).toBeInTheDocument();
 	});
 
+	it('assert style books info message', () => {
+		Liferay.FeatureFlags['LPD-30204'] = true;
+
+		renderComponent();
+
+		expect(
+			screen.getByText(
+				'only-style-books-based-on-the-frontend-token-definition-provided-by-Test Theme-are-visible'
+			)
+		).toBeInTheDocument();
+
+		Liferay.FeatureFlags['LPD-30204'] = false;
+	});
+
+	it('checks panel accessibility', async () => {
+		const {container} = renderComponent();
+
+		await checkAccessibility({context: container});
+	});
+
 	it('calls changeMasterLayout when a master layout is selected', async () => {
 		renderComponent();
 		const button = screen.getByLabelText('Pablo Master Layout');
 
 		await act(async () => {
-			userEvent.click(button);
+			await userEvent.click(button);
 		});
 
 		expect(changeMasterLayout).toBeCalledWith(
-			expect.objectContaining({masterLayoutPlid: '15'})
+			expect.objectContaining({masterLayoutPageTemplateEntryERC: '15'})
 		);
 	});
 
-	it('calls changeStyleBookEntry when a style is selected', () => {
+	it('calls changeStyleBookEntry when a style is selected', async () => {
 		renderComponent();
 		const button = screen.getByLabelText('Pablo Style');
 
-		userEvent.click(button);
+		await userEvent.click(button);
 
 		expect(LayoutService.changeStyleBookEntry).toHaveBeenCalledTimes(1);
 		expect(LayoutService.changeStyleBookEntry).toHaveBeenCalledWith(
 			expect.objectContaining({
-				styleBookEntryId: '3',
+				styleBookEntryERC: '3',
 			})
 		);
-	});
-
-	it('renders Styles from Theme card when page does not have a master layout and there is not a default style book', () => {
-		mockConfigGetter.mockReturnValue({
-			...DEFAULT_CONFIG,
-			defaultStyleBookEntryName: null,
-		});
-
-		renderComponent();
-
-		expect(screen.getByLabelText('styles-from-theme')).toBeInTheDocument();
-	});
-
-	it('renders Styles from Master card when page have a master layout with a stylebook associated', () => {
-		mockConfigGetter.mockReturnValue({
-			...DEFAULT_CONFIG,
-			defaultStyleBookEntryName: 'Master Page Style Book',
-		});
-
-		renderComponent({masterLayoutPlid: '15'});
-
-		expect(screen.getByLabelText('styles-from-master')).toBeInTheDocument();
-		expect(screen.getByText('Master Page Style Book')).toBeInTheDocument();
-	});
-
-	it('renders Styles by Default card when there is a default style book', () => {
-		mockConfigGetter.mockReturnValue({
-			...DEFAULT_CONFIG,
-			defaultStyleBookEntryName: 'Master Page Style Book',
-		});
-
-		renderComponent();
-
-		expect(screen.getByLabelText('styles-by-default')).toBeInTheDocument();
-		expect(screen.getByText('Master Page Style Book')).toBeInTheDocument();
 	});
 });

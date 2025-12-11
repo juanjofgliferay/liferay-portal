@@ -57,7 +57,8 @@ public class DLAppLocalServiceWrapper
 	 * @throws PortalException if a portal exception occurred
 	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
 	 #addFileEntry(String, long, long, long, String, String,
-	 String, String, String, File, Date, Date, ServiceContext)}
+	 String, String, String, String, File, Date, Date
+	 expirationDate, Date, ServiceContext)}
 	 */
 	@Deprecated
 	@Override
@@ -77,14 +78,15 @@ public class DLAppLocalServiceWrapper
 	public com.liferay.portal.kernel.repository.model.FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, byte[] bytes,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
-			sourceFileName, mimeType, bytes, expirationDate, reviewDate,
-			serviceContext);
+			sourceFileName, mimeType, bytes, displayDate, expirationDate,
+			reviewDate, serviceContext);
 	}
 
 	/**
@@ -110,6 +112,8 @@ public class DLAppLocalServiceWrapper
 	 * @param description the file's description
 	 * @param changeLog the file's version change log
 	 * @param bytes the file's data (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally
+	 <code>null</code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review Date (optionally <code>null</code>)
@@ -127,14 +131,15 @@ public class DLAppLocalServiceWrapper
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog, byte[] bytes,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
 			sourceFileName, mimeType, title, urlTitle, description, changeLog,
-			bytes, expirationDate, reviewDate, serviceContext);
+			bytes, displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	/**
@@ -160,7 +165,10 @@ public class DLAppLocalServiceWrapper
 	 * @param description the file's description
 	 * @param changeLog the file's version change log
 	 * @param file the file's data (optionally <code>null</code>)
-	 * @param expirationDate the file's expiration date (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally
+	 <code>null</code>)
+	 * @param expirationDate the file's expiration date (optionally
+	 <code>null</code>)
 	 * @param reviewDate the file's review Date (optionally <code>null</code>)
 	 * @param serviceContext the service context to be applied. Can set the
 	 asset category IDs, asset tag names, and expando bridge
@@ -176,15 +184,15 @@ public class DLAppLocalServiceWrapper
 			String externalReferenceCode, long userId, long repositoryId,
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog,
-			java.io.File file, java.util.Date expirationDate,
-			java.util.Date reviewDate,
+			java.io.File file, java.util.Date displayDate,
+			java.util.Date expirationDate, java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
 			sourceFileName, mimeType, title, urlTitle, description, changeLog,
-			file, expirationDate, reviewDate, serviceContext);
+			file, displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	/**
@@ -212,6 +220,8 @@ public class DLAppLocalServiceWrapper
 	 * @param changeLog the file's version change log
 	 * @param inputStream the file's data (optionally <code>null</code>)
 	 * @param size the file's size (optionally <code>0</code>)
+	 * @param displayDate the file's display date (optionally
+	 <code>null</code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review Date (optionally <code>null</code>)
@@ -230,14 +240,16 @@ public class DLAppLocalServiceWrapper
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog,
 			java.io.InputStream inputStream, long size,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileEntry(
 			externalReferenceCode, userId, repositoryId, folderId,
 			sourceFileName, mimeType, title, urlTitle, description, changeLog,
-			inputStream, size, expirationDate, reviewDate, serviceContext);
+			inputStream, size, displayDate, expirationDate, reviewDate,
+			serviceContext);
 	}
 
 	/**
@@ -257,13 +269,14 @@ public class DLAppLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.repository.model.FileShortcut
 			addFileShortcut(
-				long userId, long repositoryId, long folderId,
-				long toFileEntryId,
+				String externalReferenceCode, long userId, long repositoryId,
+				long folderId, long toFileEntryId,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.addFileShortcut(
-			userId, repositoryId, folderId, toFileEntryId, serviceContext);
+			externalReferenceCode, userId, repositoryId, folderId,
+			toFileEntryId, serviceContext);
 	}
 
 	/**
@@ -325,6 +338,15 @@ public class DLAppLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_dlAppLocalService.deleteFileEntry(fileEntryId);
+	}
+
+	@Override
+	public void deleteFileEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_dlAppLocalService.deleteFileEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -398,6 +420,14 @@ public class DLAppLocalServiceWrapper
 		_dlAppLocalService.deleteFolder(folderId);
 	}
 
+	@Override
+	public com.liferay.portal.kernel.repository.model.FileEntry fetchFileEntry(
+			long fileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlAppLocalService.fetchFileEntry(fileEntryId);
+	}
+
 	/**
 	 * Returns the document library file entry with the matching external
 	 * reference code and group.
@@ -415,6 +445,24 @@ public class DLAppLocalServiceWrapper
 
 		return _dlAppLocalService.fetchFileEntryByExternalReferenceCode(
 			groupId, externalReferenceCode);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.FileShortcut
+			fetchFileShortcut(long fileShortcutId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlAppLocalService.fetchFileShortcut(fileShortcutId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.FileShortcut
+			fetchFileShortcutByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlAppLocalService.fetchFileShortcutByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -470,11 +518,11 @@ public class DLAppLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.repository.model.FileEntry
 			getFileEntryByExternalReferenceCode(
-				long groupId, String externalReferenceCode)
+				String externalReferenceCode, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.getFileEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -525,6 +573,16 @@ public class DLAppLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.getFileShortcut(fileShortcutId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.FileShortcut
+			getFileShortcutByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlAppLocalService.getFileShortcutByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -640,6 +698,13 @@ public class DLAppLocalServiceWrapper
 			userId, folderId, parentFolderId, serviceContext);
 	}
 
+	@Override
+	public void subscribeFileEntry(long userId, long groupId, long fileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_dlAppLocalService.subscribeFileEntry(userId, groupId, fileEntryId);
+	}
+
 	/**
 	 * Subscribe the user to changes in documents of the file entry type. This
 	 * method is only supported by the Liferay repository.
@@ -672,6 +737,14 @@ public class DLAppLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_dlAppLocalService.subscribeFolder(userId, groupId, folderId);
+	}
+
+	@Override
+	public void unsubscribeFileEntry(
+			long userId, long groupId, long fileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_dlAppLocalService.unsubscribeFileEntry(userId, groupId, fileEntryId);
 	}
 
 	/**
@@ -761,6 +834,8 @@ public class DLAppLocalServiceWrapper
 	 * @param dlVersionNumberIncrease the kind of version number increase to
 	 apply for these changes.
 	 * @param bytes the file's data (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally <code>null
+	 </code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review date (optionally <code>null</code>)
@@ -780,14 +855,14 @@ public class DLAppLocalServiceWrapper
 			String changeLog,
 			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
 				dlVersionNumberIncrease,
-			byte[] bytes, java.util.Date expirationDate,
-			java.util.Date reviewDate,
+			byte[] bytes, java.util.Date displayDate,
+			java.util.Date expirationDate, java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.updateFileEntry(
 			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
-			description, changeLog, dlVersionNumberIncrease, bytes,
+			description, changeLog, dlVersionNumberIncrease, bytes, displayDate,
 			expirationDate, reviewDate, serviceContext);
 	}
 
@@ -818,6 +893,8 @@ public class DLAppLocalServiceWrapper
 	 * @param dlVersionNumberIncrease the kind of version number increase to
 	 apply for these changes.
 	 * @param file the file's data (optionally <code>null</code>)
+	 * @param displayDate the file's display date (optionally <code>null
+	 </code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review date (optionally <code>null</code>)
@@ -837,14 +914,14 @@ public class DLAppLocalServiceWrapper
 			String changeLog,
 			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
 				dlVersionNumberIncrease,
-			java.io.File file, java.util.Date expirationDate,
-			java.util.Date reviewDate,
+			java.io.File file, java.util.Date displayDate,
+			java.util.Date expirationDate, java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.updateFileEntry(
 			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
-			description, changeLog, dlVersionNumberIncrease, file,
+			description, changeLog, dlVersionNumberIncrease, file, displayDate,
 			expirationDate, reviewDate, serviceContext);
 	}
 
@@ -876,6 +953,8 @@ public class DLAppLocalServiceWrapper
 	 apply for these changes.
 	 * @param inputStream the file's data (optionally <code>null</code>)
 	 * @param size the file's size (optionally <code>0</code>)
+	 * @param displayDate the file's displaydate (optionally <code>null
+	 </code>)
 	 * @param expirationDate the file's expiration date (optionally <code>null
 	 </code>)
 	 * @param reviewDate the file's review date (optionally <code>null</code>)
@@ -896,14 +975,15 @@ public class DLAppLocalServiceWrapper
 			com.liferay.document.library.kernel.model.DLVersionNumberIncrease
 				dlVersionNumberIncrease,
 			java.io.InputStream inputStream, long size,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlAppLocalService.updateFileEntry(
 			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
 			description, changeLog, dlVersionNumberIncrease, inputStream, size,
-			expirationDate, reviewDate, serviceContext);
+			displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	/**

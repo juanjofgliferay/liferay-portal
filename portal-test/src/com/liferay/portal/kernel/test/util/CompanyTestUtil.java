@@ -11,18 +11,22 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
+import com.liferay.portal.util.PortalInstances;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.Collection;
 import java.util.Locale;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Manuel de la Peña
@@ -33,12 +37,36 @@ public class CompanyTestUtil {
 		return addCompany(RandomTestUtil.randomString());
 	}
 
+	public static Company addCompany(boolean initialize) throws Exception {
+		if (!initialize) {
+			return addCompany(RandomTestUtil.randomString());
+		}
+
+		try {
+			return TransactionInvokerUtil.invoke(
+				_transactionConfig,
+				() -> {
+					Company company = addCompany(RandomTestUtil.randomString());
+
+					PortalInstances.initCompany(company);
+
+					return company;
+				});
+		}
+		catch (Exception exception) {
+			throw exception;
+		}
+		catch (Throwable throwable) {
+			throw new Exception(throwable);
+		}
+	}
+
 	public static Company addCompany(String name) throws Exception {
 		String virtualHostname = name + "." + RandomTestUtil.randomString(3);
 
 		return CompanyLocalServiceUtil.addCompany(
-			null, name, virtualHostname, virtualHostname, 0, true, null, null,
-			null, null, null, null);
+			null, name, virtualHostname, virtualHostname, 0, true, true, null,
+			null, null, null, null, null);
 	}
 
 	public static void resetCompanyLocales(
@@ -69,6 +97,13 @@ public class CompanyTestUtil {
 
 		UserLocalServiceUtil.updateUser(user);
 
+		// Reset thread locals
+
+		CompanyThreadLocal.setCompanyId(companyId);
+
+		LocaleThreadLocal.setDefaultLocale(
+			LocaleUtil.fromLanguageId(defaultLanguageId, false));
+
 		// Reset company supported locales
 
 		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences(
@@ -81,13 +116,17 @@ public class CompanyTestUtil {
 		// Reset company locales cache
 
 		LanguageUtil.resetAvailableLocales(companyId);
+	}
 
-		// Reset thread locals
+	private static final TransactionConfig _transactionConfig;
 
-		CompanyThreadLocal.setCompanyId(companyId);
+	static {
+		TransactionConfig.Builder builder = new TransactionConfig.Builder();
 
-		LocaleThreadLocal.setDefaultLocale(
-			LocaleUtil.fromLanguageId(defaultLanguageId, false));
+		builder.setPropagation(Propagation.REQUIRED);
+		builder.setRollbackForClasses(Exception.class);
+
+		_transactionConfig = builder.build();
 	}
 
 }

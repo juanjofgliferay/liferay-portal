@@ -1,18 +1,24 @@
 import React, {useState} from 'react';
 import {Link} from './Link';
-import {MAIN_NODE_WIDTH, SANKEY_HEIGHT, SANKEY_WIDTH} from './utils';
+import {MAIN_NODE_WIDTH, SANKEY_HEIGHT} from './utils';
 import {Node} from './Node';
+import {RangeSelectors} from 'shared/types';
 import {Tooltip as RechartsTooltip, Sankey as SankeyChart} from 'recharts';
 import {Tooltip} from './Tooltip';
 
-const Sankey = ({data}) => {
+interface ISankeyProps {
+	data: any;
+	rangeSelectors: RangeSelectors;
+	width: number;
+}
+
+const Sankey: React.FC<ISankeyProps> = ({data, rangeSelectors, width}) => {
 	const [hovered, setMouseEnter] = useState(false);
 	const [selectedNode, setSelectedNode] = useState(null);
 
-	const marginTop = 60;
-
 	return (
 		<SankeyChart
+			className='analytics-sankey'
 			data={data}
 			height={SANKEY_HEIGHT}
 			link={
@@ -23,11 +29,12 @@ const Sankey = ({data}) => {
 				/>
 			}
 			linkCurvature={0.3}
-			margin={{bottom: 30, right: 20, top: marginTop}}
+			margin={{bottom: 30, right: 20, top: 60}}
 			node={
 				<Node
 					hovered={hovered}
 					onNodeChange={setSelectedNode}
+					rangeSelectors={rangeSelectors}
 					selectedNode={selectedNode}
 				/>
 			}
@@ -40,7 +47,7 @@ const Sankey = ({data}) => {
 				setMouseEnter(false);
 			}}
 			sort={false}
-			width={SANKEY_WIDTH}
+			width={width}
 		>
 			<RechartsTooltip
 				allowEscapeViewBox={{x: true, y: true}}

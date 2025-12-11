@@ -8,11 +8,12 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.CategorySerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
+import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -104,6 +105,27 @@ public class Category implements Cloneable, Serializable {
 	}
 
 	protected Long siteId;
+
+	public Map<String, String> getTitle() {
+		return title;
+	}
+
+	public void setTitle(Map<String, String> title) {
+		this.title = title;
+	}
+
+	public void setTitle(
+		UnsafeSupplier<Map<String, String>, Exception> titleUnsafeSupplier) {
+
+		try {
+			title = titleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Map<String, String> title;
 
 	public String getVocabulary() {
 		return vocabulary;

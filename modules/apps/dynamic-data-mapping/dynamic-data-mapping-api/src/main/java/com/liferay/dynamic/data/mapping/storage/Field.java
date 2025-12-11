@@ -213,11 +213,7 @@ public class Field implements Serializable {
 
 	public boolean isPrivate() {
 		try {
-			if (_name.startsWith(StringPool.UNDERLINE)) {
-				return true;
-			}
-
-			return false;
+			return _name.startsWith(StringPool.UNDERLINE);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -295,17 +291,21 @@ public class Field implements Serializable {
 	}
 
 	private List<Serializable> _getValues(Locale locale) {
-		Set<Locale> availableLocales = getAvailableLocales();
-
-		if (!availableLocales.contains(locale)) {
-			locale = getDefaultLocale();
-		}
-
-		if (locale == null) {
-			locale = LocaleUtil.getSiteDefault();
-		}
-
 		List<Serializable> values = _valuesMap.get(locale);
+
+		if (values != null) {
+			return values;
+		}
+
+		Locale fallbackLocale = getDefaultLocale();
+
+		if (fallbackLocale == null) {
+			fallbackLocale = LocaleUtil.getSiteDefault();
+		}
+
+		if (!Objects.equals(locale, fallbackLocale)) {
+			values = _valuesMap.get(fallbackLocale);
+		}
 
 		if (values == null) {
 			return Collections.emptyList();

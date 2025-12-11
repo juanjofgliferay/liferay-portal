@@ -52,6 +52,8 @@ import com.liferay.portal.workflow.metrics.rest.resource.v1_0.AssigneeMetricReso
 import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -59,8 +61,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -515,17 +515,20 @@ public class AssigneeMetricResourceImpl extends BaseAssigneeMetricResourceImpl {
 	private AssigneeMetric _toAssigneeMetric(Bucket bucket) {
 		return new AssigneeMetric() {
 			{
-				assignee = AssigneeUtil.toAssignee(
-					_language, _portal,
-					ResourceBundleUtil.getModuleAndPortalResourceBundle(
-						contextAcceptLanguage.getPreferredLocale(),
-						AssigneeMetricResourceImpl.class),
-					GetterUtil.getLong(bucket.getKey()),
-					_userLocalService::fetchUser);
-				durationTaskAvg = _getDurationTaskAvg(bucket);
-				onTimeTaskCount = _resourceHelper.getOnTimeTaskCount(bucket);
-				overdueTaskCount = _resourceHelper.getOverdueTaskCount(bucket);
-				taskCount = _getTaskCount(bucket);
+				setAssignee(
+					() -> AssigneeUtil.toAssignee(
+						_language, _portal,
+						ResourceBundleUtil.getModuleAndPortalResourceBundle(
+							contextAcceptLanguage.getPreferredLocale(),
+							AssigneeMetricResourceImpl.class),
+						GetterUtil.getLong(bucket.getKey()),
+						_userLocalService::fetchUser));
+				setDurationTaskAvg(() -> _getDurationTaskAvg(bucket));
+				setOnTimeTaskCount(
+					() -> _resourceHelper.getOnTimeTaskCount(bucket));
+				setOverdueTaskCount(
+					() -> _resourceHelper.getOverdueTaskCount(bucket));
+				setTaskCount(() -> _getTaskCount(bucket));
 			}
 		};
 	}

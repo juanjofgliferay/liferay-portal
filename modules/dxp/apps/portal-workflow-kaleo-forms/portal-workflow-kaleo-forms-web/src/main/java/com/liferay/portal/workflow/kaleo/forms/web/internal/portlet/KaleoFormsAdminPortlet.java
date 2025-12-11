@@ -11,7 +11,6 @@ import com.liferay.dynamic.data.lists.service.DDLRecordLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
@@ -38,10 +37,19 @@ import com.liferay.portal.workflow.kaleo.forms.constants.KaleoFormsWebKeys;
 import com.liferay.portal.workflow.kaleo.forms.exception.NoSuchKaleoProcessException;
 import com.liferay.portal.workflow.kaleo.forms.model.KaleoProcess;
 import com.liferay.portal.workflow.kaleo.forms.service.KaleoProcessService;
-import com.liferay.portal.workflow.kaleo.forms.web.internal.configuration.KaleoFormsWebConfiguration;
 import com.liferay.portal.workflow.kaleo.forms.web.internal.display.context.KaleoFormsAdminDisplayContext;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.io.IOException;
 
@@ -49,16 +57,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -77,25 +75,25 @@ import org.osgi.service.component.annotations.Reference;
 	property = {
 		"com.liferay.portlet.css-class-wrapper=kaleo-forms-admin-portlet",
 		"com.liferay.portlet.display-category=category.hidden",
-		"com.liferay.portlet.footer-portal-javascript=/o/dynamic-data-mapping-web/js/custom_fields.js",
-		"com.liferay.portlet.footer-portal-javascript=/o/dynamic-data-mapping-web/js/main.js",
-		"com.liferay.portlet.footer-portlet-javascript=/admin/js/components.js",
-		"com.liferay.portlet.footer-portlet-javascript=/admin/js/main.js",
+		"com.liferay.portlet.footer-portal-javascript=/o/dynamic-data-mapping-web/js/legacy/custom_fields.js",
+		"com.liferay.portlet.footer-portal-javascript=/o/dynamic-data-mapping-web/js/legacy/main.js",
+		"com.liferay.portlet.footer-portlet-javascript=/js/legacy/components.js",
+		"com.liferay.portlet.footer-portlet-javascript=/js/legacy/main.js",
 		"com.liferay.portlet.header-portal-css=/o/dynamic-data-mapping-web/css/main.css",
 		"com.liferay.portlet.header-portlet-css=/admin/css/main.css",
 		"com.liferay.portlet.preferences-owned-by-group=true",
 		"com.liferay.portlet.private-request-attributes=false",
 		"com.liferay.portlet.render-weight=12",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Kaleo Forms Admin Web",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.copy-request-parameters=true",
-		"javax.portlet.init-param.template-path=/admin/",
-		"javax.portlet.init-param.view-template=/admin/view.jsp",
-		"javax.portlet.name=" + KaleoFormsPortletKeys.KALEO_FORMS_ADMIN,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,power-user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Kaleo Forms Admin Web",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.copy-request-parameters=true",
+		"jakarta.portlet.init-param.template-path=/admin/",
+		"jakarta.portlet.init-param.view-template=/admin/view.jsp",
+		"jakarta.portlet.name=" + KaleoFormsPortletKeys.KALEO_FORMS_ADMIN,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,power-user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -196,9 +194,6 @@ public class KaleoFormsAdminPortlet extends MVCPortlet {
 			_parameterNames.add(
 				"name" + LocaleUtil.toLanguageId(availableLocale));
 		}
-
-		_kaleoFormsWebConfiguration = ConfigurableUtil.createConfigurable(
-			KaleoFormsWebConfiguration.class, properties);
 	}
 
 	@Override
@@ -410,8 +405,8 @@ public class KaleoFormsAdminPortlet extends MVCPortlet {
 		KaleoFormsAdminDisplayContext kaleoFormsAdminDisplayContext =
 			new KaleoFormsAdminDisplayContext(
 				_ddlRecordLocalService, _ddmStorageEngineManager, _htmlParser,
-				_kaleoDefinitionVersionLocalService,
-				_kaleoFormsWebConfiguration, renderRequest, renderResponse);
+				_kaleoDefinitionVersionLocalService, renderRequest,
+				renderResponse);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, kaleoFormsAdminDisplayContext);
@@ -435,8 +430,6 @@ public class KaleoFormsAdminPortlet extends MVCPortlet {
 	@Reference
 	private KaleoDefinitionVersionLocalService
 		_kaleoDefinitionVersionLocalService;
-
-	private volatile KaleoFormsWebConfiguration _kaleoFormsWebConfiguration;
 
 	@Reference
 	private KaleoProcessService _kaleoProcessService;

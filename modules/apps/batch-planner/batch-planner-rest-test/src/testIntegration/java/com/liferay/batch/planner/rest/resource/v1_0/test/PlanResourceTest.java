@@ -11,7 +11,7 @@ import com.liferay.batch.planner.rest.client.dto.v1_0.Plan;
 import com.liferay.batch.planner.rest.client.http.HttpInvoker;
 import com.liferay.object.field.builder.TextObjectFieldBuilder;
 import com.liferay.object.model.ObjectDefinition;
-import com.liferay.object.rest.test.util.ObjectDefinitionTestUtil;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -50,7 +50,8 @@ public class PlanResourceTest extends BasePlanResourceTestCase {
 							RandomTestUtil.randomString())
 					).name(
 						fieldName
-					).build()));
+					).build()),
+				false);
 
 		HttpInvoker.HttpResponse httpResponse =
 			planResource.getPlanTemplateHttpResponse(

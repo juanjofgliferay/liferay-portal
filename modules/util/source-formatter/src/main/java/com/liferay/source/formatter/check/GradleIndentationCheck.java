@@ -109,7 +109,7 @@ public class GradleIndentationCheck extends BaseFileCheck {
 	}
 
 	private String _getQuoteString(String line) {
-		if (line.indexOf("'''") != -1) {
+		if (line.contains("'''")) {
 			return "'''";
 		}
 
@@ -120,7 +120,7 @@ public class GradleIndentationCheck extends BaseFileCheck {
 		String quoteString = _getQuoteString(line);
 		String text = line;
 
-		if (line.indexOf(quoteString) != -1) {
+		if (line.contains(quoteString)) {
 			if (insideQuotes) {
 				int x = quoteString.length();
 
@@ -159,9 +159,20 @@ public class GradleIndentationCheck extends BaseFileCheck {
 
 		text = StringUtil.removeSubstrings(text, "[{", "}]");
 
+		String trimmedText = StringUtil.trim(text);
+
+		if (trimmedText.endsWith("([")) {
+			tabCount++;
+			trimmedText = trimmedText.substring(0, trimmedText.length() - 2);
+		}
+		else if (trimmedText.equals("])")) {
+			tabCount--;
+			trimmedText = trimmedText.substring(0, trimmedText.length() - 2);
+		}
+
 		return getLevel(
-			text, new String[] {"{", "[", "("}, new String[] {"}", "]", ")"},
-			tabCount);
+			trimmedText, new String[] {"{", "[", "("},
+			new String[] {"}", "]", ")"}, tabCount);
 	}
 
 }

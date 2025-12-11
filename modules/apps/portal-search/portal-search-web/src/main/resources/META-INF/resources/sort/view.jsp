@@ -5,25 +5,27 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
 taglib uri="http://liferay.com/tld/clay" prefix="clay" %><%@
 taglib uri="http://liferay.com/tld/ddm" prefix="liferay-ddm" %><%@
+taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
 <%@ page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
-page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.search.web.internal.sort.configuration.SortPortletInstanceConfiguration" %><%@
 page import="com.liferay.portal.search.web.internal.sort.display.context.SortDisplayContext" %><%@
 page import="com.liferay.portal.search.web.internal.sort.display.context.SortTermDisplayContext" %>
 
 <liferay-theme:defineObjects />
+
+<portlet:defineObjects />
 
 <%
 SortDisplayContext sortDisplayContext = (SortDisplayContext)java.util.Objects.requireNonNull(request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT));
@@ -55,6 +57,8 @@ SortPortletInstanceConfiguration sortPortletInstanceConfiguration = sortDisplayC
 				className="<%= SortDisplayContext.class.getName() %>"
 				contextObjects='<%=
 					HashMapBuilder.<String, Object>put(
+						"namespace", liferayPortletResponse.getNamespace()
+					).put(
 						"sortDisplayContext", sortDisplayContext
 					).build()
 				%>'
@@ -62,49 +66,35 @@ SortPortletInstanceConfiguration sortPortletInstanceConfiguration = sortDisplayC
 				displayStyleGroupId="<%= sortDisplayContext.getDisplayStyleGroupId() %>"
 				entries="<%= sortDisplayContext.getSortTermDisplayContexts() %>"
 			>
-				<aui:fieldset>
-					<aui:select class="sort-term" label="sort-by" name="sortSelection">
-						<c:if test="<%= !sortDisplayContext.isAnySelected() %>">
-							<aui:option disabled="<%= true %>" label="sort-default-order" selected="<%= true %>" />
-						</c:if>
+				<div class="form-group">
 
-						<%
-						for (SortTermDisplayContext sortTermDisplayContext : sortDisplayContext.getSortTermDisplayContexts()) {
-						%>
+					<%
+					SortTermDisplayContext selectedSortTermDisplayContext = sortDisplayContext.getSelectedSortTermDisplayContext();
+					%>
 
-							<aui:option label="<%= HtmlUtil.escapeAttribute(sortTermDisplayContext.getLabel()) %>" selected="<%= sortTermDisplayContext.isSelected() %>" value="<%= HtmlUtil.escapeAttribute(sortTermDisplayContext.getField()) %>" />
+					<label for="<portlet:namespace />sortSelectionDropdown">
+						<liferay-ui:message key="sort-by" />
+					</label>
 
-						<%
-						}
-						%>
-
-					</aui:select>
-				</aui:fieldset>
+					<clay:dropdown-menu
+						aria-label='<%= LanguageUtil.get(request, "sort-by") %>'
+						cssClass="form-control form-control-select"
+						displayType="secondary"
+						dropdownItems="<%= sortDisplayContext.getActionDropdownItems() %>"
+						id='<%= liferayPortletResponse.getNamespace() + "sortSelectionDropdown" %>'
+						label='<%= (selectedSortTermDisplayContext == null) ? "relevance" : selectedSortTermDisplayContext.getLabel() %>'
+					/>
+				</div>
 			</liferay-ddm:template-renderer>
 		</aui:form>
 	</c:otherwise>
 </c:choose>
 
-<aui:script use="liferay-search-sort-util">
-	AUI().ready('aui-base', 'node', 'event', (A) => {
-		A.one('#<portlet:namespace />sortSelection').on('change', () => {
-			var selections = [];
-
-			var sortSelect = A.one('#<portlet:namespace />sortSelection').get(
-				'value'
-			);
-
-			selections.push(sortSelect);
-
-			var key = A.one('#<portlet:namespace />sort-parameter-name').get(
-				'value'
-			);
-
-			document.location.search = Liferay.Search.SortUtil.updateQueryString(
-				key,
-				selections,
-				document.location.search
-			);
-		});
-	});
-</aui:script>
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"namespace", liferayPortletResponse.getNamespace()
+		).build()
+	%>'
+	module="{Sort} from portal-search-web"
+/>

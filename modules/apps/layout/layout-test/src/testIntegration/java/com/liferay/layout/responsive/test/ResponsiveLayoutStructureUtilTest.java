@@ -82,11 +82,11 @@ public class ResponsiveLayoutStructureUtilTest {
 
 		FragmentEntry fragmentEntry =
 			_fragmentEntryLocalService.addFragmentEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
 				StringUtil.randomString(), StringUtil.randomString(),
 				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(), false, "{fieldSets: []}", null,
-				0, FragmentConstants.TYPE_COMPONENT, null,
+				0, false, false, FragmentConstants.TYPE_COMPONENT, null,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		_defaultSegmentsExperienceId =
@@ -94,9 +94,10 @@ public class ResponsiveLayoutStructureUtilTest {
 				_layout.getPlid());
 
 		_fragmentEntryLink = _fragmentEntryLinkService.addFragmentEntryLink(
-			_group.getGroupId(), 0, fragmentEntry.getFragmentEntryId(),
-			_defaultSegmentsExperienceId, _layout.getPlid(),
-			fragmentEntry.getCss(), fragmentEntry.getHtml(),
+			null, _group.getGroupId(), null,
+			fragmentEntry.getExternalReferenceCode(),
+			fragmentEntry.getScopeERC(), _defaultSegmentsExperienceId,
+			_layout.getPlid(), fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.getConfiguration(), null,
 			StringPool.BLANK, 0, null, fragmentEntry.getType(), serviceContext);
 
@@ -155,8 +156,9 @@ public class ResponsiveLayoutStructureUtilTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_layout.getGroupId(), _layout.getPlid(),
-				_defaultSegmentsExperienceId, layoutStructure.toString());
+				TestPropsValues.getUserId(), _layout.getGroupId(),
+				_layout.getPlid(), _defaultSegmentsExperienceId,
+				layoutStructure.toString());
 
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();

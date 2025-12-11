@@ -78,10 +78,11 @@ public interface LayoutUtilityPageEntryLocalService
 	public LayoutUtilityPageEntry addLayoutUtilityPageEntry(
 		LayoutUtilityPageEntry layoutUtilityPageEntry);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public LayoutUtilityPageEntry addLayoutUtilityPageEntry(
 			String externalReferenceCode, long userId, long groupId, long plid,
 			long previewFileEntryId, boolean defaultLayoutUtilityPageEntry,
-			String name, String type, long masterLayoutPlid,
+			String name, String type, String masterLayoutPageTemplateEntryERC,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -118,7 +119,10 @@ public interface LayoutUtilityPageEntryLocalService
 	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
-	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	@SystemEvent(
+		action = SystemEventConstants.ACTION_SKIP,
+		type = SystemEventConstants.TYPE_DELETE
+	)
 	public LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
 			LayoutUtilityPageEntry layoutUtilityPageEntry)
 		throws PortalException;
@@ -137,6 +141,10 @@ public interface LayoutUtilityPageEntryLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
 			long LayoutUtilityPageEntryId)
+		throws PortalException;
+
+	public LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -293,6 +301,16 @@ public interface LayoutUtilityPageEntryLocalService
 		long groupId, String type, int start, int end,
 		OrderByComparator<LayoutUtilityPageEntry> orderByComparator);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String keyword, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator);
+
 	/**
 	 * Returns all the layout utility page entries matching the UUID and company.
 	 *
@@ -331,6 +349,13 @@ public interface LayoutUtilityPageEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getLayoutUtilityPageEntriesCount(long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getLayoutUtilityPageEntriesCount(
+		long groupId, String keyword, String[] types);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getLayoutUtilityPageEntriesCount(long groupId, String[] types);
 
 	/**
 	 * Returns the layout utility page entry with the primary key.
@@ -399,6 +424,7 @@ public interface LayoutUtilityPageEntryLocalService
 	public LayoutUtilityPageEntry updateLayoutUtilityPageEntry(
 		long layoutUtilityPageEntryId, long previewFileEntryId);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public LayoutUtilityPageEntry updateLayoutUtilityPageEntry(
 			long layoutUtilityPageEntryId, String name)
 		throws PortalException;

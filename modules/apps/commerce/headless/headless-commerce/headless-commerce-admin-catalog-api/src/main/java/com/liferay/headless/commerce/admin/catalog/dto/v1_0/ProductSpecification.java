@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,15 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -40,8 +38,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ProductSpecification")
+@io.swagger.v3.oas.annotations.media.Schema(requiredProperties = {"value"})
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"specificationKey", "value"})
 @XmlRootElement(name = "ProductSpecification")
 public class ProductSpecification implements Serializable {
 
@@ -54,238 +52,597 @@ public class ProductSpecification implements Serializable {
 			ProductSpecification.class, json);
 	}
 
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "31130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "31130")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+
+		_keySupplier = null;
+	}
+
+	@JsonIgnore
+	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String key;
+
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
 	)
 	@Valid
 	public Map<String, String> getLabel() {
+		if (_labelSupplier != null) {
+			label = _labelSupplier.get();
+
+			_labelSupplier = null;
+		}
+
 		return label;
 	}
 
 	public void setLabel(Map<String, String> label) {
 		this.label = label;
+
+		_labelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel(
 		UnsafeSupplier<Map<String, String>, Exception> labelUnsafeSupplier) {
 
-		try {
-			label = labelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_labelSupplier = () -> {
+			try {
+				return labelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> label;
 
+	@JsonIgnore
+	private Supplier<Map<String, String>> _labelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getOptionCategoryExternalReferenceCode() {
+		if (_optionCategoryExternalReferenceCodeSupplier != null) {
+			optionCategoryExternalReferenceCode =
+				_optionCategoryExternalReferenceCodeSupplier.get();
+
+			_optionCategoryExternalReferenceCodeSupplier = null;
+		}
+
+		return optionCategoryExternalReferenceCode;
+	}
+
+	public void setOptionCategoryExternalReferenceCode(
+		String optionCategoryExternalReferenceCode) {
+
+		this.optionCategoryExternalReferenceCode =
+			optionCategoryExternalReferenceCode;
+
+		_optionCategoryExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setOptionCategoryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			optionCategoryExternalReferenceCodeUnsafeSupplier) {
+
+		_optionCategoryExternalReferenceCodeSupplier = () -> {
+			try {
+				return optionCategoryExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String optionCategoryExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _optionCategoryExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30129")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30129")
 	public Long getOptionCategoryId() {
+		if (_optionCategoryIdSupplier != null) {
+			optionCategoryId = _optionCategoryIdSupplier.get();
+
+			_optionCategoryIdSupplier = null;
+		}
+
 		return optionCategoryId;
 	}
 
 	public void setOptionCategoryId(Long optionCategoryId) {
 		this.optionCategoryId = optionCategoryId;
+
+		_optionCategoryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptionCategoryId(
 		UnsafeSupplier<Long, Exception> optionCategoryIdUnsafeSupplier) {
 
-		try {
-			optionCategoryId = optionCategoryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionCategoryIdSupplier = () -> {
+			try {
+				return optionCategoryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long optionCategoryId;
 
+	@JsonIgnore
+	private Supplier<Long> _optionCategoryIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1.2")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1.2")
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30129")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30129")
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long productId;
 
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getSpecificationExternalReferenceCode() {
+		if (_specificationExternalReferenceCodeSupplier != null) {
+			specificationExternalReferenceCode =
+				_specificationExternalReferenceCodeSupplier.get();
+
+			_specificationExternalReferenceCodeSupplier = null;
+		}
+
+		return specificationExternalReferenceCode;
+	}
+
+	public void setSpecificationExternalReferenceCode(
+		String specificationExternalReferenceCode) {
+
+		this.specificationExternalReferenceCode =
+			specificationExternalReferenceCode;
+
+		_specificationExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setSpecificationExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			specificationExternalReferenceCodeUnsafeSupplier) {
+
+		_specificationExternalReferenceCodeSupplier = () -> {
+			try {
+				return specificationExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String specificationExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _specificationExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30129")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30129")
 	public Long getSpecificationId() {
+		if (_specificationIdSupplier != null) {
+			specificationId = _specificationIdSupplier.get();
+
+			_specificationIdSupplier = null;
+		}
+
 		return specificationId;
 	}
 
 	public void setSpecificationId(Long specificationId) {
 		this.specificationId = specificationId;
+
+		_specificationIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSpecificationId(
 		UnsafeSupplier<Long, Exception> specificationIdUnsafeSupplier) {
 
-		try {
-			specificationId = specificationIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_specificationIdSupplier = () -> {
+			try {
+				return specificationIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long specificationId;
 
-	@Schema(example = "specification-key")
+	@JsonIgnore
+	private Supplier<Long> _specificationIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "specification-key")
 	public String getSpecificationKey() {
+		if (_specificationKeySupplier != null) {
+			specificationKey = _specificationKeySupplier.get();
+
+			_specificationKeySupplier = null;
+		}
+
 		return specificationKey;
 	}
 
 	public void setSpecificationKey(String specificationKey) {
 		this.specificationKey = specificationKey;
+
+		_specificationKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSpecificationKey(
 		UnsafeSupplier<String, Exception> specificationKeyUnsafeSupplier) {
 
-		try {
-			specificationKey = specificationKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_specificationKeySupplier = () -> {
+			try {
+				return specificationKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	@NotEmpty
 	protected String specificationKey;
 
-	@Schema(example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}")
+	@JsonIgnore
+	private Supplier<String> _specificationKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1.1")
+	public Double getSpecificationPriority() {
+		if (_specificationPrioritySupplier != null) {
+			specificationPriority = _specificationPrioritySupplier.get();
+
+			_specificationPrioritySupplier = null;
+		}
+
+		return specificationPriority;
+	}
+
+	public void setSpecificationPriority(Double specificationPriority) {
+		this.specificationPriority = specificationPriority;
+
+		_specificationPrioritySupplier = null;
+	}
+
+	@JsonIgnore
+	public void setSpecificationPriority(
+		UnsafeSupplier<Double, Exception> specificationPriorityUnsafeSupplier) {
+
+		_specificationPrioritySupplier = () -> {
+			try {
+				return specificationPriorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Double specificationPriority;
+
+	@JsonIgnore
+	private Supplier<Double> _specificationPrioritySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}"
+	)
 	@Valid
 	public Map<String, String> getValue() {
+		if (_valueSupplier != null) {
+			value = _valueSupplier.get();
+
+			_valueSupplier = null;
+		}
+
 		return value;
 	}
 
 	public void setValue(Map<String, String> value) {
 		this.value = value;
+
+		_valueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValue(
 		UnsafeSupplier<Map<String, String>, Exception> valueUnsafeSupplier) {
 
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valueSupplier = () -> {
+			try {
+				return valueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Map<String, String> value;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _valueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "true")
+	public Boolean getVisible() {
+		if (_visibleSupplier != null) {
+			visible = _visibleSupplier.get();
+
+			_visibleSupplier = null;
+		}
+
+		return visible;
+	}
+
+	public void setVisible(Boolean visible) {
+		this.visible = visible;
+
+		_visibleSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setVisible(
+		UnsafeSupplier<Boolean, Exception> visibleUnsafeSupplier) {
+
+		_visibleSupplier = () -> {
+			try {
+				return visibleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean visible;
+
+	@JsonIgnore
+	private Supplier<Boolean> _visibleSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -315,6 +672,24 @@ public class ProductSpecification implements Serializable {
 
 		sb.append("{");
 
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -324,6 +699,24 @@ public class ProductSpecification implements Serializable {
 
 			sb.append(id);
 		}
+
+		String key = getKey();
+
+		if (key != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"key\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(key));
+
+			sb.append("\"");
+		}
+
+		Map<String, String> label = getLabel();
 
 		if (label != null) {
 			if (sb.length() > 1) {
@@ -335,6 +728,25 @@ public class ProductSpecification implements Serializable {
 			sb.append(_toJSON(label));
 		}
 
+		String optionCategoryExternalReferenceCode =
+			getOptionCategoryExternalReferenceCode();
+
+		if (optionCategoryExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"optionCategoryExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(optionCategoryExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long optionCategoryId = getOptionCategoryId();
+
 		if (optionCategoryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -344,6 +756,8 @@ public class ProductSpecification implements Serializable {
 
 			sb.append(optionCategoryId);
 		}
+
+		Double priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -355,6 +769,8 @@ public class ProductSpecification implements Serializable {
 			sb.append(priority);
 		}
 
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -365,6 +781,25 @@ public class ProductSpecification implements Serializable {
 			sb.append(productId);
 		}
 
+		String specificationExternalReferenceCode =
+			getSpecificationExternalReferenceCode();
+
+		if (specificationExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"specificationExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(specificationExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long specificationId = getSpecificationId();
+
 		if (specificationId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -374,6 +809,8 @@ public class ProductSpecification implements Serializable {
 
 			sb.append(specificationId);
 		}
+
+		String specificationKey = getSpecificationKey();
 
 		if (specificationKey != null) {
 			if (sb.length() > 1) {
@@ -389,6 +826,20 @@ public class ProductSpecification implements Serializable {
 			sb.append("\"");
 		}
 
+		Double specificationPriority = getSpecificationPriority();
+
+		if (specificationPriority != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"specificationPriority\": ");
+
+			sb.append(specificationPriority);
+		}
+
+		Map<String, String> value = getValue();
+
 		if (value != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -399,13 +850,25 @@ public class ProductSpecification implements Serializable {
 			sb.append(_toJSON(value));
 		}
 
+		Boolean visible = getVisible();
+
+		if (visible != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"visible\": ");
+
+			sb.append(visible);
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductSpecification",
 		name = "x-class-name"
 	)
@@ -451,7 +914,10 @@ public class ProductSpecification implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

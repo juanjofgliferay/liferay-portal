@@ -4,12 +4,17 @@
  */
 
 import React from 'react';
-import ReactDOM from 'react-dom';
+import {createRoot} from 'react-dom/client';
 
 import App from './js/App.es';
 
 /* Bug with SwaggerUI: https://github.com/agoncal/swagger-ui-angular6/issues/2 */
+
 /* eslint-disable-next-line no-undef */
 window.Buffer = window.Buffer || require('buffer').Buffer;
 
-ReactDOM.render(<App />, document.getElementById('container'));
+/* We need to define `global` due to esbuild not polyfilling it (see LPD-31939) */
+window.global = window;
+
+const root = createRoot(document.getElementById('container'));
+root.render(<App />);

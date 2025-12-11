@@ -32,7 +32,7 @@ public class SchemaUpgradeProcess extends UpgradeProcess {
 				SchemaUpgradeProcess.class.getResourceAsStream(
 					"dependencies/update.sql"));
 
-			runSQLTemplateString(template, false);
+			runSQLTemplate(template, false);
 
 			if (!hasTable("WorkflowMetricsSLADefinition")) {
 				return;
@@ -165,6 +165,7 @@ public class SchemaUpgradeProcess extends UpgradeProcess {
 				}
 
 				preparedStatement2.executeBatch();
+
 				preparedStatement3.executeBatch();
 			}
 		}

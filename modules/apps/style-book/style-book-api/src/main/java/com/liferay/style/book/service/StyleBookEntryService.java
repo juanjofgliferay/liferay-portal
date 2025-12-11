@@ -10,11 +10,16 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.transaction.Isolation;
+import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.style.book.model.StyleBookEntry;
+
+import java.util.List;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -43,13 +48,22 @@ public interface StyleBookEntryService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the style book entry remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link StyleBookEntryServiceUtil} if injection and service tracking are not available.
 	 */
 	public StyleBookEntry addStyleBookEntry(
-			long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			ServiceContext serviceContext)
 		throws PortalException;
 
 	public StyleBookEntry addStyleBookEntry(
-			long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String name,
+			String styleBookEntryKey, String themeId,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public StyleBookEntry addStyleBookEntry(
+			String externalReferenceCode, long groupId,
+			String frontendTokensValues, String name, String styleBookEntryKey,
+			String themeId, ServiceContext serviceContext)
 		throws PortalException;
 
 	public StyleBookEntry copyStyleBookEntry(
@@ -60,10 +74,19 @@ public interface StyleBookEntryService extends BaseService {
 	public StyleBookEntry deleteStyleBookEntry(long styleBookEntryId)
 		throws PortalException;
 
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	public StyleBookEntry deleteStyleBookEntry(StyleBookEntry styleBookEntry)
 		throws PortalException;
 
 	public StyleBookEntry discardDraftStyleBookEntry(long styleBookEntryId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -72,6 +95,30 @@ public interface StyleBookEntryService extends BaseService {
 	 * @return the OSGi service identifier
 	 */
 	public String getOSGiServiceIdentifier();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+			long groupId, int start, int end,
+			OrderByComparator<StyleBookEntry> orderByComparator)
+		throws PrincipalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+			long groupId, String name, int start, int end,
+			OrderByComparator<StyleBookEntry> orderByComparator)
+		throws PrincipalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getStyleBookEntriesCount(long groupId) throws PrincipalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getStyleBookEntriesCount(long groupId, String name)
+		throws PrincipalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	public StyleBookEntry publishDraft(long styleBookEntryId)
 		throws PortalException;
@@ -89,6 +136,12 @@ public interface StyleBookEntryService extends BaseService {
 
 	public StyleBookEntry updatePreviewFileEntryId(
 			long styleBookEntryId, long previewFileEntryId)
+		throws PortalException;
+
+	public StyleBookEntry updateStyleBookEntry(
+			long styleBookEntryId, boolean defaultStylebookEntry,
+			String frontendTokensValues, String name, String styleBookEntryKey,
+			long previewFileEntryId)
 		throws PortalException;
 
 	public StyleBookEntry updateStyleBookEntry(

@@ -12,10 +12,6 @@ import com.liferay.petra.string.StringPool;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -147,37 +143,36 @@ public class HtmlUtilTest {
 	}
 
 	@Test
-	public void testEscapeJS() throws ScriptException {
-		ScriptEngineManager scriptEngineManager = new ScriptEngineManager();
-
-		ScriptEngine scriptEngine = scriptEngineManager.getEngineByName(
-			"JavaScript");
-
-		String[] stringLiterals = {
-			"'", "\"", "\\", "\n", "\r", "\u2028", "\u2029"
-		};
-
-		for (String stringLiteral : stringLiterals) {
-			String escaped = HtmlUtil.escapeJS(stringLiteral);
-
-			scriptEngine.eval(String.format("var result = '%1$s';", escaped));
-
-			Assert.assertEquals(stringLiteral, scriptEngine.get("result"));
-		}
+	public void testEscapeJS() {
+		Assert.assertEquals("\\u2028", HtmlUtil.escapeJS("\u2028"));
+		Assert.assertEquals("\\u2029", HtmlUtil.escapeJS("\u2029"));
+		Assert.assertEquals("\\x0a", HtmlUtil.escapeJS("\n"));
+		Assert.assertEquals("\\x0d", HtmlUtil.escapeJS("\r"));
+		Assert.assertEquals("\\x22", HtmlUtil.escapeJS("\""));
+		Assert.assertEquals("\\x27", HtmlUtil.escapeJS("'"));
+		Assert.assertEquals("\\x5c", HtmlUtil.escapeJS("\\"));
 	}
 
 	@Test
 	public void testEscapeJSLink() {
 		Assert.assertEquals(
-			"javascript%3aalert('hello');",
-			HtmlUtil.escapeJSLink("javascript:alert('hello');"));
+			"%00javascript%3a//localhost:800/123%0aalert(document.domain)",
+			HtmlUtil.escapeJSLink(
+				"%00javascript://localhost:800/123%0aalert(document.domain)"));
 		Assert.assertEquals(
 			"http://localhost:8080",
 			HtmlUtil.escapeJSLink("http://localhost:8080"));
 		Assert.assertEquals(
+			"http://localhost:8080/test?scope='javascript:;'",
+			HtmlUtil.escapeJSLink(
+				"http://localhost:8080/test?scope='javascript:;'"));
+		Assert.assertEquals(
 			"javascript%3a//localhost:800/123%0aalert(document.domain)",
 			HtmlUtil.escapeJSLink(
 				"\tjavascript://localhost:800/123%0aalert(document.domain)"));
+		Assert.assertEquals(
+			"javascript%3aalert('hello');",
+			HtmlUtil.escapeJSLink("javascript:alert('hello');"));
 	}
 
 	@Test
@@ -407,6 +402,16 @@ public class HtmlUtilTest {
 	@Test
 	public void testUnescapeHtmlEncodingAmpersandInBetween() {
 		Assert.assertEquals("You & Me", HtmlUtil.unescape("You &amp; Me"));
+	}
+
+	@Test
+	public void testUnescapeHtmlEncodingEmDash() {
+		Assert.assertEquals("\u2014", HtmlUtil.unescape("&#8212;"));
+	}
+
+	@Test
+	public void testUnescapeHtmlEncodingEnDash() {
+		Assert.assertEquals("\u2013", HtmlUtil.unescape("&#8211;"));
 	}
 
 	@Test

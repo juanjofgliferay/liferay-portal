@@ -25,7 +25,7 @@ exports[`ReactFieldBase does not render the add button when repeatable is true a
       </button>
     </div>
     <label
-      aria-labelledby="undefined_fieldDetails"
+      aria-labelledby="id_fieldDetails"
       class="ddm-empty ddm-repeatable"
     />
     <input
@@ -33,9 +33,18 @@ exports[`ReactFieldBase does not render the add button when repeatable is true a
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="id_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
     <span
       class="sr-only"
-      id="undefined_fieldDetails"
+      id="id_fieldDetails"
     >
       Text
     </span>
@@ -54,6 +63,15 @@ exports[`ReactFieldBase does not render the label if showLabel is false 1`] = `
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
     <span
       class="sr-only"
       id="undefined_fieldDetails"
@@ -67,7 +85,6 @@ exports[`ReactFieldBase does not render the label if showLabel is false 1`] = `
 exports[`ReactFieldBase renders the FieldBase with contentRenderer 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
   >
     <div>
@@ -80,6 +97,15 @@ exports[`ReactFieldBase renders the FieldBase with contentRenderer 1`] = `
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -96,14 +122,18 @@ exports[`ReactFieldBase renders the FieldBase with help text 1`] = `
       value="false"
     />
     <div
-      aria-hidden="true"
-      class="form-feedback-group lfr-de__field-feedback"
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
     >
       <div
-        id="undefined_fieldHelp"
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+      <span
+        class="form-help-text"
       >
         Type something!
-      </div>
+      </span>
     </div>
     <span
       class="sr-only"
@@ -118,7 +148,6 @@ exports[`ReactFieldBase renders the FieldBase with help text 1`] = `
 exports[`ReactFieldBase renders the FieldBase with id 1`] = `
 <div>
   <div
-    aria-labelledby="Id_fieldDetails"
     class="form-group hide"
   >
     <input
@@ -126,6 +155,15 @@ exports[`ReactFieldBase renders the FieldBase with id 1`] = `
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="Id_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -146,6 +184,15 @@ exports[`ReactFieldBase renders the FieldBase with label 1`] = `
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
     <span
       class="sr-only"
       id="undefined_fieldDetails"
@@ -183,6 +230,15 @@ exports[`ReactFieldBase renders the FieldBase with required 1`] = `
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
     <span
       class="sr-only"
       id="undefined_fieldDetails"
@@ -196,7 +252,9 @@ exports[`ReactFieldBase renders the FieldBase with required 1`] = `
 exports[`ReactFieldBase renders the add button when repeatable is true 1`] = `
 <div>
   <div
+    aria-labelledby="undefined_fieldLabel"
     class="form-group hide"
+    role="group"
   >
     <div
       class="lfr-ddm-form-field-repeatable-toolbar"
@@ -220,12 +278,22 @@ exports[`ReactFieldBase renders the add button when repeatable is true 1`] = `
     <label
       aria-labelledby="undefined_fieldDetails"
       class="ddm-empty ddm-repeatable"
+      id="undefined_fieldLabel"
     />
     <input
       name="undefined_edited"
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
     <span
       class="sr-only"
       id="undefined_fieldDetails"
@@ -239,7 +307,6 @@ exports[`ReactFieldBase renders the add button when repeatable is true 1`] = `
 exports[`ReactFieldBase renders the default markup 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
   >
     <input
@@ -247,6 +314,15 @@ exports[`ReactFieldBase renders the default markup 1`] = `
       type="hidden"
       value="false"
     />
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;

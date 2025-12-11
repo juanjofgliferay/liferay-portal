@@ -12,7 +12,7 @@ import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.model.AssetListEntryAssetEntryRel;
 import com.liferay.asset.list.service.AssetListEntryAssetEntryRelLocalService;
 import com.liferay.asset.list.service.persistence.AssetListEntryAssetEntryRelUtil;
-import com.liferay.asset.list.util.AssetListTestUtil;
+import com.liferay.asset.list.test.util.AssetListTestUtil;
 import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.asset.test.util.asset.renderer.factory.TestAssetRendererFactory;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -250,20 +250,20 @@ public class AssetListEntryAssetEntryRelServiceTest {
 		AssetListTestUtil.addAssetListEntryAssetEntryRel(
 			_group.getGroupId(), assetEntry2, assetListEntry, segmentsEntryId);
 
-		List<AssetListEntryAssetEntryRel> assetListEntryRelList =
+		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
 			_assetListEntryAssetEntryRelLocalService.
 				getAssetListEntryAssetEntryRels(
 					assetListEntry.getAssetListEntryId(), QueryUtil.ALL_POS,
 					QueryUtil.ALL_POS);
 
 		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel =
-			assetListEntryRelList.get(0);
+			assetListEntryAssetEntryRels.get(0);
 
 		Assert.assertEquals(
 			assetListEntryAssetEntryRel.getAssetEntryId(),
 			assetEntry1.getEntryId());
 
-		assetListEntryAssetEntryRel = assetListEntryRelList.get(1);
+		assetListEntryAssetEntryRel = assetListEntryAssetEntryRels.get(1);
 
 		Assert.assertEquals(
 			assetListEntryAssetEntryRel.getAssetEntryId(),

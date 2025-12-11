@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.delivery.client.dto.v1_0.Comment;
 import com.liferay.headless.delivery.client.dto.v1_0.Field;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
@@ -20,35 +23,61 @@ import com.liferay.headless.delivery.client.pagination.Page;
 import com.liferay.headless.delivery.client.pagination.Pagination;
 import com.liferay.headless.delivery.client.resource.v1_0.CommentResource;
 import com.liferay.headless.delivery.client.serdes.v1_0.CommentSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
+
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,15 +86,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
+import java.util.TimeZone;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -74,6 +99,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Javier Gamarra
@@ -84,12 +112,14 @@ public abstract class BaseCommentResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -103,10 +133,25 @@ public abstract class BaseCommentResourceTestCase {
 
 		_commentResource.setContextCompany(testCompany);
 
-		CommentResource.Builder builder = CommentResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		commentResource = builder.authentication(
-			"test@liferay.com", "test"
+		commentResource = CommentResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -120,7 +165,32 @@ public abstract class BaseCommentResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Comment comment1 = randomComment();
+
+		String json = objectMapper.writeValueAsString(comment1);
+
+		Comment comment2 = CommentSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(comment1, comment2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		Comment comment = randomComment();
+
+		String json1 = objectMapper.writeValueAsString(comment);
+		String json2 = CommentSerDes.toJSON(comment);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -135,40 +205,6 @@ public abstract class BaseCommentResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		Comment comment1 = randomComment();
-
-		String json = objectMapper.writeValueAsString(comment1);
-
-		Comment comment2 = CommentSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(comment1, comment2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		Comment comment = randomComment();
-
-		String json1 = objectMapper.writeValueAsString(comment);
-		String json2 = CommentSerDes.toJSON(comment);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -188,6 +224,964 @@ public abstract class BaseCommentResourceTestCase {
 
 		Assert.assertEquals(regex, comment.getExternalReferenceCode());
 		Assert.assertEquals(regex, comment.getText());
+	}
+
+	@Test
+	public void testDeleteComment() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Comment comment = testDeleteComment_addComment();
+
+		assertHttpResponseStatusCode(
+			204, commentResource.deleteCommentHttpResponse(comment.getId()));
+
+		assertHttpResponseStatusCode(
+			404, commentResource.getCommentHttpResponse(comment.getId()));
+		assertHttpResponseStatusCode(
+			404, commentResource.getCommentHttpResponse(0L));
+	}
+
+	protected Comment testDeleteComment_addComment() throws Exception {
+		return testPostCommentComment_addComment(randomComment());
+	}
+
+	@Test
+	public void testGraphQLDeleteComment() throws Exception {
+
+		// No namespace
+
+		Comment comment1 = testGraphQLDeleteComment_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteComment",
+						new HashMap<String, Object>() {
+							{
+								put("commentId", comment1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteComment"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"comment",
+					new HashMap<String, Object>() {
+						{
+							put("commentId", comment1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Comment comment2 = testGraphQLDeleteComment_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteComment",
+							new HashMap<String, Object>() {
+								{
+									put("commentId", comment2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteComment"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"comment",
+						new HashMap<String, Object>() {
+							{
+								put("commentId", comment2.getId());
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Comment testGraphQLDeleteComment_addComment() throws Exception {
+		return testGraphQLComment_addComment();
+	}
+
+	@Test
+	public void testDeleteCommentBatch() throws Exception {
+		Comment comment1 = testDeleteCommentBatch_addComment();
+
+		testDeleteCommentBatch_deleteComment(202, null, comment1.getId());
+
+		assertHttpResponseStatusCode(
+			404, commentResource.getCommentHttpResponse(comment1.getId()));
+	}
+
+	protected Comment testDeleteCommentBatch_addComment() throws Exception {
+		return testDeleteComment_addComment();
+	}
+
+	protected void testDeleteCommentBatch_deleteComment(
+			int expectedStatusCode, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			commentResource.deleteCommentBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		waitForFinish(
+			"COMPLETED",
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Comment comment =
+			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		assertHttpResponseStatusCode(
+			204,
+			commentResource.
+				deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					"-"));
+	}
+
+	protected Comment
+			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		Comment comment1 =
+			testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"blogPostingExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment1.getExternalReferenceCode() +
+										"\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"blogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"siteKey",
+								"\"" +
+									testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+										"\"");
+
+							put(
+								"blogPostingExternalReferenceCode",
+								"\"" +
+									testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode() +
+										"\"");
+							put(
+								"externalReferenceCode",
+								"\"" + comment1.getExternalReferenceCode() +
+									"\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Comment comment2 =
+			testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" +
+											testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+												"\"");
+
+									put(
+										"blogPostingExternalReferenceCode",
+										"\"" +
+											testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode() +
+												"\"");
+									put(
+										"externalReferenceCode",
+										"\"" +
+											comment2.
+												getExternalReferenceCode() +
+													"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"blogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"blogPostingExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment2.getExternalReferenceCode() +
+										"\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Long
+			testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testGraphQLDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		return testGraphQLSiteComment_addComment();
+	}
+
+	@Test
+	public void testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Comment comment =
+			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		assertHttpResponseStatusCode(
+			204,
+			commentResource.
+				deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					"-"));
+	}
+
+	protected Comment
+			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		Comment comment1 =
+			testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"parentCommentExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment1.getExternalReferenceCode() +
+										"\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"commentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"siteKey",
+								"\"" +
+									testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+										"\"");
+
+							put(
+								"parentCommentExternalReferenceCode",
+								"\"" +
+									testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode() +
+										"\"");
+							put(
+								"externalReferenceCode",
+								"\"" + comment1.getExternalReferenceCode() +
+									"\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Comment comment2 =
+			testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" +
+											testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+												"\"");
+
+									put(
+										"parentCommentExternalReferenceCode",
+										"\"" +
+											testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode() +
+												"\"");
+									put(
+										"externalReferenceCode",
+										"\"" +
+											comment2.
+												getExternalReferenceCode() +
+													"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"commentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"parentCommentExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment2.getExternalReferenceCode() +
+										"\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Long
+			testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testGraphQLDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		return testGraphQLSiteComment_addComment();
+	}
+
+	@Test
+	public void testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Comment comment =
+			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		assertHttpResponseStatusCode(
+			204,
+			commentResource.
+				deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					"-"));
+	}
+
+	protected Comment
+			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		Comment comment1 =
+			testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"documentExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment1.getExternalReferenceCode() +
+										"\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"documentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"siteKey",
+								"\"" +
+									testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+										"\"");
+
+							put(
+								"documentExternalReferenceCode",
+								"\"" +
+									testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode() +
+										"\"");
+							put(
+								"externalReferenceCode",
+								"\"" + comment1.getExternalReferenceCode() +
+									"\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Comment comment2 =
+			testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" +
+											testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+												"\"");
+
+									put(
+										"documentExternalReferenceCode",
+										"\"" +
+											testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode() +
+												"\"");
+									put(
+										"externalReferenceCode",
+										"\"" +
+											comment2.
+												getExternalReferenceCode() +
+													"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"documentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"documentExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment2.getExternalReferenceCode() +
+										"\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Long
+			testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testGraphQLDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		return testGraphQLSiteComment_addComment();
+	}
+
+	@Test
+	public void testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		Comment comment =
+			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		assertHttpResponseStatusCode(
+			204,
+			commentResource.
+				deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					comment.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			commentResource.
+				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
+					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					"-"));
+	}
+
+	protected Comment
+			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		// No namespace
+
+		Comment comment1 =
+			testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"structuredContentExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment1.getExternalReferenceCode() +
+										"\"");
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"structuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode",
+					new HashMap<String, Object>() {
+						{
+							put(
+								"siteKey",
+								"\"" +
+									testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+										"\"");
+
+							put(
+								"structuredContentExternalReferenceCode",
+								"\"" +
+									testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode() +
+										"\"");
+							put(
+								"externalReferenceCode",
+								"\"" + comment1.getExternalReferenceCode() +
+									"\"");
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Comment comment2 =
+			testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" +
+											testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+												"\"");
+
+									put(
+										"structuredContentExternalReferenceCode",
+										"\"" +
+											testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode() +
+												"\"");
+									put(
+										"externalReferenceCode",
+										"\"" +
+											comment2.
+												getExternalReferenceCode() +
+													"\"");
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"structuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" +
+										testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+											"\"");
+
+								put(
+									"structuredContentExternalReferenceCode",
+									"\"" +
+										testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode() +
+											"\"");
+								put(
+									"externalReferenceCode",
+									"\"" + comment2.getExternalReferenceCode() +
+										"\"");
+							}
+						},
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected Long
+			testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testGraphQLDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		return testGraphQLSiteComment_addComment();
 	}
 
 	@Test
@@ -357,10 +1351,10 @@ public abstract class BaseCommentResourceTestCase {
 
 		Long blogPostingId = testGetBlogPostingCommentsPage_getBlogPostingId();
 
-		Page<Comment> commentPage = commentResource.getBlogPostingCommentsPage(
+		Page<Comment> commentsPage = commentResource.getBlogPostingCommentsPage(
 			blogPostingId, null, null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(commentPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(commentsPage.getTotalCount());
 
 		Comment comment1 = testGetBlogPostingCommentsPage_addComment(
 			blogPostingId, randomComment());
@@ -371,32 +1365,68 @@ public abstract class BaseCommentResourceTestCase {
 		Comment comment3 = testGetBlogPostingCommentsPage_addComment(
 			blogPostingId, randomComment());
 
-		Page<Comment> page1 = commentResource.getBlogPostingCommentsPage(
-			blogPostingId, null, null, null, Pagination.of(1, totalCount + 2),
-			null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Comment> comments1 = (List<Comment>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			comments1.toString(), totalCount + 2, comments1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Comment> page1 = commentResource.getBlogPostingCommentsPage(
+				blogPostingId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Comment> page2 = commentResource.getBlogPostingCommentsPage(
-			blogPostingId, null, null, null, Pagination.of(2, totalCount + 2),
-			null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(comment1, (List<Comment>)page1.getItems());
 
-		List<Comment> comments2 = (List<Comment>)page2.getItems();
+			Page<Comment> page2 = commentResource.getBlogPostingCommentsPage(
+				blogPostingId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(comments2.toString(), 1, comments2.size());
+			assertContains(comment2, (List<Comment>)page2.getItems());
 
-		Page<Comment> page3 = commentResource.getBlogPostingCommentsPage(
-			blogPostingId, null, null, null,
-			Pagination.of(1, (int)totalCount + 3), null);
+			Page<Comment> page3 = commentResource.getBlogPostingCommentsPage(
+				blogPostingId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(comment1, (List<Comment>)page3.getItems());
-		assertContains(comment2, (List<Comment>)page3.getItems());
-		assertContains(comment3, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
+		else {
+			Page<Comment> page1 = commentResource.getBlogPostingCommentsPage(
+				blogPostingId, null, null, null,
+				Pagination.of(1, totalCount + 2), null);
+
+			List<Comment> comments1 = (List<Comment>)page1.getItems();
+
+			Assert.assertEquals(
+				comments1.toString(), totalCount + 2, comments1.size());
+
+			Page<Comment> page2 = commentResource.getBlogPostingCommentsPage(
+				blogPostingId, null, null, null,
+				Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Comment> comments2 = (List<Comment>)page2.getItems();
+
+			Assert.assertEquals(comments2.toString(), 1, comments2.size());
+
+			Page<Comment> page3 = commentResource.getBlogPostingCommentsPage(
+				blogPostingId, null, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(comment1, (List<Comment>)page3.getItems());
+			assertContains(comment2, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -408,7 +1438,7 @@ public abstract class BaseCommentResourceTestCase {
 			(entityField, comment1, comment2) -> {
 				BeanTestUtil.setProperty(
 					comment1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -559,75 +1589,78 @@ public abstract class BaseCommentResourceTestCase {
 	}
 
 	@Test
-	public void testPostBlogPostingComment() throws Exception {
-		Comment randomComment = randomComment();
+	public void testGraphQLGetBlogPostingCommentsPage() throws Exception {
+		Long blogPostingId = testGetBlogPostingCommentsPage_getBlogPostingId();
 
-		Comment postComment = testPostBlogPostingComment_addComment(
-			randomComment);
+		GraphQLField graphQLField = new GraphQLField(
+			"blogPostingComments",
+			new HashMap<String, Object>() {
+				{
+					put("blogPostingId", blogPostingId);
+					put("search", null);
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
 
-		assertEquals(randomComment, postComment);
-		assertValid(postComment);
-	}
+		// No namespace
 
-	protected Comment testPostBlogPostingComment_addComment(Comment comment)
-		throws Exception {
+		JSONObject blogPostingCommentsJSONObject =
+			JSONUtil.getValueAsJSONObject(
+				invokeGraphQLQuery(graphQLField), "JSONObject/data",
+				"JSONObject/blogPostingComments");
 
-		return commentResource.postBlogPostingComment(
-			testGetBlogPostingCommentsPage_getBlogPostingId(), comment);
-	}
+		long totalCount = blogPostingCommentsJSONObject.getLong("totalCount");
 
-	@Test
-	public void testDeleteComment() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Comment comment = testDeleteComment_addComment();
+		Comment comment1 = testGraphQLBlogPostingComment_addComment(
+			blogPostingId, randomComment());
 
-		assertHttpResponseStatusCode(
-			204, commentResource.deleteCommentHttpResponse(comment.getId()));
+		Comment comment2 = testGraphQLBlogPostingComment_addComment(
+			blogPostingId, randomComment());
 
-		assertHttpResponseStatusCode(
-			404, commentResource.getCommentHttpResponse(comment.getId()));
+		blogPostingCommentsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/blogPostingComments");
 
-		assertHttpResponseStatusCode(
-			404, commentResource.getCommentHttpResponse(0L));
-	}
+		Assert.assertEquals(
+			totalCount + 2,
+			blogPostingCommentsJSONObject.getLong("totalCount"));
 
-	protected Comment testDeleteComment_addComment() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		assertContains(
+			comment1,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					blogPostingCommentsJSONObject.getString("items"))));
+		assertContains(
+			comment2,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					blogPostingCommentsJSONObject.getString("items"))));
 
-	@Test
-	public void testGraphQLDeleteComment() throws Exception {
-		Comment comment = testGraphQLDeleteComment_addComment();
+		// Using the namespace headlessDelivery_v1_0
 
-		Assert.assertTrue(
-			JSONUtil.getValueAsBoolean(
-				invokeGraphQLMutation(
-					new GraphQLField(
-						"deleteComment",
-						new HashMap<String, Object>() {
-							{
-								put("commentId", comment.getId());
-							}
-						})),
-				"JSONObject/data", "Object/deleteComment"));
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+		blogPostingCommentsJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(
-				new GraphQLField(
-					"comment",
-					new HashMap<String, Object>() {
-						{
-							put("commentId", comment.getId());
-						}
-					},
-					new GraphQLField("id"))),
-			"JSONArray/errors");
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+			"JSONObject/blogPostingComments");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
-	}
+		Assert.assertEquals(
+			totalCount + 2,
+			blogPostingCommentsJSONObject.getLong("totalCount"));
 
-	protected Comment testGraphQLDeleteComment_addComment() throws Exception {
-		return testGraphQLComment_addComment();
+		assertContains(
+			comment1,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					blogPostingCommentsJSONObject.getString("items"))));
+		assertContains(
+			comment2,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					blogPostingCommentsJSONObject.getString("items"))));
 	}
 
 	@Test
@@ -640,14 +1673,201 @@ public abstract class BaseCommentResourceTestCase {
 		assertValid(getComment);
 	}
 
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		Comment postComment = testGetComment_addComment();
+
+		Comment getComment = commentResource.getComment(postComment.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany, "com.liferay.headless.delivery.dto.v1_0.Comment"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postComment.getId());
+
+		assertEquals(getComment, CommentSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
 	protected Comment testGetComment_addComment() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testPostCommentComment_addComment(randomComment());
 	}
 
 	@Test
 	public void testGraphQLGetComment() throws Exception {
 		Comment comment = testGraphQLGetComment_addComment();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -664,11 +1884,34 @@ public abstract class BaseCommentResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/comment"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				comment,
+				CommentSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"comment",
+									new HashMap<String, Object>() {
+										{
+											put("commentId", comment.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/comment"))));
 	}
 
 	@Test
 	public void testGraphQLGetCommentNotFound() throws Exception {
 		Long irrelevantCommentId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -684,33 +1927,29 @@ public abstract class BaseCommentResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"comment",
+							new HashMap<String, Object>() {
+								{
+									put("commentId", irrelevantCommentId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected Comment testGraphQLGetComment_addComment() throws Exception {
 		return testGraphQLComment_addComment();
-	}
-
-	@Test
-	public void testPutComment() throws Exception {
-		Comment postComment = testPutComment_addComment();
-
-		Comment randomComment = randomComment();
-
-		Comment putComment = commentResource.putComment(
-			postComment.getId(), randomComment);
-
-		assertEquals(randomComment, putComment);
-		assertValid(putComment);
-
-		Comment getComment = commentResource.getComment(putComment.getId());
-
-		assertEquals(randomComment, getComment);
-		assertValid(getComment);
-	}
-
-	protected Comment testPutComment_addComment() throws Exception {
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -867,10 +2106,10 @@ public abstract class BaseCommentResourceTestCase {
 	public void testGetCommentCommentsPageWithPagination() throws Exception {
 		Long parentCommentId = testGetCommentCommentsPage_getParentCommentId();
 
-		Page<Comment> commentPage = commentResource.getCommentCommentsPage(
+		Page<Comment> commentsPage = commentResource.getCommentCommentsPage(
 			parentCommentId, null, null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(commentPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(commentsPage.getTotalCount());
 
 		Comment comment1 = testGetCommentCommentsPage_addComment(
 			parentCommentId, randomComment());
@@ -881,32 +2120,68 @@ public abstract class BaseCommentResourceTestCase {
 		Comment comment3 = testGetCommentCommentsPage_addComment(
 			parentCommentId, randomComment());
 
-		Page<Comment> page1 = commentResource.getCommentCommentsPage(
-			parentCommentId, null, null, null, Pagination.of(1, totalCount + 2),
-			null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Comment> comments1 = (List<Comment>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			comments1.toString(), totalCount + 2, comments1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Comment> page1 = commentResource.getCommentCommentsPage(
+				parentCommentId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Comment> page2 = commentResource.getCommentCommentsPage(
-			parentCommentId, null, null, null, Pagination.of(2, totalCount + 2),
-			null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(comment1, (List<Comment>)page1.getItems());
 
-		List<Comment> comments2 = (List<Comment>)page2.getItems();
+			Page<Comment> page2 = commentResource.getCommentCommentsPage(
+				parentCommentId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(comments2.toString(), 1, comments2.size());
+			assertContains(comment2, (List<Comment>)page2.getItems());
 
-		Page<Comment> page3 = commentResource.getCommentCommentsPage(
-			parentCommentId, null, null, null,
-			Pagination.of(1, (int)totalCount + 3), null);
+			Page<Comment> page3 = commentResource.getCommentCommentsPage(
+				parentCommentId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(comment1, (List<Comment>)page3.getItems());
-		assertContains(comment2, (List<Comment>)page3.getItems());
-		assertContains(comment3, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
+		else {
+			Page<Comment> page1 = commentResource.getCommentCommentsPage(
+				parentCommentId, null, null, null,
+				Pagination.of(1, totalCount + 2), null);
+
+			List<Comment> comments1 = (List<Comment>)page1.getItems();
+
+			Assert.assertEquals(
+				comments1.toString(), totalCount + 2, comments1.size());
+
+			Page<Comment> page2 = commentResource.getCommentCommentsPage(
+				parentCommentId, null, null, null,
+				Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Comment> comments2 = (List<Comment>)page2.getItems();
+
+			Assert.assertEquals(comments2.toString(), 1, comments2.size());
+
+			Page<Comment> page3 = commentResource.getCommentCommentsPage(
+				parentCommentId, null, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(comment1, (List<Comment>)page3.getItems());
+			assertContains(comment2, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -916,7 +2191,7 @@ public abstract class BaseCommentResourceTestCase {
 			(entityField, comment1, comment2) -> {
 				BeanTestUtil.setProperty(
 					comment1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1058,23 +2333,6 @@ public abstract class BaseCommentResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostCommentComment() throws Exception {
-		Comment randomComment = randomComment();
-
-		Comment postComment = testPostCommentComment_addComment(randomComment);
-
-		assertEquals(randomComment, postComment);
-		assertValid(postComment);
-	}
-
-	protected Comment testPostCommentComment_addComment(Comment comment)
-		throws Exception {
-
-		return commentResource.postCommentComment(
-			testGetCommentCommentsPage_getParentCommentId(), comment);
 	}
 
 	@Test
@@ -1238,10 +2496,10 @@ public abstract class BaseCommentResourceTestCase {
 	public void testGetDocumentCommentsPageWithPagination() throws Exception {
 		Long documentId = testGetDocumentCommentsPage_getDocumentId();
 
-		Page<Comment> commentPage = commentResource.getDocumentCommentsPage(
+		Page<Comment> commentsPage = commentResource.getDocumentCommentsPage(
 			documentId, null, null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(commentPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(commentsPage.getTotalCount());
 
 		Comment comment1 = testGetDocumentCommentsPage_addComment(
 			documentId, randomComment());
@@ -1252,32 +2510,68 @@ public abstract class BaseCommentResourceTestCase {
 		Comment comment3 = testGetDocumentCommentsPage_addComment(
 			documentId, randomComment());
 
-		Page<Comment> page1 = commentResource.getDocumentCommentsPage(
-			documentId, null, null, null, Pagination.of(1, totalCount + 2),
-			null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Comment> comments1 = (List<Comment>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			comments1.toString(), totalCount + 2, comments1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Comment> page1 = commentResource.getDocumentCommentsPage(
+				documentId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<Comment> page2 = commentResource.getDocumentCommentsPage(
-			documentId, null, null, null, Pagination.of(2, totalCount + 2),
-			null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(comment1, (List<Comment>)page1.getItems());
 
-		List<Comment> comments2 = (List<Comment>)page2.getItems();
+			Page<Comment> page2 = commentResource.getDocumentCommentsPage(
+				documentId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(comments2.toString(), 1, comments2.size());
+			assertContains(comment2, (List<Comment>)page2.getItems());
 
-		Page<Comment> page3 = commentResource.getDocumentCommentsPage(
-			documentId, null, null, null, Pagination.of(1, (int)totalCount + 3),
-			null);
+			Page<Comment> page3 = commentResource.getDocumentCommentsPage(
+				documentId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertContains(comment1, (List<Comment>)page3.getItems());
-		assertContains(comment2, (List<Comment>)page3.getItems());
-		assertContains(comment3, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
+		else {
+			Page<Comment> page1 = commentResource.getDocumentCommentsPage(
+				documentId, null, null, null, Pagination.of(1, totalCount + 2),
+				null);
+
+			List<Comment> comments1 = (List<Comment>)page1.getItems();
+
+			Assert.assertEquals(
+				comments1.toString(), totalCount + 2, comments1.size());
+
+			Page<Comment> page2 = commentResource.getDocumentCommentsPage(
+				documentId, null, null, null, Pagination.of(2, totalCount + 2),
+				null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Comment> comments2 = (List<Comment>)page2.getItems();
+
+			Assert.assertEquals(comments2.toString(), 1, comments2.size());
+
+			Page<Comment> page3 = commentResource.getDocumentCommentsPage(
+				documentId, null, null, null,
+				Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(comment1, (List<Comment>)page3.getItems());
+			assertContains(comment2, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -1287,7 +2581,7 @@ public abstract class BaseCommentResourceTestCase {
 			(entityField, comment1, comment2) -> {
 				BeanTestUtil.setProperty(
 					comment1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -1430,77 +2724,75 @@ public abstract class BaseCommentResourceTestCase {
 	}
 
 	@Test
-	public void testPostDocumentComment() throws Exception {
-		Comment randomComment = randomComment();
+	public void testGraphQLGetDocumentCommentsPage() throws Exception {
+		Long documentId = testGetDocumentCommentsPage_getDocumentId();
 
-		Comment postComment = testPostDocumentComment_addComment(randomComment);
+		GraphQLField graphQLField = new GraphQLField(
+			"documentComments",
+			new HashMap<String, Object>() {
+				{
+					put("documentId", documentId);
+					put("search", null);
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
 
-		assertEquals(randomComment, postComment);
-		assertValid(postComment);
-	}
+		// No namespace
 
-	protected Comment testPostDocumentComment_addComment(Comment comment)
-		throws Exception {
+		JSONObject documentCommentsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/documentComments");
 
-		return commentResource.postDocumentComment(
-			testGetDocumentCommentsPage_getDocumentId(), comment);
-	}
+		long totalCount = documentCommentsJSONObject.getLong("totalCount");
 
-	@Test
-	public void testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
+		Comment comment1 = testGraphQLDocumentComment_addComment(
+			documentId, randomComment());
 
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Comment comment =
-			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+		Comment comment2 = testGraphQLDocumentComment_addComment(
+			documentId, randomComment());
 
-		assertHttpResponseStatusCode(
-			204,
-			commentResource.
-				deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
+		documentCommentsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/documentComments");
 
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
+		Assert.assertEquals(
+			totalCount + 2, documentCommentsJSONObject.getLong("totalCount"));
 
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-	}
+		assertContains(
+			comment1,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					documentCommentsJSONObject.getString("items"))));
+		assertContains(
+			comment2,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					documentCommentsJSONObject.getString("items"))));
 
-	protected Long
-			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
+		// Using the namespace headlessDelivery_v1_0
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		documentCommentsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+			"JSONObject/documentComments");
 
-	protected String
-			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode()
-		throws Exception {
+		Assert.assertEquals(
+			totalCount + 2, documentCommentsJSONObject.getLong("totalCount"));
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testDeleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		assertContains(
+			comment1,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					documentCommentsJSONObject.getString("items"))));
+		assertContains(
+			comment2,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					documentCommentsJSONObject.getString("items"))));
 	}
 
 	@Test
@@ -1521,24 +2813,23 @@ public abstract class BaseCommentResourceTestCase {
 		assertValid(getComment);
 	}
 
+	protected Comment
+			testGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
 	protected Long
 			testGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
 			testGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -1551,6 +2842,8 @@ public abstract class BaseCommentResourceTestCase {
 
 		Comment comment =
 			testGraphQLGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -1573,7 +2866,6 @@ public abstract class BaseCommentResourceTestCase {
 											"\"" +
 												testGraphQLGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode() +
 													"\"");
-
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -1585,14 +2877,50 @@ public abstract class BaseCommentResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/blogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				comment,
+				CommentSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"blogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+														"\"");
+
+											put(
+												"blogPostingExternalReferenceCode",
+												"\"" +
+													testGraphQLGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode() +
+														"\"");
+											put(
+												"externalReferenceCode",
+												"\"" +
+													comment.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/blogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode"))));
 	}
 
 	protected Long
 			testGraphQLGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
@@ -1611,6 +2939,8 @@ public abstract class BaseCommentResourceTestCase {
 			"\"" + RandomTestUtil.randomString() + "\"";
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -1634,157 +2964,41 @@ public abstract class BaseCommentResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"blogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"blogPostingExternalReferenceCode",
+										irrelevantBlogPostingExternalReferenceCode);
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected Comment
 			testGraphQLGetSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
-		return testGraphQLComment_addComment();
-	}
-
-	@Test
-	public void testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		Comment postComment =
-			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		Comment randomComment = randomComment();
-
-		Comment putComment =
-			commentResource.
-				putSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					postComment.getExternalReferenceCode(), randomComment);
-
-		assertEquals(randomComment, putComment);
-		assertValid(putComment);
-
-		Comment getComment =
-			commentResource.
-				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(randomComment, getComment);
-		assertValid(getComment);
-
-		Comment newComment =
-			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_createComment();
-
-		putComment =
-			commentResource.
-				putSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					newComment.getExternalReferenceCode(), newComment);
-
-		assertEquals(newComment, putComment);
-		assertValid(putComment);
-
-		getComment =
-			commentResource.
-				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(newComment, getComment);
-
-		Assert.assertEquals(
-			newComment.getExternalReferenceCode(),
-			putComment.getExternalReferenceCode());
-	}
-
-	protected Long
-			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_createComment()
-		throws Exception {
-
-		return randomComment();
-	}
-
-	protected Comment
-			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Comment comment =
-			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		assertHttpResponseStatusCode(
-			204,
-			commentResource.
-				deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-	}
-
-	protected Long
-			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testDeleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGraphQLSiteComment_addComment();
 	}
 
 	@Test
@@ -1805,24 +3019,23 @@ public abstract class BaseCommentResourceTestCase {
 		assertValid(getComment);
 	}
 
+	protected Comment
+			testGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
 	protected Long
 			testGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
 			testGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -1835,6 +3048,8 @@ public abstract class BaseCommentResourceTestCase {
 
 		Comment comment =
 			testGraphQLGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -1857,7 +3072,6 @@ public abstract class BaseCommentResourceTestCase {
 											"\"" +
 												testGraphQLGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode() +
 													"\"");
-
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -1869,14 +3083,50 @@ public abstract class BaseCommentResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/commentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				comment,
+				CommentSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"commentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+														"\"");
+
+											put(
+												"parentCommentExternalReferenceCode",
+												"\"" +
+													testGraphQLGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode() +
+														"\"");
+											put(
+												"externalReferenceCode",
+												"\"" +
+													comment.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/commentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode"))));
 	}
 
 	protected Long
 			testGraphQLGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
@@ -1895,6 +3145,8 @@ public abstract class BaseCommentResourceTestCase {
 			"\"" + RandomTestUtil.randomString() + "\"";
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -1918,157 +3170,41 @@ public abstract class BaseCommentResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"commentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"parentCommentExternalReferenceCode",
+										irrelevantParentCommentExternalReferenceCode);
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected Comment
 			testGraphQLGetSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
-		return testGraphQLComment_addComment();
-	}
-
-	@Test
-	public void testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		Comment postComment =
-			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		Comment randomComment = randomComment();
-
-		Comment putComment =
-			commentResource.
-				putSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					postComment.getExternalReferenceCode(), randomComment);
-
-		assertEquals(randomComment, putComment);
-		assertValid(putComment);
-
-		Comment getComment =
-			commentResource.
-				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(randomComment, getComment);
-		assertValid(getComment);
-
-		Comment newComment =
-			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_createComment();
-
-		putComment =
-			commentResource.
-				putSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					newComment.getExternalReferenceCode(), newComment);
-
-		assertEquals(newComment, putComment);
-		assertValid(putComment);
-
-		getComment =
-			commentResource.
-				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(newComment, getComment);
-
-		Assert.assertEquals(
-			newComment.getExternalReferenceCode(),
-			putComment.getExternalReferenceCode());
-	}
-
-	protected Long
-			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_createComment()
-		throws Exception {
-
-		return randomComment();
-	}
-
-	protected Comment
-			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Comment comment =
-			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		assertHttpResponseStatusCode(
-			204,
-			commentResource.
-				deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-	}
-
-	protected Long
-			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testDeleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGraphQLSiteComment_addComment();
 	}
 
 	@Test
@@ -2089,24 +3225,23 @@ public abstract class BaseCommentResourceTestCase {
 		assertValid(getComment);
 	}
 
+	protected Comment
+			testGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
 	protected Long
 			testGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
 			testGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -2119,6 +3254,8 @@ public abstract class BaseCommentResourceTestCase {
 
 		Comment comment =
 			testGraphQLGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -2141,7 +3278,6 @@ public abstract class BaseCommentResourceTestCase {
 											"\"" +
 												testGraphQLGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode() +
 													"\"");
-
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -2153,14 +3289,50 @@ public abstract class BaseCommentResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/documentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				comment,
+				CommentSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"documentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+														"\"");
+
+											put(
+												"documentExternalReferenceCode",
+												"\"" +
+													testGraphQLGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode() +
+														"\"");
+											put(
+												"externalReferenceCode",
+												"\"" +
+													comment.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/documentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode"))));
 	}
 
 	protected Long
 			testGraphQLGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
@@ -2179,6 +3351,8 @@ public abstract class BaseCommentResourceTestCase {
 			"\"" + RandomTestUtil.randomString() + "\"";
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -2202,157 +3376,41 @@ public abstract class BaseCommentResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"documentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"documentExternalReferenceCode",
+										irrelevantDocumentExternalReferenceCode);
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected Comment
 			testGraphQLGetSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
-		return testGraphQLComment_addComment();
-	}
-
-	@Test
-	public void testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		Comment postComment =
-			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		Comment randomComment = randomComment();
-
-		Comment putComment =
-			commentResource.
-				putSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					postComment.getExternalReferenceCode(), randomComment);
-
-		assertEquals(randomComment, putComment);
-		assertValid(putComment);
-
-		Comment getComment =
-			commentResource.
-				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(randomComment, getComment);
-		assertValid(getComment);
-
-		Comment newComment =
-			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_createComment();
-
-		putComment =
-			commentResource.
-				putSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					newComment.getExternalReferenceCode(), newComment);
-
-		assertEquals(newComment, putComment);
-		assertValid(putComment);
-
-		getComment =
-			commentResource.
-				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(newComment, getComment);
-
-		Assert.assertEquals(
-			newComment.getExternalReferenceCode(),
-			putComment.getExternalReferenceCode());
-	}
-
-	protected Long
-			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_createComment()
-		throws Exception {
-
-		return randomComment();
-	}
-
-	protected Comment
-			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		Comment comment =
-			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		assertHttpResponseStatusCode(
-			204,
-			commentResource.
-				deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-
-		assertHttpResponseStatusCode(
-			404,
-			commentResource.
-				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCodeHttpResponse(
-					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					comment.getExternalReferenceCode()));
-	}
-
-	protected Long
-			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testDeleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGraphQLSiteComment_addComment();
 	}
 
 	@Test
@@ -2373,24 +3431,23 @@ public abstract class BaseCommentResourceTestCase {
 		assertValid(getComment);
 	}
 
+	protected Comment
+			testGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
 	protected Long
 			testGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
 			testGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -2403,6 +3460,8 @@ public abstract class BaseCommentResourceTestCase {
 
 		Comment comment =
 			testGraphQLGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -2425,7 +3484,6 @@ public abstract class BaseCommentResourceTestCase {
 											"\"" +
 												testGraphQLGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode() +
 													"\"");
-
 										put(
 											"externalReferenceCode",
 											"\"" +
@@ -2437,14 +3495,50 @@ public abstract class BaseCommentResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/structuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				comment,
+				CommentSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"structuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId() +
+														"\"");
+
+											put(
+												"structuredContentExternalReferenceCode",
+												"\"" +
+													testGraphQLGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode() +
+														"\"");
+											put(
+												"externalReferenceCode",
+												"\"" +
+													comment.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/structuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode"))));
 	}
 
 	protected Long
 			testGraphQLGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGroup.getGroupId();
 	}
 
 	protected String
@@ -2463,6 +3557,8 @@ public abstract class BaseCommentResourceTestCase {
 			"\"" + RandomTestUtil.randomString() + "\"";
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -2486,100 +3582,41 @@ public abstract class BaseCommentResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"structuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"structuredContentExternalReferenceCode",
+										irrelevantStructuredContentExternalReferenceCode);
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
 	protected Comment
 			testGraphQLGetSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
 		throws Exception {
 
-		return testGraphQLComment_addComment();
-	}
-
-	@Test
-	public void testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode()
-		throws Exception {
-
-		Comment postComment =
-			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
-
-		Comment randomComment = randomComment();
-
-		Comment putComment =
-			commentResource.
-				putSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					postComment.getExternalReferenceCode(), randomComment);
-
-		assertEquals(randomComment, putComment);
-		assertValid(putComment);
-
-		Comment getComment =
-			commentResource.
-				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(randomComment, getComment);
-		assertValid(getComment);
-
-		Comment newComment =
-			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_createComment();
-
-		putComment =
-			commentResource.
-				putSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					newComment.getExternalReferenceCode(), newComment);
-
-		assertEquals(newComment, putComment);
-		assertValid(putComment);
-
-		getComment =
-			commentResource.
-				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
-					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
-					putComment.getExternalReferenceCode());
-
-		assertEquals(newComment, getComment);
-
-		Assert.assertEquals(
-			newComment.getExternalReferenceCode(),
-			putComment.getExternalReferenceCode());
-	}
-
-	protected Long
-			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Comment
-			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_createComment()
-		throws Exception {
-
-		return randomComment();
-	}
-
-	protected Comment
-			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGraphQLSiteComment_addComment();
 	}
 
 	@Test
@@ -2760,11 +3797,11 @@ public abstract class BaseCommentResourceTestCase {
 		Long structuredContentId =
 			testGetStructuredContentCommentsPage_getStructuredContentId();
 
-		Page<Comment> commentPage =
+		Page<Comment> commentsPage =
 			commentResource.getStructuredContentCommentsPage(
 				structuredContentId, null, null, null, null, null);
 
-		int totalCount = GetterUtil.getInteger(commentPage.getTotalCount());
+		int totalCount = GetterUtil.getInteger(commentsPage.getTotalCount());
 
 		Comment comment1 = testGetStructuredContentCommentsPage_addComment(
 			structuredContentId, randomComment());
@@ -2775,32 +3812,74 @@ public abstract class BaseCommentResourceTestCase {
 		Comment comment3 = testGetStructuredContentCommentsPage_addComment(
 			structuredContentId, randomComment());
 
-		Page<Comment> page1 = commentResource.getStructuredContentCommentsPage(
-			structuredContentId, null, null, null,
-			Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<Comment> comments1 = (List<Comment>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			comments1.toString(), totalCount + 2, comments1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<Comment> page1 =
+				commentResource.getStructuredContentCommentsPage(
+					structuredContentId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<Comment> page2 = commentResource.getStructuredContentCommentsPage(
-			structuredContentId, null, null, null,
-			Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(comment1, (List<Comment>)page1.getItems());
 
-		List<Comment> comments2 = (List<Comment>)page2.getItems();
+			Page<Comment> page2 =
+				commentResource.getStructuredContentCommentsPage(
+					structuredContentId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(comments2.toString(), 1, comments2.size());
+			assertContains(comment2, (List<Comment>)page2.getItems());
 
-		Page<Comment> page3 = commentResource.getStructuredContentCommentsPage(
-			structuredContentId, null, null, null,
-			Pagination.of(1, (int)totalCount + 3), null);
+			Page<Comment> page3 =
+				commentResource.getStructuredContentCommentsPage(
+					structuredContentId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(comment1, (List<Comment>)page3.getItems());
-		assertContains(comment2, (List<Comment>)page3.getItems());
-		assertContains(comment3, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
+		else {
+			Page<Comment> page1 =
+				commentResource.getStructuredContentCommentsPage(
+					structuredContentId, null, null, null,
+					Pagination.of(1, totalCount + 2), null);
+
+			List<Comment> comments1 = (List<Comment>)page1.getItems();
+
+			Assert.assertEquals(
+				comments1.toString(), totalCount + 2, comments1.size());
+
+			Page<Comment> page2 =
+				commentResource.getStructuredContentCommentsPage(
+					structuredContentId, null, null, null,
+					Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<Comment> comments2 = (List<Comment>)page2.getItems();
+
+			Assert.assertEquals(comments2.toString(), 1, comments2.size());
+
+			Page<Comment> page3 =
+				commentResource.getStructuredContentCommentsPage(
+					structuredContentId, null, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(comment1, (List<Comment>)page3.getItems());
+			assertContains(comment2, (List<Comment>)page3.getItems());
+			assertContains(comment3, (List<Comment>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -2812,7 +3891,7 @@ public abstract class BaseCommentResourceTestCase {
 			(entityField, comment1, comment2) -> {
 				BeanTestUtil.setProperty(
 					comment1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -2968,6 +4047,170 @@ public abstract class BaseCommentResourceTestCase {
 	}
 
 	@Test
+	public void testGraphQLGetStructuredContentCommentsPage() throws Exception {
+		Long structuredContentId =
+			testGetStructuredContentCommentsPage_getStructuredContentId();
+
+		GraphQLField graphQLField = new GraphQLField(
+			"structuredContentComments",
+			new HashMap<String, Object>() {
+				{
+					put("structuredContentId", structuredContentId);
+					put("search", null);
+					put("page", 1);
+					put("pageSize", 10);
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		// No namespace
+
+		JSONObject structuredContentCommentsJSONObject =
+			JSONUtil.getValueAsJSONObject(
+				invokeGraphQLQuery(graphQLField), "JSONObject/data",
+				"JSONObject/structuredContentComments");
+
+		long totalCount = structuredContentCommentsJSONObject.getLong(
+			"totalCount");
+
+		Comment comment1 = testGraphQLStructuredContentComment_addComment(
+			structuredContentId, randomComment());
+
+		Comment comment2 = testGraphQLStructuredContentComment_addComment(
+			structuredContentId, randomComment());
+
+		structuredContentCommentsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/structuredContentComments");
+
+		Assert.assertEquals(
+			totalCount + 2,
+			structuredContentCommentsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			comment1,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					structuredContentCommentsJSONObject.getString("items"))));
+		assertContains(
+			comment2,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					structuredContentCommentsJSONObject.getString("items"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		structuredContentCommentsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+			"JSONObject/structuredContentComments");
+
+		Assert.assertEquals(
+			totalCount + 2,
+			structuredContentCommentsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			comment1,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					structuredContentCommentsJSONObject.getString("items"))));
+		assertContains(
+			comment2,
+			Arrays.asList(
+				CommentSerDes.toDTOs(
+					structuredContentCommentsJSONObject.getString("items"))));
+	}
+
+	@Test
+	public void testPostBlogPostingComment() throws Exception {
+		Comment randomComment = randomComment();
+
+		Comment postComment = testPostBlogPostingComment_addComment(
+			randomComment);
+
+		assertEquals(randomComment, postComment);
+		assertValid(postComment);
+	}
+
+	protected Comment testPostBlogPostingComment_addComment(Comment comment)
+		throws Exception {
+
+		return commentResource.postBlogPostingComment(
+			testGetBlogPostingCommentsPage_getBlogPostingId(), comment);
+	}
+
+	@Test
+	public void testGraphQLPostBlogPostingComment() throws Exception {
+		Comment randomComment = randomComment();
+
+		Comment comment = testGraphQLBlogPostingComment_addComment(
+			testGraphQLPostBlogPostingComment_getBlogPostingId(),
+			randomComment);
+
+		Assert.assertTrue(equals(randomComment, comment));
+	}
+
+	protected Long testGraphQLPostBlogPostingComment_getBlogPostingId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostCommentComment() throws Exception {
+		Comment randomComment = randomComment();
+
+		Comment postComment = testPostCommentComment_addComment(randomComment);
+
+		assertEquals(randomComment, postComment);
+		assertValid(postComment);
+	}
+
+	protected Comment testPostCommentComment_addComment(Comment comment)
+		throws Exception {
+
+		return commentResource.postCommentComment(
+			testGetCommentCommentsPage_getParentCommentId(), comment);
+	}
+
+	@Test
+	public void testPostDocumentComment() throws Exception {
+		Comment randomComment = randomComment();
+
+		Comment postComment = testPostDocumentComment_addComment(randomComment);
+
+		assertEquals(randomComment, postComment);
+		assertValid(postComment);
+	}
+
+	protected Comment testPostDocumentComment_addComment(Comment comment)
+		throws Exception {
+
+		return commentResource.postDocumentComment(
+			testGetDocumentCommentsPage_getDocumentId(), comment);
+	}
+
+	@Test
+	public void testGraphQLPostDocumentComment() throws Exception {
+		Comment randomComment = randomComment();
+
+		Comment comment = testGraphQLDocumentComment_addComment(
+			testGraphQLPostDocumentComment_getDocumentId(), randomComment);
+
+		Assert.assertTrue(equals(randomComment, comment));
+	}
+
+	protected Long testGraphQLPostDocumentComment_getDocumentId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
 	public void testPostStructuredContentComment() throws Exception {
 		Comment randomComment = randomComment();
 
@@ -2987,12 +4230,683 @@ public abstract class BaseCommentResourceTestCase {
 			comment);
 	}
 
+	@Test
+	public void testGraphQLPostStructuredContentComment() throws Exception {
+		Comment randomComment = randomComment();
+
+		Comment comment = testGraphQLStructuredContentComment_addComment(
+			testGraphQLPostStructuredContentComment_getStructuredContentId(),
+			randomComment);
+
+		Assert.assertTrue(equals(randomComment, comment));
+	}
+
+	protected Long
+			testGraphQLPostStructuredContentComment_getStructuredContentId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPutComment() throws Exception {
+		Comment postComment = testPutComment_addComment();
+
+		Comment randomComment = randomComment();
+
+		Comment putComment = commentResource.putComment(
+			postComment.getId(), randomComment);
+
+		assertEquals(randomComment, putComment);
+		assertValid(putComment);
+
+		Comment getComment = commentResource.getComment(putComment.getId());
+
+		assertEquals(randomComment, getComment);
+		assertValid(getComment);
+	}
+
+	protected Comment testPutComment_addComment() throws Exception {
+		return testPostCommentComment_addComment(randomComment());
+	}
+
+	@Test
+	public void testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		Comment postComment =
+			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Comment randomComment = randomComment();
+
+		Comment putComment =
+			commentResource.
+				putSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					postComment.getExternalReferenceCode(), randomComment);
+
+		assertEquals(randomComment, putComment);
+		assertValid(putComment);
+
+		Comment getComment =
+			commentResource.
+				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(randomComment, getComment);
+		assertValid(getComment);
+
+		Comment newComment =
+			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_createComment();
+
+		putComment =
+			commentResource.
+				putSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					newComment.getExternalReferenceCode(), newComment);
+
+		assertEquals(newComment, putComment);
+		assertValid(putComment);
+
+		getComment =
+			commentResource.
+				getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(newComment, getComment);
+
+		Assert.assertEquals(
+			newComment.getExternalReferenceCode(),
+			putComment.getExternalReferenceCode());
+	}
+
+	protected Comment
+			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_getBlogPostingExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testPutSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode_createComment()
+		throws Exception {
+
+		return randomComment();
+	}
+
+	@Test
+	public void testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		Comment postComment =
+			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Comment randomComment = randomComment();
+
+		Comment putComment =
+			commentResource.
+				putSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					postComment.getExternalReferenceCode(), randomComment);
+
+		assertEquals(randomComment, putComment);
+		assertValid(putComment);
+
+		Comment getComment =
+			commentResource.
+				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(randomComment, getComment);
+		assertValid(getComment);
+
+		Comment newComment =
+			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_createComment();
+
+		putComment =
+			commentResource.
+				putSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					newComment.getExternalReferenceCode(), newComment);
+
+		assertEquals(newComment, putComment);
+		assertValid(putComment);
+
+		getComment =
+			commentResource.
+				getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(newComment, getComment);
+
+		Assert.assertEquals(
+			newComment.getExternalReferenceCode(),
+			putComment.getExternalReferenceCode());
+	}
+
+	protected Comment
+			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_getParentCommentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testPutSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode_createComment()
+		throws Exception {
+
+		return randomComment();
+	}
+
+	@Test
+	public void testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		Comment postComment =
+			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Comment randomComment = randomComment();
+
+		Comment putComment =
+			commentResource.
+				putSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					postComment.getExternalReferenceCode(), randomComment);
+
+		assertEquals(randomComment, putComment);
+		assertValid(putComment);
+
+		Comment getComment =
+			commentResource.
+				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(randomComment, getComment);
+		assertValid(getComment);
+
+		Comment newComment =
+			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_createComment();
+
+		putComment =
+			commentResource.
+				putSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					newComment.getExternalReferenceCode(), newComment);
+
+		assertEquals(newComment, putComment);
+		assertValid(putComment);
+
+		getComment =
+			commentResource.
+				getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(newComment, getComment);
+
+		Assert.assertEquals(
+			newComment.getExternalReferenceCode(),
+			putComment.getExternalReferenceCode());
+	}
+
+	protected Comment
+			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_getDocumentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testPutSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode_createComment()
+		throws Exception {
+
+		return randomComment();
+	}
+
+	@Test
+	public void testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode()
+		throws Exception {
+
+		Comment postComment =
+			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment();
+
+		Comment randomComment = randomComment();
+
+		Comment putComment =
+			commentResource.
+				putSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					postComment.getExternalReferenceCode(), randomComment);
+
+		assertEquals(randomComment, putComment);
+		assertValid(putComment);
+
+		Comment getComment =
+			commentResource.
+				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(randomComment, getComment);
+		assertValid(getComment);
+
+		Comment newComment =
+			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_createComment();
+
+		putComment =
+			commentResource.
+				putSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					newComment.getExternalReferenceCode(), newComment);
+
+		assertEquals(newComment, putComment);
+		assertValid(putComment);
+
+		getComment =
+			commentResource.
+				getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId(),
+					testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode(),
+					putComment.getExternalReferenceCode());
+
+		assertEquals(newComment, getComment);
+
+		Assert.assertEquals(
+			newComment.getExternalReferenceCode(),
+			putComment.getExternalReferenceCode());
+	}
+
+	protected Comment
+			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_addComment()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long
+			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected String
+			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_getStructuredContentExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment
+			testPutSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode_createComment()
+		throws Exception {
+
+		return randomComment();
+	}
+
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Comment comment1 = testBatchEngineDeleteImportTask_addComment();
+
+		testBatchEngineDeleteImportTask_deleteComment(
+			200, null, comment1.getId());
+
+		assertHttpResponseStatusCode(
+			404, commentResource.getCommentHttpResponse(comment1.getId()));
+	}
+
+	protected Comment testBatchEngineDeleteImportTask_addComment()
+		throws Exception {
+
+		return testDeleteComment_addComment();
+	}
+
+	protected void testBatchEngineDeleteImportTask_deleteComment(
+			int expectedStatusCode, String externalReferenceCode, Long id,
+			String... parameters)
+		throws Exception {
+
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).parameters(
+			parameters
+		).build();
+
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.delivery.dto.v1_0.Comment", null, null,
+				null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+		}
+	}
+
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	protected Comment testGraphQLComment_addComment() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	protected Comment testGraphQLSiteComment_addComment() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment testGraphQLBlogPostingComment_addComment()
+		throws Exception {
+
+		return testGraphQLBlogPostingComment_addComment(
+			testGraphQLBlogPostingComment_getBlogPostingId(), randomComment());
+	}
+
+	protected Long testGraphQLBlogPostingComment_getBlogPostingId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment testGraphQLBlogPostingComment_addComment(
+			Long blogPostingId, Comment comment)
+		throws Exception {
+
+		JSONDeserializer<Comment> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field : getDeclaredFields(Comment.class)) {
+			if (getGraphQLValue(field.get(comment)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(comment)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createBlogPostingComment",
+						new HashMap<String, Object>() {
+							{
+								put("blogPostingId", blogPostingId);
+								put("comment", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createBlogPostingComment"),
+			Comment.class);
+	}
+
+	protected Comment testGraphQLDocumentComment_addComment() throws Exception {
+		return testGraphQLDocumentComment_addComment(
+			testGraphQLDocumentComment_getDocumentId(), randomComment());
+	}
+
+	protected Long testGraphQLDocumentComment_getDocumentId() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment testGraphQLDocumentComment_addComment(
+			Long documentId, Comment comment)
+		throws Exception {
+
+		JSONDeserializer<Comment> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field : getDeclaredFields(Comment.class)) {
+			if (getGraphQLValue(field.get(comment)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(comment)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createDocumentComment",
+						new HashMap<String, Object>() {
+							{
+								put("documentId", documentId);
+								put("comment", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createDocumentComment"),
+			Comment.class);
+	}
+
+	protected Comment testGraphQLStructuredContentComment_addComment()
+		throws Exception {
+
+		return testGraphQLStructuredContentComment_addComment(
+			testGraphQLStructuredContentComment_getStructuredContentId(),
+			randomComment());
+	}
+
+	protected Long testGraphQLStructuredContentComment_getStructuredContentId()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Comment testGraphQLStructuredContentComment_addComment(
+			Long structuredContentId, Comment comment)
+		throws Exception {
+
+		JSONDeserializer<Comment> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field : getDeclaredFields(Comment.class)) {
+			if (getGraphQLValue(field.get(comment)) != null) {
+				if (sb.length() > 1) {
+					sb.append(", ");
+				}
+
+				sb.append(field.getName());
+				sb.append(": ");
+				sb.append(getGraphQLValue(field.get(comment)));
+			}
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createStructuredContentComment",
+						new HashMap<String, Object>() {
+							{
+								put("structuredContentId", structuredContentId);
+								put("comment", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createStructuredContentComment"),
+			Comment.class);
+	}
+
+	protected String getGraphQLValue(Object value) throws Exception {
+		if (value == null) {
+			return null;
+		}
+		else if (value instanceof Boolean || value instanceof Number) {
+			return value.toString();
+		}
+		else if (value instanceof Date date) {
+			return "\"" +
+				DateUtil.getDate(
+					date, "yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.getDefault(),
+					TimeZone.getTimeZone("UTC")) + "\"";
+		}
+		else if (value instanceof Enum<?> enm) {
+			return enm.name();
+		}
+		else if (value instanceof Map<?, ?> map) {
+			List<String> entries = new ArrayList<>();
+
+			for (Map.Entry<?, ?> entry : map.entrySet()) {
+				String graphQLValue = getGraphQLValue(entry.getValue());
+
+				if (graphQLValue != null) {
+					entries.add(entry.getKey() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
+		else if (value instanceof Object[] array) {
+			List<String> entries = new ArrayList<>();
+
+			for (Object entry : array) {
+				String graphQLValue = getGraphQLValue(entry);
+
+				if (graphQLValue != null) {
+					entries.add(graphQLValue);
+				}
+			}
+
+			return "[" + String.join(", ", entries) + "]";
+		}
+		else if (value instanceof String) {
+			return "\"" + value + "\"";
+		}
+		else {
+			List<String> entries = new ArrayList<>();
+
+			Class<?> clazz = value.getClass();
+			java.lang.reflect.Field[] declaredFields = getDeclaredFields(clazz);
+
+			if (declaredFields.length == 0) {
+				declaredFields = getDeclaredFields(clazz.getSuperclass());
+			}
+
+			for (java.lang.reflect.Field field : declaredFields) {
+				String graphQLValue = getGraphQLValue(field.get(value));
+
+				if (graphQLValue != null) {
+					entries.add(field.getName() + ": " + graphQLValue);
+				}
+			}
+
+			return "{" + String.join(", ", entries) + "}";
+		}
 	}
 
 	protected void assertContains(Comment comment, List<Comment> comments) {
@@ -3181,6 +5095,10 @@ public abstract class BaseCommentResourceTestCase {
 
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
+
+		graphQLFields.add(new GraphQLField("externalReferenceCode"));
+
+		graphQLFields.add(new GraphQLField("id"));
 
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
@@ -3372,6 +5290,10 @@ public abstract class BaseCommentResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -3450,20 +5372,18 @@ public abstract class BaseCommentResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = comment.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(comment.getDateCreated(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(comment.getDateCreated(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -3473,7 +5393,7 @@ public abstract class BaseCommentResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(comment.getDateCreated()));
+				sb.append(_format.format(comment.getDateCreated()));
 			}
 
 			return sb.toString();
@@ -3481,20 +5401,18 @@ public abstract class BaseCommentResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = comment.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(comment.getDateModified(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(comment.getDateModified(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -3504,7 +5422,7 @@ public abstract class BaseCommentResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(comment.getDateModified()));
+				sb.append(_format.format(comment.getDateModified()));
 			}
 
 			return sb.toString();
@@ -3632,7 +5550,8 @@ public abstract class BaseCommentResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -3684,22 +5603,45 @@ public abstract class BaseCommentResourceTestCase {
 		return randomComment();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected CommentResource commentResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -3708,11 +5650,16 @@ public abstract class BaseCommentResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -3744,6 +5691,24 @@ public abstract class BaseCommentResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -3765,16 +5730,6 @@ public abstract class BaseCommentResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -3872,10 +5827,34 @@ public abstract class BaseCommentResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseCommentResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.delivery.resource.v1_0.CommentResource
 		_commentResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

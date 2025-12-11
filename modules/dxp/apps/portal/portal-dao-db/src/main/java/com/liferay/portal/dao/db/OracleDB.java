@@ -34,6 +34,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -134,6 +135,22 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	public String getCharacterSet(Connection connection) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select value from nls_database_parameters where parameter " +
+					"in ('NLS_CHARACTERSET')")) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getString(1);
+				}
+			}
+		}
+
+		return StringPool.BLANK;
+	}
+
+	@Override
 	public List<Index> getIndexes(Connection connection) throws SQLException {
 		List<Index> indexes = new ArrayList<>();
 
@@ -163,7 +180,8 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
-	public ResultSet getIndexResultSet(Connection connection, String tableName)
+	public ResultSet getIndexResultSet(
+			Connection connection, String tableName, boolean onlyUnique)
 		throws SQLException {
 
 		DatabaseMetaData databaseMetaData = connection.getMetaData();
@@ -171,14 +189,13 @@ public class OracleDB extends BaseDB {
 		DBInspector dbInspector = new DBInspector(connection);
 
 		return databaseMetaData.getIndexInfo(
-			dbInspector.getCatalog(), dbInspector.getSchema(), tableName, false,
-			true);
+			dbInspector.getCatalog(), dbInspector.getSchema(), tableName,
+			onlyUnique, true);
 	}
 
 	@Override
 	public String getPopulateSQL(String databaseName, String sqlContent) {
-		return StringBundler.concat(
-			"connect &1/&2;\n", "set define off;\n\n", sqlContent, "quit");
+		return "connect &1/&2;\nset define off;\n\n" + sqlContent + "quit";
 	}
 
 	@Override
@@ -188,8 +205,15 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	public boolean isSupportsCharacterSet(Connection connection)
+		throws SQLException {
+
+		return Objects.equals(getCharacterSet(connection), "AL32UTF8");
+	}
+
+	@Override
 	public boolean isSupportsInlineDistinct() {
-		return _SUPPORTS_INLINE_DISTINCT;
+		return false;
 	}
 
 	@Override
@@ -387,13 +411,14 @@ public class OracleDB extends BaseDB {
 		}
 	}
 
+	@Override
 	protected boolean isSupportsDDLRollback() {
-		return _SUPPORTS_DDL_ROLLBACK;
+		return false;
 	}
 
 	@Override
 	protected boolean isSupportsDuplicatedIndexName() {
-		return _SUPPORTS_DUPLICATED_INDEX_NAME;
+		return false;
 	}
 
 	@Override
@@ -429,6 +454,10 @@ public class OracleDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException, SQLException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -522,12 +551,6 @@ public class OracleDB extends BaseDB {
 		_SQL_TYPE_BINARY_DOUBLE, Types.NUMERIC, Types.NUMERIC, Types.VARCHAR,
 		Types.CLOB, Types.VARCHAR
 	};
-
-	private static final boolean _SUPPORTS_DDL_ROLLBACK = false;
-
-	private static final boolean _SUPPORTS_DUPLICATED_INDEX_NAME = false;
-
-	private static final boolean _SUPPORTS_INLINE_DISTINCT = false;
 
 	private static final Log _log = LogFactoryUtil.getLog(OracleDB.class);
 

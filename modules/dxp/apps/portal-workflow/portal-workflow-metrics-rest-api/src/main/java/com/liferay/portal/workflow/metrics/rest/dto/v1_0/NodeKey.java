@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -47,59 +46,85 @@ public class NodeKey implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(NodeKey.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getExecutionType() {
+		if (_executionTypeSupplier != null) {
+			executionType = _executionTypeSupplier.get();
+
+			_executionTypeSupplier = null;
+		}
+
 		return executionType;
 	}
 
 	public void setExecutionType(String executionType) {
 		this.executionType = executionType;
+
+		_executionTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExecutionType(
 		UnsafeSupplier<String, Exception> executionTypeUnsafeSupplier) {
 
-		try {
-			executionType = executionTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_executionTypeSupplier = () -> {
+			try {
+				return executionTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String executionType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _executionTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
+
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -128,6 +153,8 @@ public class NodeKey implements Serializable {
 
 		sb.append("{");
 
+		String executionType = getExecutionType();
+
 		if (executionType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -141,6 +168,8 @@ public class NodeKey implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -161,8 +190,8 @@ public class NodeKey implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.NodeKey",
 		name = "x-class-name"
 	)
@@ -208,7 +237,10 @@ public class NodeKey implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

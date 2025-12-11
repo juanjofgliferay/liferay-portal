@@ -23,8 +23,6 @@ definition {
 			ACUtils.addSiteAndPage();
 		}
 
-		ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-
 		task ("Add a new user") {
 			JSONUser.addUser(
 				userEmailAddress = "userea@liferay.com",
@@ -38,8 +36,8 @@ definition {
 				userEmailAddress = "userea@liferay.com");
 		}
 
-		task ("Sync the Contact Data") {
-			ACDXPSettings.syncNewContactData();
+		task ("Connect the DXP to AC") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 	}
 
@@ -56,164 +54,6 @@ definition {
 		}
 
 		ACUtils.tearDownAC();
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8626 | Test Summary: Segment distribution chart can be filtered by date property"
-	@priority = 5
-	test CanDistributionChartFilteredDateProperty {
-		task ("View AC Page as new user") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "userea@liferay.com",
-				userLoginFullName = "userfn userln");
-
-			ACUtils.navigateToSitePage(
-				pageName = "AC Page",
-				siteName = "Site Name");
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
-		}
-
-		task ("Add a new static segment") {
-			ACNavigation.goToSegments();
-
-			ACSegments.createStaticSegment();
-		}
-
-		task ("Type the segment name") {
-			ACUtils.setItemName(itemName = "Static Segment Test");
-		}
-
-		task ("Add new user as member") {
-			ACSegments.addStaticMember(tableMember = "userfn userln");
-
-			ACSegments.saveSegment();
-		}
-
-		task ("Go to Segments") {
-			ACNavigation.goToSegments();
-
-			ACSegments.accessSegment(segmentName = "Static Segment Test");
-		}
-
-		task ("Filter Attribute") {
-			ACNavigation.switchTab(tabName = "Distribution");
-
-			ACSegments.selectDistributionByAttribute(attribute = "modifiedDate");
-		}
-
-		task ("Get current date") {
-			var dayNum = DateUtil.getDate(0);
-			var tomorrowNum = DateUtil.getDate(1);
-			var monthNum = DateUtil.getCurrentMonth();
-			var yearNum = DateUtil.getCurrentYear();
-
-			if ((${monthNum} != 10) && (${monthNum} != 11) && (${monthNum} != 12)) {
-				var monthNum = "0${monthNum}";
-			}
-
-			var i = ${dayNum} / 10;
-			var j = ${tomorrowNum} / 10;
-
-			if (${i} == 0) {
-				var dayNum = "0${dayNum}";
-			}
-
-			if (${j} == 0) {
-				var tomorrowNum = "0${tomorrowNum}";
-			}
-		}
-
-		task ("View Chart Entry") {
-			if (!(IsTextEqual.isPartialText(locator1 = "ACSegments#BREAKDOWN_CHART", value1 = "${yearNum}-${monthNum}-${dayNum}"))) {
-				ACSegments.viewBreakdownChartsEntry(key_entry = "${yearNum}-${monthNum}-${tomorrowNum}");
-			}
-
-			ACSegments.viewBreakdownChartsEntry(key_entry = "100.0%");
-		}
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8627 | Test Summary: Segment distribution chart can be filtered by number property"
-	@ignore = "true"
-	@priority = 3
-	test CanDistributionChartFilteredNumber {
-
-		// AC Refactor: Chart fails to appear when filtering with a number property.
-		// AC Refactor ticket: LRAC-9328
-		// AC Bug ticket: LRAC-9329
-
-		task ("Add a user custom field and sync") {
-			CustomFields.openCustomFieldAdmin();
-
-			CustomFields.addCP(
-				customFieldName = "Age",
-				customFieldType = "Input Field",
-				customInputDataType = "Integer",
-				resourceName = "User",
-				startingValue = 21);
-
-			ACDXPSettings.syncAttributes(
-				attributeCategory = "People",
-				attributeNameList = "Age");
-		}
-
-		task ("View AC Page as new user") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "userea@liferay.com",
-				userLoginFullName = "userfn userln");
-
-			ACUtils.navigateToSitePage(
-				pageName = "AC Page",
-				siteName = "Site Name");
-
-			ACUtils.closeAllSessionsAndWait();
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
-		}
-
-		task ("Add a new static segment") {
-			ACNavigation.goToSegments();
-
-			ACSegments.createStaticSegment();
-		}
-
-		task ("Type the segment name") {
-			ACUtils.setItemName(itemName = "Static Segment Test");
-		}
-
-		task ("Add new user as member") {
-			ACSegments.addStaticMember(tableMember = "userfn userln");
-
-			ACSegments.saveSegment();
-		}
-
-		task ("Go to Segments") {
-			ACNavigation.goToSegments();
-
-			ACSegments.accessSegment(segmentName = "Static Segment Test");
-		}
-
-		task ("Filter Attribute") {
-			ACNavigation.switchTab(tabName = "Distribution");
-
-			ACSegments.selectDistributionByAttribute(attribute = "age");
-		}
-
-		task ("View Chart Entry") {
-
-			// Test will fail here because of no chart appearing.
-
-			ACSegments.viewBreakdownChartsEntry(key_entry = "userfn - 100.0%");
-		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8628 | Test Summary: Segment distribution chart can be filtered by text property"
@@ -242,18 +82,15 @@ definition {
 			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Add a new static segment") {
+		task ("Add a new Dynamic segment") {
 			ACNavigation.goToSegments();
 
-			ACSegments.createStaticSegment();
-		}
+			ACSegments.createDynamicSegmentAndFillFields(
+				criterion = "Individual Attributes",
+				segmentField = "email",
+				segments = "Dynamic Segment Test");
 
-		task ("Type the segment name") {
-			ACUtils.setItemName(itemName = "Static Segment Test");
-		}
-
-		task ("Add new user as member") {
-			ACSegments.addStaticMember(tableMember = "userfn userln");
+			ACSegments.editTextCriterion(textInput = "userea@liferay.com");
 
 			ACSegments.saveSegment();
 		}
@@ -261,7 +98,7 @@ definition {
 		task ("Go to Segments") {
 			ACNavigation.goToSegments();
 
-			ACSegments.accessSegment(segmentName = "Static Segment Test");
+			ACSegments.accessSegment(segmentName = "Dynamic Segment Test");
 		}
 
 		task ("Filter Attribute") {
@@ -272,91 +109,6 @@ definition {
 
 		task ("View Chart Entry") {
 			ACSegments.viewBreakdownChartsEntry(key_entry = "userfn - 100.0%");
-		}
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8625 | Test Summary: Search the Segment Profile Distribution"
-	@ignore = "true"
-	@priority = 3
-	test CanSearchTheSegmentProfileDistribution {
-
-		// AC Refactor: Data doesn't appear on time
-		// AC Refactor ticket: LRAC-14011
-
-		var userList = "ac,dxp";
-		var emailList = "ac@liferay.com,dxp@liferay.com,userea@liferay.com";
-		var nameList = "ac ac,dxp dxp,userfn userln";
-
-		task ("Create new users") {
-			for (var userCreate : list ${userList}) {
-				JSONUser.addUser(
-					jobTitle = "QA",
-					userEmailAddress = "${userCreate}@liferay.com",
-					userFirstName = ${userCreate},
-					userLastName = ${userCreate},
-					userScreenName = ${userCreate});
-			}
-		}
-
-		ACDXPSettings.syncNewContactData();
-
-		task ("View AC Page as new user") {
-			ACUtils.navigateToSitePageWithUser(
-				emailList = ${emailList},
-				pageName = "AC Page",
-				siteName = "Site Name");
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
-		}
-
-		task ("Add a new static segment") {
-			ACNavigation.goToSegments();
-
-			ACSegments.createStaticSegment();
-		}
-
-		task ("Type the segment name") {
-			ACUtils.setItemName(itemName = "Static Segment Test");
-		}
-
-		task ("Add new user as member") {
-			ACSegments.addStaticMultiMember(tableMember = ${nameList});
-
-			ACSegments.saveSegment();
-		}
-
-		task ("Go to Segments") {
-			ACNavigation.goToSegments();
-
-			ACSegments.accessSegment(segmentName = "Static Segment Test");
-		}
-
-		task ("Filter Attribute") {
-			ACNavigation.switchTab(tabName = "Distribution");
-
-			ACSegments.selectDistributionByAttribute(attribute = "jobTitle");
-		}
-
-		task ("Click on the category in the dashboard") {
-			ACUtils.clickOnDistributionBar();
-		}
-
-		task ("Assert that a right word will be found") {
-			for (var userSearch : list ${userList}) {
-				ACSegments.searchTheSegmentProfile(searchTerm = "${userSearch} ${userSearch}");
-
-				ACInterests.viewIndividualInterestSpecificOrder(interestTopic = "${userSearch} ${userSearch}");
-			}
-		}
-
-		task ("Assert that a wrong word will be not found") {
-			ACSegments.searchTheSegmentProfile(searchTerm = "userfn");
-
-			ACUtils.viewGenericText(textValueList = "There are no results found.,Try choosing a different breakdown.,Learn more about distribution.");
 		}
 	}
 
@@ -404,18 +156,15 @@ definition {
 			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Add a new static segment") {
+		task ("Add a new Dynamic segment") {
 			ACNavigation.goToSegments();
 
-			ACSegments.createStaticSegment();
-		}
+			ACSegments.createDynamicSegmentAndFillFields(
+				criterion = "Individual Attributes",
+				segmentField = "email",
+				segments = "Dynamic Segment Test");
 
-		task ("Type the segment name") {
-			ACUtils.setItemName(itemName = "Static Segment Test");
-		}
-
-		task ("Add new user as member") {
-			ACSegments.addStaticMultiMember(tableMember = ${nameList});
+			ACSegments.editTextCriterion(textInput = "@liferay.com");
 
 			ACSegments.saveSegment();
 		}
@@ -423,7 +172,7 @@ definition {
 		task ("Go to Segments") {
 			ACNavigation.goToSegments();
 
-			ACSegments.accessSegment(segmentName = "Static Segment Test");
+			ACSegments.accessSegment(segmentName = "Dynamic Segment Test");
 		}
 
 		task ("Filter Attribute") {

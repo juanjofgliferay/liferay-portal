@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -22,7 +22,6 @@ page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
-page import="com.liferay.portal.kernel.util.ReleaseInfo" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.search.web.internal.search.bar.portlet.SearchBarPortlet" %><%@
@@ -54,7 +53,7 @@ SearchBarPortletDisplayContext searchBarPortletDisplayContext = (SearchBarPortle
 		</div>
 	</c:when>
 	<c:otherwise>
-		<aui:form action="<%= searchBarPortletDisplayContext.getSearchURL() %>" method="get" name="fm">
+		<form action="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getSearchURL()) %>" id="<%= randomNamespace %>fm" method="get" name="<%= randomNamespace %>fm">
 			<c:if test="<%= !Validator.isBlank(searchBarPortletDisplayContext.getPaginationStartParameterName()) %>">
 				<input class="search-bar-reset-start-page" name="<%= searchBarPortletDisplayContext.getPaginationStartParameterName() %>" type="hidden" value="0" />
 			</c:if>
@@ -80,42 +79,8 @@ SearchBarPortletDisplayContext searchBarPortletDisplayContext = (SearchBarPortle
 					<c:when test="<%= searchBarPortletDisplayContext.isSuggestionsEnabled() %>">
 						<div id="<portlet:namespace />reactSearchBar">
 							<react:component
-								module="js/components/SearchBar"
-								props='<%=
-									HashMapBuilder.<String, Object>put(
-										"destinationFriendlyURL", searchBarPortletDisplayContext.getDestinationFriendlyURL()
-									).put(
-										"emptySearchEnabled", searchBarPortletDisplayContext.isEmptySearchEnabled()
-									).put(
-										"isDXP", ReleaseInfo.isDXP()
-									).put(
-										"isSearchExperiencesSupported", searchBarPortletDisplayContext.isSearchExperiencesSupported()
-									).put(
-										"keywords", searchBarPortletDisplayContext.getKeywords()
-									).put(
-										"keywordsParameterName", searchBarPortletDisplayContext.getKeywordsParameterName()
-									).put(
-										"letUserChooseScope", searchBarPortletDisplayContext.isLetTheUserChooseTheSearchScope()
-									).put(
-										"paginationStartParameterName", searchBarPortletDisplayContext.getPaginationStartParameterName()
-									).put(
-										"scopeParameterName", searchBarPortletDisplayContext.getScopeParameterName()
-									).put(
-										"scopeParameterStringCurrentSite", searchBarPortletDisplayContext.getCurrentSiteSearchScopeParameterString()
-									).put(
-										"scopeParameterStringEverything", searchBarPortletDisplayContext.getEverythingSearchScopeParameterString()
-									).put(
-										"searchURL", searchBarPortletDisplayContext.getSearchURL()
-									).put(
-										"selectedEverythingSearchScope", searchBarPortletDisplayContext.isSelectedEverythingSearchScope()
-									).put(
-										"suggestionsContributorConfiguration", searchBarPortletDisplayContext.getSuggestionsContributorConfiguration()
-									).put(
-										"suggestionsDisplayThreshold", searchBarPortletDisplayContext.getSuggestionsDisplayThreshold()
-									).put(
-										"suggestionsURL", searchBarPortletDisplayContext.getSuggestionsURL()
-									).build()
-								%>'
+								module="{ReactSearchBar} from portal-search-web/search-bar"
+								props="<%= searchBarPortletDisplayContext.getReactData() %>"
 							/>
 						</div>
 					</c:when>
@@ -126,9 +91,9 @@ SearchBarPortletDisplayContext searchBarPortletDisplayContext = (SearchBarPortle
 							<div class="input-group <%= searchBarPortletDisplayContext.isLetTheUserChooseTheSearchScope() ? "search-bar-scope" : "search-bar-simple" %>">
 								<c:choose>
 									<c:when test="<%= searchBarPortletDisplayContext.isLetTheUserChooseTheSearchScope() %>">
-										<aui:input autocomplete="off" cssClass="search-bar-keywords-input" data-qa-id="searchInput" id="<%= randomNamespace + HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" label="" name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" placeholder='<%= LanguageUtil.get(request, "search-...") %>' title='<%= LanguageUtil.get(request, "search") %>' type="text" useNamespace="<%= false %>" value="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywords()) %>" wrapperCssClass="input-group-item input-group-prepend search-bar-keywords-input-wrapper" />
+										<aui:input autocomplete="off" cssClass="search-bar-keywords-input" data-qa-id="searchInput" disabled="<%= true %>" id="<%= randomNamespace + HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" label="" name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" placeholder="<%= searchBarPortletDisplayContext.getInputPlaceholder() %>" title='<%= LanguageUtil.get(request, "search") %>' type="text" useNamespace="<%= false %>" value="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywords()) %>" wrapperCssClass="input-group-item input-group-prepend search-bar-keywords-input-wrapper" />
 
-										<aui:select cssClass="search-bar-scope-select" id="<%= randomNamespace + HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getScopeParameterName()) %>" label="" name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getScopeParameterName()) %>" title="scope" useNamespace="<%= false %>" wrapperCssClass="input-group-item input-group-item-shrink input-group-prepend search-bar-search-select-wrapper">
+										<aui:select cssClass="search-bar-scope-select" disabled="<%= true %>" id="<%= randomNamespace + HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getScopeParameterName()) %>" label="" name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getScopeParameterName()) %>" title="scope" useNamespace="<%= false %>" wrapperCssClass="input-group-item input-group-item-shrink input-group-prepend search-bar-search-select-wrapper">
 											<aui:option label="this-site" selected="<%= searchBarPortletDisplayContext.isSelectedCurrentSiteSearchScope() %>" value="<%= searchBarPortletDisplayContext.getCurrentSiteSearchScopeParameterString() %>" />
 
 											<c:if test="<%= searchBarPortletDisplayContext.isAvailableEverythingSearchScope() %>">
@@ -139,6 +104,8 @@ SearchBarPortletDisplayContext searchBarPortletDisplayContext = (SearchBarPortle
 										<div class="input-group-append input-group-item input-group-item-shrink">
 											<clay:button
 												aria-label='<%= LanguageUtil.get(request, "search") %>'
+												cssClass="search-bar-submit-button"
+												disabled="<%= true %>"
 												displayType="secondary"
 												icon="search"
 												type="submit"
@@ -147,13 +114,15 @@ SearchBarPortletDisplayContext searchBarPortletDisplayContext = (SearchBarPortle
 									</c:when>
 									<c:otherwise>
 										<div class="input-group-item search-bar-keywords-input-wrapper">
-											<input aria-label="<%= LanguageUtil.get(request, "search") %>" autocomplete="off" class="form-control input-group-inset input-group-inset-after search-bar-keywords-input" data-qa-id="searchInput" id="<%= randomNamespace %><%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" placeholder="<%= LanguageUtil.get(request, "search-...") %>" title="<%= LanguageUtil.get(request, "search") %>" type="text" value="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywords()) %>" />
+											<input aria-label="<%= LanguageUtil.get(request, "search") %>" autocomplete="off" class="form-control input-group-inset input-group-inset-after search-bar-keywords-input" data-qa-id="searchInput" disabled="<%= true %>" id="<%= randomNamespace %><%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywordsParameterName()) %>" placeholder="<%= searchBarPortletDisplayContext.getInputPlaceholder() %>" title="<%= LanguageUtil.get(request, "search") %>" type="text" value="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getKeywords()) %>" />
 
 											<aui:input name="<%= HtmlUtil.escapeAttribute(searchBarPortletDisplayContext.getScopeParameterName()) %>" type="hidden" value="<%= searchBarPortletDisplayContext.getScopeParameterValue() %>" />
 
 											<div class="input-group-inset-item input-group-inset-item-after">
 												<clay:button
 													aria-label='<%= LanguageUtil.get(request, "search") %>'
+													cssClass="search-bar-submit-button"
+													disabled="<%= true %>"
 													displayType="unstyled"
 													icon="search"
 													type="submit"
@@ -167,10 +136,19 @@ SearchBarPortletDisplayContext searchBarPortletDisplayContext = (SearchBarPortle
 					</c:otherwise>
 				</c:choose>
 			</liferay-ddm:template-renderer>
-		</aui:form>
+		</form>
 
 		<liferay-frontend:component
-			module="js/SearchBar"
+			context='<%=
+				HashMapBuilder.<String, Object>put(
+					"formId", randomNamespace + "fm"
+				).put(
+					"initialKeywords", searchBarPortletDisplayContext.getKeywords()
+				).put(
+					"retainFacetSelections", searchBarPortletDisplayContext.isRetainFacetSelections()
+				).build()
+			%>'
+			module="{SearchBar} from portal-search-web/search-bar"
 		/>
 	</c:otherwise>
 </c:choose>

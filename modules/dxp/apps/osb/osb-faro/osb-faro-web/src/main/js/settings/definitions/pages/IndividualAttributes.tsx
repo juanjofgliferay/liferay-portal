@@ -1,5 +1,5 @@
 import * as API from 'shared/api';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
 import ClayLink from '@clayui/link';
@@ -10,16 +10,17 @@ import URLConstants from 'shared/util/url-constants';
 import withStatefulPagination from 'shared/hoc/StatefulPagination';
 import {applyTimeZone} from 'shared/util/date';
 import {close, modalTypes, open} from 'shared/actions/modals';
-import {compose, withCurrentUser} from 'shared/hoc';
+import {compose} from 'shared/hoc';
 import {connect, ConnectedProps} from 'react-redux';
 import {createOrderIOMap} from 'shared/util/pagination';
 import {getDefinitions} from 'shared/util/breadcrumbs';
 import {omit} from 'lodash';
-import {RootState} from 'shared/store';
 import {Routes, toRoute} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
 import {User} from 'shared/util/records';
+import {useTimeZone} from 'shared/hooks/useTimeZone';
 
 const SearchableEntityTableHOC = withStatefulPagination(
 	SearchableEntityTable,
@@ -29,18 +30,7 @@ const SearchableEntityTableHOC = withStatefulPagination(
 	props => omit(props, 'onSearchValueChange')
 );
 
-const connector = connect(
-	(store: RootState, {groupId}: {groupId: string}) => ({
-		timeZoneId: store.getIn([
-			'projects',
-			groupId,
-			'data',
-			'timeZone',
-			'timeZoneId'
-		])
-	}),
-	{close, open}
-);
+const connector = connect(null, {close, open});
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
@@ -53,11 +43,12 @@ interface IIndividualAttributesProps
 
 const IndividualAttributes: React.FC<IIndividualAttributesProps> = ({
 	close,
-	currentUser,
 	groupId,
-	open,
-	timeZoneId
+	open
 }) => {
+	const currentUser = useCurrentUser();
+	const {timeZoneId} = useTimeZone();
+
 	const openModal = ({dataSources, fieldName}) => () => {
 		open(modalTypes.INDIVIDUAL_ATTRIBUTES_MODAL, {
 			dataSources,
@@ -92,7 +83,6 @@ const IndividualAttributes: React.FC<IIndividualAttributesProps> = ({
 				}
 			]}
 			className='individual-attributes-root'
-			groupId={groupId}
 			pageDescription={Liferay.Language.get(
 				'this-is-the-data-model-of-an-individual.-analytics-cloud-will-take-and-store-the–newest-data-from-all-your-sources'
 			)}
@@ -141,7 +131,7 @@ const IndividualAttributes: React.FC<IIndividualAttributesProps> = ({
 										'connect-a-data-source-with-people-data'
 									)}
 
-									<a
+									<ClayLink
 										className='d-block mb-3'
 										href={URLConstants.DataSourceConnection}
 										key='DOCUMENTATION'
@@ -150,7 +140,7 @@ const IndividualAttributes: React.FC<IIndividualAttributesProps> = ({
 										{Liferay.Language.get(
 											'access-our-documentation-to-learn-more'
 										)}
-									</a>
+									</ClayLink>
 
 									{authorized && (
 										<ClayLink
@@ -174,7 +164,7 @@ const IndividualAttributes: React.FC<IIndividualAttributesProps> = ({
 							icon={{
 								border: false,
 								size: Sizes.XXXLarge,
-								symbol: 'ac-satellite'
+								symbol: 'ac_satellite'
 							}}
 							spacer
 							title={Liferay.Language.get(
@@ -191,4 +181,4 @@ const IndividualAttributes: React.FC<IIndividualAttributesProps> = ({
 	);
 };
 
-export default compose<any>(withCurrentUser, connector)(IndividualAttributes);
+export default compose<any>(connector)(IndividualAttributes);

@@ -7,13 +7,14 @@ package com.liferay.cookies.configuration;
 
 import aQute.bnd.annotation.metatype.Meta;
 
+import com.liferay.portal.configuration.metatype.annotations.ExtendedAttributeDefinition;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 
 /**
  * @author Olivér Kecskeméty
  */
 @ExtendedObjectClassDefinition(
-	category = "cookies", scope = ExtendedObjectClassDefinition.Scope.GROUP
+	category = "privacy", scope = ExtendedObjectClassDefinition.Scope.GROUP
 )
 @Meta.OCD(
 	id = "com.liferay.cookies.configuration.CookiesPreferenceHandlingConfiguration",
@@ -22,6 +23,14 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface CookiesPreferenceHandlingConfiguration {
 
+	@ExtendedAttributeDefinition(featureFlagKey = "LPD-65277")
+	@Meta.AD(
+		deflt = "12", description = "cookie-consent-renewal-period-help",
+		max = "12", min = "1", name = "cookie-consent-renewal-period",
+		required = false
+	)
+	public int consentRenewalPeriod();
+
 	@Meta.AD(
 		deflt = "false", description = "cookie-enabled-help", name = "enabled",
 		required = false
@@ -29,9 +38,14 @@ public interface CookiesPreferenceHandlingConfiguration {
 	public boolean enabled();
 
 	@Meta.AD(
-		deflt = "true", description = "cookie-explicit-consent-mode-help",
+		deflt = "true",
+		description = "cookie-explicit-consent-mode-help-deprecated",
 		name = "cookie-explicit-consent-mode", required = false
 	)
 	public boolean explicitConsentMode();
+
+	@ExtendedAttributeDefinition(featureFlagKey = "LPD-65277")
+	@Meta.AD(deflt = "0", name = "modified-date", required = false)
+	public long modifiedDate();
 
 }

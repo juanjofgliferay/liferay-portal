@@ -32,7 +32,7 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -69,14 +69,14 @@ public class DownloadFileVersionContentDashboardItemVersionActionProviderTest {
 			_group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + "." + ContentTypes.IMAGE_JPEG,
 			MimeTypesUtil.getExtensionContentType(ContentTypes.IMAGE_JPEG),
-			new byte[0], null, null,
+			new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE,
+			JavaConstants.JAKARTA_PORTLET_RESPONSE,
 			new MockLiferayPortletRenderResponse());
 
 		MockLiferayResourceRequest mockLiferayResourceRequest =
@@ -86,7 +86,7 @@ public class DownloadFileVersionContentDashboardItemVersionActionProviderTest {
 			WebKeys.THEME_DISPLAY, _getThemeDisplay(mockHttpServletRequest));
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, mockLiferayResourceRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, mockLiferayResourceRequest);
 
 		ContentDashboardItemVersionAction contentDashboardItemVersionAction =
 			_contentDashboardItemVersionActionProvider.
@@ -115,7 +115,7 @@ public class DownloadFileVersionContentDashboardItemVersionActionProviderTest {
 			_group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + "." + ContentTypes.IMAGE_JPEG,
 			MimeTypesUtil.getExtensionContentType(ContentTypes.IMAGE_JPEG),
-			new byte[0], null, null,
+			new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		Assert.assertTrue(
@@ -134,7 +134,7 @@ public class DownloadFileVersionContentDashboardItemVersionActionProviderTest {
 			MimeTypesUtil.getExtensionContentType(
 				ContentTypes.
 					APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML),
-			new byte[0], null, null,
+			new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		Assert.assertTrue(

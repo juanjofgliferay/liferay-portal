@@ -35,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author André de Oliveira
  */
 @Component(
-	property = "javax.portlet.name=" + SearchBarPortletKeys.SEARCH_BAR,
+	property = "jakarta.portlet.name=" + SearchBarPortletKeys.SEARCH_BAR,
 	service = PortletSharedSearchContributor.class
 )
 public class SearchBarPortletSharedSearchContributor
@@ -49,6 +49,9 @@ public class SearchBarPortletSharedSearchContributor
 			new SearchBarPortletPreferencesImpl(
 				portletSharedSearchSettings.getPortletPreferences());
 
+		portletSharedSearchSettings.setIncludeAttachments(
+			searchBarPortletPreferences.isIncludeAttachments());
+
 		SearchRequestBuilder searchRequestBuilder =
 			portletSharedSearchSettings.getFederatedSearchRequestBuilder(
 				searchBarPortletPreferences.getFederatedSearchKey());
@@ -60,8 +63,15 @@ public class SearchBarPortletSharedSearchContributor
 		}
 
 		searchRequestBuilder.withSearchContext(
-			searchContext -> searchContext.setIncludeInternalAssetCategories(
-				false));
+			searchContext -> {
+				searchContext.setAttribute(
+					SearchContextAttributes.
+						ATTRIBUTE_KEY_CONTRIBUTE_TUNING_RANKINGS,
+					Boolean.TRUE);
+				searchContext.setIncludeAttachments(
+					searchBarPortletPreferences.isIncludeAttachments());
+				searchContext.setIncludeInternalAssetCategories(false);
+			});
 
 		_setKeywords(
 			searchRequestBuilder, searchBarPortletPreferences,

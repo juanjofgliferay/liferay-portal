@@ -1,4 +1,4 @@
-@component-name = "portal-content-dashboard"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -36,6 +36,7 @@ definition {
 			ContentDashboard.editAsset(
 				assetNewTitle = "WC Content Edit",
 				assetTitle = "WC Content",
+				isWebContent = "true",
 				saveAsDraft = "true");
 		}
 
@@ -97,7 +98,7 @@ definition {
 				webContentContent = "WC Content Content",
 				webContentTitle = "Web Content Title 2");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "test@liferay.com",
@@ -758,22 +759,24 @@ definition {
 		}
 
 		task ("Validade if the categories are shown in order of creation") {
+			SetWindowSize.maximizeWindow();
+
 			ContentDashboard.goToContentDashboard();
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 1,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "C_Subaudien…");
+				value1 = "C_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 2,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "B_Subaudien…");
+				value1 = "B_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 3,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "A_Subaudien…");
+				value1 = "A_Subaudien");
 		}
 	}
 
@@ -1575,7 +1578,7 @@ definition {
 				categoryNameList = "Substage_4",
 				vocabularyName = "Stage");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("Navigate to the content panel and see if, in the new category order, the new category receives a new color, placed in the last position") {
@@ -1797,7 +1800,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -1886,7 +1889,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -2016,7 +2019,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -2132,7 +2135,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -2252,7 +2255,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -2436,9 +2439,7 @@ definition {
 
 			WebContentNavigator.gotoEditCP(webContentTitle = "WC Title");
 
-			WebContent.editDisplayDate(displayDate = "01/01/2100");
-
-			PortletEntry.publish();
+			WebContent.scheduleWCArticleWithPermissions(displayDate = "2100-01-01 01:00");
 		}
 
 		task ("Go to Content Dashboard and click on the title") {
@@ -3443,7 +3444,8 @@ definition {
 
 			ContentDashboard.editAsset(
 				assetNewTitle = "WC Title Edited",
-				assetTitle = "WC Title");
+				assetTitle = "WC Title",
+				isWebContent = "true");
 		}
 
 		task ("Assert in title was porperty edited") {
@@ -3904,7 +3906,7 @@ definition {
 				groupName = "Test Site Name",
 				title = "Web Content Title 2",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Login with Admin user") {
@@ -4031,7 +4033,7 @@ definition {
 				groupName = "Test Site Name",
 				title = "Web Content Title 2",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Login with Admin user") {
@@ -4123,7 +4125,7 @@ definition {
 				groupName = "Test Site Name",
 				title = "Web Content Title 2",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Login with Admin user") {
@@ -4605,9 +4607,7 @@ definition {
 
 			WebContentNavigator.gotoEditCP(webContentTitle = "WC Title Scheduled");
 
-			WebContent.editDisplayDate(displayDate = "01/01/2100");
-
-			PortletEntry.publish();
+			WebContent.scheduleWCArticleWithPermissions(displayDate = "2100-11-20 01:00");
 		}
 
 		task ("Filter asset at Content Dashboard using status") {
@@ -4788,7 +4788,7 @@ definition {
 
 			WebContent.addReviewDate(reviewDate = "01/01/2100");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("When navigating to the content dashboard") {
@@ -4840,7 +4840,7 @@ definition {
 				webContentText = "Web Content Content",
 				webContentTitle = "Web Content Title 2");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Navigate to Content Dashbaord") {
@@ -4961,7 +4961,9 @@ definition {
 		task ("Check location at web content editor") {
 			AssertLocation.assertPartialLocation(value1 = "com_liferay_journal_web_portlet_JournalPortlet");
 
-			AssertLocation.assertPartialLocation(value1 = "edit_article.jsp");
+			AssertLocation.assertPartialLocation(value1 = "edit_article");
+
+			AssertVisible(locator1 = "WCEditWebContent#SIDEBAR");
 		}
 	}
 
@@ -5668,6 +5670,8 @@ definition {
 		}
 
 		task ("Go to Content Dashboard and set graph to only one vocabulary") {
+			SetWindowSize.maximizeWindow();
+
 			ContentDashboard.goToContentDashboard();
 
 			ContentDashboard.moveVocabularyDisplayConfiguration(vocabularyName = "Stage");
@@ -5688,20 +5692,20 @@ definition {
 		}
 
 		task ("Validate if the remaining categories are shown in order of creating") {
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 1,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "C_Subaudien…");
+				value1 = "C_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 2,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "B_Subaudien…");
+				value1 = "B_Subaudien");
 
-			AssertTextEquals(
+			AssertTextEquals.assertPartialText(
 				categoryIndex = 3,
 				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
-				value1 = "A_Subaudien…");
+				value1 = "A_Subaudien");
 		}
 	}
 
@@ -5732,7 +5736,7 @@ definition {
 		}
 
 		task ("Change the order of assets") {
-			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+			ManagementBar.sortAssets(sortDirection = "Ascending");
 
 			AssertTextEquals(
 				locator1 = "ContentDashboard#LAST_ELEMENT_LISTED",
@@ -5757,13 +5761,13 @@ definition {
 
 			WebContent.addReviewDate(reviewDate = "01/01/2100");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 
 			WebContentNavigator.gotoEditCP(webContentTitle = "WC Title 2");
 
 			WebContent.addReviewDate(reviewDate = "01/01/2200");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("When navigating to the content dashboard") {
@@ -5779,7 +5783,7 @@ definition {
 				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
 				value1 = "WC Title 2");
 
-			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+			ManagementBar.sortAssets(sortDirection = "Ascending");
 
 			AssertTextPresent(
 				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
@@ -5814,7 +5818,7 @@ definition {
 		}
 
 		task ("Change de order of assets") {
-			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+			ManagementBar.sortAssets(sortDirection = "Descending");
 
 			AssertTextEquals(
 				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
@@ -5825,6 +5829,7 @@ definition {
 	@description = "LPS-132254 When a user selects the value of the number of rows (4, 8, 40, 60) displayed in the list, the Content Dashboard will display the number of rows selected"
 	@priority = 5
 	test PaginationDisplaySelectedNumberOfRows {
+		property custom.properties = "search.container.page.delta.values=4,8,20,40,60";
 		property portal.acceptance = "true";
 
 		var groupId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
@@ -5852,6 +5857,8 @@ definition {
 	@description = "LPS-132254 When a user use the <, > buttons, the page displayed moves forward/backward"
 	@priority = 3
 	test PaginationMoveAcrossPagesWithButtons {
+		property custom.properties = "search.container.page.delta.values=4,8,20,40,60";
+
 		var groupId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		task ("Create 6 WC using JSON") {
@@ -5883,6 +5890,8 @@ definition {
 	@description = "LPS-132254 When a user clicks on a page number, that page is displayed in the Content Dashboard"
 	@priority = 3
 	test PaginationMoveAcrossPagesWithNumber {
+		property custom.properties = "search.container.page.delta.values=4,8,20,40,60";
+
 		var groupId = JSONGroupSetter.setGroupId(groupName = "Test Site Name");
 
 		task ("Create 6 WC using JSON") {
@@ -5921,7 +5930,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -6066,7 +6075,8 @@ definition {
 
 			ContentDashboard.editAsset(
 				assetNewTitle = "WC Title Edited",
-				assetTitle = "WC Title");
+				assetTitle = "WC Title",
+				isWebContent = "true");
 
 			AssertTextEquals(
 				locator1 = "ContentDashboard#FILTER_TEXT",
@@ -6110,7 +6120,7 @@ definition {
 		task ("Check if extension is present") {
 			AssertTextEquals(
 				locator1 = "ManagementBar#SEARCH_RESULT_SUMMARY",
-				value1 = "10 Results for");
+				value1 = "10 Results Found With Filters");
 		}
 	}
 
@@ -6155,7 +6165,8 @@ definition {
 
 			ContentDashboard.editAsset(
 				assetNewTitle = "WC WebContent New Title",
-				assetTitle = "WC WebContent Title");
+				assetTitle = "WC WebContent Title",
+				isWebContent = "true");
 		}
 
 		task ("Check if content is correct") {
@@ -6275,7 +6286,7 @@ definition {
 				webContentContent = "WC Content 2",
 				webContentTitle = "WC Title 2");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Login with Admin user") {
@@ -6358,7 +6369,7 @@ definition {
 				webContentContent = "WC Content",
 				webContentTitle = "WC Title 2");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Login with Admin user") {
@@ -6435,7 +6446,7 @@ definition {
 				webContentContent = "WC Content",
 				webContentTitle = "WC Title 2");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Edit Web Content created by Test user") {
@@ -6588,6 +6599,42 @@ definition {
 		}
 	}
 
+	@description = "This is a use case for LPS-177756. The tooltip of the back button is Go to Content Dashboard when viewing an asset with a DPT from the Content Dashboard."
+	@priority = 3
+	test ViewBackButtonTooltipInAssociatedDisplayPageTemplate {
+		task ("Given access to the associated display page via content dashboard") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			JSONLayoutpagetemplate.setLayoutPageTemplateEntryAsDefault(
+				groupName = "Test Site Name",
+				layoutPageTemplateEntryName = "Display Page Name",
+				type = "Display Page Template");
+
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+
+			ContentDashboard.goToContentDashboard();
+
+			LexiconTable.clickTableEntryTitle(tableEntry = "Web Content Title");
+		}
+
+		task ("When hover over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to Content Dashboard",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+	}
+
 	@description = "LPS-162823 Add the View Action to the Version History for Documents and Media"
 	@priority = 3
 	test ViewDocumentVersion {
@@ -6655,7 +6702,7 @@ definition {
 
 			WebContent.addReviewDate(reviewDate = "01/01/2100");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("When navigating to the content dashboard") {
@@ -6683,7 +6730,7 @@ definition {
 
 			JSONUser.setFirstPassword(
 				agreeToTermsAndAnswerReminderQuery = "true",
-				newPassword = "test",
+				newPassword = PropsUtil.get("default.admin.password"),
 				requireReset = "false",
 				userEmailAddress = "userea@liferay.com");
 		}
@@ -6714,7 +6761,7 @@ definition {
 				webContentContent = "WC Content Content",
 				webContentTitle = "Web Content Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Login with Test user once more") {
@@ -6853,7 +6900,7 @@ definition {
 
 			AssertChecked(locator1 = "Checkbox#NEVER_REVIEW");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("When navigating to the content dashboard") {
@@ -6885,7 +6932,7 @@ definition {
 
 			WebContent.addReviewDate(reviewDate = "01/01/2100");
 
-			PortletEntry.publish();
+			WebContent.publishExistingWCArticleWithPermissions();
 		}
 
 		task ("When navigating to the content dashboard") {
@@ -6985,7 +7032,7 @@ definition {
 				webContentText = "Web Content Content",
 				webContentTitle = "Web Content Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Navigate to Content Dashbaord") {

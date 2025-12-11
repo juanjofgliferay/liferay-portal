@@ -5,20 +5,15 @@
 
 package com.liferay.jenkins.results.parser;
 
-import com.liferay.jenkins.results.parser.testray.TestrayS3Object;
+import com.liferay.jenkins.results.parser.testray.TestrayCloudObject;
 
 import java.io.File;
 import java.io.IOException;
 
 import java.net.URL;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Date;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -28,98 +23,51 @@ public class URLTopLevelBuildReport extends BaseTopLevelBuildReport {
 
 	@Override
 	public JSONObject getBuildReportJSONObject() {
-		if (buildReportJSONObject != null) {
-			return buildReportJSONObject;
+		if (_buildReportJSONObject != null) {
+			return _buildReportJSONObject;
 		}
 
-		buildReportJSONObject = getJSONObjectFromURL(
-			getBuildReportJSONUserContentURL());
+		TestrayCloudObject buildReportTestrayCloudObject =
+			getBuildReportTestrayCloudObject();
 
-		if (buildReportJSONObject == null) {
-			buildReportJSONObject = getJSONObjectFromURL(
+		if (buildReportTestrayCloudObject != null) {
+			_buildReportJSONObject = new JSONObject(
+				buildReportTestrayCloudObject.getValue());
+		}
+
+		if (_buildReportJSONObject == null) {
+			_buildReportJSONObject = getJSONObjectFromURL(
+				getBuildReportJSONUserContentURL());
+		}
+
+		if (_buildReportJSONObject == null) {
+			_buildReportJSONObject = getJSONObjectFromURL(
 				getBuildReportJSONTestrayURL());
 		}
 
-		if (buildReportJSONObject == null) {
-			TestrayS3Object buildReportTestrayS3Object =
-				getBuildReportTestrayS3Object();
+		initialize(_buildReportJSONObject);
 
-			if (buildReportTestrayS3Object != null) {
-				buildReportJSONObject = new JSONObject(
-					buildReportTestrayS3Object.getValue());
-			}
-		}
+		return _buildReportJSONObject;
+	}
 
-		if (buildReportJSONObject == null) {
-			buildReportJSONObject = getBuildReportJSONObject(
-				getJSONObjectFromURL(getBuildResultJSONTestrayURL()));
-		}
-
-		if (buildReportJSONObject == null) {
-			TestrayS3Object buildResultTestrayS3Object =
-				getBuildResultTestrayS3Object();
-
-			if (buildResultTestrayS3Object != null) {
-				buildReportJSONObject = getBuildReportJSONObject(
-					new JSONObject(buildResultTestrayS3Object.getValue()));
-			}
-		}
-
-		_addTestResultsFromBuildResults();
-
-		return buildReportJSONObject;
+	@Override
+	public Date getStartDate() {
+		return new Date(_buildJSONObject.getLong("timestamp"));
 	}
 
 	protected URLTopLevelBuildReport(
 		JSONObject buildJSONObject, JobReport jobReport) {
 
-		super(buildJSONObject, jobReport);
+		super(buildJSONObject.getString("url"), jobReport);
+
+		_buildJSONObject = buildJSONObject;
 	}
 
-	protected URLTopLevelBuildReport(URL buildURL) {
-		super(buildURL);
-	}
+	protected URLTopLevelBuildReport(String buildURLString) {
+		super(buildURLString);
 
-	@Override
-	protected File getJenkinsConsoleLocalFile() {
-		if (_jenkinsConsoleLocalFile != null) {
-			return _jenkinsConsoleLocalFile;
-		}
-
-		JobReport jobReport = getJobReport();
-
-		JenkinsMaster jenkinsMaster = jobReport.getJenkinsMaster();
-
-		try {
-			URL jenkinsConsoleURL = new URL(
-				JenkinsResultsParserUtil.combine(
-					"https://testray.liferay.com/reports/production/logs/",
-					getStartYearMonth(), "/", jenkinsMaster.getName(), "/",
-					jobReport.getJobName(), "/",
-					String.valueOf(getBuildNumber()),
-					"/jenkins-console.txt.gz"));
-
-			File jenkinsConsoleLocalGzipFile = new File(
-				System.getenv("WORKSPACE"),
-				JenkinsResultsParserUtil.getDistinctTimeStamp() + ".gz");
-
-			JenkinsResultsParserUtil.toFile(
-				jenkinsConsoleURL, jenkinsConsoleLocalGzipFile);
-
-			File jenkinsConsoleLocalFile = new File(
-				System.getenv("WORKSPACE"),
-				JenkinsResultsParserUtil.getDistinctTimeStamp());
-
-			JenkinsResultsParserUtil.unGzip(
-				jenkinsConsoleLocalGzipFile, jenkinsConsoleLocalFile);
-
-			_jenkinsConsoleLocalFile = jenkinsConsoleLocalFile;
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-
-		return _jenkinsConsoleLocalFile;
+		_buildJSONObject = JenkinsAPIUtil.getAPIJSONObject(
+			String.valueOf(getBuildURL()));
 	}
 
 	protected JSONObject getJSONObjectFromURL(URL url) {
@@ -163,111 +111,7 @@ public class URLTopLevelBuildReport extends BaseTopLevelBuildReport {
 		}
 	}
 
-	private void _addTestResultsFromBuildResults() {
-		JSONObject buildReportJSONObject = getBuildReportJSONObject();
-
-		if (buildReportJSONObject == null) {
-			return;
-		}
-
-		Map<String, List<JSONObject>> testResultsJSONObjectsMap =
-			_getTestResultsJSONObjectsMap();
-
-		if (testResultsJSONObjectsMap.isEmpty()) {
-			return;
-		}
-
-		JSONArray batchesJSONArray = buildReportJSONObject.getJSONArray(
-			"batches");
-
-		for (int i = 0; i < batchesJSONArray.length(); i++) {
-			JSONObject batchJSONObject = batchesJSONArray.getJSONObject(i);
-
-			List<JSONObject> testResultsJSONObjects =
-				testResultsJSONObjectsMap.get(
-					batchJSONObject.getString("batchName"));
-
-			JSONArray buildsJSONArray = batchJSONObject.getJSONArray("builds");
-
-			for (int j = 0; j < buildsJSONArray.length(); j++) {
-				JSONObject buildJSONObject = buildsJSONArray.getJSONObject(j);
-
-				for (JSONObject testResultJSONObject : testResultsJSONObjects) {
-					if (!Objects.equals(
-							buildJSONObject.getString("buildURL"),
-							testResultJSONObject.getString("buildURL"))) {
-
-						continue;
-					}
-
-					JSONArray testResultsJSONArray =
-						buildJSONObject.getJSONArray("testResults");
-
-					if (testResultsJSONArray == null) {
-						testResultsJSONArray = new JSONArray();
-					}
-
-					JSONObject jsonObject = new JSONObject();
-
-					jsonObject.put(
-						"duration", testResultJSONObject.get("duration")
-					).put(
-						"errorDetails", testResultJSONObject.opt("errorDetails")
-					).put(
-						"name", testResultJSONObject.get("name")
-					).put(
-						"status", testResultJSONObject.get("status")
-					);
-
-					testResultsJSONArray.put(jsonObject);
-				}
-			}
-		}
-	}
-
-	private Map<String, List<JSONObject>> _getTestResultsJSONObjectsMap() {
-		Map<String, List<JSONObject>> testResultsJSONObjectsMap =
-			new HashMap<>();
-
-		JSONObject buildResultJSONObject = getJSONObjectFromURL(
-			getBuildResultJSONUserContentURL());
-
-		if (buildResultJSONObject == null) {
-			return testResultsJSONObjectsMap;
-		}
-
-		JSONArray batchResultsJSONArray = buildResultJSONObject.getJSONArray(
-			"batchResults");
-
-		for (int i = 0; i < batchResultsJSONArray.length(); i++) {
-			JSONObject batchResultJSONObject =
-				batchResultsJSONArray.getJSONObject(i);
-
-			String batchName = batchResultJSONObject.getString("jobVariant");
-
-			batchName = batchName.replaceAll("([^/]+)/.*", "$1");
-
-			List<JSONObject> testResultsJSONObjects =
-				testResultsJSONObjectsMap.get(batchName);
-
-			if (testResultsJSONObjects == null) {
-				testResultsJSONObjects = new ArrayList<>();
-			}
-
-			JSONArray testResultsJSONArray = batchResultJSONObject.getJSONArray(
-				"testResults");
-
-			for (int j = 0; j < testResultsJSONArray.length(); j++) {
-				testResultsJSONObjects.add(
-					testResultsJSONArray.getJSONObject(j));
-			}
-
-			testResultsJSONObjectsMap.put(batchName, testResultsJSONObjects);
-		}
-
-		return testResultsJSONObjectsMap;
-	}
-
-	private File _jenkinsConsoleLocalFile;
+	private final JSONObject _buildJSONObject;
+	private JSONObject _buildReportJSONObject;
 
 }

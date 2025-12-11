@@ -14,7 +14,7 @@ import {partition} from 'lodash';
 import {Segment} from 'shared/util/records';
 import {sequence} from 'shared/util/promise';
 import {useChannelContext} from 'shared/context/channel';
-import {useStatefulPagination} from 'shared/hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 const DELETE_OPTION = {
 	label: Liferay.Language.get('delete'),
@@ -114,7 +114,7 @@ const AssignSegments: React.FC<IAssignSegmentsProps> = ({groupId, onClose}) => {
 
 		const segmentsFn = toUpdate.map(({channelId, id}) => {
 			if (channelId === DELETE_OPTION.value) {
-				return () => API.individualSegment.delete({groupId, id});
+				return () => API.individualSegment.delete({groupId, ids: [id]});
 			}
 
 			return () =>

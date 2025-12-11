@@ -21,6 +21,7 @@ import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderNoteLocalService;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.headless.commerce.delivery.order.client.dto.v1_0.PlacedOrderComment;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -58,13 +59,13 @@ public class PlacedOrderCommentResourceTest
 			_user.getUserId());
 
 		_accountEntry = _accountEntryLocalService.addAccountEntry(
-			_user.getUserId(), 0, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), null,
+			StringPool.BLANK, _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			RandomTestUtil.randomString() + "@liferay.com", null,
 			RandomTestUtil.randomString(), "business", 1, _serviceContext);
 
 		_commerceCurrency = _commerceCurrencyLocalService.addCommerceCurrency(
-			_user.getUserId(), RandomTestUtil.randomString(),
+			null, _user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomString(), BigDecimal.ONE, new HashMap<>(), 2,
 			2, "HALF_EVEN", false, RandomTestUtil.nextDouble(), true);
@@ -98,6 +99,8 @@ public class PlacedOrderCommentResourceTest
 		return new PlacedOrderComment() {
 			{
 				content = StringUtil.toLowerCase(RandomTestUtil.randomString());
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				orderId = _commerceOrder.getCommerceOrderId();
 				restricted = RandomTestUtil.randomBoolean();
@@ -107,7 +110,33 @@ public class PlacedOrderCommentResourceTest
 
 	@Override
 	protected PlacedOrderComment
+			testGetPlacedOrderByExternalReferenceCodePlacedOrderCommentsPage_addPlacedOrderComment(
+				String externalReferenceCode,
+				PlacedOrderComment placedOrderComment)
+		throws Exception {
+
+		return _addCommerceOrderNote(placedOrderComment);
+	}
+
+	@Override
+	protected String
+			testGetPlacedOrderByExternalReferenceCodePlacedOrderCommentsPage_getExternalReferenceCode()
+		throws Exception {
+
+		return _commerceOrder.getExternalReferenceCode();
+	}
+
+	@Override
+	protected PlacedOrderComment
 			testGetPlacedOrderComment_addPlacedOrderComment()
+		throws Exception {
+
+		return _addCommerceOrderNote(randomPlacedOrderComment());
+	}
+
+	@Override
+	protected PlacedOrderComment
+			testGetPlacedOrderCommentByExternalReferenceCode_addPlacedOrderComment()
 		throws Exception {
 
 		return _addCommerceOrderNote(randomPlacedOrderComment());
@@ -143,6 +172,7 @@ public class PlacedOrderCommentResourceTest
 
 		CommerceOrderNote commerceOrderNote =
 			_commerceOrderNoteLocalService.addCommerceOrderNote(
+				placedOrderComment.getExternalReferenceCode(),
 				placedOrderComment.getOrderId(),
 				placedOrderComment.getContent(),
 				placedOrderComment.getRestricted(), _serviceContext);
@@ -152,6 +182,8 @@ public class PlacedOrderCommentResourceTest
 		return new PlacedOrderComment() {
 			{
 				content = commerceOrderNote.getContent();
+				externalReferenceCode =
+					commerceOrderNote.getExternalReferenceCode();
 				id = commerceOrderNote.getCommerceOrderNoteId();
 				orderId = commerceOrderNote.getCommerceOrderId();
 				restricted = commerceOrderNote.isRestricted();

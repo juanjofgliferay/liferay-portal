@@ -100,61 +100,52 @@ public class BatchBuild extends BaseParentBuild {
 		Element messageElement = super.getGitHubMessageElement();
 
 		if (messageElement == null) {
-			return messageElement;
+			return null;
 		}
 
 		String result = getResult();
 
 		if (result.equals("ABORTED") && (getDownstreamBuildCount(null) == 0)) {
-			return messageElement;
+			_gitHubMessageElement = messageElement;
+
+			return _gitHubMessageElement;
 		}
 
-		Map<Build, Element> downstreamBuildFailureMessages =
-			getDownstreamBuildMessages(getFailedDownstreamBuilds());
+		List<Build> failedDownstreamBuilds = getFailedDownstreamBuilds();
+
+		List<Element> downstreamBuildMessageElements =
+			getDownstreamBuildMessageElements(failedDownstreamBuilds);
 
 		if (result.equals("FAILURE") &&
-			downstreamBuildFailureMessages.isEmpty()) {
+			downstreamBuildMessageElements.isEmpty()) {
 
-			return messageElement;
+			_gitHubMessageElement = messageElement;
+
+			return _gitHubMessageElement;
 		}
 
 		List<Element> failureElements = new ArrayList<>();
 		List<Element> upstreamJobFailureElements = new ArrayList<>();
 
-		for (Map.Entry<Build, Element> entry :
-				downstreamBuildFailureMessages.entrySet()) {
+		for (Build failedDownstreamBuild : failedDownstreamBuilds) {
+			Element gitHubMessageElement =
+				failedDownstreamBuild.getGitHubMessageElement();
 
-			Build failedDownstreamBuild = entry.getKey();
-
-			Element upstreamJobFailureElement =
-				failedDownstreamBuild.
-					getGitHubMessageUpstreamJobFailureElement();
-
-			if (upstreamJobFailureElement != null) {
-				upstreamJobFailureElements.add(upstreamJobFailureElement);
-			}
-
-			Element failureElement = entry.getValue();
-
-			if (failureElement == null) {
+			if (gitHubMessageElement == null) {
 				continue;
 			}
 
-			if (isHighPriorityBuildFailureElement(failureElement)) {
-				failureElements.add(0, failureElement);
-
-				continue;
+			if (failedDownstreamBuild.isUniqueFailure()) {
+				failureElements.add(gitHubMessageElement);
 			}
-
-			failureElements.add(failureElement);
+			else {
+				upstreamJobFailureElements.add(gitHubMessageElement);
+			}
 		}
 
 		if (!upstreamJobFailureElements.isEmpty()) {
-			upstreamJobFailureMessageElement = getGitHubMessageElement(true);
-
 			Dom4JUtil.getOrderedListElement(
-				upstreamJobFailureElements, upstreamJobFailureMessageElement,
-				4);
+				upstreamJobFailureElements, getGitHubMessageElement(true), 4);
 		}
 
 		Dom4JUtil.getOrderedListElement(failureElements, messageElement, 4);
@@ -171,7 +162,9 @@ public class BatchBuild extends BaseParentBuild {
 			return null;
 		}
 
-		return messageElement;
+		_gitHubMessageElement = messageElement;
+
+		return _gitHubMessageElement;
 	}
 
 	@Override
@@ -290,12 +283,20 @@ public class BatchBuild extends BaseParentBuild {
 		return getTotalSlavesUsedCount(status, modifiedBuildsOnly, true);
 	}
 
-	protected BatchBuild(String url) {
-		this(url, null);
+	@Override
+	public void saveBuildURLInBuildDatabase() {
+		BuildDatabase buildDatabase = getBuildDatabase();
+
+		buildDatabase.putProperty(
+			BUILD_URLS_PROPERTIES_KEY, getBatchName(), getBuildURL(), false);
 	}
 
-	protected BatchBuild(String url, TopLevelBuild topLevelBuild) {
-		super(url, topLevelBuild);
+	protected BatchBuild(String buildURL) {
+		this(buildURL, null);
+	}
+
+	protected BatchBuild(String buildURL, TopLevelBuild topLevelBuild) {
+		super(buildURL, topLevelBuild);
 
 		String jobVariant = getJobVariant();
 
@@ -458,11 +459,11 @@ public class BatchBuild extends BaseParentBuild {
 	protected int getTestCountByStatus(String status) {
 		JSONObject testReportJSONObject = getTestReportJSONObject(false);
 
-		int failCount = testReportJSONObject.getInt("failCount");
+		int failCount = testReportJSONObject.optInt("failCount");
 
 		if (status.equals("SUCCESS")) {
-			int totalCount = testReportJSONObject.getInt("totalCount");
-			int skipCount = testReportJSONObject.getInt("skipCount");
+			int totalCount = testReportJSONObject.optInt("totalCount");
+			int skipCount = testReportJSONObject.optInt("skipCount");
 
 			return totalCount - skipCount - failCount;
 		}
@@ -483,5 +484,7 @@ public class BatchBuild extends BaseParentBuild {
 		JenkinsResultsParserUtil.getNewThreadPoolExecutor(10, true);
 	private static final Pattern _jobVariantPattern = Pattern.compile(
 		"(?<batchName>[^/]+)(/.*)?");
+
+	private Element _gitHubMessageElement;
 
 }

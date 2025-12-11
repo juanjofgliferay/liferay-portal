@@ -226,6 +226,10 @@ public class DLFileEntryServiceTest {
 		DLFileEntry dlFileEntry = addDLFileEntry(
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, false);
 
+		updateStatus(
+			dlFileEntry.getFileVersion(),
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
 		StreamUtil.cleanUp(
 			DLFileEntryServiceUtil.getFileAsStream(
 				dlFileEntry.getFileEntryId(), dlFileEntry.getVersion()));
@@ -424,7 +428,7 @@ public class DLFileEntryServiceTest {
 			StringPool.BLANK,
 			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT, null,
 			null, new ByteArrayInputStream(_CONTENT.getBytes()), 0, null, null,
-			serviceContext);
+			null, serviceContext);
 	}
 
 	protected DLFileEntry updateDLFileEntry(
@@ -438,8 +442,8 @@ public class DLFileEntryServiceTest {
 			StringPool.BLANK, DLVersionNumberIncrease.MINOR,
 			dlFileEntry.getFileEntryTypeId(), null, null,
 			dlFileEntry.getContentStream(), dlFileEntry.getSize(),
-			dlFileEntry.getExpirationDate(), dlFileEntry.getReviewDate(),
-			serviceContext);
+			dlFileEntry.getDisplayDate(), dlFileEntry.getExpirationDate(),
+			dlFileEntry.getReviewDate(), serviceContext);
 	}
 
 	protected DLFileEntry updateStatus(

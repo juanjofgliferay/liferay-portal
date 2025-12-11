@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.security.script.management.configuration.helper.ScriptManagementConfigurationHelper;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDesignerWebKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.display.context.KaleoDesignerDisplayContext;
@@ -27,11 +28,11 @@ import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalServ
 import com.liferay.portal.workflow.portlet.tab.BaseWorkflowPortletTab;
 import com.liferay.portal.workflow.portlet.tab.WorkflowPortletTab;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -95,7 +96,7 @@ public class KaleoDesignerWorkflowPortletTab extends BaseWorkflowPortletTab {
 				_actionExecutorManager, renderRequest,
 				_kaleoDefinitionVersionLocalService, _portletResourcePermission,
 				ResourceBundleLoaderUtil.getPortalResourceBundleLoader(),
-				_userLocalService));
+				_scriptManagementConfigurationHelper, _userLocalService));
 
 		String name = ParamUtil.getString(renderRequest, "name");
 
@@ -146,6 +147,10 @@ public class KaleoDesignerWorkflowPortletTab extends BaseWorkflowPortletTab {
 		target = "(resource.name=" + WorkflowConstants.RESOURCE_NAME + ")"
 	)
 	private PortletResourcePermission _portletResourcePermission;
+
+	@Reference
+	private ScriptManagementConfigurationHelper
+		_scriptManagementConfigurationHelper;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.portal.workflow.kaleo.designer.web)"

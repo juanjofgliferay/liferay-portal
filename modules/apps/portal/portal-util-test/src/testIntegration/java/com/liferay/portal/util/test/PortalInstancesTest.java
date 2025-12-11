@@ -7,14 +7,17 @@ package com.liferay.portal.util.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -25,9 +28,9 @@ import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.UnicodeProperties;
@@ -35,15 +38,11 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
-
-import java.util.List;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -98,7 +97,6 @@ public class PortalInstancesTest {
 			_virtualHostsDefaultSiteName);
 	}
 
-	@Ignore
 	@Test
 	public void testGetCompanyId() {
 		_updateLayoutSetVirtualHostname(
@@ -127,6 +125,29 @@ public class PortalInstancesTest {
 		_testGetCompanyId(
 			_nondefaultGroupPublicLayoutHostname,
 			_nondefaultGroupPublicLayout.getLayoutSet());
+	}
+
+	@Test
+	public void testGetCompanyIdFromHttpServletRequestAttribute() {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.COMPANY_ID, _company.getCompanyId());
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					CompanyConstants.SYSTEM)) {
+
+			_assertGetCompanyId(true, mockHttpServletRequest);
+		}
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					RandomTestUtil.randomLong())) {
+
+			_assertGetCompanyId(false, mockHttpServletRequest);
+		}
 	}
 
 	@Test
@@ -165,40 +186,42 @@ public class PortalInstancesTest {
 		_testGetVirtualHostLanguageId(languageId, hostname);
 	}
 
-	@Test
-	public void testGetWebIdsAfterInitCompany() {
-		PortalInstances.initCompany(_company);
+	private void _assertGetCompanyId(
+		boolean equals, MockHttpServletRequest mockHttpServletRequest) {
 
-		List<String> webIds = ListUtil.fromArray(PortalInstances.getWebIds());
-
-		Assert.assertTrue(webIds.contains(_company.getWebId()));
-
-		_company.setWebId(RandomTestUtil.randomString());
-
-		PortalInstances.initCompany(
-			_companyLocalService.updateCompany(_company));
-
-		webIds = ListUtil.fromArray(PortalInstances.getWebIds());
-
-		Assert.assertTrue(webIds.contains(_company.getWebId()));
-	}
-
-	private void _testGetCompanyId(
-		String hostname, LayoutSet expectedLayoutSet) {
-
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
-
-		mockHttpServletRequest.setServerName(hostname);
-
-		mockHttpServletRequest.addHeader("Host", hostname);
+		// PortalInstances#getCompanyId must be invoked before
+		// CompanyThreadLocal#getCompanyId
 
 		Assert.assertEquals(
 			_company.getCompanyId(),
 			PortalInstances.getCompanyId(mockHttpServletRequest));
 
+		if (equals) {
+			Assert.assertEquals(
+				_company.getCompanyId(),
+				(long)CompanyThreadLocal.getCompanyId());
+		}
+		else {
+			Assert.assertNotEquals(
+				_company.getCompanyId(),
+				(long)CompanyThreadLocal.getCompanyId());
+		}
+	}
+
+	private void _testGetCompanyId(String hostname, LayoutSet layoutSet) {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.addHeader("Host", hostname);
+		mockHttpServletRequest.setServerName(hostname);
+
+		_assertGetCompanyId(true, mockHttpServletRequest);
+
 		Assert.assertEquals(
-			expectedLayoutSet,
+			_company.getCompanyId(),
+			mockHttpServletRequest.getAttribute(WebKeys.COMPANY_ID));
+		Assert.assertEquals(
+			layoutSet,
 			mockHttpServletRequest.getAttribute(
 				WebKeys.VIRTUAL_HOST_LAYOUT_SET));
 	}

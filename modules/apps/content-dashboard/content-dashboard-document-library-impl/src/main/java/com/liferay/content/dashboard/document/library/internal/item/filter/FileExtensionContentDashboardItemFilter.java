@@ -18,21 +18,23 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Cristina González
@@ -70,9 +72,25 @@ public class FileExtensionContentDashboardItemFilter
 		).setActive(
 			ListUtil.isNotEmpty(getParameterValues())
 		).setLabel(
-			_language.get(_httpServletRequest, "extension") +
-				StringPool.TRIPLE_PERIOD
+			_language.get(_httpServletRequest, "extension[file]")
 		).build();
+	}
+
+	@Override
+	public Filter getFilter() {
+		List<String> fileExtensions = getParameterValues();
+
+		if (ListUtil.isEmpty(fileExtensions)) {
+			return null;
+		}
+
+		TermsFilter termsFilter = new TermsFilter("fileExtension");
+
+		for (String fileExtension : fileExtensions) {
+			termsFilter.addValue(fileExtension);
+		}
+
+		return termsFilter;
 	}
 
 	@Override
@@ -92,7 +110,7 @@ public class FileExtensionContentDashboardItemFilter
 
 	@Override
 	public String getParameterLabel(Locale locale) {
-		return _language.get(locale, "extension");
+		return _language.get(locale, "extension[file]");
 	}
 
 	@Override
@@ -115,7 +133,7 @@ public class FileExtensionContentDashboardItemFilter
 		try {
 			PortletRequest portletRequest =
 				(PortletRequest)_httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST);
+					JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 			RequestBackedPortletURLFactory requestBackedPortletURLFactory =
 				RequestBackedPortletURLFactoryUtil.create(portletRequest);
@@ -131,7 +149,7 @@ public class FileExtensionContentDashboardItemFilter
 
 			PortletResponse portletResponse =
 				(PortletResponse)_httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE);
+					JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 			return PortletURLBuilder.create(
 				_itemSelector.getItemSelectorURL(
@@ -164,7 +182,7 @@ public class FileExtensionContentDashboardItemFilter
 	private String _getRedirectURL() {
 		PortletResponse portletResponse =
 			(PortletResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		return HttpComponentsUtil.removeParameter(
 			_portal.getCurrentCompleteURL(_httpServletRequest),

@@ -36,13 +36,29 @@ public class BatchEngineExportTaskLocalServiceImpl
 	public BatchEngineExportTask addBatchEngineExportTask(
 		String externalReferenceCode, long companyId, long userId,
 		String callbackURL, String className, String contentType,
-		String executeStatus, List<String> fieldNamesList,
+		String executeStatus, List<String> fieldNames,
 		Map<String, Serializable> parameters, String taskItemDelegateName) {
 
 		BatchEngineExportTask batchEngineExportTask =
-			batchEngineExportTaskPersistence.create(
+			createBatchEngineExportTask(
 				counterLocalService.increment(
-					BatchEngineExportTask.class.getName()));
+					BatchEngineExportTask.class.getName()),
+				externalReferenceCode, companyId, userId, callbackURL,
+				className, contentType, executeStatus, fieldNames, parameters,
+				taskItemDelegateName);
+
+		return batchEngineExportTaskPersistence.update(batchEngineExportTask);
+	}
+
+	@Override
+	public BatchEngineExportTask createBatchEngineExportTask(
+		long batchEngineExportTaskId, String externalReferenceCode,
+		long companyId, long userId, String callbackURL, String className,
+		String contentType, String executeStatus, List<String> fieldNames,
+		Map<String, Serializable> parameters, String taskItemDelegateName) {
+
+		BatchEngineExportTask batchEngineExportTask =
+			batchEngineExportTaskPersistence.create(batchEngineExportTaskId);
 
 		batchEngineExportTask.setExternalReferenceCode(externalReferenceCode);
 		batchEngineExportTask.setCompanyId(companyId);
@@ -53,11 +69,11 @@ public class BatchEngineExportTaskLocalServiceImpl
 			new OutputBlob(new UnsyncByteArrayInputStream(new byte[0]), 0));
 		batchEngineExportTask.setContentType(contentType);
 		batchEngineExportTask.setExecuteStatus(executeStatus);
-		batchEngineExportTask.setFieldNamesList(fieldNamesList);
+		batchEngineExportTask.setFieldNamesList(fieldNames);
 		batchEngineExportTask.setParameters(parameters);
 		batchEngineExportTask.setTaskItemDelegateName(taskItemDelegateName);
 
-		return batchEngineExportTaskPersistence.update(batchEngineExportTask);
+		return batchEngineExportTask;
 	}
 
 	@Override

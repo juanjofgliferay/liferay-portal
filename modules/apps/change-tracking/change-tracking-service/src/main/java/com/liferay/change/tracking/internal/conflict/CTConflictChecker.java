@@ -5,6 +5,7 @@
 
 package com.liferay.change.tracking.internal.conflict;
 
+import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
 import com.liferay.change.tracking.conflict.CTEntryConflictHelper;
 import com.liferay.change.tracking.conflict.ConflictInfo;
 import com.liferay.change.tracking.constants.CTConstants;
@@ -33,6 +34,7 @@ import com.liferay.petra.sql.dsl.spi.query.Join;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ORMException;
 import com.liferay.portal.kernel.dao.orm.Session;
@@ -42,6 +44,8 @@ import com.liferay.portal.kernel.model.change.tracking.CTModel;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
@@ -78,7 +82,8 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		ServiceTrackerMap<String, CTEntryConflictHelper>
 			ctEntryConflictHelperServiceTrackerMap,
 		CTEntryLocalService ctEntryLocalService, CTService<T> ctService,
-		long modelClassNameId, long sourceCTCollectionId,
+		CTSettingsConfiguration ctSettingsConfiguration, long modelClassNameId,
+		long sourceCTCollectionId,
 		TableReferenceDefinitionManager tableReferenceDefinitionManager,
 		long targetCTCollectionId) {
 
@@ -91,6 +96,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 			ctEntryConflictHelperServiceTrackerMap;
 		_ctEntryLocalService = ctEntryLocalService;
 		_ctService = ctService;
+		_ctSettingsConfiguration = ctSettingsConfiguration;
 		_modelClassNameId = modelClassNameId;
 		_sourceCTCollectionId = sourceCTCollectionId;
 		_tableReferenceDefinitionManager = tableReferenceDefinitionManager;
@@ -139,7 +145,6 @@ public class CTConflictChecker<T extends CTModel<T>> {
 
 		_checkAdditions(
 			connection, ctPersistence, conflictInfos, primaryKeyName);
-
 		_checkDeletions(
 			connection, ctPersistence, conflictInfos, primaryKeyName);
 
@@ -173,20 +178,22 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
 					"select publication.", primaryKeyName, " from ",
-					ctPersistence.getTableName(),
-					" publication inner join CTEntry on CTEntry.modelClassPK ",
-					"= publication.", primaryKeyName,
-					" where CTEntry.ctCollectionId = ", _sourceCTCollectionId,
-					" and CTEntry.modelClassNameId = ", _modelClassNameId,
-					" and CTEntry.changeType = ",
-					CTConstants.CT_CHANGE_TYPE_ADDITION,
-					" and publication.ctCollectionId = ",
-					_targetCTCollectionId));
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+					ctPersistence.getTableName(), " publication inner join ",
+					"CTEntry on CTEntry.modelClassPK = publication.",
+					primaryKeyName, " where CTEntry.ctCollectionId = ? and ",
+					"CTEntry.modelClassNameId = ? and CTEntry.changeType = ? ",
+					"and publication.ctCollectionId = ?"))) {
 
-			while (resultSet.next()) {
-				conflictInfos.add(
-					new AdditionConflictInfo(resultSet.getLong(1)));
+			preparedStatement.setLong(1, _sourceCTCollectionId);
+			preparedStatement.setLong(2, _modelClassNameId);
+			preparedStatement.setInt(3, CTConstants.CT_CHANGE_TYPE_ADDITION);
+			preparedStatement.setLong(4, _targetCTCollectionId);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					conflictInfos.add(
+						new AdditionConflictInfo(resultSet.getLong(1)));
+				}
 			}
 		}
 		catch (SQLException sqlException) {
@@ -202,10 +209,12 @@ public class CTConflictChecker<T extends CTModel<T>> {
 
 		String constraintConflictsSQL = CTRowUtil.getConstraintConflictsSQL(
 			ctPersistence.getTableName(), primaryKeyName, columnNames,
-			_sourceCTCollectionId, _targetCTCollectionId);
+			_targetCTCollectionId);
 
 		List<Map.Entry<Long, Long>> nextPrimaryKeys =
-			_getConflictingPrimaryKeys(connection, constraintConflictsSQL);
+			_getConflictingPrimaryKeys(
+				connection, ctPersistence.getTableName(), primaryKeyName,
+				columnNames, constraintConflictsSQL);
 
 		if (nextPrimaryKeys.isEmpty()) {
 			return;
@@ -264,7 +273,8 @@ public class CTConflictChecker<T extends CTModel<T>> {
 			attemptedPrimaryKeys.add(currentPrimaryKeys);
 
 			nextPrimaryKeys = _getConflictingPrimaryKeys(
-				connection, constraintConflictsSQL);
+				connection, ctPersistence.getTableName(), primaryKeyName,
+				columnNames, constraintConflictsSQL);
 
 			resolvedPrimaryKeys.addAll(nextPrimaryKeys);
 
@@ -272,7 +282,9 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		}
 
 		List<Map.Entry<Long, Long>> unresolvedPrimaryKeys =
-			_getConflictingPrimaryKeys(connection, constraintConflictsSQL);
+			_getConflictingPrimaryKeys(
+				connection, ctPersistence.getTableName(), primaryKeyName,
+				columnNames, constraintConflictsSQL);
 
 		resolvedPrimaryKeys.removeAll(unresolvedPrimaryKeys);
 
@@ -308,6 +320,16 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		}
 
 		for (CTEntry ctEntry : _ctEntries) {
+			String missingRequirementTypeName =
+				ctEntryConflictHelper.getMissingRequirementTypeName(
+					ctEntry, _targetCTCollectionId);
+
+			if (Validator.isNotNull(missingRequirementTypeName)) {
+				conflictInfos.add(
+					new MissingRequirementConflictInfo(
+						ctEntry.getModelClassPK(), missingRequirementTypeName));
+			}
+
 			if (ctEntryConflictHelper.hasModificationConflict(
 					ctEntry, _targetCTCollectionId)) {
 
@@ -330,26 +352,77 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		Connection connection, CTPersistence<T> ctPersistence,
 		List<ConflictInfo> conflictInfos, String primaryKeyName) {
 
+		if (_ctSettingsConfiguration.
+				modificationDeletionConflictCheckEnabled()) {
+
+			try (PreparedStatement preparedStatement =
+					connection.prepareStatement(
+						StringBundler.concat(
+							"select publication.", primaryKeyName, " from ",
+							ctPersistence.getTableName(),
+							" publication inner join CTEntry on CTEntry.",
+							"modelClassPK = publication.", primaryKeyName,
+							" where CTEntry.ctCollectionId = ? and CTEntry.",
+							"modelClassNameId = ? and CTEntry.changeType = ? ",
+							"and (publication.ctCollectionId = ? or ",
+							"publication.ctCollectionId = ?) and CTEntry.",
+							"modelMvccVersion != publication.mvccVersion"))) {
+
+				preparedStatement.setLong(1, _sourceCTCollectionId);
+				preparedStatement.setLong(2, _modelClassNameId);
+				preparedStatement.setInt(
+					3, CTConstants.CT_CHANGE_TYPE_DELETION);
+				preparedStatement.setLong(4, _targetCTCollectionId);
+				preparedStatement.setLong(
+					5, CTConstants.CT_COLLECTION_ID_PRODUCTION);
+
+				try (ResultSet resultSet = preparedStatement.executeQuery()) {
+					while (resultSet.next()) {
+						conflictInfos.add(
+							new ModificationDeletionConflictInfo(
+								resultSet.getLong(1), false));
+					}
+				}
+			}
+			catch (SQLException sqlException) {
+				throw new ORMException(sqlException);
+			}
+		}
+
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				StringBundler.concat(
-					"select publication.", primaryKeyName, " from ",
-					ctPersistence.getTableName(),
-					" publication inner join CTEntry on CTEntry.modelClassPK ",
-					"= publication.", primaryKeyName,
-					" where CTEntry.ctCollectionId = ", _sourceCTCollectionId,
-					" and CTEntry.modelClassNameId = ", _modelClassNameId,
-					" and CTEntry.changeType = ",
-					CTConstants.CT_CHANGE_TYPE_DELETION,
-					" and (publication.ctCollectionId = ",
-					_targetCTCollectionId, " or publication.ctCollectionId = ",
-					CTConstants.CT_COLLECTION_ID_PRODUCTION,
-					") and CTEntry.modelMvccVersion != ",
-					"publication.mvccVersion"));
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+					"select distinct ctEntry1.modelClassPK from CTEntry ",
+					"ctEntry1 inner join CTCollection on ctEntry1.",
+					"ctCollectionId = CTCollection.ctCollectionId and ",
+					"(CTCollection.status = ? or CTCollection.status = ?) ",
+					"inner join (select CTCollection.ctCollectionId, ",
+					"modelClassNameId, modelClassPK, changeType from CTEntry ",
+					"inner join CTCollection on CTEntry.ctCollectionId = ",
+					"CTCollection.ctCollectionId and (CTCollection.status = ? ",
+					"or CTCollection.status = ?)) ctEntry2 on ctEntry1.",
+					"modelClassNameId = ctEntry2.modelClassNameId and ",
+					"ctEntry1.modelClassPK = ctEntry2.modelClassPK where ",
+					"ctEntry1.modelClassNameId = ? and ctEntry1.changeType = ",
+					"? and ctEntry1.ctCollectionId = ? and ctEntry2.",
+					"changeType = ? and ctEntry2.ctCollectionId != ?"))) {
 
-			while (resultSet.next()) {
-				conflictInfos.add(
-					new ModificationDeletionConflictInfo(resultSet.getLong(1)));
+			preparedStatement.setInt(1, WorkflowConstants.STATUS_DRAFT);
+			preparedStatement.setInt(2, WorkflowConstants.STATUS_INCOMPLETE);
+			preparedStatement.setInt(3, WorkflowConstants.STATUS_DRAFT);
+			preparedStatement.setInt(4, WorkflowConstants.STATUS_INCOMPLETE);
+			preparedStatement.setLong(5, _modelClassNameId);
+			preparedStatement.setInt(6, CTConstants.CT_CHANGE_TYPE_DELETION);
+			preparedStatement.setLong(7, _sourceCTCollectionId);
+			preparedStatement.setInt(
+				8, CTConstants.CT_CHANGE_TYPE_MODIFICATION);
+			preparedStatement.setLong(9, _sourceCTCollectionId);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					conflictInfos.add(
+						new ModificationDeletionConflictInfo(
+							resultSet.getLong(1), true));
+				}
 			}
 		}
 		catch (SQLException sqlException) {
@@ -362,9 +435,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 			List<ConflictInfo> conflictInfos)
 		throws PortalException {
 
-		if (!_ctEntryLocalService.hasCTEntries(
-				_sourceCTCollectionId, _modelClassNameId)) {
-
+		if (_ctEntries.isEmpty()) {
 			return;
 		}
 
@@ -425,7 +496,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 					connection, dslQuery);
 				ResultSet resultSet = preparedStatement.executeQuery()) {
 
-				if (resultSet.next()) {
+				while (resultSet.next()) {
 					long modelClassPK = resultSet.getLong(1);
 
 					String tableName = resultSet.getString(2);
@@ -486,55 +557,180 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		}
 	}
 
-	private List<Map.Entry<Long, Long>> _getConflictingPrimaryKeys(
-		Connection connection, String constraintConflictsSQL) {
+	private void _copyModificationConflictCTRow(
+		Connection connection, CTPersistence<?> ctPersistence,
+		String primaryKeyName, long primaryKey, long tempCTCollectionId) {
 
+		StringBundler sb = new StringBundler("select ");
+
+		Set<String> ignoredColumnNames = ctPersistence.getCTColumnNames(
+			CTColumnResolutionType.IGNORE);
+		Set<String> maxColumnNames = ctPersistence.getCTColumnNames(
+			CTColumnResolutionType.MAX);
+		Set<String> minColumnNames = ctPersistence.getCTColumnNames(
+			CTColumnResolutionType.MIN);
+
+		Map<String, Integer> tableColumnsMap =
+			ctPersistence.getTableColumnsMap();
+
+		for (String name : tableColumnsMap.keySet()) {
+			if (name.equals("ctCollectionId")) {
+				sb.append(_sourceCTCollectionId);
+				sb.append(" as ");
+			}
+			else if (name.equals("mvccVersion")) {
+				sb.append("(publication.mvccVersion + 1) ");
+			}
+			else if (ignoredColumnNames.contains(name)) {
+				sb.append("production.");
+			}
+			else if (maxColumnNames.contains(name) ||
+					 minColumnNames.contains(name)) {
+
+				sb.append("composite.");
+			}
+			else {
+				sb.append("publication.");
+			}
+
+			sb.append(name);
+			sb.append(", ");
+		}
+
+		sb.setStringAt(" from ", sb.index() - 1);
+
+		sb.append(ctPersistence.getTableName());
+		sb.append(" production inner join ");
+		sb.append(ctPersistence.getTableName());
+		sb.append(" publication on production.");
+		sb.append(primaryKeyName);
+		sb.append(" = publication.");
+		sb.append(primaryKeyName);
+
+		if (!maxColumnNames.isEmpty() || !minColumnNames.isEmpty()) {
+			sb.append(" inner join (select ");
+			sb.append(primaryKeyName);
+
+			for (String maxColumnName : maxColumnNames) {
+				sb.append(", max(");
+				sb.append(maxColumnName);
+				sb.append(") ");
+				sb.append(maxColumnName);
+			}
+
+			for (String minColumnName : minColumnNames) {
+				sb.append(", min(");
+				sb.append(minColumnName);
+				sb.append(") ");
+				sb.append(minColumnName);
+			}
+
+			sb.append(" from ");
+			sb.append(ctPersistence.getTableName());
+			sb.append(" where ctCollectionId in (");
+			sb.append(_targetCTCollectionId);
+			sb.append(", ");
+			sb.append(tempCTCollectionId);
+			sb.append(") group by ");
+			sb.append(primaryKeyName);
+			sb.append(") composite on composite.");
+			sb.append(primaryKeyName);
+			sb.append(" = production.");
+			sb.append(primaryKeyName);
+		}
+
+		sb.append(" where publication.ctCollectionId = ");
+		sb.append(tempCTCollectionId);
+		sb.append(" and production.ctCollectionId = ");
+		sb.append(_targetCTCollectionId);
+		sb.append(" and publication.");
+		sb.append(primaryKeyName);
+		sb.append(" = ");
+		sb.append(primaryKey);
+		sb.append(" and production.");
+		sb.append(primaryKeyName);
+		sb.append(" = ");
+		sb.append(primaryKey);
+
+		try {
+			CTRowUtil.copyCTRows(ctPersistence, connection, sb.toString());
+		}
+		catch (SQLException sqlException) {
+			throw new ORMException(sqlException);
+		}
+	}
+
+	private List<Map.Entry<Long, Long>> _getConflictingPrimaryKeys(
+		Connection connection, String tableName, String primaryKeyName,
+		String[] columnNames, String constraintConflictsSQL) {
+
+		Set<Long> verifyPrimaryKeys = new HashSet<>();
 		Set<Long> ignorablePrimaryKeys = new HashSet<>();
 
-		for (CTEntry ctEntry :
-				_ctEntryLocalService.getCTEntries(
-					_sourceCTCollectionId, _modelClassNameId)) {
-
+		for (CTEntry ctEntry : _ctEntries) {
 			if (ctEntry.getChangeType() !=
 					CTConstants.CT_CHANGE_TYPE_ADDITION) {
 
 				ignorablePrimaryKeys.add(ctEntry.getModelClassPK());
 			}
+			else {
+				verifyPrimaryKeys.add(ctEntry.getModelClassPK());
+			}
 		}
 
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				constraintConflictsSQL);
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+		if (verifyPrimaryKeys.isEmpty()) {
+			return Collections.emptyList();
+		}
 
-			List<Map.Entry<Long, Long>> primaryKeys = null;
+		String constraintEntriesSQL = CTRowUtil.getConstraintEntitiesSQL(
+			tableName, primaryKeyName, columnNames, _sourceCTCollectionId,
+			verifyPrimaryKeys);
 
-			while (resultSet.next()) {
-				long sourcePK = resultSet.getLong(1);
-				long targetPK = resultSet.getLong(2);
+		List<Map.Entry<Long, Long>> primaryKeys = new ArrayList<>();
 
-				if (ignorablePrimaryKeys.contains(sourcePK) ||
-					ignorablePrimaryKeys.contains(targetPK)) {
+		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
+				constraintEntriesSQL);
+			ResultSet resultSet1 = preparedStatement1.executeQuery()) {
 
-					continue;
+			while (resultSet1.next()) {
+				long sourcePK = resultSet1.getLong(1);
+
+				try (PreparedStatement preparedStatement2 =
+						connection.prepareStatement(constraintConflictsSQL)) {
+
+					preparedStatement2.setObject(1, sourcePK);
+
+					for (int i = 2; i < (columnNames.length + 2); i++) {
+						preparedStatement2.setObject(
+							i, resultSet1.getObject(i));
+					}
+
+					try (ResultSet resultSet2 =
+							preparedStatement2.executeQuery()) {
+
+						while (resultSet2.next()) {
+							long targetPK = resultSet2.getLong(1);
+
+							if (ignorablePrimaryKeys.contains(targetPK)) {
+								continue;
+							}
+
+							primaryKeys.add(
+								new AbstractMap.SimpleImmutableEntry<>(
+									sourcePK, targetPK));
+						}
+					}
 				}
-
-				if (primaryKeys == null) {
-					primaryKeys = new ArrayList<>();
+				catch (SQLException sqlException) {
+					throw new ORMException(sqlException);
 				}
-
-				primaryKeys.add(
-					new AbstractMap.SimpleImmutableEntry<>(sourcePK, targetPK));
 			}
-
-			if (primaryKeys == null) {
-				primaryKeys = Collections.emptyList();
-			}
-
-			return primaryKeys;
 		}
 		catch (SQLException sqlException) {
 			throw new ORMException(sqlException);
 		}
+
+		return primaryKeys;
 	}
 
 	private List<Long> _getDeletionModificationPKs(
@@ -546,20 +742,25 @@ public class CTConflictChecker<T extends CTModel<T>> {
 					"select CTEntry.modelClassPK from CTEntry left join ",
 					ctPersistence.getTableName(), " publication on ",
 					"publication.", primaryKeyName, " = CTEntry.modelClassPK ",
-					"and (publication.ctCollectionId = ", _targetCTCollectionId,
-					" or publication.ctCollectionId = ",
-					CTConstants.CT_COLLECTION_ID_PRODUCTION,
-					") where CTEntry.ctCollectionId = ", _sourceCTCollectionId,
-					" and CTEntry.modelClassNameId = ", _modelClassNameId,
-					" and CTEntry.changeType = ",
-					CTConstants.CT_CHANGE_TYPE_MODIFICATION, " and ",
-					"publication.", primaryKeyName, " is null"));
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+					"and (publication.ctCollectionId = ? or publication.",
+					"ctCollectionId = ?) where CTEntry.ctCollectionId = ? and ",
+					"CTEntry.modelClassNameId = ? and CTEntry.changeType = ? ",
+					"and publication.", primaryKeyName, " is null"))) {
+
+			preparedStatement.setLong(1, _targetCTCollectionId);
+			preparedStatement.setLong(
+				2, CTConstants.CT_COLLECTION_ID_PRODUCTION);
+			preparedStatement.setLong(3, _sourceCTCollectionId);
+			preparedStatement.setLong(4, _modelClassNameId);
+			preparedStatement.setInt(
+				5, CTConstants.CT_CHANGE_TYPE_MODIFICATION);
 
 			List<Long> primaryKeys = new ArrayList<>();
 
-			while (resultSet.next()) {
-				primaryKeys.add(resultSet.getLong(1));
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					primaryKeys.add(resultSet.getLong(1));
+				}
 			}
 
 			return primaryKeys;
@@ -600,24 +801,24 @@ public class CTConflictChecker<T extends CTModel<T>> {
 					Column<?, Long> ctCollectionIdColumn = table.getColumn(
 						"ctCollectionId", Long.class);
 
-					if (ctCollectionIdColumn != null) {
-						if (_targetCTCollectionId ==
-								CTConstants.CT_COLLECTION_ID_PRODUCTION) {
+					if (ctCollectionIdColumn == null) {
+						return null;
+					}
 
-							return ctCollectionIdColumn.in(
-								new Long[] {
-									_sourceCTCollectionId, _targetCTCollectionId
-								});
-						}
+					if (_targetCTCollectionId ==
+							CTConstants.CT_COLLECTION_ID_PRODUCTION) {
 
 						return ctCollectionIdColumn.in(
 							new Long[] {
-								_sourceCTCollectionId, _targetCTCollectionId,
-								CTConstants.CT_COLLECTION_ID_PRODUCTION
+								_sourceCTCollectionId, _targetCTCollectionId
 							});
 					}
 
-					return null;
+					return ctCollectionIdColumn.in(
+						new Long[] {
+							_sourceCTCollectionId, _targetCTCollectionId,
+							CTConstants.CT_COLLECTION_ID_PRODUCTION
+						});
 				});
 
 			joinStep = joinStep.leftJoinOn(table, predicate);
@@ -796,122 +997,53 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		sb.append(_sourceCTCollectionId);
 		sb.append(" and ");
 		sb.append(primaryKeyName);
-		sb.append(" in (");
+		sb.append(" = ?");
 
-		for (Long primaryKey : resolvedPrimaryKeys) {
-			sb.append(primaryKey);
-			sb.append(", ");
-		}
+		try (PreparedStatement preparedStatement =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection, sb.toString())) {
 
-		sb.setStringAt(")", sb.index() - 1);
+			for (Long primaryKey : resolvedPrimaryKeys) {
+				preparedStatement.setLong(1, primaryKey);
 
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				sb.toString())) {
+				preparedStatement.addBatch();
+			}
 
-			preparedStatement.executeUpdate();
+			preparedStatement.executeBatch();
 		}
 		catch (SQLException sqlException) {
 			throw new ORMException(sqlException);
 		}
 
-		sb = new StringBundler("select ");
-
-		Map<String, Integer> tableColumnsMap =
-			ctPersistence.getTableColumnsMap();
-
-		Set<String> ignoredColumnNames = ctPersistence.getCTColumnNames(
-			CTColumnResolutionType.IGNORE);
-
-		Set<String> maxColumnNames = ctPersistence.getCTColumnNames(
-			CTColumnResolutionType.MAX);
-
-		Set<String> minColumnNames = ctPersistence.getCTColumnNames(
-			CTColumnResolutionType.MIN);
-
-		for (String name : tableColumnsMap.keySet()) {
-			if (name.equals("ctCollectionId")) {
-				sb.append(_sourceCTCollectionId);
-				sb.append(" as ");
-			}
-			else if (name.equals("mvccVersion")) {
-				sb.append("(publication.mvccVersion + 1) ");
-			}
-			else if (ignoredColumnNames.contains(name)) {
-				sb.append("production.");
-			}
-			else if (maxColumnNames.contains(name) ||
-					 minColumnNames.contains(name)) {
-
-				sb.append("composite.");
-			}
-			else {
-				sb.append("publication.");
-			}
-
-			sb.append(name);
-			sb.append(", ");
+		for (long primaryKey : resolvedPrimaryKeys) {
+			_copyModificationConflictCTRow(
+				connection, ctPersistence, primaryKeyName, primaryKey,
+				tempCTCollectionId);
 		}
 
-		sb.setStringAt(" from ", sb.index() - 1);
+		ctPersistence.clearCache(new HashSet<>(resolvedPrimaryKeys));
 
+		sb = new StringBundler(7);
+
+		sb.append("delete from ");
 		sb.append(ctPersistence.getTableName());
-		sb.append(" production inner join ");
-		sb.append(ctPersistence.getTableName());
-		sb.append(" publication on production.");
-		sb.append(primaryKeyName);
-		sb.append(" = publication.");
-		sb.append(primaryKeyName);
-
-		if (!maxColumnNames.isEmpty() || !minColumnNames.isEmpty()) {
-			sb.append(" inner join (select ");
-			sb.append(primaryKeyName);
-
-			for (String maxColumnName : maxColumnNames) {
-				sb.append(", max(");
-				sb.append(maxColumnName);
-				sb.append(") ");
-				sb.append(maxColumnName);
-			}
-
-			for (String minColumnName : minColumnNames) {
-				sb.append(", min(");
-				sb.append(minColumnName);
-				sb.append(") ");
-				sb.append(minColumnName);
-			}
-
-			sb.append(" from ");
-			sb.append(ctPersistence.getTableName());
-			sb.append(" where ctCollectionId in (");
-			sb.append(_targetCTCollectionId);
-			sb.append(", ");
-			sb.append(tempCTCollectionId);
-			sb.append(") group by ");
-			sb.append(primaryKeyName);
-			sb.append(") composite on composite.");
-			sb.append(primaryKeyName);
-			sb.append(" = production.");
-			sb.append(primaryKeyName);
-		}
-
-		sb.append(" where publication.ctCollectionId = ");
+		sb.append(" where ctCollectionId = ");
 		sb.append(tempCTCollectionId);
-		sb.append(" and production.ctCollectionId = ");
-		sb.append(_targetCTCollectionId);
+		sb.append(" and ");
+		sb.append(primaryKeyName);
+		sb.append(" = ?");
 
-		try {
-			CTRowUtil.copyCTRows(ctPersistence, connection, sb.toString());
-		}
-		catch (SQLException sqlException) {
-			throw new ORMException(sqlException);
-		}
+		try (PreparedStatement preparedStatement =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection, sb.toString())) {
 
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
-				StringBundler.concat(
-					"delete from ", ctPersistence.getTableName(),
-					" where ctCollectionId = ", tempCTCollectionId))) {
+			for (Long primaryKey : resolvedPrimaryKeys) {
+				preparedStatement.setLong(1, primaryKey);
 
-			preparedStatement.executeUpdate();
+				preparedStatement.addBatch();
+			}
+
+			preparedStatement.executeBatch();
 		}
 		catch (SQLException sqlException) {
 			throw new ORMException(sqlException);
@@ -964,12 +1096,8 @@ public class CTConflictChecker<T extends CTModel<T>> {
 				CTEntry ctEntry = _modificationCTEntries.get(pk);
 
 				if (ctEntry != null) {
-					long mvccVersion = resultSet.getLong(2);
-
-					ctEntry.setModifiedDate(ctEntry.getModifiedDate());
-					ctEntry.setModelMvccVersion(mvccVersion);
-
-					_ctEntryLocalService.updateCTEntry(ctEntry);
+					_ctEntryLocalService.updateModelMvccVersion(
+						ctEntry.getCtEntryId(), resultSet.getLong(2));
 				}
 			}
 		}
@@ -989,6 +1117,7 @@ public class CTConflictChecker<T extends CTModel<T>> {
 		_ctEntryConflictHelperServiceTrackerMap;
 	private final CTEntryLocalService _ctEntryLocalService;
 	private final CTService<T> _ctService;
+	private final CTSettingsConfiguration _ctSettingsConfiguration;
 	private final long _modelClassNameId;
 	private Map<Serializable, CTEntry> _modificationCTEntries;
 	private final long _sourceCTCollectionId;

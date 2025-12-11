@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -29,12 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,14 +53,22 @@ public class AuditEvent implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(AuditEvent.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public AuditFieldChange[] getAuditFieldChanges() {
+		if (_auditFieldChangesSupplier != null) {
+			auditFieldChanges = _auditFieldChangesSupplier.get();
+
+			_auditFieldChangesSupplier = null;
+		}
+
 		return auditFieldChanges;
 	}
 
 	public void setAuditFieldChanges(AuditFieldChange[] auditFieldChanges) {
 		this.auditFieldChanges = auditFieldChanges;
+
+		_auditFieldChangesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,105 +76,149 @@ public class AuditEvent implements Serializable {
 		UnsafeSupplier<AuditFieldChange[], Exception>
 			auditFieldChangesUnsafeSupplier) {
 
-		try {
-			auditFieldChanges = auditFieldChangesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_auditFieldChangesSupplier = () -> {
+			try {
+				return auditFieldChangesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected AuditFieldChange[] auditFieldChanges;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<AuditFieldChange[]> _auditFieldChangesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Creator getCreator() {
+		if (_creatorSupplier != null) {
+			creator = _creatorSupplier.get();
+
+			_creatorSupplier = null;
+		}
+
 		return creator;
 	}
 
 	public void setCreator(Creator creator) {
 		this.creator = creator;
+
+		_creatorSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCreator(
 		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
 
-		try {
-			creator = creatorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_creatorSupplier = () -> {
+			try {
+				return creatorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Creator creator;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Creator> _creatorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
 		return dateCreated;
 	}
 
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCreated(
 		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
 
-		try {
-			dateCreated = dateCreatedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateCreated;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getEventType() {
+		if (_eventTypeSupplier != null) {
+			eventType = _eventTypeSupplier.get();
+
+			_eventTypeSupplier = null;
+		}
+
 		return eventType;
 	}
 
 	public void setEventType(String eventType) {
 		this.eventType = eventType;
+
+		_eventTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEventType(
 		UnsafeSupplier<String, Exception> eventTypeUnsafeSupplier) {
 
-		try {
-			eventType = eventTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_eventTypeSupplier = () -> {
+			try {
+				return eventTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String eventType;
+
+	@JsonIgnore
+	private Supplier<String> _eventTypeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -199,6 +250,8 @@ public class AuditEvent implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		AuditFieldChange[] auditFieldChanges = getAuditFieldChanges();
+
 		if (auditFieldChanges != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -219,6 +272,8 @@ public class AuditEvent implements Serializable {
 			sb.append("]");
 		}
 
+		Creator creator = getCreator();
+
 		if (creator != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -228,6 +283,8 @@ public class AuditEvent implements Serializable {
 
 			sb.append(creator);
 		}
+
+		Date dateCreated = getDateCreated();
 
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
@@ -242,6 +299,8 @@ public class AuditEvent implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String eventType = getEventType();
 
 		if (eventType != null) {
 			if (sb.length() > 1) {
@@ -262,8 +321,8 @@ public class AuditEvent implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.object.rest.dto.v1_0.AuditEvent",
 		name = "x-class-name"
 	)
@@ -309,7 +368,10 @@ public class AuditEvent implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

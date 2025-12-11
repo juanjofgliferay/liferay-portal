@@ -18,7 +18,6 @@ import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.asset.list.asset.entry.provider.AssetListAssetEntryProvider;
 import com.liferay.asset.list.model.AssetListEntry;
-import com.liferay.asset.list.service.AssetListEntryService;
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 import com.liferay.asset.publisher.util.AssetEntryResult;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
@@ -26,6 +25,12 @@ import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSele
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.util.AssetHelper;
+import com.liferay.info.pagination.InfoPage;
+import com.liferay.info.pagination.Pagination;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -33,12 +38,12 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutPrototype;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -50,6 +55,7 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -68,6 +74,10 @@ import com.liferay.segments.SegmentsEntryRetriever;
 import com.liferay.segments.constants.SegmentsWebKeys;
 import com.liferay.segments.context.RequestContextMapper;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -80,10 +90,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -154,10 +160,10 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 		assetEntryQuery.setEnd(end);
 		assetEntryQuery.setStart(start);
 
-		List<AssetEntry> results = _assetEntryService.getEntries(
+		List<AssetEntry> assetEntries = _assetEntryService.getEntries(
 			assetEntryQuery);
 
-		return new BaseModelSearchResult<>(results, total);
+		return new BaseModelSearchResult<>(assetEntries, total);
 	}
 
 	@Override
@@ -197,10 +203,10 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 			boolean includeNonvisibleAssets, int type)
 		throws Exception {
 
+		List<AssetEntry> assetEntries = new ArrayList<>();
+
 		String[] assetEntryXmls = portletPreferences.getValues(
 			"assetEntryXml", new String[0]);
-
-		List<AssetEntry> assetEntries = new ArrayList<>();
 
 		List<String> missingAssetEntryUuids = new ArrayList<>();
 
@@ -316,30 +322,27 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 			boolean deleteMissingAssetEntries, boolean checkPermission)
 		throws Exception {
 
-		String selectionStyle = GetterUtil.getString(
-			portletPreferences.getValue("selectionStyle", null),
-			AssetPublisherSelectionStyleConfigurationUtil.
-				defaultSelectionStyle());
+		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-		long assetListEntryId = GetterUtil.getLong(
-			portletPreferences.getValue("assetListEntryId", null));
+		AssetListEntry assetListEntry = AssetPublisherUtil.getAssetListEntry(
+			true, themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(),
+			portletPreferences);
 
-		AssetListEntry assetListEntry =
-			_assetListEntryService.fetchAssetListEntry(assetListEntryId);
-
-		if (selectionStyle.equals(
-				AssetPublisherSelectionStyleConstants.TYPE_ASSET_LIST) &&
-			(assetListEntry != null)) {
-
+		if (assetListEntry != null) {
 			long[] segmentsEntryIds = _getSegmentsEntryIds(portletRequest);
 
 			String acClientUserId = GetterUtil.getString(
 				portletRequest.getAttribute(
 					SegmentsWebKeys.SEGMENTS_ANONYMOUS_USER_ID));
 
-			return _assetListAssetEntryProvider.getAssetEntries(
-				assetListEntry, segmentsEntryIds, null, null, StringPool.BLANK,
-				acClientUserId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+			InfoPage<AssetEntry> infoPage =
+				_assetListAssetEntryProvider.getAssetEntriesInfoPage(
+					assetListEntry, segmentsEntryIds, null, null,
+					StringPool.BLANK, acClientUserId, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS);
+
+			return (List<AssetEntry>)infoPage.getPageItems();
 		}
 
 		List<AssetEntry> assetEntries = getAssetEntries(
@@ -353,12 +356,12 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 			return assetEntries;
 		}
 
-		if (!ArrayUtil.isEmpty(allCategoryIds)) {
+		if (ArrayUtil.isNotEmpty(allCategoryIds)) {
 			assetEntries = _filterAssetCategoriesAssetEntries(
 				assetEntries, allCategoryIds);
 		}
 
-		if (!ArrayUtil.isEmpty(allTagNames)) {
+		if (ArrayUtil.isNotEmpty(allTagNames)) {
 			assetEntries = _filterAssetTagNamesAssetEntries(
 				assetEntries, _normalizeAssetTagNames(allTagNames));
 		}
@@ -385,9 +388,9 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 			String[] overrideAllAssetTagNames, String[] overrideAllKeywords)
 		throws PortalException {
 
-		long[] groupIds = getGroupIds(portletPreferences, groupId, layout);
-
 		AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
+
+		long[] groupIds = getGroupIds(portletPreferences, groupId, layout);
 
 		_setCategoriesAndTagsAndKeywords(
 			assetEntryQuery, portletPreferences, groupIds,
@@ -405,8 +408,13 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 				AssetRendererFactoryRegistryUtil.getClassNameIds(
 					layout.getCompanyId());
 
-			assetEntryQuery.setClassNameIds(
-				getClassNameIds(portletPreferences, availableClassNameIds));
+			try (SafeCloseable safeCloseable =
+					FF_LPD_39304_CompanyTemporarySwapper.
+						setCompanyIdWithSafeCloseable(layout.getCompanyId())) {
+
+				assetEntryQuery.setClassNameIds(
+					getClassNameIds(portletPreferences, availableClassNameIds));
+			}
 		}
 
 		assetEntryQuery.setClassTypeIds(
@@ -841,6 +849,53 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 	}
 
 	@Override
+	public InfoPage<AssetEntry> getInfoPage(
+			PortletRequest portletRequest,
+			PortletPreferences portletPreferences,
+			PermissionChecker permissionChecker, long[] groupIds,
+			long[] allCategoryIds, String[] allTagNames,
+			boolean deleteMissingAssetEntries, boolean checkPermission,
+			int start, int end)
+		throws Exception {
+
+		List<AssetEntry> assetEntries = getAssetEntries(
+			portletRequest, portletPreferences, permissionChecker, groupIds,
+			allCategoryIds, allTagNames, deleteMissingAssetEntries,
+			checkPermission);
+
+		return InfoPage.of(
+			ListUtil.subList(assetEntries, start, end),
+			Pagination.of(end, start), assetEntries.size());
+	}
+
+	@Override
+	public Group getItemSelectorScopeGroup(Group scopeGroup)
+		throws PortalException {
+
+		if (!scopeGroup.isLayoutPrototype()) {
+			return scopeGroup;
+		}
+
+		LayoutPrototype layoutPrototype =
+			_layoutPrototypeLocalService.fetchLayoutPrototype(
+				scopeGroup.getClassPK());
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.
+				fetchFirstLayoutPageTemplateEntry(
+					layoutPrototype.getLayoutPrototypeId());
+
+		if ((layoutPageTemplateEntry != null) &&
+			(layoutPageTemplateEntry.getGroupId() > 0)) {
+
+			return _groupLocalService.getGroup(
+				layoutPageTemplateEntry.getGroupId());
+		}
+
+		return scopeGroup;
+	}
+
+	@Override
 	public String[] getKeywords(PortletPreferences portletPreferences) {
 		String[] allKeywords = new String[0];
 
@@ -916,17 +971,17 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 	private List<AssetEntry> _filterAssetCategoriesAssetEntries(
 		List<AssetEntry> assetEntries, long[] assetCategoryIds) {
 
-		List<AssetEntry> filteredAssetEntries = new ArrayList<>();
+		return TransformUtil.transform(
+			assetEntries,
+			assetEntry -> {
+				if (ArrayUtil.containsAll(
+						assetEntry.getCategoryIds(), assetCategoryIds)) {
 
-		for (AssetEntry assetEntry : assetEntries) {
-			if (ArrayUtil.containsAll(
-					assetEntry.getCategoryIds(), assetCategoryIds)) {
+					return assetEntry;
+				}
 
-				filteredAssetEntries.add(assetEntry);
-			}
-		}
-
-		return filteredAssetEntries;
+				return null;
+			});
 	}
 
 	private long[] _filterAssetCategoryIds(
@@ -942,20 +997,22 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 	}
 
 	private long[] _filterAssetCategoryIds(long[] assetCategoryIds) {
-		List<Long> assetCategoryIdsList = new ArrayList<>();
+		List<Long> filteredAssetCategoryIdsList = TransformUtil.transformToList(
+			assetCategoryIds,
+			assetCategoryId -> {
+				AssetCategory category =
+					_assetCategoryLocalService.fetchAssetCategory(
+						assetCategoryId);
 
-		for (long assetCategoryId : assetCategoryIds) {
-			AssetCategory category =
-				_assetCategoryLocalService.fetchAssetCategory(assetCategoryId);
+				if (category == null) {
+					return null;
+				}
 
-			if (category == null) {
-				continue;
-			}
+				return assetCategoryId;
+			});
 
-			assetCategoryIdsList.add(assetCategoryId);
-		}
-
-		return ArrayUtil.toArray(assetCategoryIdsList.toArray(new Long[0]));
+		return ArrayUtil.toArray(
+			filteredAssetCategoryIdsList.toArray(new Long[0]));
 	}
 
 	private List<AssetEntry> _filterAssetTagNamesAssetEntries(
@@ -1170,7 +1227,8 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 		return _segmentsEntryRetriever.getSegmentsEntryIds(
 			themeDisplay.getScopeGroupId(), themeDisplay.getUserId(),
 			_requestContextMapper.map(
-				_portal.getHttpServletRequest(portletRequest)));
+				_portal.getHttpServletRequest(portletRequest)),
+			new long[0]);
 	}
 
 	private long[] _getSiteGroupIds(long[] groupIds) {
@@ -1217,10 +1275,6 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 
 		for (int i = 0; i < assetTagNames.length; i++) {
 			assetTagNames[i] = StringUtil.trim(assetTagNames[i]);
-
-			if (!_featureFlagManager.isEnabled("LPS-194362")) {
-				assetTagNames[i] = StringUtil.toLowerCase(assetTagNames[i]);
-			}
 		}
 
 		return assetTagNames;
@@ -1244,12 +1298,10 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 			return;
 		}
 
-		String[] assetEntryXmls = portletPreferences.getValues(
-			"assetEntryXml", new String[0]);
+		List<String> assetEntryXmls = ListUtil.fromArray(
+			portletPreferences.getValues("assetEntryXml", new String[0]));
 
-		List<String> assetEntryXmlsList = ListUtil.fromArray(assetEntryXmls);
-
-		Iterator<String> iterator = assetEntryXmlsList.iterator();
+		Iterator<String> iterator = assetEntryXmls.iterator();
 
 		while (iterator.hasNext()) {
 			String assetEntryXml = iterator.next();
@@ -1266,7 +1318,7 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 		}
 
 		portletPreferences.setValues(
-			"assetEntryXml", assetEntryXmlsList.toArray(new String[0]));
+			"assetEntryXml", assetEntryXmls.toArray(new String[0]));
 
 		portletPreferences.store();
 	}
@@ -1430,9 +1482,6 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 	@Reference
 	private AssetListAssetEntryProvider _assetListAssetEntryProvider;
 
-	@Reference
-	private AssetListEntryService _assetListEntryService;
-
 	private volatile AssetPublisherWebConfiguration
 		_assetPublisherWebConfiguration;
 
@@ -1440,13 +1489,17 @@ public class AssetPublisherHelperImpl implements AssetPublisherHelper {
 	private AssetTagLocalService _assetTagLocalService;
 
 	@Reference
-	private FeatureFlagManager _featureFlagManager;
-
-	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutPageTemplateEntryLocalService
+		_layoutPageTemplateEntryLocalService;
+
+	@Reference
+	private LayoutPrototypeLocalService _layoutPrototypeLocalService;
 
 	@Reference
 	private Portal _portal;

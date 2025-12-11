@@ -7,7 +7,14 @@ package com.liferay.headless.admin.list.type.internal.dto.v1_0.util;
 
 import com.liferay.headless.admin.list.type.dto.v1_0.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeEntryLocalService;
+import com.liferay.object.rest.dto.v1_0.util.CreatorUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+
+import jakarta.ws.rs.core.UriInfo;
 
 import java.util.Locale;
 import java.util.Map;
@@ -27,32 +34,45 @@ public class ListTypeEntryUtil {
 		serviceBuilderListTypeEntry.setExternalReferenceCode(
 			listTypeEntry.getExternalReferenceCode());
 		serviceBuilderListTypeEntry.setKey(listTypeEntry.getKey());
-		serviceBuilderListTypeEntry.setNameMap(
-			LocalizedMapUtil.getLocalizedMap(listTypeEntry.getName_i18n()));
+
+		Map<Locale, String> nameMap = LocalizedMapUtil.getLocalizedMap(
+			listTypeEntry.getName_i18n());
+
+		nameMap.computeIfAbsent(
+			LocaleUtil.getSiteDefault(), key -> listTypeEntry.getName());
+
+		serviceBuilderListTypeEntry.setNameMap(nameMap);
+
+		serviceBuilderListTypeEntry.setSystem(
+			GetterUtil.getBoolean(listTypeEntry.getSystem()));
 
 		return serviceBuilderListTypeEntry;
 	}
 
 	public static ListTypeEntry toListTypeEntry(
-		Map<String, Map<String, String>> actions, Locale locale,
-		com.liferay.list.type.model.ListTypeEntry serviceBuilderListTypeEntry) {
+		Map<String, Map<String, String>> actions, Locale locale, Portal portal,
+		com.liferay.list.type.model.ListTypeEntry serviceBuilderListTypeEntry,
+		UriInfo uriInfo, User user) {
 
 		ListTypeEntry listTypeEntry = new ListTypeEntry() {
 			{
-				dateCreated = serviceBuilderListTypeEntry.getCreateDate();
-				dateModified = serviceBuilderListTypeEntry.getModifiedDate();
-				externalReferenceCode =
-					serviceBuilderListTypeEntry.getExternalReferenceCode();
-				id = serviceBuilderListTypeEntry.getListTypeEntryId();
-				key = serviceBuilderListTypeEntry.getKey();
-				name = serviceBuilderListTypeEntry.getName(locale);
-				name_i18n = LocalizedMapUtil.getI18nMap(
-					serviceBuilderListTypeEntry.getNameMap());
-				type = serviceBuilderListTypeEntry.getType();
+				setCreator(() -> CreatorUtil.toCreator(portal, uriInfo, user));
+				setDateCreated(serviceBuilderListTypeEntry::getCreateDate);
+				setDateModified(serviceBuilderListTypeEntry::getModifiedDate);
+				setExternalReferenceCode(
+					serviceBuilderListTypeEntry::getExternalReferenceCode);
+				setId(serviceBuilderListTypeEntry::getListTypeEntryId);
+				setKey(serviceBuilderListTypeEntry::getKey);
+				setName(() -> serviceBuilderListTypeEntry.getName(locale));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						serviceBuilderListTypeEntry.getNameMap()));
+				setSystem(serviceBuilderListTypeEntry::getSystem);
+				setType(serviceBuilderListTypeEntry::getType);
 			}
 		};
 
-		listTypeEntry.setActions(actions);
+		listTypeEntry.setActions(() -> actions);
 
 		return listTypeEntry;
 	}

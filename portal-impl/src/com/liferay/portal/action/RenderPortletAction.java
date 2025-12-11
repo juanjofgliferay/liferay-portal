@@ -20,8 +20,8 @@ import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -77,8 +77,6 @@ public class RenderPortletAction implements Action {
 			httpServletRequest, "p_p_static");
 
 		if (staticPortlet) {
-			portlet = (Portlet)portlet.clone();
-
 			portlet.setStatic(true);
 
 			boolean staticStartPortlet = ParamUtil.getBoolean(

@@ -20,16 +20,17 @@ import com.liferay.document.library.kernel.processor.VideoProcessorUtil;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.kernel.util.DLUtil;
-import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.image.ImageToolUtil;
+import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.image.ImageBag;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
@@ -41,7 +42,6 @@ import com.liferay.portal.kernel.model.ImageConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.Organization;
-import com.liferay.portal.kernel.model.OrganizationTable;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletProvider;
@@ -90,6 +90,7 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.trash.helper.TrashHelper;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -100,6 +101,7 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -112,8 +114,14 @@ import com.liferay.portal.kernel.webdav.WebDAVUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.impl.ImageImpl;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.users.admin.kernel.file.uploads.UserFileUploadsSettings;
+
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.awt.image.RenderedImage;
 
@@ -131,13 +139,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Alexander Chow
@@ -273,6 +274,10 @@ public class WebServerServlet extends HttpServlet {
 			message.put("companyId", user.getCompanyId());
 
 			message.put(
+				"groupExternalReferenceCode",
+				ParamUtil.getString(
+					httpServletRequest, "groupExternalReferenceCode"));
+			message.put(
 				"objectDefinitionExternalReferenceCode",
 				objectDefinitionExternalReferenceCode);
 			message.put(
@@ -332,8 +337,7 @@ public class WebServerServlet extends HttpServlet {
 			PrincipalThreadLocal.setPassword(
 				PortalUtil.getUserPassword(httpServletRequest));
 
-			PermissionThreadLocal.setPermissionChecker(
-				PermissionCheckerFactoryUtil.create(user));
+			PermissionThreadLocal.getPermissionChecker(user, true);
 
 			_checkResourcePermission(httpServletRequest, httpServletResponse);
 
@@ -554,7 +558,7 @@ public class WebServerServlet extends HttpServlet {
 
 				try {
 					FileEntry fileEntry =
-						DLAppServiceUtil.getFileEntryByUuidAndGroupId(
+						DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
 							uuid, groupId);
 
 					image = convertFileEntry(igSmallImage, fileEntry);
@@ -584,7 +588,7 @@ public class WebServerServlet extends HttpServlet {
 
 		byte[] textObj = image.getTextObj();
 
-		if ((textObj == null) || (textObj.length == 0)) {
+		if (ArrayUtil.isEmpty(textObj)) {
 			throw new NoSuchFileException();
 		}
 
@@ -683,16 +687,7 @@ public class WebServerServlet extends HttpServlet {
 			Organization organization = null;
 
 			List<Organization> organizations =
-				OrganizationLocalServiceUtil.dslQuery(
-					DSLQueryFactoryUtil.select(
-						OrganizationTable.INSTANCE
-					).from(
-						OrganizationTable.INSTANCE
-					).where(
-						OrganizationTable.INSTANCE.logoId.eq(imageId)
-					).limit(
-						0, 1
-					));
+				OrganizationLocalServiceUtil.getOrganizationsByLogoId(imageId);
 
 			if (ListUtil.isNotEmpty(organizations)) {
 				organization = organizations.get(0);
@@ -795,7 +790,12 @@ public class WebServerServlet extends HttpServlet {
 			((usersImageMaxWidth > 0) &&
 			 (image.getWidth() > usersImageMaxWidth))) {
 
-			User user = UserLocalServiceUtil.getUserByPortraitId(imageId);
+			User user = UserLocalServiceUtil.fetchUserByPortraitId(imageId);
+
+			if (user == null) {
+				throw new NoSuchUserException(
+					"No user with portrait ID " + imageId);
+			}
 
 			UserLocalServiceUtil.updatePortrait(
 				user.getUserId(), image.getTextObj());
@@ -925,7 +925,7 @@ public class WebServerServlet extends HttpServlet {
 			String name = pathArray[i];
 
 			try {
-				Folder folder = DLAppServiceUtil.getFolder(
+				Folder folder = DLAppLocalServiceUtil.getFolder(
 					groupId, folderId, URLCodec.decodeURL(name));
 
 				folderId = folder.getFolderId();
@@ -1213,7 +1213,7 @@ public class WebServerServlet extends HttpServlet {
 			cacheControlValue = HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE;
 		}
 
-		httpServletResponse.addHeader(
+		httpServletResponse.setHeader(
 			HttpHeaders.CACHE_CONTROL,
 			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
 				fileEntry, HttpHeaders.CACHE_CONTROL, cacheControlValue));
@@ -1243,10 +1243,10 @@ public class WebServerServlet extends HttpServlet {
 			long folderId, String title)
 		throws Exception {
 
-		FileEntry fileEntry = DLAppServiceUtil.getFileEntry(
+		FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
 			groupId, folderId, title);
 
-		httpServletResponse.addHeader(
+		httpServletResponse.setHeader(
 			HttpHeaders.CACHE_CONTROL,
 			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
 				fileEntry, HttpHeaders.CACHE_CONTROL,
@@ -1339,7 +1339,7 @@ public class WebServerServlet extends HttpServlet {
 			fileName = trashTitleResolver.getOriginalTitle(fileName);
 		}
 
-		httpServletResponse.addHeader(
+		httpServletResponse.setHeader(
 			HttpHeaders.CACHE_CONTROL,
 			FileEntryHttpHeaderCustomizerUtil.getHttpHeaderValue(
 				fileEntry, HttpHeaders.CACHE_CONTROL,
@@ -1606,9 +1606,23 @@ public class WebServerServlet extends HttpServlet {
 			ModelResourcePermissionRegistryUtil.getModelResourcePermission(
 				FileEntry.class.getName());
 
-		fileEntryModelResourcePermission.check(
-			permissionChecker, fileEntry.getFileEntryId(),
-			_getActionId(httpServletRequest));
+		try {
+			fileEntryModelResourcePermission.check(
+				permissionChecker, fileEntry.getFileEntryId(),
+				_getActionId(httpServletRequest));
+		}
+		catch (PortalException portalException) {
+			User user = permissionChecker.getUser();
+
+			if (user.isGuestUser() &&
+				!AuthLoginGroupSettingsUtil.isPromptEnabled(
+					fileEntry.getGroupId())) {
+
+				throw new NoSuchFileEntryException(portalException);
+			}
+
+			throw portalException;
+		}
 
 		FileVersion fileVersion = fileEntry.getFileVersion();
 
@@ -1809,10 +1823,10 @@ public class WebServerServlet extends HttpServlet {
 		if (pathArray.length == 1) {
 			long fileShortcutId = GetterUtil.getLong(pathArray[0]);
 
-			FileShortcut dlFileShortcut = DLAppServiceUtil.getFileShortcut(
+			FileShortcut dlFileShortcut = DLAppLocalServiceUtil.getFileShortcut(
 				fileShortcutId);
 
-			FileEntry fileEntry = DLAppServiceUtil.getFileEntry(
+			FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
 				dlFileShortcut.getToFileEntryId());
 
 			_checkFileEntry(fileEntry, httpServletRequest);
@@ -1822,8 +1836,9 @@ public class WebServerServlet extends HttpServlet {
 		else if (pathArray.length == 2) {
 			long groupId = GetterUtil.getLong(pathArray[0]);
 
-			FileEntry fileEntry = DLAppServiceUtil.getFileEntryByUuidAndGroupId(
-				pathArray[1], groupId);
+			FileEntry fileEntry =
+				DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+					pathArray[1], groupId);
 
 			_checkFileEntry(fileEntry, httpServletRequest);
 
@@ -1855,8 +1870,9 @@ public class WebServerServlet extends HttpServlet {
 			}
 
 			try {
-				FileEntry fileEntry = DLAppServiceUtil.getFileEntryByFileName(
-					groupId, folderId, fileName);
+				FileEntry fileEntry =
+					DLAppLocalServiceUtil.getFileEntryByFileName(
+						groupId, folderId, fileName);
 
 				_checkFileEntry(fileEntry, httpServletRequest);
 
@@ -1867,7 +1883,7 @@ public class WebServerServlet extends HttpServlet {
 					_log.debug(noSuchFileEntryException);
 				}
 
-				FileEntry fileEntry = DLAppServiceUtil.getFileEntry(
+				FileEntry fileEntry = DLAppLocalServiceUtil.getFileEntry(
 					groupId, folderId, fileName);
 
 				_checkFileEntry(fileEntry, httpServletRequest);
@@ -1880,8 +1896,9 @@ public class WebServerServlet extends HttpServlet {
 
 			String uuid = pathArray[3];
 
-			FileEntry fileEntry = DLAppServiceUtil.getFileEntryByUuidAndGroupId(
-				uuid, groupId);
+			FileEntry fileEntry =
+				DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+					uuid, groupId);
 
 			_checkFileEntry(fileEntry, httpServletRequest);
 
@@ -1900,7 +1917,8 @@ public class WebServerServlet extends HttpServlet {
 				PortalUtil.getCompanyId(httpServletRequest));
 		}
 
-		return PermissionCheckerFactoryUtil.create(user);
+		return PermissionThreadLocal.getPermissionChecker(
+			user, !user.isGuestUser());
 	}
 
 	private String _getPortletId(

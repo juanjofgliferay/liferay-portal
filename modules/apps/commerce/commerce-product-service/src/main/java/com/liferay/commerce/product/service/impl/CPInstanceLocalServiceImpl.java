@@ -7,13 +7,20 @@ package com.liferay.commerce.product.service.impl;
 
 import com.liferay.commerce.constants.CommercePriceConstants;
 import com.liferay.commerce.product.constants.CPField;
+import com.liferay.commerce.product.exception.CPInstanceCostException;
 import com.liferay.commerce.product.exception.CPInstanceDeliverySubscriptionLengthException;
+import com.liferay.commerce.product.exception.CPInstanceDepthException;
 import com.liferay.commerce.product.exception.CPInstanceDisplayDateException;
 import com.liferay.commerce.product.exception.CPInstanceExpirationDateException;
+import com.liferay.commerce.product.exception.CPInstanceHeightException;
 import com.liferay.commerce.product.exception.CPInstanceMaxPriceValueException;
+import com.liferay.commerce.product.exception.CPInstanceMinPriceValueException;
+import com.liferay.commerce.product.exception.CPInstancePriceException;
+import com.liferay.commerce.product.exception.CPInstancePromoPriceException;
 import com.liferay.commerce.product.exception.CPInstanceReplacementCPInstanceUuidException;
 import com.liferay.commerce.product.exception.CPInstanceSkuException;
-import com.liferay.commerce.product.exception.DuplicateCPInstanceException;
+import com.liferay.commerce.product.exception.CPInstanceWeightException;
+import com.liferay.commerce.product.exception.CPInstanceWidthException;
 import com.liferay.commerce.product.exception.NoSuchCPInstanceException;
 import com.liferay.commerce.product.exception.NoSuchSkuContributorCPDefinitionOptionRelException;
 import com.liferay.commerce.product.internal.util.CPDefinitionLocalServiceCircularDependencyUtil;
@@ -67,6 +74,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -91,6 +99,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -134,8 +143,7 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		_validateExternalReferenceCode(
-			0, serviceContext.getCompanyId(), externalReferenceCode);
+		_validate(cost, depth, height, price, promoPrice, weight, width);
 		_validateSku(cpDefinitionId, 0, sku);
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
@@ -228,9 +236,6 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			cpInstance.setStatus(WorkflowConstants.STATUS_EXPIRED);
 		}
 
-		cpInstance.setStatusByUserId(user.getUserId());
-		cpInstance.setStatusDate(serviceContext.getModifiedDate(date));
-		cpInstance.setExpandoBridgeAttributes(serviceContext);
 		cpInstance.setUnspsc(unspsc);
 		cpInstance.setDiscontinued(discontinued);
 		cpInstance.setDiscontinuedDate(
@@ -239,6 +244,9 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 				discontinuedDateYear));
 		cpInstance.setReplacementCPInstanceUuid(replacementCPInstanceUuid);
 		cpInstance.setReplacementCProductId(replacementCProductId);
+		cpInstance.setStatusByUserId(user.getUserId());
+		cpInstance.setStatusDate(serviceContext.getModifiedDate(date));
+		cpInstance.setExpandoBridgeAttributes(serviceContext);
 
 		cpInstance = cpInstancePersistence.update(cpInstance);
 
@@ -319,10 +327,7 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-		else {
+		if (Validator.isNotNull(externalReferenceCode)) {
 			CPInstance cpInstance = cpInstancePersistence.fetchByERC_C(
 				externalReferenceCode, serviceContext.getCompanyId());
 
@@ -586,18 +591,6 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 	}
 
 	@Override
-	public CPInstance fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			return null;
-		}
-
-		return cpInstancePersistence.fetchByERC_C(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPInstance fetchCPInstance(long cProductId, String cpInstanceUuid) {
 		CProduct cProduct = _cProductLocalService.fetchCProduct(cProductId);
 
@@ -609,8 +602,8 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			cProduct.getPublishedCPDefinitionId());
 
 		if (cpDefinition == null) {
-			cpDefinition = _cpDefinitionPersistence.fetchByC_V(
-				cProduct.getCProductId(), cProduct.getLatestVersion());
+			cpDefinition = _cpDefinitionPersistence.fetchByC_V_First(
+				cProduct.getCProductId(), cProduct.getLatestVersion(), null);
 
 			if (cpDefinition == null) {
 				return null;
@@ -963,6 +956,7 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 		return searchCPInstances(searchContext);
 	}
 
+	@Override
 	public BaseModelSearchResult<CPInstance> searchCPInstances(
 			long companyId, String cpInstanceUuid, long cProductId,
 			String keywords, int status, int start, int end, Sort sort)
@@ -1036,30 +1030,16 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		_validateExternalReferenceCode(
-			cpInstanceId, serviceContext.getCompanyId(), externalReferenceCode);
+		_validate(cost, depth, height, price, promoPrice, weight, width);
 
 		CPInstance cpInstance = cpInstancePersistence.findByPrimaryKey(
 			cpInstanceId);
 
 		_validateSku(cpInstance.getCPDefinitionId(), cpInstanceId, sku);
-
 		_validateReplacementCPInstance(
 			cpInstance, replacementCPInstanceUuid, replacementCProductId);
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
-
-		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
-				cpInstance.getCPDefinitionId())) {
-
-			CPDefinition newCPDefinition =
-				CPDefinitionLocalServiceCircularDependencyUtil.copyCPDefinition(
-					cpInstance.getCPDefinitionId());
-
-			cpInstance = cpInstancePersistence.findByC_C(
-				newCPDefinition.getCPDefinitionId(),
-				cpInstance.getCPInstanceUuid());
-		}
 
 		Date expirationDate = null;
 		Date date = new Date();
@@ -1105,7 +1085,21 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 					deliverySubscriptionTypeSettingsUnicodeProperties);
 		}
 
-		cpInstance.setExternalReferenceCode(externalReferenceCode);
+		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
+				cpInstance.getCPDefinitionId())) {
+
+			CPDefinition newCPDefinition =
+				CPDefinitionLocalServiceCircularDependencyUtil.copyCPDefinition(
+					cpInstance.getCPDefinitionId());
+
+			cpInstance = cpInstancePersistence.findByC_C(
+				newCPDefinition.getCPDefinitionId(),
+				cpInstance.getCPInstanceUuid());
+		}
+		else {
+			cpInstance.setExternalReferenceCode(externalReferenceCode);
+		}
+
 		cpInstance.setSku(sku);
 		cpInstance.setGtin(gtin);
 		cpInstance.setManufacturerPartNumber(manufacturerPartNumber);
@@ -1139,9 +1133,6 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			cpInstance.setStatus(WorkflowConstants.STATUS_EXPIRED);
 		}
 
-		cpInstance.setStatusByUserId(user.getUserId());
-		cpInstance.setStatusDate(serviceContext.getModifiedDate(date));
-		cpInstance.setExpandoBridgeAttributes(serviceContext);
 		cpInstance.setUnspsc(unspsc);
 		cpInstance.setDiscontinued(discontinued);
 		cpInstance.setDiscontinuedDate(
@@ -1150,6 +1141,9 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 				discontinuedDateYear));
 		cpInstance.setReplacementCPInstanceUuid(replacementCPInstanceUuid);
 		cpInstance.setReplacementCProductId(replacementCProductId);
+		cpInstance.setStatusByUserId(user.getUserId());
+		cpInstance.setStatusDate(serviceContext.getModifiedDate(date));
+		cpInstance.setExpandoBridgeAttributes(serviceContext);
 
 		cpInstance = cpInstancePersistence.update(cpInstance);
 
@@ -1199,9 +1193,11 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 		CPInstance cpInstance = cpInstancePersistence.findByPrimaryKey(
 			cpInstanceId);
 
-		_validateExternalReferenceCode(
-			cpInstance.getCPInstanceId(), cpInstance.getCompanyId(),
-			externalReferenceCode);
+		if (Objects.equals(
+				cpInstance.getExternalReferenceCode(), externalReferenceCode)) {
+
+			return cpInstance;
+		}
 
 		cpInstance.setExternalReferenceCode(externalReferenceCode);
 
@@ -1221,6 +1217,15 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			(promoPrice.compareTo(maxValue) > 0)) {
 
 			throw new CPInstanceMaxPriceValueException();
+		}
+
+		BigDecimal minValue = BigDecimal.valueOf(
+			GetterUtil.getDouble(CommercePriceConstants.PRICE_VALUE_MIN));
+
+		if ((cost.compareTo(minValue) < 0) || (price.compareTo(minValue) < 0) ||
+			(promoPrice.compareTo(minValue) < 0)) {
+
+			throw new CPInstanceMinPriceValueException();
 		}
 
 		CPInstance cpInstance = cpInstancePersistence.findByPrimaryKey(
@@ -1962,6 +1967,40 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 		return cpDefinitionOptionRelIdCPDefinitionOptionValueRelIds;
 	}
 
+	private void _validate(
+			BigDecimal cost, double depth, double height, BigDecimal price,
+			BigDecimal promoPrice, double weight, double width)
+		throws PortalException {
+
+		if (BigDecimalUtil.lt(cost, BigDecimal.ZERO)) {
+			throw new CPInstanceCostException();
+		}
+
+		if (depth < 0) {
+			throw new CPInstanceDepthException();
+		}
+
+		if (height < 0) {
+			throw new CPInstanceHeightException();
+		}
+
+		if (BigDecimalUtil.lt(price, BigDecimal.ZERO)) {
+			throw new CPInstancePriceException();
+		}
+
+		if (BigDecimalUtil.lt(promoPrice, BigDecimal.ZERO)) {
+			throw new CPInstancePromoPriceException();
+		}
+
+		if (weight < 0) {
+			throw new CPInstanceWeightException();
+		}
+
+		if (width < 0) {
+			throw new CPInstanceWidthException();
+		}
+	}
+
 	private UnicodeProperties
 			_validateDeliverySubscriptionTypeSettingsUnicodeProperties(
 				String deliverySubscriptionType,
@@ -1973,35 +2012,13 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 			_cpSubscriptionTypeRegistry.getCPSubscriptionType(
 				deliverySubscriptionType);
 
-		if (deliveryCPSubscriptionType != null) {
-			return deliveryCPSubscriptionType.
-				getDeliverySubscriptionTypeSettingsUnicodeProperties(
-					deliverySubscriptionTypeSettingsUnicodeProperties);
+		if (deliveryCPSubscriptionType == null) {
+			return null;
 		}
 
-		return null;
-	}
-
-	private void _validateExternalReferenceCode(
-			long cpInstanceId, long companyId, String externalReferenceCode)
-		throws PortalException {
-
-		if (Validator.isNull(externalReferenceCode)) {
-			return;
-		}
-
-		CPInstance cpInstance = cpInstancePersistence.fetchByERC_C(
-			externalReferenceCode, companyId);
-
-		if (cpInstance == null) {
-			return;
-		}
-
-		if (cpInstance.getCPInstanceId() != cpInstanceId) {
-			throw new DuplicateCPInstanceException(
-				"There is another commerce product instance with external " +
-					"reference code " + externalReferenceCode);
-		}
+		return deliveryCPSubscriptionType.
+			getDeliverySubscriptionTypeSettingsUnicodeProperties(
+				deliverySubscriptionTypeSettingsUnicodeProperties);
 	}
 
 	private void _validateReplacementCPInstance(
@@ -2066,13 +2083,12 @@ public class CPInstanceLocalServiceImpl extends CPInstanceLocalServiceBaseImpl {
 		CPSubscriptionType cpSubscriptionType =
 			_cpSubscriptionTypeRegistry.getCPSubscriptionType(subscriptionType);
 
-		if (cpSubscriptionType != null) {
-			return cpSubscriptionType.
-				getSubscriptionTypeSettingsUnicodeProperties(
-					subscriptionTypeSettingsUnicodeProperties);
+		if (cpSubscriptionType == null) {
+			return null;
 		}
 
-		return null;
+		return cpSubscriptionType.getSubscriptionTypeSettingsUnicodeProperties(
+			subscriptionTypeSettingsUnicodeProperties);
 	}
 
 	private static final String[] _SELECTED_FIELD_NAMES = {

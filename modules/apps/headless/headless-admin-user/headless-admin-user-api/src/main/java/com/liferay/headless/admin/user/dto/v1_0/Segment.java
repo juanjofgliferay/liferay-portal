@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,13 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -45,11 +44,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 	description = "Represents a set of users that meet certain criteria. Segments may be used to create customized experiences for users.",
 	value = "Segment"
 )
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@io.swagger.v3.oas.annotations.media.Schema(
 	description = "Represents a set of users that meet certain criteria. Segments may be used to create customized experiences for users.",
 	requiredProperties = {"criteria", "name"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Segment")
 public class Segment implements Serializable {
 
@@ -61,30 +60,40 @@ public class Segment implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Segment.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A flag that indicates whether the segment is active."
 	)
 	public Boolean getActive() {
+		if (_activeSupplier != null) {
+			active = _activeSupplier.get();
+
+			_activeSupplier = null;
+		}
+
 		return active;
 	}
 
 	public void setActive(Boolean active) {
 		this.active = active;
+
+		_activeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActive(
 		UnsafeSupplier<Boolean, Exception> activeUnsafeSupplier) {
 
-		try {
-			active = activeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activeSupplier = () -> {
+			try {
+				return activeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -93,28 +102,43 @@ public class Segment implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Boolean active;
 
-	@Schema(description = "The segment's criteria.")
+	@JsonIgnore
+	private Supplier<Boolean> _activeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's criteria."
+	)
 	public String getCriteria() {
+		if (_criteriaSupplier != null) {
+			criteria = _criteriaSupplier.get();
+
+			_criteriaSupplier = null;
+		}
+
 		return criteria;
 	}
 
 	public void setCriteria(String criteria) {
 		this.criteria = criteria;
+
+		_criteriaSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCriteria(
 		UnsafeSupplier<String, Exception> criteriaUnsafeSupplier) {
 
-		try {
-			criteria = criteriaUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_criteriaSupplier = () -> {
+			try {
+				return criteriaUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's criteria.")
@@ -122,14 +146,27 @@ public class Segment implements Serializable {
 	@NotEmpty
 	protected String criteria;
 
-	@Schema(description = "The segment's criteria in JSON.")
+	@JsonIgnore
+	private Supplier<String> _criteriaSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's criteria in JSON."
+	)
 	@Valid
 	public Map<String, Object> getCriteriaValue() {
+		if (_criteriaValueSupplier != null) {
+			criteriaValue = _criteriaValueSupplier.get();
+
+			_criteriaValueSupplier = null;
+		}
+
 		return criteriaValue;
 	}
 
 	public void setCriteriaValue(Map<String, Object> criteriaValue) {
 		this.criteriaValue = criteriaValue;
+
+		_criteriaValueSupplier = null;
 	}
 
 	@JsonIgnore
@@ -137,123 +174,185 @@ public class Segment implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			criteriaValueUnsafeSupplier) {
 
-		try {
-			criteriaValue = criteriaValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_criteriaValueSupplier = () -> {
+			try {
+				return criteriaValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's criteria in JSON.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Object> criteriaValue;
 
-	@Schema(description = "The segment's creation date.")
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _criteriaValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's creation date."
+	)
 	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
 		return dateCreated;
 	}
 
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCreated(
 		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
 
-		try {
-			dateCreated = dateCreatedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's creation date.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateCreated;
 
-	@Schema(description = "The segment's most recent modification date.")
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's most recent modification date."
+	)
 	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
 		return dateModified;
 	}
 
 	public void setDateModified(Date dateModified) {
 		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateModified(
 		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
 
-		try {
-			dateModified = dateModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's most recent modification date.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateModified;
 
-	@Schema(description = "The segment's ID.")
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's ID."
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(description = "The segment's name.")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's name."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's name.")
@@ -261,61 +360,94 @@ public class Segment implements Serializable {
 	@NotEmpty
 	protected String name;
 
-	@Schema(description = "The ID of the segment's site.")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The ID of the segment's site."
+	)
 	public Long getSiteId() {
+		if (_siteIdSupplier != null) {
+			siteId = _siteIdSupplier.get();
+
+			_siteIdSupplier = null;
+		}
+
 		return siteId;
 	}
 
 	public void setSiteId(Long siteId) {
 		this.siteId = siteId;
+
+		_siteIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSiteId(
 		UnsafeSupplier<Long, Exception> siteIdUnsafeSupplier) {
 
-		try {
-			siteId = siteIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_siteIdSupplier = () -> {
+			try {
+				return siteIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The ID of the segment's site.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long siteId;
 
-	@Schema(description = "The segment's source.")
+	@JsonIgnore
+	private Supplier<Long> _siteIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The segment's source."
+	)
 	public String getSource() {
+		if (_sourceSupplier != null) {
+			source = _sourceSupplier.get();
+
+			_sourceSupplier = null;
+		}
+
 		return source;
 	}
 
 	public void setSource(String source) {
 		this.source = source;
+
+		_sourceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSource(
 		UnsafeSupplier<String, Exception> sourceUnsafeSupplier) {
 
-		try {
-			source = sourceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sourceSupplier = () -> {
+			try {
+				return sourceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The segment's source.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String source;
+
+	@JsonIgnore
+	private Supplier<String> _sourceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -347,6 +479,8 @@ public class Segment implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Boolean active = getActive();
+
 		if (active != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -356,6 +490,8 @@ public class Segment implements Serializable {
 
 			sb.append(active);
 		}
+
+		String criteria = getCriteria();
 
 		if (criteria != null) {
 			if (sb.length() > 1) {
@@ -371,6 +507,8 @@ public class Segment implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, Object> criteriaValue = getCriteriaValue();
+
 		if (criteriaValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -380,6 +518,8 @@ public class Segment implements Serializable {
 
 			sb.append(_toJSON(criteriaValue));
 		}
+
+		Date dateCreated = getDateCreated();
 
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
@@ -395,6 +535,8 @@ public class Segment implements Serializable {
 			sb.append("\"");
 		}
 
+		Date dateModified = getDateModified();
+
 		if (dateModified != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -409,6 +551,8 @@ public class Segment implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -418,6 +562,8 @@ public class Segment implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -433,6 +579,8 @@ public class Segment implements Serializable {
 			sb.append("\"");
 		}
 
+		Long siteId = getSiteId();
+
 		if (siteId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -442,6 +590,8 @@ public class Segment implements Serializable {
 
 			sb.append(siteId);
 		}
+
+		String source = getSource();
 
 		if (source != null) {
 			if (sb.length() > 1) {
@@ -462,8 +612,8 @@ public class Segment implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.Segment",
 		name = "x-class-name"
 	)
@@ -509,7 +659,10 @@ public class Segment implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

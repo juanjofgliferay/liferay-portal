@@ -6,6 +6,7 @@
 package com.liferay.portal.model.impl;
 
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -15,6 +16,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
 import java.util.Date;
 
@@ -384,11 +388,24 @@ public class UserCacheModel
 
 		userImpl.resetOriginalValues();
 
+		try {
+			_groupIdMethodHandle.invokeExact(userImpl, groupId);
+
+			_layoutsUpdatedMethodHandle.invokeExact(userImpl, layoutsUpdated);
+
+			_userGroupIdsMethodHandle.invokeExact(userImpl, userGroupIds);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+
 		return userImpl;
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
 		mvccVersion = objectInput.readLong();
 
 		ctCollectionId = objectInput.readLong();
@@ -449,6 +466,12 @@ public class UserCacheModel
 		type = objectInput.readInt();
 
 		status = objectInput.readInt();
+
+		groupId = (long)objectInput.readObject();
+
+		layoutsUpdated = (boolean)objectInput.readObject();
+
+		userGroupIds = (long[])objectInput.readObject();
 	}
 
 	@Override
@@ -636,6 +659,12 @@ public class UserCacheModel
 		objectOutput.writeInt(type);
 
 		objectOutput.writeInt(status);
+
+		objectOutput.writeObject(groupId);
+
+		objectOutput.writeObject(layoutsUpdated);
+
+		objectOutput.writeObject(userGroupIds);
 	}
 
 	public long mvccVersion;
@@ -682,5 +711,30 @@ public class UserCacheModel
 	public boolean emailAddressVerified;
 	public int type;
 	public int status;
+	public volatile long groupId;
+	public volatile boolean layoutsUpdated;
+	public volatile long[] userGroupIds;
+
+	private static final MethodHandle _groupIdMethodHandle;
+	private static final MethodHandle _layoutsUpdatedMethodHandle;
+	private static final MethodHandle _userGroupIdsMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_groupIdMethodHandle = lookup.findSetter(
+				UserImpl.class, "_groupId", long.class);
+
+			_layoutsUpdatedMethodHandle = lookup.findSetter(
+				UserImpl.class, "_layoutsUpdated", boolean.class);
+
+			_userGroupIdsMethodHandle = lookup.findSetter(
+				UserImpl.class, "_userGroupIds", long[].class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }

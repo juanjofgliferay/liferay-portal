@@ -5,6 +5,7 @@
 
 package com.liferay.portal.scheduler.quartz.internal;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
@@ -18,6 +19,7 @@ import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.scheduler.JobState;
 import com.liferay.portal.kernel.scheduler.JobStateSerializeUtil;
 import com.liferay.portal.kernel.scheduler.SchedulerEngine;
+import com.liferay.portal.kernel.scheduler.SchedulerEngineAuditor;
 import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
 import com.liferay.portal.kernel.scheduler.SchedulerException;
 import com.liferay.portal.kernel.scheduler.StorageType;
@@ -25,8 +27,8 @@ import com.liferay.portal.kernel.scheduler.TriggerState;
 import com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalRunMode;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.scheduler.quartz.internal.job.MessageSenderJob;
@@ -282,6 +284,7 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 		}
 	}
 
+	@Override
 	public void run(
 			long companyId, String jobName, String groupName,
 			StorageType storageType)
@@ -431,14 +434,14 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 	@Activate
 	protected void activate() {
 		_descriptionMaxLength = GetterUtil.getInteger(
-			_props.get(PropsKeys.SCHEDULER_DESCRIPTION_MAX_LENGTH), 120);
+			PropsUtil.get(PropsKeys.SCHEDULER_DESCRIPTION_MAX_LENGTH), 120);
 		_groupNameMaxLength = GetterUtil.getInteger(
-			_props.get(PropsKeys.SCHEDULER_GROUP_NAME_MAX_LENGTH), 80);
+			PropsUtil.get(PropsKeys.SCHEDULER_GROUP_NAME_MAX_LENGTH), 80);
 		_jobNameMaxLength = GetterUtil.getInteger(
-			_props.get(PropsKeys.SCHEDULER_JOB_NAME_MAX_LENGTH), 80);
+			PropsUtil.get(PropsKeys.SCHEDULER_JOB_NAME_MAX_LENGTH), 80);
 
 		_schedulerEngineEnabled = GetterUtil.getBoolean(
-			_props.get(PropsKeys.SCHEDULER_ENABLED));
+			PropsUtil.get(PropsKeys.SCHEDULER_ENABLED));
 
 		if (!_schedulerEngineEnabled) {
 			return;
@@ -549,24 +552,21 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 
 		groupName = _fixMaxLength(groupName, _groupNameMaxLength, storageType);
 
-		List<SchedulerResponse> schedulerResponses = new ArrayList<>();
+		return TransformUtil.transform(
+			scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName)),
+			jobKey -> {
+				SchedulerResponse schedulerResponse = getScheduledJob(
+					scheduler, jobKey);
 
-		Set<JobKey> jobKeys = scheduler.getJobKeys(
-			GroupMatcher.jobGroupEquals(groupName));
+				if ((schedulerResponse != null) &&
+					((storageType == null) ||
+					 (storageType == schedulerResponse.getStorageType()))) {
 
-		for (JobKey jobKey : jobKeys) {
-			SchedulerResponse schedulerResponse = getScheduledJob(
-				scheduler, jobKey);
+					return schedulerResponse;
+				}
 
-			if ((schedulerResponse != null) &&
-				((storageType == null) ||
-				 (storageType == schedulerResponse.getStorageType()))) {
-
-				schedulerResponses.add(schedulerResponse);
-			}
-		}
-
-		return schedulerResponses;
+				return null;
+			});
 	}
 
 	protected void schedule(
@@ -689,7 +689,7 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 
 		StdSchedulerFactory schedulerFactory = new StdSchedulerFactory();
 
-		Properties properties = _props.getProperties(propertiesPrefix, true);
+		Properties properties = PropsUtil.getProperties(propertiesPrefix, true);
 
 		if (useQuartzCluster) {
 			DBType dbType = DBManagerUtil.getDBType();
@@ -706,7 +706,7 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 			}
 
 			if (GetterUtil.getBoolean(
-					_props.get(PropsKeys.CLUSTER_LINK_ENABLED))) {
+					PropsUtil.get(PropsKeys.CLUSTER_LINK_ENABLED))) {
 
 				if (dbType == DBType.HYPERSONIC) {
 					_log.error("Unable to cluster scheduler on Hypersonic");
@@ -783,13 +783,13 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 
 	private Scheduler _persistedScheduler;
 
-	@Reference
-	private Props _props;
-
 	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.portal.scheduler.quartz)(release.schema.version=1.0.0))"
+		target = "(&(release.bundle.symbolic.name=com.liferay.portal.scheduler.quartz)(release.schema.version>=1.0.2))"
 	)
 	private Release _release;
+
+	@Reference
+	private SchedulerEngineAuditor _schedulerEngineAuditor;
 
 	private volatile boolean _schedulerEngineEnabled;
 
@@ -835,13 +835,6 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 		}
 
 		private void _audit(JobKey jobKey, TriggerState triggerState) {
-			SchedulerEngineHelper schedulerEngineHelper =
-				_schedulerEngineHelperSnapshot.get();
-
-			if (schedulerEngineHelper == null) {
-				return;
-			}
-
 			try {
 				JobDetail jobDetail = _scheduler.getJobDetail(jobKey);
 
@@ -851,7 +844,8 @@ public class QuartzSchedulerEngine implements SchedulerEngine {
 
 				message.setValues(new HashMap<>(jobDataMap.getWrappedMap()));
 
-				schedulerEngineHelper.auditSchedulerJobs(message, triggerState);
+				_schedulerEngineAuditor.auditSchedulerJobs(
+					message, triggerState);
 			}
 			catch (Exception exception) {
 				_log.error(

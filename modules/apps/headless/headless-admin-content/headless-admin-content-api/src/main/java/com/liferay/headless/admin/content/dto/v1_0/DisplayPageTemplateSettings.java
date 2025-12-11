@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,14 +53,22 @@ public class DisplayPageTemplateSettings implements Serializable {
 			DisplayPageTemplateSettings.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public ContentAssociation getContentAssociation() {
+		if (_contentAssociationSupplier != null) {
+			contentAssociation = _contentAssociationSupplier.get();
+
+			_contentAssociationSupplier = null;
+		}
+
 		return contentAssociation;
 	}
 
 	public void setContentAssociation(ContentAssociation contentAssociation) {
 		this.contentAssociation = contentAssociation;
+
+		_contentAssociationSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,24 +76,35 @@ public class DisplayPageTemplateSettings implements Serializable {
 		UnsafeSupplier<ContentAssociation, Exception>
 			contentAssociationUnsafeSupplier) {
 
-		try {
-			contentAssociation = contentAssociationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentAssociationSupplier = () -> {
+			try {
+				return contentAssociationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentAssociation contentAssociation;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<ContentAssociation> _contentAssociationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public OpenGraphSettingsMapping getOpenGraphSettingsMapping() {
+		if (_openGraphSettingsMappingSupplier != null) {
+			openGraphSettingsMapping = _openGraphSettingsMappingSupplier.get();
+
+			_openGraphSettingsMappingSupplier = null;
+		}
+
 		return openGraphSettingsMapping;
 	}
 
@@ -94,6 +112,8 @@ public class DisplayPageTemplateSettings implements Serializable {
 		OpenGraphSettingsMapping openGraphSettingsMapping) {
 
 		this.openGraphSettingsMapping = openGraphSettingsMapping;
+
+		_openGraphSettingsMappingSupplier = null;
 	}
 
 	@JsonIgnore
@@ -101,30 +121,43 @@ public class DisplayPageTemplateSettings implements Serializable {
 		UnsafeSupplier<OpenGraphSettingsMapping, Exception>
 			openGraphSettingsMappingUnsafeSupplier) {
 
-		try {
-			openGraphSettingsMapping =
-				openGraphSettingsMappingUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_openGraphSettingsMappingSupplier = () -> {
+			try {
+				return openGraphSettingsMappingUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected OpenGraphSettingsMapping openGraphSettingsMapping;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<OpenGraphSettingsMapping>
+		_openGraphSettingsMappingSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public SEOSettingsMapping getSeoSettingsMapping() {
+		if (_seoSettingsMappingSupplier != null) {
+			seoSettingsMapping = _seoSettingsMappingSupplier.get();
+
+			_seoSettingsMappingSupplier = null;
+		}
+
 		return seoSettingsMapping;
 	}
 
 	public void setSeoSettingsMapping(SEOSettingsMapping seoSettingsMapping) {
 		this.seoSettingsMapping = seoSettingsMapping;
+
+		_seoSettingsMappingSupplier = null;
 	}
 
 	@JsonIgnore
@@ -132,20 +165,25 @@ public class DisplayPageTemplateSettings implements Serializable {
 		UnsafeSupplier<SEOSettingsMapping, Exception>
 			seoSettingsMappingUnsafeSupplier) {
 
-		try {
-			seoSettingsMapping = seoSettingsMappingUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_seoSettingsMappingSupplier = () -> {
+			try {
+				return seoSettingsMappingUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SEOSettingsMapping seoSettingsMapping;
+
+	@JsonIgnore
+	private Supplier<SEOSettingsMapping> _seoSettingsMappingSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -176,6 +214,8 @@ public class DisplayPageTemplateSettings implements Serializable {
 
 		sb.append("{");
 
+		ContentAssociation contentAssociation = getContentAssociation();
+
 		if (contentAssociation != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -186,6 +226,9 @@ public class DisplayPageTemplateSettings implements Serializable {
 			sb.append(String.valueOf(contentAssociation));
 		}
 
+		OpenGraphSettingsMapping openGraphSettingsMapping =
+			getOpenGraphSettingsMapping();
+
 		if (openGraphSettingsMapping != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -195,6 +238,8 @@ public class DisplayPageTemplateSettings implements Serializable {
 
 			sb.append(String.valueOf(openGraphSettingsMapping));
 		}
+
+		SEOSettingsMapping seoSettingsMapping = getSeoSettingsMapping();
 
 		if (seoSettingsMapping != null) {
 			if (sb.length() > 1) {
@@ -211,8 +256,8 @@ public class DisplayPageTemplateSettings implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.content.dto.v1_0.DisplayPageTemplateSettings",
 		name = "x-class-name"
 	)
@@ -258,7 +303,10 @@ public class DisplayPageTemplateSettings implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

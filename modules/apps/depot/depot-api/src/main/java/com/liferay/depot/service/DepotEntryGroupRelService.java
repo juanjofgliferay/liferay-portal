@@ -7,6 +7,7 @@ package com.liferay.depot.service;
 
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.model.DepotEntryGroupRel;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
@@ -30,6 +31,7 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @AccessControlled
+@CTAware
 @JSONWebService
 @ProviderType
 @Transactional(
@@ -52,8 +54,18 @@ public interface DepotEntryGroupRelService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DepotEntryGroupRel getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			long depotEntryId, long toGroupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
-			long groupId, int start, int end)
+			DepotEntry depotEntry, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
+			long groupId, int type, int start, int end)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -61,7 +73,8 @@ public interface DepotEntryGroupRelService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getDepotEntryGroupRelsCount(long groupId) throws PortalException;
+	public int getDepotEntryGroupRelsCount(long groupId, int type)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.

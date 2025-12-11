@@ -1,26 +1,26 @@
 {
 	"dependencies": {
-		"@clayui/alert": "3.106.1",
-		"@clayui/autocomplete": "3.107.1",
-		"@clayui/button": "3.107.0",
-		"@clayui/data-provider": "3.107.0",
-		"@clayui/drop-down": "3.107.1",
-		"@clayui/form": "3.107.0",
-		"@clayui/icon": "3.106.1",
-		"@clayui/layout": "3.106.1",
-		"@clayui/link": "3.106.1",
-		"@clayui/loading-indicator": "3.106.1",
-		"@clayui/modal": "3.107.0",
-		"@clayui/tabs": "3.107.0",
-		"@clayui/toolbar": "3.107.0",
+		"@clayui/alert": "3.148.0",
+		"@clayui/autocomplete": "3.155.0",
+		"@clayui/button": "3.144.1",
+		"@clayui/data-provider": "3.151.0",
+		"@clayui/drop-down": "3.155.0",
+		"@clayui/form": "3.151.0",
+		"@clayui/icon": "3.144.1",
+		"@clayui/layout": "3.144.1",
+		"@clayui/link": "3.144.1",
+		"@clayui/loading-indicator": "3.144.1",
+		"@clayui/modal": "3.151.0",
+		"@clayui/tabs": "3.151.0",
+		"@clayui/toolbar": "3.151.0",
 		"@liferay/object-js-components-web": "*",
 		"dagre": "0.8.2",
-		"frontend-editor-ckeditor-web": "*",
 		"frontend-js-components-web": "*",
 		"frontend-js-web": "*",
 		"moment": "2.29.4",
 		"prop-types": "15.7.2",
-		"react": "16.12.0",
+		"react": "18.2.0",
+		"react-dom": "18.2.0",
 		"react-flow-renderer": "9.7.0",
 		"uuid": "9.0.0"
 	},
@@ -36,12 +36,13 @@
 			"<rootDir>/test/mock"
 		]
 	},
+	"main": "designer/js/index.js",
 	"name": "portal-workflow-kaleo-designer-web",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix",
-		"test": "liferay-npm-scripts test"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format",
+		"test": "node-scripts test"
 	},
-	"version": "5.0.120"
+	"version": "5.0.162"
 }

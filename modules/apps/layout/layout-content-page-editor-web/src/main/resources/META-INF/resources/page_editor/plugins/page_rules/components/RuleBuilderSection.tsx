@@ -7,16 +7,19 @@ import ClayButton from '@clayui/button';
 import {Option, Picker} from '@clayui/core';
 import ClayIcon from '@clayui/icon';
 import ClayPanel from '@clayui/panel';
-import React, {Dispatch, SetStateAction, useContext, useMemo} from 'react';
+import {ScreenReaderAnnouncerContext} from '@liferay/layout-js-components-web';
+import React, {useContext, useMemo} from 'react';
 import {flushSync} from 'react-dom';
-
-// @ts-ignore
-
 import {v4 as uuidv4} from 'uuid';
 
-import ActionComponent, {Action} from './Action';
-import ConditionComponent, {Condition} from './Condition';
-import {ScreenReaderAnnouncerContext} from './ScreenReaderContext';
+import {LAYOUT_DATA_ITEM_TYPES} from '../../../app/config/constants/layoutDataItemTypes';
+import {useSelector} from '../../../app/contexts/StoreContext';
+import selectLayoutDataItemLabel from '../../../app/selectors/selectLayoutDataItemLabel';
+import {isAllowedInRules} from '../../../app/utils/isAllowedInRules';
+import {isLayoutDataItemDeleted} from '../../../app/utils/isLayoutDataItemDeleted';
+import {Action, Condition} from '../../../types/Rule';
+import ActionComponent from './Action';
+import ConditionComponent from './Condition';
 
 const TriggerLabel = React.forwardRef<HTMLButtonElement, any>(
 	({children, className: _className, onClick, ...otherProps}, ref) => (
@@ -35,16 +38,61 @@ const TriggerLabel = React.forwardRef<HTMLButtonElement, any>(
 
 type RuleBuilderActionProps = {
 	actions: Action[];
-	layoutDataItems: {label: string; value: string}[];
-	setActions: Dispatch<SetStateAction<Action[]>>;
+	setActions: (actions: Action[]) => void;
 };
 
 export function RuleBuilderActionSection({
 	actions,
-	layoutDataItems,
 	setActions,
 }: RuleBuilderActionProps) {
 	const {sendMessage} = useContext(ScreenReaderAnnouncerContext);
+
+	const fragmentEntryLinks = useSelector((state) => state.fragmentEntryLinks);
+	const layoutData = useSelector((state) => state.layoutData);
+
+	const [layoutDataItems, inputFragmentItems] = useMemo(() => {
+		const layoutItems: {label: string; value: string}[] = [];
+		const inputFragments: {label: string; value: string}[] = [];
+
+		Object.values(layoutData.items).forEach((item) => {
+			if (isLayoutDataItemDeleted(layoutData, item.itemId)) {
+				return;
+			}
+
+			if (isAllowedInRules(item, layoutData)) {
+				layoutItems.push({
+					label: selectLayoutDataItemLabel(
+						{fragmentEntryLinks, layoutData},
+						item
+					),
+					value: item.itemId,
+				});
+			}
+
+			if (item.type === LAYOUT_DATA_ITEM_TYPES.fragment) {
+				const fragment =
+					fragmentEntryLinks[item.config.fragmentEntryLinkId];
+
+				if (
+					fragment &&
+					fragment.fragmentEntryType === 'input' &&
+					!fragment.fieldTypes?.includes('categorization') &&
+					!fragment.fieldTypes?.includes('localizationSelect') &&
+					!fragment.fieldTypes?.includes('stepper')
+				) {
+					inputFragments.push({
+						label: selectLayoutDataItemLabel(
+							{fragmentEntryLinks, layoutData},
+							item
+						),
+						value: item.itemId,
+					});
+				}
+			}
+		});
+
+		return [layoutItems, inputFragments];
+	}, [layoutData, fragmentEntryLinks]);
 
 	const actionsRefMap = useMemo(() => new Map(), []);
 
@@ -52,10 +100,7 @@ export function RuleBuilderActionSection({
 		const actionId = uuidv4();
 
 		flushSync(() => {
-			setActions((previousActions) => [
-				...previousActions,
-				{id: actionId} as Action,
-			]);
+			setActions([...actions, {id: actionId} as Action]);
 		});
 
 		const actionElement = actionsRefMap.get(actionId);
@@ -73,14 +118,22 @@ export function RuleBuilderActionSection({
 
 			actionsRefMap.get(nextCondition.id)?.focus();
 
-			setActions((previousActions) =>
-				previousActions.filter(
+			setActions(
+				actions.filter(
 					(_action, currentIndex) => currentIndex !== index
 				)
 			);
 		}
 
 		sendMessage(Liferay.Language.get('action-deleted'));
+	};
+
+	const onActionChange = (action: Action, index: number) => {
+		const newActions = [...actions];
+
+		newActions[index] = action;
+
+		setActions(newActions);
 	};
 
 	const setActionRef = (
@@ -111,28 +164,30 @@ export function RuleBuilderActionSection({
 			}
 			displayType="secondary"
 		>
-			<ClayPanel.Body className="px-3" role="menu">
-				{actions.map((action, index) => (
-					<ActionComponent
-						action={action}
-						key={action.id}
-						layoutDataItems={layoutDataItems}
-						onActionChange={(action) =>
-							setActions((previousActions) => {
-								const newActions = [...previousActions];
-
-								newActions[index] = action;
-
-								return newActions;
-							})
-						}
-						onDeleteAction={() => {
-							onDeleteAction(action, index);
-						}}
-						showDeleteButton={actions.length > 1 || !!action.type}
-						wrapperRef={(element) => setActionRef(action, element)}
-					/>
-				))}
+			<ClayPanel.Body className="px-3">
+				<div role="menu">
+					{actions.map((action, index) => (
+						<ActionComponent
+							action={action}
+							inputFragmentItems={inputFragmentItems}
+							key={action.id}
+							layoutDataItems={layoutDataItems}
+							onActionChange={(action) =>
+								onActionChange(action, index)
+							}
+							onDeleteAction={() => {
+								onDeleteAction(action, index);
+							}}
+							showDeleteButton={
+								!action.readOnly &&
+								(actions.length > 1 || !!action.type)
+							}
+							wrapperRef={(element) =>
+								setActionRef(action, element)
+							}
+						/>
+					))}
+				</div>
 
 				<ClayButton
 					className="mt-2"
@@ -152,8 +207,8 @@ export type ConditionType = 'all' | 'any';
 type RuleBuilderConditionProps = {
 	conditionType: ConditionType;
 	conditions: Condition[];
-	setConditionType: Dispatch<SetStateAction<ConditionType>>;
-	setConditions: Dispatch<SetStateAction<Condition[]>>;
+	setConditionType: (conditionType: ConditionType) => void;
+	setConditions: (conditions: Condition[]) => void;
 };
 
 export function RuleBuilderConditionSection({
@@ -164,16 +219,47 @@ export function RuleBuilderConditionSection({
 }: RuleBuilderConditionProps) {
 	const {sendMessage} = useContext(ScreenReaderAnnouncerContext);
 
+	const fragmentEntryLinks = useSelector((state) => state.fragmentEntryLinks);
+	const layoutData = useSelector((state) => state.layoutData);
+
+	const inputFragmentItems = useMemo(() => {
+		const inputFragments: {label: string; value: string}[] = [];
+
+		Object.values(layoutData.items).forEach((item) => {
+			if (isLayoutDataItemDeleted(layoutData, item.itemId)) {
+				return;
+			}
+
+			if (item.type === LAYOUT_DATA_ITEM_TYPES.fragment) {
+				const fragment =
+					fragmentEntryLinks[item.config.fragmentEntryLinkId];
+
+				if (
+					fragment &&
+					fragment.fragmentEntryType === 'input' &&
+					fragment.fieldTypes?.includes('boolean')
+				) {
+					inputFragments.push({
+						label: selectLayoutDataItemLabel(
+							{fragmentEntryLinks, layoutData},
+							item
+						),
+						value: item.itemId,
+					});
+				}
+			}
+		});
+
+		return inputFragments;
+	}, [layoutData, fragmentEntryLinks]);
+
 	const conditionRefMap = useMemo(() => new Map(), []);
 
 	const onAddCondition = () => {
 		const conditionId = uuidv4();
 
 		flushSync(() => {
-			setConditions((previousConditions) => [
-				...previousConditions,
-				{id: conditionId} as Condition,
-			]);
+			setConditions([...conditions, {id: conditionId} as Condition]);
 		});
 
 		const conditionElement = conditionRefMap.get(conditionId);
@@ -192,14 +278,22 @@ export function RuleBuilderConditionSection({
 
 			conditionRefMap.get(nextCondition.id)?.focus();
 
-			setConditions((previousConditions) =>
-				previousConditions.filter(
+			setConditions(
+				conditions.filter(
 					(_condition, currentIndex) => currentIndex !== index
 				)
 			);
 		}
 
 		sendMessage(Liferay.Language.get('condition-deleted'));
+	};
+
+	const onConditionChange = (condition: Condition, index: number) => {
+		const newConditions = [...conditions];
+
+		newConditions[index] = condition;
+
+		setConditions(newConditions);
 	};
 
 	const setConditionRef = (
@@ -218,10 +312,10 @@ export function RuleBuilderConditionSection({
 						conditionType === 'all'
 							? Liferay.Language.get(
 									'if-all-of-the-following-conditions-are-met'
-							  )
+								)
 							: Liferay.Language.get(
 									'if-any-of-the-following-conditions-are-met'
-							  )
+								)
 					}
 					className="p-3 page-editor__rule-builder-section-title text-3"
 				>
@@ -237,6 +331,11 @@ export function RuleBuilderConditionSection({
 
 						<div className="align-items-center d-flex">
 							<Picker
+								aria-label={
+									conditionType === 'all'
+										? Liferay.Language.get('all')
+										: Liferay.Language.get('any')
+								}
 								as={TriggerLabel}
 								items={[
 									{
@@ -248,6 +347,19 @@ export function RuleBuilderConditionSection({
 										value: 'all',
 									},
 								]}
+								messages={{
+									itemDescribedby: Liferay.Language.get(
+										'you-are-currently-on-a-text-element,-inside-of-a-list-box'
+									),
+									itemSelected:
+										Liferay.Language.get('x-selected'),
+									scrollToBottomAriaLabel:
+										Liferay.Language.get(
+											'scroll-to-bottom'
+										),
+									scrollToTopAriaLabel:
+										Liferay.Language.get('scroll-to-top'),
+								}}
 								onSelectionChange={(key: any) =>
 									setConditionType(key)
 								}
@@ -272,31 +384,28 @@ export function RuleBuilderConditionSection({
 			displayType="secondary"
 			showCollapseIcon
 		>
-			<ClayPanel.Body className="px-3" role="menu">
-				{conditions.map((condition, index, conditions) => (
-					<ConditionComponent
-						condition={condition}
-						key={condition.id}
-						onConditionChange={(condition) =>
-							setConditions((previousConditions) => {
-								const newConditions = [...previousConditions];
-
-								newConditions[index] = condition;
-
-								return newConditions;
-							})
-						}
-						onDeleteCondition={() =>
-							onDeleteCondition(condition, index)
-						}
-						showDeleteButton={
-							conditions.length > 1 || !!condition.type
-						}
-						wrapperRef={(element) =>
-							setConditionRef(condition, element)
-						}
-					/>
-				))}
+			<ClayPanel.Body className="px-3">
+				<div role="menu">
+					{conditions.map((condition, index, conditions) => (
+						<ConditionComponent
+							condition={condition}
+							inputFragmentItems={inputFragmentItems}
+							key={condition.id}
+							onConditionChange={(condition) =>
+								onConditionChange(condition, index)
+							}
+							onDeleteCondition={() =>
+								onDeleteCondition(condition, index)
+							}
+							showDeleteButton={
+								conditions.length > 1 || !!condition.type
+							}
+							wrapperRef={(element) =>
+								setConditionRef(condition, element)
+							}
+						/>
+					))}
+				</div>
 
 				<ClayButton
 					className="mt-2"

@@ -12,6 +12,8 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
@@ -24,6 +26,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.asset.service.base.AssetCategoryServiceBaseImpl;
+import com.liferay.portlet.asset.service.permission.AssetCategoriesPermission;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
@@ -112,9 +115,42 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 	}
 
 	@Override
+	public AssetCategory deleteCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetCategory assetCategory =
+			assetCategoryLocalService.getAssetCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		AssetCategoryPermission.check(
+			getPermissionChecker(), assetCategory.getCategoryId(),
+			ActionKeys.DELETE);
+
+		return assetCategoryLocalService.deleteCategory(assetCategory);
+	}
+
+	@Override
 	public AssetCategory fetchCategory(long categoryId) throws PortalException {
 		AssetCategory category = assetCategoryLocalService.fetchCategory(
 			categoryId);
+
+		if (category != null) {
+			AssetCategoryPermission.check(
+				getPermissionChecker(), category, ActionKeys.VIEW);
+		}
+
+		return category;
+	}
+
+	@Override
+	public AssetCategory fetchCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetCategory category =
+			assetCategoryLocalService.fetchAssetCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
 
 		if (category != null) {
 			AssetCategoryPermission.check(
@@ -260,6 +296,25 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 
 		return assetCategoryPersistence.countByParentCategoryId(
 			parentCategoryId);
+	}
+
+	public AssetCategory getOrAddEmptyCategory(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		AssetCategory category =
+			assetCategoryService.fetchCategoryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (category != null) {
+			return category;
+		}
+
+		AssetCategoriesPermission.check(
+			getPermissionChecker(), groupId, ActionKeys.ADD_CATEGORY);
+
+		return assetCategoryLocalService.getOrAddEmptyCategory(
+			externalReferenceCode, getUserId(), groupId);
 	}
 
 	@Override
@@ -544,18 +599,19 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 
 	@Override
 	public AssetCategory updateCategory(
-			long categoryId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long categoryId,
+			long parentCategoryId, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, long vocabularyId,
+			String[] categoryProperties, ServiceContext serviceContext)
 		throws PortalException {
 
 		AssetCategoryPermission.check(
 			getPermissionChecker(), categoryId, ActionKeys.UPDATE);
 
 		return assetCategoryLocalService.updateCategory(
-			getUserId(), categoryId, parentCategoryId, titleMap, descriptionMap,
-			vocabularyId, categoryProperties, serviceContext);
+			externalReferenceCode, getUserId(), categoryId, parentCategoryId,
+			titleMap, descriptionMap, vocabularyId, categoryProperties,
+			serviceContext);
 	}
 
 	protected List<AssetCategory> filterCategories(
@@ -592,13 +648,23 @@ public class AssetCategoryServiceImpl extends AssetCategoryServiceBaseImpl {
 			JSONObject categoryJSONObject = JSONFactoryUtil.createJSONObject(
 				categoryJSON);
 
-			categoryJSONObject.put(
-				"path", getCategoryPath(category.getCategoryId()));
+			try {
+				categoryJSONObject.put(
+					"path", getCategoryPath(category.getCategoryId()));
 
-			jsonArray.put(categoryJSONObject);
+				jsonArray.put(categoryJSONObject);
+			}
+			catch (PortalException portalException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(portalException);
+				}
+			}
 		}
 
 		return jsonArray;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetCategoryServiceImpl.class);
 
 }

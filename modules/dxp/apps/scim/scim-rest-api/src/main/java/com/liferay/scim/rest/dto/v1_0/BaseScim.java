@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Olivér Kecskeméty
@@ -52,30 +51,40 @@ public class BaseScim implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(BaseScim.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A String that is an identifier for the resource as defined by the provisioning client."
 	)
 	public String getExternalId() {
+		if (_externalIdSupplier != null) {
+			externalId = _externalIdSupplier.get();
+
+			_externalIdSupplier = null;
+		}
+
 		return externalId;
 	}
 
 	public void setExternalId(String externalId) {
 		this.externalId = externalId;
+
+		_externalIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalId(
 		UnsafeSupplier<String, Exception> externalIdUnsafeSupplier) {
 
-		try {
-			externalId = externalIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalIdSupplier = () -> {
+			try {
+				return externalIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -84,28 +93,41 @@ public class BaseScim implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalId;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _externalIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A unique identifier for a SCIM resource as defined by the service provider."
 	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -114,57 +136,83 @@ public class BaseScim implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Meta getMeta() {
+		if (_metaSupplier != null) {
+			meta = _metaSupplier.get();
+
+			_metaSupplier = null;
+		}
+
 		return meta;
 	}
 
 	public void setMeta(Meta meta) {
 		this.meta = meta;
+
+		_metaSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMeta(UnsafeSupplier<Meta, Exception> metaUnsafeSupplier) {
-		try {
-			meta = metaUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_metaSupplier = () -> {
+			try {
+				return metaUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Meta meta;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Meta> _metaSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A multi-valued list of strings indicating the namespaces of the SCIM schemas that define the attributes present in the current JSON structure."
 	)
 	public String[] getSchemas() {
+		if (_schemasSupplier != null) {
+			schemas = _schemasSupplier.get();
+
+			_schemasSupplier = null;
+		}
+
 		return schemas;
 	}
 
 	public void setSchemas(String[] schemas) {
 		this.schemas = schemas;
+
+		_schemasSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSchemas(
 		UnsafeSupplier<String[], Exception> schemasUnsafeSupplier) {
 
-		try {
-			schemas = schemasUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_schemasSupplier = () -> {
+			try {
+				return schemasUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -172,6 +220,9 @@ public class BaseScim implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] schemas;
+
+	@JsonIgnore
+	private Supplier<String[]> _schemasSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -200,6 +251,8 @@ public class BaseScim implements Serializable {
 
 		sb.append("{");
 
+		String externalId = getExternalId();
+
 		if (externalId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -213,6 +266,8 @@ public class BaseScim implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -228,6 +283,8 @@ public class BaseScim implements Serializable {
 			sb.append("\"");
 		}
 
+		Meta meta = getMeta();
+
 		if (meta != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -237,6 +294,8 @@ public class BaseScim implements Serializable {
 
 			sb.append(String.valueOf(meta));
 		}
+
+		String[] schemas = getSchemas();
 
 		if (schemas != null) {
 			if (sb.length() > 1) {
@@ -267,8 +326,8 @@ public class BaseScim implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.scim.rest.dto.v1_0.BaseScim",
 		name = "x-class-name"
 	)
@@ -314,7 +373,10 @@ public class BaseScim implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Petteri Karttunen
@@ -49,42 +48,67 @@ public class FacetConfiguration implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FacetConfiguration.class, json);
 	}
 
-	@Schema(description = "The name of the aggregation.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The name of the aggregation."
+	)
 	public String getAggregationName() {
+		if (_aggregationNameSupplier != null) {
+			aggregationName = _aggregationNameSupplier.get();
+
+			_aggregationNameSupplier = null;
+		}
+
 		return aggregationName;
 	}
 
 	public void setAggregationName(String aggregationName) {
 		this.aggregationName = aggregationName;
+
+		_aggregationNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAggregationName(
 		UnsafeSupplier<String, Exception> aggregationNameUnsafeSupplier) {
 
-		try {
-			aggregationName = aggregationNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_aggregationNameSupplier = () -> {
+			try {
+				return aggregationNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The name of the aggregation.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String aggregationName;
 
-	@Schema(description = "Additional attributes for the facet.")
+	@JsonIgnore
+	private Supplier<String> _aggregationNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Additional attributes for the facet."
+	)
 	@Valid
 	public Map<String, Object> getAttributes() {
+		if (_attributesSupplier != null) {
+			attributes = _attributesSupplier.get();
+
+			_attributesSupplier = null;
+		}
+
 		return attributes;
 	}
 
 	public void setAttributes(Map<String, Object> attributes) {
 		this.attributes = attributes;
+
+		_attributesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -92,131 +116,196 @@ public class FacetConfiguration implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			attributesUnsafeSupplier) {
 
-		try {
-			attributes = attributesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attributesSupplier = () -> {
+			try {
+				return attributesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Additional attributes for the facet.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> attributes;
 
-	@Schema(description = "Frequency threshold for showing the terms.")
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _attributesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Frequency threshold for showing the terms."
+	)
 	public Integer getFrequencyThreshold() {
+		if (_frequencyThresholdSupplier != null) {
+			frequencyThreshold = _frequencyThresholdSupplier.get();
+
+			_frequencyThresholdSupplier = null;
+		}
+
 		return frequencyThreshold;
 	}
 
 	public void setFrequencyThreshold(Integer frequencyThreshold) {
 		this.frequencyThreshold = frequencyThreshold;
+
+		_frequencyThresholdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFrequencyThreshold(
 		UnsafeSupplier<Integer, Exception> frequencyThresholdUnsafeSupplier) {
 
-		try {
-			frequencyThreshold = frequencyThresholdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_frequencyThresholdSupplier = () -> {
+			try {
+				return frequencyThresholdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Frequency threshold for showing the terms.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer frequencyThreshold;
 
-	@Schema(description = "Maximum number of terms to be shown.")
+	@JsonIgnore
+	private Supplier<Integer> _frequencyThresholdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Maximum number of terms to be shown."
+	)
 	public Integer getMaxTerms() {
+		if (_maxTermsSupplier != null) {
+			maxTerms = _maxTermsSupplier.get();
+
+			_maxTermsSupplier = null;
+		}
+
 		return maxTerms;
 	}
 
 	public void setMaxTerms(Integer maxTerms) {
 		this.maxTerms = maxTerms;
+
+		_maxTermsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMaxTerms(
 		UnsafeSupplier<Integer, Exception> maxTermsUnsafeSupplier) {
 
-		try {
-			maxTerms = maxTermsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_maxTermsSupplier = () -> {
+			try {
+				return maxTermsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Maximum number of terms to be shown.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer maxTerms;
 
-	@Schema(description = "The name of the facet.")
+	@JsonIgnore
+	private Supplier<Integer> _maxTermsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The name of the facet."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The name of the facet.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema(description = "The values / selections to be filtered by.")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The values / selections to be filtered by."
+	)
 	@Valid
 	public Object[] getValues() {
+		if (_valuesSupplier != null) {
+			values = _valuesSupplier.get();
+
+			_valuesSupplier = null;
+		}
+
 		return values;
 	}
 
 	public void setValues(Object[] values) {
 		this.values = values;
+
+		_valuesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValues(
 		UnsafeSupplier<Object[], Exception> valuesUnsafeSupplier) {
 
-		try {
-			values = valuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valuesSupplier = () -> {
+			try {
+				return valuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The values / selections to be filtered by.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object[] values;
+
+	@JsonIgnore
+	private Supplier<Object[]> _valuesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -245,6 +334,8 @@ public class FacetConfiguration implements Serializable {
 
 		sb.append("{");
 
+		String aggregationName = getAggregationName();
+
 		if (aggregationName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -259,6 +350,8 @@ public class FacetConfiguration implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, Object> attributes = getAttributes();
+
 		if (attributes != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -268,6 +361,8 @@ public class FacetConfiguration implements Serializable {
 
 			sb.append(_toJSON(attributes));
 		}
+
+		Integer frequencyThreshold = getFrequencyThreshold();
 
 		if (frequencyThreshold != null) {
 			if (sb.length() > 1) {
@@ -279,6 +374,8 @@ public class FacetConfiguration implements Serializable {
 			sb.append(frequencyThreshold);
 		}
 
+		Integer maxTerms = getMaxTerms();
+
 		if (maxTerms != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -288,6 +385,8 @@ public class FacetConfiguration implements Serializable {
 
 			sb.append(maxTerms);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -302,6 +401,8 @@ public class FacetConfiguration implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Object[] values = getValues();
 
 		if (values != null) {
 			if (sb.length() > 1) {
@@ -332,8 +433,8 @@ public class FacetConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.search.rest.dto.v1_0.FacetConfiguration",
 		name = "x-class-name"
 	)
@@ -379,7 +480,10 @@ public class FacetConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

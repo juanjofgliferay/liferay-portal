@@ -306,8 +306,7 @@ if (deliveryMaxSubscriptionCycles > 0) {
 			document.querySelector(
 				'#<portlet:namespace />cycleLengthContainer .input-group-text'
 			).innerHTML = subscriptionTypeLabel;
-		},
-		['liferay-portlet-url']
+		}
 	);
 
 	Liferay.provide(
@@ -345,8 +344,7 @@ if (deliveryMaxSubscriptionCycles > 0) {
 			document.querySelector(
 				'#<portlet:namespace />deliveryCycleLengthContainer .input-group-text'
 			).innerHTML = subscriptionTypeLabel;
-		},
-		['liferay-portlet-url']
+		}
 	);
 </aui:script>
 
@@ -354,8 +352,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />neverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />maxSubscriptionCycles'
@@ -365,8 +364,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />deliveryNeverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />deliveryMaxSubscriptionCycles'

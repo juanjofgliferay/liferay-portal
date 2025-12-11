@@ -12,17 +12,24 @@ exports[`SelectWorkspaceAccount should render 1`] = `
         class="header-container"
       >
         <a
+          class=""
           href="https://liferay.com"
+          rel="noreferrer noopener"
           target="_blank"
         >
           <svg
-            class="lexicon-icon lexicon-icon-liferay-logo icon-root liferay-logo"
+            class="lexicon-icon lexicon-icon-liferay_logo icon-root liferay-logo"
             role="presentation"
           >
             <use
-              href="#liferay-logo"
+              href="#liferay_logo"
             />
           </svg>
+          <span
+            class="sr-only"
+          >
+            (Opens a new window)
+          </span>
         </a>
         <div>
           <button
@@ -35,13 +42,11 @@ exports[`SelectWorkspaceAccount should render 1`] = `
               <div
                 class="sticker sticker-root sticker-static avatar sticker-circle"
               >
-                TT
+                
               </div>
               <span
                 class="user-name"
-              >
-                Test Test
-              </span>
+              />
               <svg
                 class="lexicon-icon lexicon-icon-caret-bottom icon-root caret"
                 role="presentation"
@@ -67,11 +72,11 @@ exports[`SelectWorkspaceAccount should render 1`] = `
               class="logo-container"
             >
               <svg
-                class="lexicon-icon lexicon-icon-ac-logo icon-root logo-icon"
+                class="lexicon-icon lexicon-icon-ac_logo icon-root logo-icon"
                 role="presentation"
               >
                 <use
-                  href="#ac-logo"
+                  href="#ac_logo"
                 />
               </svg>
               <span
@@ -108,7 +113,7 @@ exports[`SelectWorkspaceAccount should render 1`] = `
               >
                 <a
                   class="button-root workspace-link border-button btn btn-unstyled"
-                  href="/workspace/126"
+                  href="/workspace/corpProjectUuid126/add"
                 >
                   <div
                     class="autofit-col autofit-col-expand"
@@ -122,6 +127,11 @@ exports[`SelectWorkspaceAccount should render 1`] = `
                         <div
                           class="workspace-name"
                         >
+                          <div
+                            class="info-wrapper configuration-required"
+                          >
+                            Finish Setting Up Workspace
+                          </div>
                           <span
                             class="text-truncate"
                             data-tooltip="false"

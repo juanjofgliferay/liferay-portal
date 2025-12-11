@@ -93,10 +93,8 @@ export default function SpacingBox({
 
 		event.preventDefault();
 
-		const {
-			position: currentPosition,
-			type: currentType,
-		} = document.activeElement.dataset;
+		const {position: currentPosition, type: currentType} =
+			document.activeElement.dataset;
 
 		let nextPosition = ARROW_TO_POSITION[event.key];
 		let nextType = currentType;
@@ -191,7 +189,7 @@ function SpacingSelectorButton({
 			setTimeout(
 				() =>
 					itemListRef.current
-						.querySelector(
+						?.querySelector(
 							`button[data-value="${
 								value || field?.defaultValue
 							}"]`
@@ -259,7 +257,7 @@ function SpacingSelectorButton({
 				</ClayButton>
 			}
 		>
-			<div ref={itemListRef}>
+			<div className={DROPDOWN_CLASSNAME} ref={itemListRef}>
 				<ClayDropDown.ItemList aria-labelledby={triggerId}>
 					{active && canSetCustomValue ? (
 						<>
@@ -300,10 +298,6 @@ function SpacingSelectorButton({
 									<LengthInput
 										className="mb-3 mt-2 px-3"
 										field={field}
-										onEnter={() => {
-											setActive(false);
-											triggerElement?.focus();
-										}}
 										onValueSelect={onChange}
 										showLabel={false}
 										value={

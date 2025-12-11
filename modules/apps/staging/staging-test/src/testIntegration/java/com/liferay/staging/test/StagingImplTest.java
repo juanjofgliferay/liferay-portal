@@ -7,8 +7,10 @@ package com.liferay.staging.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.exportimport.changeset.constants.ChangesetPortletKeys;
 import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationParameterMapFactoryUtil;
@@ -35,16 +37,19 @@ import com.liferay.portal.configuration.module.configuration.ConfigurationProvid
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSetBranchConstants;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetBranchLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.GroupUtil;
+import com.liferay.portal.kernel.servlet.ServletResponseConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
@@ -61,6 +66,7 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
@@ -72,8 +78,12 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.staging.configuration.StagingConfiguration;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.File;
 import java.io.Serializable;
+
+import java.net.ConnectException;
 
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -85,8 +95,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -185,6 +193,20 @@ public class StagingImplTest {
 	}
 
 	@Test
+	public void testGetExceptionMessagesJSONObject() throws Exception {
+		Exception exception = new Exception(new ConnectException());
+
+		JSONObject jsonObject = StagingUtil.getExceptionMessagesJSONObject(
+			LocaleUtil.getDefault(), exception, null);
+
+		Assert.assertEquals(
+			exception.getLocalizedMessage(), jsonObject.getString("message"));
+		Assert.assertEquals(
+			ServletResponseConstants.SC_FILE_CUSTOM_EXCEPTION,
+			jsonObject.getInt("status"));
+	}
+
+	@Test
 	public void testGetRemoteLayout() throws Exception {
 		enableRemoteStaging(false);
 
@@ -213,6 +235,46 @@ public class StagingImplTest {
 		Assert.assertEquals(
 			remoteStagingGroupLayout.getTitle(),
 			remoteLiveGroupLayout.getTitle());
+	}
+
+	@Test
+	public void testGetRemoteLayoutPlid() throws Exception {
+		enableRemoteStaging(false);
+
+		Layout remoteStagingGroupLayout = LayoutTestUtil.addTypePortletLayout(
+			_remoteStagingGroup);
+
+		long remoteLiveGroupLayoutPlid = _executeWithRemoteCredentials(
+			() -> StagingUtil.getRemoteLayoutPlid(
+				TestPropsValues.getUserId(),
+				remoteStagingGroupLayout.getGroupId(),
+				remoteStagingGroupLayout.getPlid()));
+
+		Assert.assertEquals(0L, remoteLiveGroupLayoutPlid);
+
+		Map<String, String[]> parameters =
+			ExportImportConfigurationParameterMapFactoryUtil.
+				buildFullPublishParameterMap();
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), _remoteStagingGroup.getGroupId(),
+			_remoteLiveGroup.getGroupId(), false, parameters);
+
+		remoteLiveGroupLayoutPlid = _executeWithRemoteCredentials(
+			() -> StagingUtil.getRemoteLayoutPlid(
+				TestPropsValues.getUserId(),
+				remoteStagingGroupLayout.getGroupId(),
+				remoteStagingGroupLayout.getPlid()));
+
+		Layout remoteLiveGroupLayout = LayoutServiceUtil.fetchLayout(
+			_remoteLiveGroup.getGroupId(),
+			remoteStagingGroupLayout.isPrivateLayout(),
+			remoteStagingGroupLayout.getLayoutId());
+
+		Assert.assertNotNull(remoteLiveGroupLayout);
+
+		Assert.assertEquals(
+			remoteLiveGroupLayout.getPlid(), remoteLiveGroupLayoutPlid);
 	}
 
 	@Test
@@ -275,6 +337,20 @@ public class StagingImplTest {
 	@Test
 	public void testLocalStagingJournal() throws Exception {
 		enableLocalStagingWithContent(true, false, false);
+	}
+
+	@Test
+	public void testLocalStagingJournalChangesetLatestVersionConsistency()
+		throws Exception {
+
+		_assertLocalStagingJournalVersion(1.1D);
+	}
+
+	@Test
+	public void testLocalStagingJournalChangesetPreviousVersionConsistency()
+		throws Exception {
+
+		_assertLocalStagingJournalVersion(1.0D);
 	}
 
 	@Test
@@ -701,10 +777,93 @@ public class StagingImplTest {
 		}
 
 		return AssetCategoryLocalServiceUtil.updateCategory(
-			TestPropsValues.getUserId(), category.getCategoryId(),
-			category.getParentCategoryId(), titleMap,
+			category.getExternalReferenceCode(), TestPropsValues.getUserId(),
+			category.getCategoryId(), category.getParentCategoryId(), titleMap,
 			category.getDescriptionMap(), category.getVocabularyId(), null,
 			ServiceContextTestUtil.getServiceContext());
+	}
+
+	private void _assertLocalStagingJournalVersion(Double version)
+		throws Exception {
+
+		LayoutTestUtil.addTypePortletLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
+
+		// Create content
+
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(), "Title", "content");
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		serviceContext.setAttribute(
+			StagingUtil.getStagedPortletId(JournalPortletKeys.JOURNAL),
+			Boolean.TRUE);
+
+		Map<String, Serializable> attributes = serviceContext.getAttributes();
+
+		List<String> portletIds = new ArrayList<>();
+
+		portletIds.add(JournalPortletKeys.JOURNAL);
+
+		Map<String, String[]> parameters =
+			ExportImportConfigurationParameterMapFactoryUtil.buildParameterMap(
+				PortletDataHandlerKeys.DATA_STRATEGY_MIRROR_OVERWRITE, false,
+				false, false, false, false, false, false, false, true, false,
+				portletIds, true, false, portletIds, false, portletIds,
+				ExportImportDateUtil.RANGE_FROM_LAST_PUBLISH_DATE, false, true,
+				UserIdStrategy.CURRENT_USER_ID);
+
+		attributes.putAll(parameters);
+
+		enableLocalStaging(false, serviceContext);
+
+		Group stagingGroup = _group.getStagingGroup();
+
+		// Update content in staging
+
+		JournalArticle stagingJournalArticle =
+			JournalArticleLocalServiceUtil.getArticleByUrlTitle(
+				stagingGroup.getGroupId(), journalArticle.getUrlTitle());
+
+		stagingJournalArticle = JournalTestUtil.updateArticle(
+			stagingJournalArticle, "Title2",
+			stagingJournalArticle.getContent());
+
+		// Expire old version of the content
+
+		JournalTestUtil.expireArticle(
+			stagingJournalArticle.getGroupId(), stagingJournalArticle, version);
+
+		// Publish to live
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			_group.getGroupId(), false, parameters);
+
+		// Get content from live after publishing
+
+		journalArticle = JournalArticleLocalServiceUtil.getArticle(
+			_group.getGroupId(), journalArticle.getArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, journalArticle.getStatus());
+
+		JournalArticle oldJournalArticle =
+			JournalArticleLocalServiceUtil.getArticle(
+				_group.getGroupId(), journalArticle.getArticleId(), version);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_EXPIRED, oldJournalArticle.getStatus());
+
+		AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
+			journalArticle.getGroupId(),
+			journalArticle.getArticleResourceUuid());
+
+		// Check the status of the asset entry related to the article in live
+
+		Assert.assertTrue(assetEntry.isVisible());
 	}
 
 	private Throwable _disableRemoteStagingWithIncorrectLiveGroupId() {

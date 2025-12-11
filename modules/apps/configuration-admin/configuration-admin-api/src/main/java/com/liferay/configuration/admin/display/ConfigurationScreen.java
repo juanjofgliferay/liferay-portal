@@ -5,17 +5,25 @@
 
 package com.liferay.configuration.admin.display;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
+import java.io.Serializable;
 
+import java.util.Dictionary;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Jorge Ferrer
  */
 public interface ConfigurationScreen {
+
+	public default Dictionary<String, Object> exportProperties(
+		Serializable scopePK) {
+
+		return null;
+	}
 
 	public String getCategoryKey();
 
@@ -24,6 +32,15 @@ public interface ConfigurationScreen {
 	public String getName(Locale locale);
 
 	public String getScope();
+
+	public default void importProperties(
+			Dictionary<String, Object> properties, Serializable scopePK)
+		throws Exception {
+	}
+
+	public default boolean isDeprecated() {
+		return false;
+	}
 
 	public default boolean isVisible() {
 		return true;

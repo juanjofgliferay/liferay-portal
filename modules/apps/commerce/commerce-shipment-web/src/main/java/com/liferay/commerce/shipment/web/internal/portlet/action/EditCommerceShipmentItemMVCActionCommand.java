@@ -6,10 +6,13 @@
 package com.liferay.commerce.shipment.web.internal.portlet.action;
 
 import com.liferay.commerce.constants.CommercePortletKeys;
+import com.liferay.commerce.exception.CommerceShipmentItemQuantityException;
 import com.liferay.commerce.exception.DuplicateCommerceShipmentItemException;
+import com.liferay.commerce.exception.DuplicateCommerceShipmentItemExternalReferenceCodeException;
 import com.liferay.commerce.exception.NoSuchShipmentException;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseLocalService;
+import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceShipment;
 import com.liferay.commerce.model.CommerceShipmentItem;
@@ -17,6 +20,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceShipmentItemService;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -26,6 +30,7 @@ import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -39,14 +44,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
 import java.math.BigDecimal;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,7 +62,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_SHIPMENT,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_SHIPMENT,
 		"mvc.command.name=/commerce_shipment/edit_commerce_shipment_item"
 	},
 	service = MVCActionCommand.class
@@ -82,8 +87,19 @@ public class EditCommerceShipmentItemMVCActionCommand
 				}
 				catch (Exception exception) {
 					if (exception instanceof
-							DuplicateCommerceShipmentItemException ||
-						exception instanceof NoSuchShipmentException) {
+							DuplicateCommerceShipmentItemExternalReferenceCodeException ||
+						exception instanceof PrincipalException) {
+
+						SessionErrors.add(actionRequest, exception.getClass());
+
+						actionResponse.setRenderParameter(
+							"mvcPath", "/error.jsp");
+					}
+					else if (exception instanceof
+								CommerceShipmentItemQuantityException ||
+							 exception instanceof
+								 DuplicateCommerceShipmentItemException ||
+							 exception instanceof NoSuchShipmentException) {
 
 						hideDefaultErrorMessage(actionRequest);
 						hideDefaultSuccessMessage(actionRequest);
@@ -206,7 +222,7 @@ public class EditCommerceShipmentItemMVCActionCommand
 
 	private CommerceShipmentItem _updateCommerceShipmentItem(
 			ActionRequest actionRequest)
-		throws PortalException {
+		throws Exception {
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			CommerceShipmentItem.class.getName(), actionRequest);
@@ -219,6 +235,8 @@ public class EditCommerceShipmentItemMVCActionCommand
 
 		CommerceOrderItem commerceOrderItem =
 			_commerceOrderItemService.getCommerceOrderItem(commerceOrderItemId);
+
+		CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
 		CommerceShipmentItem initialCommerceShipmentItem =
 			_commerceShipmentItemService.fetchCommerceShipmentItem(
@@ -238,6 +256,7 @@ public class EditCommerceShipmentItemMVCActionCommand
 			_commerceInventoryWarehouseLocalService.
 				getCommerceInventoryWarehouses(
 					commerceOrderItem.getCompanyId(),
+					commerceOrder.getCommerceAccountId(),
 					commerceOrderItem.getGroupId(), true);
 
 		for (CommerceInventoryWarehouse commerceInventoryWarehouse :
@@ -251,8 +270,9 @@ public class EditCommerceShipmentItemMVCActionCommand
 					commerceShipmentId, commerceOrderItemId,
 					commerceInventoryWarehouseId);
 
-			BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-				actionRequest, commerceInventoryWarehouseId + "_quantity");
+			BigDecimal quantity = _commerceOrderItemQuantityFormatter.parse(
+				actionRequest, CommerceShipmentItem.class.getName(),
+				commerceInventoryWarehouseId + "_quantity");
 
 			if ((initialCommerceShipmentItem != null) &&
 				BigDecimalUtil.gt(quantity, BigDecimal.ZERO)) {
@@ -315,6 +335,10 @@ public class EditCommerceShipmentItemMVCActionCommand
 	@Reference
 	private CommerceInventoryWarehouseLocalService
 		_commerceInventoryWarehouseLocalService;
+
+	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 
 	@Reference
 	private CommerceOrderItemService _commerceOrderItemService;

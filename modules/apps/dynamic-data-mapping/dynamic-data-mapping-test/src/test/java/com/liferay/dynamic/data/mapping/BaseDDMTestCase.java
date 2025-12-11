@@ -59,6 +59,7 @@ import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
@@ -70,14 +71,12 @@ import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.util.LocalizationImpl;
-import com.liferay.portal.util.PropsImpl;
 import com.liferay.portal.xml.SAXReaderImpl;
 
 import java.io.IOException;
@@ -148,7 +147,6 @@ public abstract class BaseDDMTestCase {
 	public void setUp() throws Exception {
 		setUpPortalClassLoaderUtil();
 		setUpPortalUtil();
-		setUpPropsUtil();
 		setUpResourceBundleUtil();
 	}
 
@@ -239,10 +237,9 @@ public abstract class BaseDDMTestCase {
 	protected DDMFormFieldValue createDDMFormFieldValue(
 		String instanceId, String name, Value value) {
 
-		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
+		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue(instanceId);
 
 		ddmFormFieldValue.setFieldReference(name);
-		ddmFormFieldValue.setInstanceId(instanceId);
 		ddmFormFieldValue.setName(name);
 		ddmFormFieldValue.setValue(value);
 
@@ -355,13 +352,13 @@ public abstract class BaseDDMTestCase {
 	}
 
 	protected DDMStructure createStructure(String name, String definition) {
+		DDMStructure structure = new DDMStructureImpl();
+
 		ReflectionTestUtil.setFieldValue(
 			_ddmFormDeserializer, "_ddmFormFieldTypeServicesRegistry",
 			getMockedDDMFormFieldTypeServicesRegistry());
 		ReflectionTestUtil.setFieldValue(
 			_ddmFormDeserializer, "_jsonFactory", jsonFactory);
-
-		DDMStructure structure = new DDMStructureImpl();
 
 		structure.setStructureId(RandomTestUtil.randomLong());
 		structure.setName(name);
@@ -603,8 +600,17 @@ public abstract class BaseDDMTestCase {
 			DDMStructureLocalService.class);
 
 		ReflectionTestUtil.setFieldValue(
-			DDMStructureLocalServiceUtil.class, "_service",
-			ddmStructureLocalService);
+			DDMStructureLocalServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<DDMStructureLocalService>(
+				DDMStructureLocalServiceUtil.class,
+				DDMStructureLocalService.class) {
+
+				@Override
+				public DDMStructureLocalService get() {
+					return ddmStructureLocalService;
+				}
+
+			});
 
 		Mockito.when(
 			ddmStructureLocalService.getStructure(Mockito.anyLong())
@@ -645,8 +651,17 @@ public abstract class BaseDDMTestCase {
 			DDMTemplateLocalService.class);
 
 		ReflectionTestUtil.setFieldValue(
-			DDMTemplateLocalServiceUtil.class, "_service",
-			ddmTemplateLocalService);
+			DDMTemplateLocalServiceUtil.class, "_serviceSnapshot",
+			new Snapshot<DDMTemplateLocalService>(
+				DDMTemplateLocalServiceUtil.class,
+				DDMTemplateLocalService.class) {
+
+				@Override
+				public DDMTemplateLocalService get() {
+					return ddmTemplateLocalService;
+				}
+
+			});
 
 		Mockito.when(
 			ddmTemplateLocalService.getTemplate(Mockito.anyLong())
@@ -751,10 +766,6 @@ public abstract class BaseDDMTestCase {
 		);
 
 		portalUtil.setPortal(portal);
-	}
-
-	protected void setUpPropsUtil() {
-		PropsUtil.setProps(new PropsImpl());
 	}
 
 	protected void setUpResourceBundleUtil() {

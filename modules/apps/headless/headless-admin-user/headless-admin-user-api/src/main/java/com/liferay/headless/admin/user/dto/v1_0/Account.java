@@ -7,6 +7,7 @@ package com.liferay.headless.admin.user.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -18,7 +19,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -30,13 +35,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -48,10 +47,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 	value = "Account"
 )
 @JsonFilter("Liferay.Vulcan")
-@Schema(
-	description = "An account represents an external account, for example a customer business.",
-	requiredProperties = {"name"}
-)
 @XmlRootElement(name = "Account")
 public class Account implements Serializable {
 
@@ -63,14 +58,162 @@ public class Account implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Account.class, json);
 	}
 
-	@Schema(description = "The users linked to the account")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The account's contact information."
+	)
+	@Valid
+	public AccountContactInformation getAccountContactInformation() {
+		if (_accountContactInformationSupplier != null) {
+			accountContactInformation =
+				_accountContactInformationSupplier.get();
+
+			_accountContactInformationSupplier = null;
+		}
+
+		return accountContactInformation;
+	}
+
+	public void setAccountContactInformation(
+		AccountContactInformation accountContactInformation) {
+
+		this.accountContactInformation = accountContactInformation;
+
+		_accountContactInformationSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAccountContactInformation(
+		UnsafeSupplier<AccountContactInformation, Exception>
+			accountContactInformationUnsafeSupplier) {
+
+		_accountContactInformationSupplier = () -> {
+			try {
+				return accountContactInformationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The account's contact information.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected AccountContactInformation accountContactInformation;
+
+	@JsonIgnore
+	private Supplier<AccountContactInformation>
+		_accountContactInformationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of the account's account groups."
+	)
+	@Valid
+	public AccountGroupBrief[] getAccountGroupBriefs() {
+		if (_accountGroupBriefsSupplier != null) {
+			accountGroupBriefs = _accountGroupBriefsSupplier.get();
+
+			_accountGroupBriefsSupplier = null;
+		}
+
+		return accountGroupBriefs;
+	}
+
+	public void setAccountGroupBriefs(AccountGroupBrief[] accountGroupBriefs) {
+		this.accountGroupBriefs = accountGroupBriefs;
+
+		_accountGroupBriefsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAccountGroupBriefs(
+		UnsafeSupplier<AccountGroupBrief[], Exception>
+			accountGroupBriefsUnsafeSupplier) {
+
+		_accountGroupBriefsSupplier = () -> {
+			try {
+				return accountGroupBriefsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "A list of the account's account groups.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected AccountGroupBrief[] accountGroupBriefs;
+
+	@JsonIgnore
+	private Supplier<AccountGroupBrief[]> _accountGroupBriefsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of the account's roles."
+	)
+	@Valid
+	public AccountRole[] getAccountRoles() {
+		if (_accountRolesSupplier != null) {
+			accountRoles = _accountRolesSupplier.get();
+
+			_accountRolesSupplier = null;
+		}
+
+		return accountRoles;
+	}
+
+	public void setAccountRoles(AccountRole[] accountRoles) {
+		this.accountRoles = accountRoles;
+
+		_accountRolesSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAccountRoles(
+		UnsafeSupplier<AccountRole[], Exception> accountRolesUnsafeSupplier) {
+
+		_accountRolesSupplier = () -> {
+			try {
+				return accountRolesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "A list of the account's roles.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected AccountRole[] accountRoles;
+
+	@JsonIgnore
+	private Supplier<AccountRole[]> _accountRolesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The users linked to the account"
+	)
 	@Valid
 	public UserAccount[] getAccountUserAccounts() {
+		if (_accountUserAccountsSupplier != null) {
+			accountUserAccounts = _accountUserAccountsSupplier.get();
+
+			_accountUserAccountsSupplier = null;
+		}
+
 		return accountUserAccounts;
 	}
 
 	public void setAccountUserAccounts(UserAccount[] accountUserAccounts) {
 		this.accountUserAccounts = accountUserAccounts;
+
+		_accountUserAccountsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -78,31 +221,44 @@ public class Account implements Serializable {
 		UnsafeSupplier<UserAccount[], Exception>
 			accountUserAccountsUnsafeSupplier) {
 
-		try {
-			accountUserAccounts = accountUserAccountsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountUserAccountsSupplier = () -> {
+			try {
+				return accountUserAccountsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The users linked to the account")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected UserAccount[] accountUserAccounts;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<UserAccount[]> _accountUserAccountsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Block of actions allowed by the user making the request."
 	)
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -110,15 +266,17 @@ public class Account implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -127,127 +285,340 @@ public class Account implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The user who created the account."
+	)
 	@Valid
-	public CustomField[] getCustomFields() {
+	public Creator getCreator() {
+		if (_creatorSupplier != null) {
+			creator = _creatorSupplier.get();
+
+			_creatorSupplier = null;
+		}
+
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+
+		_creatorSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		_creatorSupplier = () -> {
+			try {
+				return creatorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The user who created the account.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Creator creator;
+
+	@JsonIgnore
+	private Supplier<Creator> _creatorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public com.liferay.portal.vulcan.custom.field.CustomField[]
+		getCustomFields() {
+
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields) {
+
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.portal.vulcan.custom.field.CustomField[], Exception>
+				customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected CustomField[] customFields;
+	protected com.liferay.portal.vulcan.custom.field.CustomField[] customFields;
 
-	@Schema(description = "The account's creation date.")
+	@JsonIgnore
+	private Supplier<com.liferay.portal.vulcan.custom.field.CustomField[]>
+		_customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The account's creation date."
+	)
 	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
 		return dateCreated;
 	}
 
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCreated(
 		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
 
-		try {
-			dateCreated = dateCreatedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The account's creation date.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateCreated;
 
-	@Schema(description = "The account's most recent modification date.")
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The account's most recent modification date."
+	)
 	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
 		return dateModified;
 	}
 
 	public void setDateModified(Date dateModified) {
 		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateModified(
 		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
 
-		try {
-			dateModified = dateModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The account's most recent modification date.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date dateModified;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getDefaultBillingAddressExternalReferenceCode() {
+		if (_defaultBillingAddressExternalReferenceCodeSupplier != null) {
+			defaultBillingAddressExternalReferenceCode =
+				_defaultBillingAddressExternalReferenceCodeSupplier.get();
+
+			_defaultBillingAddressExternalReferenceCodeSupplier = null;
+		}
+
+		return defaultBillingAddressExternalReferenceCode;
+	}
+
+	public void setDefaultBillingAddressExternalReferenceCode(
+		String defaultBillingAddressExternalReferenceCode) {
+
+		this.defaultBillingAddressExternalReferenceCode =
+			defaultBillingAddressExternalReferenceCode;
+
+		_defaultBillingAddressExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDefaultBillingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			defaultBillingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		_defaultBillingAddressExternalReferenceCodeSupplier = () -> {
+			try {
+				return defaultBillingAddressExternalReferenceCodeUnsafeSupplier.
+					get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String defaultBillingAddressExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String>
+		_defaultBillingAddressExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getDefaultBillingAddressId() {
+		if (_defaultBillingAddressIdSupplier != null) {
+			defaultBillingAddressId = _defaultBillingAddressIdSupplier.get();
+
+			_defaultBillingAddressIdSupplier = null;
+		}
+
 		return defaultBillingAddressId;
 	}
 
 	public void setDefaultBillingAddressId(Long defaultBillingAddressId) {
 		this.defaultBillingAddressId = defaultBillingAddressId;
+
+		_defaultBillingAddressIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultBillingAddressId(
 		UnsafeSupplier<Long, Exception> defaultBillingAddressIdUnsafeSupplier) {
 
-		try {
-			defaultBillingAddressId =
-				defaultBillingAddressIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultBillingAddressIdSupplier = () -> {
+			try {
+				return defaultBillingAddressIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long defaultBillingAddressId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _defaultBillingAddressIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getDefaultShippingAddressExternalReferenceCode() {
+		if (_defaultShippingAddressExternalReferenceCodeSupplier != null) {
+			defaultShippingAddressExternalReferenceCode =
+				_defaultShippingAddressExternalReferenceCodeSupplier.get();
+
+			_defaultShippingAddressExternalReferenceCodeSupplier = null;
+		}
+
+		return defaultShippingAddressExternalReferenceCode;
+	}
+
+	public void setDefaultShippingAddressExternalReferenceCode(
+		String defaultShippingAddressExternalReferenceCode) {
+
+		this.defaultShippingAddressExternalReferenceCode =
+			defaultShippingAddressExternalReferenceCode;
+
+		_defaultShippingAddressExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDefaultShippingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			defaultShippingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		_defaultShippingAddressExternalReferenceCodeSupplier = () -> {
+			try {
+				return defaultShippingAddressExternalReferenceCodeUnsafeSupplier.
+					get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String defaultShippingAddressExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String>
+		_defaultShippingAddressExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getDefaultShippingAddressId() {
+		if (_defaultShippingAddressIdSupplier != null) {
+			defaultShippingAddressId = _defaultShippingAddressIdSupplier.get();
+
+			_defaultShippingAddressIdSupplier = null;
+		}
+
 		return defaultShippingAddressId;
 	}
 
 	public void setDefaultShippingAddressId(Long defaultShippingAddressId) {
 		this.defaultShippingAddressId = defaultShippingAddressId;
+
+		_defaultShippingAddressIdSupplier = null;
 	}
 
 	@JsonIgnore
@@ -255,74 +626,101 @@ public class Account implements Serializable {
 		UnsafeSupplier<Long, Exception>
 			defaultShippingAddressIdUnsafeSupplier) {
 
-		try {
-			defaultShippingAddressId =
-				defaultShippingAddressIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultShippingAddressIdSupplier = () -> {
+			try {
+				return defaultShippingAddressIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long defaultShippingAddressId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _defaultShippingAddressIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(String description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDescription(
 		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String description;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The account's email domains. Users assigned to this account generally will have email addresses under one of these domains."
 	)
 	public String[] getDomains() {
+		if (_domainsSupplier != null) {
+			domains = _domainsSupplier.get();
+
+			_domainsSupplier = null;
+		}
+
 		return domains;
 	}
 
 	public void setDomains(String[] domains) {
 		this.domains = domains;
+
+		_domainsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDomains(
 		UnsafeSupplier<String[], Exception> domainsUnsafeSupplier) {
 
-		try {
-			domains = domainsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_domainsSupplier = () -> {
+			try {
+				return domainsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -331,165 +729,373 @@ public class Account implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] domains;
 
-	@Schema(description = "The optional external key of this account.")
+	@JsonIgnore
+	private Supplier<String[]> _domainsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The optional external key of this account."
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The optional external key of this account.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of keywords describing the account."
+	)
+	public String[] getKeywords() {
+		if (_keywordsSupplier != null) {
+			keywords = _keywordsSupplier.get();
+
+			_keywordsSupplier = null;
+		}
+
+		return keywords;
+	}
+
+	public void setKeywords(String[] keywords) {
+		this.keywords = keywords;
+
+		_keywordsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setKeywords(
+		UnsafeSupplier<String[], Exception> keywordsUnsafeSupplier) {
+
+		_keywordsSupplier = () -> {
+			try {
+				return keywordsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "A list of keywords describing the account.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String[] keywords;
+
+	@JsonIgnore
+	private Supplier<String[]> _keywordsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getLogoBase64() {
+		if (_logoBase64Supplier != null) {
+			logoBase64 = _logoBase64Supplier.get();
+
+			_logoBase64Supplier = null;
+		}
+
+		return logoBase64;
+	}
+
+	public void setLogoBase64(String logoBase64) {
+		this.logoBase64 = logoBase64;
+
+		_logoBase64Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setLogoBase64(
+		UnsafeSupplier<String, Exception> logoBase64UnsafeSupplier) {
+
+		_logoBase64Supplier = () -> {
+			try {
+				return logoBase64UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String logoBase64;
+
+	@JsonIgnore
+	private Supplier<String> _logoBase64Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getLogoExternalReferenceCode() {
+		if (_logoExternalReferenceCodeSupplier != null) {
+			logoExternalReferenceCode =
+				_logoExternalReferenceCodeSupplier.get();
+
+			_logoExternalReferenceCodeSupplier = null;
+		}
+
+		return logoExternalReferenceCode;
+	}
+
+	public void setLogoExternalReferenceCode(String logoExternalReferenceCode) {
+		this.logoExternalReferenceCode = logoExternalReferenceCode;
+
+		_logoExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setLogoExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			logoExternalReferenceCodeUnsafeSupplier) {
+
+		_logoExternalReferenceCodeSupplier = () -> {
+			try {
+				return logoExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String logoExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _logoExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getLogoId() {
+		if (_logoIdSupplier != null) {
+			logoId = _logoIdSupplier.get();
+
+			_logoIdSupplier = null;
+		}
+
 		return logoId;
 	}
 
 	public void setLogoId(Long logoId) {
 		this.logoId = logoId;
+
+		_logoIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLogoId(
 		UnsafeSupplier<Long, Exception> logoIdUnsafeSupplier) {
 
-		try {
-			logoId = logoIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_logoIdSupplier = () -> {
+			try {
+				return logoIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long logoId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _logoIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getLogoURL() {
+		if (_logoURLSupplier != null) {
+			logoURL = _logoURLSupplier.get();
+
+			_logoURLSupplier = null;
+		}
+
 		return logoURL;
 	}
 
 	public void setLogoURL(String logoURL) {
 		this.logoURL = logoURL;
+
+		_logoURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLogoURL(
 		UnsafeSupplier<String, Exception> logoURLUnsafeSupplier) {
 
-		try {
-			logoURL = logoURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_logoURLSupplier = () -> {
+			try {
+				return logoURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String logoURL;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _logoURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	@NotEmpty
 	protected String name;
 
-	@Schema(description = "The number of this account's associated users.")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The number of this account's associated users."
+	)
 	public Integer getNumberOfUsers() {
+		if (_numberOfUsersSupplier != null) {
+			numberOfUsers = _numberOfUsersSupplier.get();
+
+			_numberOfUsersSupplier = null;
+		}
+
 		return numberOfUsers;
 	}
 
 	public void setNumberOfUsers(Integer numberOfUsers) {
 		this.numberOfUsers = numberOfUsers;
+
+		_numberOfUsersSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setNumberOfUsers(
 		UnsafeSupplier<Integer, Exception> numberOfUsersUnsafeSupplier) {
 
-		try {
-			numberOfUsers = numberOfUsersUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_numberOfUsersSupplier = () -> {
+			try {
+				return numberOfUsersUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -498,70 +1104,248 @@ public class Account implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer numberOfUsers;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _numberOfUsersSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String[] getOrganizationExternalReferenceCodes() {
+		if (_organizationExternalReferenceCodesSupplier != null) {
+			organizationExternalReferenceCodes =
+				_organizationExternalReferenceCodesSupplier.get();
+
+			_organizationExternalReferenceCodesSupplier = null;
+		}
+
+		return organizationExternalReferenceCodes;
+	}
+
+	public void setOrganizationExternalReferenceCodes(
+		String[] organizationExternalReferenceCodes) {
+
+		this.organizationExternalReferenceCodes =
+			organizationExternalReferenceCodes;
+
+		_organizationExternalReferenceCodesSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setOrganizationExternalReferenceCodes(
+		UnsafeSupplier<String[], Exception>
+			organizationExternalReferenceCodesUnsafeSupplier) {
+
+		_organizationExternalReferenceCodesSupplier = () -> {
+			try {
+				return organizationExternalReferenceCodesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String[] organizationExternalReferenceCodes;
+
+	@JsonIgnore
+	private Supplier<String[]> _organizationExternalReferenceCodesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getOrganizationIds() {
+		if (_organizationIdsSupplier != null) {
+			organizationIds = _organizationIdsSupplier.get();
+
+			_organizationIdsSupplier = null;
+		}
+
 		return organizationIds;
 	}
 
 	public void setOrganizationIds(Long[] organizationIds) {
 		this.organizationIds = organizationIds;
+
+		_organizationIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrganizationIds(
 		UnsafeSupplier<Long[], Exception> organizationIdsUnsafeSupplier) {
 
-		try {
-			organizationIds = organizationIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_organizationIdsSupplier = () -> {
+			try {
+				return organizationIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] organizationIds;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long[]> _organizationIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getParentAccountExternalReferenceCode() {
+		if (_parentAccountExternalReferenceCodeSupplier != null) {
+			parentAccountExternalReferenceCode =
+				_parentAccountExternalReferenceCodeSupplier.get();
+
+			_parentAccountExternalReferenceCodeSupplier = null;
+		}
+
+		return parentAccountExternalReferenceCode;
+	}
+
+	public void setParentAccountExternalReferenceCode(
+		String parentAccountExternalReferenceCode) {
+
+		this.parentAccountExternalReferenceCode =
+			parentAccountExternalReferenceCode;
+
+		_parentAccountExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setParentAccountExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			parentAccountExternalReferenceCodeUnsafeSupplier) {
+
+		_parentAccountExternalReferenceCodeSupplier = () -> {
+			try {
+				return parentAccountExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String parentAccountExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _parentAccountExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getParentAccountId() {
+		if (_parentAccountIdSupplier != null) {
+			parentAccountId = _parentAccountIdSupplier.get();
+
+			_parentAccountIdSupplier = null;
+		}
+
 		return parentAccountId;
 	}
 
 	public void setParentAccountId(Long parentAccountId) {
 		this.parentAccountId = parentAccountId;
+
+		_parentAccountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setParentAccountId(
 		UnsafeSupplier<Long, Exception> parentAccountIdUnsafeSupplier) {
 
-		try {
-			parentAccountId = parentAccountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_parentAccountIdSupplier = () -> {
+			try {
+				return parentAccountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long parentAccountId;
 
-	@Schema(description = "The addresses linked to the account")
+	@JsonIgnore
+	private Supplier<Long> _parentAccountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public com.liferay.portal.vulcan.permission.Permission[] getPermissions() {
+		if (_permissionsSupplier != null) {
+			permissions = _permissionsSupplier.get();
+
+			_permissionsSupplier = null;
+		}
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.portal.vulcan.permission.Permission[] permissions) {
+
+		this.permissions = permissions;
+
+		_permissionsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.portal.vulcan.permission.Permission[], Exception>
+				permissionsUnsafeSupplier) {
+
+		_permissionsSupplier = () -> {
+			try {
+				return permissionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected com.liferay.portal.vulcan.permission.Permission[] permissions;
+
+	@JsonIgnore
+	private Supplier<com.liferay.portal.vulcan.permission.Permission[]>
+		_permissionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The addresses linked to the account"
+	)
 	@Valid
 	public PostalAddress[] getPostalAddresses() {
+		if (_postalAddressesSupplier != null) {
+			postalAddresses = _postalAddressesSupplier.get();
+
+			_postalAddressesSupplier = null;
+		}
+
 		return postalAddresses;
 	}
 
 	public void setPostalAddresses(PostalAddress[] postalAddresses) {
 		this.postalAddresses = postalAddresses;
+
+		_postalAddressesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -569,85 +1353,172 @@ public class Account implements Serializable {
 		UnsafeSupplier<PostalAddress[], Exception>
 			postalAddressesUnsafeSupplier) {
 
-		try {
-			postalAddresses = postalAddressesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_postalAddressesSupplier = () -> {
+			try {
+				return postalAddressesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The addresses linked to the account")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected PostalAddress[] postalAddresses;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<PostalAddress[]> _postalAddressesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getStatus() {
+		if (_statusSupplier != null) {
+			status = _statusSupplier.get();
+
+			_statusSupplier = null;
+		}
+
 		return status;
 	}
 
 	public void setStatus(Integer status) {
 		this.status = status;
+
+		_statusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStatus(
 		UnsafeSupplier<Integer, Exception> statusUnsafeSupplier) {
 
-		try {
-			status = statusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_statusSupplier = () -> {
+			try {
+				return statusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer status;
 
-	@Schema(example = "Abcd1234")
+	@JsonIgnore
+	private Supplier<Integer> _statusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "Abcd1234")
 	public String getTaxId() {
+		if (_taxIdSupplier != null) {
+			taxId = _taxIdSupplier.get();
+
+			_taxIdSupplier = null;
+		}
+
 		return taxId;
 	}
 
 	public void setTaxId(String taxId) {
 		this.taxId = taxId;
+
+		_taxIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaxId(
 		UnsafeSupplier<String, Exception> taxIdUnsafeSupplier) {
 
-		try {
-			taxId = taxIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxIdSupplier = () -> {
+			try {
+				return taxIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String taxId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _taxIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The categories associated with this account."
+	)
+	@Valid
+	public TaxonomyCategoryBrief[] getTaxonomyCategoryBriefs() {
+		if (_taxonomyCategoryBriefsSupplier != null) {
+			taxonomyCategoryBriefs = _taxonomyCategoryBriefsSupplier.get();
+
+			_taxonomyCategoryBriefsSupplier = null;
+		}
+
+		return taxonomyCategoryBriefs;
+	}
+
+	public void setTaxonomyCategoryBriefs(
+		TaxonomyCategoryBrief[] taxonomyCategoryBriefs) {
+
+		this.taxonomyCategoryBriefs = taxonomyCategoryBriefs;
+
+		_taxonomyCategoryBriefsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setTaxonomyCategoryBriefs(
+		UnsafeSupplier<TaxonomyCategoryBrief[], Exception>
+			taxonomyCategoryBriefsUnsafeSupplier) {
+
+		_taxonomyCategoryBriefsSupplier = () -> {
+			try {
+				return taxonomyCategoryBriefsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The categories associated with this account.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected TaxonomyCategoryBrief[] taxonomyCategoryBriefs;
+
+	@JsonIgnore
+	private Supplier<TaxonomyCategoryBrief[]> _taxonomyCategoryBriefsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@JsonGetter("type")
 	@Valid
 	public Type getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	@JsonIgnore
 	public String getTypeAsString() {
+		Type type = getType();
+
 		if (type == null) {
 			return null;
 		}
@@ -657,24 +1528,31 @@ public class Account implements Serializable {
 
 	public void setType(Type type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<Type, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Type type;
+
+	@JsonIgnore
+	private Supplier<Type> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -706,6 +1584,65 @@ public class Account implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		AccountContactInformation accountContactInformation =
+			getAccountContactInformation();
+
+		if (accountContactInformation != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"accountContactInformation\": ");
+
+			sb.append(String.valueOf(accountContactInformation));
+		}
+
+		AccountGroupBrief[] accountGroupBriefs = getAccountGroupBriefs();
+
+		if (accountGroupBriefs != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"accountGroupBriefs\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < accountGroupBriefs.length; i++) {
+				sb.append(String.valueOf(accountGroupBriefs[i]));
+
+				if ((i + 1) < accountGroupBriefs.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		AccountRole[] accountRoles = getAccountRoles();
+
+		if (accountRoles != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"accountRoles\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < accountRoles.length; i++) {
+				sb.append(String.valueOf(accountRoles[i]));
+
+				if ((i + 1) < accountRoles.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		UserAccount[] accountUserAccounts = getAccountUserAccounts();
+
 		if (accountUserAccounts != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -726,6 +1663,8 @@ public class Account implements Serializable {
 			sb.append("]");
 		}
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -735,6 +1674,21 @@ public class Account implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		Creator creator = getCreator();
+
+		if (creator != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"creator\": ");
+
+			sb.append(String.valueOf(creator));
+		}
+
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields =
+			getCustomFields();
 
 		if (customFields != null) {
 			if (sb.length() > 1) {
@@ -746,7 +1700,7 @@ public class Account implements Serializable {
 			sb.append("[");
 
 			for (int i = 0; i < customFields.length; i++) {
-				sb.append(String.valueOf(customFields[i]));
+				sb.append(customFields[i]);
 
 				if ((i + 1) < customFields.length) {
 					sb.append(", ");
@@ -755,6 +1709,8 @@ public class Account implements Serializable {
 
 			sb.append("]");
 		}
+
+		Date dateCreated = getDateCreated();
 
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
@@ -770,6 +1726,8 @@ public class Account implements Serializable {
 			sb.append("\"");
 		}
 
+		Date dateModified = getDateModified();
+
 		if (dateModified != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -784,6 +1742,25 @@ public class Account implements Serializable {
 			sb.append("\"");
 		}
 
+		String defaultBillingAddressExternalReferenceCode =
+			getDefaultBillingAddressExternalReferenceCode();
+
+		if (defaultBillingAddressExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"defaultBillingAddressExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(defaultBillingAddressExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long defaultBillingAddressId = getDefaultBillingAddressId();
+
 		if (defaultBillingAddressId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -794,6 +1771,25 @@ public class Account implements Serializable {
 			sb.append(defaultBillingAddressId);
 		}
 
+		String defaultShippingAddressExternalReferenceCode =
+			getDefaultShippingAddressExternalReferenceCode();
+
+		if (defaultShippingAddressExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"defaultShippingAddressExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(defaultShippingAddressExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long defaultShippingAddressId = getDefaultShippingAddressId();
+
 		if (defaultShippingAddressId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -803,6 +1799,8 @@ public class Account implements Serializable {
 
 			sb.append(defaultShippingAddressId);
 		}
+
+		String description = getDescription();
 
 		if (description != null) {
 			if (sb.length() > 1) {
@@ -817,6 +1815,8 @@ public class Account implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String[] domains = getDomains();
 
 		if (domains != null) {
 			if (sb.length() > 1) {
@@ -842,6 +1842,8 @@ public class Account implements Serializable {
 			sb.append("]");
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -856,6 +1858,8 @@ public class Account implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -866,6 +1870,66 @@ public class Account implements Serializable {
 			sb.append(id);
 		}
 
+		String[] keywords = getKeywords();
+
+		if (keywords != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"keywords\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < keywords.length; i++) {
+				sb.append("\"");
+
+				sb.append(_escape(keywords[i]));
+
+				sb.append("\"");
+
+				if ((i + 1) < keywords.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		String logoBase64 = getLogoBase64();
+
+		if (logoBase64 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"logoBase64\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(logoBase64));
+
+			sb.append("\"");
+		}
+
+		String logoExternalReferenceCode = getLogoExternalReferenceCode();
+
+		if (logoExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"logoExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(logoExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long logoId = getLogoId();
+
 		if (logoId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -875,6 +1939,8 @@ public class Account implements Serializable {
 
 			sb.append(logoId);
 		}
+
+		String logoURL = getLogoURL();
 
 		if (logoURL != null) {
 			if (sb.length() > 1) {
@@ -890,6 +1956,8 @@ public class Account implements Serializable {
 			sb.append("\"");
 		}
 
+		String name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -904,6 +1972,8 @@ public class Account implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer numberOfUsers = getNumberOfUsers();
+
 		if (numberOfUsers != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -913,6 +1983,37 @@ public class Account implements Serializable {
 
 			sb.append(numberOfUsers);
 		}
+
+		String[] organizationExternalReferenceCodes =
+			getOrganizationExternalReferenceCodes();
+
+		if (organizationExternalReferenceCodes != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"organizationExternalReferenceCodes\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < organizationExternalReferenceCodes.length;
+				 i++) {
+
+				sb.append("\"");
+
+				sb.append(_escape(organizationExternalReferenceCodes[i]));
+
+				sb.append("\"");
+
+				if ((i + 1) < organizationExternalReferenceCodes.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		Long[] organizationIds = getOrganizationIds();
 
 		if (organizationIds != null) {
 			if (sb.length() > 1) {
@@ -934,6 +2035,25 @@ public class Account implements Serializable {
 			sb.append("]");
 		}
 
+		String parentAccountExternalReferenceCode =
+			getParentAccountExternalReferenceCode();
+
+		if (parentAccountExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"parentAccountExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(parentAccountExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long parentAccountId = getParentAccountId();
+
 		if (parentAccountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -943,6 +2063,31 @@ public class Account implements Serializable {
 
 			sb.append(parentAccountId);
 		}
+
+		com.liferay.portal.vulcan.permission.Permission[] permissions =
+			getPermissions();
+
+		if (permissions != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"permissions\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < permissions.length; i++) {
+				sb.append(permissions[i]);
+
+				if ((i + 1) < permissions.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		PostalAddress[] postalAddresses = getPostalAddresses();
 
 		if (postalAddresses != null) {
 			if (sb.length() > 1) {
@@ -964,6 +2109,8 @@ public class Account implements Serializable {
 			sb.append("]");
 		}
 
+		Integer status = getStatus();
+
 		if (status != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -973,6 +2120,8 @@ public class Account implements Serializable {
 
 			sb.append(status);
 		}
+
+		String taxId = getTaxId();
 
 		if (taxId != null) {
 			if (sb.length() > 1) {
@@ -988,6 +2137,31 @@ public class Account implements Serializable {
 			sb.append("\"");
 		}
 
+		TaxonomyCategoryBrief[] taxonomyCategoryBriefs =
+			getTaxonomyCategoryBriefs();
+
+		if (taxonomyCategoryBriefs != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"taxonomyCategoryBriefs\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < taxonomyCategoryBriefs.length; i++) {
+				sb.append(String.valueOf(taxonomyCategoryBriefs[i]));
+
+				if ((i + 1) < taxonomyCategoryBriefs.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		Type type = getType();
+
 		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -996,9 +2170,7 @@ public class Account implements Serializable {
 			sb.append("\"type\": ");
 
 			sb.append("\"");
-
 			sb.append(type);
-
 			sb.append("\"");
 		}
 
@@ -1007,8 +2179,8 @@ public class Account implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.Account",
 		name = "x-class-name"
 	)
@@ -1093,7 +2265,10 @@ public class Account implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

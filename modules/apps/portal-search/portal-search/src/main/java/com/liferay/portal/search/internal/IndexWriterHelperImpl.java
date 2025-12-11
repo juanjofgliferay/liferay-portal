@@ -8,12 +8,12 @@ package com.liferay.portal.search.internal;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.IndexWriter;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
@@ -123,6 +123,10 @@ public class IndexWriterHelperImpl implements IndexWriterHelper {
 
 	@Override
 	public void commit() throws SearchException {
+		if (!_commitImmediately) {
+			return;
+		}
+
 		for (Company company : _companyLocalService.getCompanies()) {
 			commit(company.getCompanyId());
 		}
@@ -130,6 +134,10 @@ public class IndexWriterHelperImpl implements IndexWriterHelper {
 
 	@Override
 	public void commit(long companyId) throws SearchException {
+		if (!_commitImmediately) {
+			return;
+		}
+
 		SearchEngine searchEngine = _searchEngineHelper.getSearchEngine();
 
 		IndexWriter indexWriter = searchEngine.getIndexWriter();
@@ -409,7 +417,7 @@ public class IndexWriterHelperImpl implements IndexWriterHelper {
 
 		try {
 			return _backgroundTaskManager.addBackgroundTask(
-				userId, CompanyConstants.SYSTEM, jobName,
+				userId, BackgroundTaskConstants.GROUP_ID_DEFAULT, jobName,
 				ReindexPortalBackgroundTaskExecutor.class.getName(),
 				taskContextMap, new ServiceContext());
 		}
@@ -442,7 +450,7 @@ public class IndexWriterHelperImpl implements IndexWriterHelper {
 
 		try {
 			return _backgroundTaskManager.addBackgroundTask(
-				userId, CompanyConstants.SYSTEM, jobName,
+				userId, BackgroundTaskConstants.GROUP_ID_DEFAULT, jobName,
 				ReindexSingleIndexerBackgroundTaskExecutor.class.getName(),
 				taskContextMap, new ServiceContext());
 		}

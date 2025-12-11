@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -39,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("PriceModifierCategory")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"categoryId", "priceModifierId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"categoryId", "priceModifierId"})
 @XmlRootElement(name = "PriceModifierCategory")
 public class PriceModifierCategory implements Serializable {
 
@@ -53,14 +54,22 @@ public class PriceModifierCategory implements Serializable {
 			PriceModifierCategory.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -68,52 +77,77 @@ public class PriceModifierCategory implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Category getCategory() {
+		if (_categorySupplier != null) {
+			category = _categorySupplier.get();
+
+			_categorySupplier = null;
+		}
+
 		return category;
 	}
 
 	public void setCategory(Category category) {
 		this.category = category;
+
+		_categorySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCategory(
 		UnsafeSupplier<Category, Exception> categoryUnsafeSupplier) {
 
-		try {
-			category = categoryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categorySupplier = () -> {
+			try {
+				return categoryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Category category;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Category> _categorySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "PAB-34098-789-N")
 	public String getCategoryExternalReferenceCode() {
+		if (_categoryExternalReferenceCodeSupplier != null) {
+			categoryExternalReferenceCode =
+				_categoryExternalReferenceCodeSupplier.get();
+
+			_categoryExternalReferenceCodeSupplier = null;
+		}
+
 		return categoryExternalReferenceCode;
 	}
 
@@ -121,6 +155,8 @@ public class PriceModifierCategory implements Serializable {
 		String categoryExternalReferenceCode) {
 
 		this.categoryExternalReferenceCode = categoryExternalReferenceCode;
+
+		_categoryExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -128,45 +164,59 @@ public class PriceModifierCategory implements Serializable {
 		UnsafeSupplier<String, Exception>
 			categoryExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			categoryExternalReferenceCode =
-				categoryExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categoryExternalReferenceCodeSupplier = () -> {
+			try {
+				return categoryExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String categoryExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _categoryExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getCategoryId() {
+		if (_categoryIdSupplier != null) {
+			categoryId = _categoryIdSupplier.get();
+
+			_categoryIdSupplier = null;
+		}
+
 		return categoryId;
 	}
 
 	public void setCategoryId(Long categoryId) {
 		this.categoryId = categoryId;
+
+		_categoryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCategoryId(
 		UnsafeSupplier<Long, Exception> categoryIdUnsafeSupplier) {
 
-		try {
-			categoryId = categoryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categoryIdSupplier = () -> {
+			try {
+				return categoryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -174,38 +224,60 @@ public class PriceModifierCategory implements Serializable {
 	@NotNull
 	protected Long categoryId;
 
+	@JsonIgnore
+	private Supplier<Long> _categoryIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getPriceModifierCategoryId() {
+		if (_priceModifierCategoryIdSupplier != null) {
+			priceModifierCategoryId = _priceModifierCategoryIdSupplier.get();
+
+			_priceModifierCategoryIdSupplier = null;
+		}
+
 		return priceModifierCategoryId;
 	}
 
 	public void setPriceModifierCategoryId(Long priceModifierCategoryId) {
 		this.priceModifierCategoryId = priceModifierCategoryId;
+
+		_priceModifierCategoryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceModifierCategoryId(
 		UnsafeSupplier<Long, Exception> priceModifierCategoryIdUnsafeSupplier) {
 
-		try {
-			priceModifierCategoryId =
-				priceModifierCategoryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceModifierCategoryIdSupplier = () -> {
+			try {
+				return priceModifierCategoryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long priceModifierCategoryId;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Long> _priceModifierCategoryIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getPriceModifierExternalReferenceCode() {
+		if (_priceModifierExternalReferenceCodeSupplier != null) {
+			priceModifierExternalReferenceCode =
+				_priceModifierExternalReferenceCodeSupplier.get();
+
+			_priceModifierExternalReferenceCodeSupplier = null;
+		}
+
 		return priceModifierExternalReferenceCode;
 	}
 
@@ -214,6 +286,8 @@ public class PriceModifierCategory implements Serializable {
 
 		this.priceModifierExternalReferenceCode =
 			priceModifierExternalReferenceCode;
+
+		_priceModifierExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -221,51 +295,68 @@ public class PriceModifierCategory implements Serializable {
 		UnsafeSupplier<String, Exception>
 			priceModifierExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			priceModifierExternalReferenceCode =
-				priceModifierExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceModifierExternalReferenceCodeSupplier = () -> {
+			try {
+				return priceModifierExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String priceModifierExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _priceModifierExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getPriceModifierId() {
+		if (_priceModifierIdSupplier != null) {
+			priceModifierId = _priceModifierIdSupplier.get();
+
+			_priceModifierIdSupplier = null;
+		}
+
 		return priceModifierId;
 	}
 
 	public void setPriceModifierId(Long priceModifierId) {
 		this.priceModifierId = priceModifierId;
+
+		_priceModifierIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceModifierId(
 		UnsafeSupplier<Long, Exception> priceModifierIdUnsafeSupplier) {
 
-		try {
-			priceModifierId = priceModifierIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceModifierIdSupplier = () -> {
+			try {
+				return priceModifierIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long priceModifierId;
+
+	@JsonIgnore
+	private Supplier<Long> _priceModifierIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -295,6 +386,8 @@ public class PriceModifierCategory implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -305,6 +398,8 @@ public class PriceModifierCategory implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		Category category = getCategory();
+
 		if (category != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -314,6 +409,9 @@ public class PriceModifierCategory implements Serializable {
 
 			sb.append(String.valueOf(category));
 		}
+
+		String categoryExternalReferenceCode =
+			getCategoryExternalReferenceCode();
 
 		if (categoryExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -329,6 +427,8 @@ public class PriceModifierCategory implements Serializable {
 			sb.append("\"");
 		}
 
+		Long categoryId = getCategoryId();
+
 		if (categoryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -339,6 +439,8 @@ public class PriceModifierCategory implements Serializable {
 			sb.append(categoryId);
 		}
 
+		Long priceModifierCategoryId = getPriceModifierCategoryId();
+
 		if (priceModifierCategoryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -348,6 +450,9 @@ public class PriceModifierCategory implements Serializable {
 
 			sb.append(priceModifierCategoryId);
 		}
+
+		String priceModifierExternalReferenceCode =
+			getPriceModifierExternalReferenceCode();
 
 		if (priceModifierExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -362,6 +467,8 @@ public class PriceModifierCategory implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long priceModifierId = getPriceModifierId();
 
 		if (priceModifierId != null) {
 			if (sb.length() > 1) {
@@ -378,8 +485,8 @@ public class PriceModifierCategory implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceModifierCategory",
 		name = "x-class-name"
 	)
@@ -425,7 +532,10 @@ public class PriceModifierCategory implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

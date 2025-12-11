@@ -3,18 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 import addLoadingAnimation from './addLoadingAnimation';
 import {LAYOUT_DATA_ITEM_TYPES} from './constants/layoutDataItemTypes';
 
 const addPortlet = ({item, plid, targetItem, targetPosition}) => {
 	const loading = addLoadingAnimation(targetItem, targetPosition);
-
-	openToast({
-		message: Liferay.Language.get('the-application-was-added-to-the-page'),
-		type: 'success',
-	});
 
 	const portletData =
 		item.type === LAYOUT_DATA_ITEM_TYPES.widget
@@ -23,6 +18,13 @@ const addPortlet = ({item, plid, targetItem, targetPosition}) => {
 
 	Liferay.Portlet.add({
 		beforePortletLoaded: () => null,
+		onComplete: () =>
+			openToast({
+				message: Liferay.Language.get(
+					'the-application-was-added-to-the-page'
+				),
+				type: 'success',
+			}),
 		placeHolder: loading,
 		plid,
 		portletData,

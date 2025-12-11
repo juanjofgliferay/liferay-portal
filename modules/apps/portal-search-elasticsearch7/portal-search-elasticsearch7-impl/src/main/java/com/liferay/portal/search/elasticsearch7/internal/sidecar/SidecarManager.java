@@ -9,23 +9,22 @@ import com.liferay.petra.process.ProcessExecutor;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationObserver;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
-import com.liferay.portal.search.elasticsearch7.internal.configuration.OperationModeResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionBuilder;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
-import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchInstancePaths;
-import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchInstancePathsBuilder;
 import com.liferay.portal.search.elasticsearch7.internal.connection.constants.ConnectionConstants;
-import com.liferay.portal.search.elasticsearch7.internal.index.constants.SidecarVersionConstants;
+import com.liferay.portal.search.elasticsearch7.internal.sidecar.constants.SidecarConstants;
 import com.liferay.portal.search.elasticsearch7.internal.util.ResourceUtil;
+
+import java.io.File;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -56,16 +55,22 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 	}
 
 	@Activate
-	protected void activate() {
+	protected void activate(BundleContext bundleContext) {
+		_bundleContext = bundleContext;
+
 		elasticsearchConfigurationWrapper.register(this);
 
 		applyConfigurations();
 	}
 
 	protected void applyConfigurations() {
-		if (operationModeResolver.isProductionModeEnabled()) {
+		File processFile = _bundleContext.getDataFile("sidecar.process");
+
+		if (elasticsearchConfigurationWrapper.isProductionModeEnabled()) {
 			elasticsearchConnectionManager.removeElasticsearchConnection(
 				ConnectionConstants.SIDECAR_CONNECTION_ID);
+
+			processFile.delete();
 		}
 		else {
 			_startupSuccessful = false;
@@ -86,10 +91,11 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 				_sidecar.stop();
 			}
 
+			Path workPath = Paths.get(PropsValues.LIFERAY_HOME);
+
 			_sidecar = new Sidecar(
-				elasticsearchConfigurationWrapper,
-				_getElasticsearchInstancePaths(), processExecutor,
-				new ProcessExecutorPathsImpl(props), this);
+				elasticsearchConfigurationWrapper, processExecutor,
+				_resolveHomePath(workPath), this, processFile, workPath);
 
 			ElasticsearchConnectionBuilder elasticsearchConnectionBuilder =
 				new ElasticsearchConnectionBuilder();
@@ -130,44 +136,21 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 	}
 
 	@Reference
-	protected volatile ElasticsearchConfigurationWrapper
+	protected ElasticsearchConfigurationWrapper
 		elasticsearchConfigurationWrapper;
 
 	@Reference
 	protected ElasticsearchConnectionManager elasticsearchConnectionManager;
 
 	@Reference
-	protected OperationModeResolver operationModeResolver;
-
-	@Reference
 	protected ProcessExecutor processExecutor;
-
-	@Reference
-	protected Props props;
-
-	private ElasticsearchInstancePaths _getElasticsearchInstancePaths() {
-		ElasticsearchInstancePathsBuilder elasticsearchInstancePathsBuilder =
-			new ElasticsearchInstancePathsBuilder();
-
-		Path workPath = Paths.get(props.get(PropsKeys.LIFERAY_HOME));
-
-		Path dataPath = workPath.resolve("data/elasticsearch7");
-
-		return elasticsearchInstancePathsBuilder.dataPath(
-			dataPath
-		).homePath(
-			_resolveHomePath(workPath)
-		).workPath(
-			workPath
-		).build();
-	}
 
 	private Path _resolveHomePath(Path path) {
 		String sidecarHome = elasticsearchConfigurationWrapper.sidecarHome();
 
 		if (sidecarHome.equals("elasticsearch-sidecar")) {
 			String versionNumber = ResourceUtil.getResourceAsString(
-				getClass(), SidecarVersionConstants.SIDECAR_VERSION_FILE_NAME);
+				getClass(), SidecarConstants.SIDECAR_VERSION_FILE_NAME);
 
 			sidecarHome = sidecarHome + "/" + versionNumber;
 		}
@@ -187,6 +170,7 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 
 	private static final Log _log = LogFactoryUtil.getLog(SidecarManager.class);
 
+	private BundleContext _bundleContext;
 	private Sidecar _sidecar;
 	private boolean _startupSuccessful;
 

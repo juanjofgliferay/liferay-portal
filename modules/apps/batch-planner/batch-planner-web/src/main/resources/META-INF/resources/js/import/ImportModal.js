@@ -64,7 +64,9 @@ const ImportModal = ({closeModal, formDataQuerySelector, formImportURL}) => {
 
 	return (
 		<ClayModal observer={observer} size="md" status={modalStatus}>
-			<ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
 				{Liferay.Language.get('import-file')}
 			</ClayModal.Header>
 
@@ -87,16 +89,19 @@ const ImportModal = ({closeModal, formDataQuerySelector, formImportURL}) => {
 							{Liferay.Language.get('close')}
 						</ClayButton>
 
-						{modalStatus === 'danger' && !!externalReferenceCode && (
-							<ClayButton
-								disabled={loading}
-								displayType="danger"
-								onClick={downloadFile}
-								type="submit"
-							>
-								{Liferay.Language.get('download-error-report')}
-							</ClayButton>
-						)}
+						{modalStatus === 'danger' &&
+							!!externalReferenceCode && (
+								<ClayButton
+									disabled={loading}
+									displayType="danger"
+									onClick={downloadFile}
+									type="submit"
+								>
+									{Liferay.Language.get(
+										'download-error-report'
+									)}
+								</ClayButton>
+							)}
 					</ClayButton.Group>
 				}
 			/>

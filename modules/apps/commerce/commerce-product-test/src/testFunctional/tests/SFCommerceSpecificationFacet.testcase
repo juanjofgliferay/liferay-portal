@@ -3,11 +3,14 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp(minium = "true");
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -181,11 +184,9 @@ definition {
 				key_entry = "Warranty",
 				locator1 = "CommerceNavigation#ANY_ENTRY_NAME");
 
-			AssertElementPresent(
+			AssertElementNotPresent(
 				key_entry = "Material",
 				locator1 = "CommerceNavigation#ANY_ENTRY_NAME");
-
-			// We need to remove this check after an issue is fixed
 
 			CommerceWidget.assertOptionFacetsCount(
 				expectedLabels = 1,
@@ -335,10 +336,6 @@ definition {
 			portletOption = "Configuration");
 
 		IFrame.selectModalFrame();
-
-		AssertElementPresent(
-			key_navItem = "Setup",
-			locator1 = "NavBar#ACTIVE_NAV_ITEM_LINK");
 
 		AssertElementPresent(
 			key_fieldLabel = "Display Template",

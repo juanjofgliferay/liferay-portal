@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,10 +53,19 @@ public class UserAccountFullNameDefinition implements Serializable {
 			UserAccountFullNameDefinition.class, json);
 	}
 
-	@Schema(description = "A list of the user's account.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of the user's account."
+	)
 	@Valid
 	public UserAccountFullNameDefinitionField[]
 		getUserAccountFullNameDefinitionFields() {
+
+		if (_userAccountFullNameDefinitionFieldsSupplier != null) {
+			userAccountFullNameDefinitionFields =
+				_userAccountFullNameDefinitionFieldsSupplier.get();
+
+			_userAccountFullNameDefinitionFieldsSupplier = null;
+		}
 
 		return userAccountFullNameDefinitionFields;
 	}
@@ -68,6 +76,8 @@ public class UserAccountFullNameDefinition implements Serializable {
 
 		this.userAccountFullNameDefinitionFields =
 			userAccountFullNameDefinitionFields;
+
+		_userAccountFullNameDefinitionFieldsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -75,22 +85,27 @@ public class UserAccountFullNameDefinition implements Serializable {
 		UnsafeSupplier<UserAccountFullNameDefinitionField[], Exception>
 			userAccountFullNameDefinitionFieldsUnsafeSupplier) {
 
-		try {
-			userAccountFullNameDefinitionFields =
-				userAccountFullNameDefinitionFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_userAccountFullNameDefinitionFieldsSupplier = () -> {
+			try {
+				return userAccountFullNameDefinitionFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "A list of the user's account.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected UserAccountFullNameDefinitionField[]
 		userAccountFullNameDefinitionFields;
+
+	@JsonIgnore
+	private Supplier<UserAccountFullNameDefinitionField[]>
+		_userAccountFullNameDefinitionFieldsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -121,6 +136,10 @@ public class UserAccountFullNameDefinition implements Serializable {
 
 		sb.append("{");
 
+		UserAccountFullNameDefinitionField[]
+			userAccountFullNameDefinitionFields =
+				getUserAccountFullNameDefinitionFields();
+
 		if (userAccountFullNameDefinitionFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -149,8 +168,8 @@ public class UserAccountFullNameDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.UserAccountFullNameDefinition",
 		name = "x-class-name"
 	)
@@ -196,7 +215,10 @@ public class UserAccountFullNameDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

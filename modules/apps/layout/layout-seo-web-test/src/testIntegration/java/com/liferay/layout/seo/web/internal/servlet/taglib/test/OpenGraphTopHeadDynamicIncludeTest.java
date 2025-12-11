@@ -12,8 +12,6 @@ import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.util.DLURLHelper;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldValue;
@@ -36,7 +34,7 @@ import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
-import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTagProperty;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
 import com.liferay.layout.seo.service.LayoutSEOSiteLocalService;
 import com.liferay.layout.test.util.LayoutTestUtil;
@@ -68,28 +66,31 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.translation.info.item.provider.InfoItemLanguagesProvider;
 
-import java.nio.charset.StandardCharsets;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -150,10 +151,34 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	@Test
-	public void testIncludeCustomCanonicalURL() throws Exception {
+	public void testEscapeMetaTagValues() throws Exception {
+		String xssContent = "'\"><img src=x onerror=alert()>";
+
+		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(), true,
+			Collections.singletonMap(LocaleUtil.US, "http://example.com"),
+			false, Collections.emptyMap(), Collections.emptyMap(), 0, true,
+			Collections.singletonMap(LocaleUtil.US, xssContent),
+			_serviceContext);
+
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
+		_testWithLayoutSEOCompanyConfiguration(
+			() -> _dynamicInclude.include(
+				_getHttpServletRequest(), mockHttpServletResponse,
+				RandomTestUtil.randomString()),
+			false, true);
+
+		String content = mockHttpServletResponse.getContentAsString();
+
+		Assert.assertTrue(
+			content.contains(HtmlUtil.escapeAttribute(xssContent)));
+	}
+
+	@Test
+	public void testIncludeCustomCanonicalURL() throws Exception {
 		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
 			TestPropsValues.getUserId(), _group.getGroupId(), false,
 			_layout.getLayoutId(), true,
@@ -163,6 +188,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			true, Collections.emptyMap(), Collections.emptyMap(), 0, false,
 			Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -203,23 +231,27 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeCustomMetaTags() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext();
-
-		serviceContext.setAttribute(
-			_getDDMStructureId() + "ddmFormValues",
-			new String(
-				FileUtil.getBytes(
-					getClass(),
-					"dependencies/custom_meta_tags_ddm_form_values.json"),
-				StandardCharsets.UTF_8));
-
 		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
 			_layout.getUserId(), _layout.getGroupId(),
 			_layout.isPrivateLayout(), _layout.getLayoutId(), false,
 			Collections.emptyMap(), false, Collections.emptyMap(),
 			Collections.emptyMap(), 0, false, Collections.emptyMap(),
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext());
+
+		_layoutSEOEntryLocalService.updateCustomMetaTags(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(),
+			Arrays.asList(
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), "content1"),
+					"property1"),
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), "content2"),
+					"property2")),
+			ServiceContextTestUtil.getServiceContext(
+				_layout.getGroupId(), TestPropsValues.getUserId()));
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -236,38 +268,176 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	@Test
-	public void testIncludeCustomTitle() throws Exception {
+	public void testIncludeCustomMetaTagsWithDefaultValueForOtherLocale()
+		throws Exception {
+
+		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
+			_layout.getUserId(), _layout.getGroupId(),
+			_layout.isPrivateLayout(), _layout.getLayoutId(), false,
+			Collections.emptyMap(), false, Collections.emptyMap(),
+			Collections.emptyMap(), 0, false, Collections.emptyMap(),
+			ServiceContextTestUtil.getServiceContext());
+
+		_layoutSEOEntryLocalService.updateCustomMetaTags(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(),
+			Arrays.asList(
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), "content1"),
+					"property1"),
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), "content2"),
+					"property2")),
+			ServiceContextTestUtil.getServiceContext(
+				_layout.getGroupId(), TestPropsValues.getUserId()));
+
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
-		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
-			TestPropsValues.getUserId(), _layout.getGroupId(), false,
-			_layout.getLayoutId(), true,
-			Collections.singletonMap(LocaleUtil.US, "http://example.com"),
-			false, Collections.emptyMap(), Collections.emptyMap(), 0, true,
-			Collections.singletonMap(LocaleUtil.US, "customTitle"),
-			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
-
-		_testWithLayoutSEOCompanyConfiguration(
-			() -> _dynamicInclude.include(
-				_getHttpServletRequest(), mockHttpServletResponse,
-				RandomTestUtil.randomString()),
-			false, true);
+		_dynamicInclude.include(
+			_getHttpServletRequest(LocaleUtil.SPAIN), mockHttpServletResponse,
+			RandomTestUtil.randomString());
 
 		Document document = Jsoup.parse(
 			mockHttpServletResponse.getContentAsString());
 
-		_assertMetaTag(document, "og:title", "customTitle");
+		_assertMetaTag(document, "property1", "content1");
+		_assertMetaTag(document, "property2", "content2");
+	}
+
+	@Test
+	public void testIncludeCustomMetaTagsWithEmptyValues() throws Exception {
+		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
+			_layout.getUserId(), _layout.getGroupId(),
+			_layout.isPrivateLayout(), _layout.getLayoutId(), false,
+			Collections.emptyMap(), false, Collections.emptyMap(),
+			Collections.emptyMap(), 0, false, Collections.emptyMap(),
+			ServiceContextTestUtil.getServiceContext());
+
+		_layoutSEOEntryLocalService.updateCustomMetaTags(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(),
+			Collections.singletonList(
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), StringPool.BLANK),
+					"custom property")),
+			ServiceContextTestUtil.getServiceContext(
+				_layout.getGroupId(), TestPropsValues.getUserId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_dynamicInclude.include(
+			_getHttpServletRequest(LocaleUtil.SPAIN), mockHttpServletResponse,
+			RandomTestUtil.randomString());
+
+		String content = mockHttpServletResponse.getContentAsString();
+
+		Assert.assertFalse(content.contains("custom content"));
+		Assert.assertFalse(content.contains("custom property"));
+	}
+
+	@Test
+	public void testIncludeCustomMetaTagsWithSpecialCharacters()
+		throws Exception {
+
+		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
+			_layout.getUserId(), _layout.getGroupId(),
+			_layout.isPrivateLayout(), _layout.getLayoutId(), false,
+			Collections.emptyMap(), false, Collections.emptyMap(),
+			Collections.emptyMap(), 0, false, Collections.emptyMap(),
+			ServiceContextTestUtil.getServiceContext());
+
+		_layoutSEOEntryLocalService.updateCustomMetaTags(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(),
+			Collections.singletonList(
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), "& content"),
+					"& property")),
+			ServiceContextTestUtil.getServiceContext(
+				_layout.getGroupId(), TestPropsValues.getUserId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_dynamicInclude.include(
+			_getHttpServletRequest(), mockHttpServletResponse,
+			RandomTestUtil.randomString());
+
+		Document document = Jsoup.parse(
+			mockHttpServletResponse.getContentAsString());
+
+		_assertMetaTag(document, "& property", "& content");
+	}
+
+	@Test
+	public void testIncludeCustomTitle() throws Exception {
+		_assertIncludeTitleAndDescription(null, "Heló");
+	}
+
+	@Test
+	public void testIncludeCustomTitleAndDescription() throws Exception {
+		_assertIncludeTitleAndDescription(
+			"description@#$%^&*()~`1234567890", "@#$%^&*()~`1234567890title");
+	}
+
+	@Test
+	public void testIncludeCustomTitleAndDescriptionForArabicTranslation()
+		throws Exception {
+
+		Locale locale = LocaleUtil.fromLanguageId("ar_SA");
+		String description = "الوصف العربي";
+		String title = "العنوان بالعربية";
+
+		_assertIncludeTitleAndDescription(
+			description, title, locale,
+			HashMapBuilder.put(
+				locale, description
+			).put(
+				LocaleUtil.US, RandomTestUtil.randomString()
+			).build(),
+			HashMapBuilder.put(
+				locale, title
+			).put(
+				LocaleUtil.US, RandomTestUtil.randomString()
+			).build());
+	}
+
+	@Test
+	public void testIncludeCustomTitleAndDescriptionForUntranslatedLanguage()
+		throws Exception {
+
+		String description = RandomTestUtil.randomString();
+		String title = RandomTestUtil.randomString();
+		Locale locale = LocaleUtil.fromLanguageId("ar_SA");
+
+		_assertIncludeTitleAndDescription(
+			description, title, locale,
+			HashMapBuilder.put(
+				locale, StringPool.BLANK
+			).put(
+				LocaleUtil.US, description
+			).build(),
+			HashMapBuilder.put(
+				locale, StringPool.BLANK
+			).put(
+				LocaleUtil.US, title
+			).build());
 	}
 
 	@Test
 	public void testIncludeDefaultMappedTitleAndDescription() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		_layout.setType(LayoutConstants.TYPE_ASSET_DISPLAY);
 
 		_layout = _layoutLocalService.updateLayout(_layout);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithMockInfoItem(
 			_serviceContext.getRequest(),
@@ -313,9 +483,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeImageAltNoImage() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
 			TestPropsValues.getUserId(), _layout.getGroupId(), false,
 			_layout.getLayoutId(), true,
@@ -324,6 +491,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			Collections.singletonMap(LocaleUtil.US, "Image alternative text"),
 			0, false, Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -339,24 +509,27 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeIncompleteCustomMetaTags() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext();
-
-		serviceContext.setAttribute(
-			_getDDMStructureId() + "ddmFormValues",
-			new String(
-				FileUtil.getBytes(
-					getClass(),
-					"dependencies" +
-						"/incomplete_custom_meta_tags_ddm_form_values.json"),
-				StandardCharsets.UTF_8));
-
 		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
 			_layout.getUserId(), _layout.getGroupId(),
 			_layout.isPrivateLayout(), _layout.getLayoutId(), false,
 			Collections.emptyMap(), false, Collections.emptyMap(),
 			Collections.emptyMap(), 0, false, Collections.emptyMap(),
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext());
+
+		_layoutSEOEntryLocalService.updateCustomMetaTags(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(),
+			Arrays.asList(
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), "content1"),
+					"property1"),
+				new LayoutSEOEntryCustomMetaTagProperty(
+					Collections.singletonMap(
+						LocaleUtil.getSiteDefault(), StringPool.BLANK),
+					"property2")),
+			ServiceContextTestUtil.getServiceContext(
+				_layout.getGroupId(), TestPropsValues.getUserId()));
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -374,10 +547,30 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	@Test
-	public void testIncludeLayoutOpenGraphImage() throws Exception {
+	public void testIncludeInternalServerErrorResponseStatus()
+		throws Exception {
+
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
+		mockHttpServletResponse.setStatus(
+			HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+		_testWithLayoutSEOCompanyConfiguration(
+			() -> _dynamicInclude.include(
+				_getHttpServletRequest(), mockHttpServletResponse,
+				RandomTestUtil.randomString()),
+			false, true);
+
+		Document document = Jsoup.parse(
+			mockHttpServletResponse.getContentAsString());
+
+		_assertNoLinkElements(document, "alternate");
+		_assertNoLinkElements(document, "canonical");
+	}
+
+	@Test
+	public void testIncludeLayoutOpenGraphImage() throws Exception {
 		FileEntry layoutOpenGraphImageFileEntry = _addImageFileEntry(
 			"image.jpg",
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -390,6 +583,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			layoutOpenGraphImageFileEntry.getFileEntryId(), false,
 			Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -408,9 +604,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeLayoutOpenGraphImageNoImageAlt() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		FileEntry layoutOpenGraphImageFileEntry = _addImageFileEntry(
 			"image.jpg",
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -423,6 +616,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			layoutOpenGraphImageFileEntry.getFileEntryId(), false,
 			Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -444,9 +640,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	@Test
 	public void testIncludeLayoutOpenGraphImageWhenBothDefined()
 		throws Exception {
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
 
 		FileEntry layoutOpenGraphImageFileEntry = _addImageFileEntry(
 			"image.jpg",
@@ -471,6 +664,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			siteOpenGraphImageFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
 				_getHttpServletRequest(), mockHttpServletResponse,
@@ -489,9 +685,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	@Test
 	public void testIncludeLayoutOpenGraphImageWhenBothDefinedLayoutImageAlt()
 		throws Exception {
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
 
 		FileEntry imageFileEntry = _addImageFileEntry(
 			"image.jpg",
@@ -514,6 +707,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			imageFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
 				_getHttpServletRequest(), mockHttpServletResponse,
@@ -534,9 +730,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeLayoutOpenGraphImageWithImageAlt() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		FileEntry layoutOpenGraphImageFileEntry = _addImageFileEntry(
 			"image.jpg",
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -550,6 +743,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			layoutOpenGraphImageFileEntry.getFileEntryId(), false,
 			Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -1065,9 +1261,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeMappedImage() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		_layout.setType(LayoutConstants.TYPE_ASSET_DISPLAY);
 
 		UnicodeProperties typeSettingsUnicodeProperties =
@@ -1081,6 +1274,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 		_layout = _layoutLocalService.updateLayout(_layout);
 
 		HttpServletRequest httpServletRequest = _getHttpServletRequest();
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithMockInfoItem(
 			httpServletRequest,
@@ -1100,10 +1296,43 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	@Test
-	public void testIncludeMappedTitleAndDescription() throws Exception {
+	public void testIncludeMappedImageFile() throws Exception {
+		_layout.setType(LayoutConstants.TYPE_ASSET_DISPLAY);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			_layout.getTypeSettingsProperties();
+
+		typeSettingsUnicodeProperties.put(
+			"mapped-openGraphImage", "mappedImageFileFieldName");
+		typeSettingsUnicodeProperties.put(
+			"mapped-openGraphImageAlt", "mappedImageAltFieldName");
+
+		_layout = _layoutLocalService.updateLayout(_layout);
+
+		HttpServletRequest httpServletRequest = _getHttpServletRequest();
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
+		_testWithMockInfoItem(
+			httpServletRequest,
+			() -> _testWithLayoutSEOCompanyConfiguration(
+				() -> _dynamicInclude.include(
+					httpServletRequest, mockHttpServletResponse,
+					RandomTestUtil.randomString()),
+				false, true));
+
+		Document document = Jsoup.parse(
+			mockHttpServletResponse.getContentAsString());
+
+		_assertMetaTag(
+			document, "og:image", "http://localhost:8080/imageFileURL");
+		_assertMetaTag(document, "og:image:alt", "mappedImageAlt");
+		_assertMetaTag(
+			document, "og:image:url", "http://localhost:8080/imageFileURL");
+	}
+
+	@Test
+	public void testIncludeMappedTitleAndDescription() throws Exception {
 		_layout.setType(LayoutConstants.TYPE_ASSET_DISPLAY);
 
 		UnicodeProperties typeSettingsUnicodeProperties =
@@ -1117,6 +1346,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 		_layout = _layoutLocalService.updateLayout(_layout);
 
 		HttpServletRequest httpServletRequest = _getHttpServletRequest();
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithMockInfoItem(
 			httpServletRequest,
@@ -1132,6 +1364,26 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 		_assertMetaTag(
 			document, "og:description", "mappedDescriptionFieldName");
 		_assertMetaTag(document, "og:title", "mappedTitleFieldName");
+	}
+
+	@Test
+	public void testIncludeNotFoundResponseStatus() throws Exception {
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		mockHttpServletResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+
+		_testWithLayoutSEOCompanyConfiguration(
+			() -> _dynamicInclude.include(
+				_getHttpServletRequest(), mockHttpServletResponse,
+				RandomTestUtil.randomString()),
+			false, true);
+
+		Document document = Jsoup.parse(
+			mockHttpServletResponse.getContentAsString());
+
+		_assertNoLinkElements(document, "alternate");
+		_assertNoLinkElements(document, "canonical");
 	}
 
 	@Test
@@ -1155,9 +1407,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeSecureURL() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		FileEntry layoutOpenGraphImageFileEntry = _addImageFileEntry(
 			"image.jpg",
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -1170,6 +1419,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			layoutOpenGraphImageFileEntry.getFileEntryId(), false,
 			Collections.emptyMap(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -1206,9 +1458,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 	@Test
 	public void testIncludeSiteOpenGraphImage() throws Exception {
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		FileEntry siteOpenGraphImageFileEntry = _addImageFileEntry(
 			"image_site.jpg",
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -1218,6 +1467,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			Collections.emptyMap(),
 			siteOpenGraphImageFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -1238,9 +1490,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	public void testIncludeSiteOpenGraphImageWhenOpenGraphDisabled()
 		throws Exception {
 
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
 		FileEntry siteOpenGraphImageFileEntry = _addImageFileEntry(
 			"image_site.jpg",
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -1250,6 +1499,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			Collections.emptyMap(),
 			siteOpenGraphImageFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		_testWithLayoutSEOCompanyConfiguration(
 			() -> _dynamicInclude.include(
@@ -1298,33 +1550,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	@Test
-	public void testMetaTagValuesAreEscaped() throws Exception {
-		String xssContent = "'\"><img src=x onerror=alert()>";
-
-		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
-			TestPropsValues.getUserId(), _layout.getGroupId(), false,
-			_layout.getLayoutId(), true,
-			Collections.singletonMap(LocaleUtil.US, "http://example.com"),
-			false, Collections.emptyMap(), Collections.emptyMap(), 0, true,
-			Collections.singletonMap(LocaleUtil.US, xssContent),
-			_serviceContext);
-
-		MockHttpServletResponse mockHttpServletResponse =
-			new MockHttpServletResponse();
-
-		_testWithLayoutSEOCompanyConfiguration(
-			() -> _dynamicInclude.include(
-				_getHttpServletRequest(), mockHttpServletResponse,
-				RandomTestUtil.randomString()),
-			false, true);
-
-		String content = mockHttpServletResponse.getContentAsString();
-
-		Assert.assertTrue(
-			content.contains(HtmlUtil.escapeAttribute(xssContent)));
-	}
-
-	@Test
 	public void testPrivateLayout() throws Exception {
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -1358,6 +1583,27 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 		_assertNoLinkElements(document, "canonical");
 	}
 
+	@Test
+	public void testStatusErrorPage() throws Exception {
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		mockHttpServletResponse.setStatus(
+			HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+		_testWithLayoutSEOCompanyConfiguration(
+			() -> _dynamicInclude.include(
+				_getHttpServletRequest(), mockHttpServletResponse,
+				RandomTestUtil.randomString()),
+			false, true);
+
+		Document document = Jsoup.parse(
+			mockHttpServletResponse.getContentAsString());
+
+		_assertNoLinkElements(document, "alternate");
+		_assertNoLinkElements(document, "canonical");
+	}
+
 	private FileEntry _addImageFileEntry(
 			String fileName, ServiceContext serviceContext)
 		throws Exception {
@@ -1367,7 +1613,7 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-			null, serviceContext);
+			null, null, serviceContext);
 	}
 
 	private void _assertAlternateLinkTag(Document document, Set<Locale> locales)
@@ -1459,6 +1705,55 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 		Assert.assertEquals(href, element.attr("href"));
 	}
 
+	private void _assertIncludeTitleAndDescription(
+			String description, String title)
+		throws Exception {
+
+		_assertIncludeTitleAndDescription(
+			description, title,
+			LocaleUtil.fromLanguageId(_group.getDefaultLanguageId()),
+			Collections.singletonMap(LocaleUtil.US, description),
+			Collections.singletonMap(LocaleUtil.US, title));
+	}
+
+	private void _assertIncludeTitleAndDescription(
+			String expectedDescription, String expectedTitle, Locale locale,
+			Map<Locale, String> descriptionMap, Map<Locale, String> titleMap)
+		throws Exception {
+
+		_layoutSEOEntryLocalService.updateLayoutSEOEntry(
+			TestPropsValues.getUserId(), _layout.getGroupId(), false,
+			_layout.getLayoutId(), true,
+			Collections.singletonMap(LocaleUtil.US, "http://example.com"),
+			Validator.isNotNull(expectedDescription), descriptionMap,
+			Collections.emptyMap(), 0, true, titleMap,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		mockHttpServletResponse.setCharacterEncoding("UTF-8");
+
+		_testWithLayoutSEOCompanyConfiguration(
+			() -> _dynamicInclude.include(
+				_getHttpServletRequest(locale), mockHttpServletResponse,
+				RandomTestUtil.randomString()),
+			false, true);
+
+		Document document = Jsoup.parse(
+			mockHttpServletResponse.getContentAsString());
+
+		if (Validator.isNotNull(expectedDescription)) {
+			_assertMetaTag(document, "og:description", expectedDescription);
+		}
+		else {
+			_assertMetaTag(
+				document, "og:description", _layout.getDescription(locale));
+		}
+
+		_assertMetaTag(document, "og:title", expectedTitle);
+	}
+
 	private void _assertLinkElements(Document document) {
 		Elements elements = document.select("link[data-senna-track]");
 
@@ -1527,8 +1822,8 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				_group.getCreatorUserId(), _group.getGroupId(), 0, classNameId,
-				0, RandomTestUtil.randomString(),
+				null, _group.getCreatorUserId(), _group.getGroupId(), 0, null,
+				classNameId, 0, RandomTestUtil.randomString(),
 				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, true, 0,
 				0, 0, 0,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -1603,19 +1898,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 		return availableLocales;
 	}
 
-	private long _getDDMStructureId() throws Exception {
-		Group companyGroup = _groupLocalService.getCompanyGroup(
-			TestPropsValues.getCompanyId());
-
-		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
-			companyGroup.getGroupId(),
-			_classNameLocalService.getClassNameId(
-				LayoutSEOEntry.class.getName()),
-			"custom-meta-tags");
-
-		return ddmStructure.getStructureId();
-	}
-
 	private FileEntry _getFileEntry() throws Exception {
 		return _addImageFileEntry(
 			"image.jpg",
@@ -1623,10 +1905,17 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	private HttpServletRequest _getHttpServletRequest() throws PortalException {
+		return _getHttpServletRequest(
+			LocaleUtil.fromLanguageId(_group.getDefaultLanguageId()));
+	}
+
+	private HttpServletRequest _getHttpServletRequest(Locale locale)
+		throws PortalException {
+
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		ThemeDisplay themeDisplay = _getThemeDisplay();
+		ThemeDisplay themeDisplay = _getThemeDisplay(locale);
 
 		themeDisplay.setRequest(mockHttpServletRequest);
 
@@ -1664,6 +1953,13 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	}
 
 	private ThemeDisplay _getThemeDisplay() throws PortalException {
+		return _getThemeDisplay(
+			LocaleUtil.fromLanguageId(_group.getDefaultLanguageId()));
+	}
+
+	private ThemeDisplay _getThemeDisplay(Locale locale)
+		throws PortalException {
+
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		Company company = _companyLocalService.getCompany(
@@ -1671,12 +1967,11 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 
 		themeDisplay.setCompany(company);
 
-		themeDisplay.setLanguageId(_group.getDefaultLanguageId());
+		themeDisplay.setLanguageId(LocaleUtil.toLanguageId(locale));
 		themeDisplay.setLayout(_layout);
 		themeDisplay.setLayoutSet(
 			_layoutSetLocalService.getLayoutSet(_group.getGroupId(), false));
-		themeDisplay.setLocale(
-			LocaleUtil.fromLanguageId(_group.getDefaultLanguageId()));
+		themeDisplay.setLocale(locale);
 		themeDisplay.setPortalDomain("localhost");
 		themeDisplay.setPortalURL(company.getPortalURL(_group.getGroupId()));
 		themeDisplay.setScopeGroupId(_group.getGroupId());
@@ -1785,9 +2080,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 	private CompanyLocalService _companyLocalService;
 
 	@Inject
-	private DDMStructureLocalService _ddmStructureLocalService;
-
-	@Inject
 	private DLAppLocalService _dlAppLocalService;
 
 	@Inject
@@ -1864,17 +2156,6 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 					).namespace(
 						StringPool.BLANK
 					).name(
-						"title"
-					).build(),
-					"defaultMappedTitle")
-			).infoFieldValue(
-				new InfoFieldValue<>(
-					InfoField.builder(
-					).infoFieldType(
-						TextInfoFieldType.INSTANCE
-					).namespace(
-						StringPool.BLANK
-					).name(
 						"mappedDescriptionFieldName"
 					).build(),
 					"<p>mappedDescription</p>")
@@ -1886,20 +2167,9 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 					).namespace(
 						StringPool.BLANK
 					).name(
-						"mappedTitleFieldName"
+						"mappedImageAltFieldName"
 					).build(),
-					"mappedTitle")
-			).infoFieldValue(
-				new InfoFieldValue<>(
-					InfoField.builder(
-					).infoFieldType(
-						TextInfoFieldType.INSTANCE
-					).namespace(
-						StringPool.BLANK
-					).name(
-						"mappedTitleFieldName"
-					).build(),
-					"mappedTitle")
+					"mappedImageAlt")
 			).infoFieldValue(
 				new InfoFieldValue<>(
 					InfoField.builder(
@@ -1915,13 +2185,35 @@ public class OpenGraphTopHeadDynamicIncludeTest {
 				new InfoFieldValue<>(
 					InfoField.builder(
 					).infoFieldType(
+						ImageInfoFieldType.INSTANCE
+					).namespace(
+						StringPool.BLANK
+					).name(
+						"mappedImageFileFieldName"
+					).build(),
+					"/imageFileURL")
+			).infoFieldValue(
+				new InfoFieldValue<>(
+					InfoField.builder(
+					).infoFieldType(
 						TextInfoFieldType.INSTANCE
 					).namespace(
 						StringPool.BLANK
 					).name(
-						"mappedImageAltFieldName"
+						"mappedTitleFieldName"
 					).build(),
-					"mappedImageAlt")
+					"mappedTitle")
+			).infoFieldValue(
+				new InfoFieldValue<>(
+					InfoField.builder(
+					).infoFieldType(
+						TextInfoFieldType.INSTANCE
+					).namespace(
+						StringPool.BLANK
+					).name(
+						"title"
+					).build(),
+					"defaultMappedTitle")
 			).build();
 		}
 

@@ -6,15 +6,30 @@
 package com.liferay.osb.faro.web.internal.controller.api;
 
 import com.liferay.oauth2.provider.scope.RequiresNoScope;
+import com.liferay.osb.faro.engine.client.exception.InvalidFilterException;
 import com.liferay.osb.faro.model.FaroProject;
+import com.liferay.osb.faro.util.DateUtil;
 import com.liferay.osb.faro.util.FaroThreadLocal;
 import com.liferay.osb.faro.web.internal.context.GroupInfo;
 import com.liferay.osb.faro.web.internal.controller.BaseFaroController;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.net.URI;
 
@@ -30,18 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.core.UriInfo;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Marcellus Tavares
@@ -90,7 +95,8 @@ public class ReportController extends BaseFaroController {
 
 			return _reportControllerResponseFactory.create(
 				"\"fromDate\" and \"toDate\" query parameters are mandatory " +
-					"and must be ISO 8601 compliant " + _ISO_8601_FORMAT,
+					"and must be ISO 8601 compliant " +
+						DateUtil.PATTERN_DATE_TIME,
 				Response.Status.BAD_REQUEST);
 		}
 
@@ -106,7 +112,7 @@ public class ReportController extends BaseFaroController {
 
 			return _reportControllerResponseFactory.create(
 				"Both dates in range must be ISO 8601 compliant " +
-					_ISO_8601_FORMAT,
+					DateUtil.PATTERN_DATE_TIME,
 				Response.Status.BAD_REQUEST);
 		}
 
@@ -135,6 +141,31 @@ public class ReportController extends BaseFaroController {
 			responseMap = contactsEngineClient.get(
 				faroProject, Collections.emptyMap(), path, queryParameters,
 				Map.class);
+		}
+		catch (InvalidFilterException invalidFilterException) {
+			Response.ResponseBuilder responseBuilder = Response.status(
+				Response.Status.BAD_REQUEST);
+
+			String description = "";
+
+			JSONObject jsonObject = _jsonFactory.createJSONObject(
+				invalidFilterException.getMessage());
+
+			JSONObject errorAttributesJSONObject = jsonObject.getJSONObject(
+				"errorAttributes");
+
+			if (errorAttributesJSONObject != null) {
+				description = errorAttributesJSONObject.getString(
+					"message", "");
+			}
+
+			return responseBuilder.entity(
+				HashMapBuilder.put(
+					"description", description
+				).put(
+					"message", "Bad Request"
+				).build()
+			).build();
 		}
 		catch (Exception exception) {
 			_log.error(exception);
@@ -195,14 +226,11 @@ public class ReportController extends BaseFaroController {
 		return Date.from(zonedDateTime.toInstant());
 	}
 
-	private static final String _ISO_8601_FORMAT =
-		"yyyy-MM-dd'T'HH:mm[:ss.SSS'Z']";
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ReportController.class);
 
 	private static final DateTimeFormatter _dateTimeFormatter =
-		DateTimeFormatter.ofPattern(_ISO_8601_FORMAT);
+		DateTimeFormatter.ofPattern(DateUtil.PATTERN_DATE_TIME);
 	private static final List<String> _exportTypes = new ArrayList<String>() {
 		{
 			add("event");
@@ -216,5 +244,8 @@ public class ReportController extends BaseFaroController {
 	private static final ReportControllerResponseFactory
 		_reportControllerResponseFactory =
 			new ReportControllerResponseFactory();
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

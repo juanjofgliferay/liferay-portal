@@ -32,7 +32,6 @@ import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.TicketLocalService;
@@ -139,7 +138,7 @@ public class CTOnDemandUserTicketGeneratorImpl
 			password, password, true, screenName,
 			StringBundler.concat(screenName, StringPool.AT, company.getMx()),
 			company.getLocale(), ctCollection.getName(), null,
-			"Publication Reviewer", 0, 0, true, date.getMonth(), date.getDay(),
+			"Publication Reviewer", 0, 0, true, date.getMonth(), date.getDate(),
 			date.getYear(), null, UserConstants.TYPE_ON_DEMAND_USER, null, null,
 			new long[] {role.getRoleId()}, null, false, new ServiceContext());
 
@@ -161,16 +160,16 @@ public class CTOnDemandUserTicketGeneratorImpl
 
 		if (group == null) {
 			group = _groupLocalService.addGroup(
-				ctCollection.getUserId(),
+				StringPool.BLANK, ctCollection.getUserId(),
 				GroupConstants.DEFAULT_PARENT_GROUP_ID,
 				CTCollection.class.getName(), ctCollection.getCtCollectionId(),
 				GroupConstants.DEFAULT_LIVE_GROUP_ID,
 				HashMapBuilder.put(
 					LocaleUtil.getDefault(), ctCollection.getName()
 				).build(),
-				null, GroupConstants.TYPE_SITE_PRIVATE, false,
+				null, GroupConstants.TYPE_SITE_PRIVATE, null, false,
 				GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false,
-				true, null);
+				false, true, null);
 		}
 
 		_userGroupRoleLocalService.addUserGroupRole(
@@ -196,9 +195,6 @@ public class CTOnDemandUserTicketGeneratorImpl
 
 	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private ResourcePermissionLocalService _resourcePermissionLocalService;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

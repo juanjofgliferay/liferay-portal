@@ -1,4 +1,4 @@
-@component-name = "portal-object"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.object.web.internal.configuration.FFObjectViewConfiguration.config";
@@ -374,11 +374,11 @@ definition {
 
 			Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-			LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+			LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 			Workflow.confirmWorkflowAction();
 
-			LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+			LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 			Workflow.confirmWorkflowAction();
 		}
@@ -1423,7 +1423,7 @@ definition {
 
 			Check.checkNotVisible(locator1 = "ObjectCustomViews#TOGGLE_SWITCH_EXCLUDE_STATUS");
 
-			Button.click(button = "Edit Filter");
+			Button.click(button = "Show Results");
 
 			ObjectPortlet.viewEntry(entry = "Entry Test");
 		}
@@ -1738,7 +1738,7 @@ definition {
 
 		ObjectCustomViews.goToViewsBuilderTab();
 
-		LexiconEntry.gotoAdd();
+		Click(locator1 = "ObjectCustomViews#ADD_COLUMN");
 
 		ObjectCustomViews.searchOnAddColumnModal(columnName = "Author");
 
@@ -2934,7 +2934,7 @@ definition {
 
 		ObjectCustomViews.goToViewsBuilderTab();
 
-		LexiconEntry.gotoAdd();
+		Click(locator1 = "ObjectCustomViews#ADD_COLUMN");
 
 		for (var columnOption : list "Author,Create Date,Modified Date,Status,ID") {
 			ObjectCustomViews.assertColumnVisibleOnAddColumnModal(columnOption = ${columnOption});

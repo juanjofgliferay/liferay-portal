@@ -8,12 +8,12 @@ package com.liferay.object.admin.rest.client.dto.v1_0;
 import com.liferay.object.admin.rest.client.function.UnsafeSupplier;
 import com.liferay.object.admin.rest.client.serdes.v1_0.ObjectFieldSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -338,6 +338,32 @@ public class ObjectField implements Cloneable, Serializable {
 
 	protected String name;
 
+	public String getObjectDefinitionExternalReferenceCode1() {
+		return objectDefinitionExternalReferenceCode1;
+	}
+
+	public void setObjectDefinitionExternalReferenceCode1(
+		String objectDefinitionExternalReferenceCode1) {
+
+		this.objectDefinitionExternalReferenceCode1 =
+			objectDefinitionExternalReferenceCode1;
+	}
+
+	public void setObjectDefinitionExternalReferenceCode1(
+		UnsafeSupplier<String, Exception>
+			objectDefinitionExternalReferenceCode1UnsafeSupplier) {
+
+		try {
+			objectDefinitionExternalReferenceCode1 =
+				objectDefinitionExternalReferenceCode1UnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String objectDefinitionExternalReferenceCode1;
+
 	public ObjectFieldSetting[] getObjectFieldSettings() {
 		return objectFieldSettings;
 	}
@@ -361,6 +387,32 @@ public class ObjectField implements Cloneable, Serializable {
 	}
 
 	protected ObjectFieldSetting[] objectFieldSettings;
+
+	public String getObjectRelationshipExternalReferenceCode() {
+		return objectRelationshipExternalReferenceCode;
+	}
+
+	public void setObjectRelationshipExternalReferenceCode(
+		String objectRelationshipExternalReferenceCode) {
+
+		this.objectRelationshipExternalReferenceCode =
+			objectRelationshipExternalReferenceCode;
+	}
+
+	public void setObjectRelationshipExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			objectRelationshipExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			objectRelationshipExternalReferenceCode =
+				objectRelationshipExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String objectRelationshipExternalReferenceCode;
 
 	public ReadOnly getReadOnly() {
 		return readOnly;
@@ -590,13 +642,14 @@ public class ObjectField implements Cloneable, Serializable {
 
 	public static enum BusinessType {
 
-		AGGREGATION("Aggregation"), ATTACHMENT("Attachment"),
-		AUTO_INCREMENT("AutoIncrement"), BOOLEAN("Boolean"), DATE("Date"),
-		DATE_TIME("DateTime"), DECIMAL("Decimal"), ENCRYPTED("Encrypted"),
-		FORMULA("Formula"), INTEGER("Integer"), LONG_INTEGER("LongInteger"),
-		LONG_TEXT("LongText"), MULTISELECT_PICKLIST("MultiselectPicklist"),
-		PICKLIST("Picklist"), PRECISION_DECIMAL("PrecisionDecimal"),
-		RELATIONSHIP("Relationship"), RICH_TEXT("RichText"), TEXT("Text");
+		AGGREGATION("Aggregation"), ASSIGNEE("Assignee"),
+		ATTACHMENT("Attachment"), AUTO_INCREMENT("AutoIncrement"),
+		BOOLEAN("Boolean"), DATE("Date"), DATE_TIME("DateTime"),
+		DECIMAL("Decimal"), ENCRYPTED("Encrypted"), FORMULA("Formula"),
+		INTEGER("Integer"), LONG_INTEGER("LongInteger"), LONG_TEXT("LongText"),
+		MULTISELECT_PICKLIST("MultiselectPicklist"), PICKLIST("Picklist"),
+		PRECISION_DECIMAL("PrecisionDecimal"), RELATIONSHIP("Relationship"),
+		RICH_TEXT("RichText"), TEXT("Text");
 
 		public static BusinessType create(String value) {
 			for (BusinessType businessType : values()) {

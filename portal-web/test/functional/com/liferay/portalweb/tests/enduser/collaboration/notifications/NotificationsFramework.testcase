@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -6,7 +6,6 @@ definition {
 	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Notification";
 	property testray.main.component.name = "Notifications";
 
 	setUp {
@@ -79,7 +78,7 @@ definition {
 				entryContent = "Blogs Entry${entryCount} Content",
 				entryTitle = "Blogs Entry${entryCount} Title",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		User.logoutAndLoginPG(
@@ -125,7 +124,7 @@ definition {
 				threadBody = "MB Thread Message Body${threadCount}",
 				threadSubject = "MB Thread Message Subject${threadCount}",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		User.logoutAndLoginPG(
@@ -161,7 +160,9 @@ definition {
 
 		PortletEntry.selectAll();
 
-		Click(locator1 = "Icon#MARK_AS_UNREAD");
+		Click(
+			key_text = "envelope-closed",
+			locator1 = "ManagementBar#ANY_ICON");
 
 		Notifications.viewBadgeCount(notificationCount = 2);
 	}
@@ -184,7 +185,7 @@ definition {
 				entryContent = "Blogs Entry${entryCount} Content",
 				entryTitle = "Blogs Entry${entryCount} Title",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		Notifications.viewNoNotifications(activePanel = "Profile");
@@ -356,7 +357,7 @@ definition {
 
 		Notifications.gotoNotifications();
 
-		AssertVisible(
+		AssertElementPresent(
 			key_rowEntry = "Notification no longer applies",
 			locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHECKBOX_DISABLED");
 
@@ -402,7 +403,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Staging.publishToLiveNowViaPortletCP();
 
@@ -477,7 +478,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "userea@liferay.com",
@@ -513,7 +514,7 @@ definition {
 				entryContent = "Blogs Entry${entryCount} Content",
 				entryTitle = "Blogs Entry${entryCount} Title",
 				userEmailAddress = "userea@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		Notifications.viewNoNotifications(activePanel = "Profile");

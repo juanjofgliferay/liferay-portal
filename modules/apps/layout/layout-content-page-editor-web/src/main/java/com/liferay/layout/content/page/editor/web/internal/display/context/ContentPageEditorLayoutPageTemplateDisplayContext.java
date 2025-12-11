@@ -10,9 +10,9 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
-import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
-import com.liferay.info.collection.provider.item.selector.criterion.RelatedInfoItemCollectionProviderItemSelectorCriterion;
+import com.liferay.info.collection.provider.item.selector.RelatedInfoItemCollectionProviderItemSelectorCriterion;
+import com.liferay.info.collection.provider.item.selector.RepeatableFieldInfoCollectionProviderItemSelectorCriterion;
 import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemFormVariation;
 import com.liferay.info.item.InfoItemServiceRegistry;
@@ -27,10 +27,10 @@ import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
 import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
 import com.liferay.layout.content.page.editor.sidebar.panel.ContentPageEditorSidebarPanel;
 import com.liferay.layout.content.page.editor.web.internal.configuration.PageEditorConfiguration;
-import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
 import com.liferay.layout.content.page.editor.web.internal.manager.FragmentCollectionManager;
 import com.liferay.layout.content.page.editor.web.internal.manager.FragmentEntryLinkManager;
 import com.liferay.layout.content.page.editor.web.internal.util.MappingContentUtil;
+import com.liferay.layout.manager.ContentManager;
 import com.liferay.layout.manager.LayoutLockManager;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
@@ -42,9 +42,9 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -59,16 +59,17 @@ import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -82,7 +83,6 @@ public class ContentPageEditorLayoutPageTemplateDisplayContext
 		FragmentCollectionManager fragmentCollectionManager,
 		FragmentEntryLinkManager fragmentEntryLinkManager,
 		FragmentEntryLinkLocalService fragmentEntryLinkLocalService,
-		FragmentEntryLocalService fragmentEntryLocalService,
 		FrontendTokenDefinitionRegistry frontendTokenDefinitionRegistry,
 		HttpServletRequest httpServletRequest,
 		InfoItemServiceRegistry infoItemServiceRegistry,
@@ -96,6 +96,7 @@ public class ContentPageEditorLayoutPageTemplateDisplayContext
 		LayoutPermission layoutPermission,
 		PageEditorConfiguration pageEditorConfiguration,
 		boolean pageIsDisplayPage, Portal portal, PortletRequest portletRequest,
+		PortletResourcePermission portletResourcePermission,
 		PortletURLFactory portletURLFactory, RenderResponse renderResponse,
 		SegmentsConfigurationProvider segmentsConfigurationProvider,
 		SegmentsExperienceManager segmentsExperienceManager,
@@ -104,24 +105,22 @@ public class ContentPageEditorLayoutPageTemplateDisplayContext
 		SegmentsEntryService segmentsEntryService, Staging staging,
 		StagingGroupHelper stagingGroupHelper,
 		StyleBookEntryLocalService styleBookEntryLocalService,
-		UserLocalService userLocalService,
 		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService) {
 
 		super(
 			contentPageEditorSidebarPanels, contentManager,
 			fragmentCollectionManager, fragmentEntryLinkManager,
-			fragmentEntryLinkLocalService, fragmentEntryLocalService,
-			frontendTokenDefinitionRegistry, httpServletRequest,
-			infoItemServiceRegistry, infoSearchClassMapperRegistry,
-			itemSelector, jsonFactory, language, layoutLocalService,
-			layoutLockManager, layoutPageTemplateEntryLocalService,
-			layoutPageTemplateEntryService, layoutPermission,
-			layoutSetLocalService, pageEditorConfiguration, portal,
-			portletRequest, portletURLFactory, renderResponse,
-			segmentsConfigurationProvider, segmentsExperienceManager,
-			segmentsExperienceLocalService, segmentsExperimentRelLocalService,
-			segmentsEntryService, staging, stagingGroupHelper,
-			styleBookEntryLocalService, userLocalService,
+			fragmentEntryLinkLocalService, frontendTokenDefinitionRegistry,
+			httpServletRequest, infoItemServiceRegistry,
+			infoSearchClassMapperRegistry, itemSelector, jsonFactory, language,
+			layoutLocalService, layoutLockManager,
+			layoutPageTemplateEntryLocalService, layoutPageTemplateEntryService,
+			layoutPermission, layoutSetLocalService, pageEditorConfiguration,
+			portal, portletRequest, portletResourcePermission,
+			portletURLFactory, renderResponse, segmentsConfigurationProvider,
+			segmentsExperienceManager, segmentsExperienceLocalService,
+			segmentsExperimentRelLocalService, segmentsEntryService, staging,
+			stagingGroupHelper, styleBookEntryLocalService,
 			workflowDefinitionLinkLocalService);
 
 		_itemSelector = itemSelector;
@@ -129,11 +128,8 @@ public class ContentPageEditorLayoutPageTemplateDisplayContext
 	}
 
 	@Override
-	public Map<String, Object> getEditorContext(String npmResolvedPackageName)
-		throws Exception {
-
-		Map<String, Object> editorContext = super.getEditorContext(
-			npmResolvedPackageName);
+	public Map<String, Object> getEditorContext() throws Exception {
+		Map<String, Object> editorContext = super.getEditorContext();
 
 		if (!_pageIsDisplayPage) {
 			return editorContext;
@@ -208,10 +204,24 @@ public class ContentPageEditorLayoutPageTemplateDisplayContext
 		relatedInfoItemCollectionProviderItemSelectorCriterion.
 			setSourceItemTypes(sourceItemTypes);
 
+		RepeatableFieldInfoCollectionProviderItemSelectorCriterion
+			repeatableFieldInfoCollectionProviderItemSelectorCriterion =
+				new RepeatableFieldInfoCollectionProviderItemSelectorCriterion();
+
+		repeatableFieldInfoCollectionProviderItemSelectorCriterion.
+			setDesiredItemSelectorReturnTypes(
+				new InfoListProviderItemSelectorReturnType());
+		repeatableFieldInfoCollectionProviderItemSelectorCriterion.setItemType(
+			layoutPageTemplateEntry.getClassName());
+		repeatableFieldInfoCollectionProviderItemSelectorCriterion.
+			setItemSubtype(
+				String.valueOf(layoutPageTemplateEntry.getClassTypeId()));
+
 		return ListUtil.concat(
 			collectionItemSelectorCriterions,
-			Collections.singletonList(
-				relatedInfoItemCollectionProviderItemSelectorCriterion));
+			Arrays.asList(
+				relatedInfoItemCollectionProviderItemSelectorCriterion,
+				repeatableFieldInfoCollectionProviderItemSelectorCriterion));
 	}
 
 	private JSONObject _addDisplayPageMappingFields(

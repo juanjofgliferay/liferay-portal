@@ -57,6 +57,9 @@ public class Field implements Serializable {
 	public static final String ASSET_INTERNAL_CATEGORY_TITLES =
 		"assetInternalCategoryTitles";
 
+	public static final String ASSET_INTERNAL_VOCABULARY_IDS =
+		"assetInternalVocabularyIds";
+
 	public static final String ASSET_PARENT_CATEGORY_ID = "parentCategoryId";
 
 	public static final String ASSET_PARENT_CATEGORY_IDS = "parentCategoryIds";
@@ -149,6 +152,8 @@ public class Field implements Serializable {
 	public static final String ROOT_ENTRY_CLASS_PK = "rootEntryClassPK";
 
 	public static final String SCOPE_GROUP_ID = "scopeGroupId";
+
+	public static final String SENT_DATE = "sentDate";
 
 	public static final String SNIPPET = "snippet";
 

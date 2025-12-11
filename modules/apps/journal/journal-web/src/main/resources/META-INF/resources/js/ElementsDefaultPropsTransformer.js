@@ -4,11 +4,11 @@
  */
 
 import {
-	addParams,
 	openConfirmModal,
 	openModal,
 	openSelectionModal,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {addParams} from 'frontend-js-web';
 
 import openDeleteArticleModal from './modals/openDeleteArticleModal';
 
@@ -75,11 +75,14 @@ const ACTIONS = {
 
 								input.name = `${portletNamespace}rowIds`;
 
-								const itemValue = JSON.parse(
-									selectedItems.map((item) => item.value)
-								);
+								const languageIds = selectedItems
+									.map(
+										(item) =>
+											JSON.parse(item.value).languageId
+									)
+									.join(',');
 
-								input.value = itemValue.languageId;
+								input.value = languageIds;
 
 								form.appendChild(input);
 
@@ -138,6 +141,10 @@ const ACTIONS = {
 			onConfirm: (isConfirmed) =>
 				isConfirmed && this.send(itemData.publishFolderURL),
 		});
+	},
+
+	revertArticle({itemData}) {
+		this.send(itemData.revertURL);
 	},
 
 	send(url) {

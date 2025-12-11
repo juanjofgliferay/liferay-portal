@@ -88,18 +88,18 @@ public class LayoutPrototypeLocalServiceImpl
 			"/template-" + layoutPrototype.getLayoutPrototypeId();
 
 		Group group = _groupLocalService.addGroup(
-			userId, GroupConstants.DEFAULT_PARENT_GROUP_ID,
+			StringPool.BLANK, userId, GroupConstants.DEFAULT_PARENT_GROUP_ID,
 			LayoutPrototype.class.getName(),
 			layoutPrototype.getLayoutPrototypeId(),
 			GroupConstants.DEFAULT_LIVE_GROUP_ID, layoutPrototype.getNameMap(),
-			null, 0, true, GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
-			friendlyURL, false, true, null);
+			null, 0, null, true, GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
+			friendlyURL, false, false, true, null);
 
 		if (GetterUtil.getBoolean(
 				serviceContext.getAttribute("addDefaultLayout"), true)) {
 
 			_layoutLocalService.addLayout(
-				userId, group.getGroupId(), true,
+				null, userId, group.getGroupId(), true,
 				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 				layoutPrototype.getNameMap(), null, null, null, null,
 				LayoutConstants.TYPE_PORTLET, StringPool.BLANK, false,

@@ -220,7 +220,7 @@ public class VerifyProcessTrackerOSGiCommands {
 							serviceReference.getProperty(
 								"initial.deployment")) &&
 						 initialDeployment) ||
-						(StartupHelperUtil.isUpgrading() &&
+						(StartupHelperUtil.isRunOnPortalUpgradeVerifiers() &&
 						 GetterUtil.getBoolean(
 							 serviceReference.getProperty(
 								 "run.on.portal.upgrade")))) {
@@ -236,6 +236,12 @@ public class VerifyProcessTrackerOSGiCommands {
 
 						release.setServletContextName(bundle.getSymbolicName());
 
+						release.setVerified(true);
+						release.setState(ReleaseConstants.STATE_GOOD);
+
+						release = _releaseLocalService.updateRelease(release);
+					}
+					else if ((release != null) && initialDeployment) {
 						release.setVerified(true);
 						release.setState(ReleaseConstants.STATE_GOOD);
 

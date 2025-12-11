@@ -10,7 +10,6 @@
 		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/BaseMock.*.java" />
 		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/com/liferay/osb/faro/web/internal/activator/OAuth2AuthorizationExpandoPortalInstanceLifecycleListener\.java" />
 		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/com/liferay/osb/faro/web/internal/card/template/ContactsCardTemplateManagerHelper\.java" />
-		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/com/liferay/osb/faro/web/internal/controller/FaroControllerRegistry\.java" />
 
 		<!-- Begin LRAC-12941 -->
 
@@ -22,6 +21,5 @@
 		<suppress checks="JSONPackageJSONDependencyVersionCheck" files=".*" />
 		<suppress checks="PropertiesLiferayPluginPackageLiferayVersionsCheck" files=".*" />
 		<suppress checks="SQLLongNamesCheck" files=".*" />
-		<suppress checks="YMLDefinitionOrderCheck" files=".*" />
 	</source-check>
 </suppressions>

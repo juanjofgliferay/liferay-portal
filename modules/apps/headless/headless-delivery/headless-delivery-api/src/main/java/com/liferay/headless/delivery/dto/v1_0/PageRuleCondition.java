@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,113 +51,172 @@ public class PageRuleCondition implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PageRuleCondition.class, json);
 	}
 
-	@Schema(description = "The page rule condition's description.")
-	public String getCondition() {
-		return condition;
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page rule condition's field."
+	)
+	public String getField() {
+		if (_fieldSupplier != null) {
+			field = _fieldSupplier.get();
+
+			_fieldSupplier = null;
+		}
+
+		return field;
 	}
 
-	public void setCondition(String condition) {
-		this.condition = condition;
+	public void setField(String field) {
+		this.field = field;
+
+		_fieldSupplier = null;
 	}
 
 	@JsonIgnore
-	public void setCondition(
-		UnsafeSupplier<String, Exception> conditionUnsafeSupplier) {
+	public void setField(
+		UnsafeSupplier<String, Exception> fieldUnsafeSupplier) {
 
-		try {
-			condition = conditionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldSupplier = () -> {
+			try {
+				return fieldUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "The page rule condition's description.")
+	@GraphQLField(description = "The page rule condition's field.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String condition;
+	protected String field;
 
-	@Schema(description = "The page rule condition's ID.")
+	@JsonIgnore
+	private Supplier<String> _fieldSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page rule condition's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page rule condition's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
 
-	@Schema(description = "The page rule condition's type.")
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public Options getOptions() {
+		if (_optionsSupplier != null) {
+			options = _optionsSupplier.get();
+
+			_optionsSupplier = null;
+		}
+
+		return options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+
+		_optionsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setOptions(
+		UnsafeSupplier<Options, Exception> optionsUnsafeSupplier) {
+
+		_optionsSupplier = () -> {
+			try {
+				return optionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Options options;
+
+	@JsonIgnore
+	private Supplier<Options> _optionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page rule condition's type."
+	)
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page rule condition's type.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String type;
 
-	@Schema(description = "The page rule condition's value.")
-	public String getValue() {
-		return value;
-	}
-
-	public void setValue(String value) {
-		this.value = value;
-	}
-
 	@JsonIgnore
-	public void setValue(
-		UnsafeSupplier<String, Exception> valueUnsafeSupplier) {
-
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField(description = "The page rule condition's value.")
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String value;
+	private Supplier<String> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -185,19 +245,23 @@ public class PageRuleCondition implements Serializable {
 
 		sb.append("{");
 
-		if (condition != null) {
+		String field = getField();
+
+		if (field != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"condition\": ");
+			sb.append("\"field\": ");
 
 			sb.append("\"");
 
-			sb.append(_escape(condition));
+			sb.append(_escape(field));
 
 			sb.append("\"");
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -213,6 +277,20 @@ public class PageRuleCondition implements Serializable {
 			sb.append("\"");
 		}
 
+		Options options = getOptions();
+
+		if (options != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"options\": ");
+
+			sb.append(String.valueOf(options));
+		}
+
+		String type = getType();
+
 		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -227,27 +305,13 @@ public class PageRuleCondition implements Serializable {
 			sb.append("\"");
 		}
 
-		if (value != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"value\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(value));
-
-			sb.append("\"");
-		}
-
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageRuleCondition",
 		name = "x-class-name"
 	)
@@ -293,7 +357,10 @@ public class PageRuleCondition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

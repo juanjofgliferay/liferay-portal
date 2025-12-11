@@ -10,6 +10,7 @@ import com.liferay.osb.faro.engine.client.constants.FieldMappingConstants;
 import com.liferay.osb.faro.engine.client.constants.FilterConstants;
 import com.liferay.osb.faro.engine.client.model.Field;
 import com.liferay.osb.faro.engine.client.model.Individual;
+import com.liferay.osb.faro.engine.client.model.ProjectUsageMetric;
 import com.liferay.osb.faro.engine.client.model.Results;
 import com.liferay.osb.faro.engine.client.util.FilterBuilder;
 import com.liferay.osb.faro.engine.client.util.FilterUtil;
@@ -107,11 +108,16 @@ public class MockContactsEngineClientImpl
 	}
 
 	@Override
-	public long getIndividualsCount(
-		FaroProject faroProject, boolean includeAnonymousUsers) {
+	public long getIdentitiesCount(FaroProject faroProject) {
+		return contactsEngineClient.getIdentitiesCount(faroProject);
+	}
 
-		return contactsEngineClient.getIndividualsCount(
-			faroProject, includeAnonymousUsers);
+	@Override
+	public long getIndividualsCreatedBetweenCount(
+		FaroProject faroProject, Date endDate, Date startDate) {
+
+		return contactsEngineClient.getIndividualsCreatedBetweenCount(
+			faroProject, endDate, startDate);
 	}
 
 	@Override
@@ -120,6 +126,19 @@ public class MockContactsEngineClientImpl
 
 		return contactsEngineClient.getIndividualsCreatedSinceCount(
 			faroProject, startDate);
+	}
+
+	@Override
+	public Date getLastSeenDate(FaroProject faroProject) {
+		return contactsEngineClient.getLastSeenDate(faroProject);
+	}
+
+	@Override
+	public Results<ProjectUsageMetric> getProjectUsageMetrics(
+		FaroProject faroProject, Date sinceDate) {
+
+		return contactsEngineClient.getProjectUsageMetrics(
+			faroProject, sinceDate);
 	}
 
 	@Override
@@ -155,6 +174,20 @@ public class MockContactsEngineClientImpl
 			});
 
 		return new Results<>(individuals, individuals.size());
+	}
+
+	@Override
+	public void insertBQProjects(List<FaroProject> faroProjects)
+		throws Exception {
+
+		contactsEngineClient.insertBQProjects(faroProjects);
+	}
+
+	@Override
+	public void updateBQProject(FaroProject faroProject, Date startDate)
+		throws Exception {
+
+		contactsEngineClient.updateBQProject(faroProject, startDate);
 	}
 
 	protected Results<Individual> getIndividuals(

@@ -62,17 +62,17 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Rafael Praxedes
@@ -295,26 +295,6 @@ public class DDMDisplayContext {
 		return templateSearch;
 	}
 
-	public List<DropdownItem> getFilterItemsDropdownItems() {
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					_getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_ddmWebRequestHelper.getRequest(),
-						"filter-by-navigation"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(_getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_ddmWebRequestHelper.getRequest(), "order-by"));
-			}
-		).build();
-	}
-
 	public List<NavigationItem> getNavigationItem() {
 		return NavigationItemListBuilder.add(
 			navigationItem -> {
@@ -391,6 +371,14 @@ public class DDMDisplayContext {
 			"entries-order-by-type", "asc");
 
 		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			_getOrderByDropdownItem("modified-date")
+		).add(
+			_getOrderByDropdownItem("id")
+		).build();
 	}
 
 	public String getRefererPortletName() {
@@ -691,11 +679,7 @@ public class DDMDisplayContext {
 	}
 
 	public boolean isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	public boolean isShowAddStructureButton() throws PortalException {
@@ -799,17 +783,6 @@ public class DDMDisplayContext {
 		return null;
 	}
 
-	private List<DropdownItem> _getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(_getPortletURL(), "navigation", "all");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_ddmWebRequestHelper.getRequest(), "all"));
-			}
-		).build();
-	}
-
 	private String _getKeywords() {
 		return ParamUtil.getString(_renderRequest, "keywords");
 	}
@@ -824,14 +797,6 @@ public class DDMDisplayContext {
 				LanguageUtil.get(
 					_ddmWebRequestHelper.getRequest(), orderByCol));
 		};
-	}
-
-	private List<DropdownItem> _getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			_getOrderByDropdownItem("modified-date")
-		).add(
-			_getOrderByDropdownItem("id")
-		).build();
 	}
 
 	private PortletURL _getPortletURL() {

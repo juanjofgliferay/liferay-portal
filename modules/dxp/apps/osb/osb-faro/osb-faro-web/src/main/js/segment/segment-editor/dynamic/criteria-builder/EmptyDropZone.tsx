@@ -36,18 +36,7 @@ const drop = (
 	},
 	monitor: DropTargetMonitor
 ): void => {
-	const {criterion, id, property} = monitor.getItem();
-
-	const itemType = monitor.getItemType();
-
-	if (itemType === DragTypes.Property && !id) {
-		const {entityName, type} = property;
-
-		analytics.track('Dynamic Segment Creation - Added Attribute', {
-			entityName,
-			type
-		});
-	}
+	const {criterion, property} = monitor.getItem();
 
 	if (property) {
 		addProperty(property);
@@ -86,7 +75,7 @@ class EmptyDropZone extends Component<IEmptyDropZone> {
 						<div className='criteria-message'>
 							<ClayIcon
 								className='icon-root icon-size-md'
-								symbol='ac-rule'
+								symbol='ac_rule'
 							/>
 
 							{Liferay.Language.get(
@@ -97,7 +86,7 @@ class EmptyDropZone extends Component<IEmptyDropZone> {
 						<div className='groups-message'>
 							<ClayIcon
 								className='icon-root icon-size-md'
-								symbol='ac-group'
+								symbol='ac_group'
 							/>
 
 							{Liferay.Language.get(

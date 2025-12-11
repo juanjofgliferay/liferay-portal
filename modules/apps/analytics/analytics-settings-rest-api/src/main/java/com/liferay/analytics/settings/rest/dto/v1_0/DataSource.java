@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
@@ -47,89 +46,128 @@ public class DataSource implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DataSource.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getCommerceChannelIds() {
+		if (_commerceChannelIdsSupplier != null) {
+			commerceChannelIds = _commerceChannelIdsSupplier.get();
+
+			_commerceChannelIdsSupplier = null;
+		}
+
 		return commerceChannelIds;
 	}
 
 	public void setCommerceChannelIds(Long[] commerceChannelIds) {
 		this.commerceChannelIds = commerceChannelIds;
+
+		_commerceChannelIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCommerceChannelIds(
 		UnsafeSupplier<Long[], Exception> commerceChannelIdsUnsafeSupplier) {
 
-		try {
-			commerceChannelIds = commerceChannelIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_commerceChannelIdsSupplier = () -> {
+			try {
+				return commerceChannelIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] commerceChannelIds;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long[]> _commerceChannelIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDataSourceId() {
+		if (_dataSourceIdSupplier != null) {
+			dataSourceId = _dataSourceIdSupplier.get();
+
+			_dataSourceIdSupplier = null;
+		}
+
 		return dataSourceId;
 	}
 
 	public void setDataSourceId(String dataSourceId) {
 		this.dataSourceId = dataSourceId;
+
+		_dataSourceIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDataSourceId(
 		UnsafeSupplier<String, Exception> dataSourceIdUnsafeSupplier) {
 
-		try {
-			dataSourceId = dataSourceIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataSourceIdSupplier = () -> {
+			try {
+				return dataSourceIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String dataSourceId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _dataSourceIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getSiteIds() {
+		if (_siteIdsSupplier != null) {
+			siteIds = _siteIdsSupplier.get();
+
+			_siteIdsSupplier = null;
+		}
+
 		return siteIds;
 	}
 
 	public void setSiteIds(Long[] siteIds) {
 		this.siteIds = siteIds;
+
+		_siteIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSiteIds(
 		UnsafeSupplier<Long[], Exception> siteIdsUnsafeSupplier) {
 
-		try {
-			siteIds = siteIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_siteIdsSupplier = () -> {
+			try {
+				return siteIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] siteIds;
+
+	@JsonIgnore
+	private Supplier<Long[]> _siteIdsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -158,6 +196,8 @@ public class DataSource implements Serializable {
 
 		sb.append("{");
 
+		Long[] commerceChannelIds = getCommerceChannelIds();
+
 		if (commerceChannelIds != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -178,6 +218,8 @@ public class DataSource implements Serializable {
 			sb.append("]");
 		}
 
+		String dataSourceId = getDataSourceId();
+
 		if (dataSourceId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -191,6 +233,8 @@ public class DataSource implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long[] siteIds = getSiteIds();
 
 		if (siteIds != null) {
 			if (sb.length() > 1) {
@@ -217,8 +261,8 @@ public class DataSource implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.analytics.settings.rest.dto.v1_0.DataSource",
 		name = "x-class-name"
 	)
@@ -264,7 +308,10 @@ public class DataSource implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

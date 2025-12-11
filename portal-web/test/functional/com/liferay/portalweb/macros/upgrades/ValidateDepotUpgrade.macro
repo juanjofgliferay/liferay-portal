@@ -105,6 +105,20 @@ definition {
 			locator1 = "AP#ASSET_ABSTRACT_TITLE",
 			value1 = "DM Document Title Without Publish");
 
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page Collections",
+			siteName = "Site Name Local Staging");
+
+		AssetPublisherPortlet.gotoConfigurationPG(portletIndex = 1);
+
+		Click(
+			ariaLabel = "Clear Collection",
+			locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+		PortletEntry.save();
+
+		IFrame.closeFrame();
+
 		DepotNavigator.openDepotAssetListsAdminStaging(depotName = "Test Depot Name Local Staging");
 
 		AssetListsAdmin.deleteEntry(assetListTitle = "Depot Manual Asset List");
@@ -802,7 +816,7 @@ definition {
 			webContentText = "This is a Text field",
 			webContentTitle = "Web Content Title With Structure");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 

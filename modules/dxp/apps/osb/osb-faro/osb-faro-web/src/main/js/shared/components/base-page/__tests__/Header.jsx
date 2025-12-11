@@ -19,6 +19,14 @@ const WrappedComponent = props => (
 describe('BasePage.Header', () => {
 	afterEach(cleanup);
 
+	beforeAll(() => {
+		delete window.location;
+
+		window.location = {
+			pathname: '/workspace/123/sites/contacts/accounts/321'
+		};
+	});
+
 	it('renders Header', () => {
 		const {container} = render(
 			<WrappedComponent>{'Test Test'}</WrappedComponent>
@@ -54,13 +62,46 @@ describe('BasePage.Header', () => {
 								route: Routes.CONTACTS_ACCOUNT
 							}
 						]}
-						routeParams={{groupId: '123', id: '321'}}
+						routeParams={{
+							groupId: '123',
+							id: '321'
+						}}
 						routeQueries={{rangeKey: '30'}}
 					/>
 				</BrowserRouter>
 			);
 
 			expect(container).toMatchSnapshot();
+		});
+
+		it('renders NavBar with deprecated label', () => {
+			const {container} = render(
+				<BrowserRouter>
+					<Header.NavBar
+						items={[
+							{
+								deprecated: true,
+								exact: true,
+								label: 'Test',
+								route: Routes.CONTACTS_ACCOUNT
+							}
+						]}
+						routeParams={{
+							groupId: '123',
+							id: '321'
+						}}
+						routeQueries={{rangeKey: '30'}}
+					/>
+				</BrowserRouter>
+			);
+
+			const deprecatedBadge = document.querySelector(
+				'.badge.badge-warning.badge-translucent'
+			);
+
+			expect(container).toMatchSnapshot();
+			expect(deprecatedBadge).toBeInTheDocument();
+			expect(deprecatedBadge).toHaveTextContent('DEPRECATED');
 		});
 
 		it('renders NavBar w/o routeQueries', () => {

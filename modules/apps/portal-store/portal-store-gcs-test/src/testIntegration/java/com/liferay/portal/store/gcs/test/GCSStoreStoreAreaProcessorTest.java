@@ -27,7 +27,7 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -51,7 +51,7 @@ import org.osgi.service.cm.ConfigurationAdmin;
 /**
  * @author Adolfo Pérez
  */
-@FeatureFlags("LPS-174816")
+@FeatureFlag("LPS-174816")
 @RunWith(Arquillian.class)
 public class GCSStoreStoreAreaProcessorTest {
 
@@ -136,10 +136,7 @@ public class GCSStoreStoreAreaProcessorTest {
 						_company.getCompanyId(), _group.getGroupId(), fileName,
 						Store.VERSION_DEFAULT));
 
-				StoreAreaProcessor storeAreaProcessor =
-					(StoreAreaProcessor)_store;
-
-				storeAreaProcessor.cleanUpDeletedStoreArea(
+				_storeAreaProcessor.cleanUpDeletedStoreArea(
 					_company.getCompanyId(), 1, name -> true, StringPool.BLANK,
 					Duration.ofDays(1));
 
@@ -164,15 +161,12 @@ public class GCSStoreStoreAreaProcessorTest {
 						new UnsyncByteArrayInputStream(new byte[0]));
 				}
 
-				StoreAreaProcessor storeAreaProcessor =
-					(StoreAreaProcessor)_store;
-
 				int runCount = 0;
 
 				String startOffset = StringPool.BLANK;
 
 				do {
-					startOffset = storeAreaProcessor.cleanUpDeletedStoreArea(
+					startOffset = _storeAreaProcessor.cleanUpDeletedStoreArea(
 						_company.getCompanyId(), 1, name -> true, startOffset,
 						Duration.ofDays(-1));
 
@@ -208,10 +202,7 @@ public class GCSStoreStoreAreaProcessorTest {
 						_company.getCompanyId(), _group.getGroupId(), fileName,
 						Store.VERSION_DEFAULT));
 
-				StoreAreaProcessor storeAreaProcessor =
-					(StoreAreaProcessor)_store;
-
-				storeAreaProcessor.cleanUpDeletedStoreArea(
+				_storeAreaProcessor.cleanUpDeletedStoreArea(
 					_company.getCompanyId(), 1, name -> true, StringPool.BLANK,
 					Duration.ofDays(-1));
 
@@ -239,10 +230,7 @@ public class GCSStoreStoreAreaProcessorTest {
 						_company.getCompanyId(), _group.getGroupId(), fileName,
 						Store.VERSION_DEFAULT));
 
-				StoreAreaProcessor storeAreaProcessor =
-					(StoreAreaProcessor)_store;
-
-				storeAreaProcessor.cleanUpNewStoreArea(
+				_storeAreaProcessor.cleanUpNewStoreArea(
 					_company.getCompanyId(), 1, name -> false, StringPool.BLANK,
 					Duration.ofDays(1));
 
@@ -267,15 +255,12 @@ public class GCSStoreStoreAreaProcessorTest {
 						new UnsyncByteArrayInputStream(new byte[0]));
 				}
 
-				StoreAreaProcessor storeAreaProcessor =
-					(StoreAreaProcessor)_store;
-
 				int runCount = 0;
 
 				String startOffset = StringPool.BLANK;
 
 				do {
-					startOffset = storeAreaProcessor.cleanUpNewStoreArea(
+					startOffset = _storeAreaProcessor.cleanUpNewStoreArea(
 						_company.getCompanyId(), 1, name -> false, startOffset,
 						Duration.ofDays(-1));
 
@@ -322,10 +307,7 @@ public class GCSStoreStoreAreaProcessorTest {
 						_company.getCompanyId(), _group.getGroupId(), fileName,
 						Store.VERSION_DEFAULT));
 
-				StoreAreaProcessor storeAreaProcessor =
-					(StoreAreaProcessor)_store;
-
-				storeAreaProcessor.cleanUpNewStoreArea(
+				_storeAreaProcessor.cleanUpNewStoreArea(
 					_company.getCompanyId(), 1, name -> false, StringPool.BLANK,
 					Duration.ofDays(-1));
 
@@ -365,9 +347,7 @@ public class GCSStoreStoreAreaProcessorTest {
 					_company.getCompanyId(), _group.getGroupId(), fileName,
 					Store.VERSION_DEFAULT)));
 
-		StoreAreaProcessor storeAreaProcessor = (StoreAreaProcessor)_store;
-
-		boolean copied = storeAreaProcessor.copy(
+		boolean copied = _storeAreaProcessor.copy(
 			StoreArea.LIVE.getPath(
 				_company.getCompanyId(), _group.getGroupId(), fileName,
 				Store.VERSION_DEFAULT),
@@ -387,10 +367,8 @@ public class GCSStoreStoreAreaProcessorTest {
 
 	@Test
 	public void testCopyNonexistentFile() throws Exception {
-		StoreAreaProcessor storeAreaProcessor = (StoreAreaProcessor)_store;
-
 		Assert.assertFalse(
-			storeAreaProcessor.copy(
+			_storeAreaProcessor.copy(
 				StoreArea.LIVE.getPath(
 					_company.getCompanyId(), _group.getGroupId(),
 					StringUtil.randomString(), Store.VERSION_DEFAULT),
@@ -417,5 +395,8 @@ public class GCSStoreStoreAreaProcessorTest {
 		type = Store.class
 	)
 	private Store _store;
+
+	@Inject(filter = "store.type=com.liferay.portal.store.gcs.GCSStore")
+	private StoreAreaProcessor _storeAreaProcessor;
 
 }

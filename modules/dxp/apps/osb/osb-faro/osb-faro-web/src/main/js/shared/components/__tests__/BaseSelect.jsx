@@ -49,7 +49,7 @@ describe('BaseSelect', () => {
 		expect(container).toMatchSnapshot();
 	});
 
-	it('should render as disabled', () => {
+	it('should render as disabled', async () => {
 		const dataSourceFn = jest.fn();
 
 		const {container} = render(
@@ -60,20 +60,16 @@ describe('BaseSelect', () => {
 			/>
 		);
 
-		jest.runAllTimers();
-
 		expect(dataSourceFn).not.toHaveBeenCalled();
 
 		fireEvent.click(container.querySelector('.input-group'));
-
-		jest.runAllTimers();
 
 		expect(dataSourceFn).not.toHaveBeenCalled();
 
 		expect(container).toMatchSnapshot();
 	});
 
-	it('should render w/ selectedItem', () => {
+	it('should render w/ selectedItem', async () => {
 		const {container} = render(
 			<BaseSelect
 				dataSourceFn={() =>
@@ -88,8 +84,6 @@ describe('BaseSelect', () => {
 				selectedItem={{name: 'foo'}}
 			/>
 		);
-
-		jest.runAllTimers();
 
 		expect(
 			container.querySelector('.selected-item-container').innerHTML
@@ -106,17 +100,15 @@ describe('BaseSelect', () => {
 			/>
 		);
 
-		await waitForLoadingToBeRemoved(container).then(() => {
-			const dropdownMenu = document.body.getElementsByClassName(
-				'dropdown-root'
-			)[0];
+		await waitForLoadingToBeRemoved(container);
 
-			expect(dropdownMenu).toMatchSnapshot();
-		});
+		const dropdownMenu = document.body.querySelector('.dropdown-root');
+
+		expect(dropdownMenu).toMatchSnapshot();
 	});
 
 	it('should render w/ menu title', async () => {
-		const {container} = render(
+		const {getByText} = render(
 			<BaseSelect
 				dataSourceFn={() => Promise.resolve([{name: 'test'}])}
 				focusOnInit
@@ -126,20 +118,11 @@ describe('BaseSelect', () => {
 			/>
 		);
 
-		await waitForLoadingToBeRemoved(container).then(() => {
-			const dropdownMenu = document.body.getElementsByClassName(
-				'dropdown-root'
-			)[0];
-
-			expect(
-				dropdownMenu.getElementsByClassName('dropdown-header')[0]
-					.innerHTML
-			).toEqual('Test Menu Title');
-		});
+		expect(getByText('Test Menu Title')).toBeInTheDocument();
 	});
 
 	it('should focus on the previous item', async () => {
-		const {container} = render(
+		const {container, getByText} = render(
 			<BaseSelect
 				dataSourceFn={() =>
 					Promise.resolve([
@@ -154,24 +137,18 @@ describe('BaseSelect', () => {
 			/>
 		);
 
-		await waitForLoadingToBeRemoved(container).then(async () => {
-			const dropdownMenu = document.body.getElementsByClassName(
-				'dropdown-root'
-			)[0];
+		await waitForLoadingToBeRemoved(container);
 
-			fireEvent.keyDown(container.querySelector('.input-root'), {
-				key: 'ArrowUp',
-				keyCode: 38
-			});
-
-			expect(
-				dropdownMenu.getElementsByClassName('active')[0].innerHTML
-			).toEqual('bar');
+		fireEvent.keyDown(container.querySelector('.input-root'), {
+			key: 'ArrowUp',
+			keyCode: 38
 		});
+
+		expect(getByText('bar')).toHaveClass('active');
 	});
 
 	it('should focus on the next item', async () => {
-		const {container} = render(
+		const {container, getByText} = render(
 			<BaseSelect
 				dataSourceFn={() =>
 					Promise.resolve([
@@ -186,23 +163,17 @@ describe('BaseSelect', () => {
 			/>
 		);
 
-		await waitForLoadingToBeRemoved(container).then(async () => {
-			const dropdownMenu = document.body.getElementsByClassName(
-				'dropdown-root'
-			)[0];
+		await waitForLoadingToBeRemoved(container);
 
-			fireEvent.keyDown(container.querySelector('.input-root'), {
-				key: 'ArrowDown',
-				keyCode: 40
-			});
-
-			expect(
-				dropdownMenu.getElementsByClassName('active')[0].innerHTML
-			).toEqual('foo');
+		fireEvent.keyDown(container.querySelector('.input-root'), {
+			key: 'ArrowDown',
+			keyCode: 40
 		});
+
+		expect(getByText('foo')).toHaveClass('active');
 	});
 
-	it('should render with Graphql', () => {
+	it('should render with Graphql', async () => {
 		const {container} = render(
 			<ApolloProvider client={client}>
 				<Provider store={mockStore()}>
@@ -219,7 +190,7 @@ describe('BaseSelect', () => {
 		expect(container).toMatchSnapshot();
 	});
 
-	it('should render w/ selectedItem with Graphql', () => {
+	it('should render w/ selectedItem with Graphql', async () => {
 		const {container} = render(
 			<ApolloProvider client={client}>
 				<Provider store={mockStore()}>
@@ -235,8 +206,6 @@ describe('BaseSelect', () => {
 			</ApolloProvider>
 		);
 
-		jest.runAllTimers();
-
 		expect(
 			container.querySelector('.selected-item-container').innerHTML
 		).toEqual('test1');
@@ -248,8 +217,10 @@ describe('Item', () => {
 		const {container} = render(
 			<Item item={{name: 'test'}} itemRenderer={({name}) => name} />
 		);
+
 		expect(container).toMatchSnapshot();
 	});
+
 	it('should select an item', () => {
 		const {container, getByText} = render(
 			<Item
@@ -258,8 +229,9 @@ describe('Item', () => {
 				onSelect={noop}
 			/>
 		);
+
 		fireEvent.click(getByText('test'));
-		jest.runAllTimers();
+
 		expect(container).toMatchSnapshot();
 	});
 });

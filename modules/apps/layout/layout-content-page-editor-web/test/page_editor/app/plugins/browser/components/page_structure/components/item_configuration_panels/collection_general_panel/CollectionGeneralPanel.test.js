@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -15,8 +15,10 @@ import {StoreAPIContextProvider} from '../../../../../../../../../../src/main/re
 import CollectionService from '../../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/services/CollectionService';
 import updateItemConfig from '../../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/thunks/updateItemConfig';
 import {
+	CACHE_KEYS,
 	disposeCache,
 	initializeCache,
+	setCacheItem,
 } from '../../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/utils/cache';
 import CollectionSelector from '../../../../../../../../../../src/main/resources/META-INF/resources/page_editor/common/components/CollectionSelector';
 import {CollectionGeneralPanel} from '../../../../../../../../../../src/main/resources/META-INF/resources/page_editor/plugins/browser/components/page_structure/components/item_configuration_panels/collection_general_panel/CollectionGeneralPanel';
@@ -64,11 +66,6 @@ jest.mock(
 	'../../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/thunks/updateItemConfig',
 	() => jest.fn()
 );
-
-jest.mock('frontend-js-web', () => ({
-	...jest.requireActual('frontend-js-web'),
-	sub: jest.fn((langKey, arg) => langKey.replace('x-', `${arg}-`)),
-}));
 
 const DEFAULT_ITEM_CONFIG = {
 	collection: {
@@ -140,11 +137,11 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('show-gutter');
 
-		userEvent.click(input);
+		await userEvent.click(input);
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: {gutters: true},
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -155,14 +152,14 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('vertical-alignment');
 
-		userEvent.selectOptions(input, 'center');
+		await userEvent.selectOptions(input, 'center');
 		fireEvent.change(input);
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: {
 				verticalAlignment: 'center',
 			},
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -196,7 +193,7 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('show-empty-collection-alert');
 
-		userEvent.click(input);
+		await userEvent.click(input);
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: expect.objectContaining({
@@ -204,7 +201,7 @@ describe('CollectionGeneralPanel', () => {
 					displayMessage: false,
 				},
 			}),
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -215,7 +212,8 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('empty-collection-alert');
 
-		userEvent.type(input, 'Hello world!');
+		await userEvent.clear(input);
+		await userEvent.type(input, 'Hello world!');
 
 		act(() => {
 			fireEvent.blur(input);
@@ -229,7 +227,7 @@ describe('CollectionGeneralPanel', () => {
 					},
 				},
 			}),
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -240,14 +238,14 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('pagination');
 
-		userEvent.selectOptions(input, 'none');
+		await userEvent.selectOptions(input, 'none');
 		fireEvent.change(input);
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: {
 				paginationType: 'none',
 			},
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -259,26 +257,31 @@ describe('CollectionGeneralPanel', () => {
 		const input = screen.getByLabelText('display-all-collection-items');
 
 		await act(async () => {
-			userEvent.click(input);
+			await userEvent.click(input);
 		});
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: expect.objectContaining({
 				displayAllItems: true,
 			}),
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
 	it('shows a warning message from backend when collection has some problematic configuration', async () => {
-		CollectionService.getCollectionWarningMessage.mockImplementation(() =>
-			Promise.resolve({
-				warningMessage: {
-					description: 'page-performance-warning-and-stuff',
-					title: '',
-				},
-			})
-		);
+		setCacheItem({
+			data: {
+				description: 'page-performance-warning-and-stuff',
+				title: '',
+			},
+			key: [
+				CACHE_KEYS.collectionWarningMessage,
+				'0',
+				'0',
+				JSON.stringify({...DEFAULT_ITEM_CONFIG}),
+			].join('-'),
+			status: 'saved',
+		});
 
 		await act(async () => {
 			renderComponent();
@@ -296,13 +299,13 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('display-all-pages');
 
-		userEvent.click(input);
+		await userEvent.click(input);
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: expect.objectContaining({
 				displayAllPages: true,
 			}),
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -315,14 +318,14 @@ describe('CollectionGeneralPanel', () => {
 
 		const input = screen.getByLabelText('layout');
 
-		userEvent.type(input, '1');
+		await userEvent.type(input, '1');
 		fireEvent.change(input);
 
 		expect(updateItemConfig).toHaveBeenCalledWith({
 			itemConfig: {
 				tablet: {numberOfColumns: '1'},
 			},
-			itemId: '0',
+			itemIds: ['0'],
 		});
 	});
 
@@ -349,7 +352,7 @@ describe('CollectionGeneralPanel', () => {
 
 		const popoverTrigger = await screen.findByText('2-variations');
 
-		userEvent.click(popoverTrigger);
+		await userEvent.click(popoverTrigger);
 
 		expect(screen.getByText('Variation 1')).toBeInTheDocument();
 		expect(screen.getByText('Variation 2')).toBeInTheDocument();
@@ -373,7 +376,8 @@ describe('CollectionGeneralPanel', () => {
 				'maximum-number-of-items-to-display'
 			);
 
-			userEvent.type(input, '3');
+			await userEvent.clear(input);
+			await userEvent.type(input, '3');
 
 			await act(async () => {
 				fireEvent.blur(input);
@@ -383,7 +387,7 @@ describe('CollectionGeneralPanel', () => {
 				itemConfig: {
 					numberOfItems: 3,
 				},
-				itemId: '0',
+				itemIds: ['0'],
 			});
 		});
 
@@ -413,7 +417,8 @@ describe('CollectionGeneralPanel', () => {
 				'maximum-number-of-pages-to-display'
 			);
 
-			userEvent.type(input, '3');
+			await userEvent.clear(input);
+			await userEvent.type(input, '3');
 
 			act(() => {
 				fireEvent.blur(input);
@@ -423,7 +428,7 @@ describe('CollectionGeneralPanel', () => {
 				itemConfig: {
 					numberOfPages: 3,
 				},
-				itemId: '0',
+				itemIds: ['0'],
 			});
 		});
 	});
@@ -438,7 +443,8 @@ describe('CollectionGeneralPanel', () => {
 				'maximum-number-of-items-per-page'
 			);
 
-			userEvent.type(input, '2');
+			await userEvent.clear(input);
+			await userEvent.type(input, '2');
 
 			act(() => {
 				fireEvent.blur(input);
@@ -448,7 +454,7 @@ describe('CollectionGeneralPanel', () => {
 				itemConfig: {
 					numberOfItemsPerPage: 2,
 				},
-				itemId: '0',
+				itemIds: ['0'],
 			});
 		});
 
@@ -506,7 +512,8 @@ describe('CollectionGeneralPanel', () => {
 									targetCollections: ['collection-display-a'],
 								},
 							},
-							fragmentEntryKey: COLLECTION_FILTER_FRAGMENT_ENTRY_KEY,
+							fragmentEntryKey:
+								COLLECTION_FILTER_FRAGMENT_ENTRY_KEY,
 						},
 					},
 

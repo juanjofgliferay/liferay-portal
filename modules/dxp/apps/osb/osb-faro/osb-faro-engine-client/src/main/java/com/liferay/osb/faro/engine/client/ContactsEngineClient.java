@@ -15,6 +15,7 @@ import com.liferay.osb.faro.engine.client.model.Asset;
 import com.liferay.osb.faro.engine.client.model.Author;
 import com.liferay.osb.faro.engine.client.model.BlockedKeyword;
 import com.liferay.osb.faro.engine.client.model.Channel;
+import com.liferay.osb.faro.engine.client.model.ChannelDataSource;
 import com.liferay.osb.faro.engine.client.model.Credentials;
 import com.liferay.osb.faro.engine.client.model.DXPGroup;
 import com.liferay.osb.faro.engine.client.model.DXPOrganization;
@@ -35,6 +36,7 @@ import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembershipChang
 import com.liferay.osb.faro.engine.client.model.IndividualTransformation;
 import com.liferay.osb.faro.engine.client.model.Interest;
 import com.liferay.osb.faro.engine.client.model.PageVisited;
+import com.liferay.osb.faro.engine.client.model.ProjectUsageMetric;
 import com.liferay.osb.faro.engine.client.model.Provider;
 import com.liferay.osb.faro.engine.client.model.Results;
 import com.liferay.osb.faro.engine.client.model.provider.LiferayProvider;
@@ -130,7 +132,8 @@ public interface ContactsEngineClient {
 	public void deleteFields(FaroProject faroProject, String id)
 		throws FaroEngineClientException;
 
-	public void deleteIndividualSegment(FaroProject faroProject, String id)
+	public void deleteIndividualSegments(
+			FaroProject faroProject, List<String> ids)
 		throws Exception;
 
 	public void deleteMembership(
@@ -141,6 +144,9 @@ public interface ContactsEngineClient {
 		throws Exception;
 
 	public void disconnectDataSource(FaroProject faroProject, String id)
+		throws FaroEngineClientException;
+
+	public void disconnectDataSources(FaroProject faroProject)
 		throws FaroEngineClientException;
 
 	public <T> T get(
@@ -211,6 +217,10 @@ public interface ContactsEngineClient {
 
 	public Channel getChannel(FaroProject faroProject, String id)
 		throws FaroEngineClientException;
+
+	public Results<ChannelDataSource> getChannelDataSources(
+		FaroProject faroProject, Long dataSourceId, Boolean enabled,
+		String name, int cur, int delta, List<OrderByField> orderByFields);
 
 	public Results<Channel> getChannels(
 		FaroProject faroProject, int cur, int delta, List<String> ids,
@@ -316,6 +326,8 @@ public interface ContactsEngineClient {
 		FaroProject faroProject, Long channelId, String query,
 		String fieldMappingFieldName, int cur, int delta);
 
+	public long getIdentitiesCount(FaroProject faroProject);
+
 	public Individual getIndividual(
 			FaroProject faroProject, String id, String channelId)
 		throws FaroEngineClientException;
@@ -356,8 +368,8 @@ public interface ContactsEngineClient {
 		String query, List<String> fields, boolean includeAnonymousUsers,
 		int cur, int delta, List<OrderByField> orderByFields);
 
-	public long getIndividualsCount(
-		FaroProject faroProject, boolean includeAnonymousUsers);
+	public long getIndividualsCreatedBetweenCount(
+		FaroProject faroProject, Date endDate, Date startDate);
 
 	public long getIndividualsCreatedSinceCount(
 		FaroProject faroProject, Date startDate);
@@ -391,9 +403,9 @@ public interface ContactsEngineClient {
 
 	public Results<IndividualSegment> getIndividualSegments(
 		FaroProject faroProject, String channelId, String dataSourceId,
-		String query, List<String> fields, String name, String segmentType,
-		String state, String status, int cur, int delta,
-		List<OrderByField> orderByFields);
+		String query, List<String> fields, String name,
+		List<String> segmentTypes, String state, String status, int cur,
+		int delta, List<OrderByField> orderByFields);
 
 	public Results<IndividualTransformation> getIndividualTransformations(
 		FaroProject faroProject, String individualSegmentId, String query,
@@ -401,12 +413,15 @@ public interface ContactsEngineClient {
 		List<OrderByField> orderByFields);
 
 	public Results<String> getInterestKeywords(
-		FaroProject faroProject, String query, int cur, int delta);
+		String channelId, FaroProject faroProject, String query, int cur,
+		int delta);
 
 	public Results<Interest> getInterests(
 		FaroProject faroProject, String channelId, String ownerId,
 		String ownerType, String name, String query, String expand, int cur,
 		int delta, List<OrderByField> orderByFields);
+
+	public Date getLastSeenDate(FaroProject faroProject);
 
 	public Results<PageVisited> getPagesVisited(
 		FaroProject faroProject, String channelId, String ownerId,
@@ -415,6 +430,20 @@ public interface ContactsEngineClient {
 		List<OrderByField> orderByFields);
 
 	public PageVisited getPageVisited(FaroProject faroProject, String id);
+
+	public Results<ProjectUsageMetric> getProjectUsageMetrics(
+		FaroProject faroProject, Date sinceDate);
+
+	public long getReportsExportCSVCount(
+			FaroProject faroProject, String path,
+			Map<String, List<String>> queryParameters)
+		throws Exception;
+
+	public long getSalesforceAccountsCount(
+		String dataSourceId, FaroProject faroProject);
+
+	public long getSalesforceUsersCount(
+		String dataSourceId, FaroProject faroProject);
 
 	public Results<String> getSessionValues(
 		FaroProject faroProject, String channelId, String fieldName,
@@ -425,6 +454,8 @@ public interface ContactsEngineClient {
 		List<String> fields, int cur, int delta,
 		List<OrderByField> orderByFields);
 
+	public long getSyncedIndividualsCount(FaroProject faroProject);
+
 	public void getToOutputStream(
 			FaroProject faroProject, Map<String, String> headers, String path,
 			Map<String, List<String>> queryParameters,
@@ -434,6 +465,9 @@ public interface ContactsEngineClient {
 	public Results<IndividualSegment> getUnassignedIndividualSegments(
 		FaroProject faroProject, int cur, int delta,
 		List<OrderByField> orderByFields);
+
+	public void insertBQProjects(List<FaroProject> faroProjects)
+		throws Exception;
 
 	public Channel patchChannel(
 		FaroProject faroProject, String id, String name);
@@ -464,6 +498,9 @@ public interface ContactsEngineClient {
 	public List<Map<String, Object>> refreshLiferay(FaroProject faroProject);
 
 	public void setEngineURL(String engineURL);
+
+	public void updateBQProject(FaroProject faroProject, Date startDate)
+		throws Exception;
 
 	public DataSource updateDataSource(
 		FaroProject faroProject, String id, Credentials credentials,

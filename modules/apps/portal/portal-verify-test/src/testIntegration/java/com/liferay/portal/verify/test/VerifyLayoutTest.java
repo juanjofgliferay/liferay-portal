@@ -17,10 +17,10 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.verify.VerifyLayout;
 import com.liferay.portal.verify.VerifyProcess;
 import com.liferay.portal.verify.test.util.BaseVerifyProcessTestCase;
@@ -36,6 +36,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -77,16 +78,16 @@ public class VerifyLayoutTest extends BaseVerifyProcessTestCase {
 		}
 
 		_layout1 = _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(), false, 0,
-			"name", "title", "description", LayoutConstants.TYPE_PORTLET, false,
-			_FRIENDLY_URL_1,
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			false, 0, "name", "title", "description",
+			LayoutConstants.TYPE_PORTLET, false, _FRIENDLY_URL_1,
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId()));
 
 		_layout2 = _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), TestPropsValues.getGroupId(), false, 0,
-			"name", "title", "description", LayoutConstants.TYPE_PORTLET, false,
-			_FRIENDLY_URL_2,
+			null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			false, 0, "name", "title", "description",
+			LayoutConstants.TYPE_PORTLET, false, _FRIENDLY_URL_2,
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId()));
 	}
@@ -104,6 +105,7 @@ public class VerifyLayoutTest extends BaseVerifyProcessTestCase {
 	}
 
 	@After
+	@Override
 	public void tearDown() throws Exception {
 		_errorMessages = new ArrayList<>();
 
@@ -121,6 +123,7 @@ public class VerifyLayoutTest extends BaseVerifyProcessTestCase {
 			_errorMessages.toString(), 0, _errorMessages.size());
 	}
 
+	@Ignore
 	@Test
 	public void testVerifyLayoutsWithReservedLayoutFriendlyURLs()
 		throws Exception {

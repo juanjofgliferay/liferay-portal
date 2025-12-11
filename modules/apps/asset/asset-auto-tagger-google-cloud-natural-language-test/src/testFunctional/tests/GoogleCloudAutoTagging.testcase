@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.release = "true";
@@ -52,13 +52,14 @@ definition {
 			dmDocumentTitle = "DM Document Title",
 			groupName = "Test Depot Name",
 			mimeType = "application/msword",
+			site = "false",
 			sourceFileName = "Document_1.doc");
 
 		DepotNavigator.openToDMEntryInDepot(
 			depotName = "Test Depot Name",
 			dmDocumentTitle = "DM Document Title");
 
-		DMDocument.viewTagInfo(tagName = "computers");
+		DMDocument.viewTagInfo(tagName = "Computers");
 	}
 
 	@description = "This test ensures that an Image in a depot can be auto-tagged after enabling GCV."
@@ -75,6 +76,7 @@ definition {
 			dmDocumentTitle = "Commerce_Black",
 			groupName = "Test Depot Name",
 			mimeType = "image/jpeg",
+			site = "false",
 			sourceFileName = "Commerce_Black.jpg");
 
 		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
@@ -83,7 +85,7 @@ definition {
 			depotName = "Test Depot Name",
 			dmDocumentTitle = "Commerce_Black");
 
-		DMDocument.viewTagInfo(tagName = "t-shirt");
+		DMDocument.viewTagInfo(tagName = "shirt");
 	}
 
 	@description = "This test ensures that a web content article with text in a depot can be auto-tagged after enabling GCNL."
@@ -108,7 +110,7 @@ definition {
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
 
 		WebContent.viewTagFromInfoPanel(
-			tagName = "computers",
+			tagName = "Computers",
 			webContentTitle = "Liferay");
 	}
 
@@ -148,7 +150,7 @@ definition {
 
 		BlogsEntry.viewNoTag(
 			entryTitle = "Digital Transformation or Digital Experience?",
-			tagName = "COMPUTERS");
+			tagName = "Computers");
 	}
 
 	@description = "This test ensures that a document with a tag added by manual can not be auto-tagged after publishing."
@@ -179,7 +181,7 @@ definition {
 
 		DMDocument.viewTagInfo(tagName = "manualtag");
 
-		DMDocument.viewNoTagInfo(tagName = "computers");
+		DMDocument.viewNoTagInfo(tagName = "Computers");
 	}
 
 	@description = "This test ensures that an image with a tag added by manual can not be auto-tagged after publishing."
@@ -273,9 +275,9 @@ definition {
 			groupName = "Site Name",
 			siteURLKey = "site-name");
 
-		Panel.expandPanel(panel = "Categorization");
+		Blogs.expandPanel(panel = "Categorization");
 
-		AssetCategorization.removeTag(tagName = "computers");
+		AssetCategorization.removeTag(tagName = "Computers");
 
 		PortletEntry.publish();
 
@@ -286,7 +288,7 @@ definition {
 
 		BlogsEntry.viewNoTag(
 			entryTitle = "Liferay",
-			tagName = "COMPUTERS");
+			tagName = "Computers");
 	}
 
 	@description = "This test ensures that a tag added in a document through GCNL can be removed."
@@ -315,7 +317,7 @@ definition {
 
 		Panel.expandPanel(panel = "Categorization");
 
-		for (var tagName : list "computers,electronics") {
+		for (var tagName : list "Computers,Electronics") {
 			AssetCategorization.removeTag(tagName = ${tagName});
 		}
 
@@ -328,7 +330,7 @@ definition {
 
 		DMDocument.viewCP(dmDocumentTitle = "Document_1");
 
-		DMDocument.viewNoTagInfo(tagName = "computers,electronics");
+		DMDocument.viewNoTagInfo(tagName = "Computers,Electronics");
 	}
 
 	@description = "This test ensures that a tag added in an image through GCVI can be removed."
@@ -354,7 +356,7 @@ definition {
 
 		Panel.expandPanel(panel = "Categorization");
 
-		for (var tagName : list "pattern,carmine") {
+		for (var tagName : list "Pattern,Carmine") {
 			AssetCategorization.removeTag(tagName = ${tagName});
 		}
 
@@ -367,7 +369,7 @@ definition {
 
 		DMDocument.viewCP(dmDocumentTitle = "Commerce_Black");
 
-		DMDocument.viewNoTagInfo(tagName = "pattern,carmine");
+		DMDocument.viewNoTagInfo(tagName = "Pattern,Carmine");
 	}
 
 	@description = "This test ensures that a tag added in a WC article through GCNL can be removed."
@@ -399,16 +401,16 @@ definition {
 			key_panel = "Schedule",
 			locator1 = "Panel#PANEL");
 
-		for (var tagName : list "electronics,programming") {
+		for (var tagName : list "Electronics,Programming") {
 			AssetCategorization.removeTag(tagName = ${tagName});
 		}
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 
 		WebContent.viewNoTagsFromInfoPanel(
-			tagNameList = "electronics,programming",
+			tagNameList = "Electronics,Programming",
 			webContentTitle = "Liferay");
 	}
 
@@ -454,7 +456,7 @@ definition {
 
 		BlogsEntry.viewAutoTag(
 			entryTitle = "Liferay",
-			tagName = "COMPUTERS");
+			tagName = "Computers");
 	}
 
 	@description = "This test ensures that auto tags can be published to live with the document entry."
@@ -491,7 +493,7 @@ definition {
 			groupName = "Site Name",
 			siteURLKey = "site-name");
 
-		DMDocument.viewTagInfo(tagName = "computers");
+		DMDocument.viewTagInfo(tagName = "Computers");
 	}
 
 	@description = "This test ensures that auto tags can be published to live with the Image."
@@ -525,7 +527,7 @@ definition {
 			groupName = "Site Name",
 			siteURLKey = "site-name");
 
-		for (var tagName : list "sleeve,t-shirt,pattern") {
+		for (var tagName : list "sleeve,shirt,pattern") {
 			DMDocument.viewTagInfo(tagName = ${tagName});
 		}
 	}
@@ -562,7 +564,7 @@ definition {
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 
 		WebContent.viewTagFromInfoPanel(
-			tagName = "programming",
+			tagName = "Programming",
 			webContentTitle = "Liferay");
 	}
 

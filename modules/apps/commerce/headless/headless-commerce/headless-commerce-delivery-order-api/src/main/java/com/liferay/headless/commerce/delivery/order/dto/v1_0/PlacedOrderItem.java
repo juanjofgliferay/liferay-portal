@@ -16,22 +16,25 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
 import java.math.BigDecimal;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -51,13 +54,22 @@ public class PlacedOrderItem implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PlacedOrderItem.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getAdaptiveMediaImageHTMLTag() {
+		if (_adaptiveMediaImageHTMLTagSupplier != null) {
+			adaptiveMediaImageHTMLTag =
+				_adaptiveMediaImageHTMLTagSupplier.get();
+
+			_adaptiveMediaImageHTMLTagSupplier = null;
+		}
+
 		return adaptiveMediaImageHTMLTag;
 	}
 
 	public void setAdaptiveMediaImageHTMLTag(String adaptiveMediaImageHTMLTag) {
 		this.adaptiveMediaImageHTMLTag = adaptiveMediaImageHTMLTag;
+
+		_adaptiveMediaImageHTMLTagSupplier = null;
 	}
 
 	@JsonIgnore
@@ -65,190 +77,402 @@ public class PlacedOrderItem implements Serializable {
 		UnsafeSupplier<String, Exception>
 			adaptiveMediaImageHTMLTagUnsafeSupplier) {
 
-		try {
-			adaptiveMediaImageHTMLTag =
-				adaptiveMediaImageHTMLTagUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_adaptiveMediaImageHTMLTagSupplier = () -> {
+			try {
+				return adaptiveMediaImageHTMLTagUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String adaptiveMediaImageHTMLTag;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _adaptiveMediaImageHTMLTagSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, ?> getCustomFields() {
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
 	public void setCustomFields(Map<String, ?> customFields) {
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
 		UnsafeSupplier<Map<String, ?>, Exception> customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, ?> customFields;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, ?>> _customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(deprecated = true)
+	public String getDeliveryGroup() {
+		if (_deliveryGroupSupplier != null) {
+			deliveryGroup = _deliveryGroupSupplier.get();
+
+			_deliveryGroupSupplier = null;
+		}
+
+		return deliveryGroup;
+	}
+
+	public void setDeliveryGroup(String deliveryGroup) {
+		this.deliveryGroup = deliveryGroup;
+
+		_deliveryGroupSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDeliveryGroup(
+		UnsafeSupplier<String, Exception> deliveryGroupUnsafeSupplier) {
+
+		_deliveryGroupSupplier = () -> {
+			try {
+				return deliveryGroupUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@Deprecated
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String deliveryGroup;
+
+	@JsonIgnore
+	private Supplier<String> _deliveryGroupSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getDeliveryGroupName() {
+		if (_deliveryGroupNameSupplier != null) {
+			deliveryGroupName = _deliveryGroupNameSupplier.get();
+
+			_deliveryGroupNameSupplier = null;
+		}
+
+		return deliveryGroupName;
+	}
+
+	public void setDeliveryGroupName(String deliveryGroupName) {
+		this.deliveryGroupName = deliveryGroupName;
+
+		_deliveryGroupNameSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDeliveryGroupName(
+		UnsafeSupplier<String, Exception> deliveryGroupNameUnsafeSupplier) {
+
+		_deliveryGroupNameSupplier = () -> {
+			try {
+				return deliveryGroupNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String deliveryGroupName;
+
+	@JsonIgnore
+	private Supplier<String> _deliveryGroupNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getErrorMessages() {
+		if (_errorMessagesSupplier != null) {
+			errorMessages = _errorMessagesSupplier.get();
+
+			_errorMessagesSupplier = null;
+		}
+
 		return errorMessages;
 	}
 
 	public void setErrorMessages(String[] errorMessages) {
 		this.errorMessages = errorMessages;
+
+		_errorMessagesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setErrorMessages(
 		UnsafeSupplier<String[], Exception> errorMessagesUnsafeSupplier) {
 
-		try {
-			errorMessages = errorMessagesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_errorMessagesSupplier = () -> {
+			try {
+				return errorMessagesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String[] errorMessages;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String[]> _errorMessagesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getOptions() {
+		if (_optionsSupplier != null) {
+			options = _optionsSupplier.get();
+
+			_optionsSupplier = null;
+		}
+
 		return options;
 	}
 
 	public void setOptions(String options) {
 		this.options = options;
+
+		_optionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptions(
 		UnsafeSupplier<String, Exception> optionsUnsafeSupplier) {
 
-		try {
-			options = optionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionsSupplier = () -> {
+			try {
+				return optionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String options;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _optionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getParentOrderItemId() {
+		if (_parentOrderItemIdSupplier != null) {
+			parentOrderItemId = _parentOrderItemIdSupplier.get();
+
+			_parentOrderItemIdSupplier = null;
+		}
+
 		return parentOrderItemId;
 	}
 
 	public void setParentOrderItemId(Long parentOrderItemId) {
 		this.parentOrderItemId = parentOrderItemId;
+
+		_parentOrderItemIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setParentOrderItemId(
 		UnsafeSupplier<Long, Exception> parentOrderItemIdUnsafeSupplier) {
 
-		try {
-			parentOrderItemId = parentOrderItemIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_parentOrderItemIdSupplier = () -> {
+			try {
+				return parentOrderItemIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long parentOrderItemId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _parentOrderItemIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public PlacedOrderItemShipment[] getPlacedOrderItemShipments() {
+		if (_placedOrderItemShipmentsSupplier != null) {
+			placedOrderItemShipments = _placedOrderItemShipmentsSupplier.get();
+
+			_placedOrderItemShipmentsSupplier = null;
+		}
+
 		return placedOrderItemShipments;
 	}
 
@@ -256,6 +480,8 @@ public class PlacedOrderItem implements Serializable {
 		PlacedOrderItemShipment[] placedOrderItemShipments) {
 
 		this.placedOrderItemShipments = placedOrderItemShipments;
+
+		_placedOrderItemShipmentsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -263,30 +489,43 @@ public class PlacedOrderItem implements Serializable {
 		UnsafeSupplier<PlacedOrderItemShipment[], Exception>
 			placedOrderItemShipmentsUnsafeSupplier) {
 
-		try {
-			placedOrderItemShipments =
-				placedOrderItemShipmentsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_placedOrderItemShipmentsSupplier = () -> {
+			try {
+				return placedOrderItemShipmentsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected PlacedOrderItemShipment[] placedOrderItemShipments;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<PlacedOrderItemShipment[]>
+		_placedOrderItemShipmentsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public PlacedOrderItem[] getPlacedOrderItems() {
+		if (_placedOrderItemsSupplier != null) {
+			placedOrderItems = _placedOrderItemsSupplier.get();
+
+			_placedOrderItemsSupplier = null;
+		}
+
 		return placedOrderItems;
 	}
 
 	public void setPlacedOrderItems(PlacedOrderItem[] placedOrderItems) {
 		this.placedOrderItems = placedOrderItems;
+
+		_placedOrderItemsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -294,86 +533,125 @@ public class PlacedOrderItem implements Serializable {
 		UnsafeSupplier<PlacedOrderItem[], Exception>
 			placedOrderItemsUnsafeSupplier) {
 
-		try {
-			placedOrderItems = placedOrderItemsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_placedOrderItemsSupplier = () -> {
+			try {
+				return placedOrderItemsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected PlacedOrderItem[] placedOrderItems;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<PlacedOrderItem[]> _placedOrderItemsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Price getPrice() {
+		if (_priceSupplier != null) {
+			price = _priceSupplier.get();
+
+			_priceSupplier = null;
+		}
+
 		return price;
 	}
 
 	public void setPrice(Price price) {
 		this.price = price;
+
+		_priceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrice(UnsafeSupplier<Price, Exception> priceUnsafeSupplier) {
-		try {
-			price = priceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceSupplier = () -> {
+			try {
+				return priceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Price price;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Price> _priceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long productId;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		example = "{en_US=product-url-us, hr_HR=product-url-hr, hu_HU=product-url-hu}"
 	)
 	@Valid
 	public Map<String, String> getProductURLs() {
+		if (_productURLsSupplier != null) {
+			productURLs = _productURLsSupplier.get();
+
+			_productURLsSupplier = null;
+		}
+
 		return productURLs;
 	}
 
 	public void setProductURLs(Map<String, String> productURLs) {
 		this.productURLs = productURLs;
+
+		_productURLsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -381,298 +659,644 @@ public class PlacedOrderItem implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			productURLsUnsafeSupplier) {
 
-		try {
-			productURLs = productURLsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productURLsSupplier = () -> {
+			try {
+				return productURLsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> productURLs;
 
-	@Schema(example = "10.1")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _productURLsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "10.1")
 	@Valid
 	public BigDecimal getQuantity() {
+		if (_quantitySupplier != null) {
+			quantity = _quantitySupplier.get();
+
+			_quantitySupplier = null;
+		}
+
 		return quantity;
 	}
 
 	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
+
+		_quantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setQuantity(
 		UnsafeSupplier<BigDecimal, Exception> quantityUnsafeSupplier) {
 
-		try {
-			quantity = quantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_quantitySupplier = () -> {
+			try {
+				return quantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected BigDecimal quantity;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<BigDecimal> _quantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getReplacedSku() {
+		if (_replacedSkuSupplier != null) {
+			replacedSku = _replacedSkuSupplier.get();
+
+			_replacedSkuSupplier = null;
+		}
+
 		return replacedSku;
 	}
 
 	public void setReplacedSku(String replacedSku) {
 		this.replacedSku = replacedSku;
+
+		_replacedSkuSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReplacedSku(
 		UnsafeSupplier<String, Exception> replacedSkuUnsafeSupplier) {
 
-		try {
-			replacedSku = replacedSkuUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_replacedSkuSupplier = () -> {
+			try {
+				return replacedSkuUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String replacedSku;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _replacedSkuSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Date getRequestedDeliveryDate() {
+		if (_requestedDeliveryDateSupplier != null) {
+			requestedDeliveryDate = _requestedDeliveryDateSupplier.get();
+
+			_requestedDeliveryDateSupplier = null;
+		}
+
+		return requestedDeliveryDate;
+	}
+
+	public void setRequestedDeliveryDate(Date requestedDeliveryDate) {
+		this.requestedDeliveryDate = requestedDeliveryDate;
+
+		_requestedDeliveryDateSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setRequestedDeliveryDate(
+		UnsafeSupplier<Date, Exception> requestedDeliveryDateUnsafeSupplier) {
+
+		_requestedDeliveryDateSupplier = () -> {
+			try {
+				return requestedDeliveryDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Date requestedDeliveryDate;
+
+	@JsonIgnore
+	private Supplier<Date> _requestedDeliveryDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Settings getSettings() {
+		if (_settingsSupplier != null) {
+			settings = _settingsSupplier.get();
+
+			_settingsSupplier = null;
+		}
+
 		return settings;
 	}
 
 	public void setSettings(Settings settings) {
 		this.settings = settings;
+
+		_settingsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSettings(
 		UnsafeSupplier<Settings, Exception> settingsUnsafeSupplier) {
 
-		try {
-			settings = settingsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_settingsSupplier = () -> {
+			try {
+				return settingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Settings settings;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Settings> _settingsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
+	public String getShippingAddressExternalReferenceCode() {
+		if (_shippingAddressExternalReferenceCodeSupplier != null) {
+			shippingAddressExternalReferenceCode =
+				_shippingAddressExternalReferenceCodeSupplier.get();
+
+			_shippingAddressExternalReferenceCodeSupplier = null;
+		}
+
+		return shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		String shippingAddressExternalReferenceCode) {
+
+		this.shippingAddressExternalReferenceCode =
+			shippingAddressExternalReferenceCode;
+
+		_shippingAddressExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setShippingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			shippingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		_shippingAddressExternalReferenceCodeSupplier = () -> {
+			try {
+				return shippingAddressExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String shippingAddressExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _shippingAddressExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Long getShippingAddressId() {
+		if (_shippingAddressIdSupplier != null) {
+			shippingAddressId = _shippingAddressIdSupplier.get();
+
+			_shippingAddressIdSupplier = null;
+		}
+
+		return shippingAddressId;
+	}
+
+	public void setShippingAddressId(Long shippingAddressId) {
+		this.shippingAddressId = shippingAddressId;
+
+		_shippingAddressIdSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setShippingAddressId(
+		UnsafeSupplier<Long, Exception> shippingAddressIdUnsafeSupplier) {
+
+		_shippingAddressIdSupplier = () -> {
+			try {
+				return shippingAddressIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Long shippingAddressId;
+
+	@JsonIgnore
+	private Supplier<Long> _shippingAddressIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getSku() {
+		if (_skuSupplier != null) {
+			sku = _skuSupplier.get();
+
+			_skuSupplier = null;
+		}
+
 		return sku;
 	}
 
 	public void setSku(String sku) {
 		this.sku = sku;
+
+		_skuSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSku(UnsafeSupplier<String, Exception> skuUnsafeSupplier) {
-		try {
-			sku = skuUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuSupplier = () -> {
+			try {
+				return skuUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String sku;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _skuSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSkuId() {
+		if (_skuIdSupplier != null) {
+			skuId = _skuIdSupplier.get();
+
+			_skuIdSupplier = null;
+		}
+
 		return skuId;
 	}
 
 	public void setSkuId(Long skuId) {
 		this.skuId = skuId;
+
+		_skuIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSkuId(UnsafeSupplier<Long, Exception> skuIdUnsafeSupplier) {
-		try {
-			skuId = skuIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuIdSupplier = () -> {
+			try {
+				return skuIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long skuId;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<Long> _skuIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "true")
 	public Boolean getSubscription() {
+		if (_subscriptionSupplier != null) {
+			subscription = _subscriptionSupplier.get();
+
+			_subscriptionSupplier = null;
+		}
+
 		return subscription;
 	}
 
 	public void setSubscription(Boolean subscription) {
 		this.subscription = subscription;
+
+		_subscriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSubscription(
 		UnsafeSupplier<Boolean, Exception> subscriptionUnsafeSupplier) {
 
-		try {
-			subscription = subscriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_subscriptionSupplier = () -> {
+			try {
+				return subscriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Boolean subscription;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _subscriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getThumbnail() {
+		if (_thumbnailSupplier != null) {
+			thumbnail = _thumbnailSupplier.get();
+
+			_thumbnailSupplier = null;
+		}
+
 		return thumbnail;
 	}
 
 	public void setThumbnail(String thumbnail) {
 		this.thumbnail = thumbnail;
+
+		_thumbnailSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setThumbnail(
 		UnsafeSupplier<String, Exception> thumbnailUnsafeSupplier) {
 
-		try {
-			thumbnail = thumbnailUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_thumbnailSupplier = () -> {
+			try {
+				return thumbnailUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String thumbnail;
 
-	@Schema(example = "m")
+	@JsonIgnore
+	private Supplier<String> _thumbnailSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getUnitOfMeasure() {
+		if (_unitOfMeasureSupplier != null) {
+			unitOfMeasure = _unitOfMeasureSupplier.get();
+
+			_unitOfMeasureSupplier = null;
+		}
+
+		return unitOfMeasure;
+	}
+
+	public void setUnitOfMeasure(String unitOfMeasure) {
+		this.unitOfMeasure = unitOfMeasure;
+
+		_unitOfMeasureSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setUnitOfMeasure(
+		UnsafeSupplier<String, Exception> unitOfMeasureUnsafeSupplier) {
+
+		_unitOfMeasureSupplier = () -> {
+			try {
+				return unitOfMeasureUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String unitOfMeasure;
+
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "m")
 	public String getUnitOfMeasureKey() {
+		if (_unitOfMeasureKeySupplier != null) {
+			unitOfMeasureKey = _unitOfMeasureKeySupplier.get();
+
+			_unitOfMeasureKeySupplier = null;
+		}
+
 		return unitOfMeasureKey;
 	}
 
 	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
 		this.unitOfMeasureKey = unitOfMeasureKey;
+
+		_unitOfMeasureKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitOfMeasureKey(
 		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
 
-		try {
-			unitOfMeasureKey = unitOfMeasureKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitOfMeasureKeySupplier = () -> {
+			try {
+				return unitOfMeasureKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String unitOfMeasureKey;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getValid() {
+		if (_validSupplier != null) {
+			valid = _validSupplier.get();
+
+			_validSupplier = null;
+		}
+
 		return valid;
 	}
 
 	public void setValid(Boolean valid) {
 		this.valid = valid;
+
+		_validSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValid(
 		UnsafeSupplier<Boolean, Exception> validUnsafeSupplier) {
 
-		try {
-			valid = validUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_validSupplier = () -> {
+			try {
+				return validUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Boolean valid;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _validSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getVirtualItemURLs() {
+		if (_virtualItemURLsSupplier != null) {
+			virtualItemURLs = _virtualItemURLsSupplier.get();
+
+			_virtualItemURLsSupplier = null;
+		}
+
 		return virtualItemURLs;
 	}
 
 	public void setVirtualItemURLs(String[] virtualItemURLs) {
 		this.virtualItemURLs = virtualItemURLs;
+
+		_virtualItemURLsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVirtualItemURLs(
 		UnsafeSupplier<String[], Exception> virtualItemURLsUnsafeSupplier) {
 
-		try {
-			virtualItemURLs = virtualItemURLsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_virtualItemURLsSupplier = () -> {
+			try {
+				return virtualItemURLsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String[] virtualItemURLs;
+
+	@JsonIgnore
+	private Supplier<String[]> _virtualItemURLsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public VirtualItem[] getVirtualItems() {
+		if (_virtualItemsSupplier != null) {
+			virtualItems = _virtualItemsSupplier.get();
+
+			_virtualItemsSupplier = null;
+		}
+
+		return virtualItems;
+	}
+
+	public void setVirtualItems(VirtualItem[] virtualItems) {
+		this.virtualItems = virtualItems;
+
+		_virtualItemsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setVirtualItems(
+		UnsafeSupplier<VirtualItem[], Exception> virtualItemsUnsafeSupplier) {
+
+		_virtualItemsSupplier = () -> {
+			try {
+				return virtualItemsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected VirtualItem[] virtualItems;
+
+	@JsonIgnore
+	private Supplier<VirtualItem[]> _virtualItemsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -701,6 +1325,11 @@ public class PlacedOrderItem implements Serializable {
 
 		sb.append("{");
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		String adaptiveMediaImageHTMLTag = getAdaptiveMediaImageHTMLTag();
+
 		if (adaptiveMediaImageHTMLTag != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -715,6 +1344,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, ?> customFields = getCustomFields();
+
 		if (customFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -724,6 +1355,40 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(_toJSON(customFields));
 		}
+
+		String deliveryGroup = getDeliveryGroup();
+
+		if (deliveryGroup != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliveryGroup\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(deliveryGroup));
+
+			sb.append("\"");
+		}
+
+		String deliveryGroupName = getDeliveryGroupName();
+
+		if (deliveryGroupName != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliveryGroupName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(deliveryGroupName));
+
+			sb.append("\"");
+		}
+
+		String[] errorMessages = getErrorMessages();
 
 		if (errorMessages != null) {
 			if (sb.length() > 1) {
@@ -749,6 +1414,24 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("]");
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -758,6 +1441,8 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -773,6 +1458,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		String options = getOptions();
+
 		if (options != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -787,6 +1474,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Long parentOrderItemId = getParentOrderItemId();
+
 		if (parentOrderItemId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -796,6 +1485,9 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(parentOrderItemId);
 		}
+
+		PlacedOrderItemShipment[] placedOrderItemShipments =
+			getPlacedOrderItemShipments();
 
 		if (placedOrderItemShipments != null) {
 			if (sb.length() > 1) {
@@ -817,6 +1509,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("]");
 		}
 
+		PlacedOrderItem[] placedOrderItems = getPlacedOrderItems();
+
 		if (placedOrderItems != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -837,6 +1531,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("]");
 		}
 
+		Price price = getPrice();
+
 		if (price != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -846,6 +1542,8 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(String.valueOf(price));
 		}
+
+		Long productId = getProductId();
 
 		if (productId != null) {
 			if (sb.length() > 1) {
@@ -857,6 +1555,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append(productId);
 		}
 
+		Map<String, String> productURLs = getProductURLs();
+
 		if (productURLs != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -867,6 +1567,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append(_toJSON(productURLs));
 		}
 
+		BigDecimal quantity = getQuantity();
+
 		if (quantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -876,6 +1578,8 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(quantity);
 		}
+
+		String replacedSku = getReplacedSku();
 
 		if (replacedSku != null) {
 			if (sb.length() > 1) {
@@ -891,6 +1595,24 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Date requestedDeliveryDate = getRequestedDeliveryDate();
+
+		if (requestedDeliveryDate != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"requestedDeliveryDate\": ");
+
+			sb.append("\"");
+
+			sb.append(liferayToJSONDateFormat.format(requestedDeliveryDate));
+
+			sb.append("\"");
+		}
+
+		Settings settings = getSettings();
+
 		if (settings != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -900,6 +1622,37 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(String.valueOf(settings));
 		}
+
+		String shippingAddressExternalReferenceCode =
+			getShippingAddressExternalReferenceCode();
+
+		if (shippingAddressExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shippingAddressExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shippingAddressExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long shippingAddressId = getShippingAddressId();
+
+		if (shippingAddressId != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shippingAddressId\": ");
+
+			sb.append(shippingAddressId);
+		}
+
+		String sku = getSku();
 
 		if (sku != null) {
 			if (sb.length() > 1) {
@@ -915,6 +1668,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Long skuId = getSkuId();
+
 		if (skuId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -925,6 +1680,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append(skuId);
 		}
 
+		Boolean subscription = getSubscription();
+
 		if (subscription != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -934,6 +1691,8 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(subscription);
 		}
+
+		String thumbnail = getThumbnail();
 
 		if (thumbnail != null) {
 			if (sb.length() > 1) {
@@ -949,6 +1708,24 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		String unitOfMeasure = getUnitOfMeasure();
+
+		if (unitOfMeasure != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasure\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(unitOfMeasure));
+
+			sb.append("\"");
+		}
+
+		String unitOfMeasureKey = getUnitOfMeasureKey();
+
 		if (unitOfMeasureKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -963,6 +1740,8 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean valid = getValid();
+
 		if (valid != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -972,6 +1751,8 @@ public class PlacedOrderItem implements Serializable {
 
 			sb.append(valid);
 		}
+
+		String[] virtualItemURLs = getVirtualItemURLs();
 
 		if (virtualItemURLs != null) {
 			if (sb.length() > 1) {
@@ -997,13 +1778,35 @@ public class PlacedOrderItem implements Serializable {
 			sb.append("]");
 		}
 
+		VirtualItem[] virtualItems = getVirtualItems();
+
+		if (virtualItems != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"virtualItems\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < virtualItems.length; i++) {
+				sb.append(String.valueOf(virtualItems[i]));
+
+				if ((i + 1) < virtualItems.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.order.dto.v1_0.PlacedOrderItem",
 		name = "x-class-name"
 	)
@@ -1049,7 +1852,10 @@ public class PlacedOrderItem implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

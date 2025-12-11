@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -41,11 +40,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a fragment viewport.", value = "FragmentViewport"
 )
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@io.swagger.v3.oas.annotations.media.Schema(
 	description = "Represents a fragment viewport.",
 	requiredProperties = {"fragmentViewportStyle", "id"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "FragmentViewport")
 public class FragmentViewport implements Serializable {
 
@@ -57,9 +56,17 @@ public class FragmentViewport implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FragmentViewport.class, json);
 	}
 
-	@Schema(description = "The fragment's viewport style.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment's viewport style."
+	)
 	@Valid
 	public FragmentViewportStyle getFragmentViewportStyle() {
+		if (_fragmentViewportStyleSupplier != null) {
+			fragmentViewportStyle = _fragmentViewportStyleSupplier.get();
+
+			_fragmentViewportStyleSupplier = null;
+		}
+
 		return fragmentViewportStyle;
 	}
 
@@ -67,6 +74,8 @@ public class FragmentViewport implements Serializable {
 		FragmentViewportStyle fragmentViewportStyle) {
 
 		this.fragmentViewportStyle = fragmentViewportStyle;
+
+		_fragmentViewportStyleSupplier = null;
 	}
 
 	@JsonIgnore
@@ -74,15 +83,17 @@ public class FragmentViewport implements Serializable {
 		UnsafeSupplier<FragmentViewportStyle, Exception>
 			fragmentViewportStyleUnsafeSupplier) {
 
-		try {
-			fragmentViewportStyle = fragmentViewportStyleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentViewportStyleSupplier = () -> {
+			try {
+				return fragmentViewportStyleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment's viewport style.")
@@ -90,32 +101,50 @@ public class FragmentViewport implements Serializable {
 	@NotNull
 	protected FragmentViewportStyle fragmentViewportStyle;
 
-	@Schema(description = "The fragment viewport's ID.")
+	@JsonIgnore
+	private Supplier<FragmentViewportStyle> _fragmentViewportStyleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment viewport's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment viewport's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String id;
+
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -144,6 +173,9 @@ public class FragmentViewport implements Serializable {
 
 		sb.append("{");
 
+		FragmentViewportStyle fragmentViewportStyle =
+			getFragmentViewportStyle();
+
 		if (fragmentViewportStyle != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -153,6 +185,8 @@ public class FragmentViewport implements Serializable {
 
 			sb.append(String.valueOf(fragmentViewportStyle));
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -173,8 +207,8 @@ public class FragmentViewport implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentViewport",
 		name = "x-class-name"
 	)
@@ -220,7 +254,10 @@ public class FragmentViewport implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -27,15 +27,16 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -56,6 +57,24 @@ public class DropZoneFragmentEntryLinkListener
 	public void onAddFragmentEntryLink(FragmentEntryLink fragmentEntryLink) {
 		try {
 			updateLayoutPageTemplateStructure(fragmentEntryLink, null);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Unable to update layout page template structure",
+					exception);
+			}
+		}
+	}
+
+	@Override
+	public void onCopyFragmentEntryLink(
+		FragmentEntryLink fragmentEntryLink,
+		FragmentEntryLink originalFragmentEntryLink) {
+
+		try {
+			updateLayoutPageTemplateStructure(
+				fragmentEntryLink, originalFragmentEntryLink);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -142,9 +161,9 @@ public class DropZoneFragmentEntryLinkListener
 
 		Document document = _getDocument(processedHTML);
 
-		Elements elements = document.select("lfr-drop-zone");
+		Elements elements = document.getElementsByTag("lfr-drop-zone");
 
-		if (elements.size() <= 0) {
+		if (elements.isEmpty()) {
 			return;
 		}
 
@@ -184,13 +203,11 @@ public class DropZoneFragmentEntryLinkListener
 			}
 
 			if (childrenItemIds.size() > elements.size()) {
-				List<String> childrenItemIdsToRemove = childrenItemIds.subList(
-					elements.size(), childrenItemIds.size());
-
-				childrenItemIdsToRemove.forEach(
-					itemId ->
-						layoutStructure.markLayoutStructureItemForDeletion(
-							itemId, Collections.emptyList()));
+				layoutStructure.markLayoutStructureItemForDeletion(
+					new ArrayList<>(
+						childrenItemIds.subList(
+							elements.size(), childrenItemIds.size())),
+					Collections.emptyList());
 			}
 			else {
 				for (int i = childrenItemIds.size(); i < elements.size(); i++) {
@@ -200,11 +217,12 @@ public class DropZoneFragmentEntryLinkListener
 			}
 
 			try (SafeCloseable safeCloseable =
-					CheckUnlockedLayoutThreadLocal.setWithSafeCloseable(
-						false)) {
+					CheckUnlockedLayoutThreadLocal.
+						setCheckUnlockedLayoutWithSafeCloseable(false)) {
 
 				_layoutPageTemplateStructureLocalService.
 					updateLayoutPageTemplateStructureData(
+						fragmentEntryLink.getUserId(),
 						fragmentEntryLink.getGroupId(),
 						fragmentEntryLink.getPlid(),
 						fragmentEntryLink.getSegmentsExperienceId(),
@@ -379,7 +397,8 @@ public class DropZoneFragmentEntryLinkListener
 					noExistingIdFragmentDropZoneLayoutStructureItems) {
 
 			layoutStructure.markLayoutStructureItemForDeletion(
-				fragmentDropZoneLayoutStructureItem.getItemId(),
+				Collections.singletonList(
+					fragmentDropZoneLayoutStructureItem.getItemId()),
 				Collections.emptyList());
 
 			update = true;
@@ -390,7 +409,8 @@ public class DropZoneFragmentEntryLinkListener
 					noIdFragmentDropZoneLayoutStructureItems) {
 
 			layoutStructure.markLayoutStructureItemForDeletion(
-				fragmentDropZoneLayoutStructureItem.getItemId(),
+				Collections.singletonList(
+					fragmentDropZoneLayoutStructureItem.getItemId()),
 				Collections.emptyList());
 
 			update = true;
@@ -398,11 +418,12 @@ public class DropZoneFragmentEntryLinkListener
 
 		if (update) {
 			try (SafeCloseable safeCloseable =
-					CheckUnlockedLayoutThreadLocal.setWithSafeCloseable(
-						false)) {
+					CheckUnlockedLayoutThreadLocal.
+						setCheckUnlockedLayoutWithSafeCloseable(false)) {
 
 				_layoutPageTemplateStructureLocalService.
 					updateLayoutPageTemplateStructureData(
+						fragmentEntryLink.getUserId(),
 						fragmentEntryLink.getGroupId(),
 						fragmentEntryLink.getPlid(),
 						fragmentEntryLink.getSegmentsExperienceId(),
@@ -521,15 +542,9 @@ public class DropZoneFragmentEntryLinkListener
 
 		Document document = _getDocument(processedHTML);
 
-		Elements elements = document.select("lfr-drop-zone");
-
-		if (elements.size() <= 0) {
-			return Collections.emptyList();
-		}
-
 		List<String> elementDropZoneIds = new LinkedList<>();
 
-		for (Element element : elements) {
+		for (Element element : document.getElementsByTag("lfr-drop-zone")) {
 			String dropZoneId = element.attr("data-lfr-drop-zone-id");
 
 			if (Validator.isBlank(dropZoneId)) {

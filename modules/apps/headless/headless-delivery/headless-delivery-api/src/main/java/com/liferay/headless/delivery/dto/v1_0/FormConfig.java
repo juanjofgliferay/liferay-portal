@@ -5,9 +5,12 @@
 
 package com.liferay.headless.delivery.dto.v1_0;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
@@ -17,7 +20,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,38 +54,62 @@ public class FormConfig implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FormConfig.class, json);
 	}
 
-	@Schema(description = "The form reference.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The form reference."
+	)
 	@Valid
 	public Object getFormReference() {
+		if (_formReferenceSupplier != null) {
+			formReference = _formReferenceSupplier.get();
+
+			_formReferenceSupplier = null;
+		}
+
 		return formReference;
 	}
 
 	public void setFormReference(Object formReference) {
 		this.formReference = formReference;
+
+		_formReferenceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFormReference(
 		UnsafeSupplier<Object, Exception> formReferenceUnsafeSupplier) {
 
-		try {
-			formReference = formReferenceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formReferenceSupplier = () -> {
+			try {
+				return formReferenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The form reference.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object formReference;
 
-	@Schema(description = "The definition for the success message of the form.")
+	@JsonIgnore
+	private Supplier<Object> _formReferenceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The definition for the success message of the form."
+	)
 	@Valid
 	public Object getFormSuccessSubmissionResult() {
+		if (_formSuccessSubmissionResultSupplier != null) {
+			formSuccessSubmissionResult =
+				_formSuccessSubmissionResultSupplier.get();
+
+			_formSuccessSubmissionResultSupplier = null;
+		}
+
 		return formSuccessSubmissionResult;
 	}
 
@@ -91,6 +117,8 @@ public class FormConfig implements Serializable {
 		Object formSuccessSubmissionResult) {
 
 		this.formSuccessSubmissionResult = formSuccessSubmissionResult;
+
+		_formSuccessSubmissionResultSupplier = null;
 	}
 
 	@JsonIgnore
@@ -98,16 +126,17 @@ public class FormConfig implements Serializable {
 		UnsafeSupplier<Object, Exception>
 			formSuccessSubmissionResultUnsafeSupplier) {
 
-		try {
-			formSuccessSubmissionResult =
-				formSuccessSubmissionResultUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formSuccessSubmissionResultSupplier = () -> {
+			try {
+				return formSuccessSubmissionResultUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -115,6 +144,155 @@ public class FormConfig implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object formSuccessSubmissionResult;
+
+	@JsonIgnore
+	private Supplier<Object> _formSuccessSubmissionResultSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A flag that indicates whether the page form instance is multi step or not."
+	)
+	@JsonGetter("formType")
+	@Valid
+	public FormType getFormType() {
+		if (_formTypeSupplier != null) {
+			formType = _formTypeSupplier.get();
+
+			_formTypeSupplier = null;
+		}
+
+		return formType;
+	}
+
+	@JsonIgnore
+	public String getFormTypeAsString() {
+		FormType formType = getFormType();
+
+		if (formType == null) {
+			return null;
+		}
+
+		return formType.toString();
+	}
+
+	public void setFormType(FormType formType) {
+		this.formType = formType;
+
+		_formTypeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setFormType(
+		UnsafeSupplier<FormType, Exception> formTypeUnsafeSupplier) {
+
+		_formTypeSupplier = () -> {
+			try {
+				return formTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "A flag that indicates whether the page form instance is multi step or not."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected FormType formType;
+
+	@JsonIgnore
+	private Supplier<FormType> _formTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public LocalizationConfig getLocalizationConfig() {
+		if (_localizationConfigSupplier != null) {
+			localizationConfig = _localizationConfigSupplier.get();
+
+			_localizationConfigSupplier = null;
+		}
+
+		return localizationConfig;
+	}
+
+	public void setLocalizationConfig(LocalizationConfig localizationConfig) {
+		this.localizationConfig = localizationConfig;
+
+		_localizationConfigSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setLocalizationConfig(
+		UnsafeSupplier<LocalizationConfig, Exception>
+			localizationConfigUnsafeSupplier) {
+
+		_localizationConfigSupplier = () -> {
+			try {
+				return localizationConfigUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected LocalizationConfig localizationConfig;
+
+	@JsonIgnore
+	private Supplier<LocalizationConfig> _localizationConfigSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The definition for the number of steps of the form."
+	)
+	public Integer getNumberOfSteps() {
+		if (_numberOfStepsSupplier != null) {
+			numberOfSteps = _numberOfStepsSupplier.get();
+
+			_numberOfStepsSupplier = null;
+		}
+
+		return numberOfSteps;
+	}
+
+	public void setNumberOfSteps(Integer numberOfSteps) {
+		this.numberOfSteps = numberOfSteps;
+
+		_numberOfStepsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setNumberOfSteps(
+		UnsafeSupplier<Integer, Exception> numberOfStepsUnsafeSupplier) {
+
+		_numberOfStepsSupplier = () -> {
+			try {
+				return numberOfStepsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "The definition for the number of steps of the form."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Integer numberOfSteps;
+
+	@JsonIgnore
+	private Supplier<Integer> _numberOfStepsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -143,6 +321,8 @@ public class FormConfig implements Serializable {
 
 		sb.append("{");
 
+		Object formReference = getFormReference();
+
 		if (formReference != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -163,6 +343,8 @@ public class FormConfig implements Serializable {
 				sb.append(formReference);
 			}
 		}
+
+		Object formSuccessSubmissionResult = getFormSuccessSubmissionResult();
 
 		if (formSuccessSubmissionResult != null) {
 			if (sb.length() > 1) {
@@ -186,17 +368,93 @@ public class FormConfig implements Serializable {
 			}
 		}
 
+		FormType formType = getFormType();
+
+		if (formType != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"formType\": ");
+
+			sb.append("\"");
+			sb.append(formType);
+			sb.append("\"");
+		}
+
+		LocalizationConfig localizationConfig = getLocalizationConfig();
+
+		if (localizationConfig != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"localizationConfig\": ");
+
+			sb.append(String.valueOf(localizationConfig));
+		}
+
+		Integer numberOfSteps = getNumberOfSteps();
+
+		if (numberOfSteps != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"numberOfSteps\": ");
+
+			sb.append(numberOfSteps);
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FormConfig",
 		name = "x-class-name"
 	)
 	public String xClassName;
+
+	@GraphQLName("FormType")
+	public static enum FormType {
+
+		SIMPLE("simple"), MULTISTEP("multistep");
+
+		@JsonCreator
+		public static FormType create(String value) {
+			if ((value == null) || value.equals("")) {
+				return null;
+			}
+
+			for (FormType formType : values()) {
+				if (Objects.equals(formType.getValue(), value)) {
+					return formType;
+				}
+			}
+
+			throw new IllegalArgumentException("Invalid enum value: " + value);
+		}
+
+		@JsonValue
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private FormType(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
 
 	private static String _escape(Object object) {
 		return StringUtil.replace(
@@ -238,7 +496,10 @@ public class FormConfig implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

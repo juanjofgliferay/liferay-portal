@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.AddressService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
@@ -66,9 +67,10 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 
 	@Override
 	public AccountEntry addAccountEntry(
-			long userId, long parentAccountEntryId, String name,
-			String description, String[] domains, String email,
-			byte[] logoBytes, String taxIdNumber, String type, int status,
+			String externalReferenceCode, long userId,
+			long parentAccountEntryId, String name, String description,
+			String[] domains, String email, byte[] logoBytes,
+			String taxIdNumber, String type, int status,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -76,9 +78,9 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 			getPermissionChecker(), AccountActionKeys.ADD_ACCOUNT_ENTRY);
 
 		return accountEntryLocalService.addAccountEntry(
-			userId, parentAccountEntryId, name, description,
-			_getManageableDomains(0L, domains), email, logoBytes, taxIdNumber,
-			type, status, serviceContext);
+			externalReferenceCode, userId, parentAccountEntryId, name,
+			description, _getManageableDomains(0L, domains), email, logoBytes,
+			taxIdNumber, type, status, serviceContext);
 	}
 
 	@Override
@@ -132,7 +134,7 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 		PermissionChecker permissionChecker = getPermissionChecker();
 
 		_accountEntryModelResourcePermission.check(
-			permissionChecker, accountEntryId, ActionKeys.DELETE);
+			permissionChecker, accountEntryId, ActionKeys.DEACTIVATE);
 
 		return _withServiceContext(
 			() -> accountEntryLocalService.deactivateAccountEntry(
@@ -169,7 +171,7 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 
 	@Override
 	public AccountEntry fetchAccountEntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		AccountEntry accountEntry =
@@ -220,6 +222,43 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 	}
 
 	@Override
+	public AccountEntry getAccountEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		AccountEntry accountEntry =
+			accountEntryLocalService.getAccountEntryByExternalReferenceCode(
+				externalReferenceCode, companyId);
+
+		_accountEntryModelResourcePermission.check(
+			getPermissionChecker(), accountEntry.getAccountEntryId(),
+			ActionKeys.VIEW);
+
+		return accountEntry;
+	}
+
+	public AccountEntry getOrAddEmptyAccountEntry(
+			String externalReferenceCode, String name, String type)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		AccountEntry accountEntry = fetchAccountEntryByExternalReferenceCode(
+			externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (accountEntry != null) {
+			return accountEntry;
+		}
+
+		PortalPermissionUtil.check(
+			permissionChecker, AccountActionKeys.ADD_ACCOUNT_ENTRY);
+
+		return accountEntryLocalService.getOrAddEmptyAccountEntry(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId(), name, type);
+	}
+
+	@Override
 	public BaseModelSearchResult<AccountEntry> searchAccountEntries(
 			String keywords, LinkedHashMap<String, Object> params, int cur,
 			int delta, String orderByField, boolean reverse)
@@ -245,6 +284,14 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntry, ActionKeys.UPDATE);
 
+		if (accountEntry.getDefaultBillingAddressId() > 0) {
+			_validateAddressId(accountEntry.getDefaultBillingAddressId());
+		}
+
+		if (accountEntry.getDefaultShippingAddressId() > 0) {
+			_validateAddressId(accountEntry.getDefaultShippingAddressId());
+		}
+
 		if (!_accountEntryModelResourcePermission.contains(
 				getPermissionChecker(), accountEntry.getAccountEntryId(),
 				AccountActionKeys.MANAGE_DOMAINS)) {
@@ -263,19 +310,47 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 
 	@Override
 	public AccountEntry updateAccountEntry(
-			long accountEntryId, long parentAccountEntryId, String name,
-			String description, boolean deleteLogo, String[] domains,
-			String emailAddress, byte[] logoBytes, String taxIdNumber,
-			int status, ServiceContext serviceContext)
+			String externalReferenceCode, long accountEntryId,
+			long parentAccountEntryId, String name, String description,
+			boolean deleteLogo, String[] domains, String emailAddress,
+			byte[] logoBytes, String taxIdNumber, int status,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		_accountEntryModelResourcePermission.check(
 			getPermissionChecker(), accountEntryId, ActionKeys.UPDATE);
 
 		return accountEntryLocalService.updateAccountEntry(
-			accountEntryId, parentAccountEntryId, name, description, deleteLogo,
+			externalReferenceCode, accountEntryId, parentAccountEntryId, name,
+			description, deleteLogo,
 			_getManageableDomains(accountEntryId, domains), emailAddress,
 			logoBytes, taxIdNumber, status, serviceContext);
+	}
+
+	@Override
+	public AccountEntry updateDefaultBillingAddressId(
+			long accountEntryId, long addressId)
+		throws PortalException {
+
+		_accountEntryModelResourcePermission.check(
+			getPermissionChecker(), accountEntryId, ActionKeys.UPDATE);
+
+		_validateAddressId(addressId);
+
+		return updateDefaultBillingAddressId(accountEntryId, addressId);
+	}
+
+	@Override
+	public AccountEntry updateDefaultShippingAddressId(
+			long accountEntryId, long addressId)
+		throws PortalException {
+
+		_accountEntryModelResourcePermission.check(
+			getPermissionChecker(), accountEntryId, ActionKeys.UPDATE);
+
+		_validateAddressId(addressId);
+
+		return updateDefaultShippingAddressId(accountEntryId, addressId);
 	}
 
 	@Override
@@ -328,6 +403,12 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 		return null;
 	}
 
+	private void _validateAddressId(long addressId) throws PortalException {
+		if (addressId > 0) {
+			_addressService.getAddress(addressId);
+		}
+	}
+
 	private AccountEntry _withServiceContext(
 			UnsafeSupplier<AccountEntry, PortalException> unsafeSupplier,
 			long userId)
@@ -354,5 +435,8 @@ public class AccountEntryServiceImpl extends AccountEntryServiceBaseImpl {
 	)
 	private volatile ModelResourcePermission<AccountEntry>
 		_accountEntryModelResourcePermission;
+
+	@Reference
+	private AddressService _addressService;
 
 }

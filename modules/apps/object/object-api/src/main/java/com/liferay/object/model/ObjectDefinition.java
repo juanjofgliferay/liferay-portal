@@ -48,11 +48,16 @@ public interface ObjectDefinition
 
 		};
 
+	public java.util.Locale getDefaultLocale();
+
 	public String getDestinationName();
 
 	public String getExtensionDBTableName();
 
 	public String getLocalizationDBTableName();
+
+	public java.util.List<ObjectDefinitionSetting>
+		getObjectDefinitionSettings();
 
 	public String getObjectFolderExternalReferenceCode();
 
@@ -66,20 +71,35 @@ public interface ObjectDefinition
 
 	public String getRESTContextPath();
 
+	public String getRootObjectDefinitionExternalReferenceCode();
+
+	public long getRootObjectDefinitionId();
+
+	public long[] getRootObjectDefinitionIds();
+
 	public String getShortName();
 
 	public boolean isApproved();
+
+	public boolean isCMS();
 
 	public boolean isDefaultStorageType();
 
 	public boolean isLinkedToObjectFolder(long objectFolderId);
 
-	public boolean isNodeCandidate();
+	public boolean isModifiableAndSystem();
 
 	public boolean isRootDescendantNode();
+
+	public boolean isRootDescendantNode(long rootObjectDefinitionId);
 
 	public boolean isRootNode();
 
 	public boolean isUnmodifiableSystemObject();
+
+	public boolean isVisible();
+
+	public void setObjectDefinitionSettings(
+		java.util.List<ObjectDefinitionSetting> objectDefinitionSettings);
 
 }

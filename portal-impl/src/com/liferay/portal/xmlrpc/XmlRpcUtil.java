@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.xml.StAXReaderUtil;
@@ -42,15 +43,12 @@ public class XmlRpcUtil {
 	public static String buildMethod(String methodName, Object[] arguments)
 		throws XmlRpcException {
 
-		StringBundler sb = new StringBundler((arguments.length * 3) + 8);
+		StringBundler sb = new StringBundler((arguments.length * 3) + 5);
 
-		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-
-		sb.append("<methodCall>");
+		sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><methodCall>");
 		sb.append("<methodName>");
 		sb.append(methodName);
-		sb.append("</methodName>");
-		sb.append("<params>");
+		sb.append("</methodName><params>");
 
 		for (Object argument : arguments) {
 			sb.append("<param>");
@@ -58,8 +56,7 @@ public class XmlRpcUtil {
 			sb.append("</param>");
 		}
 
-		sb.append("</params>");
-		sb.append("</methodCall>");
+		sb.append("</params></methodCall>");
 
 		return sb.toString();
 	}
@@ -127,6 +124,8 @@ public class XmlRpcUtil {
 		XMLStreamReader xmlStreamReader = null;
 
 		try {
+			int paramCount = 0;
+
 			XMLInputFactory xmlInputFactory =
 				StAXReaderUtil.getXMLInputFactory();
 
@@ -152,6 +151,14 @@ public class XmlRpcUtil {
 
 				if (!name.equals("param")) {
 					continue;
+				}
+
+				paramCount++;
+
+				if ((PropsValues.XML_RPC_MAX_PARAMETERS != -1) &&
+					(paramCount > PropsValues.XML_RPC_MAX_PARAMETERS)) {
+
+					throw new IOException("Too many XML-RPC parameters");
 				}
 
 				xmlStreamReader.nextTag();

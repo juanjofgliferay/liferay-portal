@@ -60,7 +60,8 @@ public class OAuthClientEntryLocalServiceImpl
 	@Override
 	public OAuthClientEntry addOAuthClientEntry(
 			long userId, String authRequestParametersJSON,
-			String authServerWellKnownURI, String infoJSON,
+			String authServerWellKnownURI, String customClaimsJSON,
+			String infoJSON, long metadataCacheTime,
 			String oidcUserInfoMapperJSON, String tokenRequestParametersJSON)
 		throws PortalException {
 
@@ -85,6 +86,10 @@ public class OAuthClientEntryLocalServiceImpl
 		}
 		else {
 			_validateAuthRequestParametersJSON(authRequestParametersJSON);
+		}
+
+		if (customClaimsJSON == null) {
+			customClaimsJSON = "{}";
 		}
 
 		if (Validator.isNull(tokenRequestParametersJSON)) {
@@ -114,7 +119,9 @@ public class OAuthClientEntryLocalServiceImpl
 			authRequestParametersJSON);
 		oAuthClientEntry.setAuthServerWellKnownURI(authServerWellKnownURI);
 		oAuthClientEntry.setClientId(clientId);
+		oAuthClientEntry.setCustomClaimsJSON(customClaimsJSON);
 		oAuthClientEntry.setInfoJSON(clientInformationJSONObject.toString());
+		oAuthClientEntry.setMetadataCacheTime(metadataCacheTime);
 		oAuthClientEntry.setOIDCUserInfoMapperJSON(oidcUserInfoMapperJSON);
 		oAuthClientEntry.setTokenRequestParametersJSON(
 			tokenRequestParametersJSON);
@@ -217,7 +224,8 @@ public class OAuthClientEntryLocalServiceImpl
 	@Override
 	public OAuthClientEntry updateOAuthClientEntry(
 			long oAuthClientEntryId, String authRequestParametersJSON,
-			String authServerWellKnownURI, String infoJSON,
+			String authServerWellKnownURI, String customClaimsJSON,
+			String infoJSON, long metadataCacheTime,
 			String oidcUserInfoMapperJSON, String tokenRequestParametersJSON)
 		throws PortalException {
 
@@ -247,6 +255,10 @@ public class OAuthClientEntryLocalServiceImpl
 			_validateAuthRequestParametersJSON(authRequestParametersJSON);
 		}
 
+		if (customClaimsJSON != null) {
+			oAuthClientEntry.setCustomClaimsJSON(customClaimsJSON);
+		}
+
 		if (Validator.isNull(tokenRequestParametersJSON)) {
 			tokenRequestParametersJSON = "{}";
 		}
@@ -269,6 +281,7 @@ public class OAuthClientEntryLocalServiceImpl
 		oAuthClientEntry.setAuthServerWellKnownURI(authServerWellKnownURI);
 		oAuthClientEntry.setClientId(clientId);
 		oAuthClientEntry.setInfoJSON(clientInformationJSONObject.toString());
+		oAuthClientEntry.setMetadataCacheTime(metadataCacheTime);
 		oAuthClientEntry.setOIDCUserInfoMapperJSON(oidcUserInfoMapperJSON);
 		oAuthClientEntry.setTokenRequestParametersJSON(
 			tokenRequestParametersJSON);

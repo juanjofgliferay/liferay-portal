@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alejandro Tardín
@@ -49,33 +48,46 @@ public class GenericError implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(GenericError.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getMessage() {
+		if (_messageSupplier != null) {
+			message = _messageSupplier.get();
+
+			_messageSupplier = null;
+		}
+
 		return message;
 	}
 
 	public void setMessage(String message) {
 		this.message = message;
+
+		_messageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMessage(
 		UnsafeSupplier<String, Exception> messageUnsafeSupplier) {
 
-		try {
-			message = messageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_messageSupplier = () -> {
+			try {
+				return messageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String message;
+
+	@JsonIgnore
+	private Supplier<String> _messageSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -104,6 +116,8 @@ public class GenericError implements Serializable {
 
 		sb.append("{");
 
+		String message = getMessage();
+
 		if (message != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -123,8 +137,8 @@ public class GenericError implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.bulk.rest.dto.v1_0.GenericError",
 		name = "x-class-name"
 	)
@@ -170,7 +184,10 @@ public class GenericError implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

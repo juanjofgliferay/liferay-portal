@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,30 +51,40 @@ public class NoneActionExecutionResult implements Serializable {
 			NoneActionExecutionResult.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Whether to reload the page after the action is executed."
 	)
 	public Boolean getReload() {
+		if (_reloadSupplier != null) {
+			reload = _reloadSupplier.get();
+
+			_reloadSupplier = null;
+		}
+
 		return reload;
 	}
 
 	public void setReload(Boolean reload) {
 		this.reload = reload;
+
+		_reloadSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReload(
 		UnsafeSupplier<Boolean, Exception> reloadUnsafeSupplier) {
 
-		try {
-			reload = reloadUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_reloadSupplier = () -> {
+			try {
+				return reloadUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -83,6 +92,9 @@ public class NoneActionExecutionResult implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean reload;
+
+	@JsonIgnore
+	private Supplier<Boolean> _reloadSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -112,6 +124,8 @@ public class NoneActionExecutionResult implements Serializable {
 
 		sb.append("{");
 
+		Boolean reload = getReload();
+
 		if (reload != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -127,8 +141,8 @@ public class NoneActionExecutionResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.NoneActionExecutionResult",
 		name = "x-class-name"
 	)
@@ -174,7 +188,10 @@ public class NoneActionExecutionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -650,7 +650,7 @@ public interface UserService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -833,16 +833,9 @@ public interface UserService extends BaseService {
 	public User getUserByEmailAddress(long companyId, String emailAddress)
 		throws PortalException;
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -1120,6 +1113,14 @@ public interface UserService extends BaseService {
 			String emailAddress2, ServiceContext serviceContext)
 		throws PortalException;
 
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
+		throws PortalException;
+
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
+		throws PortalException;
+
 	/**
 	 * Updates a user account that was automatically created when a guest user
 	 * participated in an action (e.g. posting a comment) and only provided his
@@ -1219,6 +1220,9 @@ public interface UserService extends BaseService {
 			ServiceContext serviceContext)
 		throws PortalException;
 
+	public User updateLanguageId(long userId, String languageId)
+		throws PortalException;
+
 	/**
 	 * Updates whether the user is locked out from logging in.
 	 *
@@ -1228,17 +1232,6 @@ public interface UserService extends BaseService {
 	 */
 	public User updateLockoutById(long userId, boolean lockout)
 		throws PortalException;
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public User updateOpenId(long userId, String openId) throws PortalException;
 
 	/**
 	 * Sets the organizations that the user is in, removing and adding
@@ -1313,6 +1306,10 @@ public interface UserService extends BaseService {
 	 */
 	public User updateStatus(
 			long userId, int status, ServiceContext serviceContext)
+		throws PortalException;
+
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**

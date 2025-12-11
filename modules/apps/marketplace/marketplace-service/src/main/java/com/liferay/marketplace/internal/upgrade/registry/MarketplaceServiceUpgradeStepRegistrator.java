@@ -34,11 +34,14 @@ public class MarketplaceServiceUpgradeStepRegistrator
 					_expandoTableLocalService, _expandoValueLocalService));
 
 		registry.register(
-			"1.0.0", "1.0.1",
+			"1.0.0", "1.0.0.step-1",
 			UpgradeProcessFactory.addColumns(
 				"Marketplace_App", "title VARCHAR(75)", "description STRING",
 				"category VARCHAR(75)", "iconURL STRING",
-				"version VARCHAR(75)"),
+				"version VARCHAR(75)"));
+
+		registry.register(
+			"1.0.0.step-1", "1.0.1",
 			new com.liferay.marketplace.internal.upgrade.v1_0_0.
 				ModuleUpgradeProcess());
 
@@ -56,8 +59,9 @@ public class MarketplaceServiceUpgradeStepRegistrator
 
 		registry.register(
 			"2.0.1", "2.0.2",
-			new com.liferay.marketplace.internal.upgrade.v2_0_2.
-				AppUpgradeProcess());
+			UpgradeProcessFactory.runSQL(
+				"delete from Marketplace_App where appId is not null",
+				"delete from Marketplace_Module where moduleId is not null"));
 
 		registry.register(
 			"2.0.2", "2.0.3",

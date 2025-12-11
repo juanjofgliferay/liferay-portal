@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,87 +51,126 @@ public class UserAccountFullNameDefinitionField implements Serializable {
 			UserAccountFullNameDefinitionField.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String key;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getRequired() {
+		if (_requiredSupplier != null) {
+			required = _requiredSupplier.get();
+
+			_requiredSupplier = null;
+		}
+
 		return required;
 	}
 
 	public void setRequired(Boolean required) {
 		this.required = required;
+
+		_requiredSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRequired(
 		UnsafeSupplier<Boolean, Exception> requiredUnsafeSupplier) {
 
-		try {
-			required = requiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_requiredSupplier = () -> {
+			try {
+				return requiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Boolean required;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _requiredSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getValues() {
+		if (_valuesSupplier != null) {
+			values = _valuesSupplier.get();
+
+			_valuesSupplier = null;
+		}
+
 		return values;
 	}
 
 	public void setValues(String[] values) {
 		this.values = values;
+
+		_valuesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValues(
 		UnsafeSupplier<String[], Exception> valuesUnsafeSupplier) {
 
-		try {
-			values = valuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valuesSupplier = () -> {
+			try {
+				return valuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String[] values;
+
+	@JsonIgnore
+	private Supplier<String[]> _valuesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -163,6 +201,8 @@ public class UserAccountFullNameDefinitionField implements Serializable {
 
 		sb.append("{");
 
+		String key = getKey();
+
 		if (key != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -177,6 +217,8 @@ public class UserAccountFullNameDefinitionField implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean required = getRequired();
+
 		if (required != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -186,6 +228,8 @@ public class UserAccountFullNameDefinitionField implements Serializable {
 
 			sb.append(required);
 		}
+
+		String[] values = getValues();
 
 		if (values != null) {
 			if (sb.length() > 1) {
@@ -216,8 +260,8 @@ public class UserAccountFullNameDefinitionField implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.UserAccountFullNameDefinitionField",
 		name = "x-class-name"
 	)
@@ -263,7 +307,10 @@ public class UserAccountFullNameDefinitionField implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

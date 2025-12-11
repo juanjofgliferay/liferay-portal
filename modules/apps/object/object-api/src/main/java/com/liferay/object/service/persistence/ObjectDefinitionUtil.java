@@ -1126,6 +1126,332 @@ public class ObjectDefinitionUtil {
 	}
 
 	/**
+	 * Returns all the object definitions where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @return the matching object definitions
+	 */
+	public static List<ObjectDefinition> findByAccountEntryRestricted(
+		boolean accountEntryRestricted) {
+
+		return getPersistence().findByAccountEntryRestricted(
+			accountEntryRestricted);
+	}
+
+	/**
+	 * Returns a range of all the object definitions where accountEntryRestricted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByAccountEntryRestricted(
+		boolean accountEntryRestricted, int start, int end) {
+
+		return getPersistence().findByAccountEntryRestricted(
+			accountEntryRestricted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where accountEntryRestricted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByAccountEntryRestricted(
+		boolean accountEntryRestricted, int start, int end,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().findByAccountEntryRestricted(
+			accountEntryRestricted, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where accountEntryRestricted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByAccountEntryRestricted(
+		boolean accountEntryRestricted, int start, int end,
+		OrderByComparator<ObjectDefinition> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByAccountEntryRestricted(
+			accountEntryRestricted, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first object definition in the ordered set where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByAccountEntryRestricted_First(
+			boolean accountEntryRestricted,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByAccountEntryRestricted_First(
+			accountEntryRestricted, orderByComparator);
+	}
+
+	/**
+	 * Returns the first object definition in the ordered set where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByAccountEntryRestricted_First(
+		boolean accountEntryRestricted,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().fetchByAccountEntryRestricted_First(
+			accountEntryRestricted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last object definition in the ordered set where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByAccountEntryRestricted_Last(
+			boolean accountEntryRestricted,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByAccountEntryRestricted_Last(
+			accountEntryRestricted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last object definition in the ordered set where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByAccountEntryRestricted_Last(
+		boolean accountEntryRestricted,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().fetchByAccountEntryRestricted_Last(
+			accountEntryRestricted, orderByComparator);
+	}
+
+	/**
+	 * Returns the object definitions before and after the current object definition in the ordered set where accountEntryRestricted = &#63;.
+	 *
+	 * @param objectDefinitionId the primary key of the current object definition
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object definition
+	 * @throws NoSuchObjectDefinitionException if a object definition with the primary key could not be found
+	 */
+	public static ObjectDefinition[] findByAccountEntryRestricted_PrevAndNext(
+			long objectDefinitionId, boolean accountEntryRestricted,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByAccountEntryRestricted_PrevAndNext(
+			objectDefinitionId, accountEntryRestricted, orderByComparator);
+	}
+
+	/**
+	 * Returns all the object definitions that the user has permission to view where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @return the matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByAccountEntryRestricted(
+		boolean accountEntryRestricted) {
+
+		return getPersistence().filterFindByAccountEntryRestricted(
+			accountEntryRestricted);
+	}
+
+	/**
+	 * Returns a range of all the object definitions that the user has permission to view where accountEntryRestricted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByAccountEntryRestricted(
+		boolean accountEntryRestricted, int start, int end) {
+
+		return getPersistence().filterFindByAccountEntryRestricted(
+			accountEntryRestricted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions that the user has permissions to view where accountEntryRestricted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByAccountEntryRestricted(
+		boolean accountEntryRestricted, int start, int end,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().filterFindByAccountEntryRestricted(
+			accountEntryRestricted, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the object definitions before and after the current object definition in the ordered set of object definitions that the user has permission to view where accountEntryRestricted = &#63;.
+	 *
+	 * @param objectDefinitionId the primary key of the current object definition
+	 * @param accountEntryRestricted the account entry restricted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object definition
+	 * @throws NoSuchObjectDefinitionException if a object definition with the primary key could not be found
+	 */
+	public static ObjectDefinition[]
+			filterFindByAccountEntryRestricted_PrevAndNext(
+				long objectDefinitionId, boolean accountEntryRestricted,
+				OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().filterFindByAccountEntryRestricted_PrevAndNext(
+			objectDefinitionId, accountEntryRestricted, orderByComparator);
+	}
+
+	/**
+	 * Removes all the object definitions where accountEntryRestricted = &#63; from the database.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 */
+	public static void removeByAccountEntryRestricted(
+		boolean accountEntryRestricted) {
+
+		getPersistence().removeByAccountEntryRestricted(accountEntryRestricted);
+	}
+
+	/**
+	 * Returns the number of object definitions where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @return the number of matching object definitions
+	 */
+	public static int countByAccountEntryRestricted(
+		boolean accountEntryRestricted) {
+
+		return getPersistence().countByAccountEntryRestricted(
+			accountEntryRestricted);
+	}
+
+	/**
+	 * Returns the number of object definitions that the user has permission to view where accountEntryRestricted = &#63;.
+	 *
+	 * @param accountEntryRestricted the account entry restricted
+	 * @return the number of matching object definitions that the user has permission to view
+	 */
+	public static int filterCountByAccountEntryRestricted(
+		boolean accountEntryRestricted) {
+
+		return getPersistence().filterCountByAccountEntryRestricted(
+			accountEntryRestricted);
+	}
+
+	/**
+	 * Returns the object definition where className = &#63; or throws a <code>NoSuchObjectDefinitionException</code> if it could not be found.
+	 *
+	 * @param className the class name
+	 * @return the matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByClassName(String className)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByClassName(className);
+	}
+
+	/**
+	 * Returns the object definition where className = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param className the class name
+	 * @return the matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByClassName(String className) {
+		return getPersistence().fetchByClassName(className);
+	}
+
+	/**
+	 * Returns the object definition where className = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param className the class name
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByClassName(
+		String className, boolean useFinderCache) {
+
+		return getPersistence().fetchByClassName(className, useFinderCache);
+	}
+
+	/**
+	 * Removes the object definition where className = &#63; from the database.
+	 *
+	 * @param className the class name
+	 * @return the object definition that was removed
+	 */
+	public static ObjectDefinition removeByClassName(String className)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().removeByClassName(className);
+	}
+
+	/**
+	 * Returns the number of object definitions where className = &#63;.
+	 *
+	 * @param className the class name
+	 * @return the number of matching object definitions
+	 */
+	public static int countByClassName(String className) {
+		return getPersistence().countByClassName(className);
+	}
+
+	/**
 	 * Returns all the object definitions where system = &#63;.
 	 *
 	 * @param system the system
@@ -1367,6 +1693,276 @@ public class ObjectDefinitionUtil {
 	 */
 	public static int filterCountBySystem(boolean system) {
 		return getPersistence().filterCountBySystem(system);
+	}
+
+	/**
+	 * Returns all the object definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_U(
+		long companyId, long userId) {
+
+		return getPersistence().findByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns a range of all the object definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_U(
+		long companyId, long userId, int start, int end) {
+
+		return getPersistence().findByC_U(companyId, userId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_U(
+		long companyId, long userId, int start, int end,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().findByC_U(
+			companyId, userId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_U(
+		long companyId, long userId, int start, int end,
+		OrderByComparator<ObjectDefinition> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_U(
+			companyId, userId, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first object definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByC_U_First(
+			long companyId, long userId,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByC_U_First(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the first object definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByC_U_First(
+		long companyId, long userId,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().fetchByC_U_First(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last object definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByC_U_Last(
+			long companyId, long userId,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByC_U_Last(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last object definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByC_U_Last(
+		long companyId, long userId,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().fetchByC_U_Last(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the object definitions before and after the current object definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param objectDefinitionId the primary key of the current object definition
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object definition
+	 * @throws NoSuchObjectDefinitionException if a object definition with the primary key could not be found
+	 */
+	public static ObjectDefinition[] findByC_U_PrevAndNext(
+			long objectDefinitionId, long companyId, long userId,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByC_U_PrevAndNext(
+			objectDefinitionId, companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns all the object definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_U(
+		long companyId, long userId) {
+
+		return getPersistence().filterFindByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns a range of all the object definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_U(
+		long companyId, long userId, int start, int end) {
+
+		return getPersistence().filterFindByC_U(companyId, userId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions that the user has permissions to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_U(
+		long companyId, long userId, int start, int end,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().filterFindByC_U(
+			companyId, userId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the object definitions before and after the current object definition in the ordered set of object definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param objectDefinitionId the primary key of the current object definition
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object definition
+	 * @throws NoSuchObjectDefinitionException if a object definition with the primary key could not be found
+	 */
+	public static ObjectDefinition[] filterFindByC_U_PrevAndNext(
+			long objectDefinitionId, long companyId, long userId,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().filterFindByC_U_PrevAndNext(
+			objectDefinitionId, companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Removes all the object definitions where companyId = &#63; and userId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 */
+	public static void removeByC_U(long companyId, long userId) {
+		getPersistence().removeByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns the number of object definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the number of matching object definitions
+	 */
+	public static int countByC_U(long companyId, long userId) {
+		return getPersistence().countByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns the number of object definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the number of matching object definitions that the user has permission to view
+	 */
+	public static int filterCountByC_U(long companyId, long userId) {
+		return getPersistence().filterCountByC_U(companyId, userId);
 	}
 
 	/**
@@ -2949,6 +3545,611 @@ public class ObjectDefinitionUtil {
 
 		return getPersistence().filterCountByC_A_S_S(
 			companyId, active, system, status);
+	}
+
+	/**
+	 * Returns all the object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns a range of all the object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first object definition in the ordered set where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByC_OFI_A_E_S_S_First(
+			long companyId, long objectFolderId, boolean active,
+			boolean enableObjectEntryDraft, String scope, int status,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByC_OFI_A_E_S_S_First(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, orderByComparator);
+	}
+
+	/**
+	 * Returns the first object definition in the ordered set where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByC_OFI_A_E_S_S_First(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().fetchByC_OFI_A_E_S_S_First(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, orderByComparator);
+	}
+
+	/**
+	 * Returns the last object definition in the ordered set where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object definition
+	 * @throws NoSuchObjectDefinitionException if a matching object definition could not be found
+	 */
+	public static ObjectDefinition findByC_OFI_A_E_S_S_Last(
+			long companyId, long objectFolderId, boolean active,
+			boolean enableObjectEntryDraft, String scope, int status,
+			OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByC_OFI_A_E_S_S_Last(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, orderByComparator);
+	}
+
+	/**
+	 * Returns the last object definition in the ordered set where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object definition, or <code>null</code> if a matching object definition could not be found
+	 */
+	public static ObjectDefinition fetchByC_OFI_A_E_S_S_Last(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status,
+		OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().fetchByC_OFI_A_E_S_S_Last(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, orderByComparator);
+	}
+
+	/**
+	 * Returns the object definitions before and after the current object definition in the ordered set where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param objectDefinitionId the primary key of the current object definition
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object definition
+	 * @throws NoSuchObjectDefinitionException if a object definition with the primary key could not be found
+	 */
+	public static ObjectDefinition[] findByC_OFI_A_E_S_S_PrevAndNext(
+			long objectDefinitionId, long companyId, long objectFolderId,
+			boolean active, boolean enableObjectEntryDraft, String scope,
+			int status, OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().findByC_OFI_A_E_S_S_PrevAndNext(
+			objectDefinitionId, companyId, objectFolderId, active,
+			enableObjectEntryDraft, scope, status, orderByComparator);
+	}
+
+	/**
+	 * Returns all the object definitions that the user has permission to view where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns a range of all the object definitions that the user has permission to view where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end) {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions that the user has permissions to view where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the object definitions before and after the current object definition in the ordered set of object definitions that the user has permission to view where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param objectDefinitionId the primary key of the current object definition
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object definition
+	 * @throws NoSuchObjectDefinitionException if a object definition with the primary key could not be found
+	 */
+	public static ObjectDefinition[] filterFindByC_OFI_A_E_S_S_PrevAndNext(
+			long objectDefinitionId, long companyId, long objectFolderId,
+			boolean active, boolean enableObjectEntryDraft, String scope,
+			int status, OrderByComparator<ObjectDefinition> orderByComparator)
+		throws com.liferay.object.exception.NoSuchObjectDefinitionException {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S_PrevAndNext(
+			objectDefinitionId, companyId, objectFolderId, active,
+			enableObjectEntryDraft, scope, status, orderByComparator);
+	}
+
+	/**
+	 * Returns all the object definitions that the user has permission to view where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns a range of all the object definitions that the user has permission to view where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end) {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions that the user has permission to view where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions that the user has permission to view
+	 */
+	public static List<ObjectDefinition> filterFindByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().filterFindByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns all the object definitions where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns a range of all the object definitions where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @return the range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @param start the lower bound of the range of object definitions
+	 * @param end the upper bound of the range of object definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object definitions
+	 */
+	public static List<ObjectDefinition> findByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status, int start,
+		int end, OrderByComparator<ObjectDefinition> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Removes all the object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 */
+	public static void removeByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		getPersistence().removeByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns the number of object definitions where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the number of matching object definitions
+	 */
+	public static int countByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().countByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns the number of object definitions where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the number of matching object definitions
+	 */
+	public static int countByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().countByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns the number of object definitions that the user has permission to view where companyId = &#63; and objectFolderId = &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderId the object folder ID
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the number of matching object definitions that the user has permission to view
+	 */
+	public static int filterCountByC_OFI_A_E_S_S(
+		long companyId, long objectFolderId, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().filterCountByC_OFI_A_E_S_S(
+			companyId, objectFolderId, active, enableObjectEntryDraft, scope,
+			status);
+	}
+
+	/**
+	 * Returns the number of object definitions that the user has permission to view where companyId = &#63; and objectFolderId = any &#63; and active = &#63; and enableObjectEntryDraft = &#63; and scope = &#63; and status = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param objectFolderIds the object folder IDs
+	 * @param active the active
+	 * @param enableObjectEntryDraft the enable object entry draft
+	 * @param scope the scope
+	 * @param status the status
+	 * @return the number of matching object definitions that the user has permission to view
+	 */
+	public static int filterCountByC_OFI_A_E_S_S(
+		long companyId, long[] objectFolderIds, boolean active,
+		boolean enableObjectEntryDraft, String scope, int status) {
+
+		return getPersistence().filterCountByC_OFI_A_E_S_S(
+			companyId, objectFolderIds, active, enableObjectEntryDraft, scope,
+			status);
 	}
 
 	/**

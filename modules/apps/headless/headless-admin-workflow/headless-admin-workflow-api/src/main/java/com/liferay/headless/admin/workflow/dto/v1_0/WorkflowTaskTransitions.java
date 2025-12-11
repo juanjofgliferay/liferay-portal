@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,9 +49,15 @@ public class WorkflowTaskTransitions implements Serializable {
 			WorkflowTaskTransitions.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public WorkflowTaskTransition[] getWorkflowTaskTransitions() {
+		if (_workflowTaskTransitionsSupplier != null) {
+			workflowTaskTransitions = _workflowTaskTransitionsSupplier.get();
+
+			_workflowTaskTransitionsSupplier = null;
+		}
+
 		return workflowTaskTransitions;
 	}
 
@@ -60,6 +65,8 @@ public class WorkflowTaskTransitions implements Serializable {
 		WorkflowTaskTransition[] workflowTaskTransitions) {
 
 		this.workflowTaskTransitions = workflowTaskTransitions;
+
+		_workflowTaskTransitionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,21 +74,25 @@ public class WorkflowTaskTransitions implements Serializable {
 		UnsafeSupplier<WorkflowTaskTransition[], Exception>
 			workflowTaskTransitionsUnsafeSupplier) {
 
-		try {
-			workflowTaskTransitions =
-				workflowTaskTransitionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_workflowTaskTransitionsSupplier = () -> {
+			try {
+				return workflowTaskTransitionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected WorkflowTaskTransition[] workflowTaskTransitions;
+
+	@JsonIgnore
+	private Supplier<WorkflowTaskTransition[]> _workflowTaskTransitionsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -111,6 +122,9 @@ public class WorkflowTaskTransitions implements Serializable {
 
 		sb.append("{");
 
+		WorkflowTaskTransition[] workflowTaskTransitions =
+			getWorkflowTaskTransitions();
+
 		if (workflowTaskTransitions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -136,8 +150,8 @@ public class WorkflowTaskTransitions implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTaskTransitions",
 		name = "x-class-name"
 	)
@@ -183,7 +197,10 @@ public class WorkflowTaskTransitions implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,14 +48,22 @@ public class ElementInstance implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ElementInstance.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Configuration getConfigurationEntry() {
+		if (_configurationEntrySupplier != null) {
+			configurationEntry = _configurationEntrySupplier.get();
+
+			_configurationEntrySupplier = null;
+		}
+
 		return configurationEntry;
 	}
 
 	public void setConfigurationEntry(Configuration configurationEntry) {
 		this.configurationEntry = configurationEntry;
+
+		_configurationEntrySupplier = null;
 	}
 
 	@JsonIgnore
@@ -64,107 +71,157 @@ public class ElementInstance implements Serializable {
 		UnsafeSupplier<Configuration, Exception>
 			configurationEntryUnsafeSupplier) {
 
-		try {
-			configurationEntry = configurationEntryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_configurationEntrySupplier = () -> {
+			try {
+				return configurationEntryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Configuration configurationEntry;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Configuration> _configurationEntrySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public SXPElement getSxpElement() {
+		if (_sxpElementSupplier != null) {
+			sxpElement = _sxpElementSupplier.get();
+
+			_sxpElementSupplier = null;
+		}
+
 		return sxpElement;
 	}
 
 	public void setSxpElement(SXPElement sxpElement) {
 		this.sxpElement = sxpElement;
+
+		_sxpElementSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSxpElement(
 		UnsafeSupplier<SXPElement, Exception> sxpElementUnsafeSupplier) {
 
-		try {
-			sxpElement = sxpElementUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sxpElementSupplier = () -> {
+			try {
+				return sxpElementUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected SXPElement sxpElement;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<SXPElement> _sxpElementSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSxpElementId() {
+		if (_sxpElementIdSupplier != null) {
+			sxpElementId = _sxpElementIdSupplier.get();
+
+			_sxpElementIdSupplier = null;
+		}
+
 		return sxpElementId;
 	}
 
 	public void setSxpElementId(Long sxpElementId) {
 		this.sxpElementId = sxpElementId;
+
+		_sxpElementIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSxpElementId(
 		UnsafeSupplier<Long, Exception> sxpElementIdUnsafeSupplier) {
 
-		try {
-			sxpElementId = sxpElementIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sxpElementIdSupplier = () -> {
+			try {
+				return sxpElementIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long sxpElementId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _sxpElementIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(Integer type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<Integer, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer type;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _typeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getUiConfigurationValues() {
+		if (_uiConfigurationValuesSupplier != null) {
+			uiConfigurationValues = _uiConfigurationValuesSupplier.get();
+
+			_uiConfigurationValuesSupplier = null;
+		}
+
 		return uiConfigurationValues;
 	}
 
@@ -172,6 +229,8 @@ public class ElementInstance implements Serializable {
 		Map<String, Object> uiConfigurationValues) {
 
 		this.uiConfigurationValues = uiConfigurationValues;
+
+		_uiConfigurationValuesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -179,20 +238,25 @@ public class ElementInstance implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			uiConfigurationValuesUnsafeSupplier) {
 
-		try {
-			uiConfigurationValues = uiConfigurationValuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_uiConfigurationValuesSupplier = () -> {
+			try {
+				return uiConfigurationValuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> uiConfigurationValues;
+
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _uiConfigurationValuesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -221,6 +285,8 @@ public class ElementInstance implements Serializable {
 
 		sb.append("{");
 
+		Configuration configurationEntry = getConfigurationEntry();
+
 		if (configurationEntry != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -230,6 +296,8 @@ public class ElementInstance implements Serializable {
 
 			sb.append(String.valueOf(configurationEntry));
 		}
+
+		SXPElement sxpElement = getSxpElement();
 
 		if (sxpElement != null) {
 			if (sb.length() > 1) {
@@ -241,6 +309,8 @@ public class ElementInstance implements Serializable {
 			sb.append(String.valueOf(sxpElement));
 		}
 
+		Long sxpElementId = getSxpElementId();
+
 		if (sxpElementId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -251,6 +321,8 @@ public class ElementInstance implements Serializable {
 			sb.append(sxpElementId);
 		}
 
+		Integer type = getType();
+
 		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -260,6 +332,8 @@ public class ElementInstance implements Serializable {
 
 			sb.append(type);
 		}
+
+		Map<String, Object> uiConfigurationValues = getUiConfigurationValues();
 
 		if (uiConfigurationValues != null) {
 			if (sb.length() > 1) {
@@ -276,8 +350,8 @@ public class ElementInstance implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.ElementInstance",
 		name = "x-class-name"
 	)
@@ -323,7 +397,10 @@ public class ElementInstance implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

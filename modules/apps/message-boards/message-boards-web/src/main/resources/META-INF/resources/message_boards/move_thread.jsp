@@ -67,19 +67,21 @@ if (portletTitleBasedNavigation) {
 					<aui:input disabled="<%= thread.isLocked() %>" helpMessage='<%= thread.isLocked() ? LanguageUtil.get(request, "unlock-thread-to-add-an-explanation-post") : StringPool.BLANK %>' label="add-explanation-post" name="addExplanationPost" onClick='<%= liferayPortletResponse.getNamespace() + "toggleExplanationPost();" %>' type="checkbox" />
 
 					<div class="hide" id="<portlet:namespace />explanationPost">
-						<aui:input maxlength="<%= ModelHintsConstants.TEXT_MAX_LENGTH %>" name="subject" style="width: 350px;" value="">
-							<aui:validator name="required">
-								function() {
-									var addExplanationPostCheckbox = document.getElementById('<portlet:namespace />addExplanationPost');
+						<liferay-ui:csp>
+							<aui:input maxlength="<%= ModelHintsConstants.TEXT_MAX_LENGTH %>" name="subject" style="width: 350px;" value="">
+								<aui:validator name="required">
+									function () {
+										var addExplanationPostCheckbox = document.getElementById('<portlet:namespace />addExplanationPost');
 
-									if (addExplanationPostCheckbox) {
-										return addExplanationPostCheckbox.checked;
+										if (addExplanationPostCheckbox) {
+											return addExplanationPostCheckbox.checked;
+										}
 									}
-								}
-							</aui:validator>
-						</aui:input>
+								</aui:validator>
+							</aui:input>
+						</liferay-ui:csp>
 
-						<aui:field-wrapper label="body">
+						<div>
 							<c:choose>
 								<c:when test='<%= message.isFormatBBCode() || messageFormat.equals("bbcode") %>'>
 									<%@ include file="/message_boards/bbcode_editor.jspf" %>
@@ -90,7 +92,7 @@ if (portletTitleBasedNavigation) {
 							</c:choose>
 
 							<aui:input name="body" type="hidden" />
-						</aui:field-wrapper>
+						</div>
 					</div>
 				</aui:fieldset>
 			</div>
@@ -104,7 +106,7 @@ if (portletTitleBasedNavigation) {
 	</aui:form>
 </div>
 
-<script>
+<aui:script>
 	var form = document.<portlet:namespace />fm;
 
 	function <portlet:namespace />moveThread() {
@@ -143,7 +145,7 @@ if (portletTitleBasedNavigation) {
 				onSelect: function (event) {
 					Liferay.Util.setFormValues(form, {
 						categoryName: Liferay.Util.unescape(event.name),
-						mbCategoryId: event.categoryid,
+						mbCategoryId: event.resourceid,
 					});
 				},
 				selectEventName: '<portlet:namespace />selectCategory',
@@ -158,4 +160,4 @@ if (portletTitleBasedNavigation) {
 			});
 		});
 	}
-</script>
+</aui:script>

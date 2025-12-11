@@ -22,7 +22,7 @@
 </tr>
 <tr>
 	<td>AB_TEST_TITLE_DXP</td>
-	<td>//*[@class= 'mb-0 text-dark text-truncate' and contains(text(),'${key_title}')]</td>
+	<td>//*[contains(@class, 'text-truncate') and contains(text(),'${key_title}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -32,12 +32,12 @@
 </tr>
 <tr>
 	<td>AB_TEST_SIDE_BAR</td>
-	<td>//div[contains(@class,'sidebar') and descendant::*[contains(.,'A/B Test')]]</td>
+	<td>//div[contains(@class,'segments-experiment-panel')][.//*[normalize-space()='Tests']]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>CONNECTED_NOT_SYNC_BUTTON</td>
-	<td>//div[div[h1[contains(.,'A/B Test')]]] //h4[contains(.,'Sync to Liferay Analytics Cloud')]</td>
+	<td>//div[div[h1[contains(.,'Tests')]]] //div[contains(.,'Sync to Liferay Analytics Cloud')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -82,12 +82,17 @@
 </tr>
 <tr>
 	<td>KEBAB_AB_TEST</td>
-	<td>//button[contains(@class, 'dropdown-toggle btn-monospaced btn btn-outline-borderless btn-outline-secondary')]</td>
+	<td>//div[@data-testid]//button[contains(@class, 'dropdown-toggle')][@aria-label='Show Actions']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NO_HAVE_HISTORY_AB_TEST_MESSAGE</td>
-	<td>//div[@class="text-center"]//h4[text()="There is no test history for this experience."]</td>
+	<td>//div[@class="text-center"]//div[text()="There is no test history for this experience."]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OPEN_ITEM</td>
+	<td>//a[normalize-space()='${key_itemName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -107,7 +112,7 @@
 </tr>
 <tr>
 	<td>REVIEW_VARIANTS_ANALYTICS_CLOUD</td>
-	<td>//div[@class='analytics-variant-card-table']//tr[${key_index}]//*[contains(@class,'table-cell-expanded') and h5[contains(text(),'${name}')]]</td>
+	<td>//div[@class='analytics-variant-card-table']//div[contains(@class,'h5') and contains(text(),'${name}')]</td>
 	<td></td>
 </tr>
 <tr>

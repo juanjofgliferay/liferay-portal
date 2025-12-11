@@ -8,10 +8,11 @@ package com.liferay.portal.kernel.search;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
-import java.util.Collection;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Collection;
+import java.util.Locale;
 
 /**
  * @author Brian Wing Shun Chan
@@ -28,6 +29,10 @@ public interface Indexer<T> {
 	public void delete(T object) throws SearchException;
 
 	public String getClassName();
+
+	public default long getCompanyId() {
+		return 0;
+	}
 
 	public Document getDocument(T object) throws SearchException;
 
@@ -48,6 +53,13 @@ public interface Indexer<T> {
 	 */
 	@Deprecated
 	public String getSortField(String orderByCol);
+
+	public default Summary getSummary(
+			Document document, Locale locale, String snippet)
+		throws SearchException {
+
+		return null;
+	}
 
 	public Summary getSummary(
 			Document document, String snippet, PortletRequest portletRequest,

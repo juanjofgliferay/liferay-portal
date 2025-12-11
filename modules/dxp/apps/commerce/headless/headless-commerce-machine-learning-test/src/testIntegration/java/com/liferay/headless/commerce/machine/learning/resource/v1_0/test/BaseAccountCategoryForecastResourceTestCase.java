@@ -26,25 +26,30 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,12 +61,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -85,7 +84,7 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -99,14 +98,19 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 		_accountCategoryForecastResource.setContextCompany(testCompany);
 
-		AccountCategoryForecastResource.Builder builder =
-			AccountCategoryForecastResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		accountCategoryForecastResource = builder.authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
+		accountCategoryForecastResource =
+			AccountCategoryForecastResource.builder(
+			).authentication(
+				_testCompanyAdminUser.getEmailAddress(),
+				PropsValues.DEFAULT_ADMIN_PASSWORD
+			).endpoint(
+				testCompany.getVirtualHostname(), 8080, "http"
+			).locale(
+				LocaleUtil.getDefault()
+			).build();
 	}
 
 	@After
@@ -117,21 +121,7 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				enable(SerializationFeature.INDENT_OUTPUT);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
 
 		AccountCategoryForecast accountCategoryForecast1 =
 			randomAccountCategoryForecast();
@@ -147,20 +137,7 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 	@Test
 	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
 
 		AccountCategoryForecast accountCategoryForecast =
 			randomAccountCategoryForecast();
@@ -171,6 +148,24 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 		Assert.assertEquals(
 			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
+			{
+				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+				configure(
+					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+				enable(SerializationFeature.INDENT_OUTPUT);
+				setDateFormat(new ISO8601DateFormat());
+				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+				setSerializationInclusion(JsonInclude.Include.NON_NULL);
+				setVisibility(
+					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+				setVisibility(
+					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+			}
+		};
 	}
 
 	@Test
@@ -245,13 +240,13 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 	public void testGetAccountCategoryForecastsByMonthlyRevenuePageWithPagination()
 		throws Exception {
 
-		Page<AccountCategoryForecast> accountCategoryForecastPage =
+		Page<AccountCategoryForecast> accountCategoryForecastsPage =
 			accountCategoryForecastResource.
 				getAccountCategoryForecastsByMonthlyRevenuePage(
 					null, null, null, null, null, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountCategoryForecastPage.getTotalCount());
+			accountCategoryForecastsPage.getTotalCount());
 
 		AccountCategoryForecast accountCategoryForecast1 =
 			testGetAccountCategoryForecastsByMonthlyRevenuePage_addAccountCategoryForecast(
@@ -265,49 +260,94 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 			testGetAccountCategoryForecastsByMonthlyRevenuePage_addAccountCategoryForecast(
 				randomAccountCategoryForecast());
 
-		Page<AccountCategoryForecast> page1 =
-			accountCategoryForecastResource.
-				getAccountCategoryForecastsByMonthlyRevenuePage(
-					null, null, null, null, null,
-					Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountCategoryForecast> accountCategoryForecasts1 =
-			(List<AccountCategoryForecast>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountCategoryForecasts1.toString(), totalCount + 2,
-			accountCategoryForecasts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountCategoryForecast> page1 =
+				accountCategoryForecastResource.
+					getAccountCategoryForecastsByMonthlyRevenuePage(
+						null, null, null, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountCategoryForecast> page2 =
-			accountCategoryForecastResource.
-				getAccountCategoryForecastsByMonthlyRevenuePage(
-					null, null, null, null, null,
-					Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountCategoryForecast1,
+				(List<AccountCategoryForecast>)page1.getItems());
 
-		List<AccountCategoryForecast> accountCategoryForecasts2 =
-			(List<AccountCategoryForecast>)page2.getItems();
+			Page<AccountCategoryForecast> page2 =
+				accountCategoryForecastResource.
+					getAccountCategoryForecastsByMonthlyRevenuePage(
+						null, null, null, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountCategoryForecasts2.toString(), 1,
-			accountCategoryForecasts2.size());
+			assertContains(
+				accountCategoryForecast2,
+				(List<AccountCategoryForecast>)page2.getItems());
 
-		Page<AccountCategoryForecast> page3 =
-			accountCategoryForecastResource.
-				getAccountCategoryForecastsByMonthlyRevenuePage(
-					null, null, null, null, null,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountCategoryForecast> page3 =
+				accountCategoryForecastResource.
+					getAccountCategoryForecastsByMonthlyRevenuePage(
+						null, null, null, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountCategoryForecast1,
-			(List<AccountCategoryForecast>)page3.getItems());
-		assertContains(
-			accountCategoryForecast2,
-			(List<AccountCategoryForecast>)page3.getItems());
-		assertContains(
-			accountCategoryForecast3,
-			(List<AccountCategoryForecast>)page3.getItems());
+			assertContains(
+				accountCategoryForecast3,
+				(List<AccountCategoryForecast>)page3.getItems());
+		}
+		else {
+			Page<AccountCategoryForecast> page1 =
+				accountCategoryForecastResource.
+					getAccountCategoryForecastsByMonthlyRevenuePage(
+						null, null, null, null, null,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountCategoryForecast> accountCategoryForecasts1 =
+				(List<AccountCategoryForecast>)page1.getItems();
+
+			Assert.assertEquals(
+				accountCategoryForecasts1.toString(), totalCount + 2,
+				accountCategoryForecasts1.size());
+
+			Page<AccountCategoryForecast> page2 =
+				accountCategoryForecastResource.
+					getAccountCategoryForecastsByMonthlyRevenuePage(
+						null, null, null, null, null,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountCategoryForecast> accountCategoryForecasts2 =
+				(List<AccountCategoryForecast>)page2.getItems();
+
+			Assert.assertEquals(
+				accountCategoryForecasts2.toString(), 1,
+				accountCategoryForecasts2.size());
+
+			Page<AccountCategoryForecast> page3 =
+				accountCategoryForecastResource.
+					getAccountCategoryForecastsByMonthlyRevenuePage(
+						null, null, null, null, null,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountCategoryForecast1,
+				(List<AccountCategoryForecast>)page3.getItems());
+			assertContains(
+				accountCategoryForecast2,
+				(List<AccountCategoryForecast>)page3.getItems());
+			assertContains(
+				accountCategoryForecast3,
+				(List<AccountCategoryForecast>)page3.getItems());
+		}
 	}
 
 	protected AccountCategoryForecast
@@ -317,6 +357,11 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Assert.assertTrue(true);
 	}
 
 	protected void assertContains(
@@ -750,6 +795,10 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -897,22 +946,18 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 
 		if (entityFieldName.equals("timestamp")) {
 			if (operator.equals("between")) {
+				Date date = accountCategoryForecast.getTimestamp();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							accountCategoryForecast.getTimestamp(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							accountCategoryForecast.getTimestamp(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -923,7 +968,7 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 				sb.append(" ");
 
 				sb.append(
-					_dateFormat.format(accountCategoryForecast.getTimestamp()));
+					_format.format(accountCategoryForecast.getTimestamp()));
 			}
 
 			return sb.toString();
@@ -989,7 +1034,8 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1047,21 +1093,21 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 	}
 
 	protected AccountCategoryForecastResource accountCategoryForecastResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1070,11 +1116,16 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1106,6 +1157,24 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1127,16 +1196,6 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1235,7 +1294,9 @@ public abstract class BaseAccountCategoryForecastResourceTestCase {
 		LogFactoryUtil.getLog(
 			BaseAccountCategoryForecastResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.machine.learning.resource.v1_0.

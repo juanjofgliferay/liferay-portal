@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,34 +48,47 @@ public class DocumentField implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DocumentField.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object[] getValues() {
+		if (_valuesSupplier != null) {
+			values = _valuesSupplier.get();
+
+			_valuesSupplier = null;
+		}
+
 		return values;
 	}
 
 	public void setValues(Object[] values) {
 		this.values = values;
+
+		_valuesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValues(
 		UnsafeSupplier<Object[], Exception> valuesUnsafeSupplier) {
 
-		try {
-			values = valuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valuesSupplier = () -> {
+			try {
+				return valuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object[] values;
+
+	@JsonIgnore
+	private Supplier<Object[]> _valuesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -104,6 +116,8 @@ public class DocumentField implements Serializable {
 		StringBundler sb = new StringBundler();
 
 		sb.append("{");
+
+		Object[] values = getValues();
 
 		if (values != null) {
 			if (sb.length() > 1) {
@@ -134,8 +148,8 @@ public class DocumentField implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.DocumentField",
 		name = "x-class-name"
 	)
@@ -181,7 +195,10 @@ public class DocumentField implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -15,9 +15,9 @@ import {accountsListColumns} from 'shared/util/table-columns';
 import {FetchSegmentsParams} from 'segment/pages/List';
 import {Routes, toRoute} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
-import {useQueryPagination} from 'shared/hooks';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {User} from 'shared/util/records';
-import {withCurrentUser} from 'shared/hoc';
 
 const getAccountsDataSource = ({
 	channelId,
@@ -42,12 +42,8 @@ interface IListProps {
 	groupId: string;
 }
 
-const List: React.FC<IListProps> = ({
-	channelId,
-	currentUser,
-	groupId,
-	...otherProps
-}) => {
+const List: React.FC<IListProps> = ({channelId, groupId, ...otherProps}) => {
+	const currentUser = useCurrentUser();
 	const authorized = currentUser.isAdmin();
 
 	const columns = [
@@ -79,7 +75,7 @@ const List: React.FC<IListProps> = ({
 							'connect-a-data-source-to-get-started'
 						)}
 
-						<a
+						<ClayLink
 							className='d-block mb-3'
 							href={URLConstants.DataSourceConnection}
 							key='DOCUMENTATION'
@@ -88,7 +84,7 @@ const List: React.FC<IListProps> = ({
 							{Liferay.Language.get(
 								'access-our-documentation-to-learn-more'
 							)}
-						</a>
+						</ClayLink>
 
 						{authorized && (
 							<ClayLink
@@ -107,7 +103,7 @@ const List: React.FC<IListProps> = ({
 				icon: {
 					border: false,
 					size: Sizes.XXXLarge,
-					symbol: 'ac-satellite'
+					symbol: 'ac_satellite'
 				},
 				title: Liferay.Language.get(
 					'no-accounts-synced-from-data-sources'
@@ -139,4 +135,4 @@ const List: React.FC<IListProps> = ({
 	);
 };
 
-export default withCurrentUser(List);
+export default List;

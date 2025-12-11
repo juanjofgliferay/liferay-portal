@@ -7,10 +7,10 @@ package com.liferay.application.list.my.account.permissions.internal.model.liste
 
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
 import com.liferay.osgi.util.ServiceTrackerFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -36,11 +36,10 @@ import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PrefsProps;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Arrays;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -62,20 +61,13 @@ public class CompanyModelListener extends BaseModelListener<Company> {
 		TransactionCommitCallbackUtil.registerCallback(
 			() -> {
 				PanelCategoryHelper panelCategoryHelper =
-					new PanelCategoryHelper(
-						_panelAppRegistry, _panelCategoryRegistry);
+					new PanelCategoryHelper(_panelAppRegistry);
 
-				List<PanelApp> panelApps = panelCategoryHelper.getAllPanelApps(
-					PanelCategoryKeys.USER_MY_ACCOUNT);
-
-				List<Portlet> portlets = new ArrayList<>(panelApps.size());
-
-				for (PanelApp panelApp : panelApps) {
-					Portlet portlet = _portletLocalService.getPortletById(
-						panelApp.getPortletId());
-
-					portlets.add(portlet);
-				}
+				List<Portlet> portlets = TransformUtil.transform(
+					panelCategoryHelper.getAllPanelApps(
+						PanelCategoryKeys.USER_MY_ACCOUNT),
+					panelApp -> _portletLocalService.getPortletById(
+						panelApp.getPortletId()));
 
 				_initPermissions(company.getCompanyId(), portlets);
 
@@ -186,9 +178,6 @@ public class CompanyModelListener extends BaseModelListener<Company> {
 
 	@Reference
 	private PanelAppRegistry _panelAppRegistry;
-
-	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
 
 	@Reference
 	private PortletLocalService _portletLocalService;

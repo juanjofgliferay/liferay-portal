@@ -1,7 +1,7 @@
 @component-name = "portal-commerce"
 definition {
 
-	property custom.properties = "company.security.strangers.verify=false${line.separator}feature.flag.COMMERCE-11028=true${line.separator}jsonws.web.service.paths.excludes=";
+	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Shopping Experience";
@@ -45,6 +45,12 @@ definition {
 		}
 
 		task ("And the admin marks the sku as 'Price on Application'") {
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
 			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
 		}
 
@@ -52,7 +58,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -72,323 +78,6 @@ definition {
 
 			// Add assertions for the pricing following COMMERCE-11276
 
-		}
-	}
-
-	@description = "COMMERCE-11507. As an admin user with permission to manage quotes, I want to be able to mark a quote as processed in the order's admin page"
-	@priority = 5
-	test CanAdminUsersWithManageQuotePermissionProcessQuote {
-		property portal.acceptance = "true";
-
-		task ("Given 'Allow Request a Quote on a Fully Priced Cart' is enabled for the site") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			Check.checkToggleSwitch(
-				key_toggleSwitchLabel = "Request a Quote",
-				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-			Button.clickSave();
-		}
-
-		task ("And an Operations Manager user is created Manage Quotes permission") {
-			JSONUser.addUserWithRole(
-				roleTitle = "Operations Manager",
-				userEmailAddress = "om@liferay.com",
-				userFirstName = "Operations",
-				userLastName = "Manager",
-				userScreenName = "operationsmanager");
-		}
-
-		task ("And the buyer user requests a quote for an order") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			var orderId = selenium.getText("CommerceEntry#ACTIVE_ORDER_ID");
-
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
-
-			Click(
-				key_orderAuthor = "Buyer User",
-				locator1 = "CommerceAccelerators#ORDERS_ENTRY_VIEW_BUTTON");
-
-			CommerceOrders.createQuoteRequest(
-				quoteRequestValue = "I kindly request a quote for this product.",
-				requestAQuoteInOpenOrdersPage = "true");
-		}
-
-		task ("When the operations manager navigate to the order's admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "om@liferay.com",
-				userLoginFullName = "Operations Manager");
-
-			CommerceOrders.openOrdersAdmin();
-
-			CommerceNavigator.gotoOrderEntryViaAdmin(status = "Quote Requested");
-		}
-
-		task ("Then the user is not able to mark a quote as processed") {
-			AssertElementNotPresent(
-				key_index = "Quote Processed",
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-		}
-
-		task ("And the step tracker shows 'Quote Requested' as active step") {
-			AssertElementPresent(
-				key_stepLabel = "Quote Requested",
-				locator1 = "CommerceOrders#STEP_TRACKER_ACTIVE_STEP");
-
-			AssertElementPresent(
-				key_stepLabel = "Quote Processed",
-				locator1 = "CommerceOrders#STEP_TRACKER_INACTIVE_STEP");
-		}
-
-		task ("When the Operations Manager role is given the Manage Quotes permission") {
-			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "MANAGE_QUOTES",
-				resourceName = "com.liferay.commerce.order",
-				roleTitle = "Operations Manager");
-		}
-
-		task ("Then the user is able to mark a quote as processed") {
-			Refresh();
-
-			AssertElementPresent(
-				key_index = "Quote Processed",
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-
-			Click(
-				key_index = "Quote Processed",
-				locator1 = "WorkflowMetrics#SEARCH_FIELD_MAPPINGS_METRICS_INDEXES");
-		}
-
-		task ("And the step tracker shows 'Quote Processed' as active step") {
-			for (var status : list "Quote Requested,Quote Processed") {
-				AssertElementPresent(
-					key_stepLabel = ${status},
-					locator1 = "CommerceOrders#STEP_TRACKER_COMPLETED_STEP");
-			}
-		}
-
-		task ("And the buyer can see the 'Quote Processed' status on the order") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
-
-			AssertElementPresent(
-				key_entry = ${orderId},
-				key_status = "Quote Processed",
-				locator1 = "CommerceOrders#PLACED_ORDERS_LIST_STATUS");
-
-			Click(
-				key_orderAuthor = "Buyer User",
-				locator1 = "CommerceAccelerators#ORDERS_ENTRY_VIEW_BUTTON");
-
-			AssertElementPresent(
-				key_status = "Quote Processed",
-				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_STATUS");
-		}
-	}
-
-	@description = "COMMERCE-11030. Verify that the Request a Quote button is visible in the Mini Cart and in the Order's Details Page."
-	@priority = 5
-	test CanAssertRequestAQuoteButtonIsVisible {
-		property portal.acceptance = "true";
-
-		task ("Given 'Allow Request a Quote on a Fully Priced Cart' is enabled for the site") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			Check.checkToggleSwitch(
-				key_toggleSwitchLabel = "Request a Quote",
-				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-			Button.clickSave();
-		}
-
-		task ("When the buyer user adds a product to the cart") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-		}
-
-		task ("Then the 'Request a Quote' button is visible in the Mini Cart") {
-			CommerceNavigator.gotoMiniCart();
-
-			AssertElementPresent(
-				key_text = "Request a Quote",
-				locator1 = "Button#ANY");
-		}
-
-		task ("And after clicking the button, it is visible also in the Order's Details Page") {
-			Button.click(button = "Request a Quote");
-
-			var activeOrderId = selenium.getText("CommerceEntry#ACTIVE_ORDER_ID");
-
-			WaitForElementPresent(locator1 = "CommerceOrders#PENDING_ORDERS_ORDER_ID");
-
-			var openOrderId = selenium.getText("CommerceOrders#PENDING_ORDERS_ORDER_ID");
-
-			TestUtils.assertEquals(
-				actual = ${activeOrderId},
-				expected = ${openOrderId});
-
-			AssertElementPresent(
-				key_text = "Request a Quote",
-				locator1 = "Button#ANY");
-		}
-	}
-
-	@description = "COMMERCE-11296. As buyer, I can verify that, after submitting a quote request, I will be redirected to Open Order's Page once Reorder button is clicked."
-	@priority = 5
-	test CanBeRedirectedToOpenOrdersUponClickingReorderButton {
-		property portal.acceptance = "true";
-
-		task ("Given 'Allow Request a Quote on a Fully Priced Cart' is enabled for the site") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			Check.checkToggleSwitch(
-				key_toggleSwitchLabel = "Request a Quote",
-				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-			Button.clickSave();
-		}
-
-		task ("When the buyer user requests a quote for an order") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
-
-			Click(
-				key_orderAuthor = "Buyer User",
-				locator1 = "CommerceAccelerators#ORDERS_ENTRY_VIEW_BUTTON");
-
-			CommerceOrders.createQuoteRequest(
-				quoteRequestValue = "I kindly request a quote for this product.",
-				requestAQuoteInOpenOrdersPage = "true");
-		}
-
-		task ("Then upon clicking the 'Reorder' button, is redirected to Open Order's Page to start the checkout or request a quote for the new order") {
-			Click(
-				key_text = "Reorder",
-				locator1 = "Button#ANY");
-
-			CommerceUtilities.checkSuccessAlertAppearsAndDisappears();
-
-			var orderIds = CommerceJSONOrdersAPI._getCommerceOrderIds(orderCount = 2);
-
-			var quoteRequestedOrderId = StringUtil.extractFirst(${orderIds}, ",");
-			var openOrderId = StringUtil.extractLast(${orderIds}, ",");
-
-			TestUtils.assertNotEquals(
-				actual = ${openOrderId},
-				expected = ${quoteRequestedOrderId});
-
-			AssertElementPresent(
-				key_text = "Request a Quote",
-				locator1 = "Button#ANY");
-
-			AssertElementPresent(
-				key_text = "Checkout",
-				locator1 = "Button#ANY");
-		}
-	}
-
-	@description = "COMMERCE-11277. As a buyer user, I can create a Quote Request in the Open Order's Details Page by entering a personal message."
-	@priority = 5
-	test CanCreateQuoteRequest {
-		property portal.acceptance = "true";
-
-		task ("Given 'Allow Request a Quote on a Fully Priced Cart' is enabled for the site") {
-			CommerceChannels.openChannelsAdmin();
-
-			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
-
-			Check.checkToggleSwitch(
-				key_toggleSwitchLabel = "Request a Quote",
-				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
-
-			Button.clickSave();
-		}
-
-		task ("And the buyer user clicks the 'Request a Quote' button in the Mini Cart") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			CommerceNavigator.gotoMiniCart();
-
-			Button.click(button = "Request a Quote");
-		}
-
-		task ("When the buyer clicks again the 'Request a Quote' button in the Open Order Details Page") {
-			Click(
-				buttonId = "requestQuote",
-				locator1 = "Button#BUTTON_ID");
-		}
-
-		task ("Then the a modal named Request a Quote is shown") {
-			AssertElementPresent(
-				key_title = "Request a Quote",
-				locator1 = "CommerceFrontStore#MODAL_TITLE");
-		}
-
-		task ("When the buyer submits the request after writing a message in the note area") {
-			CommerceOrders.createQuoteRequest(quoteRequestValue = "I kindly request a quote for this product.");
-		}
-
-		task ("Then the quote request is placed with the status 'Quote Requested' in the Placed Order's Details Page") {
-			AssertElementPresent(
-				key_status = "Quote Requested",
-				locator1 = "CommerceOrders#PLACED_ORDERS_DETAILS_STATUS");
-		}
-
-		task ("Then the quote request cannot be edited") {
-			Click.javaScriptClick(locator1 = "CommerceFrontStore#ORDER_PAGES_NOTES_BUTTON");
-
-			AssertTextNotPresent(
-				locator1 = "CommerceAccelerators#PORTLET_CONTENT",
-				value1 = "Edit");
 		}
 	}
 
@@ -441,7 +130,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -544,7 +233,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -614,7 +303,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -697,7 +386,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -730,6 +419,12 @@ definition {
 		task ("When the admin marks the sku as 'Price on Application'") {
 			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
 			MouseOver(
 				key_label = "Price on Application",
 				locator1 = "CommerceEntry#LABEL_TOOLTIP_ICON");
@@ -741,26 +436,16 @@ definition {
 
 			CommerceSKUs.setSkuPricing(priceOnApplication = "true");
 
-			Button.clickPublish();
-		}
-
-		task ("Then the pricing fields are greyed out") {
-			for (var text : list "Base Price,Promotion Price,Cost") {
-				AssertElementPresent(
-					key_text = ${text},
-					locator1 = "CommerceEntry#ANY_TEXT_INPUT_DISABLED");
-			}
-
-			Click(locator1 = "Icon#CLOSE");
+			Button.clickSave();
 
 			SelectFrame.selectFrameTop();
 		}
 
-		task ("And 'Price on Application' is shown as the active price") {
+		task ("Then 'Price on Application' is shown as the active price") {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -770,9 +455,7 @@ definition {
 		}
 
 		task ("When the admin unmarks the sku as 'Price on Application'") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommerceProducts.openProductsAdmin();
 
@@ -784,28 +467,24 @@ definition {
 
 			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
 			CommerceSKUs.setSkuPricing(priceOnApplication = "false");
 
-			Button.clickPublish();
-		}
-
-		task ("Then the pricing fields are not greyed out") {
-			for (var text : list "Base Price,Promotion Price,Cost") {
-				AssertElementPresent(
-					key_text = ${text},
-					locator1 = "TextInput#ANY");
-			}
-
-			Click(locator1 = "Icon#CLOSE");
+			Button.clickSave();
 
 			SelectFrame.selectFrameTop();
 		}
 
-		task ("And the base price is shown as the active price") {
+		task ("Then the base price is shown as the active price") {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -836,6 +515,12 @@ definition {
 		}
 
 		task ("And the admin marks the sku as 'Price on Application'") {
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
 			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
 		}
 
@@ -857,7 +542,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -905,6 +590,12 @@ definition {
 		}
 
 		task ("And the admin marks the sku as 'Price on Application'") {
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
 			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
 		}
 
@@ -926,7 +617,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -990,7 +681,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1041,6 +732,12 @@ definition {
 		}
 
 		task ("And the admin marks the sku as 'Price on Application'") {
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
 			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
 		}
 
@@ -1074,7 +771,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1161,7 +858,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1176,7 +873,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer2@liferay.com");
 		}
@@ -1188,9 +885,7 @@ definition {
 		}
 
 		task ("When the admin sets up the account group eligibility for Account Group Name that contains Commerce Account 2") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommercePriceLists.openPriceListsAdmin();
 
@@ -1205,7 +900,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer2@liferay.com");
 		}
@@ -1220,7 +915,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1296,7 +991,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1373,7 +1068,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1452,7 +1147,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1464,9 +1159,7 @@ definition {
 		}
 
 		task ("But if the admin inverts the priority for the two price lists created before") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommercePriceLists.openPriceListsAdmin();
 
@@ -1493,7 +1186,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1519,6 +1212,12 @@ definition {
 		}
 
 		task ("And the admin marks the sku as 'Price on Application'") {
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
 			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
 		}
 
@@ -1552,7 +1251,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1657,7 +1356,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1673,7 +1372,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer2@liferay.com");
 		}
@@ -1685,9 +1384,7 @@ definition {
 		}
 
 		task ("When the admin sets up the account group eligibility for Account Group Name that contains Commerce Account 2") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
+			User.logoutAndLoginPG();
 
 			CommercePromotions.openPromotionsAdmin();
 
@@ -1702,7 +1399,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer2@liferay.com");
 		}
@@ -1718,7 +1415,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1811,7 +1508,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1906,7 +1603,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1932,57 +1629,6 @@ definition {
 			AssertElementPresent(
 				key_productName = "U-Joint",
 				locator1 = "CommerceAccelerators#PRODUCT_CARD_PRICE_ON_APPLICATION");
-		}
-	}
-
-	@description = "COMMERCE-11324. As a buyer user, I can Request a Quote from the Product Details Page for a product whose SKU is marked as Price On Application."
-	@priority = 5
-	test CanRequestAQuoteFromProductDetailsPage {
-		property portal.acceptance = "true";
-
-		task ("Given the admin marks the sku of a product as 'Price on Application") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceProducts.searchAndGoToProductEntry(entryProductName = "U-Joint");
-
-			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-			CommerceNavigator.gotoTableListEntry(entryName = "MIN55861");
-
-			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
-		}
-
-		task ("When the buyer user navigates to U-Joint's product details page") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			CommerceNavigator.gotoProductDetails(productName = "U-Joint");
-		}
-
-		task ("Then Request a Quote button is shown in the product details page together with add to cart button") {
-			AssertElementPresent(
-				key_text = "Request a Quote",
-				locator1 = "Button#ANY_SECONDARY");
-
-			AssertElementPresent(locator1 = "CommerceAccelerators#ADD_TO_CART_BUTTON_PRODUCT_DETAILS_PAGE");
-		}
-
-		task ("And the buyer can Request a Quote from the product details page") {
-			Click(
-				key_text = "Request a Quote",
-				locator1 = "Button#ANY_SECONDARY");
-
-			WaitForElementPresent(locator1 = "CommerceOrders#PENDING_ORDERS_ORDER_ID");
-
-			var openOrderId = selenium.getText("CommerceOrders#PENDING_ORDERS_ORDER_ID");
-
-			AssertTextEquals(
-				locator1 = "CommerceOrders#PENDING_ORDERS_ORDER_ID",
-				value1 = ${openOrderId});
 		}
 	}
 
@@ -2015,7 +1661,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2056,7 +1702,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2070,10 +1716,7 @@ definition {
 		task ("When the admin logs in") {
 			User.logoutPG();
 
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "test@liferay.com");
+			CommerceLogin.miniumLogin(urlAppend = "web/minium");
 		}
 
 		task ("And sets MIN55861 as Price on Application also on Minium Base Price List") {
@@ -2096,7 +1739,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -2163,7 +1806,7 @@ definition {
 			for (var priceListName : list "Minium Base Price List,Minium Base Promotion,Test Price List,Test Promotion") {
 				AssertElementPresent(
 					key_entryTitle = ${priceListName},
-					key_index = 3,
+					key_index = 5,
 					key_value = "No",
 					locator1 = "CommerceEntry#TABLE_ENTRY_FIELD_VALUE");
 			}
@@ -2211,7 +1854,7 @@ definition {
 			for (var priceListName : list "Minium Base Price List,Minium Base Promotion") {
 				AssertElementPresent(
 					key_entryTitle = ${priceListName},
-					key_index = 3,
+					key_index = 5,
 					key_value = "No",
 					locator1 = "CommerceEntry#TABLE_ENTRY_FIELD_VALUE");
 			}
@@ -2219,14 +1862,14 @@ definition {
 			for (var priceListName : list "Test Price List,Test Promotion") {
 				AssertElementPresent(
 					key_entryTitle = ${priceListName},
-					key_index = 3,
+					key_index = 5,
 					key_value = "Yes",
 					locator1 = "CommerceEntry#TABLE_ENTRY_FIELD_VALUE");
 			}
 		}
 	}
 
-	@description = "COMMERCE-12210. The admin can view Price on Application column in the SKU's Price Lists tab via the SKU admin page"
+	@description = "COMMERCE-12210. The admin can view Price on Application column in the SKU's Price list tab via the SKU admin page"
 	@priority = 5
 	test CanViewPriceOnApplicationColumnInSKUPriceListsTabViaSKUsAdmin {
 		property portal.acceptance = "true";
@@ -2279,7 +1922,7 @@ definition {
 			for (var priceListName : list "Minium Base Price List,Minium Base Promotion,Test Price List,Test Promotion") {
 				AssertElementPresent(
 					key_entryTitle = ${priceListName},
-					key_index = 3,
+					key_index = 5,
 					key_value = "No",
 					locator1 = "CommerceEntry#TABLE_ENTRY_FIELD_VALUE");
 			}
@@ -2325,7 +1968,7 @@ definition {
 			for (var priceListName : list "Minium Base Price List,Minium Base Promotion") {
 				AssertElementPresent(
 					key_entryTitle = ${priceListName},
-					key_index = 3,
+					key_index = 5,
 					key_value = "No",
 					locator1 = "CommerceEntry#TABLE_ENTRY_FIELD_VALUE");
 			}
@@ -2333,7 +1976,7 @@ definition {
 			for (var priceListName : list "Test Price List,Test Promotion") {
 				AssertElementPresent(
 					key_entryTitle = ${priceListName},
-					key_index = 3,
+					key_index = 5,
 					key_value = "Yes",
 					locator1 = "CommerceEntry#TABLE_ENTRY_FIELD_VALUE");
 			}
@@ -2356,6 +1999,12 @@ definition {
 		}
 
 		task ("When the admin marks the sku as 'Price on Application'") {
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Price");
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Base Price List");
+
 			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
 		}
 
@@ -2363,7 +2012,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -2416,108 +2065,6 @@ definition {
 				key_productName = "Transmission Cooler Line Assembly",
 				locator1 = "CommerceAccelerators#ORDER_DETAILS_UNIT_PRICE",
 				value1 = "$ 15.00");
-		}
-	}
-
-	@description = "COMMERCE-12939. As a buyer user, I want to be able to view a quote request order with email prepopulate and submit the quote request without notes"
-	@priority = 5
-	test CanViewQuoteRequestEmailPrepopulateForLoggedUser {
-		property portal.acceptance = "true";
-
-		task ("Given the admin marks the U-Joint's SKU as 'Price on Application'") {
-			CommerceProducts.openProductsAdmin();
-
-			CommerceProducts.searchAndGoToProductEntry(entryProductName = "U-Joint");
-
-			CommerceEntry.gotoMenuTab(menuTab = "SKUs");
-
-			CommerceNavigator.gotoTableListEntry(entryName = "MIN55861");
-
-			CommerceSKUs.editSkuPricing(priceOnApplication = "true");
-		}
-
-		task ("And the buyer adds the 'Price on Application' product to Cart") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-		}
-
-		task ("When clicking the 'Request a Quote' button in the Mini Cart") {
-			CommerceNavigator.gotoMiniCart();
-
-			Button.click(button = "Request a Quote");
-		}
-
-		task ("And clicks again the 'Request a Quote' button in the Open Order Details Page") {
-			Click(
-				buttonId = "requestQuote",
-				locator1 = "Button#BUTTON_ID");
-		}
-
-		task ("Then can view the buyer's email prepopulated in the Request a Quote popup") {
-			AssertElementPresent(
-				key_title = "Request a Quote",
-				locator1 = "CommerceFrontStore#MODAL_TITLE");
-
-			AssertTextEquals(
-				key_placeHolder = "Enter an email address.",
-				locator1 = "TextInput#ANY_PLACEHOLDER",
-				value1 = "buyer@liferay.com");
-
-			AssertTextEquals(
-				key_value = "requestQuote",
-				locator1 = "CommerceFrontStore#TEXTAREA_FIELD",
-				value1 = "");
-		}
-
-		task ("And can submit the request without filling in note info") {
-			Button.click(button = "Submit");
-		}
-
-		task ("And admin can view the order with the status 'Quote Requested' in the Orders admin page") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "test@liferay.com",
-				userLoginFullName = "Test Test");
-
-			CommerceOrders.openOrdersAdmin();
-
-			AssertElementPresent(
-				key_orderStatus = "Quote Requested",
-				locator1 = "CommerceOrders#ORDER_ELLIPSIS_BY_STATUS");
-
-			CommerceJSONOrdersAPI._deleteAllCommerceOrders();
-		}
-
-		task ("But if the buyer submits the request by filling in non-email format for the email field") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "buyer@liferay.com",
-				userLoginFullName = "Buyer User");
-
-			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/catalog");
-
-			FrontStore.addInitializerProductToCart(
-				productName = "U-Joint",
-				productQuantity = 1);
-
-			CommerceNavigator.gotoMiniCart();
-
-			CommerceOrders.createQuoteRequest(
-				quoteRequestEmail = "guestuser",
-				requestAQuoteInMiniCart = "true",
-				requestAQuoteInOpenOrdersPage = "true");
-		}
-
-		task ("Then it's not allowed to submit a request with invalid email address") {
-			AssertElementPresent(
-				key_alertMessage = "Please enter a valid email address.",
-				locator1 = "Message#ERROR_ENTER_A_VALID_VALUE");
 		}
 	}
 

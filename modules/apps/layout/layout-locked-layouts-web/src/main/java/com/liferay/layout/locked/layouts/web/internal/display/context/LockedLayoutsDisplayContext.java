@@ -15,6 +15,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
@@ -30,14 +31,14 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Lourdes Fernández Besada
@@ -133,7 +134,17 @@ public class LockedLayoutsDisplayContext {
 							PortletURLBuilder.createActionURL(
 								_liferayPortletResponse
 							).setActionName(
-								"/layout_locked_layouts/unlock_layouts"
+								() -> {
+									if (FeatureFlagManagerUtil.isEnabled(
+											_themeDisplay.getCompanyId(),
+											"LPD-11003")) {
+
+										return "/locked_items/unlock_layouts";
+									}
+
+									return "/layout_locked_layouts" +
+										"/unlock_layouts";
+								}
 							).setRedirect(
 								_themeDisplay.getURLCurrent()
 							).setParameter(
@@ -217,11 +228,7 @@ public class LockedLayoutsDisplayContext {
 	}
 
 	public boolean hasLockedLayouts() {
-		if (ListUtil.isEmpty(_getLockedLayouts())) {
-			return false;
-		}
-
-		return true;
+		return ListUtil.isNotEmpty(_getLockedLayouts());
 	}
 
 	public static class LockedLayoutOrder {
@@ -391,12 +398,12 @@ public class LockedLayoutsDisplayContext {
 	}
 
 	private boolean _hasKeywords(String keywords, LockedLayout lockedLayout) {
-		if (StringUtil.contains(
-				StringUtil.toLowerCase(lockedLayout.getUserName()), keywords,
-				StringPool.BLANK) ||
-			StringUtil.contains(
-				StringUtil.toLowerCase(getName(lockedLayout)), keywords,
-				StringPool.BLANK)) {
+		String lowerCaseName = StringUtil.toLowerCase(getName(lockedLayout));
+		String lowerCaseUserName = StringUtil.toLowerCase(
+			lockedLayout.getUserName());
+
+		if (lowerCaseName.contains(keywords) ||
+			lowerCaseUserName.contains(keywords)) {
 
 			return true;
 		}

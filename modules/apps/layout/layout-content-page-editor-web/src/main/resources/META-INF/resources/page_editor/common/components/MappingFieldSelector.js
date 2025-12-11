@@ -36,8 +36,9 @@ export default function MappingFieldSelector({
 
 	return (
 		<ClayForm.Group
-			className={classNames('mb-2 mt-3', className, {
+			className={classNames('mb-0', className, {
 				'has-warning': hasWarnings,
+				'mt-3': Liferay.FeatureFlags['LPD-60546'],
 			})}
 			small
 		>
@@ -45,6 +46,7 @@ export default function MappingFieldSelector({
 
 			<ClaySelect
 				aria-describedby={fieldTypeId}
+				className="mb-2"
 				disabled={!(fields && !!fields.length)}
 				id={mappingSelectorFieldSelectId}
 				onChange={onValueSelect}
@@ -57,11 +59,23 @@ export default function MappingFieldSelector({
 							value={UNMAPPED_OPTION.value}
 						/>
 
-						{fields.map((fieldSet, index) => {
-							const key = `${fieldSet.label || ''}${index}`;
+						{fields.map((item, index) => {
+							const isFieldSet = 'fields' in item;
+
+							if (!isFieldSet) {
+								return (
+									<ClaySelect.Option
+										key={item.key}
+										label={item.label}
+										value={item.key}
+									/>
+								);
+							}
+
+							const key = `${item.label || ''}${index}`;
 
 							const Wrapper = ({children, ...props}) =>
-								fieldSet.label ? (
+								item.label ? (
 									<ClaySelect.OptGroup {...props}>
 										{children}
 									</ClaySelect.OptGroup>
@@ -72,8 +86,8 @@ export default function MappingFieldSelector({
 								);
 
 							return (
-								<Wrapper key={key} label={fieldSet.label}>
-									{fieldSet.fields.map((field) => (
+								<Wrapper key={key} label={item.label}>
+									{item.fields.map((field) => (
 										<ClaySelect.Option
 											key={field.key}
 											label={field.label}
@@ -88,7 +102,7 @@ export default function MappingFieldSelector({
 			</ClaySelect>
 
 			{selectedField && (
-				<p className="mt-2 text-3" id={fieldTypeId}>
+				<p className="mb-0 text-2" id={fieldTypeId}>
 					<b>{Liferay.Language.get('field-type')}: </b>
 
 					{` ${selectedField.typeLabel}`}

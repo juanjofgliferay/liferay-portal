@@ -14,13 +14,12 @@ import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexNameBuilder;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslatorImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,10 +44,9 @@ public class SynonymsDisplayBuilderTest extends BaseSynonymsWebTestCase {
 		setUpPortletPreferencesFactoryUtil();
 
 		_synonymsDisplayBuilder = new SynonymsDisplayBuilder(
-			_documentToSynonymSetTranslatorImpl, _httpServletRequest, _language,
-			portal, _queries, _renderRequest, _renderResponse,
-			searchEngineAdapter, _searchEngineInformation, _sorts,
-			_synonymSetIndexNameBuilder);
+			_httpServletRequest, _language, portal, _queries, _renderRequest,
+			_renderResponse, searchEngineAdapter, _searchEngineInformation,
+			_sorts, _synonymSetIndexNameBuilder);
 	}
 
 	@Test
@@ -85,9 +83,6 @@ public class SynonymsDisplayBuilderTest extends BaseSynonymsWebTestCase {
 			_synonymsDisplayBuilder.getDisplayedSynonymSet("car,automobile"));
 	}
 
-	private final DocumentToSynonymSetTranslatorImpl
-		_documentToSynonymSetTranslatorImpl =
-			new DocumentToSynonymSetTranslatorImpl();
 	private final HttpServletRequest _httpServletRequest = Mockito.mock(
 		HttpServletRequest.class);
 	private final Language _language = Mockito.mock(Language.class);

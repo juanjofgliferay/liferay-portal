@@ -25,24 +25,29 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,12 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -83,7 +82,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -97,14 +96,19 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 		_placedOrderItemShipmentResource.setContextCompany(testCompany);
 
-		PlacedOrderItemShipmentResource.Builder builder =
-			PlacedOrderItemShipmentResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		placedOrderItemShipmentResource = builder.authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
+		placedOrderItemShipmentResource =
+			PlacedOrderItemShipmentResource.builder(
+			).authentication(
+				_testCompanyAdminUser.getEmailAddress(),
+				PropsValues.DEFAULT_ADMIN_PASSWORD
+			).endpoint(
+				testCompany.getVirtualHostname(), 8080, "http"
+			).locale(
+				LocaleUtil.getDefault()
+			).build();
 	}
 
 	@After
@@ -115,21 +119,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				enable(SerializationFeature.INDENT_OUTPUT);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
 
 		PlacedOrderItemShipment placedOrderItemShipment1 =
 			randomPlacedOrderItemShipment();
@@ -145,20 +135,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 	@Test
 	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
 
 		PlacedOrderItemShipment placedOrderItemShipment =
 			randomPlacedOrderItemShipment();
@@ -171,6 +148,24 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
+			{
+				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+				configure(
+					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+				enable(SerializationFeature.INDENT_OUTPUT);
+				setDateFormat(new ISO8601DateFormat());
+				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+				setSerializationInclusion(JsonInclude.Include.NON_NULL);
+				setVisibility(
+					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+				setVisibility(
+					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+			}
+		};
+	}
+
 	@Test
 	public void testEscapeRegexInStringFields() throws Exception {
 		String regex = "^[0-9]+(\\.[0-9]{1,2})\"?";
@@ -180,6 +175,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 		placedOrderItemShipment.setAuthor(regex);
 		placedOrderItemShipment.setCarrier(regex);
+		placedOrderItemShipment.setExternalReferenceCode(regex);
 		placedOrderItemShipment.setShippingOptionName(regex);
 		placedOrderItemShipment.setTrackingNumber(regex);
 		placedOrderItemShipment.setTrackingURL(regex);
@@ -195,11 +191,113 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 		Assert.assertEquals(regex, placedOrderItemShipment.getAuthor());
 		Assert.assertEquals(regex, placedOrderItemShipment.getCarrier());
 		Assert.assertEquals(
+			regex, placedOrderItemShipment.getExternalReferenceCode());
+		Assert.assertEquals(
 			regex, placedOrderItemShipment.getShippingOptionName());
 		Assert.assertEquals(regex, placedOrderItemShipment.getTrackingNumber());
 		Assert.assertEquals(regex, placedOrderItemShipment.getTrackingURL());
 		Assert.assertEquals(
 			regex, placedOrderItemShipment.getUnitOfMeasureKey());
+	}
+
+	@Test
+	public void testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage()
+		throws Exception {
+
+		String externalReferenceCode =
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getExternalReferenceCode();
+		String irrelevantExternalReferenceCode =
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getIrrelevantExternalReferenceCode();
+
+		Page<PlacedOrderItemShipment> page =
+			placedOrderItemShipmentResource.
+				getPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage(
+					externalReferenceCode);
+
+		long totalCount = page.getTotalCount();
+
+		if (irrelevantExternalReferenceCode != null) {
+			PlacedOrderItemShipment irrelevantPlacedOrderItemShipment =
+				testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_addPlacedOrderItemShipment(
+					irrelevantExternalReferenceCode,
+					randomIrrelevantPlacedOrderItemShipment());
+
+			page =
+				placedOrderItemShipmentResource.
+					getPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage(
+						irrelevantExternalReferenceCode);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(
+				irrelevantPlacedOrderItemShipment,
+				(List<PlacedOrderItemShipment>)page.getItems());
+			assertValid(
+				page,
+				testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
+		}
+
+		PlacedOrderItemShipment placedOrderItemShipment1 =
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_addPlacedOrderItemShipment(
+				externalReferenceCode, randomPlacedOrderItemShipment());
+
+		PlacedOrderItemShipment placedOrderItemShipment2 =
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_addPlacedOrderItemShipment(
+				externalReferenceCode, randomPlacedOrderItemShipment());
+
+		page =
+			placedOrderItemShipmentResource.
+				getPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage(
+					externalReferenceCode);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(
+			placedOrderItemShipment1,
+			(List<PlacedOrderItemShipment>)page.getItems());
+		assertContains(
+			placedOrderItemShipment2,
+			(List<PlacedOrderItemShipment>)page.getItems());
+		assertValid(
+			page,
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected PlacedOrderItemShipment
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_addPlacedOrderItemShipment(
+				String externalReferenceCode,
+				PlacedOrderItemShipment placedOrderItemShipment)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getExternalReferenceCode()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetPlacedOrderItemByExternalReferenceCodePlacedOrderItemShipmentsPage_getIrrelevantExternalReferenceCode()
+		throws Exception {
+
+		return null;
 	}
 
 	@Test
@@ -302,12 +400,9 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 		return null;
 	}
 
-	protected PlacedOrderItemShipment
-			testGraphQLPlacedOrderItemShipment_addPlacedOrderItemShipment()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Assert.assertTrue(true);
 	}
 
 	protected void assertContains(
@@ -456,6 +551,18 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 					"estimatedShippingDate", additionalAssertFieldName)) {
 
 				if (placedOrderItemShipment.getEstimatedShippingDate() ==
+						null) {
+
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (placedOrderItemShipment.getExternalReferenceCode() ==
 						null) {
 
 					valid = false;
@@ -615,6 +722,10 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
 
+		graphQLFields.add(new GraphQLField("externalReferenceCode"));
+
+		graphQLFields.add(new GraphQLField("id"));
+
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
 					com.liferay.headless.commerce.delivery.order.dto.v1_0.
@@ -740,6 +851,19 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				if (!Objects.deepEquals(
 						placedOrderItemShipment1.getEstimatedShippingDate(),
 						placedOrderItemShipment2.getEstimatedShippingDate())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals(
+					"externalReferenceCode", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						placedOrderItemShipment1.getExternalReferenceCode(),
+						placedOrderItemShipment2.getExternalReferenceCode())) {
 
 					return false;
 				}
@@ -920,6 +1044,10 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
+
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
 			field -> {
@@ -1088,22 +1216,18 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 		if (entityFieldName.equals("createDate")) {
 			if (operator.equals("between")) {
+				Date date = placedOrderItemShipment.getCreateDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getCreateDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getCreateDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1114,8 +1238,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				sb.append(" ");
 
 				sb.append(
-					_dateFormat.format(
-						placedOrderItemShipment.getCreateDate()));
+					_format.format(placedOrderItemShipment.getCreateDate()));
 			}
 
 			return sb.toString();
@@ -1123,24 +1246,18 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 		if (entityFieldName.equals("estimatedDeliveryDate")) {
 			if (operator.equals("between")) {
+				Date date = placedOrderItemShipment.getEstimatedDeliveryDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getEstimatedDeliveryDate(),
-							-2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getEstimatedDeliveryDate(),
-							2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1151,7 +1268,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				sb.append(" ");
 
 				sb.append(
-					_dateFormat.format(
+					_format.format(
 						placedOrderItemShipment.getEstimatedDeliveryDate()));
 			}
 
@@ -1160,24 +1277,18 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 		if (entityFieldName.equals("estimatedShippingDate")) {
 			if (operator.equals("between")) {
+				Date date = placedOrderItemShipment.getEstimatedShippingDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getEstimatedShippingDate(),
-							-2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getEstimatedShippingDate(),
-							2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1188,8 +1299,54 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				sb.append(" ");
 
 				sb.append(
-					_dateFormat.format(
+					_format.format(
 						placedOrderItemShipment.getEstimatedShippingDate()));
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("externalReferenceCode")) {
+			Object object = placedOrderItemShipment.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
 			}
 
 			return sb.toString();
@@ -1202,22 +1359,18 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 
 		if (entityFieldName.equals("modifiedDate")) {
 			if (operator.equals("between")) {
+				Date date = placedOrderItemShipment.getModifiedDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getModifiedDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							placedOrderItemShipment.getModifiedDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1228,8 +1381,7 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				sb.append(" ");
 
 				sb.append(
-					_dateFormat.format(
-						placedOrderItemShipment.getModifiedDate()));
+					_format.format(placedOrderItemShipment.getModifiedDate()));
 			}
 
 			return sb.toString();
@@ -1463,7 +1615,8 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1501,6 +1654,8 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				createDate = RandomTestUtil.nextDate();
 				estimatedDeliveryDate = RandomTestUtil.nextDate();
 				estimatedShippingDate = RandomTestUtil.nextDate();
+				externalReferenceCode = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
 				modifiedDate = RandomTestUtil.nextDate();
 				orderId = RandomTestUtil.randomLong();
@@ -1535,21 +1690,21 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 	}
 
 	protected PlacedOrderItemShipmentResource placedOrderItemShipmentResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1558,11 +1713,16 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1594,6 +1754,24 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1615,16 +1793,6 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1723,7 +1891,9 @@ public abstract class BasePlacedOrderItemShipmentResourceTestCase {
 		LogFactoryUtil.getLog(
 			BasePlacedOrderItemShipmentResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.delivery.order.resource.v1_0.

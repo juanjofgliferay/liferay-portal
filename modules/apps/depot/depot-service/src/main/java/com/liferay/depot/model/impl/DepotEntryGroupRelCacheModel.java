@@ -69,10 +69,12 @@ public class DepotEntryGroupRelCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(33);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", depotEntryGroupRelId=");
@@ -97,6 +99,8 @@ public class DepotEntryGroupRelCacheModel
 		sb.append(searchable);
 		sb.append(", toGroupId=");
 		sb.append(toGroupId);
+		sb.append(", type=");
+		sb.append(type);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append("}");
@@ -110,6 +114,7 @@ public class DepotEntryGroupRelCacheModel
 			new DepotEntryGroupRelImpl();
 
 		depotEntryGroupRelImpl.setMvccVersion(mvccVersion);
+		depotEntryGroupRelImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			depotEntryGroupRelImpl.setUuid("");
@@ -149,6 +154,7 @@ public class DepotEntryGroupRelCacheModel
 		depotEntryGroupRelImpl.setDepotEntryId(depotEntryId);
 		depotEntryGroupRelImpl.setSearchable(searchable);
 		depotEntryGroupRelImpl.setToGroupId(toGroupId);
+		depotEntryGroupRelImpl.setType(type);
 
 		if (lastPublishDate == Long.MIN_VALUE) {
 			depotEntryGroupRelImpl.setLastPublishDate(null);
@@ -166,6 +172,8 @@ public class DepotEntryGroupRelCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		depotEntryGroupRelId = objectInput.readLong();
@@ -186,12 +194,16 @@ public class DepotEntryGroupRelCacheModel
 		searchable = objectInput.readBoolean();
 
 		toGroupId = objectInput.readLong();
+
+		type = objectInput.readInt();
 		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
 
 		if (uuid == null) {
 			objectOutput.writeUTF("");
@@ -225,10 +237,13 @@ public class DepotEntryGroupRelCacheModel
 		objectOutput.writeBoolean(searchable);
 
 		objectOutput.writeLong(toGroupId);
+
+		objectOutput.writeInt(type);
 		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public long depotEntryGroupRelId;
 	public long groupId;
@@ -241,6 +256,7 @@ public class DepotEntryGroupRelCacheModel
 	public long depotEntryId;
 	public boolean searchable;
 	public long toGroupId;
+	public int type;
 	public long lastPublishDate;
 
 }

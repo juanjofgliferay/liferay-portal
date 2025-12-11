@@ -55,14 +55,14 @@ public class LayoutUtilityPageEntryLocalServiceWrapper
 	public LayoutUtilityPageEntry addLayoutUtilityPageEntry(
 			String externalReferenceCode, long userId, long groupId, long plid,
 			long previewFileEntryId, boolean defaultLayoutUtilityPageEntry,
-			String name, String type, long masterLayoutPlid,
+			String name, String type, String masterLayoutPageTemplateEntryERC,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutUtilityPageEntryLocalService.addLayoutUtilityPageEntry(
 			externalReferenceCode, userId, groupId, plid, previewFileEntryId,
-			defaultLayoutUtilityPageEntry, name, type, masterLayoutPlid,
-			serviceContext);
+			defaultLayoutUtilityPageEntry, name, type,
+			masterLayoutPageTemplateEntryERC, serviceContext);
 	}
 
 	@Override
@@ -139,6 +139,15 @@ public class LayoutUtilityPageEntryLocalServiceWrapper
 
 		return _layoutUtilityPageEntryLocalService.deleteLayoutUtilityPageEntry(
 			LayoutUtilityPageEntryId);
+	}
+
+	@Override
+	public LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutUtilityPageEntryLocalService.deleteLayoutUtilityPageEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -393,6 +402,26 @@ public class LayoutUtilityPageEntryLocalServiceWrapper
 			groupId, type, start, end, orderByComparator);
 	}
 
+	@Override
+	public java.util.List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String keyword, String[] types, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<LayoutUtilityPageEntry>
+			orderByComparator) {
+
+		return _layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntries(
+			groupId, keyword, types, start, end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String[] types, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<LayoutUtilityPageEntry>
+			orderByComparator) {
+
+		return _layoutUtilityPageEntryLocalService.getLayoutUtilityPageEntries(
+			groupId, types, start, end, orderByComparator);
+	}
+
 	/**
 	 * Returns all the layout utility page entries matching the UUID and company.
 	 *
@@ -446,6 +475,20 @@ public class LayoutUtilityPageEntryLocalServiceWrapper
 	public int getLayoutUtilityPageEntriesCount(long groupId) {
 		return _layoutUtilityPageEntryLocalService.
 			getLayoutUtilityPageEntriesCount(groupId);
+	}
+
+	@Override
+	public int getLayoutUtilityPageEntriesCount(
+		long groupId, String keyword, String[] types) {
+
+		return _layoutUtilityPageEntryLocalService.
+			getLayoutUtilityPageEntriesCount(groupId, keyword, types);
+	}
+
+	@Override
+	public int getLayoutUtilityPageEntriesCount(long groupId, String[] types) {
+		return _layoutUtilityPageEntryLocalService.
+			getLayoutUtilityPageEntriesCount(groupId, types);
 	}
 
 	/**

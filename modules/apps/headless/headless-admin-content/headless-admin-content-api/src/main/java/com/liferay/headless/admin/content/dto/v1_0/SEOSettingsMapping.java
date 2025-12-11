@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,10 +51,17 @@ public class SEOSettingsMapping implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SEOSettingsMapping.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Field of the content type that will be used as the description"
 	)
 	public String getDescriptionMappingFieldKey() {
+		if (_descriptionMappingFieldKeySupplier != null) {
+			descriptionMappingFieldKey =
+				_descriptionMappingFieldKeySupplier.get();
+
+			_descriptionMappingFieldKeySupplier = null;
+		}
+
 		return descriptionMappingFieldKey;
 	}
 
@@ -63,6 +69,8 @@ public class SEOSettingsMapping implements Serializable {
 		String descriptionMappingFieldKey) {
 
 		this.descriptionMappingFieldKey = descriptionMappingFieldKey;
+
+		_descriptionMappingFieldKeySupplier = null;
 	}
 
 	@JsonIgnore
@@ -70,16 +78,17 @@ public class SEOSettingsMapping implements Serializable {
 		UnsafeSupplier<String, Exception>
 			descriptionMappingFieldKeyUnsafeSupplier) {
 
-		try {
-			descriptionMappingFieldKey =
-				descriptionMappingFieldKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionMappingFieldKeySupplier = () -> {
+			try {
+				return descriptionMappingFieldKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -88,15 +97,26 @@ public class SEOSettingsMapping implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String descriptionMappingFieldKey;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _descriptionMappingFieldKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Field of the content type that will be used as the HTML title"
 	)
 	public String getHtmlTitleMappingFieldKey() {
+		if (_htmlTitleMappingFieldKeySupplier != null) {
+			htmlTitleMappingFieldKey = _htmlTitleMappingFieldKeySupplier.get();
+
+			_htmlTitleMappingFieldKeySupplier = null;
+		}
+
 		return htmlTitleMappingFieldKey;
 	}
 
 	public void setHtmlTitleMappingFieldKey(String htmlTitleMappingFieldKey) {
 		this.htmlTitleMappingFieldKey = htmlTitleMappingFieldKey;
+
+		_htmlTitleMappingFieldKeySupplier = null;
 	}
 
 	@JsonIgnore
@@ -104,16 +124,17 @@ public class SEOSettingsMapping implements Serializable {
 		UnsafeSupplier<String, Exception>
 			htmlTitleMappingFieldKeyUnsafeSupplier) {
 
-		try {
-			htmlTitleMappingFieldKey =
-				htmlTitleMappingFieldKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_htmlTitleMappingFieldKeySupplier = () -> {
+			try {
+				return htmlTitleMappingFieldKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -122,30 +143,43 @@ public class SEOSettingsMapping implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String htmlTitleMappingFieldKey;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _htmlTitleMappingFieldKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Robots of the page that renders the Display Page Template"
 	)
 	public String getRobots() {
+		if (_robotsSupplier != null) {
+			robots = _robotsSupplier.get();
+
+			_robotsSupplier = null;
+		}
+
 		return robots;
 	}
 
 	public void setRobots(String robots) {
 		this.robots = robots;
+
+		_robotsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRobots(
 		UnsafeSupplier<String, Exception> robotsUnsafeSupplier) {
 
-		try {
-			robots = robotsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_robotsSupplier = () -> {
+			try {
+				return robotsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -154,16 +188,27 @@ public class SEOSettingsMapping implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String robots;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _robotsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Internationalized field of the robots of the page that renders the Display Page Template"
 	)
 	@Valid
 	public Map<String, String> getRobots_i18n() {
+		if (_robots_i18nSupplier != null) {
+			robots_i18n = _robots_i18nSupplier.get();
+
+			_robots_i18nSupplier = null;
+		}
+
 		return robots_i18n;
 	}
 
 	public void setRobots_i18n(Map<String, String> robots_i18n) {
 		this.robots_i18n = robots_i18n;
+
+		_robots_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -171,15 +216,17 @@ public class SEOSettingsMapping implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			robots_i18nUnsafeSupplier) {
 
-		try {
-			robots_i18n = robots_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_robots_i18nSupplier = () -> {
+			try {
+				return robots_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -187,6 +234,9 @@ public class SEOSettingsMapping implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> robots_i18n;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _robots_i18nSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -215,6 +265,8 @@ public class SEOSettingsMapping implements Serializable {
 
 		sb.append("{");
 
+		String descriptionMappingFieldKey = getDescriptionMappingFieldKey();
+
 		if (descriptionMappingFieldKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -228,6 +280,8 @@ public class SEOSettingsMapping implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String htmlTitleMappingFieldKey = getHtmlTitleMappingFieldKey();
 
 		if (htmlTitleMappingFieldKey != null) {
 			if (sb.length() > 1) {
@@ -243,6 +297,8 @@ public class SEOSettingsMapping implements Serializable {
 			sb.append("\"");
 		}
 
+		String robots = getRobots();
+
 		if (robots != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -256,6 +312,8 @@ public class SEOSettingsMapping implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Map<String, String> robots_i18n = getRobots_i18n();
 
 		if (robots_i18n != null) {
 			if (sb.length() > 1) {
@@ -272,8 +330,8 @@ public class SEOSettingsMapping implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.content.dto.v1_0.SEOSettingsMapping",
 		name = "x-class-name"
 	)
@@ -319,7 +377,10 @@ public class SEOSettingsMapping implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

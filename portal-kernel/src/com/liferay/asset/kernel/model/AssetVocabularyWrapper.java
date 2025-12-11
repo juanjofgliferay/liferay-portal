@@ -53,6 +53,7 @@ public class AssetVocabularyWrapper
 		attributes.put("settings", getSettings());
 		attributes.put("visibilityType", getVisibilityType());
 		attributes.put("lastPublishDate", getLastPublishDate());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -160,6 +161,12 @@ public class AssetVocabularyWrapper
 
 		if (lastPublishDate != null) {
 			setLastPublishDate(lastPublishDate);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -390,6 +397,16 @@ public class AssetVocabularyWrapper
 	}
 
 	/**
+	 * Returns the status of this asset vocabulary.
+	 *
+	 * @return the status of this asset vocabulary
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
 	 * Returns the title of this asset vocabulary.
 	 *
 	 * @return the title of this asset vocabulary
@@ -552,6 +569,10 @@ public class AssetVocabularyWrapper
 			classNameId, classTypePK);
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #isMissingRequiredCategory(long, long, long[], long)}
+	 */
+	@Deprecated
 	@Override
 	public boolean isMissingRequiredCategory(
 		long classNameId, long classTypePK, long[] categoryIds) {
@@ -561,13 +582,32 @@ public class AssetVocabularyWrapper
 	}
 
 	@Override
+	public boolean isMissingRequiredCategory(
+		long classNameId, long classTypePK, long[] categoryIds, long groupId) {
+
+		return model.isMissingRequiredCategory(
+			classNameId, classTypePK, categoryIds, groupId);
+	}
+
+	@Override
 	public boolean isMultiValued() {
 		return model.isMultiValued();
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #isRequired(long, long, long)}
+	 */
+	@Deprecated
 	@Override
 	public boolean isRequired(long classNameId, long classTypePK) {
 		return model.isRequired(classNameId, classTypePK);
+	}
+
+	@Override
+	public boolean isRequired(
+		long classNameId, long classTypePK, long groupId) {
+
+		return model.isRequired(classNameId, classTypePK, groupId);
 	}
 
 	@Override
@@ -765,6 +805,16 @@ public class AssetVocabularyWrapper
 	@Override
 	public void setSettings(String settings) {
 		model.setSettings(settings);
+	}
+
+	/**
+	 * Sets the status of this asset vocabulary.
+	 *
+	 * @param status the status of this asset vocabulary
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
 	}
 
 	/**

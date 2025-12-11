@@ -18,24 +18,27 @@ import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
 import com.liferay.portal.kernel.concurrent.SystemExecutorServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedInputStream;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.lpkg.StaticLPKGResolver;
 import com.liferay.portal.kernel.module.framework.ThrowableCollector;
 import com.liferay.portal.kernel.service.BaseLocalService;
+import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.module.framework.ModuleFramework;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.spring.context.PortalContextLoaderListener;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -124,6 +127,43 @@ import org.springframework.context.ConfigurableApplicationContext;
  */
 public class ModuleFrameworkImpl implements ModuleFramework {
 
+	@Override
+	public Framework createFramework() throws Exception {
+		if (_log.isDebugEnabled()) {
+			_log.debug("Initializing the OSGi framework");
+		}
+
+		_validateModuleFrameworkBaseDirForEquinox();
+
+		_initRequiredStartupDirs();
+
+		Thread currentThread = Thread.currentThread();
+
+		ServiceLoader<FrameworkFactory> serviceLoader = ServiceLoader.load(
+			FrameworkFactory.class, currentThread.getContextClassLoader());
+
+		Iterator<FrameworkFactory> iterator = serviceLoader.iterator();
+
+		FrameworkFactory frameworkFactory = iterator.next();
+
+		if (_log.isDebugEnabled()) {
+			Class<?> clazz = frameworkFactory.getClass();
+
+			_log.debug("Using the OSGi framework factory " + clazz.getName());
+		}
+
+		Map<String, String> properties = _buildFrameworkProperties(
+			frameworkFactory.getClass());
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Creating a new OSGi framework instance");
+		}
+
+		_framework = frameworkFactory.newFramework(properties);
+
+		return _framework;
+	}
+
 	public Bundle getBundle(
 			BundleContext bundleContext, InputStream inputStream)
 		throws PortalException {
@@ -166,40 +206,10 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	@Override
 	public void initFramework() throws Exception {
 		if (_log.isDebugEnabled()) {
-			_log.debug("Initializing the OSGi framework");
-		}
-
-		_validateModuleFrameworkBaseDirForEquinox();
-
-		_initRequiredStartupDirs();
-
-		Thread currentThread = Thread.currentThread();
-
-		ServiceLoader<FrameworkFactory> serviceLoader = ServiceLoader.load(
-			FrameworkFactory.class, currentThread.getContextClassLoader());
-
-		Iterator<FrameworkFactory> iterator = serviceLoader.iterator();
-
-		FrameworkFactory frameworkFactory = iterator.next();
-
-		if (_log.isDebugEnabled()) {
-			Class<?> clazz = frameworkFactory.getClass();
-
-			_log.debug("Using the OSGi framework factory " + clazz.getName());
-		}
-
-		Map<String, String> properties = _buildFrameworkProperties(
-			frameworkFactory.getClass());
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Creating a new OSGi framework instance");
-		}
-
-		_framework = frameworkFactory.newFramework(properties);
-
-		if (_log.isDebugEnabled()) {
 			_log.debug("Initializing the new OSGi framework instance");
 		}
+
+		Thread currentThread = Thread.currentThread();
 
 		ClassLoader classLoader = currentThread.getContextClassLoader();
 
@@ -332,8 +342,8 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 					"OSGi framework event ", frameworkEvent,
 					" triggered after a ", timeout, "ms timeout"));
 		}
-		else if (_log.isInfoEnabled()) {
-			_log.info(frameworkEvent);
+		else if (_log.isDebugEnabled()) {
+			_log.debug(frameworkEvent);
 		}
 
 		if (Boolean.parseBoolean(System.getenv("LIFERAY_CLEAN_OSGI_STATE"))) {
@@ -788,19 +798,52 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	}
 
 	private Dictionary<String, Object> _getProperties(
-		OSGiBeanProperties osgiBeanProperties, String beanName) {
+		OSGiBeanProperties osgiBeanProperties, Object bean, String beanName) {
 
-		HashMapDictionary<String, Object> properties =
-			new HashMapDictionary<>();
+		Dictionary<String, Object> properties = new HashMapDictionary<>();
 
 		if (osgiBeanProperties != null) {
-			properties.putAll(
-				OSGiBeanProperties.Convert.toMap(osgiBeanProperties));
+			properties = HashMapDictionaryBuilder.<String, Object>putAll(
+				OSGiBeanProperties.Convert.toMap(osgiBeanProperties)
+			).build();
 		}
 
 		properties.put(ServicePropsKeys.BEAN_ID, beanName);
 		properties.put(ServicePropsKeys.ORIGINAL_BEAN, Boolean.TRUE);
 		properties.put(ServicePropsKeys.VENDOR, ReleaseInfo.getVendor());
+
+		if (bean instanceof BaseService) {
+			Class<?> beanClass = bean.getClass();
+
+			JSONWebService jsonWebService = beanClass.getAnnotation(
+				JSONWebService.class);
+
+			if (jsonWebService == null) {
+				for (Class<?> interfaceClass : beanClass.getInterfaces()) {
+					if ((interfaceClass == BaseService.class) ||
+						!BaseService.class.isAssignableFrom(interfaceClass)) {
+
+						continue;
+					}
+
+					jsonWebService = interfaceClass.getAnnotation(
+						JSONWebService.class);
+
+					if (jsonWebService != null) {
+						break;
+					}
+				}
+			}
+
+			if (jsonWebService != null) {
+				properties.put(
+					"json.web.service.context.name",
+					PortalContextLoaderListener.getPortalServletContextName());
+				properties.put(
+					"json.web.service.context.path",
+					PortalContextLoaderListener.getPortalServletContextPath());
+			}
+		}
 
 		return properties;
 	}
@@ -892,7 +935,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	}
 
 	private void _installBundlesFromDir(
-			String dirPath, Map<String, Long> checksums,
+			String dirPath, Map<Long, Long> checksums,
 			Set<String> fragmentHosts)
 		throws Exception {
 
@@ -919,9 +962,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 				Bundle bundle = bundleContext.installBundle(
 					location, inputStream);
 
-				checksums.put(
-					bundle.getBundleId() + _CHECKSUM_SUFFIX,
-					_calculateChecksum(file));
+				checksums.put(bundle.getBundleId(), _calculateChecksum(file));
 
 				if ((bundle.getState() != Bundle.INSTALLED) &&
 					(bundle.getState() != Bundle.RESOLVED)) {
@@ -1011,8 +1052,8 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		}
 	}
 
-	private Map<String, Long> _installDynamicBundles() throws Exception {
-		Map<String, Long> checksums = new HashMap<>();
+	private Map<Long, Long> _installDynamicBundles() throws Exception {
+		Map<Long, Long> checksums = new HashMap<>();
 
 		Set<String> fragmentHosts = new HashSet<>();
 
@@ -1261,19 +1302,24 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 	}
 
 	private void _registerDynamicBundles(
-			Map<String, Long> checksums, BundleContext bundleContext)
+			Map<Long, Long> checksums, BundleContext bundleContext)
 		throws Exception {
 
-		byte[] data = new byte[8];
+		byte[] bytes = new byte[checksums.size() * 16];
 
-		for (Map.Entry<String, Long> entry : checksums.entrySet()) {
-			File file = bundleContext.getDataFile(entry.getKey());
+		int index = 0;
 
-			try (OutputStream outputStream = new FileOutputStream(file)) {
-				BigEndianCodec.putLong(data, 0, entry.getValue());
+		for (Map.Entry<Long, Long> entry : checksums.entrySet()) {
+			BigEndianCodec.putLong(bytes, index, entry.getKey());
+			BigEndianCodec.putLong(bytes, index + 8, entry.getValue());
 
-				outputStream.write(data);
-			}
+			index += 16;
+		}
+
+		try (OutputStream outputStream = new FileOutputStream(
+				bundleContext.getDataFile("bundles.checksum"), true)) {
+
+			outputStream.write(bytes);
 		}
 	}
 
@@ -1294,7 +1340,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		ServiceRegistration<?> serviceRegistration =
 			bundleContext.registerService(
 				names.toArray(new String[0]), bean,
-				_getProperties(osgiBeanProperties, beanName));
+				_getProperties(osgiBeanProperties, bean, beanName));
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
@@ -1611,10 +1657,6 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 
 		bundleContext.registerService(
 			ProcessExecutor.class, new LocalProcessExecutor(), null);
-
-		bundleContext.registerService(
-			Props.class, PropsUtil.getProps(),
-			_getProperties(null, Props.class.getName()));
 	}
 
 	private void _startConfigurationBundles(Collection<Bundle> bundles)
@@ -1642,7 +1684,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 			_log.info("Starting dynamic bundles");
 		}
 
-		Map<String, Long> dynamicBundleChecksums = _installDynamicBundles();
+		Map<Long, Long> dynamicBundleChecksums = _installDynamicBundles();
 
 		FrameworkStartLevel frameworkStartLevel = _framework.adapt(
 			FrameworkStartLevel.class);
@@ -1779,8 +1821,6 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 		}
 	}
 
-	private static final String _CHECKSUM_SUFFIX = ".checksum";
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ModuleFrameworkImpl.class);
 
@@ -1790,7 +1830,7 @@ public class ModuleFrameworkImpl implements ModuleFramework {
 				MODULE_FRAMEWORK_CONFIGURATION_BUNDLE_SYMBOLIC_NAMES);
 
 	private BundleListener _bundleListener;
-	private Framework _framework;
+	private volatile Framework _framework;
 	private LogListener _logListener;
 	private final Map
 		<ConfigurableApplicationContext, Collection<ServiceRegistration<?>>>

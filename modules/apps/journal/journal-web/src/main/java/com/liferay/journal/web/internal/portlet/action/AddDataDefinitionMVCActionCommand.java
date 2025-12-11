@@ -19,12 +19,9 @@ import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Locale;
-import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/add_data_definition"
 	},
 	service = MVCActionCommand.class
@@ -95,16 +92,15 @@ public class AddDataDefinitionMVCActionCommand
 		DataDefinition dataDefinition = DataDefinition.toDTO(
 			dataDefinitionString);
 
-		String structureKey = ParamUtil.getString(
-			actionRequest, "structureKey");
-		String dataLayout = ParamUtil.getString(actionRequest, "dataLayout");
-		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
-			actionRequest, "description");
-
-		dataDefinition.setDataDefinitionKey(structureKey);
-		dataDefinition.setDefaultDataLayout(DataLayout.toDTO(dataLayout));
+		dataDefinition.setDataDefinitionKey(
+			() -> ParamUtil.getString(actionRequest, "structureKey"));
+		dataDefinition.setDefaultDataLayout(
+			() -> DataLayout.toDTO(
+				ParamUtil.getString(actionRequest, "dataLayout")));
 		dataDefinition.setDescription(
-			LocalizedValueUtil.toStringObjectMap(descriptionMap));
+			() -> LocalizedValueUtil.toStringObjectMap(
+				_localization.getLocalizationMap(
+					actionRequest, "description")));
 
 		dataDefinitionResource.postSiteDataDefinitionByContentType(
 			groupId, "journal", dataDefinition);

@@ -1,16 +1,18 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property ci.retries.disabled = "true";
-	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Staging";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -27,6 +29,7 @@ definition {
 	@description = "User can enable local staging on site which is based on Masterclass site template."
 	@priority = 4
 	test CanEnableLocalStagingOnMasterclassSiteTemplate {
+		property portal.release = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -60,6 +63,8 @@ definition {
 	@ignore = "true"
 	@priority = 4
 	test CanEnableLocalStagingOnMiniumSiteTemplate {
+		property portal.release = "true";
+
 		task ("Given: Add a new site based on Minium site template") {
 			Site.openSitesAdmin();
 
@@ -92,47 +97,11 @@ definition {
 		}
 	}
 
-	@description = "User can enable local staging on site which is based on Raylife site template."
-	@priority = 4
-	test CanEnableLocalStagingOnRaylifeSiteTemplate {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		task ("Given: Add a new site based on Raylife site template") {
-			Site.openSitesAdmin();
-
-			Site.addSiteTemplateCP(
-				siteName = "Test Raylife Site",
-				siteTemplateName = "Raylife D2C");
-		}
-
-		task ("When: Enable local staging on the new site with page versioning") {
-			JSONStaging.enableLocalStaging(
-				branchingPrivate = "true",
-				branchingPublic = "true",
-				groupName = "Test Raylife Site");
-		}
-
-		task ("Then: User can publish the staging site") {
-			Navigator.openSiteURL(siteName = "Test Raylife Site");
-
-			var key_tabName = "Staging";
-
-			while (IsElementNotPresent(locator1 = "StagingPublishToLive#TAB_NAME")) {
-				Refresh();
-			}
-
-			Click(locator1 = "StagingPublishToLive#TAB_NAME");
-
-			Staging.gotoPublishToLive();
-
-			Staging.publishToLive();
-		}
-	}
-
 	@description = "User can enable local staging on site which is based on Speedwell site template."
 	@priority = 4
 	test CanEnableLocalStagingOnSpeedwellSiteTemplate {
+		property portal.release = "true";
+
 		task ("Given: Add a new site based on Speedwell site template") {
 			Site.openSitesAdmin();
 
@@ -159,9 +128,50 @@ definition {
 		}
 	}
 
+	@description = "User can enable local staging on site which is based on Team Extranet site template."
+	@priority = 4
+	test CanEnableLocalStagingOnTeamExtranetSiteTemplate {
+		property portal.release = "false";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Add a new site based on Raylife site template") {
+			Site.openSitesAdmin();
+
+			Site.addSiteTemplateCP(
+				siteName = "Test Team Extranet Site",
+				siteTemplateName = "Team Extranet");
+		}
+
+		task ("When: Enable local staging on the new site with page versioning") {
+			JSONStaging.enableLocalStaging(
+				branchingPrivate = "true",
+				branchingPublic = "true",
+				groupName = "Test Team Extranet Site");
+		}
+
+		task ("Then: User can publish the staging site") {
+			Navigator.openSiteURL(siteName = "Test Team Extranet Site");
+
+			var key_tabName = "Staging";
+
+			while (IsElementNotPresent(locator1 = "StagingPublishToLive#TAB_NAME")) {
+				Refresh();
+			}
+
+			Click(locator1 = "StagingPublishToLive#TAB_NAME");
+
+			Staging.gotoPublishToLive();
+
+			Staging.publishToLive();
+		}
+	}
+
 	@description = "User can enable local staging on site which is based on Welcome site template."
 	@priority = 4
 	test CanEnableLocalStagingOnWelcomeSiteTemplate {
+		property portal.release = "true";
+
 		task ("Given: Add a new site based on Welcome site template") {
 			Site.openSitesAdmin();
 

@@ -6,12 +6,16 @@
 package com.liferay.friendly.url.servlet.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationParameterMapFactoryUtil;
+import com.liferay.exportimport.kernel.service.StagingLocalServiceUtil;
+import com.liferay.exportimport.kernel.staging.StagingUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.encryptor.Encryptor;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
+import com.liferay.portal.kernel.io.BigEndianCodec;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
@@ -22,8 +26,11 @@ import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
+import com.liferay.portal.kernel.model.impl.VirtualLayout;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.ChecksumUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
@@ -33,29 +40,45 @@ import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserGroupTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.servlet.I18nServlet;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.test.rule.LanguageIds;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.redirect.model.RedirectEntry;
 import com.liferay.redirect.service.RedirectEntryLocalService;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -65,12 +88,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -82,21 +99,27 @@ import org.junit.runner.RunWith;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockServletContext;
 
 /**
  * @author László Csontos
  */
+@LanguageIds(
+	availableLanguageIds = {"en_GB", "en_US", "hu_HU", "pt_BR"},
+	defaultLanguageId = "en_US"
+)
 @RunWith(Arquillian.class)
 public class FriendlyURLServletTest {
 
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
-		PropsValues.LOCALES_ENABLED = new String[] {"en_US", "hu_HU", "de_DE"};
 		PropsValues.LOCALE_USE_DEFAULT_IF_NOT_AVAILABLE = true;
 
 		LanguageUtil.init();
@@ -109,9 +132,10 @@ public class FriendlyURLServletTest {
 		_layout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		List<Locale> availableLocales = Arrays.asList(
-			LocaleUtil.US, LocaleUtil.GERMANY, LocaleUtil.HUNGARY);
+			LocaleUtil.US, LocaleUtil.UK, LocaleUtil.HUNGARY,
+			LocaleUtil.BRAZIL);
 
-		GroupTestUtil.updateDisplaySettings(
+		_group = GroupTestUtil.updateDisplaySettings(
 			_group.getGroupId(), availableLocales, LocaleUtil.US);
 
 		Class<?> clazz = _servlet.getClass();
@@ -139,12 +163,229 @@ public class FriendlyURLServletTest {
 	public void tearDown() throws Exception {
 		ServiceContextThreadLocal.popServiceContext();
 
-		PropsValues.LOCALES_ENABLED = PropsUtil.getArray(
-			PropsKeys.LOCALES_ENABLED);
 		PropsValues.LOCALE_USE_DEFAULT_IF_NOT_AVAILABLE = GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.LOCALE_USE_DEFAULT_IF_NOT_AVAILABLE));
+	}
 
-		LanguageUtil.init();
+	@Test
+	public void testCanAccessOldFriendlyURLAfterPublishLayouts()
+		throws Exception {
+
+		StagingLocalServiceUtil.enableLocalStaging(
+			TestPropsValues.getUserId(), _group, false, false,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		Group stagingGroup = _group.getStagingGroup();
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			stagingGroup.getGroupId(), false,
+			HashMapBuilder.put(
+				_portal.getSiteDefaultLocale(stagingGroup), "test"
+			).build(),
+			HashMapBuilder.put(
+				_portal.getSiteDefaultLocale(stagingGroup), "/test"
+			).build());
+
+		String oldPath = getPath(_group, layout);
+
+		Map<String, String[]> parameters =
+			ExportImportConfigurationParameterMapFactoryUtil.
+				buildFullPublishParameterMap();
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			_group.getGroupId(), false, parameters);
+
+		layout = LayoutTestUtil.updateFriendlyURL(
+			layout,
+			HashMapBuilder.put(
+				_portal.getSiteDefaultLocale(stagingGroup), "/new-test"
+			).build());
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			_group.getGroupId(), false, parameters);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setPathInfo(oldPath);
+		mockHttpServletRequest.setRequestURI(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING + oldPath);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_servlet.service(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING +
+				getPath(_group, layout),
+			mockHttpServletResponse.getRedirectedUrl());
+	}
+
+	@Test
+	public void testCanAccessOldLocalizedFriendlyURLAfterPublishLayouts()
+		throws Exception {
+
+		StagingLocalServiceUtil.enableLocalStaging(
+			TestPropsValues.getUserId(), _group, false, false,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		Group stagingGroup = _group.getStagingGroup();
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			stagingGroup.getGroupId(), false,
+			HashMapBuilder.put(
+				_portal.getSiteDefaultLocale(stagingGroup), "test"
+			).build(),
+			HashMapBuilder.put(
+				_portal.getSiteDefaultLocale(stagingGroup), "/test"
+			).put(
+				LocaleUtil.BRAZIL, "/teste"
+			).build());
+
+		String oldPath = _getLocalizedPath(_group, layout, LocaleUtil.BRAZIL);
+
+		Map<String, String[]> parameters =
+			ExportImportConfigurationParameterMapFactoryUtil.
+				buildFullPublishParameterMap();
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			_group.getGroupId(), false, parameters);
+
+		layout = LayoutTestUtil.updateFriendlyURL(
+			layout,
+			HashMapBuilder.put(
+				_portal.getSiteDefaultLocale(stagingGroup), "/new-test"
+			).put(
+				LocaleUtil.BRAZIL, "/novo-teste"
+			).build());
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			_group.getGroupId(), false, parameters);
+
+		String i18nLanguageId = "pt_BR";
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.I18N_LANGUAGE_ID, i18nLanguageId);
+		mockHttpServletRequest.setPathInfo(oldPath);
+		mockHttpServletRequest.setRequestURI(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING + oldPath);
+		mockHttpServletRequest.setServletPath(i18nLanguageId);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_servlet.service(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			"/pt" + PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING +
+				_getLocalizedPath(_group, layout, LocaleUtil.BRAZIL),
+			mockHttpServletResponse.getRedirectedUrl());
+	}
+
+	@Test
+	public void testGetRedirectForAlternativeSite() throws Throwable {
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(), false,
+			HashMapBuilder.put(
+				LocaleUtil.US, "home"
+			).build(),
+			HashMapBuilder.put(
+				LocaleUtil.HUNGARY, "/home-hu"
+			).put(
+				LocaleUtil.UK, "/home-gb"
+			).put(
+				LocaleUtil.US, "/home"
+			).build());
+
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance("/home", true, false),
+			"/home-gb");
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance("/home", true, true),
+			"/en/home-gb");
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance("/home", true, true),
+			"/en-US/home-gb");
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance("/hu/home-hu", true, true),
+			"/hu/home-gb");
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance("/en-GB/home-gb", true, true),
+			"/en-GB/home");
+
+		String publicGroupFriendlyURL =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING +
+				_group.getFriendlyURL();
+
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance(
+				publicGroupFriendlyURL + "/home", true, false),
+			publicGroupFriendlyURL + "/home-gb");
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance(
+				publicGroupFriendlyURL + "/home", true, true),
+			StringBundler.concat("/en", publicGroupFriendlyURL, "/home-gb"));
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance(
+				publicGroupFriendlyURL + "/home", true, true),
+			StringBundler.concat("/en-US", publicGroupFriendlyURL, "/home-gb"));
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance(
+				StringBundler.concat("/hu", publicGroupFriendlyURL, "/home-hu"),
+				true, true),
+			StringBundler.concat("/hu", publicGroupFriendlyURL, "/home-gb"));
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance(
+				StringBundler.concat(
+					"/en-GB", publicGroupFriendlyURL, "/home-gb"),
+				true, true),
+			StringBundler.concat("/en-GB", publicGroupFriendlyURL, "/home"));
+
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance(getURL(layout), false, false),
+			"/fr/home");
+		_testGetRedirectForAlternativeSite(
+			_redirectConstructor2.newInstance("/home", true, true),
+			"/fr/home-gb");
+
+		PropsValues.LOCALE_USE_DEFAULT_IF_NOT_AVAILABLE = false;
+
+		_testGetRedirectForAlternativeSite(null, "/fr/home");
+		_testGetRedirectForAlternativeSite(null, "/fr/home-gb");
+	}
+
+	@Test
+	public void testGetRedirectForUserGroup() throws Throwable {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setPathInfo(StringPool.SLASH);
+
+		User user = UserTestUtil.addUser(_group.getGroupId());
+
+		UserGroup userGroup = UserGroupTestUtil.addUserGroup(
+			_group.getGroupId());
+
+		_userGroupLocalService.addUserUserGroup(
+			user.getUserId(), userGroup.getUserGroupId());
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			userGroup.getGroupId());
+
+		testGetRedirect(
+			mockHttpServletRequest, getPath(user.getGroup(), layout),
+			_redirectConstructor1.newInstance(
+				_portal.getLayoutActualURL(
+					new VirtualLayout(layout, user.getGroup()),
+					Portal.PATH_MAIN)));
 	}
 
 	@Test
@@ -172,33 +413,29 @@ public class FriendlyURLServletTest {
 		_resourcePermissionLocalService.updateResourcePermission(
 			resourcePermission);
 
-		Layout layout2 = LayoutTestUtil.addTypePortletLayout(group);
+		_user = UserTestUtil.addUser(group.getGroupId());
 
-		layout2.setHidden(true);
-
-		layout2 = _layoutLocalService.updateLayout(layout2);
+		PermissionThreadLocal.setPermissionChecker(
+			PermissionCheckerFactoryUtil.create(_user));
 
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
 		mockHttpServletRequest.setPathInfo(StringPool.SLASH);
 
-		_user = UserTestUtil.addUser();
-
-		PermissionThreadLocal.setPermissionChecker(
-			PermissionCheckerFactoryUtil.create(_user));
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
 
 		testGetRedirect(
-			mockHttpServletRequest, group.getFriendlyURL(), Portal.PATH_MAIN,
-			_redirectConstructor1.newInstance(getURL(layout2)));
+			mockHttpServletRequest, mockHttpServletResponse,
+			group.getFriendlyURL(),
+			_redirectConstructor1.newInstance(getURL(layout1)));
+		Assert.assertEquals(404, mockHttpServletResponse.getStatus());
 	}
 
 	@Test
 	public void testGetRedirectOnLinkToURLLayoutWithDoAsUserId()
 		throws Throwable {
-
-		_doAsUser = UserTestUtil.addUser();
-		_user = UserTestUtil.addUser();
 
 		Layout linkToURLLayout = LayoutTestUtil.addTypeLinkToURLLayout(
 			_group.getGroupId(), _layout.getFriendlyURL());
@@ -206,32 +443,20 @@ public class FriendlyURLServletTest {
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		mockHttpServletRequest.setAttribute(
-			WebKeys.USER_ID, _doAsUser.getUserId());
-
-		HttpSession httpSession = mockHttpServletRequest.getSession();
-
-		httpSession.setAttribute(WebKeys.USER_ID, _user.getUserId());
-
 		String path = getPath(_group, linkToURLLayout);
 
-		Company company = _companyLocalService.getCompany(
-			_doAsUser.getCompanyId());
-
-		String encryptedDoAsUserId = _encryptor.encrypt(
-			company.getKeyObj(), String.valueOf(_doAsUser.getUserId()));
+		String encryptedDoAsUserId = _getEncryptedDoAsUserId(
+			mockHttpServletRequest);
 
 		Object expectedRedirect = _redirectConstructor1.newInstance(
 			HttpComponentsUtil.setParameter(
 				_layout.getFriendlyURL(), "doAsUserId", encryptedDoAsUserId));
 
-		testGetRedirect(
-			mockHttpServletRequest, path, Portal.PATH_MAIN, expectedRedirect);
+		testGetRedirect(mockHttpServletRequest, path, expectedRedirect);
 
 		mockHttpServletRequest.setParameter("doAsUserId", encryptedDoAsUserId);
 
-		testGetRedirect(
-			mockHttpServletRequest, path, Portal.PATH_MAIN, expectedRedirect);
+		testGetRedirect(mockHttpServletRequest, path, expectedRedirect);
 	}
 
 	@Test
@@ -242,7 +467,7 @@ public class FriendlyURLServletTest {
 		mockHttpServletRequest.setPathInfo(StringPool.SLASH);
 
 		testGetRedirect(
-			mockHttpServletRequest, getPath(_group, _layout), Portal.PATH_MAIN,
+			mockHttpServletRequest, getPath(_group, _layout),
 			_redirectConstructor1.newInstance(getURL(_layout)));
 	}
 
@@ -256,17 +481,17 @@ public class FriendlyURLServletTest {
 		String path = "/" + _group.getGroupId() + _layout.getFriendlyURL();
 
 		testGetRedirect(
-			mockHttpServletRequest, path, Portal.PATH_MAIN,
+			mockHttpServletRequest, path,
 			_redirectConstructor1.newInstance(getURL(_layout)));
 	}
 
 	@Test
 	public void testGetRedirectWithI18nPath() throws Throwable {
-		testGetI18nRedirect("/fr", "/en");
-		testGetI18nRedirect("/hu", "/hu");
-		testGetI18nRedirect("/en", "/en");
-		testGetI18nRedirect("/de_DE", "/de_DE");
-		testGetI18nRedirect("/en_US", "/en_US");
+		testGetI18nRedirect("/fr");
+		testGetI18nRedirect("/hu");
+		testGetI18nRedirect("/en");
+		testGetI18nRedirect("/en_GB");
+		testGetI18nRedirect("/en_US");
 	}
 
 	@Test(expected = NoSuchGroupException.class)
@@ -276,9 +501,7 @@ public class FriendlyURLServletTest {
 
 		mockHttpServletRequest.setPathInfo(StringPool.SLASH);
 
-		testGetRedirect(
-			mockHttpServletRequest, "/nonexistent-site/home", Portal.PATH_MAIN,
-			null);
+		testGetRedirect(mockHttpServletRequest, "/nonexistent-site/home", null);
 	}
 
 	@Test
@@ -298,8 +521,41 @@ public class FriendlyURLServletTest {
 
 		testGetRedirect(
 			mockHttpServletRequest, getPath(userGroup, _layout),
-			Portal.PATH_MAIN,
 			_redirectConstructor1.newInstance(getURL(_layout)));
+	}
+
+	@Test
+	public void testGetRedirectWithRedirectEntryAndDoAsUserId()
+		throws Throwable {
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_group);
+
+		String sourceURL = RandomTestUtil.randomString();
+
+		_redirectEntryLocalService.addRedirectEntry(
+			_group.getGroupId(), layout.getName(LocaleUtil.US), null, false,
+			sourceURL, ServiceContextTestUtil.getServiceContext());
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setPathInfo(CharPool.SLASH + sourceURL);
+
+		String encryptedDoAsUserId = _getEncryptedDoAsUserId(
+			mockHttpServletRequest);
+
+		mockHttpServletRequest.setParameter("doAsUserId", encryptedDoAsUserId);
+
+		Object expectedRedirect = _redirectConstructor2.newInstance(
+			HttpComponentsUtil.setParameter(
+				layout.getName(LocaleUtil.US), "doAsUserId",
+				encryptedDoAsUserId),
+			true, false);
+
+		testGetRedirect(
+			mockHttpServletRequest,
+			_group.getFriendlyURL() + CharPool.SLASH + sourceURL,
+			expectedRedirect);
 	}
 
 	@Test
@@ -339,7 +595,7 @@ public class FriendlyURLServletTest {
 		mockHttpServletRequest.setPathInfo(_layout.getFriendlyURL());
 
 		testGetRedirect(
-			mockHttpServletRequest, getPath(_group, _layout), Portal.PATH_MAIN,
+			mockHttpServletRequest, getPath(_group, _layout),
 			_redirectConstructor1.newInstance(getURL(_layout)));
 	}
 
@@ -360,7 +616,6 @@ public class FriendlyURLServletTest {
 
 		testGetRedirect(
 			mockHttpServletRequest, _group.getFriendlyURL() + "/TÉSTREDIRECT",
-			Portal.PATH_MAIN,
 			_redirectConstructor2.newInstance(
 				layout.getName(LocaleUtil.US), true, false));
 	}
@@ -382,7 +637,6 @@ public class FriendlyURLServletTest {
 
 		testGetRedirect(
 			mockHttpServletRequest, _group.getFriendlyURL() + "/TESTREDIRECT",
-			Portal.PATH_MAIN,
 			_redirectConstructor2.newInstance(
 				layout.getName(LocaleUtil.US), true, false));
 	}
@@ -421,7 +675,7 @@ public class FriendlyURLServletTest {
 			ServiceContextTestUtil.getServiceContext(groupId);
 
 		Layout redirectLayout = _layoutLocalService.addLayout(
-			serviceContext.getUserId(), groupId, false,
+			null, serviceContext.getUserId(), groupId, false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap,
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(),
@@ -464,12 +718,11 @@ public class FriendlyURLServletTest {
 			HashMapBuilder.put(
 				locale, "/home"
 			).put(
-				LocaleUtil.GERMANY, "/home1"
+				LocaleUtil.UK, "/home1"
 			).build());
 
 		GroupTestUtil.updateDisplaySettings(
-			group.getGroupId(), Arrays.asList(LocaleUtil.GERMANY),
-			LocaleUtil.GERMANY);
+			group.getGroupId(), Arrays.asList(LocaleUtil.UK), LocaleUtil.UK);
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -481,7 +734,6 @@ public class FriendlyURLServletTest {
 					PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
 					group.getFriendlyURL(), "/home")),
 			mockHttpServletResponse, getPath(group, homeLayout) + "/home",
-			Portal.PATH_MAIN,
 			_redirectConstructor1.newInstance(getURL(homeLayout)));
 
 		Assert.assertEquals(404, mockHttpServletResponse.getStatus());
@@ -501,7 +753,6 @@ public class FriendlyURLServletTest {
 					PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
 					_group.getFriendlyURL(), "/path")),
 			mockHttpServletResponse, getPath(_group, _layout) + "/path",
-			Portal.PATH_MAIN,
 			_redirectConstructor1.newInstance(getURL(_layout)));
 
 		Assert.assertEquals(404, mockHttpServletResponse.getStatus());
@@ -583,6 +834,50 @@ public class FriendlyURLServletTest {
 	}
 
 	@Test
+	public void testServiceRedirectWithForwardedRequest() throws Throwable {
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_group);
+
+		String oldFriendlyURL = layout.getFriendlyURL();
+
+		String oldPath = getPath(_group, layout);
+
+		layout = _layoutLocalService.updateLayout(
+			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
+			layout.getParentLayoutId(), layout.getNameMap(),
+			layout.getTitleMap(), layout.getDescriptionMap(),
+			layout.getKeywordsMap(), layout.getRobotsMap(), layout.getType(),
+			layout.isHidden(),
+			HashMapBuilder.put(
+				LocaleUtil.getSiteDefault(),
+				StringPool.SLASH + RandomTestUtil.randomString()
+			).build(),
+			layout.isIconImage(), null, layout.getStyleBookEntryERC(),
+			layout.getFaviconFileEntryId(),
+			layout.getMasterLayoutPageTemplateEntryERC(),
+			ServiceContextTestUtil.getServiceContext());
+
+		mockHttpServletRequest.setAttribute(
+			JavaConstants.JAKARTA_SERVLET_FORWARD_REQUEST_URI, oldFriendlyURL);
+		mockHttpServletRequest.setPathInfo(oldPath);
+		mockHttpServletRequest.setRequestURI(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING + oldPath);
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_servlet.service(mockHttpServletRequest, mockHttpServletResponse);
+
+		Assert.assertEquals(
+			layout.getFriendlyURL(),
+			mockHttpServletResponse.getRedirectedUrl());
+
+		Assert.assertEquals(302, mockHttpServletResponse.getStatus());
+	}
+
+	@Test
 	public void testServiceRedirectWithRedirectEntry() throws Exception {
 		_testServiceRedirectWithRedirectEntry("path", true, 301);
 		_testServiceRedirectWithRedirectEntry("path", false, 302);
@@ -633,9 +928,7 @@ public class FriendlyURLServletTest {
 			"&p_v_l_s_g_id=0";
 	}
 
-	protected void testGetI18nRedirect(String i18nPath, String expectedI18nPath)
-		throws Throwable {
-
+	protected void testGetI18nRedirect(String i18nPath) throws Throwable {
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
@@ -653,30 +946,19 @@ public class FriendlyURLServletTest {
 
 		mockHttpServletRequest.setRequestURI(requestURI);
 
-		Object expectedRedirect = null;
-
-		if (!Objects.equals(i18nPath, expectedI18nPath)) {
-			expectedRedirect = _redirectConstructor2.newInstance(
-				expectedI18nPath + requestURI, true, true);
-		}
-		else {
-			expectedRedirect = _redirectConstructor1.newInstance(
-				getURL(_layout));
-		}
+		Object expectedRedirect = _redirectConstructor1.newInstance(
+			getURL(_layout));
 
 		testGetRedirect(
-			mockHttpServletRequest, _group.getFriendlyURL(), Portal.PATH_MAIN,
-			expectedRedirect);
-
+			mockHttpServletRequest, _group.getFriendlyURL(), expectedRedirect);
 		testGetRedirect(
-			mockHttpServletRequest, getPath(_group, _layout), Portal.PATH_MAIN,
-			expectedRedirect);
+			mockHttpServletRequest, getPath(_group, _layout), expectedRedirect);
 	}
 
 	protected void testGetRedirect(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, String path,
-			String mainPath, Object expectedRedirect)
+			Object expectedRedirect)
 		throws Throwable {
 
 		try {
@@ -691,13 +973,157 @@ public class FriendlyURLServletTest {
 	}
 
 	protected void testGetRedirect(
-			HttpServletRequest httpServletRequest, String path, String mainPath,
+			HttpServletRequest httpServletRequest, String path,
 			Object expectedRedirect)
 		throws Throwable {
 
 		testGetRedirect(
-			httpServletRequest, new MockHttpServletResponse(), path, mainPath,
+			httpServletRequest, new MockHttpServletResponse(), path,
 			expectedRedirect);
+	}
+
+	private String _getEncryptedDoAsUserId(
+			MockHttpServletRequest mockHttpServletRequest)
+		throws Exception {
+
+		_doAsUser = UserTestUtil.addUser();
+		_user = UserTestUtil.addUser();
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.USER_ID, _doAsUser.getUserId());
+
+		HttpSession httpSession = mockHttpServletRequest.getSession();
+
+		httpSession.setAttribute(WebKeys.USER_ID, _user.getUserId());
+
+		Company company = _companyLocalService.getCompany(
+			_doAsUser.getCompanyId());
+
+		byte[] doAsUserIdBytes = new byte[Long.BYTES];
+
+		BigEndianCodec.putLong(doAsUserIdBytes, 0, _doAsUser.getUserId());
+
+		return StringUtil.bytesToHexString(
+			ChecksumUtil.appendChecksum(
+				_encryptor.encryptUnencoded(
+					company.getKeyObj(), doAsUserIdBytes)));
+	}
+
+	private String _getLocalizedPath(
+		Group group, Layout layout, Locale locale) {
+
+		return group.getFriendlyURL() + layout.getFriendlyURL(locale);
+	}
+
+	private void _testGetRedirectForAlternativeSite(
+			Object expectedRedirect, String requestURI)
+		throws Throwable {
+
+		MockHttpServletRequest originalMockHttpServletRequest =
+			new MockHttpServletRequest("GET", requestURI);
+
+		int pos = requestURI.indexOf(StringPool.SLASH, 1);
+
+		if (pos > 0) {
+			originalMockHttpServletRequest.setPathInfo(
+				requestURI.substring(pos));
+
+			Map<String, String> languageIds = I18nServlet.getLanguageIdsMap();
+
+			String servletPath = languageIds.get(
+				StringUtil.toLowerCase(
+					StringUtil.replace(
+						requestURI.substring(0, pos), CharPool.DASH,
+						CharPool.UNDERLINE)));
+
+			if (servletPath != null) {
+				originalMockHttpServletRequest.setServletPath(servletPath);
+			}
+		}
+		else {
+			originalMockHttpServletRequest.setPathInfo(StringPool.SLASH);
+		}
+
+		String layoutFriendlyURL = requestURI.substring(
+			requestURI.lastIndexOf(StringPool.SLASH));
+
+		String publicFriendlyURL = StringBundler.concat(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+			_group.getFriendlyURL(), layoutFriendlyURL);
+
+		HttpServletRequest virtualHostFilterProcessedHttpServletRequest =
+			new HttpServletRequestWrapper(originalMockHttpServletRequest) {
+
+				@Override
+				public String getPathInfo() {
+					String requestURI = getRequestURI();
+
+					int pos = requestURI.indexOf(StringPool.SLASH, 1);
+
+					if (pos != -1) {
+						return requestURI.substring(pos);
+					}
+
+					return StringPool.SLASH;
+				}
+
+				@Override
+				public String getRequestURI() {
+					return super.getServletPath() + publicFriendlyURL;
+				}
+
+			};
+
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		if (!Validator.isBlank(
+				originalMockHttpServletRequest.getServletPath())) {
+
+			ReflectionTestUtil.invoke(
+				_i18nServlet, "service",
+				new Class<?>[] {
+					HttpServletRequest.class, HttpServletResponse.class
+				},
+				virtualHostFilterProcessedHttpServletRequest,
+				mockHttpServletResponse);
+		}
+
+		if (mockHttpServletResponse.getStatus() == 404) {
+			Assert.assertNull(expectedRedirect);
+		}
+		else {
+			HttpServletRequest
+				virtualHostFilterAndI18nServletProcessedHttpServletRequest =
+					new HttpServletRequestWrapper(
+						virtualHostFilterProcessedHttpServletRequest) {
+
+						@Override
+						public String getPathInfo() {
+							String requestURI = getRequestURI();
+
+							int pos = requestURI.indexOf(StringPool.SLASH, 1);
+
+							if (pos != -1) {
+								return requestURI.substring(pos);
+							}
+
+							return StringPool.SLASH;
+						}
+
+						@Override
+						public String getRequestURI() {
+							return publicFriendlyURL;
+						}
+
+					};
+
+			testGetRedirect(
+				virtualHostFilterAndI18nServletProcessedHttpServletRequest,
+				virtualHostFilterAndI18nServletProcessedHttpServletRequest.
+					getPathInfo(),
+				expectedRedirect);
+		}
 	}
 
 	private void _testServiceRedirectWithRedirectEntry(
@@ -751,10 +1177,24 @@ public class FriendlyURLServletTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
+	private final I18nServlet _i18nServlet = new I18nServlet() {
+
+		@Override
+		public ServletContext getServletContext() {
+			return _servletContext;
+		}
+
+		private final ServletContext _servletContext = new MockServletContext();
+
+	};
+
 	private Layout _layout;
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
+
+	@Inject
+	private Portal _portal;
 
 	private Constructor<?> _redirectConstructor1;
 	private Constructor<?> _redirectConstructor2;
@@ -775,5 +1215,8 @@ public class FriendlyURLServletTest {
 
 	@DeleteAfterTestRun
 	private User _user;
+
+	@Inject
+	private UserGroupLocalService _userGroupLocalService;
 
 }

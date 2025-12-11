@@ -363,7 +363,7 @@ public class KBArticlePersistenceTest {
 	public void testCountByR_SArrayable() throws Exception {
 		_persistence.countByR_S(
 			new long[] {RandomTestUtil.nextLong(), 0L},
-			RandomTestUtil.nextInt());
+			new int[] {RandomTestUtil.nextInt(), 0});
 	}
 
 	@Test
@@ -582,6 +582,16 @@ public class KBArticlePersistenceTest {
 		_persistence.countByG_ERC_V(0L, "null", 0);
 
 		_persistence.countByG_ERC_V(0L, (String)null, 0);
+	}
+
+	@Test
+	public void testCountByG_ERC_S() throws Exception {
+		_persistence.countByG_ERC_S(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt());
+
+		_persistence.countByG_ERC_S(0L, "null", 0);
+
+		_persistence.countByG_ERC_S(0L, (String)null, 0);
 	}
 
 	@Test
@@ -867,6 +877,23 @@ public class KBArticlePersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_P_M_S() throws Exception {
+		_persistence.countByG_P_M_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.randomBoolean(), RandomTestUtil.nextInt());
+
+		_persistence.countByG_P_M_S(0L, 0L, RandomTestUtil.randomBoolean(), 0);
+	}
+
+	@Test
+	public void testCountByG_P_M_SArrayable() throws Exception {
+		_persistence.countByG_P_M_S(
+			RandomTestUtil.nextLong(),
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomBoolean(), RandomTestUtil.nextInt());
+	}
+
+	@Test
 	public void testCountByG_P_M_NotS() throws Exception {
 		_persistence.countByG_P_M_NotS(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -885,19 +912,19 @@ public class KBArticlePersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_KBFI_UT_ST() throws Exception {
-		_persistence.countByG_KBFI_UT_ST(
+	public void testCountByG_KBFI_UT_S() throws Exception {
+		_persistence.countByG_KBFI_UT_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "",
 			RandomTestUtil.nextInt());
 
-		_persistence.countByG_KBFI_UT_ST(0L, 0L, "null", 0);
+		_persistence.countByG_KBFI_UT_S(0L, 0L, "null", 0);
 
-		_persistence.countByG_KBFI_UT_ST(0L, 0L, (String)null, 0);
+		_persistence.countByG_KBFI_UT_S(0L, 0L, (String)null, 0);
 	}
 
 	@Test
-	public void testCountByG_KBFI_UT_STArrayable() throws Exception {
-		_persistence.countByG_KBFI_UT_ST(
+	public void testCountByG_KBFI_UT_SArrayable() throws Exception {
+		_persistence.countByG_KBFI_UT_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
 			RandomTestUtil.randomString(),
 			new int[] {RandomTestUtil.nextInt(), 0});

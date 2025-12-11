@@ -3,7 +3,7 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Headless Discovery";
+	property testray.main.component.name = "Headless Discovery Application";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -29,8 +29,8 @@ definition {
 		}
 	}
 
-	@priority = 5
-	test CanConsumeGraphQLAPIsForHeadlessAdminContent {
+	@priority = 4
+	test CanGetFieldsAnnotatedWithGraphQLTypeExtension {
 		property portal.acceptance = "true";
 
 		task ("Given a basic web content is created") {
@@ -40,80 +40,22 @@ definition {
 				title = "Web Content Title");
 		}
 
-		task ("Given navigate to headless admin content endpoint") {
-			APIExplorer.navigateToOpenAPI(
-				api = "headless-admin-content",
-				version = "v1.0");
-		}
-
-		task ("When executing query structured content title") {
-			var siteId = JSONGroupSetter.setGroupId(groupName = "Guest");
-
-			APIExplorer.executeGraphqlQuery(query = "query {structuredContents(siteKey:\"${siteId}\"){items{title}}}");
-		}
-
-		task ("Then the value in respone equals to the one we created") {
-			AssertTextEquals.assertPartialText(
-				locator1 = "OpenAPI#GRAPHQL_RESPONSE",
-				value1 = "\"title\": \"Web Content Title\"");
-		}
-	}
-
-	@priority = 5
-	test CanConsumeGraphQLAPIsForHeadlessAdminTaxonomy {
-		property portal.acceptance = "true";
-
-		task ("Given a vocabulary is added") {
-			JSONCategory.addVocabulary(
-				groupName = "Guest",
-				title = "Vocabulary Name");
-		}
-
-		task ("Given navigate to headless admin taxonomy endpoint") {
-			APIExplorer.navigateToOpenAPI(
-				api = "headless-admin-taxonomy",
-				version = "v1.0");
-		}
-
-		task ("When executing query taxonomy vocabulary name") {
-			var siteId = JSONGroupSetter.setGroupId(groupName = "Guest");
-
-			APIExplorer.executeGraphqlQuery(query = "query{taxonomyVocabularies(siteKey:\"${siteId}\"){items{name}}}");
-		}
-
-		task ("Then the value in respone equals to the one we created") {
-			AssertTextEquals.assertPartialText(
-				locator1 = "OpenAPI#GRAPHQL_RESPONSE",
-				value1 = "\"name\": \"Vocabulary Name\"");
-		}
-	}
-
-	@priority = 5
-	test CanConsumeGraphQLAPIsForHeadlessDelivery {
-		property portal.acceptance = "true";
-
-		task ("Given a blog entry with a custom headline is created") {
-			BlogPostingAPI.getIdOfCreatedBlogPosting(
-				articleBody = "myArticleBody",
-				headline = "headline of my blog posting");
-		}
-
-		task ("Given navigate to headless delivery endpoint") {
+		task ("And Given navigate to headless delivery endpoint") {
 			APIExplorer.navigateToOpenAPI(
 				api = "headless-delivery",
 				version = "v1.0");
 		}
 
-		task ("When executing query blog headline") {
+		task ("When executing query structured content info") {
 			var siteId = JSONGroupSetter.setGroupId(groupName = "Guest");
 
-			APIExplorer.executeGraphqlQuery(query = "query{blogPostings(siteKey:\"${siteId}\"){items{headline}}}");
+			APIExplorer.executeGraphqlQuery(query = "query {admin {structuredContents(siteKey: \"${siteId}\"){items {title version {number status {code}}}}}}");
 		}
 
 		task ("Then the value in respone equals to the one we created") {
 			AssertTextEquals.assertPartialText(
 				locator1 = "OpenAPI#GRAPHQL_RESPONSE",
-				value1 = "\"headline\": \"headline of my blog posting\"");
+				value1 = "{             \"title\": \"Web Content Title\",             \"version\": {               \"number\": 1,               \"status\": {                 \"code\": 0               }             }           }");
 		}
 	}
 

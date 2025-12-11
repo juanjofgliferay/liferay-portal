@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -39,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("DiscountAccountGroup")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"accountGroupId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"accountGroupId"})
 @XmlRootElement(name = "DiscountAccountGroup")
 public class DiscountAccountGroup implements Serializable {
 
@@ -53,14 +54,22 @@ public class DiscountAccountGroup implements Serializable {
 			DiscountAccountGroup.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public PricingAccountGroup getAccountGroup() {
+		if (_accountGroupSupplier != null) {
+			accountGroup = _accountGroupSupplier.get();
+
+			_accountGroupSupplier = null;
+		}
+
 		return accountGroup;
 	}
 
 	public void setAccountGroup(PricingAccountGroup accountGroup) {
 		this.accountGroup = accountGroup;
+
+		_accountGroupSupplier = null;
 	}
 
 	@JsonIgnore
@@ -68,23 +77,35 @@ public class DiscountAccountGroup implements Serializable {
 		UnsafeSupplier<PricingAccountGroup, Exception>
 			accountGroupUnsafeSupplier) {
 
-		try {
-			accountGroup = accountGroupUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountGroupSupplier = () -> {
+			try {
+				return accountGroupUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected PricingAccountGroup accountGroup;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<PricingAccountGroup> _accountGroupSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "PAB-34098-789-N")
 	public String getAccountGroupExternalReferenceCode() {
+		if (_accountGroupExternalReferenceCodeSupplier != null) {
+			accountGroupExternalReferenceCode =
+				_accountGroupExternalReferenceCodeSupplier.get();
+
+			_accountGroupExternalReferenceCodeSupplier = null;
+		}
+
 		return accountGroupExternalReferenceCode;
 	}
 
@@ -93,6 +114,8 @@ public class DiscountAccountGroup implements Serializable {
 
 		this.accountGroupExternalReferenceCode =
 			accountGroupExternalReferenceCode;
+
+		_accountGroupExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -100,45 +123,59 @@ public class DiscountAccountGroup implements Serializable {
 		UnsafeSupplier<String, Exception>
 			accountGroupExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			accountGroupExternalReferenceCode =
-				accountGroupExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountGroupExternalReferenceCodeSupplier = () -> {
+			try {
+				return accountGroupExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String accountGroupExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _accountGroupExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getAccountGroupId() {
+		if (_accountGroupIdSupplier != null) {
+			accountGroupId = _accountGroupIdSupplier.get();
+
+			_accountGroupIdSupplier = null;
+		}
+
 		return accountGroupId;
 	}
 
 	public void setAccountGroupId(Long accountGroupId) {
 		this.accountGroupId = accountGroupId;
+
+		_accountGroupIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccountGroupId(
 		UnsafeSupplier<Long, Exception> accountGroupIdUnsafeSupplier) {
 
-		try {
-			accountGroupId = accountGroupIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountGroupIdSupplier = () -> {
+			try {
+				return accountGroupIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -146,14 +183,25 @@ public class DiscountAccountGroup implements Serializable {
 	@NotNull
 	protected Long accountGroupId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _accountGroupIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -161,52 +209,77 @@ public class DiscountAccountGroup implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getDiscountAccountGroupId() {
+		if (_discountAccountGroupIdSupplier != null) {
+			discountAccountGroupId = _discountAccountGroupIdSupplier.get();
+
+			_discountAccountGroupIdSupplier = null;
+		}
+
 		return discountAccountGroupId;
 	}
 
 	public void setDiscountAccountGroupId(Long discountAccountGroupId) {
 		this.discountAccountGroupId = discountAccountGroupId;
+
+		_discountAccountGroupIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountAccountGroupId(
 		UnsafeSupplier<Long, Exception> discountAccountGroupIdUnsafeSupplier) {
 
-		try {
-			discountAccountGroupId = discountAccountGroupIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountAccountGroupIdSupplier = () -> {
+			try {
+				return discountAccountGroupIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountAccountGroupId;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Long> _discountAccountGroupIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getDiscountExternalReferenceCode() {
+		if (_discountExternalReferenceCodeSupplier != null) {
+			discountExternalReferenceCode =
+				_discountExternalReferenceCodeSupplier.get();
+
+			_discountExternalReferenceCodeSupplier = null;
+		}
+
 		return discountExternalReferenceCode;
 	}
 
@@ -214,6 +287,8 @@ public class DiscountAccountGroup implements Serializable {
 		String discountExternalReferenceCode) {
 
 		this.discountExternalReferenceCode = discountExternalReferenceCode;
+
+		_discountExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -221,50 +296,67 @@ public class DiscountAccountGroup implements Serializable {
 		UnsafeSupplier<String, Exception>
 			discountExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			discountExternalReferenceCode =
-				discountExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountExternalReferenceCodeSupplier = () -> {
+			try {
+				return discountExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String discountExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _discountExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getDiscountId() {
+		if (_discountIdSupplier != null) {
+			discountId = _discountIdSupplier.get();
+
+			_discountIdSupplier = null;
+		}
+
 		return discountId;
 	}
 
 	public void setDiscountId(Long discountId) {
 		this.discountId = discountId;
+
+		_discountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountId(
 		UnsafeSupplier<Long, Exception> discountIdUnsafeSupplier) {
 
-		try {
-			discountId = discountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountIdSupplier = () -> {
+			try {
+				return discountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountId;
+
+	@JsonIgnore
+	private Supplier<Long> _discountIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -294,6 +386,8 @@ public class DiscountAccountGroup implements Serializable {
 
 		sb.append("{");
 
+		PricingAccountGroup accountGroup = getAccountGroup();
+
 		if (accountGroup != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -303,6 +397,9 @@ public class DiscountAccountGroup implements Serializable {
 
 			sb.append(String.valueOf(accountGroup));
 		}
+
+		String accountGroupExternalReferenceCode =
+			getAccountGroupExternalReferenceCode();
 
 		if (accountGroupExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -318,6 +415,8 @@ public class DiscountAccountGroup implements Serializable {
 			sb.append("\"");
 		}
 
+		Long accountGroupId = getAccountGroupId();
+
 		if (accountGroupId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -327,6 +426,8 @@ public class DiscountAccountGroup implements Serializable {
 
 			sb.append(accountGroupId);
 		}
+
+		Map<String, Map<String, String>> actions = getActions();
 
 		if (actions != null) {
 			if (sb.length() > 1) {
@@ -338,6 +439,8 @@ public class DiscountAccountGroup implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		Long discountAccountGroupId = getDiscountAccountGroupId();
+
 		if (discountAccountGroupId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -347,6 +450,9 @@ public class DiscountAccountGroup implements Serializable {
 
 			sb.append(discountAccountGroupId);
 		}
+
+		String discountExternalReferenceCode =
+			getDiscountExternalReferenceCode();
 
 		if (discountExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -361,6 +467,8 @@ public class DiscountAccountGroup implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long discountId = getDiscountId();
 
 		if (discountId != null) {
 			if (sb.length() > 1) {
@@ -377,8 +485,8 @@ public class DiscountAccountGroup implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountAccountGroup",
 		name = "x-class-name"
 	)
@@ -424,7 +532,10 @@ public class DiscountAccountGroup implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

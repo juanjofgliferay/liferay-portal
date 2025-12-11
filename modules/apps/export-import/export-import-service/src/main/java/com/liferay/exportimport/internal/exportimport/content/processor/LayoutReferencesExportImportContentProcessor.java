@@ -29,23 +29,24 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutFriendlyURLLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.InetAddressUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.staging.StagingGroupHelper;
 
 import java.net.InetAddress;
@@ -55,7 +56,7 @@ import java.net.UnknownHostException;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.NavigableMap;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -125,7 +126,7 @@ public class LayoutReferencesExportImportContentProcessor
 
 		LayoutSet publicLayoutSet = group.getPublicLayoutSet();
 
-		TreeMap<String, String> publicLayoutSetVirtualHostnames =
+		NavigableMap<String, String> publicLayoutSetVirtualHostnames =
 			publicLayoutSet.getVirtualHostnames();
 
 		String portalURL = StringPool.BLANK;
@@ -148,7 +149,7 @@ public class LayoutReferencesExportImportContentProcessor
 
 		LayoutSet privateLayoutSet = group.getPrivateLayoutSet();
 
-		TreeMap<String, String> privateLayoutSetVirtualHostnames =
+		NavigableMap<String, String> privateLayoutSetVirtualHostnames =
 			privateLayoutSet.getVirtualHostnames();
 
 		if (!privateLayoutSetVirtualHostnames.isEmpty()) {
@@ -434,7 +435,7 @@ public class LayoutReferencesExportImportContentProcessor
 					else {
 						LayoutSet publicLayoutSet = group.getPublicLayoutSet();
 
-						TreeMap<String, String> publicVirtualHostnames =
+						NavigableMap<String, String> publicVirtualHostnames =
 							publicLayoutSet.getVirtualHostnames();
 
 						if (!publicVirtualHostnames.isEmpty() ||
@@ -635,7 +636,7 @@ public class LayoutReferencesExportImportContentProcessor
 					company.getVirtualHostname(), serverPort, false);
 			}
 
-			TreeMap<String, String> privateVirtualHostnames =
+			NavigableMap<String, String> privateVirtualHostnames =
 				privateLayoutSet.getVirtualHostnames();
 
 			if (!privateVirtualHostnames.isEmpty()) {
@@ -646,7 +647,7 @@ public class LayoutReferencesExportImportContentProcessor
 				privateLayoutSetPortalURL = companyPortalURL;
 			}
 
-			TreeMap<String, String> publicVirtualHostnames =
+			NavigableMap<String, String> publicVirtualHostnames =
 				publicLayoutSet.getVirtualHostnames();
 
 			if (!publicVirtualHostnames.isEmpty()) {
@@ -678,7 +679,7 @@ public class LayoutReferencesExportImportContentProcessor
 					company.getVirtualHostname(), secureSecurePort, true);
 			}
 
-			TreeMap<String, String> privateVirtualHostnames =
+			NavigableMap<String, String> privateVirtualHostnames =
 				privateLayoutSet.getVirtualHostnames();
 
 			if (!privateVirtualHostnames.isEmpty()) {
@@ -686,7 +687,7 @@ public class LayoutReferencesExportImportContentProcessor
 					privateVirtualHostnames.firstKey(), secureSecurePort, true);
 			}
 
-			TreeMap<String, String> publicVirtualHostnames =
+			NavigableMap<String, String> publicVirtualHostnames =
 				publicLayoutSet.getVirtualHostnames();
 
 			if (!publicVirtualHostnames.isEmpty()) {
@@ -718,7 +719,7 @@ public class LayoutReferencesExportImportContentProcessor
 			StringPool.BLANK;
 		String virtualHostPublicLayoutFriendlyURLReplacement = StringPool.BLANK;
 
-		TreeMap<String, String> privateVirtualHostnames =
+		NavigableMap<String, String> privateVirtualHostnames =
 			privateLayoutSet.getVirtualHostnames();
 
 		if (privateVirtualHostnames.isEmpty()) {
@@ -737,7 +738,7 @@ public class LayoutReferencesExportImportContentProcessor
 				group.getFriendlyURL();
 		}
 
-		TreeMap<String, String> publicVirtualHostnames =
+		NavigableMap<String, String> publicVirtualHostnames =
 			publicLayoutSet.getVirtualHostnames();
 
 		if (publicVirtualHostnames.isEmpty() && !_isDefaultGroup(group)) {
@@ -879,11 +880,6 @@ public class LayoutReferencesExportImportContentProcessor
 
 		Group group = _groupLocalService.getGroup(groupId);
 
-		String[] friendlyURLSeparators = {
-			"/-/", FriendlyURLResolverConstants.URL_SEPARATOR_BLOGS_ENTRY,
-			FriendlyURLResolverConstants.URL_SEPARATOR_FILE_ENTRY,
-			FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE
-		};
 		String[] patterns = {"href=", "[[", "{{"};
 
 		int beginPos = -1;
@@ -945,7 +941,11 @@ public class LayoutReferencesExportImportContentProcessor
 
 			url = content.substring(beginPos + offset, endPos);
 
-			endPos = StringUtil.indexOfAny(url, friendlyURLSeparators);
+			endPos = StringUtil.indexOfAny(
+				url,
+				ArrayUtil.remove(
+					FriendlyURLResolverRegistryUtil.getURLSeparators(),
+					VirtualLayoutConstants.CANONICAL_URL_SEPARATOR));
 
 			if (endPos != -1) {
 				url = url.substring(0, endPos);
@@ -1082,7 +1082,7 @@ public class LayoutReferencesExportImportContentProcessor
 				else {
 					LayoutSet publicLayoutSet = group.getPublicLayoutSet();
 
-					TreeMap<String, String> publicVirtualHostnames =
+					NavigableMap<String, String> publicVirtualHostnames =
 						publicLayoutSet.getVirtualHostnames();
 
 					if (!publicVirtualHostnames.isEmpty() ||

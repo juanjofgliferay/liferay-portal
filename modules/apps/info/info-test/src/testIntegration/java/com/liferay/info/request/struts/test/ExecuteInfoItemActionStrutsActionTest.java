@@ -10,6 +10,7 @@ import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.object.constants.ObjectActionExecutorConstants;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.field.builder.TextObjectFieldBuilder;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectAction;
@@ -19,6 +20,7 @@ import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.EventsProcessorUtil;
@@ -46,12 +48,13 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.script.management.test.rule.ScriptManagementConfigurationTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upload.test.util.UploadTestUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import java.io.Serializable;
@@ -80,7 +83,9 @@ public class ExecuteInfoItemActionStrutsActionTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			ScriptManagementConfigurationTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -91,13 +96,13 @@ public class ExecuteInfoItemActionStrutsActionTest {
 		ObjectDefinition objectDefinition = _addObjectDefinition();
 
 		_classNameId = String.valueOf(
-			_portal.getClassNameId(
-				ObjectDefinition.class.getName() + "#" +
-					objectDefinition.getObjectDefinitionId()));
+			_portal.getClassNameId(objectDefinition.getClassName()));
 
 		ObjectEntry objectEntry = _objectEntryLocalService.addObjectEntry(
-			_user.getUserId(), _group.getGroupId(),
+			_group.getGroupId(), _user.getUserId(),
 			objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
 			HashMapBuilder.<String, Serializable>put(
 				"text", RandomTestUtil.randomString()
 			).build(),
@@ -109,7 +114,7 @@ public class ExecuteInfoItemActionStrutsActionTest {
 			RandomTestUtil.randomString());
 		_fileName = _file.createTempFileName("action-executed-", "txt");
 		_layout = _layoutLocalService.addLayout(
-			_user.getUserId(), _group.getGroupId(), false,
+			null, _user.getUserId(), _group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 0,
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(), Collections.emptyMap(),
@@ -118,7 +123,7 @@ public class ExecuteInfoItemActionStrutsActionTest {
 			UnicodePropertiesBuilder.put(
 				LayoutTypeSettingsConstants.KEY_PUBLISHED, "true"
 			).buildString(),
-			false, false, Collections.emptyMap(), 0,
+			false, false, Collections.emptyMap(), null,
 			ServiceContextTestUtil.getServiceContext(
 				_group.getGroupId(), _user.getUserId()));
 
@@ -162,13 +167,15 @@ public class ExecuteInfoItemActionStrutsActionTest {
 	private ObjectDefinition _addObjectDefinition() throws Exception {
 		ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
-				_user.getUserId(), 0, false, false, false,
+				null, _user.getUserId(), 0, null, false, true, false, true,
+				false, false, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null,
+				ObjectDefinitionTestUtil.getRandomName(), null,
 				"control_panel.sites",
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				false, ObjectDefinitionConstants.SCOPE_SITE,
-				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT, null);
+				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+				Collections.emptyList(), null, Collections.emptyList());
 
 		ObjectField objectField = ObjectFieldUtil.addCustomObjectField(
 			new TextObjectFieldBuilder(

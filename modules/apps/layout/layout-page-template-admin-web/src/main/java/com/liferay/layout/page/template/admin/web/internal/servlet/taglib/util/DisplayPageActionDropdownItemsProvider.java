@@ -15,15 +15,18 @@ import com.liferay.info.item.provider.InfoItemDetailsProvider;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
+import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
 import com.liferay.item.selector.criteria.upload.criterion.UploadItemSelectorCriterion;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
 import com.liferay.layout.page.template.admin.web.internal.configuration.LayoutPageTemplateAdminWebConfiguration;
 import com.liferay.layout.page.template.admin.web.internal.constants.LayoutPageTemplateAdminWebKeys;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplateEntryPermission;
+import com.liferay.layout.page.template.item.selector.LayoutPageTemplateCollectionTreeNodeItemSelectorCriterion;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -45,13 +48,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -132,7 +135,8 @@ public class DisplayPageActionDropdownItemsProvider {
 					).add(
 						() ->
 							_layoutPageTemplateEntry.isApproved() &&
-							(_layoutPageTemplateEntry.getClassNameId() > 0) &&
+							Validator.isNotNull(
+								_layoutPageTemplateEntry.getClassName()) &&
 							hasUpdatePermission,
 						_getMarkAsDefaultDisplayPageActionUnsafeConsumer()
 					).add(
@@ -154,6 +158,9 @@ public class DisplayPageActionDropdownItemsProvider {
 							_layoutPageTemplateEntry.getLayoutPrototypeId() ==
 								0,
 						_getExportDisplayPageActionUnsafeConsumer()
+					).add(
+						() -> hasUpdatePermission,
+						_getMoveDisplayPageActionUnsafeConsumer()
 					).build());
 				dropdownGroupItem.setSeparator(true);
 			}
@@ -305,17 +312,18 @@ public class DisplayPageActionDropdownItemsProvider {
 		return PortletURLBuilder.createActionURL(
 			_renderResponse
 		).setActionName(
-			"/layout_page_template_admin/copy_layout_page_template_entry"
+			"/layout_page_template_admin/copy_layout_page_template_entries_" +
+				"and_layout_page_template_collections"
 		).setRedirect(
 			_themeDisplay.getURLCurrent()
 		).setParameter(
 			"copyPermissions", copyPermissions
 		).setParameter(
-			"layoutPageTemplateCollectionId",
-			_layoutPageTemplateEntry.getLayoutPageTemplateCollectionId()
-		).setParameter(
-			"layoutPageTemplateEntryId",
+			"layoutPageTemplateEntriesIds",
 			_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
+		).setParameter(
+			"layoutParentPageTemplateCollectionId",
+			_layoutPageTemplateEntry.getLayoutPageTemplateCollectionId()
 		).buildString();
 	}
 
@@ -345,6 +353,8 @@ public class DisplayPageActionDropdownItemsProvider {
 						"/delete_layout_page_template_entry"
 				).setRedirect(
 					_themeDisplay.getURLCurrent()
+				).setTabs1(
+					"display-page-templates"
 				).setParameter(
 					"layoutPageTemplateEntryId",
 					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
@@ -501,6 +511,22 @@ public class DisplayPageActionDropdownItemsProvider {
 				itemSelectorCriterion));
 	}
 
+	private String _getLayoutPageTemplateCollectionItemSelectorURL() {
+		LayoutPageTemplateCollectionTreeNodeItemSelectorCriterion
+			layoutPageTemplateCollectionTreeNodeItemSelectorCriterion =
+				new LayoutPageTemplateCollectionTreeNodeItemSelectorCriterion();
+
+		layoutPageTemplateCollectionTreeNodeItemSelectorCriterion.
+			setDesiredItemSelectorReturnTypes(new UUIDItemSelectorReturnType());
+
+		return PortletURLBuilder.create(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				"selectFolder",
+				layoutPageTemplateCollectionTreeNodeItemSelectorCriterion)
+		).buildString();
+	}
+
 	private UnsafeConsumer<DropdownItem, Exception>
 		_getMarkAsDefaultDisplayPageActionUnsafeConsumer() {
 
@@ -569,6 +595,39 @@ public class DisplayPageActionDropdownItemsProvider {
 			}
 
 			dropdownItem.setLabel(LanguageUtil.get(_httpServletRequest, label));
+		};
+	}
+
+	private UnsafeConsumer<DropdownItem, Exception>
+		_getMoveDisplayPageActionUnsafeConsumer() {
+
+		return dropdownItem -> {
+			dropdownItem.putData("action", "moveDisplayPage");
+			dropdownItem.putData(
+				"itemSelectorURL",
+				_getLayoutPageTemplateCollectionItemSelectorURL());
+			dropdownItem.putData(
+				"layoutPageTemplateEntryId",
+				String.valueOf(
+					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()));
+			dropdownItem.putData(
+				"layoutPageTemplateEntryName",
+				_layoutPageTemplateEntry.getName());
+			dropdownItem.putData(
+				"moveSelectedDisplayPageURL",
+				PortletURLBuilder.createActionURL(
+					_renderResponse
+				).setActionName(
+					StringBundler.concat(
+						"/layout_page_template_admin",
+						"/move_layout_page_template_entries",
+						"_and_layout_page_template_collections")
+				).setRedirect(
+					_themeDisplay.getURLCurrent()
+				).buildString());
+			dropdownItem.setIcon("move-folder");
+			dropdownItem.setLabel(
+				LanguageUtil.get(_httpServletRequest, "move"));
 		};
 	}
 
@@ -701,11 +760,7 @@ public class DisplayPageActionDropdownItemsProvider {
 			return false;
 		}
 
-		if (_draftLayout.isDraft()) {
-			return true;
-		}
-
-		return false;
+		return _draftLayout.isDraft();
 	}
 
 	private final boolean _allowedMappedContentType;

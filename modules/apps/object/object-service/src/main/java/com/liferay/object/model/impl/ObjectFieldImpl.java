@@ -11,10 +11,17 @@ import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectFieldSetting;
+import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.service.ObjectDefinitionLocalServiceUtil;
+import com.liferay.object.service.ObjectFieldSettingLocalServiceUtil;
+import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
@@ -28,11 +35,26 @@ public class ObjectFieldImpl extends ObjectFieldBaseImpl {
 
 	@Override
 	public boolean compareBusinessType(String businessType) {
-		if (Objects.equals(getBusinessType(), businessType)) {
-			return true;
+		return Objects.equals(getBusinessType(), businessType);
+	}
+
+	@Override
+	public String getAttachmentDownloadActionKey() {
+		return StringBundler.concat(
+			ActionKeys.DOWNLOAD, StringPool.UNDERLINE,
+			TextFormatter.format(getName(), TextFormatter.R));
+	}
+
+	@Override
+	public String[] getDBColumnNames() {
+		if (compareBusinessType(ObjectFieldConstants.BUSINESS_TYPE_ASSIGNEE)) {
+			return new String[] {
+				"classNameId_" + getDBColumnName(),
+				"classPK_" + getDBColumnName()
+			};
 		}
 
-		return false;
+		return new String[] {getDBColumnName()};
 	}
 
 	@Override
@@ -48,7 +70,30 @@ public class ObjectFieldImpl extends ObjectFieldBaseImpl {
 
 	@Override
 	public List<ObjectFieldSetting> getObjectFieldSettings() {
+		if (_objectFieldSettings == null) {
+			_objectFieldSettings =
+				ObjectFieldSettingLocalServiceUtil.
+					getObjectFieldObjectFieldSettings(getObjectFieldId());
+		}
+
 		return _objectFieldSettings;
+	}
+
+	@Override
+	public ObjectRelationship getObjectRelationship() {
+		return ObjectRelationshipLocalServiceUtil.
+			fetchObjectRelationshipByObjectFieldId2(getObjectFieldId());
+	}
+
+	@Override
+	public String getReadOnly() {
+		String readOnly = super.getReadOnly();
+
+		if (Validator.isNull(readOnly)) {
+			return ObjectFieldConstants.READ_ONLY_FALSE;
+		}
+
+		return readOnly;
 	}
 
 	@Override
@@ -75,7 +120,7 @@ public class ObjectFieldImpl extends ObjectFieldBaseImpl {
 			GetterUtil.getBoolean(
 				ObjectFieldSettingUtil.getValue(
 					ObjectFieldSettingConstants.NAME_UNIQUE_VALUES,
-					_objectFieldSettings))) {
+					getObjectFieldSettings()))) {
 
 			return true;
 		}
@@ -83,6 +128,7 @@ public class ObjectFieldImpl extends ObjectFieldBaseImpl {
 		return false;
 	}
 
+	@Override
 	public boolean hasUpdateValues() {
 		if (compareBusinessType(
 				ObjectFieldConstants.BUSINESS_TYPE_AGGREGATION) ||
@@ -104,9 +150,11 @@ public class ObjectFieldImpl extends ObjectFieldBaseImpl {
 
 		ObjectDefinition objectDefinition = getObjectDefinition();
 
-		if (objectDefinition.isUnmodifiableSystemObject() &&
-			!Objects.equals(
-				objectDefinition.getExtensionDBTableName(), getDBTableName())) {
+		if ((objectDefinition.isUnmodifiableSystemObject() &&
+			 !Objects.equals(
+				 objectDefinition.getExtensionDBTableName(),
+				 getDBTableName())) ||
+			ObjectFieldUtil.isMetadata(getName())) {
 
 			return false;
 		}
@@ -114,6 +162,7 @@ public class ObjectFieldImpl extends ObjectFieldBaseImpl {
 		return true;
 	}
 
+	@Override
 	public boolean isMetadata() {
 		return ObjectFieldUtil.isMetadata(getName());
 	}

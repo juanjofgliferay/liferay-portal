@@ -6,7 +6,6 @@
 package com.liferay.search.experiences.internal.info.collection.provider;
 
 import com.liferay.asset.util.AssetHelper;
-import com.liferay.info.collection.provider.BetaInfoCollectionProvider;
 import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.FilteredInfoCollectionProvider;
 import com.liferay.info.collection.provider.SingleFormVariationInfoCollectionProvider;
@@ -15,13 +14,19 @@ import com.liferay.info.filter.InfoFilter;
 import com.liferay.info.filter.KeywordsInfoFilter;
 import com.liferay.info.filter.TagsInfoFilter;
 import com.liferay.info.pagination.Pagination;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.search.constants.SearchContextAttributes;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.search.experiences.model.SXPBlueprint;
 
@@ -33,7 +38,7 @@ import java.util.Locale;
  * @author Petteri Karttunen
  */
 public abstract class SXPBlueprintInfoCollectionProvider<T>
-	implements BetaInfoCollectionProvider<T>, FilteredInfoCollectionProvider<T>,
+	implements FilteredInfoCollectionProvider<T>,
 			   SingleFormVariationInfoCollectionProvider<T> {
 
 	public SXPBlueprintInfoCollectionProvider(
@@ -45,6 +50,30 @@ public abstract class SXPBlueprintInfoCollectionProvider<T>
 		this.searcher = searcher;
 		this.searchRequestBuilderFactory = searchRequestBuilderFactory;
 		this.sxpBlueprint = sxpBlueprint;
+	}
+
+	public SearchResponse getCollectionQuerySearchResponse(
+		CollectionQuery collectionQuery) {
+
+		Pagination pagination = collectionQuery.getPagination();
+
+		SearchRequestBuilder searchRequestBuilder = getSearchRequestBuilder(
+			collectionQuery, pagination);
+
+		return searcher.search(searchRequestBuilder.build());
+	}
+
+	@Override
+	public String getFormVariationKey() {
+		return sxpBlueprint.getExternalReferenceCode();
+	}
+
+	@Override
+	public String getKey() {
+		return StringBundler.concat(
+			SXPBlueprint.class.getName(), StringPool.UNDERLINE,
+			sxpBlueprint.getCompanyId(), StringPool.UNDERLINE,
+			sxpBlueprint.getExternalReferenceCode());
 	}
 
 	@Override
@@ -61,7 +90,14 @@ public abstract class SXPBlueprintInfoCollectionProvider<T>
 
 	@Override
 	public boolean isAvailable() {
-		return FeatureFlagManagerUtil.isEnabled("LPS-129412");
+		if (FeatureFlagManagerUtil.isEnabled("LPS-129412") &&
+			(sxpBlueprint.getCompanyId() ==
+				CompanyThreadLocal.getCompanyId())) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	protected SearchRequestBuilder getSearchRequestBuilder(
@@ -89,7 +125,8 @@ public abstract class SXPBlueprintInfoCollectionProvider<T>
 					collectionQuery.getInfoFilter(CategoriesInfoFilter.class);
 
 				if ((categoriesInfoFilter != null) &&
-					!ArrayUtil.isEmpty(categoriesInfoFilter.getCategoryIds())) {
+					ArrayUtil.isNotEmpty(
+						categoriesInfoFilter.getCategoryIds())) {
 
 					long[] categoryIds = ArrayUtil.append(
 						categoriesInfoFilter.getCategoryIds());
@@ -103,7 +140,7 @@ public abstract class SXPBlueprintInfoCollectionProvider<T>
 					TagsInfoFilter.class);
 
 				if ((tagsInfoFilter != null) &&
-					!ArrayUtil.isEmpty(tagsInfoFilter.getTagNames())) {
+					ArrayUtil.isNotEmpty(tagsInfoFilter.getTagNames())) {
 
 					String[] tagNames = ArrayUtil.append(
 						tagsInfoFilter.getTagNames());
@@ -130,7 +167,16 @@ public abstract class SXPBlueprintInfoCollectionProvider<T>
 					collectionQuery.getInfoFilter(KeywordsInfoFilter.class);
 
 				if (keywordsInfoFilter != null) {
-					searchContext.setKeywords(keywordsInfoFilter.getKeywords());
+					String keywords = keywordsInfoFilter.getKeywords();
+
+					searchContext.setKeywords(keywords);
+
+					if (!Validator.isBlank(keywords)) {
+						searchContext.setAttribute(
+							SearchContextAttributes.
+								ATTRIBUTE_KEY_CONTRIBUTE_TUNING_RANKINGS,
+							Boolean.TRUE);
+					}
 				}
 
 				searchContext.setLocale(serviceContext.getLocale());

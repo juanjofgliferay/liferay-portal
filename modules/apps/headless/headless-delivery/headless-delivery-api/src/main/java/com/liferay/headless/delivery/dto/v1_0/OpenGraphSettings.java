@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,42 +51,67 @@ public class OpenGraphSettings implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(OpenGraphSettings.class, json);
 	}
 
-	@Schema(description = "The Open Graph's description.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The Open Graph's description."
+	)
 	public String getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(String description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDescription(
 		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The Open Graph's description.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String description;
 
-	@Schema(description = "The localized Open Graph's descriptions.")
+	@JsonIgnore
+	private Supplier<String> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized Open Graph's descriptions."
+	)
 	@Valid
 	public Map<String, String> getDescription_i18n() {
+		if (_description_i18nSupplier != null) {
+			description_i18n = _description_i18nSupplier.get();
+
+			_description_i18nSupplier = null;
+		}
+
 		return description_i18n;
 	}
 
 	public void setDescription_i18n(Map<String, String> description_i18n) {
 		this.description_i18n = description_i18n;
+
+		_description_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -95,86 +119,131 @@ public class OpenGraphSettings implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			description_i18nUnsafeSupplier) {
 
-		try {
-			description_i18n = description_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_description_i18nSupplier = () -> {
+			try {
+				return description_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized Open Graph's descriptions.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> description_i18n;
 
-	@Schema(description = "The Open Graph's image.")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _description_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The Open Graph's image."
+	)
 	@Valid
 	public ContentDocument getImage() {
+		if (_imageSupplier != null) {
+			image = _imageSupplier.get();
+
+			_imageSupplier = null;
+		}
+
 		return image;
 	}
 
 	public void setImage(ContentDocument image) {
 		this.image = image;
+
+		_imageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setImage(
 		UnsafeSupplier<ContentDocument, Exception> imageUnsafeSupplier) {
 
-		try {
-			image = imageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_imageSupplier = () -> {
+			try {
+				return imageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The Open Graph's image.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentDocument image;
 
-	@Schema(description = "The Open Graph's image alt.")
+	@JsonIgnore
+	private Supplier<ContentDocument> _imageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The Open Graph's image alt."
+	)
 	public String getImageAlt() {
+		if (_imageAltSupplier != null) {
+			imageAlt = _imageAltSupplier.get();
+
+			_imageAltSupplier = null;
+		}
+
 		return imageAlt;
 	}
 
 	public void setImageAlt(String imageAlt) {
 		this.imageAlt = imageAlt;
+
+		_imageAltSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setImageAlt(
 		UnsafeSupplier<String, Exception> imageAltUnsafeSupplier) {
 
-		try {
-			imageAlt = imageAltUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_imageAltSupplier = () -> {
+			try {
+				return imageAltUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The Open Graph's image alt.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String imageAlt;
 
-	@Schema(description = "The localized Open Graph's image alts.")
+	@JsonIgnore
+	private Supplier<String> _imageAltSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized Open Graph's image alts."
+	)
 	@Valid
 	public Map<String, String> getImageAlt_i18n() {
+		if (_imageAlt_i18nSupplier != null) {
+			imageAlt_i18n = _imageAlt_i18nSupplier.get();
+
+			_imageAlt_i18nSupplier = null;
+		}
+
 		return imageAlt_i18n;
 	}
 
 	public void setImageAlt_i18n(Map<String, String> imageAlt_i18n) {
 		this.imageAlt_i18n = imageAlt_i18n;
+
+		_imageAlt_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -182,57 +251,87 @@ public class OpenGraphSettings implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			imageAlt_i18nUnsafeSupplier) {
 
-		try {
-			imageAlt_i18n = imageAlt_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_imageAlt_i18nSupplier = () -> {
+			try {
+				return imageAlt_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized Open Graph's image alts.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> imageAlt_i18n;
 
-	@Schema(description = "The Open Graph's title.")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _imageAlt_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The Open Graph's title."
+	)
 	public String getTitle() {
+		if (_titleSupplier != null) {
+			title = _titleSupplier.get();
+
+			_titleSupplier = null;
+		}
+
 		return title;
 	}
 
 	public void setTitle(String title) {
 		this.title = title;
+
+		_titleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTitle(
 		UnsafeSupplier<String, Exception> titleUnsafeSupplier) {
 
-		try {
-			title = titleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_titleSupplier = () -> {
+			try {
+				return titleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The Open Graph's title.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String title;
 
-	@Schema(description = "The localized Open Graph's titles.")
+	@JsonIgnore
+	private Supplier<String> _titleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized Open Graph's titles."
+	)
 	@Valid
 	public Map<String, String> getTitle_i18n() {
+		if (_title_i18nSupplier != null) {
+			title_i18n = _title_i18nSupplier.get();
+
+			_title_i18nSupplier = null;
+		}
+
 		return title_i18n;
 	}
 
 	public void setTitle_i18n(Map<String, String> title_i18n) {
 		this.title_i18n = title_i18n;
+
+		_title_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -240,20 +339,25 @@ public class OpenGraphSettings implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			title_i18nUnsafeSupplier) {
 
-		try {
-			title_i18n = title_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_title_i18nSupplier = () -> {
+			try {
+				return title_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized Open Graph's titles.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> title_i18n;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _title_i18nSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -282,6 +386,8 @@ public class OpenGraphSettings implements Serializable {
 
 		sb.append("{");
 
+		String description = getDescription();
+
 		if (description != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -296,6 +402,8 @@ public class OpenGraphSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> description_i18n = getDescription_i18n();
+
 		if (description_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -306,6 +414,8 @@ public class OpenGraphSettings implements Serializable {
 			sb.append(_toJSON(description_i18n));
 		}
 
+		ContentDocument image = getImage();
+
 		if (image != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -315,6 +425,8 @@ public class OpenGraphSettings implements Serializable {
 
 			sb.append(String.valueOf(image));
 		}
+
+		String imageAlt = getImageAlt();
 
 		if (imageAlt != null) {
 			if (sb.length() > 1) {
@@ -330,6 +442,8 @@ public class OpenGraphSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> imageAlt_i18n = getImageAlt_i18n();
+
 		if (imageAlt_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -339,6 +453,8 @@ public class OpenGraphSettings implements Serializable {
 
 			sb.append(_toJSON(imageAlt_i18n));
 		}
+
+		String title = getTitle();
 
 		if (title != null) {
 			if (sb.length() > 1) {
@@ -353,6 +469,8 @@ public class OpenGraphSettings implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Map<String, String> title_i18n = getTitle_i18n();
 
 		if (title_i18n != null) {
 			if (sb.length() > 1) {
@@ -369,8 +487,8 @@ public class OpenGraphSettings implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.OpenGraphSettings",
 		name = "x-class-name"
 	)
@@ -416,7 +534,10 @@ public class OpenGraphSettings implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

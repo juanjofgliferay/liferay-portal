@@ -11,12 +11,12 @@ import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.sort.Sorts;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.DocumentToRankingTranslator;
+import com.liferay.portal.search.tuning.rankings.index.RankingBuilderFactory;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.RenderURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.RenderURL;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,8 +45,8 @@ public class ViewResultRankingsMVCRenderCommandTest
 		setUpPortletPreferencesFactoryUtil();
 
 		ReflectionTestUtil.setFieldValue(
-			_viewResultRankingsMVCRenderCommand, "documentToRankingTranslator",
-			_documentToRankingTranslator);
+			_viewResultRankingsMVCRenderCommand, "_rankingBuilderFactory",
+			_rankingBuilderFactory);
 		ReflectionTestUtil.setFieldValue(
 			_viewResultRankingsMVCRenderCommand, "indexNameBuilder",
 			_indexNameBuilder);
@@ -79,7 +79,7 @@ public class ViewResultRankingsMVCRenderCommandTest
 		setUpLanguageUtil("");
 		setUpPortal();
 		setUpPortalUtil();
-		setUpPropsUtil();
+		setUpQuery();
 		setUpRankingIndexNameBuilder();
 		setUpRenderResponse(_renderResponse);
 		setUpSearchEngineAdapter(Mockito.mock(SearchHits.class));
@@ -101,10 +101,10 @@ public class ViewResultRankingsMVCRenderCommandTest
 		).createRenderURL();
 	}
 
-	private final DocumentToRankingTranslator _documentToRankingTranslator =
-		Mockito.mock(DocumentToRankingTranslator.class);
 	private final IndexNameBuilder _indexNameBuilder = Mockito.mock(
 		IndexNameBuilder.class);
+	private final RankingBuilderFactory _rankingBuilderFactory = Mockito.mock(
+		RankingBuilderFactory.class);
 	private final RenderRequest _renderRequest = Mockito.mock(
 		RenderRequest.class);
 	private final RenderResponse _renderResponse = Mockito.mock(

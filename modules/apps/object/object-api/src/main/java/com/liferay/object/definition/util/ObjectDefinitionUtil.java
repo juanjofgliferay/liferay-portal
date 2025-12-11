@@ -6,13 +6,17 @@
 package com.liferay.object.definition.util;
 
 import com.liferay.batch.engine.unit.BatchEngineUnitThreadLocal;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.events.StartupHelperUtil;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.util.PortalInstances;
 
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author Alejandro Tardín
@@ -22,7 +26,7 @@ public class ObjectDefinitionUtil {
 	public static String getModifiableSystemObjectDefinitionRESTContextPath(
 		String name) {
 
-		if (PortalRunMode.isTestMode() && Objects.equals(name, "Test")) {
+		if (PortalRunMode.isTestMode() && StringUtil.startsWith(name, "Test")) {
 			return "/test";
 		}
 
@@ -39,22 +43,30 @@ public class ObjectDefinitionUtil {
 		return _allowedModifiableSystemObjectDefinitionNames.containsKey(name);
 	}
 
-	public static boolean
-		isAllowedUnmodifiableSystemObjectDefinitionExternalReferenceCode(
-			String externalReferenceCode, String name) {
+	public static boolean isDefaultFriendlyURLSeparator(
+		String friendlyURLSeparator) {
 
-		if (PortalRunMode.isTestMode()) {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_OBJECT_ENTRY);
+
+		if ((friendlyURLResolver != null) &&
+			StringUtil.equals(
+				StringUtil.removeSubstring(
+					friendlyURLResolver.getURLSeparator(), StringPool.SLASH),
+				friendlyURLSeparator)) {
+
 			return true;
 		}
 
-		return StringUtil.equals(
-			_allowedUnmodifiableSystemObjectDefinitionNames.get(name),
-			externalReferenceCode);
+		return false;
 	}
 
 	public static boolean isInvokerBundleAllowed() {
-		if (PortalInstances.isCurrentCompanyInDeletionProcess() ||
-			PortalRunMode.isTestMode()) {
+		if (ObjectDefinitionThreadLocal.isSkipBundleAllowedCheck() ||
+			PortalInstances.isCurrentCompanyInDeletionProcess() ||
+			PortalRunMode.isTestMode() || StartupHelperUtil.isUpgrading()) {
 
 			return true;
 		}
@@ -85,9 +97,13 @@ public class ObjectDefinitionUtil {
 	}
 
 	private static final String[] _ALLOWED_INVOKER_BUNDLE_SYMBOLIC_NAMES = {
-		"com.liferay.frontend.data.set.views.web",
+		"com.liferay.ai.hub.site.initializer", "com.liferay.commerce.service",
+		"com.liferay.cookies.impl", "com.liferay.digital.sales.room.impl",
+		"com.liferay.frontend.data.set.admin.web",
+		"com.liferay.frontend.data.set.impl",
 		"com.liferay.headless.builder.impl", "com.liferay.list.type.service",
-		"com.liferay.notification.service", "com.liferay.object.service"
+		"com.liferay.mcp.server", "com.liferay.notification.service",
+		"com.liferay.object.service", "com.liferay.site.initializer.cms"
 	};
 
 	private static final Map<String, String>
@@ -106,38 +122,81 @@ public class ObjectDefinitionUtil {
 		).put(
 			"Bookmark", "/bookmarks"
 		).put(
+			"CMSBasicDocument", "/cms/basic-documents"
+		).put(
+			"CMSBasicWebContent", "/cms/basic-web-contents"
+		).put(
+			"CMSBlog", "/cms/blogs"
+		).put(
+			"CMSBulkActionTask", "/cms/bulk-action-tasks"
+		).put(
+			"CMSBulkActionTaskItem", "/cms/bulk-action-task-items"
+		).put(
+			"CMSDefaultPermission", "/cms/default-permissions"
+		).put(
+			"CMSExternalVideo", "/cms/external-videos"
+		).put(
+			"CommerceReturn", "/commerce/returns"
+		).put(
+			"CommerceReturnItem", "/commerce/return-items"
+		).put(
+			"DataSet", "/data-set-admin/data-sets"
+		).put(
+			"DataSetAction", "/data-set-admin/actions"
+		).put(
+			"DataSetCardsSection", "/data-set-admin/cards-sections"
+		).put(
+			"DataSetClientExtensionFilter",
+			"/data-set-admin/client-extension-filters"
+		).put(
+			"DataSetDateFilter", "/data-set-admin/date-filters"
+		).put(
+			"DataSetListSection", "/data-set-admin/list-sections"
+		).put(
+			"DataSetSelectionFilter", "/data-set-admin/selection-filters"
+		).put(
+			"DataSetSnapshot", "/data-set-admin/snapshots"
+		).put(
+			"DataSetSort", "/data-set-admin/sorts"
+		).put(
+			"DataSetTableSection", "/data-set-admin/table-sections"
+		).put(
+			"DSRRoom", "/digital-sales-room/rooms"
+		).put(
 			"FDSAction", "/data-set-manager/actions"
+		).put(
+			"FDSCardsSection", "/data-set-manager/cards-sections"
 		).put(
 			"FDSClientExtensionFilter",
 			"/data-set-manager/client-extension-filters"
 		).put(
 			"FDSDateFilter", "/data-set-manager/date-filters"
 		).put(
-			"FDSDynamicFilter", "/data-set-manager/dynamic-filters"
+			"FDSDynamicFilter", "/data-set-manager/selection-filters"
 		).put(
 			"FDSEntry", "/data-set-manager/entries"
 		).put(
-			"FDSField", "/data-set-manager/fields"
+			"FDSField", "/data-set-manager/table-sections"
+		).put(
+			"FDSListSection", "/data-set-manager/list-sections"
 		).put(
 			"FDSSort", "/data-set-manager/sorts"
 		).put(
-			"FDSView", "/data-set-manager/views"
-		).build();
-	private static final Map<String, String>
-		_allowedUnmodifiableSystemObjectDefinitionNames = HashMapBuilder.put(
-			"AccountEntry", "L_ACCOUNT"
+			"FDSView", "/data-set-manager/data-sets"
 		).put(
-			"Address", "L_POSTAL_ADDRESS"
+			"FunctionalCookieEntry", "/functional-cookies-entries"
 		).put(
-			"CommerceOrder", "L_COMMERCE_ORDER"
+			"KnowledgeBase", "/cms/knowledge-bases"
 		).put(
-			"CommercePricingClass", "L_COMMERCE_PRODUCT_GROUP"
+			"MCPServer", "/mcp/servers"
 		).put(
-			"CPDefinition", "L_COMMERCE_PRODUCT_DEFINITION"
+			"MCPServerPrompt", "/mcp/server-prompts"
 		).put(
-			"Organization", "L_ORGANIZATION"
+			"NecessaryCookieEntry", "/necessary-cookies-entries"
 		).put(
-			"User", "L_USER"
+			"PerformanceCookieEntry", "/performance-cookies-entries"
+		).put(
+			"PersonalizationCookieEntry", "/personalization-cookies-entries"
 		).build();
 
 }

@@ -5,13 +5,15 @@
 
 package com.liferay.jenkins.results.parser;
 
-import java.io.File;
-import java.io.IOException;
+import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -22,81 +24,56 @@ import org.json.JSONObject;
 public class DefaultTopLevelBuildReport extends BaseTopLevelBuildReport {
 
 	@Override
+	public void addTestrayAttachmentURL(URL testrayAttachmentURL) {
+		if (_testrayAttachmentURLs.contains(testrayAttachmentURL)) {
+			return;
+		}
+
+		_testrayAttachmentURLs.add(testrayAttachmentURL);
+	}
+
+	@Override
 	public JSONObject getBuildReportJSONObject() {
-		if (buildReportJSONObject != null) {
-			return buildReportJSONObject;
-		}
+		JSONObject buildReportJSONObject =
+			_topLevelBuild.getBuildReportJSONObject();
 
-		buildReportJSONObject = new JSONObject();
+		Map<String, Set<DownstreamBuildReport>> downstreamBuildReportsMap =
+			new HashMap<>();
 
-		buildReportJSONObject.put(
-			"buildParameters", _topLevelBuild.getParameters());
-		buildReportJSONObject.put("buildURL", _topLevelBuild.getBuildURL());
-		buildReportJSONObject.put("duration", _topLevelBuild.getDuration());
-		buildReportJSONObject.put("result", _topLevelBuild.getResult());
-		buildReportJSONObject.put("startTime", _topLevelBuild.getStartTime());
+		for (DownstreamBuildReport downstreamBuildReport :
+				getDownstreamBuildReports()) {
 
-		StopWatchRecordsGroup stopWatchRecordsGroup =
-			_topLevelBuild.getStopWatchRecordsGroup();
+			String batchName = downstreamBuildReport.getBatchName();
 
-		if (stopWatchRecordsGroup != null) {
-			buildReportJSONObject.put(
-				"stopWatchRecords", stopWatchRecordsGroup.getJSONArray());
-		}
+			Set<DownstreamBuildReport> downstreamBuildReports =
+				downstreamBuildReportsMap.getOrDefault(
+					batchName, new HashSet<>());
 
-		Map<String, List<JSONObject>> downstreamBuildMap = new HashMap<>();
+			downstreamBuildReports.add(downstreamBuildReport);
 
-		for (Build build : _topLevelBuild.getDownstreamBuilds(null)) {
-			String batchName = "default";
-
-			List<JSONObject> downstreamBuildJSONObjects = new ArrayList<>();
-
-			if (build instanceof BatchBuild) {
-				BatchBuild batchBuild = (BatchBuild)build;
-
-				batchName = batchBuild.getBatchName();
-
-				for (AxisBuild axisBuild :
-						batchBuild.getDownstreamAxisBuilds()) {
-
-					downstreamBuildJSONObjects.add(
-						_getDownstreamBuildJSONObject(axisBuild));
-				}
-			}
-			else {
-				if (build instanceof AxisBuild) {
-					AxisBuild axisBuild = (AxisBuild)build;
-
-					batchName = axisBuild.getBatchName();
-				}
-				else if (build instanceof DownstreamBuild) {
-					DownstreamBuild downstreamBuild = (DownstreamBuild)build;
-
-					batchName = downstreamBuild.getBatchName();
-				}
-
-				downstreamBuildJSONObjects.add(
-					_getDownstreamBuildJSONObject(build));
-			}
-
-			downstreamBuildJSONObjects.addAll(
-				downstreamBuildMap.getOrDefault(
-					batchName, new ArrayList<JSONObject>()));
-
-			downstreamBuildMap.put(batchName, downstreamBuildJSONObjects);
+			downstreamBuildReportsMap.put(batchName, downstreamBuildReports);
 		}
 
 		JSONArray batchesJSONArray = new JSONArray();
 
-		for (Map.Entry<String, List<JSONObject>> downstreamBuildEntry :
-				downstreamBuildMap.entrySet()) {
+		for (Map.Entry<String, Set<DownstreamBuildReport>> entry :
+				downstreamBuildReportsMap.entrySet()) {
+
+			JSONArray buildsJSONArray = new JSONArray();
+
+			for (DownstreamBuildReport downstreamBuildReport :
+					entry.getValue()) {
+
+				buildsJSONArray.put(
+					downstreamBuildReport.getBuildReportJSONObject());
+			}
 
 			JSONObject batchJSONObject = new JSONObject();
 
 			batchJSONObject.put(
-				"batchName", downstreamBuildEntry.getKey()
+				"batchName", entry.getKey()
 			).put(
-				"builds", downstreamBuildEntry.getValue()
+				"builds", buildsJSONArray
 			);
 
 			batchesJSONArray.put(batchJSONObject);
@@ -104,115 +81,99 @@ public class DefaultTopLevelBuildReport extends BaseTopLevelBuildReport {
 
 		buildReportJSONObject.put("batches", batchesJSONArray);
 
+		Build controllerBuild = _topLevelBuild.getControllerBuild();
+
+		if (controllerBuild != null) {
+			buildReportJSONObject.put(
+				"controller", controllerBuild.getBuildReportJSONObject());
+		}
+
 		buildReportJSONObject.put(
-			"testSuiteName", _topLevelBuild.getTestSuiteName());
+			"testrayAttachmentURLs", _getTestrayAttachmentURLStrings());
 
 		return buildReportJSONObject;
 	}
 
+	@Override
+	public List<DownstreamBuildReport> getDownstreamBuildReports() {
+		Set<DownstreamBuildReport> downstreamBuildReports = new HashSet<>(
+			super.getDownstreamBuildReports());
+
+		for (Build build : _topLevelBuild.getDownstreamBuilds()) {
+			if (!build.isCompleted()) {
+				continue;
+			}
+
+			String batchName = _getBatchName(build);
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(batchName)) {
+				continue;
+			}
+
+			downstreamBuildReports.add(
+				BuildReportFactory.newDownstreamBuildReport(
+					batchName, build.getBuildReportJSONObject(), this));
+		}
+
+		return new ArrayList<>(downstreamBuildReports);
+	}
+
+	@Override
+	public Date getStartDate() {
+		return new Date(_topLevelBuild.getStartTime());
+	}
+
 	protected DefaultTopLevelBuildReport(TopLevelBuild topLevelBuild) {
-		super(topLevelBuild);
+		super(topLevelBuild.getBuildURL());
 
 		_topLevelBuild = topLevelBuild;
-
-		_jenkinsConsoleLocalFile = new File(
-			System.getenv("WORKSPACE"),
-			JenkinsResultsParserUtil.getDistinctTimeStamp());
-
-		try {
-			JenkinsResultsParserUtil.write(
-				_jenkinsConsoleLocalFile, topLevelBuild.getConsoleText());
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
 	}
 
-	@Override
-	protected JSONObject getBuildJSONObject() {
-		return _topLevelBuild.getBuildJSONObject();
-	}
-
-	@Override
-	protected File getJenkinsConsoleLocalFile() {
-		return _jenkinsConsoleLocalFile;
-	}
-
-	private JSONObject _getDownstreamBuildJSONObject(Build build) {
-		JSONObject downstreamBuildJSONObject = new JSONObject();
-
+	private String _getBatchName(Build build) {
 		if (build instanceof AxisBuild) {
 			AxisBuild axisBuild = (AxisBuild)build;
 
-			downstreamBuildJSONObject.put("axisName", axisBuild.getAxisName());
+			return axisBuild.getBatchName();
+		}
+		else if (build instanceof BatchBuild) {
+			BatchBuild batchBuild = (BatchBuild)build;
+
+			return batchBuild.getBatchName();
 		}
 		else if (build instanceof DownstreamBuild) {
 			DownstreamBuild downstreamBuild = (DownstreamBuild)build;
 
-			downstreamBuildJSONObject.put(
-				"axisName", downstreamBuild.getAxisName());
+			return downstreamBuild.getBatchName();
 		}
 
-		downstreamBuildJSONObject.put(
-			"buildURL", build.getBuildURL()
-		).put(
-			"duration", build.getDuration()
-		).put(
-			"result", build.getResult()
-		).put(
-			"startTime", build.getStartTime()
-		);
-
-		StopWatchRecordsGroup stopWatchRecordsGroup =
-			build.getStopWatchRecordsGroup();
-
-		if (stopWatchRecordsGroup != null) {
-			downstreamBuildJSONObject.put(
-				"stopWatchRecords", stopWatchRecordsGroup.getJSONArray());
-		}
-
-		JSONArray testResultsJSONArray = new JSONArray();
-
-		for (TestResult testResult : build.getTestResults(null)) {
-			testResultsJSONArray.put(_getTestResultJSONObject(testResult));
-		}
-
-		downstreamBuildJSONObject.put("testResults", testResultsJSONArray);
-
-		return downstreamBuildJSONObject;
+		return null;
 	}
 
-	private JSONObject _getTestResultJSONObject(TestResult testResult) {
-		JSONObject testResultJSONObject = new JSONObject();
+	private List<String> _getTestrayAttachmentURLStrings() {
+		List<String> testrayAttachmentURLStrings = new ArrayList<>();
 
-		testResultJSONObject.put("duration", testResult.getDuration());
+		List<URL> testrayAttachmentURLs = new ArrayList<>();
 
-		String errorDetails = testResult.getErrorDetails();
+		testrayAttachmentURLs.addAll(_testrayAttachmentURLs);
+		testrayAttachmentURLs.addAll(_topLevelBuild.getTestrayAttachmentURLs());
 
-		if (errorDetails != null) {
-			if (errorDetails.contains("\n")) {
-				int index = errorDetails.indexOf("\n");
+		for (URL testrayAttachmentURL : testrayAttachmentURLs) {
+			String testrayAttachmentURLString = String.valueOf(
+				testrayAttachmentURL);
 
-				errorDetails = errorDetails.substring(0, index);
+			if (testrayAttachmentURLStrings.contains(
+					testrayAttachmentURLString)) {
+
+				continue;
 			}
 
-			if (errorDetails.length() > 200) {
-				errorDetails = errorDetails.substring(0, 200);
-			}
-
-			testResultJSONObject.put("errorDetails", errorDetails);
+			testrayAttachmentURLStrings.add(testrayAttachmentURLString);
 		}
 
-		testResultJSONObject.put(
-			"name", testResult.getDisplayName()
-		).put(
-			"status", testResult.getStatus()
-		);
-
-		return testResultJSONObject;
+		return testrayAttachmentURLStrings;
 	}
 
-	private final File _jenkinsConsoleLocalFile;
+	private final List<URL> _testrayAttachmentURLs = new ArrayList<>();
 	private final TopLevelBuild _topLevelBuild;
 
 }

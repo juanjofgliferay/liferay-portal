@@ -6,10 +6,8 @@
 import {useEventListener} from '@liferay/frontend-js-react-web';
 import {useEffect, useState} from 'react';
 
-import {KEY_CODES} from '../utils/keyCodes';
+import {KeyboardKey} from '../types/KeyboardKey';
 import {ItemTypeValues, LIST_ITEM_TYPES} from '../utils/listItemTypes';
-
-const ALLOWED_KEY_CODES = [KEY_CODES.ARROW_DOWN, KEY_CODES.ARROW_UP];
 
 interface Props {
 	handleOpen: (key: string, editing: boolean) => void;
@@ -33,15 +31,15 @@ export default function useKeyboardNavigation({type}: Props) {
 	useEventListener(
 		'keydown',
 		(event) => {
-			const {code} = <KeyboardEvent>event;
+			const key = (<KeyboardEvent>event).key as KeyboardKey;
 
-			if (!ALLOWED_KEY_CODES.includes(code) || !element) {
+			if ((key !== 'ArrowDown' && key !== 'ArrowUp') || !element) {
 				return;
 			}
 
 			event.preventDefault();
 
-			const nextCode = code;
+			const nextCode = key;
 
 			if (type === LIST_ITEM_TYPES.header) {
 				onHeaderKeyDown(element, nextCode);
@@ -59,9 +57,8 @@ export default function useKeyboardNavigation({type}: Props) {
 	useEventListener(
 		'blur',
 		(event) => {
-			const keyboardEvent = (event as unknown) as React.FocusEvent<
-				HTMLElement
-			>;
+			const keyboardEvent =
+				event as unknown as React.FocusEvent<HTMLElement>;
 
 			const list = keyboardEvent.target?.closest('.panel-group');
 
@@ -78,8 +75,8 @@ export default function useKeyboardNavigation({type}: Props) {
 	return {isTarget, setElement};
 }
 
-function onHeaderKeyDown(element: HTMLElement, keyCode: string) {
-	if (keyCode === KEY_CODES.ARROW_DOWN) {
+function onHeaderKeyDown(element: HTMLElement, keyCode: KeyboardKey) {
+	if (keyCode === 'ArrowDown') {
 
 		// Target first item of the list. If it's collapsed, target next header
 
@@ -97,7 +94,7 @@ function onHeaderKeyDown(element: HTMLElement, keyCode: string) {
 			nextHeader?.focus();
 		}
 	}
-	else if (keyCode === KEY_CODES.ARROW_UP) {
+	else if (keyCode === 'ArrowUp') {
 
 		// Target last item of the previous list. If it's collapsed, target previous header
 
@@ -118,17 +115,16 @@ function onHeaderKeyDown(element: HTMLElement, keyCode: string) {
 			lastItem.focus();
 		}
 		else {
-			const previousHeader = previousCollapse.querySelector<HTMLElement>(
-				'button'
-			);
+			const previousHeader =
+				previousCollapse.querySelector<HTMLElement>('button');
 
 			previousHeader?.focus();
 		}
 	}
 }
 
-function onListItemKeyDown(element: HTMLElement, keyCode: string) {
-	if (keyCode === KEY_CODES.ARROW_UP) {
+function onListItemKeyDown(element: HTMLElement, keyCode: KeyboardKey) {
+	if (keyCode === 'ArrowUp') {
 
 		// Target previous list item. If it's the first one, target header
 
@@ -143,7 +139,7 @@ function onListItemKeyDown(element: HTMLElement, keyCode: string) {
 			header?.focus();
 		}
 	}
-	else if (keyCode === KEY_CODES.ARROW_DOWN) {
+	else if (keyCode === 'ArrowDown') {
 
 		// Target next list item. If it's the last one, target next header
 

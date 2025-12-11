@@ -16,20 +16,25 @@ CookiesBannerDisplayContext cookiesBannerDisplayContext = (CookiesBannerDisplayC
 >
 	<clay:row>
 		<clay:content-row
+			cssClass="autofit-float-sm-down px-2 px-md-0"
 			noGutters="true"
 			verticalAlign="center"
 		>
 			<clay:content-col
 				expand="<%= true %>"
 			>
-				<span>
-					<%= cookiesBannerDisplayContext.getContent(locale) %>
+				<p class="mb-2 text-5 text-weight-semi-bold">
+					<%= HtmlUtil.escape(cookiesBannerDisplayContext.getTitle(locale)) %>
+				</p>
+
+				<p class="mb-0">
+					<%= HtmlUtil.escape(cookiesBannerDisplayContext.getContent(locale)) %>
 
 					<clay:link
-						href="<%= cookiesBannerDisplayContext.getPrivacyPolicyLink() %>"
-						label="<%= cookiesBannerDisplayContext.getLinkDisplayText(locale) %>"
+						href="<%= HtmlUtil.escape(cookiesBannerDisplayContext.getPrivacyPolicyLink()) %>"
+						label="<%= HtmlUtil.escape(cookiesBannerDisplayContext.getLinkDisplayText(locale)) %>"
 					/>
-				</span>
+				</p>
 			</clay:content-col>
 
 			<clay:content-col>

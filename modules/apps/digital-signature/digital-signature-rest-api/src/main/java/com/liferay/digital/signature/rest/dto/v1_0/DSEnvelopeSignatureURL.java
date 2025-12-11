@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author José Abelenda
@@ -48,31 +47,44 @@ public class DSEnvelopeSignatureURL implements Serializable {
 			DSEnvelopeSignatureURL.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getUrl() {
+		if (_urlSupplier != null) {
+			url = _urlSupplier.get();
+
+			_urlSupplier = null;
+		}
+
 		return url;
 	}
 
 	public void setUrl(String url) {
 		this.url = url;
+
+		_urlSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUrl(UnsafeSupplier<String, Exception> urlUnsafeSupplier) {
-		try {
-			url = urlUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_urlSupplier = () -> {
+			try {
+				return urlUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String url;
+
+	@JsonIgnore
+	private Supplier<String> _urlSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -102,6 +114,8 @@ public class DSEnvelopeSignatureURL implements Serializable {
 
 		sb.append("{");
 
+		String url = getUrl();
+
 		if (url != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -121,8 +135,8 @@ public class DSEnvelopeSignatureURL implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.digital.signature.rest.dto.v1_0.DSEnvelopeSignatureURL",
 		name = "x-class-name"
 	)
@@ -168,7 +182,10 @@ public class DSEnvelopeSignatureURL implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

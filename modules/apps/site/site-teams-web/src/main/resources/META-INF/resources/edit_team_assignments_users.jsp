@@ -18,12 +18,12 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= new EditSiteTeamAssignmentsUsersManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, editSiteTeamAssignmentsUsersDisplayContext) %>"
-	propsTransformer="js/EditTeamAssignmentsUsersManagementToolbarPropsTransformer"
+	propsTransformer="{EditTeamAssignmentsUsersManagementToolbarPropsTransformer} from site-teams-web"
 />
 
 <portlet:actionURL name="deleteTeamUsers" var="deleteTeamUsersURL" />
 
-<aui:form action="<%= deleteTeamUsersURL %>" cssClass="container-fluid container-fluid-max-xl portlet-site-teams-users" method="post" name="fm">
+<aui:form action="<%= deleteTeamUsersURL %>" cssClass="container-fluid portlet-site-teams-users" method="post" name="fm">
 	<aui:input name="tabs1" type="hidden" value="<%= editSiteTeamAssignmentsUsersDisplayContext.getTabs1() %>" />
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 	<aui:input name="teamId" type="hidden" value="<%= String.valueOf(editSiteTeamAssignmentsUsersDisplayContext.getTeamId()) %>" />
@@ -43,7 +43,7 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 				<c:when test='<%= Objects.equals(editSiteTeamAssignmentsUsersDisplayContext.getDisplayStyle(), "icon") %>'>
 					<liferay-ui:search-container-column-text>
 						<clay:user-card
-							propsTransformer="js/UserDropdownDefaultPropsTransformer"
+							propsTransformer="{UserDropdownDefaultPropsTransformer} from site-teams-web"
 							userCard="<%= new UserUserCard(user2, editSiteTeamAssignmentsUsersDisplayContext.getTeamId(), renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 						/>
 					</liferay-ui:search-container-column-text>
@@ -58,11 +58,11 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 					<liferay-ui:search-container-column-text
 						colspan="<%= 2 %>"
 					>
-						<h5><%= user2.getFullName() %></h5>
+						<div class="h5"><%= user2.getFullName() %></div>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<span><%= user2.getScreenName() %></span>
-						</h6>
+						</div>
 					</liferay-ui:search-container-column-text>
 
 					<liferay-ui:search-container-column-text>
@@ -74,7 +74,7 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= userActionDropdownItemsProvider.getActionDropdownItems() %>"
-							propsTransformer="js/UserDropdownDefaultPropsTransformer"
+							propsTransformer="{UserDropdownDefaultPropsTransformer} from site-teams-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -100,7 +100,7 @@ EditSiteTeamAssignmentsUsersDisplayContext editSiteTeamAssignmentsUsersDisplayCo
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= userActionDropdownItemsProvider.getActionDropdownItems() %>"
-							propsTransformer="js/UserDropdownDefaultPropsTransformer"
+							propsTransformer="{UserDropdownDefaultPropsTransformer} from site-teams-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:otherwise>

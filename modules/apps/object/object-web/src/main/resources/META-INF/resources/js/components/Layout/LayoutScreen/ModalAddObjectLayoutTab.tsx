@@ -13,9 +13,9 @@ import {ClayTooltipProvider} from '@clayui/tooltip';
 import {
 	FormError,
 	Input,
-	REQUIRED_MSG,
 	SingleSelect,
-	getLocalizableLabel,
+	constantsUtils,
+	stringUtils,
 	useForm,
 } from '@liferay/object-js-components-web';
 import classNames from 'classnames';
@@ -107,7 +107,7 @@ function TabType({
 				onClick={() => onChangeType(type)}
 				{...(disabled && tabProps)}
 			>
-				<h4 className="layout-tab__tab-types__title">{label}</h4>
+				<div className="h4 layout-tab__tab-types__title">{label}</div>
 
 				<span className="tab__tab-types__description">
 					{description}
@@ -139,9 +139,8 @@ export function ModalAddObjectLayoutTab({
 		dispatch,
 	] = useLayoutContext();
 	const [selectedType, setSelectedType] = useState(TYPES.FIELDS);
-	const [selectedRelationship, setSelectedRelationship] = useState<
-		TObjectRelationship
-	>();
+	const [selectedRelationship, setSelectedRelationship] =
+		useState<TObjectRelationship>();
 
 	const objectRelationshipItems = useMemo(() => {
 		const availableObjectRelationships: ObjectRelationshipItem[] = [];
@@ -149,7 +148,11 @@ export function ModalAddObjectLayoutTab({
 		objectRelationships.forEach(({id, inLayout, label, name, reverse}) => {
 			if (!inLayout) {
 				availableObjectRelationships.push({
-					label: getLocalizableLabel(creationLanguageId, label, name),
+					label: stringUtils.getLocalizableLabel({
+						fallbackLabel: name,
+						fallbackLanguageId: creationLanguageId,
+						labels: label,
+					}),
 					reverse,
 					value: id.toString(),
 				});
@@ -176,15 +179,20 @@ export function ModalAddObjectLayoutTab({
 	const onValidate = (values: Partial<TObjectLayoutTab>) => {
 		const errors: FormError<TObjectLayoutTab> = {};
 
-		if (!getLocalizableLabel(creationLanguageId, values.name)) {
-			errors.name = REQUIRED_MSG;
+		if (
+			!stringUtils.getLocalizableLabel({
+				fallbackLanguageId: creationLanguageId,
+				labels: values.name,
+			})
+		) {
+			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 
 		if (
 			!values.objectRelationshipId &&
 			selectedType === TYPES.RELATIONSHIPS
 		) {
-			errors.objectRelationshipId = REQUIRED_MSG;
+			errors.objectRelationshipId = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -201,7 +209,9 @@ export function ModalAddObjectLayoutTab({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={handleSubmit}>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					{Liferay.Language.get('add-tab')}
 				</ClayModal.Header>
 
@@ -219,10 +229,10 @@ export function ModalAddObjectLayoutTab({
 							});
 						}}
 						required
-						value={getLocalizableLabel(
-							creationLanguageId,
-							values.name
-						)}
+						value={stringUtils.getLocalizableLabel({
+							fallbackLanguageId: creationLanguageId,
+							labels: values.name,
+						})}
 					/>
 
 					<ClayForm.Group>
@@ -257,9 +267,10 @@ export function ModalAddObjectLayoutTab({
 							items={objectRelationshipItems}
 							label={Liferay.Language.get('relationship')}
 							onSelectionChange={(value) => {
-								const selectedObjectRelationship = objectRelationships.find(
-									({id}) => id.toString() === value
-								);
+								const selectedObjectRelationship =
+									objectRelationships.find(
+										({id}) => id.toString() === value
+									);
 
 								setSelectedRelationship(
 									selectedObjectRelationship
@@ -273,9 +284,8 @@ export function ModalAddObjectLayoutTab({
 							selectedKey={selectedRelationship?.id.toString()}
 						>
 							{({label, reverse, value}) => {
-								const relationshipInfo = getRelationshipInfo(
-									reverse
-								);
+								const relationshipInfo =
+									getRelationshipInfo(reverse);
 
 								return (
 									<Option key={value} textValue={label}>

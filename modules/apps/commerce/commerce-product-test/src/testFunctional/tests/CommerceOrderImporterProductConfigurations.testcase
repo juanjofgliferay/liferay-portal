@@ -2,8 +2,6 @@
 definition {
 
 	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
-	property osgi.module.configuration.file.names = "com.liferay.commerce.configuration.CommerceOrderImporterTypeConfiguration.config";
-	property osgi.module.configurations = "enabled=\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Shopping Experience";
@@ -66,7 +64,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -160,7 +158,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -235,7 +233,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -329,7 +327,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -395,7 +393,7 @@ definition {
 	test CanImportValidAllowedQuantity {
 		property portal.acceptance = "false";
 
-		var allowedOrderQuantities = "1,3,6";
+		var allowedOrderQuantities = "1, 3, 6";
 		var orderIds = ListUtil.newList();
 
 		task ("Given 2 placed orders are created") {
@@ -411,7 +409,7 @@ definition {
 			}
 		}
 
-		task ("And U-Joint Minimum Order Quantity is set to '1,3,6'") {
+		task ("And U-Joint Minimum Order Quantity is set to '1, 3 and 6'") {
 			CommerceJSONProductsAPI._patchCommerceProductConfiguration(
 				allowedOrderQuantities = ${allowedOrderQuantities},
 				productName = "U-Joint");
@@ -421,7 +419,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -500,7 +498,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -579,7 +577,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -658,7 +656,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 

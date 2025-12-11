@@ -17,6 +17,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -41,6 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 	configurationPid = "com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfiguration",
 	service = AopService.class
 )
+@CTAware
 public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 
 	@Override
@@ -126,7 +128,7 @@ public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 
 		AssetRenderer<?> assetRenderer = assetEntry.getAssetRenderer();
 
-		Set<String> assetTagNamesSet = new LinkedHashSet<>();
+		Set<String> assetTagNames1 = new LinkedHashSet<>();
 
 		for (AssetAutoTagProvider<?> assetAutoTagProvider :
 				AssetAutoTaggerUtil.getAssetEntryAssetAutoTagProviders()) {
@@ -134,7 +136,7 @@ public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 			AssetAutoTagProvider<AssetEntry> assetEntryAssetAutoTagProvider =
 				(AssetAutoTagProvider<AssetEntry>)assetAutoTagProvider;
 
-			assetTagNamesSet.addAll(
+			assetTagNames1.addAll(
 				assetEntryAssetAutoTagProvider.getTagNames(assetEntry));
 		}
 
@@ -149,22 +151,23 @@ public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 				AssetAutoTagProvider<Object> objectAssetAutoTagProvider =
 					(AssetAutoTagProvider<Object>)assetAutoTagProvider;
 
-				assetTagNamesSet.addAll(
+				assetTagNames1.addAll(
 					objectAssetAutoTagProvider.getTagNames(
 						assetRenderer.getAssetObject()));
 			}
 		}
 
-		assetTagNamesSet.removeAll(Arrays.asList(assetEntry.getTagNames()));
+		assetTagNames1.removeAll(Arrays.asList(assetEntry.getTagNames()));
 
-		List<String> assetTagNames = new ArrayList<>(assetTagNamesSet);
+		List<String> assetTagNames2 = new ArrayList<>(assetTagNames1);
 
 		if (maximumNumberOfTagsPerAsset > 0) {
-			return assetTagNames.subList(
-				0, Math.min(maximumNumberOfTagsPerAsset, assetTagNames.size()));
+			return assetTagNames2.subList(
+				0,
+				Math.min(maximumNumberOfTagsPerAsset, assetTagNames2.size()));
 		}
 
-		return assetTagNames;
+		return assetTagNames2;
 	}
 
 	private void _reindex(AssetEntry assetEntry) throws PortalException {

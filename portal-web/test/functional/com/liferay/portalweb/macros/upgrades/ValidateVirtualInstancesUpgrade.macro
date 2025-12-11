@@ -105,10 +105,7 @@ definition {
 	@summary = "Validates data persistence and that the basic portal functionalities are working correctly across multiple instances after an upgrade is executed"
 	macro viewVirtualInstancesUpgrade() {
 		task ("Assert user on default instance") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin();
 
 			User.viewCP(
 				userEmailAddress = "userea1@liferay.com",
@@ -188,15 +185,12 @@ definition {
 		task ("Assert user on second instance") {
 			Navigator.openSpecificURL(url = "http://www.able.com:8080");
 
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://www.able.com:8080",
-				userEmailAddress = "test@www.able.com");
+			SignIn.signInSpecificURL(
+				url = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com",
+				userPassword = PropsUtil.get("default.admin.password"));
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin(baseURL = "http://www.able.com:8080");
 
 			User.viewCP(
 				userEmailAddress = "userea2@www.able.com",
@@ -286,15 +280,12 @@ definition {
 		task ("Assert user on third instance") {
 			Navigator.openSpecificURL(url = "http://www.baker.com:8080");
 
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://www.baker.com:8080",
-				userEmailAddress = "test@www.baker.com");
+			SignIn.signInSpecificURL(
+				url = "http://www.baker.com:8080",
+				userEmailAddress = "test@www.baker.com",
+				userPassword = PropsUtil.get("default.admin.password"));
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Users and Organizations");
+			User.openUsersAdmin(baseURL = "http://www.baker.com:8080");
 
 			User.viewCP(
 				userEmailAddress = "userea3@www.baker.com",

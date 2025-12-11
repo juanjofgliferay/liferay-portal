@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,115 +49,167 @@ public class Transition implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Transition.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getLabel() {
+		if (_labelSupplier != null) {
+			label = _labelSupplier.get();
+
+			_labelSupplier = null;
+		}
+
 		return label;
 	}
 
 	public void setLabel(String label) {
 		this.label = label;
+
+		_labelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel(
 		UnsafeSupplier<String, Exception> labelUnsafeSupplier) {
 
-		try {
-			label = labelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_labelSupplier = () -> {
+			try {
+				return labelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String label;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _labelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getSourceNodeName() {
+		if (_sourceNodeNameSupplier != null) {
+			sourceNodeName = _sourceNodeNameSupplier.get();
+
+			_sourceNodeNameSupplier = null;
+		}
+
 		return sourceNodeName;
 	}
 
 	public void setSourceNodeName(String sourceNodeName) {
 		this.sourceNodeName = sourceNodeName;
+
+		_sourceNodeNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSourceNodeName(
 		UnsafeSupplier<String, Exception> sourceNodeNameUnsafeSupplier) {
 
-		try {
-			sourceNodeName = sourceNodeNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sourceNodeNameSupplier = () -> {
+			try {
+				return sourceNodeNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String sourceNodeName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _sourceNodeNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getTargetNodeName() {
+		if (_targetNodeNameSupplier != null) {
+			targetNodeName = _targetNodeNameSupplier.get();
+
+			_targetNodeNameSupplier = null;
+		}
+
 		return targetNodeName;
 	}
 
 	public void setTargetNodeName(String targetNodeName) {
 		this.targetNodeName = targetNodeName;
+
+		_targetNodeNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTargetNodeName(
 		UnsafeSupplier<String, Exception> targetNodeNameUnsafeSupplier) {
 
-		try {
-			targetNodeName = targetNodeNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_targetNodeNameSupplier = () -> {
+			try {
+				return targetNodeNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String targetNodeName;
+
+	@JsonIgnore
+	private Supplier<String> _targetNodeNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -187,6 +238,8 @@ public class Transition implements Serializable {
 
 		sb.append("{");
 
+		String label = getLabel();
+
 		if (label != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -200,6 +253,8 @@ public class Transition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -215,6 +270,8 @@ public class Transition implements Serializable {
 			sb.append("\"");
 		}
 
+		String sourceNodeName = getSourceNodeName();
+
 		if (sourceNodeName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -228,6 +285,8 @@ public class Transition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String targetNodeName = getTargetNodeName();
 
 		if (targetNodeName != null) {
 			if (sb.length() > 1) {
@@ -248,8 +307,8 @@ public class Transition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.workflow.dto.v1_0.Transition",
 		name = "x-class-name"
 	)
@@ -295,7 +354,10 @@ public class Transition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

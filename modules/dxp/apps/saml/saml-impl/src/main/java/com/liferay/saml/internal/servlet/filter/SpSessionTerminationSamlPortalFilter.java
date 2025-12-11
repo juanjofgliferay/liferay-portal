@@ -5,17 +5,20 @@
 
 package com.liferay.saml.internal.servlet.filter;
 
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.saml.helper.SamlHttpRequestHelper;
 import com.liferay.saml.persistence.model.SamlSpSession;
+import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.runtime.servlet.profile.SingleLogoutProfile;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -25,9 +28,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"before-filter=Session Id Filter", "dispatcher=FORWARD",
+		"before-filter=Absolute Redirects Filter", "dispatcher=FORWARD",
 		"dispatcher=REQUEST",
-		"init-param.url-regex-ignore-pattern=^/html/.+\\.(css|gif|html|ico|jpg|js|png)(\\?.*)?$",
+		"init-param.url-regex-ignore-pattern=^/(html|o)/.+\\.(css|gif|html|ico|jpg|js|png)(\\?.*)?$",
 		"servlet-context-name=",
 		"servlet-filter-name=SP Session Termination SAML Portal Filter",
 		"url-pattern=/*"
@@ -44,16 +47,13 @@ public class SpSessionTerminationSamlPortalFilter extends BaseSamlPortalFilter {
 	}
 
 	@Override
-	public boolean isFilterEnabled() {
-		return true;
-	}
-
-	@Override
 	public boolean isFilterEnabled(
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
 
-		if (httpServletRequest.getSession(false) != null) {
+		if (_samlProviderConfigurationHelper.isEnabled() &&
+			(httpServletRequest.getSession(false) != null)) {
+
 			return true;
 		}
 
@@ -70,11 +70,23 @@ public class SpSessionTerminationSamlPortalFilter extends BaseSamlPortalFilter {
 			httpServletRequest);
 
 		if ((samlSpSession != null) && samlSpSession.isTerminated()) {
-			_singleLogoutProfile.terminateSpSession(
-				httpServletRequest, httpServletResponse);
+			String requestPath = _samlHttpRequestHelper.getRequestPath(
+				httpServletRequest);
 
-			_singleLogoutProfile.logout(
-				httpServletRequest, httpServletResponse);
+			if (!requestPath.equals("/c/portal/logout") &&
+				!requestPath.equals("/c/portal/saml/slo")) {
+
+				_singleLogoutProfile.terminateSpSession(
+					httpServletRequest, httpServletResponse);
+
+				if (FeatureFlagManagerUtil.isEnabled("LPD-29737")) {
+					_singleLogoutProfile.terminateSsoSession(
+						httpServletRequest, httpServletResponse);
+				}
+
+				_singleLogoutProfile.logout(
+					httpServletRequest, httpServletResponse);
+			}
 		}
 
 		filterChain.doFilter(httpServletRequest, httpServletResponse);
@@ -87,6 +99,12 @@ public class SpSessionTerminationSamlPortalFilter extends BaseSamlPortalFilter {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SpSessionTerminationSamlPortalFilter.class);
+
+	@Reference
+	private SamlHttpRequestHelper _samlHttpRequestHelper;
+
+	@Reference
+	private SamlProviderConfigurationHelper _samlProviderConfigurationHelper;
 
 	private ServletContext _servletContext;
 

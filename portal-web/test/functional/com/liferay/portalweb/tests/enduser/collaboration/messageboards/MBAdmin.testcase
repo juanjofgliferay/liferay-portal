@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.acceptance = "true";
@@ -46,6 +46,8 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanAddSubcategory {
+		property portal.acceptance = "false";
+
 		JSONMBMessage.addCategory(
 			categoryDescription = "MB Category Description",
 			categoryName = "MB Category Name",
@@ -77,9 +79,9 @@ definition {
 	@priority = 5
 	@refactordone
 	test CanAddThread {
-		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
-		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
-		property environment.acceptance = "true";
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
+		property environment.acceptance = "false";
 		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
@@ -174,6 +176,8 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanDeleteCategories {
+		property portal.acceptance = "false";
+
 		for (var num : list "1,2,3") {
 			JSONMBMessage.addCategory(
 				categoryDescription = "MB Category Description",
@@ -213,6 +217,8 @@ definition {
 	@description = "This is a test for LPS-136918. It checks that a category can be exported."
 	@priority = 3
 	test CanExportCategory {
+		property portal.acceptance = "false";
+
 		JSONMBMessage.addCategory(
 			categoryDescription = "MB Category Description",
 			categoryName = "MB Category Name",
@@ -228,6 +234,8 @@ definition {
 	@description = "This is a test for LPS-136917. It checks that a category can be imported."
 	@priority = 3
 	test CanImportCategory {
+		property portal.acceptance = "false";
+
 		MessageBoardsAdmin.openMessageBoardsAdmin(siteURLKey = "guest");
 
 		LAR.importPortlet(
@@ -359,10 +367,11 @@ definition {
 			messageURL = "[$MESSAGE_URL$]",
 			siteURLKey = "guest");
 
+		Panel.expandPanel(panel = "Definition of Terms");
+
 		for (var definitionOfTerm : list "[$MESSAGE_PARENT$],The message body of the parent message,[$MESSAGE_SIBLINGS$],The message thread of messages at the same level,[$ROOT_MESSAGE_BODY$],The message body of the original message") {
 			AssertElementPresent(
 				key_definitionOfTerm = ${definitionOfTerm},
-				key_number = 1,
 				locator1 = "MessageBoardsAdminConfiguration#DEFINITION_OF_TERMS");
 		}
 
@@ -376,7 +385,6 @@ definition {
 		for (var definitionOfTerm : list "[$MESSAGE_PARENT$],The message body of the parent message,[$MESSAGE_SIBLINGS$],The message thread of messages at the same level,[$ROOT_MESSAGE_BODY$],The message body of the original message") {
 			AssertElementPresent(
 				key_definitionOfTerm = ${definitionOfTerm},
-				key_number = 2,
 				locator1 = "MessageBoardsAdminConfiguration#DEFINITION_OF_TERMS");
 		}
 	}

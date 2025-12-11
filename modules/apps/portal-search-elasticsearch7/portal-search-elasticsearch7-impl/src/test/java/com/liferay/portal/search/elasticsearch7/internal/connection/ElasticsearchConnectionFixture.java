@@ -7,23 +7,35 @@ package com.liferay.portal.search.elasticsearch7.internal.connection;
 
 import com.liferay.petra.process.local.LocalProcessExecutor;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.JavaDetector;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch7.internal.connection.constants.ConnectionConstants;
+import com.liferay.portal.search.elasticsearch7.internal.sidecar.HttpPortRange;
 import com.liferay.portal.search.elasticsearch7.internal.sidecar.PathUtil;
 import com.liferay.portal.search.elasticsearch7.internal.sidecar.Sidecar;
 import com.liferay.portal.search.elasticsearch7.internal.sidecar.SidecarManager;
-import com.liferay.portal.util.PropsImpl;
 
+import java.io.File;
+import java.io.IOException;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.Collections;
 import java.util.Map;
 
+import org.elasticsearch.action.ingest.PutPipelineRequest;
+import org.elasticsearch.client.IngestClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.bytes.BytesArray;
+import org.elasticsearch.xcontent.XContentType;
 
 import org.mockito.Mockito;
 
@@ -38,7 +50,10 @@ public class ElasticsearchConnectionFixture
 	}
 
 	public ElasticsearchConnection createElasticsearchConnection() {
-		PropsUtil.setProps(new PropsImpl());
+		PropsUtil.set(PropsKeys.LIFERAY_HOME, _TMP_PATH.toString());
+		PropsUtil.set(
+			PropsKeys.LIFERAY_SHIELDED_CONTAINER_LIB_PORTAL_DIR,
+			String.valueOf(_TMP_PATH.resolve("lib-process-executor")));
 
 		ElasticsearchConfigurationWrapper elasticsearchConfigurationWrapper =
 			new ElasticsearchConfigurationWrapper() {
@@ -48,13 +63,19 @@ public class ElasticsearchConnectionFixture
 							ElasticsearchConfiguration.class,
 							_elasticsearchConfigurationProperties));
 				}
+
+				@Override
+				public String httpCORSAllowOrigin() {
+					return "'*'";
+				}
+
 			};
 
 		Sidecar sidecar = new Sidecar(
-			elasticsearchConfigurationWrapper,
-			_createElasticsearchInstancePaths(), new LocalProcessExecutor(),
-			() -> _TMP_PATH.resolve("lib-process-executor"),
-			Mockito.mock(SidecarManager.class));
+			elasticsearchConfigurationWrapper, new LocalProcessExecutor(),
+			_TMP_PATH.resolve("sidecar-elasticsearch"),
+			Mockito.mock(SidecarManager.class),
+			new File(_workPath.toFile(), "sidecar.process"), _workPath);
 
 		ElasticsearchConnectionBuilder elasticsearchConnectionBuilder =
 			new ElasticsearchConnectionBuilder();
@@ -85,6 +106,8 @@ public class ElasticsearchConnectionFixture
 		createElasticsearchConnection();
 
 		_elasticsearchConnection.connect();
+
+		_putTimestampPipeline(getRestHighLevelClient());
 	}
 
 	public void destroyNode() {
@@ -163,6 +186,14 @@ public class ElasticsearchConnectionFixture
 				Map<String, Object> elasticsearchConfigurationProperties,
 				String clusterName) {
 
+			String sidecarJVMOptions = "-Xmx256m";
+
+			if (!JavaDetector.isJDK8()) {
+				sidecarJVMOptions =
+					"-Xmx256m|--add-opens=java.base/java.lang=ALL-UNNAMED|--" +
+						"add-opens=java.base/java.lang.invoke=ALL-UNNAMED";
+			}
+
 			return HashMapBuilder.<String, Object>put(
 				"clusterName", clusterName
 			).put(
@@ -174,7 +205,7 @@ public class ElasticsearchConnectionFixture
 			).put(
 				"sidecarHttpPort", HttpPortRange.AUTO
 			).put(
-				"sidecarJVMOptions", "-Xmx256m"
+				"sidecarJVMOptions", sidecarJVMOptions
 			).putAll(
 				elasticsearchConfigurationProperties
 			).build();
@@ -186,27 +217,40 @@ public class ElasticsearchConnectionFixture
 
 	}
 
-	private ElasticsearchInstancePaths _createElasticsearchInstancePaths() {
-		ElasticsearchInstancePaths elasticsearchInstancePaths = Mockito.mock(
-			ElasticsearchInstancePaths.class);
-
-		Mockito.doReturn(
-			_TMP_PATH.resolve("sidecar-elasticsearch")
-		).when(
-			elasticsearchInstancePaths
-		).getHomePath();
-
-		Mockito.doReturn(
-			_workPath
-		).when(
-			elasticsearchInstancePaths
-		).getWorkPath();
-
-		return elasticsearchInstancePaths;
-	}
-
 	private void _deleteTmpDir() {
 		PathUtil.deleteDir(_workPath);
+	}
+
+	private void _putTimestampPipeline(
+		RestHighLevelClient restHighLevelClient) {
+
+		IngestClient ingestClient = restHighLevelClient.ingest();
+
+		String json = JSONUtil.put(
+			"description", "Adds timestamp to documents"
+		).put(
+			"processors",
+			JSONUtil.put(
+				JSONUtil.put(
+					"set",
+					JSONUtil.put(
+						"field", "_source.timestamp"
+					).put(
+						"value", "{{{_ingest.timestamp}}}"
+					)))
+		).toString();
+
+		PutPipelineRequest putPipelineRequest = new PutPipelineRequest(
+			"timestamp", new BytesArray(json.getBytes(StandardCharsets.UTF_8)),
+			XContentType.JSON);
+
+		try {
+			ingestClient.putPipeline(
+				putPipelineRequest, RequestOptions.DEFAULT);
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
 	}
 
 	private static final Path _TMP_PATH = Paths.get("tmp");

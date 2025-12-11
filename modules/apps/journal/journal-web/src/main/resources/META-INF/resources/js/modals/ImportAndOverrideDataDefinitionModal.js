@@ -12,10 +12,8 @@ import React, {useEffect, useRef, useState} from 'react';
 
 const ImportAndOverrideDataDefinitionModal = ({portletNamespace}) => {
 	const [visible, setVisible] = useState(false);
-	const [
-		importAndOverrideStructureURL,
-		setImportAndOverrideStructureURL,
-	] = useState('');
+	const [importAndOverrideStructureURL, setImportAndOverrideStructureURL] =
+		useState('');
 	const inputFileRef = useRef();
 	const importAndOverrideDataDefinitionModalComponentId = `${portletNamespace}importAndOverrideDataDefinitionModal`;
 	const importAndOverrideDataDefinitionFormId = `${portletNamespace}importAndOverrideDataDefinitionForm`;
@@ -60,7 +58,9 @@ const ImportAndOverrideDataDefinitionModal = ({portletNamespace}) => {
 
 	return visible ? (
 		<ClayModal observer={observer} size="md">
-			<ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
 				{Liferay.Language.get('import-structure')}
 			</ClayModal.Header>
 

@@ -8,7 +8,9 @@ package com.liferay.depot.service;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -22,6 +24,8 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -44,13 +48,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see DepotEntryGroupRelLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface DepotEntryGroupRelLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<DepotEntryGroupRel>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -58,8 +64,9 @@ public interface DepotEntryGroupRelLocalService
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.depot.service.impl.DepotEntryGroupRelLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the depot entry group rel local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link DepotEntryGroupRelLocalServiceUtil} if injection and service tracking are not available.
 	 */
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
-		boolean searchable);
+			boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
+			boolean searchable)
+		throws PortalException;
 
 	/**
 	 * Adds the depot entry group rel to the database. Also notifies the appropriate model listeners.
@@ -76,10 +83,12 @@ public interface DepotEntryGroupRelLocalService
 		DepotEntryGroupRel depotEntryGroupRel);
 
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId);
+			long depotEntryId, long toGroupId)
+		throws PortalException;
 
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId, boolean searchable);
+			long depotEntryId, long toGroupId, boolean searchable)
+		throws PortalException;
 
 	/**
 	 * Creates a new depot entry group rel with the primary key. Does not add the depot entry group rel to the database.
@@ -106,11 +115,13 @@ public interface DepotEntryGroupRelLocalService
 	 *
 	 * @param depotEntryGroupRel the depot entry group rel
 	 * @return the depot entry group rel that was removed
+	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public DepotEntryGroupRel deleteDepotEntryGroupRel(
-		DepotEntryGroupRel depotEntryGroupRel);
+			DepotEntryGroupRel depotEntryGroupRel)
+		throws PortalException;
 
 	/**
 	 * Deletes the depot entry group rel with the primary key from the database. Also notifies the appropriate model listeners.
@@ -242,6 +253,11 @@ public interface DepotEntryGroupRelLocalService
 	public DepotEntryGroupRel getDepotEntryGroupRel(long depotEntryGroupRelId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DepotEntryGroupRel getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			long depotEntryId, long toGroupId)
+		throws PortalException;
+
 	/**
 	 * Returns the depot entry group rel matching the UUID and group.
 	 *
@@ -259,6 +275,10 @@ public interface DepotEntryGroupRelLocalService
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
 		DepotEntry depotEntry);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		DepotEntry depotEntry, int start, int end);
+
 	/**
 	 * Returns a range of all the depot entry group rels.
 	 *
@@ -275,7 +295,7 @@ public interface DepotEntryGroupRelLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
-		long groupId, int start, int end);
+		long groupId, int type, int start, int end);
 
 	/**
 	 * Returns all the depot entry group rels matching the UUID and company.
@@ -315,7 +335,7 @@ public interface DepotEntryGroupRelLocalService
 	public int getDepotEntryGroupRelsCount(DepotEntry depotEntry);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getDepotEntryGroupRelsCount(long groupId);
+	public int getDepotEntryGroupRelsCount(long groupId, int type);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
@@ -367,5 +387,20 @@ public interface DepotEntryGroupRelLocalService
 	public DepotEntryGroupRel updateSearchable(
 			long depotEntryGroupRelId, boolean searchable)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<DepotEntryGroupRel> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<DepotEntryGroupRel> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<DepotEntryGroupRel>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

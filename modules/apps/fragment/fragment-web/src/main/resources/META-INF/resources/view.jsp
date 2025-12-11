@@ -12,7 +12,8 @@ List<FragmentCollection> fragmentCollections = (List<FragmentCollection>)request
 Map<String, List<FragmentCollection>> inheritedFragmentCollections = (Map<String, List<FragmentCollection>>)request.getAttribute(FragmentWebKeys.INHERITED_FRAGMENT_COLLECTIONS);
 List<FragmentCollection> systemFragmentCollections = (List<FragmentCollection>)request.getAttribute(FragmentWebKeys.SYSTEM_FRAGMENT_COLLECTIONS);
 
-List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEntriesDisplayContext.getFragmentCollectionContributors(locale);
+List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentDisplayContext.getFragmentCollectionContributors(locale);
+ImportDisplayContext importDisplayContext = new ImportDisplayContext(request, renderRequest, renderResponse);
 %>
 
 <liferay-ui:error embed="<%= false %>" exception="<%= DuplicateFragmentCollectionKeyException.class %>">
@@ -39,6 +40,7 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 
 <clay:container-fluid
 	cssClass="container-view"
+	size="xxxl"
 >
 	<clay:row>
 		<clay:col
@@ -64,22 +66,35 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 						</clay:content-col>
 
 						<clay:content-col>
-							<ul class="navbar-nav">
+							<ul class="align-items-center navbar-nav">
 								<li>
 									<c:if test="<%= FragmentPermission.contains(permissionChecker, scopeGroupId, FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES) %>">
 										<clay:link
 											borderless="<%= true %>"
-											cssClass="component-action"
+											cssClass="component-action lfr-portal-tooltip"
 											href="<%= editFragmentCollectionURL %>"
 											icon="plus"
+											title='<%= LanguageUtil.get(request, "add-fragment-set") %>'
 											type="button"
 										/>
 									</c:if>
 								</li>
+
+								<c:if test="<%= fragmentDisplayContext.isShowMarketplace() %>">
+									<li>
+										<div>
+											<react:component
+												module="{MarketplaceButton} from layout-js-components-web"
+												props="<%= fragmentDisplayContext.getMarketplaceProps() %>"
+											/>
+										</div>
+									</li>
+								</c:if>
+
 								<li>
 
 									<%
-									Map<String, Object> fragmentCollectionsViewContext = fragmentEntriesDisplayContext.getFragmentCollectionsViewContext();
+									Map<String, Object> fragmentCollectionsViewContext = fragmentDisplayContext.getFragmentCollectionsViewContext();
 									%>
 
 									<clay:dropdown-actions
@@ -99,8 +114,9 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 											).build()
 										%>'
 										aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
-										dropdownItems="<%= fragmentEntriesDisplayContext.getCollectionsDropdownItems() %>"
-										propsTransformer="js/FragmentCollectionViewDefaultPropsTransformer"
+										dropdownItems="<%= fragmentDisplayContext.getCollectionsDropdownItems() %>"
+										propsTransformer="{FragmentCollectionViewDefaultPropsTransformer} from fragment-web"
+										title='<%= LanguageUtil.get(request, "fragment-sets-options") %>'
 									/>
 								</li>
 							</ul>
@@ -113,7 +129,7 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 						</span>
 
 						<clay:vertical-nav
-							verticalNavItems="<%= fragmentEntriesDisplayContext.getVerticalNavItemList(systemFragmentCollections, fragmentCollectionContributors) %>"
+							verticalNavItems="<%= fragmentDisplayContext.getVerticalNavItemList(systemFragmentCollections, fragmentCollectionContributors) %>"
 						/>
 					</c:if>
 
@@ -124,7 +140,7 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 						<span class="text-truncate"><%= entry.getKey() %></span>
 
 						<clay:vertical-nav
-							verticalNavItems="<%= fragmentEntriesDisplayContext.getVerticalNavItemList(entry.getValue()) %>"
+							verticalNavItems="<%= fragmentDisplayContext.getVerticalNavItemList(entry.getValue()) %>"
 						/>
 
 					<%
@@ -132,10 +148,10 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 					%>
 
 					<c:if test="<%= ListUtil.isNotEmpty(fragmentCollections) %>">
-						<span class="text-truncate"><%= HtmlUtil.escape(fragmentEntriesDisplayContext.getGroupName(scopeGroupId)) %></span>
+						<span class="text-truncate"><%= HtmlUtil.escape(fragmentDisplayContext.getGroupName(scopeGroupId)) %></span>
 
 						<clay:vertical-nav
-							verticalNavItems="<%= fragmentEntriesDisplayContext.getVerticalNavItemList(fragmentCollections) %>"
+							verticalNavItems="<%= fragmentDisplayContext.getVerticalNavItemList(fragmentCollections) %>"
 						/>
 					</c:if>
 				</c:when>
@@ -145,13 +161,13 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 					</p>
 
 					<liferay-frontend:empty-result-message
-						actionDropdownItems="<%= FragmentPermission.contains(permissionChecker, scopeGroupId, FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES) ? fragmentEntriesDisplayContext.getActionDropdownItems() : null %>"
-						additionalProps="<%= fragmentEntriesDisplayContext.getFragmentCollectionsViewContext() %>"
+						actionDropdownItems="<%= FragmentPermission.contains(permissionChecker, scopeGroupId, FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES) ? fragmentDisplayContext.getActionDropdownItems() : null %>"
+						additionalProps="<%= fragmentDisplayContext.getFragmentCollectionsViewContext() %>"
 						animationType="<%= EmptyResultMessageKeys.AnimationType.NONE %>"
-						buttonPropsTransformer="js/FragmentCollectionViewButtonPropsTransformer"
+						buttonPropsTransformer="{FragmentCollectionViewButtonPropsTransformer} from fragment-web"
 						description='<%= LanguageUtil.get(request, "fragment-sets-are-needed-to-create-fragments") %>'
 						elementType='<%= LanguageUtil.get(request, "fragment-sets") %>'
-						propsTransformer="js/FragmentCollectionViewDefaultPropsTransformer"
+						propsTransformer="{FragmentCollectionViewDefaultPropsTransformer} from fragment-web"
 						propsTransformerServletContext="<%= application %>"
 					/>
 				</c:otherwise>
@@ -161,7 +177,12 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 		<clay:col
 			lg="9"
 		>
-			<c:if test="<%= (fragmentEntriesDisplayContext.getFragmentCollection() != null) || (fragmentEntriesDisplayContext.getFragmentCollectionContributor() != null) %>">
+
+			<%
+			FragmentCollectionContributor fragmentCollectionContributor = fragmentDisplayContext.getFragmentCollectionContributor();
+			%>
+
+			<c:if test="<%= (fragmentDisplayContext.getFragmentCollection() != null) || (fragmentCollectionContributor != null) %>">
 				<clay:sheet
 					size="full"
 				>
@@ -170,22 +191,31 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 							verticalAlign="center"
 						>
 							<clay:content-col>
-								<%= fragmentEntriesDisplayContext.getFragmentCollectionName() %>
+								<%= fragmentDisplayContext.getFragmentCollectionName() %>
 							</clay:content-col>
 
-							<c:if test="<%= fragmentEntriesDisplayContext.showFragmentCollectionActions() %>">
+							<c:if test="<%= (fragmentCollectionContributor != null) && fragmentCollectionContributor.isDeprecated() %>">
+								<div class="c-ml-3">
+									<liferay-frontend:feature-indicator
+										interactive="<%= true %>"
+										type="deprecated"
+									/>
+								</div>
+							</c:if>
+
+							<c:if test="<%= fragmentDisplayContext.isShowFragmentCollectionActions() %>">
 								<clay:content-col
 									cssClass="inline-item-after"
 								>
 
 									<%
-									FragmentCollectionActionDropdownItemsProvider fragmentCollectionActionDropdownItemsProvider = new FragmentCollectionActionDropdownItemsProvider(fragmentEntriesDisplayContext, request, renderResponse);
+									FragmentCollectionActionDropdownItemsProvider fragmentCollectionActionDropdownItemsProvider = new FragmentCollectionActionDropdownItemsProvider(fragmentDisplayContext, request, renderResponse);
 									%>
 
 									<clay:dropdown-actions
 										aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 										dropdownItems="<%= fragmentCollectionActionDropdownItemsProvider.getActionDropdownItems() %>"
-										propsTransformer="js/FragmentCollectionDropdownPropsTransformer"
+										propsTransformer="{FragmentCollectionDropdownPropsTransformer} from fragment-web"
 									/>
 								</clay:content-col>
 							</c:if>
@@ -193,19 +223,19 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 					</h2>
 
 					<clay:sheet-section>
-						<c:if test="<%= !ListUtil.isEmpty(fragmentEntriesDisplayContext.getNavigationItems()) %>">
+						<c:if test="<%= !ListUtil.isEmpty(fragmentDisplayContext.getNavigationItems()) %>">
 							<clay:navigation-bar
-								navigationItems="<%= fragmentEntriesDisplayContext.getNavigationItems() %>"
+								navigationItems="<%= fragmentDisplayContext.getNavigationItems() %>"
 							/>
 						</c:if>
 
 						<c:choose>
-							<c:when test="<%= fragmentEntriesDisplayContext.isSelectedFragmentCollectionContributor() %>">
+							<c:when test="<%= fragmentDisplayContext.isSelectedFragmentCollectionContributor() %>">
 								<liferay-util:include page="/view_contributed_fragment_entries.jsp" servletContext="<%= application %>" />
 							</c:when>
 							<c:otherwise>
 								<c:choose>
-									<c:when test="<%= fragmentEntriesDisplayContext.isViewResources() %>">
+									<c:when test="<%= fragmentDisplayContext.isViewResources() %>">
 										<liferay-util:include page="/view_resources.jsp" servletContext="<%= application %>" />
 									</c:when>
 									<c:otherwise>
@@ -225,8 +255,6 @@ List<FragmentCollectionContributor> fragmentCollectionContributors = fragmentEnt
 </aui:form>
 
 <%
-ImportDisplayContext importDisplayContext = new ImportDisplayContext(request, renderRequest, renderResponse);
-
 List<String> draftFragmentsImporterResultEntries = importDisplayContext.getFragmentsImporterResultEntries(FragmentsImporterResultEntry.Status.IMPORTED_DRAFT);
 %>
 

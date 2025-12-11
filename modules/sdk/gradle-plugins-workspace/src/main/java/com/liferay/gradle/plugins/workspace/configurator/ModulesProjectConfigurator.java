@@ -8,7 +8,6 @@ package com.liferay.gradle.plugins.workspace.configurator;
 import com.liferay.ant.bnd.metatype.MetatypePlugin;
 import com.liferay.gradle.plugins.JspCDefaultsPlugin;
 import com.liferay.gradle.plugins.LiferayOSGiPlugin;
-import com.liferay.gradle.plugins.extensions.BundleExtension;
 import com.liferay.gradle.plugins.extensions.LiferayOSGiExtension;
 import com.liferay.gradle.plugins.js.module.config.generator.JSModuleConfigGeneratorPlugin;
 import com.liferay.gradle.plugins.js.transpiler.JSTranspilerBasePlugin;
@@ -22,13 +21,14 @@ import com.liferay.gradle.plugins.test.integration.TestIntegrationBasePlugin;
 import com.liferay.gradle.plugins.test.integration.TestIntegrationPlugin;
 import com.liferay.gradle.plugins.test.integration.TestIntegrationTomcatExtension;
 import com.liferay.gradle.plugins.upgrade.table.builder.UpgradeTableBuilderPlugin;
-import com.liferay.gradle.plugins.util.BndUtil;
 import com.liferay.gradle.plugins.workspace.FrontendPlugin;
+import com.liferay.gradle.plugins.workspace.LiferayJspCompatibilityPlugin;
 import com.liferay.gradle.plugins.workspace.WorkspaceExtension;
 import com.liferay.gradle.plugins.workspace.WorkspacePlugin;
 import com.liferay.gradle.plugins.workspace.internal.JSModuleConfigGeneratorDefaultsPlugin;
 import com.liferay.gradle.plugins.workspace.internal.util.FileUtil;
 import com.liferay.gradle.plugins.workspace.internal.util.GradleUtil;
+import com.liferay.gradle.plugins.workspace.internal.util.JakartaCompatibilityUtil;
 import com.liferay.gradle.plugins.wsdd.builder.WSDDBuilderPlugin;
 
 import groovy.json.JsonSlurper;
@@ -57,7 +57,6 @@ import org.gradle.api.Task;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.CopySourceSpec;
 import org.gradle.api.file.CopySpec;
-import org.gradle.api.file.DeleteSpec;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.ExtensionContainer;
@@ -70,8 +69,6 @@ import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.language.base.plugins.LifecycleBasePlugin;
-
-import org.osgi.framework.Constants;
 
 /**
  * @author Andrea Di Giorgi
@@ -123,6 +120,25 @@ public class ModulesProjectConfigurator extends BaseProjectConfigurator {
 			}
 
 			GradleUtil.applyPlugin(project, LiferayOSGiPlugin.class);
+
+			LiferayOSGiExtension liferayOSGiExtension = GradleUtil.getExtension(
+				project, LiferayOSGiExtension.class);
+
+			String javaeePackage = "javax";
+
+			if (JakartaCompatibilityUtil.isUseJakarta(project)) {
+				javaeePackage = "jakarta";
+			}
+
+			liferayOSGiExtension.bundleDefaultInstructions(
+				Collections.singletonMap(
+					"-antbnd.jspanalyzer.fallback-javaee-package",
+					javaeePackage));
+
+			if (!JakartaCompatibilityUtil.isUseJakarta(project)) {
+				GradleUtil.applyPlugin(
+					project, LiferayJspCompatibilityPlugin.class);
+			}
 
 			if (FileUtil.exists(project, "rest-config.yaml")) {
 				GradleUtil.applyPlugin(project, RESTBuilderPlugin.class);
@@ -200,9 +216,6 @@ public class ModulesProjectConfigurator extends BaseProjectConfigurator {
 			}
 		}
 
-		final BundleExtension bundleExtension = BndUtil.getBundleExtension(
-			project.getExtensions());
-
 		final WorkspaceExtension workspaceExtension = _getWorkspaceExtension(
 			project);
 
@@ -214,15 +227,6 @@ public class ModulesProjectConfigurator extends BaseProjectConfigurator {
 				@Override
 				public void execute(Project project) {
 					TaskContainer taskContainer = project.getTasks();
-
-					Task deployFastTask = taskContainer.findByName(
-						LiferayOSGiPlugin.DEPLOY_FAST_TASK_NAME);
-
-					if (deployFastTask != null) {
-						_configureTaskDeployFast(
-							(Copy)deployFastTask, bundleExtension,
-							workspaceExtension);
-					}
 
 					Task setUpTestableTomcatTask = taskContainer.findByName(
 						TestIntegrationPlugin.SET_UP_TESTABLE_TOMCAT_TASK_NAME);
@@ -368,75 +372,6 @@ public class ModulesProjectConfigurator extends BaseProjectConfigurator {
 		copy.dependsOn(buildTask);
 
 		copy.into("osgi/modules", _copyJarClosure(project, buildTask));
-	}
-
-	private void _configureTaskDeployFast(
-		Copy deployFastTask, BundleExtension bundleExtension,
-		WorkspaceExtension workspaceExtension) {
-
-		Project project = deployFastTask.getProject();
-
-		String bundleSymbolicName = bundleExtension.getInstruction(
-			Constants.BUNDLE_SYMBOLICNAME);
-		String bundleVersion = bundleExtension.getInstruction(
-			Constants.BUNDLE_VERSION);
-
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("work/");
-		sb.append(bundleSymbolicName);
-		sb.append("-");
-		sb.append(bundleVersion);
-
-		final String pathName = sb.toString();
-
-		File dockerWorkDir = new File(
-			workspaceExtension.getDockerDir(), pathName);
-
-		deployFastTask.setDestinationDir(workspaceExtension.getHomeDir());
-
-		deployFastTask.doLast(
-			new Action<Task>() {
-
-				@Override
-				public void execute(Task task) {
-					project.sync(
-						new Action<CopySpec>() {
-
-							@Override
-							public void execute(CopySpec copySpec) {
-								copySpec.from(
-									new File(
-										deployFastTask.getDestinationDir(),
-										pathName));
-								copySpec.into(dockerWorkDir);
-							}
-
-						});
-				}
-
-			});
-
-		Task cleanTask = GradleUtil.getTask(
-			project, LifecycleBasePlugin.CLEAN_TASK_NAME);
-
-		cleanTask.doLast(
-			new Action<Task>() {
-
-				@Override
-				public void execute(Task task) {
-					project.delete(
-						new Action<DeleteSpec>() {
-
-							@Override
-							public void execute(DeleteSpec deleteSpec) {
-								deleteSpec.delete(dockerWorkDir);
-							}
-
-						});
-				}
-
-			});
 	}
 
 	private void _configureTaskSetUpTestableTomcat(

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -308,6 +309,12 @@ public class ObjectValidationRuleLocalServiceUtil {
 			uuid, companyId);
 	}
 
+	public static List<ObjectValidationRule> getObjectValidationRules(
+		boolean active, String engine) {
+
+		return getService().getObjectValidationRules(active, engine);
+	}
+
 	/**
 	 * Returns a range of all the object validation rules.
 	 *
@@ -428,14 +435,21 @@ public class ObjectValidationRuleLocalServiceUtil {
 			baseModel, objectDefinitionId, payloadJSONObject, userId);
 	}
 
+	public static void validate(
+			List<String> externalReferenceCodes,
+			com.liferay.object.model.ObjectEntry objectEntry, long userId)
+		throws PortalException {
+
+		getService().validate(externalReferenceCodes, objectEntry, userId);
+	}
+
 	public static ObjectValidationRuleLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectValidationRuleLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectValidationRuleLocalService _service;
+	private static final Snapshot<ObjectValidationRuleLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ObjectValidationRuleLocalServiceUtil.class,
+			ObjectValidationRuleLocalService.class);
 
 }

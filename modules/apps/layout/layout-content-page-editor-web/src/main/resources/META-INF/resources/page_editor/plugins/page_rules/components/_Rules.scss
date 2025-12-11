@@ -1,17 +1,39 @@
 @import 'cadmin-variables';
 
 html#{$cadmin-selector} .cadmin {
-	.page-editor__rule:hover {
-		background: $cadmin-list-group-active-bg;
+	.page-editor__rule {
+		&:focus-visible,
+		&:hover {
+			background: $cadmin-list-group-active-bg;
+		}
+
+		&:focus-visible {
+			box-shadow: 0 0 0 2px $cadmin-primary-l0;
+			outline: 0;
+			z-index: 1;
+		}
+
+		input {
+			&:active,
+			&:focus {
+				outline-color: $cadmin-primary-l1;
+			}
+		}
+
+		.text-muted .label {
+			color: $cadmin-secondary-l1;
+		}
 	}
 
 	.page-editor__rule-builder-item {
 		border: 1px solid $cadmin-gray-300;
 		border-radius: 0.25rem;
-		height: 50px;
+		min-height: 50px;
 
 		&:focus-visible {
-			box-shadow: 0 0 0 2px $cadmin-white, 0 0 0 4px $cadmin-primary-l0;
+			box-shadow:
+				0 0 0 2px $cadmin-white,
+				0 0 0 4px $cadmin-primary-l0;
 			outline: 0;
 		}
 

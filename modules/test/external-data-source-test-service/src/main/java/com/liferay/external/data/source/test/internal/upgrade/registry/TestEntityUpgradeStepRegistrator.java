@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Shuyang Zhou
  */
-@Component(service = UpgradeStepRegistrator.class)
+@Component(enabled = false, service = UpgradeStepRegistrator.class)
 public class TestEntityUpgradeStepRegistrator
 	implements UpgradeStepRegistrator {
 

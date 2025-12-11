@@ -14,7 +14,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.awt.image.RenderedImage;
 
@@ -63,7 +63,7 @@ public class RenderedImageUtil {
 			try {
 				imageReader = iterator.next();
 
-				imageReader.setInput(imageInputStream);
+				imageReader.setInput(imageInputStream, false, true);
 
 				int height = imageReader.getHeight(0);
 				int width = imageReader.getWidth(0);

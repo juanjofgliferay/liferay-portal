@@ -5,6 +5,7 @@
 
 package com.liferay.commerce.product.definitions.web.internal.portlet.action;
 
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
@@ -18,9 +19,11 @@ import com.liferay.commerce.product.exception.CPDefinitionIgnoreSKUCombinationsE
 import com.liferay.commerce.product.exception.CPInstanceDeliverySubscriptionLengthException;
 import com.liferay.commerce.product.exception.CPInstanceJsonException;
 import com.liferay.commerce.product.exception.CPInstanceMaxPriceValueException;
+import com.liferay.commerce.product.exception.CPInstancePriceException;
 import com.liferay.commerce.product.exception.CPInstanceReplacementCPInstanceUuidException;
 import com.liferay.commerce.product.exception.CPInstanceSkuException;
 import com.liferay.commerce.product.exception.DuplicateCPInstanceException;
+import com.liferay.commerce.product.exception.DuplicateCPInstanceExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchSkuContributorCPDefinitionOptionRelException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
@@ -36,6 +39,7 @@ import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -54,6 +58,10 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+
 import java.math.BigDecimal;
 
 import java.util.Calendar;
@@ -61,10 +69,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,7 +78,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_instance"
 	},
 	service = MVCActionCommand.class
@@ -123,6 +127,7 @@ public class EditCPInstanceMVCActionCommand extends BaseMVCActionCommand {
 					CPInstanceDeliverySubscriptionLengthException ||
 				throwable instanceof CPInstanceJsonException ||
 				throwable instanceof CPInstanceMaxPriceValueException ||
+				throwable instanceof CPInstancePriceException ||
 				throwable instanceof
 					CPInstanceReplacementCPInstanceUuidException ||
 				throwable instanceof CPInstanceSkuException ||
@@ -137,6 +142,14 @@ public class EditCPInstanceMVCActionCommand extends BaseMVCActionCommand {
 					actionRequest, "redirect");
 
 				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else if (throwable instanceof
+						DuplicateCPInstanceExternalReferenceCodeException ||
+					 throwable instanceof PrincipalException) {
+
+				SessionErrors.add(actionRequest, throwable.getClass());
+
+				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
 			else {
 				throw new PortletException(throwable);
@@ -233,19 +246,16 @@ public class EditCPInstanceMVCActionCommand extends BaseMVCActionCommand {
 		boolean purchasable = ParamUtil.getBoolean(
 			actionRequest, "purchasable");
 		boolean published = ParamUtil.getBoolean(actionRequest, "published");
-
 		double width = ParamUtil.getDouble(actionRequest, "width");
 		double height = ParamUtil.getDouble(actionRequest, "height");
 		double depth = ParamUtil.getDouble(actionRequest, "depth");
 		double weight = ParamUtil.getDouble(actionRequest, "weight");
-
-		BigDecimal price = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "price", BigDecimal.ZERO);
-		BigDecimal promoPrice = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "promoPrice", BigDecimal.ZERO);
-		BigDecimal cost = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "cost", BigDecimal.ZERO);
-
+		BigDecimal price = _commercePriceFormatter.parse(
+			actionRequest, false, CPInstance.class.getName(), "price");
+		BigDecimal promoPrice = _commercePriceFormatter.parse(
+			actionRequest, false, CPInstance.class.getName(), "promoPrice");
+		BigDecimal cost = _commercePriceFormatter.parse(
+			actionRequest, false, CPInstance.class.getName(), "cost");
 		int displayDateMonth = ParamUtil.getInteger(
 			actionRequest, "displayDateMonth");
 		int displayDateDay = ParamUtil.getInteger(
@@ -507,12 +517,6 @@ public class EditCPInstanceMVCActionCommand extends BaseMVCActionCommand {
 				commercePriceList.getCommercePriceListId(), price,
 				priceOnApplication, null, null, serviceContext);
 		}
-		else {
-			_commercePriceEntryLocalService.updatePricingInfo(
-				commercePriceEntry.getCommercePriceEntryId(),
-				commercePriceEntry.isBulkPricing(), price, priceOnApplication,
-				null, null, serviceContext);
-		}
 	}
 
 	private static final TransactionConfig _transactionConfig =
@@ -521,6 +525,9 @@ public class EditCPInstanceMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CommercePriceListLocalService _commercePriceListLocalService;

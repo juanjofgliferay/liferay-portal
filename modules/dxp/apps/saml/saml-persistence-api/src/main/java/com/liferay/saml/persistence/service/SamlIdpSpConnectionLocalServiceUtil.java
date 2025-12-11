@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.saml.persistence.model.SamlIdpSpConnection;
 
@@ -36,21 +37,6 @@ public class SamlIdpSpConnectionLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.saml.persistence.service.impl.SamlIdpSpConnectionLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static SamlIdpSpConnection addSamlIdpSpConnection(
-			int assertionLifetime, String attributeNames,
-			boolean attributesEnabled, boolean attributesNamespaceEnabled,
-			boolean enabled, boolean encryptionForced, String metadataUrl,
-			InputStream metadataXmlInputStream, String name,
-			String nameIdAttribute, String nameIdFormat, String samlSpEntityId,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addSamlIdpSpConnection(
-			assertionLifetime, attributeNames, attributesEnabled,
-			attributesNamespaceEnabled, enabled, encryptionForced, metadataUrl,
-			metadataXmlInputStream, name, nameIdAttribute, nameIdFormat,
-			samlSpEntityId, serviceContext);
-	}
 
 	/**
 	 * Adds the saml idp sp connection to the database. Also notifies the appropriate model listeners.
@@ -66,6 +52,22 @@ public class SamlIdpSpConnectionLocalServiceUtil {
 		SamlIdpSpConnection samlIdpSpConnection) {
 
 		return getService().addSamlIdpSpConnection(samlIdpSpConnection);
+	}
+
+	public static SamlIdpSpConnection addSamlIdpSpConnection(
+			String samlSpEntityId, int assertionLifetime, String attributeNames,
+			boolean attributesEnabled, boolean attributesNamespaceEnabled,
+			boolean enabled, boolean encryptionForced, String metadataUrl,
+			InputStream metadataXmlInputStream, String name,
+			String nameIdAttribute, String nameIdFormat,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addSamlIdpSpConnection(
+			samlSpEntityId, assertionLifetime, attributeNames,
+			attributesEnabled, attributesNamespaceEnabled, enabled,
+			encryptionForced, metadataUrl, metadataXmlInputStream, name,
+			nameIdAttribute, nameIdFormat, serviceContext);
 	}
 
 	/**
@@ -334,20 +336,20 @@ public class SamlIdpSpConnectionLocalServiceUtil {
 	}
 
 	public static SamlIdpSpConnection updateSamlIdpSpConnection(
-			long samlIdpSpConnectionId, int assertionLifetime,
-			String attributeNames, boolean attributesEnabled,
-			boolean attributesNamespaceEnabled, boolean enabled,
-			boolean encryptionForced, String metadataUrl,
+			long samlIdpSpConnectionId, String samlSpEntityId,
+			int assertionLifetime, String attributeNames,
+			boolean attributesEnabled, boolean attributesNamespaceEnabled,
+			boolean enabled, boolean encryptionForced, String metadataUrl,
 			InputStream metadataXmlInputStream, String name,
-			String nameIdAttribute, String nameIdFormat, String samlSpEntityId,
+			String nameIdAttribute, String nameIdFormat,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateSamlIdpSpConnection(
-			samlIdpSpConnectionId, assertionLifetime, attributeNames,
-			attributesEnabled, attributesNamespaceEnabled, enabled,
-			encryptionForced, metadataUrl, metadataXmlInputStream, name,
-			nameIdAttribute, nameIdFormat, samlSpEntityId, serviceContext);
+			samlIdpSpConnectionId, samlSpEntityId, assertionLifetime,
+			attributeNames, attributesEnabled, attributesNamespaceEnabled,
+			enabled, encryptionForced, metadataUrl, metadataXmlInputStream,
+			name, nameIdAttribute, nameIdFormat, serviceContext);
 	}
 
 	/**
@@ -367,13 +369,12 @@ public class SamlIdpSpConnectionLocalServiceUtil {
 	}
 
 	public static SamlIdpSpConnectionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SamlIdpSpConnectionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile SamlIdpSpConnectionLocalService _service;
+	private static final Snapshot<SamlIdpSpConnectionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			SamlIdpSpConnectionLocalServiceUtil.class,
+			SamlIdpSpConnectionLocalService.class);
 
 }

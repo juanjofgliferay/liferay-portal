@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -47,195 +46,286 @@ public class WishListItem implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(WishListItem.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFinalPrice() {
+		if (_finalPriceSupplier != null) {
+			finalPrice = _finalPriceSupplier.get();
+
+			_finalPriceSupplier = null;
+		}
+
 		return finalPrice;
 	}
 
 	public void setFinalPrice(String finalPrice) {
 		this.finalPrice = finalPrice;
+
+		_finalPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFinalPrice(
 		UnsafeSupplier<String, Exception> finalPriceUnsafeSupplier) {
 
-		try {
-			finalPrice = finalPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_finalPriceSupplier = () -> {
+			try {
+				return finalPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String finalPrice;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _finalPriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFriendlyURL() {
+		if (_friendlyURLSupplier != null) {
+			friendlyURL = _friendlyURLSupplier.get();
+
+			_friendlyURLSupplier = null;
+		}
+
 		return friendlyURL;
 	}
 
 	public void setFriendlyURL(String friendlyURL) {
 		this.friendlyURL = friendlyURL;
+
+		_friendlyURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFriendlyURL(
 		UnsafeSupplier<String, Exception> friendlyURLUnsafeSupplier) {
 
-		try {
-			friendlyURL = friendlyURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_friendlyURLSupplier = () -> {
+			try {
+				return friendlyURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String friendlyURL;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _friendlyURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getIcon() {
+		if (_iconSupplier != null) {
+			icon = _iconSupplier.get();
+
+			_iconSupplier = null;
+		}
+
 		return icon;
 	}
 
 	public void setIcon(String icon) {
 		this.icon = icon;
+
+		_iconSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setIcon(UnsafeSupplier<String, Exception> iconUnsafeSupplier) {
-		try {
-			icon = iconUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_iconSupplier = () -> {
+			try {
+				return iconUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String icon;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _iconSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long productId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getProductName() {
+		if (_productNameSupplier != null) {
+			productName = _productNameSupplier.get();
+
+			_productNameSupplier = null;
+		}
+
 		return productName;
 	}
 
 	public void setProductName(String productName) {
 		this.productName = productName;
+
+		_productNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductName(
 		UnsafeSupplier<String, Exception> productNameUnsafeSupplier) {
 
-		try {
-			productName = productNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productNameSupplier = () -> {
+			try {
+				return productNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String productName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _productNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSkuId() {
+		if (_skuIdSupplier != null) {
+			skuId = _skuIdSupplier.get();
+
+			_skuIdSupplier = null;
+		}
+
 		return skuId;
 	}
 
 	public void setSkuId(Long skuId) {
 		this.skuId = skuId;
+
+		_skuIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSkuId(UnsafeSupplier<Long, Exception> skuIdUnsafeSupplier) {
-		try {
-			skuId = skuIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuIdSupplier = () -> {
+			try {
+				return skuIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long skuId;
+
+	@JsonIgnore
+	private Supplier<Long> _skuIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -264,6 +354,8 @@ public class WishListItem implements Serializable {
 
 		sb.append("{");
 
+		String finalPrice = getFinalPrice();
+
 		if (finalPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -277,6 +369,8 @@ public class WishListItem implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String friendlyURL = getFriendlyURL();
 
 		if (friendlyURL != null) {
 			if (sb.length() > 1) {
@@ -292,6 +386,8 @@ public class WishListItem implements Serializable {
 			sb.append("\"");
 		}
 
+		String icon = getIcon();
+
 		if (icon != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -306,6 +402,8 @@ public class WishListItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -316,6 +414,8 @@ public class WishListItem implements Serializable {
 			sb.append(id);
 		}
 
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -325,6 +425,8 @@ public class WishListItem implements Serializable {
 
 			sb.append(productId);
 		}
+
+		String productName = getProductName();
 
 		if (productName != null) {
 			if (sb.length() > 1) {
@@ -339,6 +441,8 @@ public class WishListItem implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long skuId = getSkuId();
 
 		if (skuId != null) {
 			if (sb.length() > 1) {
@@ -355,8 +459,8 @@ public class WishListItem implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.catalog.dto.v1_0.WishListItem",
 		name = "x-class-name"
 	)
@@ -402,7 +506,10 @@ public class WishListItem implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

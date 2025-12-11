@@ -20,7 +20,7 @@ List<Map<String, String>> selectedItems = (List<Map<String, String>>)data.get("s
 		for (Map<String, String> selectedItem : selectedItems) {
 		%>
 
-			<input name="<%= (String)data.get("inputName") %>" type="hidden" value="<%= selectedItem.get("value") %>" />
+			<input name="<%= (String)data.get("inputName") %>" type="hidden" value="<%= HtmlUtil.escape(selectedItem.get("value")) %>" />
 
 		<%
 		}
@@ -60,7 +60,7 @@ List<Map<String, String>> selectedItems = (List<Map<String, String>>)data.get("s
 	</div>
 
 	<react:component
-		module="asset_tags_selector/AssetTagsSelectorTag.es"
+		module="{AssetTagsSelectorTag} from asset-taglib"
 		props="<%= data %>"
 	/>
 </div>

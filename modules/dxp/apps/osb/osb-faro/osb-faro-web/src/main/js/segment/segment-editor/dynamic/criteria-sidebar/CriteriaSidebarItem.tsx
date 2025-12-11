@@ -11,12 +11,13 @@ import {PropertyTypes} from '../utils/constants';
 const TYPE_ICON_MAP = {
 	[PropertyTypes.Behavior]: 'web-content',
 	[PropertyTypes.Boolean]: 'check',
+	[PropertyTypes.AccountDate]: 'date',
 	[PropertyTypes.AccountNumber]: 'integer',
 	[PropertyTypes.AccountText]: 'text',
 	[PropertyTypes.Date]: 'date',
 	[PropertyTypes.DateTime]: 'date',
 	[PropertyTypes.Duration]: 'time',
-	[PropertyTypes.Event]: 'ac-event-analysis',
+	[PropertyTypes.Event]: 'ac_event_analysis',
 	[PropertyTypes.Number]: 'integer',
 	[PropertyTypes.OrganizationBoolean]: 'check',
 	[PropertyTypes.OrganizationDate]: 'date',
@@ -76,6 +77,7 @@ const beginDrag = ({
 		valid = {customInput: false, dateFilter: true};
 	} else if (
 		[
+			PropertyTypes.AccountDate,
 			PropertyTypes.AccountNumber,
 			PropertyTypes.AccountText,
 			PropertyTypes.Duration,
@@ -132,7 +134,7 @@ export class CriteriaSidebarItem extends React.Component<ICriteriaSidebarItemPro
 		);
 
 		return connectDragSource(
-			<li className={classes}>
+			<li className={classes} data-testid={`criteria-item-${label}`}>
 				<span className='inline-item'>
 					<ClayIcon className='icon-root' symbol='drag' />
 				</span>

@@ -11,6 +11,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.tools.ToolsUtil;
@@ -117,6 +118,28 @@ public class SourceUtil {
 		return annotationsBlocks;
 	}
 
+	public static int getColumnIndex(
+		String tablesSQLContent, String tableName, String columnName) {
+
+		String tableSQL = _getTableSQL(tablesSQLContent, tableName);
+
+		if (tableSQL == null) {
+			return -1;
+		}
+
+		Pattern pattern = Pattern.compile(
+			StringBundler.concat(
+				"(?i)\n\\s*", columnName, "_?\\s+([\\w\\(\\)]+)[\\s,]"));
+
+		Matcher matcher = pattern.matcher(tableSQL);
+
+		if (matcher.find()) {
+			return matcher.start();
+		}
+
+		return -1;
+	}
+
 	public static String getIndent(String s) {
 		StringBundler sb = new StringBundler(s.length());
 
@@ -129,6 +152,16 @@ public class SourceUtil {
 		}
 
 		return sb.toString();
+	}
+
+	public static String getLeadingSpaces(String line) {
+		for (int i = 0; i < line.length(); i++) {
+			if (line.charAt(i) != CharPool.SPACE) {
+				return line.substring(0, i);
+			}
+		}
+
+		return line;
 	}
 
 	public static String getLine(String content, int lineNumber) {
@@ -241,19 +274,17 @@ public class SourceUtil {
 				return true;
 			}
 
-			if (s1.charAt(s1.length() - j) != s2.charAt(s2.length() - j)) {
-				char[] chars1 = s1.toCharArray();
-				char[] chars2 = s2.toCharArray();
-
-				Arrays.sort(chars1);
-				Arrays.sort(chars2);
-
-				if (!Arrays.equals(chars1, chars2)) {
-					return false;
-				}
-
-				return true;
+			if (s1.charAt(s1.length() - j) == s2.charAt(s2.length() - j)) {
+				continue;
 			}
+
+			char[] chars1 = s1.toCharArray();
+			char[] chars2 = s2.toCharArray();
+
+			Arrays.sort(chars1);
+			Arrays.sort(chars2);
+
+			return Arrays.equals(chars1, chars2);
 		}
 	}
 
@@ -363,6 +394,73 @@ public class SourceUtil {
 		}
 
 		return annotations;
+	}
+
+	public static String stripQuotes(String s) {
+		return stripQuotes(s, CharPool.APOSTROPHE, CharPool.QUOTE);
+	}
+
+	public static String stripQuotes(String s, char... delimiters) {
+		List<Character> delimitersList = ListUtil.fromArray(delimiters);
+
+		char delimiter = CharPool.SPACE;
+		boolean insideQuotes = false;
+
+		StringBundler sb = new StringBundler();
+
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+
+			if (insideQuotes) {
+				if (c == delimiter) {
+					int precedingBackSlashCount = 0;
+
+					for (int j = i - 1; j >= 0; j--) {
+						if (s.charAt(j) == CharPool.BACK_SLASH) {
+							precedingBackSlashCount += 1;
+						}
+						else {
+							break;
+						}
+					}
+
+					if ((precedingBackSlashCount == 0) ||
+						((precedingBackSlashCount % 2) == 0)) {
+
+						insideQuotes = false;
+					}
+				}
+			}
+			else if (delimitersList.contains(c)) {
+				delimiter = c;
+				insideQuotes = true;
+			}
+			else {
+				sb.append(c);
+			}
+		}
+
+		return sb.toString();
+	}
+
+	private static String _getTableSQL(
+		String tablesSQLContent, String tableName) {
+
+		Pattern pattern = Pattern.compile("create table " + tableName + "_? ");
+
+		Matcher matcher = pattern.matcher(tablesSQLContent);
+
+		if (!matcher.find()) {
+			return null;
+		}
+
+		int x = tablesSQLContent.indexOf(");", matcher.start());
+
+		if (x == -1) {
+			return null;
+		}
+
+		return tablesSQLContent.substring(matcher.start(), x + 1);
 	}
 
 	private static final Pattern _annotationMemberValuePairPattern =

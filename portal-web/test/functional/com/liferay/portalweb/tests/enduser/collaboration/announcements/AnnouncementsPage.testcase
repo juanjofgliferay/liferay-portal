@@ -1,4 +1,4 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
@@ -292,13 +292,15 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanViewAnnouncementsPagination {
+		property custom.properties = "announcements.entry.page.delta.values=4,8,20,40,60${line.separator}search.container.page.delta.values=4,8,20,40,60";
+
 		for (var entryCount : list "1,2,3,4,5,6,7") {
 			JSONAnnouncement.addAnnouncement(
 				announcementContent = "Announcements Entry Content ${entryCount}",
 				announcementTitle = "Announcements Entry Title ${entryCount}",
 				announcementURL = "http://www.liferay.com",
 				userEmailAddress = "test@liferay.com",
-				userPassword = "test");
+				userPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		Navigator.gotoPage(pageName = "Announcements Page");

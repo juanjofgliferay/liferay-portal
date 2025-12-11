@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -51,33 +50,46 @@ public class AssigneeBulkSelection implements Serializable {
 			AssigneeBulkSelection.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getInstanceIds() {
+		if (_instanceIdsSupplier != null) {
+			instanceIds = _instanceIdsSupplier.get();
+
+			_instanceIdsSupplier = null;
+		}
+
 		return instanceIds;
 	}
 
 	public void setInstanceIds(Long[] instanceIds) {
 		this.instanceIds = instanceIds;
+
+		_instanceIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInstanceIds(
 		UnsafeSupplier<Long[], Exception> instanceIdsUnsafeSupplier) {
 
-		try {
-			instanceIds = instanceIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_instanceIdsSupplier = () -> {
+			try {
+				return instanceIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] instanceIds;
+
+	@JsonIgnore
+	private Supplier<Long[]> _instanceIdsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -107,6 +119,8 @@ public class AssigneeBulkSelection implements Serializable {
 
 		sb.append("{");
 
+		Long[] instanceIds = getInstanceIds();
+
 		if (instanceIds != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -132,8 +146,8 @@ public class AssigneeBulkSelection implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.AssigneeBulkSelection",
 		name = "x-class-name"
 	)
@@ -179,7 +193,10 @@ public class AssigneeBulkSelection implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

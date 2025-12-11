@@ -8,6 +8,8 @@ package com.liferay.portlet.documentlibrary.service.impl;
 import com.liferay.document.library.kernel.exception.NoSuchFileVersionException;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.document.library.kernel.util.comparator.DLFileVersionVersionComparator;
@@ -34,8 +36,24 @@ public class DLFileVersionLocalServiceImpl
 	public DLFileVersion fetchLatestFileVersion(
 		long fileEntryId, boolean excludeWorkingCopy) {
 
-		List<DLFileVersion> dlFileVersions =
-			dlFileVersionPersistence.findByFileEntryId(fileEntryId);
+		return fetchLatestFileVersion(
+			fileEntryId, excludeWorkingCopy, WorkflowConstants.STATUS_ANY);
+	}
+
+	@Override
+	public DLFileVersion fetchLatestFileVersion(
+		long fileEntryId, boolean excludeWorkingCopy, int status) {
+
+		List<DLFileVersion> dlFileVersions = null;
+
+		if (status == WorkflowConstants.STATUS_ANY) {
+			dlFileVersions = dlFileVersionPersistence.findByFileEntryId(
+				fileEntryId);
+		}
+		else {
+			dlFileVersions = dlFileVersionPersistence.findByF_S(
+				fileEntryId, status);
+		}
 
 		if (dlFileVersions.isEmpty()) {
 			return null;
@@ -43,7 +61,8 @@ public class DLFileVersionLocalServiceImpl
 
 		dlFileVersions = ListUtil.copy(dlFileVersions);
 
-		Collections.sort(dlFileVersions, new DLFileVersionVersionComparator());
+		Collections.sort(
+			dlFileVersions, DLFileVersionVersionComparator.getInstance(false));
 
 		DLFileVersion dlFileVersion = dlFileVersions.get(0);
 
@@ -94,7 +113,8 @@ public class DLFileVersionLocalServiceImpl
 
 		dlFileVersions = ListUtil.copy(dlFileVersions);
 
-		Collections.sort(dlFileVersions, new DLFileVersionVersionComparator());
+		Collections.sort(
+			dlFileVersions, DLFileVersionVersionComparator.getInstance(false));
 
 		return dlFileVersions;
 	}
@@ -105,12 +125,13 @@ public class DLFileVersionLocalServiceImpl
 
 		if (status == WorkflowConstants.STATUS_ANY) {
 			return dlFileVersionPersistence.findByFileEntryId(
-				fileEntryId, start, end, new DLFileVersionVersionComparator());
+				fileEntryId, start, end,
+				DLFileVersionVersionComparator.getInstance(false));
 		}
 
 		return dlFileVersionPersistence.findByF_S(
 			fileEntryId, status, start, end,
-			new DLFileVersionVersionComparator());
+			DLFileVersionVersionComparator.getInstance(false));
 	}
 
 	@Override
@@ -175,6 +196,19 @@ public class DLFileVersionLocalServiceImpl
 
 		actionableDynamicQuery.setAddCriteriaMethod(
 			dynamicQuery -> {
+				if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+					DLFolder dlFolder = _dlFolderLocalService.fetchDLFolder(
+						folderId);
+
+					if (dlFolder != null) {
+						Property groupIdProperty = PropertyFactoryUtil.forName(
+							"groupId");
+
+						dynamicQuery.add(
+							groupIdProperty.eq(dlFolder.getGroupId()));
+					}
+				}
+
 				Property folderIdProperty = PropertyFactoryUtil.forName(
 					"folderId");
 

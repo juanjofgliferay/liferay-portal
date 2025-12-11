@@ -95,8 +95,10 @@ public class FragmentEntryLinkStagedModelDataHandler
 		fragmentEntryLink.setEditableValues(editableValues);
 
 		FragmentEntry fragmentEntry =
-			_fragmentEntryLocalService.fetchFragmentEntry(
-				fragmentEntryLink.getFragmentEntryId());
+			_fragmentEntryLocalService.
+				fetchFragmentEntryByExternalReferenceCode(
+					fragmentEntryLink.getFragmentEntryERC(),
+					fragmentEntryLink.getFragmentEntryGroupId());
 
 		if (fragmentEntry != null) {
 			if (fragmentEntry.getGroupId() != fragmentEntryLink.getGroupId()) {
@@ -104,6 +106,15 @@ public class FragmentEntryLinkStagedModelDataHandler
 					fragmentEntry.getGroupId());
 
 				if (group != null) {
+					Group companyGroup = _groupLocalService.getCompanyGroup(
+						group.getCompanyId());
+
+					if (group.getGroupId() == companyGroup.getGroupId()) {
+						fragmentEntryLinkElement.addAttribute(
+							"fragment-entry-group-global",
+							Boolean.TRUE.toString());
+					}
+
 					fragmentEntryLinkElement.addAttribute(
 						"fragment-entry-group-key", group.getGroupKey());
 				}
@@ -151,28 +162,16 @@ public class FragmentEntryLinkStagedModelDataHandler
 			FragmentEntryLink fragmentEntryLink)
 		throws Exception {
 
-		Map<Long, Long> originalFragmentEntryLinkIds =
-			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
-				FragmentEntryLink.class);
+		String fragmentEntryERC = fragmentEntryLink.getFragmentEntryERC();
+		String fragmentEntryScopeERC =
+			fragmentEntryLink.getFragmentEntryScopeERC();
 
-		long originalFragmentEntryLinkId = MapUtil.getLong(
-			originalFragmentEntryLinkIds,
-			fragmentEntryLink.getOriginalFragmentEntryLinkId(),
-			fragmentEntryLink.getOriginalFragmentEntryLinkId());
-
-		Map<Long, Long> fragmentEntryIds =
-			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
-				FragmentEntry.class);
-
-		long fragmentEntryId = MapUtil.getLong(
-			fragmentEntryIds, fragmentEntryLink.getFragmentEntryId());
-
-		if ((fragmentEntryId == 0) &&
-			(fragmentEntryLink.getFragmentEntryId() > 0)) {
-
+		if (Validator.isNotNull(fragmentEntryERC)) {
 			FragmentEntry fragmentEntry =
-				_fragmentEntryLocalService.fetchFragmentEntry(
-					fragmentEntryLink.getFragmentEntryId());
+				_fragmentEntryLocalService.
+					fetchFragmentEntryByExternalReferenceCode(
+						fragmentEntryLink.getFragmentEntryERC(),
+						fragmentEntryLink.getFragmentEntryGroupId());
 
 			if (fragmentEntry != null) {
 				FragmentEntry targetFragmentEntry =
@@ -181,11 +180,14 @@ public class FragmentEntryLinkStagedModelDataHandler
 							fragmentEntry.getUuid(),
 							portletDataContext.getGroupId());
 
-				if (targetFragmentEntry != null) {
-					fragmentEntryId = targetFragmentEntry.getFragmentEntryId();
+				if (Validator.isNull(fragmentEntryScopeERC) &&
+					(targetFragmentEntry != null)) {
+
+					fragmentEntryERC =
+						targetFragmentEntry.getExternalReferenceCode();
 				}
 				else {
-					fragmentEntryId = fragmentEntryLink.getFragmentEntryId();
+					fragmentEntryERC = fragmentEntryLink.getFragmentEntryERC();
 				}
 			}
 			else {
@@ -193,12 +195,9 @@ public class FragmentEntryLinkStagedModelDataHandler
 					portletDataContext.getImportDataStagedModelElement(
 						fragmentEntryLink);
 
-				String fragmentEntryGroupKey = GetterUtil.getString(
-					fragmentEntryLinkElement.attributeValue(
-						"fragment-entry-group-key"));
-
-				Group group = _groupLocalService.fetchGroup(
-					fragmentEntryLink.getCompanyId(), fragmentEntryGroupKey);
+				Group group = _fetchGroup(
+					portletDataContext.getCompanyId(),
+					fragmentEntryLinkElement);
 
 				if (group != null) {
 					String fragmentEntryKey = GetterUtil.getString(
@@ -211,7 +210,7 @@ public class FragmentEntryLinkStagedModelDataHandler
 				}
 
 				if (fragmentEntry != null) {
-					fragmentEntryId = fragmentEntry.getFragmentEntryId();
+					fragmentEntryERC = fragmentEntry.getExternalReferenceCode();
 				}
 			}
 		}
@@ -229,9 +228,11 @@ public class FragmentEntryLinkStagedModelDataHandler
 
 		importedFragmentEntryLink.setGroupId(
 			portletDataContext.getScopeGroupId());
-		importedFragmentEntryLink.setOriginalFragmentEntryLinkId(
-			originalFragmentEntryLinkId);
-		importedFragmentEntryLink.setFragmentEntryId(fragmentEntryId);
+		importedFragmentEntryLink.setOriginalFragmentEntryLinkERC(
+			fragmentEntryLink.getOriginalFragmentEntryLinkERC());
+		importedFragmentEntryLink.setFragmentEntryERC(fragmentEntryERC);
+		importedFragmentEntryLink.setFragmentEntryScopeERC(
+			fragmentEntryScopeERC);
 
 		Map<Long, Long> segmentsExperienceIds =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
@@ -287,6 +288,24 @@ public class FragmentEntryLinkStagedModelDataHandler
 		getStagedModelRepository() {
 
 		return _stagedModelRepository;
+	}
+
+	private Group _fetchGroup(
+		long companyId, Element fragmentEntryLinkElement) {
+
+		boolean fragmentEntryGroupGlobal = GetterUtil.getBoolean(
+			fragmentEntryLinkElement.attributeValue(
+				"fragment-entry-group-global"));
+
+		if (fragmentEntryGroupGlobal) {
+			return _groupLocalService.fetchCompanyGroup(companyId);
+		}
+
+		String fragmentEntryGroupKey = GetterUtil.getString(
+			fragmentEntryLinkElement.attributeValue(
+				"fragment-entry-group-key"));
+
+		return _groupLocalService.fetchGroup(companyId, fragmentEntryGroupKey);
 	}
 
 	@Reference(target = "(content.processor.type=DLReferences)")

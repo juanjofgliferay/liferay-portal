@@ -42,7 +42,8 @@ public class DLFileEntryServiceUtil {
 			Map<String, com.liferay.dynamic.data.mapping.kernel.DDMFormValues>
 				ddmFormValuesMap,
 			java.io.File file, InputStream inputStream, long size,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
@@ -50,7 +51,7 @@ public class DLFileEntryServiceUtil {
 			externalReferenceCode, groupId, repositoryId, folderId,
 			sourceFileName, mimeType, title, urlTitle, description, changeLog,
 			fileEntryTypeId, ddmFormValuesMap, file, inputStream, size,
-			expirationDate, reviewDate, serviceContext);
+			displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	public static com.liferay.document.library.kernel.model.DLFileVersion
@@ -121,10 +122,24 @@ public class DLFileEntryServiceUtil {
 		getService().deleteFileEntry(groupId, folderId, title);
 	}
 
+	public static void deleteFileEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		getService().deleteFileEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	public static void deleteFileVersion(long fileEntryId, String version)
 		throws PortalException {
 
 		getService().deleteFileVersion(fileEntryId, version);
+	}
+
+	public static DLFileEntry fetchFileEntry(long fileEntryId)
+		throws PortalException {
+
+		return getService().fetchFileEntry(fileEntryId);
 	}
 
 	public static DLFileEntry fetchFileEntry(
@@ -266,11 +281,11 @@ public class DLFileEntryServiceUtil {
 	}
 
 	public static DLFileEntry getFileEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
 		return getService().getFileEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	public static DLFileEntry getFileEntryByFileName(
@@ -428,15 +443,16 @@ public class DLFileEntryServiceUtil {
 			Map<String, com.liferay.dynamic.data.mapping.kernel.DDMFormValues>
 				ddmFormValuesMap,
 			java.io.File file, InputStream inputStream, long size,
-			java.util.Date expirationDate, java.util.Date reviewDate,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateFileEntry(
 			fileEntryId, sourceFileName, mimeType, title, urlTitle, description,
 			changeLog, dlVersionNumberIncrease, fileEntryTypeId,
-			ddmFormValuesMap, file, inputStream, size, expirationDate,
-			reviewDate, serviceContext);
+			ddmFormValuesMap, file, inputStream, size, displayDate,
+			expirationDate, reviewDate, serviceContext);
 	}
 
 	public static DLFileEntry updateStatus(

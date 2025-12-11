@@ -10,6 +10,7 @@ import com.liferay.object.constants.ObjectWebKeys;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectValidationRule;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.service.ObjectValidationRuleLocalService;
 import com.liferay.object.validation.rule.ObjectValidationRuleEngineRegistry;
 import com.liferay.object.web.internal.object.definitions.display.context.ObjectDefinitionsValidationsDisplayContext;
@@ -20,10 +21,11 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.script.management.configuration.helper.ScriptManagementConfigurationHelper;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
+		"jakarta.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
 		"mvc.command.name=/object_definitions/edit_object_validation_rule"
 	},
 	service = MVCRenderCommand.class
@@ -63,7 +65,9 @@ public class EditObjectValidationRuleMVCRenderCommand
 				new ObjectDefinitionsValidationsDisplayContext(
 					_portal.getHttpServletRequest(renderRequest),
 					_objectDefinitionModelResourcePermission,
-					_objectValidationRuleEngineRegistry));
+					_objectFolderLocalService,
+					_objectValidationRuleEngineRegistry,
+					_scriptManagementConfigurationHelper));
 		}
 		catch (PortalException portalException) {
 			SessionErrors.add(renderRequest, portalException.getClass());
@@ -82,6 +86,9 @@ public class EditObjectValidationRuleMVCRenderCommand
 		_objectDefinitionModelResourcePermission;
 
 	@Reference
+	private ObjectFolderLocalService _objectFolderLocalService;
+
+	@Reference
 	private ObjectValidationRuleEngineRegistry
 		_objectValidationRuleEngineRegistry;
 
@@ -90,5 +97,9 @@ public class EditObjectValidationRuleMVCRenderCommand
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private ScriptManagementConfigurationHelper
+		_scriptManagementConfigurationHelper;
 
 }

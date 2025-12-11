@@ -1,4 +1,4 @@
-@component-name = "portal-workflow-ee"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -98,6 +98,7 @@ definition {
 
 	@priority = 3
 	test AddProcessWithNewFieldSetAndWorkflowViaSourceTab {
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -1537,10 +1538,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Workflow.addNewDefinition(workflowDefinitionTitle = "Uploaded Definition");
 
@@ -2627,6 +2625,8 @@ definition {
 
 	@priority = 3
 	test ViewUnpublishedWorkflowDefinitionsMenulist {
+		property portal.upstream = "quarantine";
+
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(

@@ -8,11 +8,13 @@ package com.liferay.commerce.product.service.impl;
 import com.liferay.commerce.inventory.exception.CommerceInventoryWarehouseItemUnitOfMeasureKeyException;
 import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.exception.CPDefinitionOptionValueRelCPInstanceException;
+import com.liferay.commerce.product.exception.CPDefinitionOptionValueRelKeyException;
 import com.liferay.commerce.product.exception.CPDefinitionOptionValueRelPriceException;
 import com.liferay.commerce.product.exception.CPDefinitionOptionValueRelQuantityException;
 import com.liferay.commerce.product.exception.DuplicateCPDefinitionOptionValueRelKeyException;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionOptionValueRelException;
 import com.liferay.commerce.product.exception.NoSuchCPInstanceUnitOfMeasureException;
+import com.liferay.commerce.product.helper.CPCollectionProviderHelper;
 import com.liferay.commerce.product.internal.util.CPDefinitionLocalServiceCircularDependencyUtil;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
@@ -33,11 +35,12 @@ import com.liferay.commerce.product.service.CPOptionLocalService;
 import com.liferay.commerce.product.service.CPOptionValueLocalService;
 import com.liferay.commerce.product.service.base.CPDefinitionOptionValueRelLocalServiceBaseImpl;
 import com.liferay.commerce.product.service.persistence.CPDefinitionOptionRelPersistence;
-import com.liferay.commerce.product.util.CPCollectionProviderHelper;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
 import com.liferay.info.pagination.Pagination;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.Criterion;
@@ -66,12 +69,16 @@ import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.taglib.util.CustomAttributesUtil;
@@ -129,18 +136,18 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 
 		key = _friendlyURLNormalizer.normalize(key);
 
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+				cpDefinitionOptionRelId);
+
 		_validate(
-			0, cpDefinitionOptionRelId, cpInstanceId, key, unitOfMeasureKey);
+			0, cpDefinitionOptionRel, cpInstanceId, key, unitOfMeasureKey);
 
 		long cpDefinitionOptionValueRelId = counterLocalService.increment();
 
 		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
 			cpDefinitionOptionValueRelPersistence.create(
 				cpDefinitionOptionValueRelId);
-
-		CPDefinitionOptionRel cpDefinitionOptionRel =
-			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
-				cpDefinitionOptionRelId);
 
 		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
 				cpDefinitionOptionRel.getCPDefinitionId(),
@@ -169,9 +176,9 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 		cpDefinitionOptionValueRel.setUserName(user.getFullName());
 		cpDefinitionOptionValueRel.setCPDefinitionOptionRelId(
 			cpDefinitionOptionRelId);
-		cpDefinitionOptionValueRel.setExpandoBridgeAttributes(serviceContext);
 		cpDefinitionOptionValueRel.setKey(key);
 		cpDefinitionOptionValueRel.setNameMap(nameMap);
+		cpDefinitionOptionValueRel.setExpandoBridgeAttributes(serviceContext);
 
 		if (cpDefinitionOptionRel.isPriceTypeStatic()) {
 			cpDefinitionOptionValueRel.setPrice(
@@ -192,6 +199,10 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 		if (cpInstance != null) {
 			_validateLinkableCPInstance(cpInstance);
 		}
+
+		_validateLinkedCPDefinitionOptionValueRel(cpDefinitionOptionValueRel);
+		_validatePriceableCPDefinitionOptionValue(
+			cpDefinitionOptionValueRel, cpDefinitionOptionRel.getPriceType());
 
 		cpDefinitionOptionValueRel =
 			cpDefinitionOptionValueRelPersistence.update(
@@ -222,17 +233,17 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 
 		key = _friendlyURLNormalizer.normalize(key);
 
-		_validate(0, cpDefinitionOptionRelId, 0, key, StringPool.BLANK);
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+				cpDefinitionOptionRelId);
+
+		_validate(0, cpDefinitionOptionRel, 0, key, StringPool.BLANK);
 
 		long cpDefinitionOptionValueRelId = counterLocalService.increment();
 
 		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
 			cpDefinitionOptionValueRelPersistence.create(
 				cpDefinitionOptionValueRelId);
-
-		CPDefinitionOptionRel cpDefinitionOptionRel =
-			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
-				cpDefinitionOptionRelId);
 
 		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
 				cpDefinitionOptionRel.getCPDefinitionId(),
@@ -257,9 +268,9 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 		cpDefinitionOptionValueRel.setUserName(user.getFullName());
 		cpDefinitionOptionValueRel.setCPDefinitionOptionRelId(
 			cpDefinitionOptionRelId);
-		cpDefinitionOptionValueRel.setExpandoBridgeAttributes(serviceContext);
 		cpDefinitionOptionValueRel.setKey(key);
 		cpDefinitionOptionValueRel.setNameMap(nameMap);
+		cpDefinitionOptionValueRel.setExpandoBridgeAttributes(serviceContext);
 
 		if (cpDefinitionOptionRel.isPriceTypeStatic()) {
 			cpDefinitionOptionValueRel.setPrice(BigDecimal.ZERO);
@@ -435,33 +446,28 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 		List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels,
 		List<CPInstanceOptionValueRel> cpInstanceOptionValueRels) {
 
-		List<CPDefinitionOptionValueRel> filteredCPDefinitionOptionValueRels =
-			new ArrayList<>();
+		return TransformUtil.transform(
+			cpDefinitionOptionValueRels,
+			cpDefinitionOptionValueRel -> {
+				for (CPInstanceOptionValueRel cpInstanceOptionValueRel :
+						cpInstanceOptionValueRels) {
 
-		for (CPDefinitionOptionValueRel cpDefinitionOptionValueRel :
-				cpDefinitionOptionValueRels) {
+					long cpDefinitionOptionValueRelId1 =
+						cpDefinitionOptionValueRel.
+							getCPDefinitionOptionValueRelId();
+					long cpDefinitionOptionValueRelId2 =
+						cpInstanceOptionValueRel.
+							getCPDefinitionOptionValueRelId();
 
-			for (CPInstanceOptionValueRel cpInstanceOptionValueRel :
-					cpInstanceOptionValueRels) {
+					if (cpDefinitionOptionValueRelId1 ==
+							cpDefinitionOptionValueRelId2) {
 
-				long cpDefinitionOptionValueRelId1 =
-					cpDefinitionOptionValueRel.
-						getCPDefinitionOptionValueRelId();
-				long cpDefinitionOptionValueRelId2 =
-					cpInstanceOptionValueRel.getCPDefinitionOptionValueRelId();
-
-				if (cpDefinitionOptionValueRelId1 ==
-						cpDefinitionOptionValueRelId2) {
-
-					filteredCPDefinitionOptionValueRels.add(
-						cpDefinitionOptionValueRel);
-
-					break;
+						return cpDefinitionOptionValueRel;
+					}
 				}
-			}
-		}
 
-		return filteredCPDefinitionOptionValueRels;
+				return null;
+			});
 	}
 
 	@Override
@@ -489,7 +495,9 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 			_cpDefinitionOptionRelLocalService.fetchCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
-		if (cpDefinitionOptionRel.isDefinedExternally()) {
+		if ((cpDefinitionOptionRel != null) &&
+			cpDefinitionOptionRel.isDefinedExternally()) {
+
 			return _cpCollectionProviderHelper.getCPDefinitionOptionValueRels(
 				cpDefinitionOptionRel, null, Pagination.of(end, start));
 		}
@@ -522,9 +530,7 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 			long[] cpDefinitionOptionValueRelsId)
 		throws PortalException {
 
-		if ((cpDefinitionOptionValueRelsId == null) ||
-			(cpDefinitionOptionValueRelsId.length == 0)) {
-
+		if (ArrayUtil.isEmpty(cpDefinitionOptionValueRelsId)) {
 			return Collections.emptyList();
 		}
 
@@ -770,13 +776,12 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 
 		key = _friendlyURLNormalizer.normalize(key);
 
-		_validate(
-			cpDefinitionOptionValueRel.getCPDefinitionOptionValueRelId(),
-			cpDefinitionOptionValueRel.getCPDefinitionOptionRelId(),
-			cpInstanceId, key, unitOfMeasureKey);
-
 		CPDefinitionOptionRel cpDefinitionOptionRel =
 			cpDefinitionOptionValueRel.getCPDefinitionOptionRel();
+
+		_validate(
+			cpDefinitionOptionValueRel.getCPDefinitionOptionValueRelId(),
+			cpDefinitionOptionRel, cpInstanceId, key, unitOfMeasureKey);
 
 		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
 				cpDefinitionOptionRel.getCPDefinitionId(),
@@ -800,10 +805,10 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 			_updateCPDefinitionOptionValueRelCPInstance(
 				cpDefinitionOptionValueRel, cpInstanceId);
 
-		cpDefinitionOptionValueRel.setExpandoBridgeAttributes(serviceContext);
 		cpDefinitionOptionValueRel.setKey(key);
 		cpDefinitionOptionValueRel.setNameMap(nameMap);
 		cpDefinitionOptionValueRel.setPriority(priority);
+		cpDefinitionOptionValueRel.setExpandoBridgeAttributes(serviceContext);
 
 		if (cpDefinitionOptionRel.isPriceTypeStatic()) {
 			cpDefinitionOptionValueRel.setPrice(price);
@@ -948,6 +953,29 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 		return cpDefinitionOptionValueRels;
 	}
 
+	private String _getTimeZone(String[] splits) {
+		if ((splits == null) || (splits.length < 7) || splits[7].isEmpty()) {
+			return StringPool.BLANK;
+		}
+
+		if (splits.length == 8) {
+			return splits[7].toUpperCase();
+		}
+
+		String timeZone = StringBundler.concat(
+			StringUtil.upperCaseFirstLetter(splits[7]),
+			StringPool.FORWARD_SLASH,
+			StringUtil.upperCaseFirstLetter(splits[8]));
+
+		if ((splits.length > 9) && Validator.isNotNull(splits[9])) {
+			return StringBundler.concat(
+				timeZone, StringPool.UNDERLINE,
+				StringUtil.upperCaseFirstLetter(splits[9]));
+		}
+
+		return timeZone;
+	}
+
 	private boolean _hasCustomAttributes(CPOptionValue cpOptionValue)
 		throws PortalException {
 
@@ -1063,19 +1091,67 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 	}
 
 	private void _validate(
-			long cpDefinitionOptionValueRelId, long cpDefinitionOptionRelId,
-			long cpInstanceId, String key, String unitOfMeasureKey)
+			long cpDefinitionOptionValueRelId,
+			CPDefinitionOptionRel cpDefinitionOptionRel, long cpInstanceId,
+			String key, String unitOfMeasureKey)
 		throws PortalException {
 
 		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
 			cpDefinitionOptionValueRelPersistence.fetchByC_K(
-				cpDefinitionOptionRelId, key);
+				cpDefinitionOptionRel.getCPDefinitionOptionRelId(), key);
 
 		if ((cpDefinitionOptionValueRel != null) &&
 			(cpDefinitionOptionValueRel.getCPDefinitionOptionValueRelId() !=
 				cpDefinitionOptionValueRelId)) {
 
 			throw new DuplicateCPDefinitionOptionValueRelKeyException();
+		}
+
+		if (Objects.equals(
+				CPConstants.PRODUCT_OPTION_SELECT_DATE_KEY,
+				cpDefinitionOptionRel.getCommerceOptionTypeKey())) {
+
+			if (key == null) {
+				throw new CPDefinitionOptionValueRelKeyException(
+					"Key is mandatory");
+			}
+
+			if (!key.matches("^[a-z0-9-]*$")) {
+				throw new CPDefinitionOptionValueRelKeyException("Invalid key");
+			}
+
+			String[] splits = key.split(StringPool.DASH);
+
+			Integer month = 0;
+			Integer day = 0;
+			Integer year = 0;
+			Integer hour = 0;
+			Integer minute = 0;
+
+			try {
+				month = Integer.valueOf(splits[0]);
+				day = Integer.valueOf(splits[1]);
+				year = Integer.valueOf(splits[2]);
+				hour = Integer.valueOf(splits[3]);
+				minute = Integer.valueOf(splits[4]);
+				Integer.valueOf(splits[5]);
+			}
+			catch (NumberFormatException numberFormatException) {
+				throw new CPDefinitionOptionValueRelKeyException(
+					"Invalid date", numberFormatException);
+			}
+
+			_portal.getDate(
+				month - 1, day, year, hour, minute,
+				TimeZoneUtil.getTimeZone(_getTimeZone(splits)),
+				CPDefinitionOptionValueRelKeyException.class);
+
+			if (!Objects.equals(CPConstants.DAYS_DURATION_TYPE, splits[6]) &&
+				!Objects.equals(CPConstants.HOURS_DURATION_TYPE, splits[6])) {
+
+				throw new CPDefinitionOptionValueRelKeyException(
+					"Invalid duration type");
+			}
 		}
 
 		if (cpInstanceId > 0) {
@@ -1256,6 +1332,9 @@ public class CPDefinitionOptionValueRelLocalServiceImpl
 
 	@Reference
 	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private UserLocalService _userLocalService;

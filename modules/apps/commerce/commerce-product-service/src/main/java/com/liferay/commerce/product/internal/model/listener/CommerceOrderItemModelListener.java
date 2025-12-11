@@ -5,11 +5,11 @@
 
 package com.liferay.commerce.product.internal.model.listener;
 
+import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
-import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -36,9 +36,13 @@ public class CommerceOrderItemModelListener
 				return;
 			}
 
+			CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
+
 			CPInstance firstAvailableReplacementCPInstance =
 				_cpInstanceHelper.fetchFirstAvailableReplacementCPInstance(
+					commerceOrder.getCommerceAccountId(),
 					commerceOrderItem.getGroupId(),
+					commerceOrder.getCommerceOrderTypeId(),
 					cpInstance.getCPInstanceId());
 
 			if ((firstAvailableReplacementCPInstance == null) ||
@@ -57,9 +61,6 @@ public class CommerceOrderItemModelListener
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceOrderItemModelListener.class);
-
-	@Reference
-	private CommerceOrderItemLocalService _commerceOrderItemLocalService;
 
 	@Reference
 	private CPInstanceHelper _cpInstanceHelper;

@@ -6,21 +6,23 @@
 package com.liferay.cookies.banner.web.internal.display.context;
 
 import com.liferay.cookies.configuration.CookiesConfigurationProvider;
+import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
+import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eduardo García
@@ -30,29 +32,60 @@ public class CookiesBannerConfigurationDisplayContext
 
 	public CookiesBannerConfigurationDisplayContext(
 		CookiesConfigurationProvider cookiesConfigurationProvider,
-		RenderRequest renderRequest, RenderResponse renderResponse) {
+		HttpServletRequest httpServletRequest,
+		LayoutUtilityPageEntryLayoutProvider
+			layoutUtilityPageEntryLayoutProvider) {
 
-		super(cookiesConfigurationProvider, renderRequest, renderResponse);
+		super(
+			cookiesConfigurationProvider, httpServletRequest,
+			layoutUtilityPageEntryLayoutProvider);
 	}
 
 	public Map<String, Object> getContext() {
-		return HashMapBuilder.<String, Object>put(
-			"optionalConsentCookieTypeNames",
-			getConsentCookieTypeNamesJSONArray(getOptionalConsentCookieTypes())
+		HashMapBuilder.HashMapWrapper<String, Object> hashMapWrapper =
+			HashMapBuilder.<String, Object>put(
+				"optionalConsentCookieTypeNames",
+				getConsentCookieTypeNamesJSONArray(
+					getOptionalConsentCookieTypes())
+			).put(
+				"requiredConsentCookieTypeNames",
+				getConsentCookieTypeNamesJSONArray(
+					getRequiredConsentCookieTypes())
+			).put(
+				"showButtons", isShowButtons()
+			);
+
+		if (!isConsentRenewalPeriodEnabled()) {
+			return hashMapWrapper.build();
+		}
+
+		return hashMapWrapper.put(
+			"consentRenewalPeriod", getConsentRenewalPeriod()
 		).put(
-			"requiredConsentCookieTypeNames",
-			getConsentCookieTypeNamesJSONArray(getRequiredConsentCookieTypes())
-		).put(
-			"showButtons", isShowButtons()
+			"modifiedDate", getModifiedDate()
 		).build();
 	}
 
-	public String getCookiePolicyLink() {
+	public String getCookiePolicyLink() throws PortalException {
 		String cookiePolicyLink =
 			cookiesConsentConfiguration.cookiePolicyLink();
 
 		if (Validator.isNotNull(cookiePolicyLink)) {
 			return cookiePolicyLink;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Layout layout =
+			layoutUtilityPageEntryLayoutProvider.
+				getDefaultLayoutUtilityPageEntryLayout(
+					themeDisplay.getScopeGroupId(),
+					LayoutUtilityPageEntryConstants.TYPE_COOKIE_POLICY);
+
+		if (layout != null) {
+			return PortalUtil.getLayoutURL(layout, themeDisplay);
 		}
 
 		return StringPool.POUND;
@@ -80,14 +113,11 @@ public class CookiesBannerConfigurationDisplayContext
 	}
 
 	public boolean isShowButtons() {
-		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-		if (!themeDisplay.isStatePopUp()) {
-			return true;
-		}
-
-		return false;
+		return !themeDisplay.isStatePopUp();
 	}
 
 }

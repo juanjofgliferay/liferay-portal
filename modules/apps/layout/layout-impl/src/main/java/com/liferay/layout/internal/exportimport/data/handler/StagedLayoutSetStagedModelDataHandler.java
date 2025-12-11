@@ -32,6 +32,7 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -218,7 +219,8 @@ public class StagedLayoutSetStagedModelDataHandler
 					portletDataContext, importedStagedLayoutSet);
 		}
 
-		_importClientExtensionEntryRels(portletDataContext, stagedLayoutSet);
+		_importClientExtensionEntryRels(
+			portletDataContext, stagedLayoutSet, importedStagedLayoutSet);
 		_importLogo(portletDataContext);
 		_importTheme(portletDataContext, stagedLayoutSet);
 
@@ -230,9 +232,14 @@ public class StagedLayoutSetStagedModelDataHandler
 
 		List<Element> layoutElements = layoutsElement.elements();
 
-		// Delete missing pages
+		if (portletDataContext.isPrivateLayout() ||
+			!FeatureFlagManagerUtil.isEnabled("LPD-35443") ||
+			!FeatureFlagManagerUtil.isEnabled("LPD-35914")) {
 
-		_deleteMissingLayouts(portletDataContext, layoutElements);
+			// Delete missing pages
+
+			_deleteMissingLayouts(portletDataContext, layoutElements);
+		}
 
 		// Remove layouts that were deleted from the layout set prototype
 
@@ -292,7 +299,7 @@ public class StagedLayoutSetStagedModelDataHandler
 					portletDataContext.getGroupId(),
 					portletDataContext.isPrivateLayout())) {
 
-			if (Validator.isNull(layout.getSourcePrototypeLayoutUuid())) {
+			if (Validator.isNull(layout.getLayoutSetPrototypeLayoutERC())) {
 				continue;
 			}
 
@@ -302,14 +309,20 @@ public class StagedLayoutSetStagedModelDataHandler
 				continue;
 			}
 
-			Layout sourcePrototypeLayout = _layoutLocalService.fetchLayout(
-				layout.getSourcePrototypeLayoutUuid(),
-				layoutSetPrototype.getGroupId(), true);
+			Layout sourcePrototypeLayout =
+				_layoutLocalService.fetchLayoutByExternalReferenceCode(
+					layout.getLayoutSetPrototypeLayoutERC(),
+					layoutSetPrototype.getGroupId());
 
 			if ((sourcePrototypeLayout == null) &&
 				_layoutLocalService.hasLayout(
 					layout.getUuid(), layout.getGroupId(),
-					layout.isPrivateLayout())) {
+					layout.isPrivateLayout()) &&
+				!layout.getLayoutSet(
+				).getSettings(
+				).contains(
+					Sites.MERGE_FAIL_FRIENDLY_URL_LAYOUTS
+				)) {
 
 				_layoutLocalService.deleteLayout(
 					layout, ServiceContextThreadLocal.getServiceContext());
@@ -386,6 +399,34 @@ public class StagedLayoutSetStagedModelDataHandler
 		}
 	}
 
+	private void _deleteUnnecessaryClientExtensionEntryRels(
+		StagedLayoutSet stagedLayoutSet,
+		StagedLayoutSet importedStagedLayoutSet) {
+
+		LayoutSet importedLayoutSet = importedStagedLayoutSet.getLayoutSet();
+
+		List<ClientExtensionEntryRel> importedClientExtensionEntryRels =
+			_clientExtensionEntryRelLocalService.getClientExtensionEntryRels(
+				_portal.getClassNameId(LayoutSet.class),
+				importedLayoutSet.getLayoutSetId());
+
+		for (ClientExtensionEntryRel importedClientExtensionEntryRel :
+				importedClientExtensionEntryRels) {
+
+			ClientExtensionEntryRel stagedClientExtensionEntryRel =
+				_clientExtensionEntryRelLocalService.
+					fetchClientExtensionEntryRelByUuidAndGroupId(
+						importedClientExtensionEntryRel.getUuid(),
+						stagedLayoutSet.getGroupId());
+
+			if (stagedClientExtensionEntryRel == null) {
+				_clientExtensionEntryRelLocalService.
+					deleteClientExtensionEntryRel(
+						importedClientExtensionEntryRel);
+			}
+		}
+	}
+
 	private void _exportClientExtensionEntryRels(
 			PortletDataContext portletDataContext,
 			StagedLayoutSet stagedLayoutSet)
@@ -409,6 +450,10 @@ public class StagedLayoutSetStagedModelDataHandler
 			PortletDataContext portletDataContext,
 			StagedLayoutSet stagedLayoutSet, Element stagedLayoutSetElement)
 		throws Exception {
+
+		if (!_isFaviconExportImportEnabled(portletDataContext)) {
+			return;
+		}
 
 		LayoutSet layoutSet = stagedLayoutSet.getLayoutSet();
 
@@ -462,6 +507,13 @@ public class StagedLayoutSetStagedModelDataHandler
 
 		portletDataContext.getExportDataGroupElement(Layout.class);
 
+		if (!portletDataContext.isPrivateLayout() &&
+			FeatureFlagManagerUtil.isEnabled("LPD-35443") &&
+			FeatureFlagManagerUtil.isEnabled("LPD-35914")) {
+
+			return;
+		}
+
 		long[] layoutIds = portletDataContext.getLayoutIds();
 
 		LayoutSet layoutSet = stagedLayoutSet.getLayoutSet();
@@ -484,10 +536,13 @@ public class StagedLayoutSetStagedModelDataHandler
 				Element layoutElement = portletDataContext.getExportDataElement(
 					layout);
 
-				layoutElement.addAttribute(Constants.ACTION, Constants.SKIP);
-				layoutElement.addAttribute(
-					"layout-parent-layout-id",
-					String.valueOf(layout.getParentLayoutId()));
+				if (layoutElement.attributeValue(Constants.ACTION) == null) {
+					layoutElement.addAttribute(
+						Constants.ACTION, Constants.SKIP);
+					layoutElement.addAttribute(
+						"layout-parent-layout-id",
+						String.valueOf(layout.getParentLayoutId()));
+				}
 
 				continue;
 			}
@@ -668,17 +723,17 @@ public class StagedLayoutSetStagedModelDataHandler
 			GetterUtil.getLong(
 				layoutElement.attributeValue("layout-parent-layout-id")));
 
-		if (actions.contains(Constants.SKIP)) {
-			return true;
-		}
-
-		return false;
+		return actions.contains(Constants.SKIP);
 	}
 
 	private void _importClientExtensionEntryRels(
 			PortletDataContext portletDataContext,
-			StagedLayoutSet stagedLayoutSet)
+			StagedLayoutSet stagedLayoutSet,
+			StagedLayoutSet importedStagedLayoutSet)
 		throws Exception {
+
+		_deleteUnnecessaryClientExtensionEntryRels(
+			stagedLayoutSet, importedStagedLayoutSet);
 
 		List<Element> clientExtensionEntryRelsElements =
 			portletDataContext.getReferenceDataElements(
@@ -696,6 +751,10 @@ public class StagedLayoutSetStagedModelDataHandler
 			PortletDataContext portletDataContext,
 			StagedLayoutSet stagedLayoutSet, Element stagedLayoutSetElement)
 		throws Exception {
+
+		if (!_isFaviconExportImportEnabled(portletDataContext)) {
+			return;
+		}
 
 		LayoutSet layoutSet = stagedLayoutSet.getLayoutSet();
 
@@ -791,9 +850,13 @@ public class StagedLayoutSetStagedModelDataHandler
 						portletDataContext, stagedLayoutSet,
 						layoutSet.getCss());
 
-			layoutSet.setCss(css);
+			if (Validator.isNotNull(css) ||
+				!MergeLayoutPrototypesThreadLocal.isInProgress()) {
 
-			_themeImporter.importTheme(portletDataContext, layoutSet);
+				layoutSet.setCss(css);
+
+				_themeImporter.importTheme(portletDataContext, layoutSet);
+			}
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
@@ -803,6 +866,19 @@ public class StagedLayoutSetStagedModelDataHandler
 					exception);
 			}
 		}
+	}
+
+	private boolean _isFaviconExportImportEnabled(
+		PortletDataContext portletDataContext) {
+
+		Map<String, String[]> parameterMap =
+			portletDataContext.getParameterMap();
+
+		if (!parameterMap.containsKey(PortletDataHandlerKeys.FAVICON)) {
+			return true;
+		}
+
+		return MapUtil.getBoolean(parameterMap, PortletDataHandlerKeys.FAVICON);
 	}
 
 	private StagedLayoutSet _unwrapLayoutSetStagingHandler(
@@ -936,16 +1012,24 @@ public class StagedLayoutSetStagedModelDataHandler
 			}
 
 			if (action.equals(Constants.ADD)) {
-				long layoutId = GetterUtil.getLong(
-					layoutElement.attributeValue("layout-id"));
+				Layout layout = layouts.get(
+					GetterUtil.getLong(
+						layoutElement.attributeValue("layout-id")));
+				String uuid = layoutElement.attributeValue("uuid");
 
-				Layout layout = layouts.get(layoutId);
+				if ((layout != null) &&
+					!Objects.equals(layout.getUuid(), uuid)) {
+
+					layout = _layoutLocalService.fetchLayoutByUuidAndGroupId(
+						uuid, portletDataContext.getScopeGroupId(),
+						privateLayout);
+				}
 
 				if (layout == null) {
 					if (_log.isDebugEnabled()) {
 						_log.debug(
 							StringBundler.concat(
-								"Layout ", layoutElement.attributeValue("uuid"),
+								"Layout ", uuid,
 								" might not have been imported due to a ",
 								"controlled error. See ",
 								"SitesImpl#addMergeFailFriendlyURLLayout."));
@@ -958,9 +1042,10 @@ public class StagedLayoutSetStagedModelDataHandler
 					layoutElement.attributeValue("layout-priority"));
 
 				layoutPriority = _layoutLocalServiceHelper.getNextPriority(
-					layout.getGroupId(), layout.isPrivateLayout(),
-					layout.getParentLayoutId(),
-					layout.getSourcePrototypeLayoutUuid(), layoutPriority);
+					layout.getGroupId(),
+					layout.getLayoutSetPrototypeLayoutERC(),
+					layout.isPrivateLayout(), layout.getParentLayoutId(),
+					layoutPriority);
 
 				layoutPriorities.put(layout.getPlid(), layoutPriority);
 			}

@@ -8,10 +8,12 @@ package com.liferay.journal.web.internal.layout.display.page;
 import com.liferay.asset.util.AssetHelper;
 import com.liferay.depot.group.provider.SiteConnectedGroupGroupProvider;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.ERCInfoItemIdentifier;
 import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.layout.display.page.BaseLayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -32,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
 	service = LayoutDisplayPageProvider.class
 )
 public class JournalArticleLayoutDisplayPageProvider
-	implements LayoutDisplayPageProvider<JournalArticle> {
+	extends BaseLayoutDisplayPageProvider<JournalArticle> {
 
 	@Override
 	public String getClassName() {
@@ -40,29 +42,19 @@ public class JournalArticleLayoutDisplayPageProvider
 	}
 
 	@Override
+	public String getDefaultURLSeparator() {
+		return FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE;
+	}
+
+	@Override
 	public LayoutDisplayPageObjectProvider<JournalArticle>
-		getLayoutDisplayPageObjectProvider(
-			InfoItemReference infoItemReference) {
-
-		InfoItemIdentifier infoItemIdentifier =
-			infoItemReference.getInfoItemIdentifier();
-
-		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
-			return null;
-		}
-
-		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-			(ClassPKInfoItemIdentifier)
-				infoItemReference.getInfoItemIdentifier();
-
-		JournalArticle article = journalArticleLocalService.fetchLatestArticle(
-			classPKInfoItemIdentifier.getClassPK());
-
-		if (!_isShow(article)) {
-			return null;
-		}
+		getLayoutDisplayPageObjectProvider(JournalArticle article) {
 
 		try {
+			if (!_isShow(article)) {
+				return null;
+			}
+
 			return new JournalArticleLayoutDisplayPageObjectProvider(
 				article, assetHelper);
 		}
@@ -111,8 +103,57 @@ public class JournalArticleLayoutDisplayPageProvider
 	}
 
 	@Override
-	public String getURLSeparator() {
-		return FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE;
+	protected JournalArticleLayoutDisplayPageObjectProvider
+		doGetLayoutDisplayPageObjectProvider(
+			long groupId, InfoItemReference infoItemReference) {
+
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier) &&
+			!(infoItemIdentifier instanceof ERCInfoItemIdentifier)) {
+
+			return null;
+		}
+
+		JournalArticle article = null;
+
+		if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
+			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+				(ClassPKInfoItemIdentifier)
+					infoItemReference.getInfoItemIdentifier();
+
+			article = journalArticleLocalService.fetchLatestArticle(
+				classPKInfoItemIdentifier.getClassPK());
+
+			if (classPKInfoItemIdentifier.getVersion() != null) {
+				article = journalArticleLocalService.fetchArticle(
+					article.getGroupId(), article.getArticleId(),
+					Double.valueOf(classPKInfoItemIdentifier.getVersion()));
+			}
+		}
+		else {
+			ERCInfoItemIdentifier ercInfoItemIdentifier =
+				(ERCInfoItemIdentifier)infoItemIdentifier;
+
+			article =
+				journalArticleLocalService.
+					fetchLatestArticleByExternalReferenceCode(
+						groupId,
+						ercInfoItemIdentifier.getExternalReferenceCode());
+		}
+
+		if (!_isShow(article)) {
+			return null;
+		}
+
+		try {
+			return new JournalArticleLayoutDisplayPageObjectProvider(
+				article, assetHelper);
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
 	}
 
 	@Reference
@@ -130,7 +171,7 @@ public class JournalArticleLayoutDisplayPageProvider
 
 		for (long connectedGroupId :
 				siteConnectedGroupGroupProvider.
-					getCurrentAndAncestorSiteAndDepotGroupIds(groupId)) {
+					getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true)) {
 
 			JournalArticle article = null;
 
@@ -157,8 +198,7 @@ public class JournalArticleLayoutDisplayPageProvider
 
 		if ((article == null) || article.isExpired() || article.isInTrash() ||
 			(article.isPending() && (permissionChecker != null) &&
-			 !permissionChecker.isSignedIn()) ||
-			article.isScheduled()) {
+			 !permissionChecker.isSignedIn())) {
 
 			return false;
 		}

@@ -117,6 +117,14 @@ public class FriendlyURLEntryLocalServiceWrapper
 			primaryKeyObj);
 	}
 
+	@Override
+	public void deleteCompanyFriendlyURLEntries(
+		long companyId, long classNameId) {
+
+		_friendlyURLEntryLocalService.deleteCompanyFriendlyURLEntries(
+			companyId, classNameId);
+	}
+
 	/**
 	 * Deletes the friendly url entry from the database. Also notifies the appropriate model listeners.
 	 *
@@ -640,6 +648,18 @@ public class FriendlyURLEntryLocalServiceWrapper
 		return _friendlyURLEntryLocalService.updateFriendlyURLEntry(
 			friendlyURLEntryId, classNameId, classPK, defaultLanguageId,
 			urlTitleMap);
+	}
+
+	@Override
+	public FriendlyURLEntry updateFriendlyURLEntry(
+			long friendlyURLEntryId, long classNameId, long classPK,
+			String defaultLanguageId, java.util.Map<String, String> urlTitleMap,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _friendlyURLEntryLocalService.updateFriendlyURLEntry(
+			friendlyURLEntryId, classNameId, classPK, defaultLanguageId,
+			urlTitleMap, serviceContext);
 	}
 
 	@Override

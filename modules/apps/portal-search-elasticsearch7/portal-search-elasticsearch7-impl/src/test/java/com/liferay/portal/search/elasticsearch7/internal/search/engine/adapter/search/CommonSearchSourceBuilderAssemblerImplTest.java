@@ -14,8 +14,8 @@ import com.liferay.portal.search.elasticsearch7.internal.connection.IndexName;
 import com.liferay.portal.search.elasticsearch7.internal.facet.DefaultFacetTranslator;
 import com.liferay.portal.search.elasticsearch7.internal.filter.ElasticsearchFilterTranslatorFixture;
 import com.liferay.portal.search.elasticsearch7.internal.index.LiferayIndexFixture;
+import com.liferay.portal.search.elasticsearch7.internal.legacy.query.ElasticsearchQueryTranslatorFixture;
 import com.liferay.portal.search.elasticsearch7.internal.query.ElasticsearchQueryTranslator;
-import com.liferay.portal.search.elasticsearch7.internal.query.ElasticsearchQueryTranslatorFixture;
 import com.liferay.portal.search.elasticsearch7.internal.query.SearchAssert;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.filter.ComplexQueryBuilderFactory;
@@ -565,30 +565,6 @@ public class CommonSearchSourceBuilderAssemblerImplTest {
 	protected static CommonSearchSourceBuilderAssembler
 		createCommonSearchSourceBuilderAssembler(Queries queries) {
 
-		com.liferay.portal.search.elasticsearch7.internal.legacy.query.
-			ElasticsearchQueryTranslatorFixture
-				legacyElasticsearchQueryTranslatorFixture =
-					new com.liferay.portal.search.elasticsearch7.internal.
-						legacy.query.ElasticsearchQueryTranslatorFixture();
-
-		com.liferay.portal.search.elasticsearch7.internal.legacy.query.
-			ElasticsearchQueryTranslator legacyElasticsearchQueryTranslator =
-				legacyElasticsearchQueryTranslatorFixture.
-					getElasticsearchQueryTranslator();
-
-		ElasticsearchQueryTranslatorFixture
-			elasticsearchQueryTranslatorFixture =
-				new ElasticsearchQueryTranslatorFixture();
-
-		ElasticsearchFilterTranslatorFixture
-			elasticsearchFilterTranslatorFixture =
-				new ElasticsearchFilterTranslatorFixture(
-					legacyElasticsearchQueryTranslator);
-
-		ElasticsearchQueryTranslator elasticsearchQueryTranslator =
-			elasticsearchQueryTranslatorFixture.
-				getElasticsearchQueryTranslator();
-
 		CommonSearchSourceBuilderAssembler commonSearchSourceBuilderAssembler =
 			new CommonSearchSourceBuilderAssemblerImpl();
 
@@ -598,16 +574,32 @@ public class CommonSearchSourceBuilderAssemblerImplTest {
 		ReflectionTestUtil.setFieldValue(
 			commonSearchSourceBuilderAssembler, "_facetTranslator",
 			new DefaultFacetTranslator());
+
+		ElasticsearchQueryTranslatorFixture
+			legacyElasticsearchQueryTranslatorFixture =
+				new ElasticsearchQueryTranslatorFixture();
+
+		com.liferay.portal.search.elasticsearch7.internal.legacy.query.
+			ElasticsearchQueryTranslator legacyElasticsearchQueryTranslator =
+				legacyElasticsearchQueryTranslatorFixture.
+					getElasticsearchQueryTranslator();
+
+		ElasticsearchFilterTranslatorFixture
+			elasticsearchFilterTranslatorFixture =
+				new ElasticsearchFilterTranslatorFixture(
+					legacyElasticsearchQueryTranslator);
+
 		ReflectionTestUtil.setFieldValue(
 			commonSearchSourceBuilderAssembler, "_filterTranslator",
 			elasticsearchFilterTranslatorFixture.
 				getElasticsearchFilterTranslator());
+
 		ReflectionTestUtil.setFieldValue(
 			commonSearchSourceBuilderAssembler, "_legacyQueryTranslator",
 			legacyElasticsearchQueryTranslator);
 		ReflectionTestUtil.setFieldValue(
 			commonSearchSourceBuilderAssembler, "_queryTranslator",
-			elasticsearchQueryTranslator);
+			new ElasticsearchQueryTranslator());
 
 		return commonSearchSourceBuilderAssembler;
 	}

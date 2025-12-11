@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.trash.model.TrashEntry;
 
@@ -148,6 +149,10 @@ public class TrashEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deletePersistedModel(persistedModel);
+	}
+
+	public static void deleteTrashEntries(long companyId, String className) {
+		getService().deleteTrashEntries(companyId, className);
 	}
 
 	/**
@@ -472,13 +477,11 @@ public class TrashEntryLocalServiceUtil {
 	}
 
 	public static TrashEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(TrashEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile TrashEntryLocalService _service;
+	private static final Snapshot<TrashEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			TrashEntryLocalServiceUtil.class, TrashEntryLocalService.class);
 
 }

@@ -5,62 +5,67 @@
 
 package com.liferay.object.rest.internal.resource.v1_0.test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.list.type.entry.util.ListTypeEntryUtil;
+import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
 import com.liferay.object.constants.ObjectActionExecutorConstants;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
+import com.liferay.object.field.builder.MultiselectPicklistObjectFieldBuilder;
+import com.liferay.object.field.setting.builder.ObjectFieldSettingBuilder;
 import com.liferay.object.field.util.ObjectFieldUtil;
-import com.liferay.object.model.ObjectAction;
 import com.liferay.object.model.ObjectDefinition;
-import com.liferay.object.model.ObjectRelationship;
-import com.liferay.object.rest.test.util.ObjectDefinitionTestUtil;
-import com.liferay.object.rest.test.util.ObjectRelationshipTestUtil;
+import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
+import com.liferay.object.system.JaxRsApplicationDescriptor;
+import com.liferay.object.system.SystemObjectDefinitionManager;
+import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
-import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 /**
  * @author Carlos Correa
@@ -73,486 +78,431 @@ public class OpenAPIResourceTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		_company = CompanyTestUtil.addCompany();
-
-		PortalInstances.initCompany(_company);
-
-		_originalName = PrincipalThreadLocal.getName();
-
-		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws PortalException {
-		_companyLocalService.deleteCompany(_company);
-
-		PrincipalThreadLocal.setName(_originalName);
-	}
-
 	@Before
 	public void setUp() throws Exception {
-		_objectDefinition1 = ObjectDefinitionTestUtil.publishObjectDefinition(
-			Collections.singletonList(
+		_objectDefinition = ObjectDefinitionTestUtil.publishObjectDefinition(
+			"Object1",
+			Arrays.asList(
 				ObjectFieldUtil.createObjectField(
-					"Text", "String", true, true, null,
-					RandomTestUtil.randomString(), _OBJECT_FIELD_NAME, false)));
-	}
-
-	@FeatureFlags("LPS-180090")
-	@Test
-	public void testGetActionsOpenAPI() throws Exception {
-
-		// Collection actions
-
-		_testGetActionsOpenAPI(
-			Arrays.asList(
-				"create", "createBatch", "deleteBatch", "updateBatch"),
-			"Page" + _objectDefinition1.getShortName());
-
-		// Individual actions
-
-		String objectActionName = RandomTestUtil.randomString();
-
-		ObjectAction objectAction = _objectActionLocalService.addObjectAction(
-			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
-			_objectDefinition1.getObjectDefinitionId(), true, StringPool.BLANK,
-			RandomTestUtil.randomString(),
-			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			objectActionName, ObjectActionExecutorConstants.KEY_GROOVY,
-			ObjectActionTriggerConstants.KEY_STANDALONE,
-			new UnicodeProperties(), false);
-
-		_testGetActionsOpenAPI(
-			Arrays.asList(
-				"delete", "get", "permissions", "replace", "update",
-				objectActionName),
-			_objectDefinition1.getShortName());
-
-		// Permission actions
-
-		_testGetActionsOpenAPI(
-			Arrays.asList("delete", "get", "permissions", "replace", "update"),
-			"PagePermission");
-
-		_objectActionLocalService.deleteObjectAction(objectAction);
-	}
-
-	@Test
-	public void testGetNestedEntityInObjectRelationship() throws Exception {
-		_testGetNestedEntityInObjectRelationship(
-			ObjectRelationshipConstants.TYPE_MANY_TO_MANY);
-
-		_testGetNestedEntityInObjectRelationship(
-			ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
-	}
-
-	@Test
-	public void testGetObjectRelationshipEndpoints() throws Exception {
-
-		// Active
-
-		_testGetObjectRelationshipEndpoints(
-			true, ObjectRelationshipConstants.TYPE_MANY_TO_MANY);
-		_testGetObjectRelationshipEndpoints(
-			true, ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
-
-		// Inactive
-
-		_testGetObjectRelationshipEndpoints(
-			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY);
-		_testGetObjectRelationshipEndpoints(
-			false, ObjectRelationshipConstants.TYPE_ONE_TO_MANY);
+					ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT,
+					ObjectFieldConstants.DB_TYPE_LONG, true, true, null,
+					"field1", "field1",
+					Arrays.asList(
+						new ObjectFieldSettingBuilder(
+						).name(
+							ObjectFieldSettingConstants.
+								NAME_ACCEPTED_FILE_EXTENSIONS
+						).value(
+							"txt"
+						).build(),
+						new ObjectFieldSettingBuilder(
+						).name(
+							ObjectFieldSettingConstants.NAME_FILE_SOURCE
+						).value(
+							ObjectFieldSettingConstants.VALUE_DOCS_AND_MEDIA
+						).build(),
+						new ObjectFieldSettingBuilder(
+						).name(
+							ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE
+						).value(
+							String.valueOf(1)
+						).build()),
+					false),
+				ObjectFieldUtil.createObjectField(
+					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+					ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+					"field2", "field2", false)),
+			ObjectDefinitionConstants.SCOPE_COMPANY);
 	}
 
 	@Test
 	public void testGetOpenAPI() throws Exception {
-		_user = UserTestUtil.addUser(_company);
+		ListTypeDefinition listTypeDefinition =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				null, TestPropsValues.getUserId(),
+				Collections.singletonMap(
+					LocaleUtil.US, RandomTestUtil.randomString()),
+				false,
+				TransformUtil.transformToList(
+					new String[] {"value1", "value2"},
+					listTypeValue -> ListTypeEntryUtil.createListTypeEntry(
+						listTypeValue,
+						Collections.singletonMap(
+							LocaleUtil.US, listTypeValue))),
+				new ServiceContext());
 
-		_objectDefinition2 = ObjectDefinitionTestUtil.publishObjectDefinition(
-			Collections.singletonList(
-				ObjectFieldUtil.createObjectField(
-					"Text", "String", true, true, null,
-					RandomTestUtil.randomString(), _OBJECT_FIELD_NAME, false)),
-			ObjectDefinitionConstants.SCOPE_COMPANY, _user.getUserId());
-
-		_testGetOpenAPI(_objectDefinition1, _objectDefinition2);
-
-		_siteScopedObjectDefinition =
+		ObjectDefinition relatedObjectDefinition1 =
 			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object2",
+				Arrays.asList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field1", "field1", false),
+					new MultiselectPicklistObjectFieldBuilder(
+					).labelMap(
+						LocalizedMapUtil.getLocalizedMap("field2")
+					).listTypeDefinitionId(
+						listTypeDefinition.getListTypeDefinitionId()
+					).name(
+						"multiselectPicklistField"
+					).build()),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectDefinitions.add(relatedObjectDefinition1);
+
+		ObjectDefinition relatedObjectDefinition2 =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object3",
+				Arrays.asList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field1", "field1", false),
+					new MultiselectPicklistObjectFieldBuilder(
+					).labelMap(
+						LocalizedMapUtil.getLocalizedMap("field2")
+					).listTypeDefinitionId(
+						listTypeDefinition.getListTypeDefinitionId()
+					).name(
+						"multiselectPicklistField"
+					).build()),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectDefinitions.add(relatedObjectDefinition2);
+
+		ObjectDefinition relatedObjectDefinition3 =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object4",
+				Arrays.asList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field1", "field1", false)),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectDefinitions.add(relatedObjectDefinition3);
+
+		ObjectDefinition relatedObjectDefinition4 =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object5",
+				Arrays.asList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field1", "field1", false)),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectDefinitions.add(relatedObjectDefinition4);
+
+		ObjectDefinition relatedObjectDefinition5 =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object6",
+				Arrays.asList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field1", "field1", false)),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectDefinitions.add(relatedObjectDefinition5);
+
+		ObjectDefinition relatedObjectDefinition6 =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object7",
+				Arrays.asList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field1", "field1", false)),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectDefinitions.add(relatedObjectDefinition6);
+
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			_objectDefinition.getObjectDefinitionId(),
+			relatedObjectDefinition1.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship1"), "relationship1",
+			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			_objectDefinition.getObjectDefinitionId(),
+			relatedObjectDefinition1.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship2"), "relationship2",
+			false, ObjectRelationshipConstants.TYPE_ONE_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			relatedObjectDefinition1.getObjectDefinitionId(),
+			relatedObjectDefinition2.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship3"), "relationship3",
+			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			relatedObjectDefinition1.getObjectDefinitionId(),
+			relatedObjectDefinition2.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship4"), "relationship4",
+			false, ObjectRelationshipConstants.TYPE_ONE_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			relatedObjectDefinition2.getObjectDefinitionId(),
+			relatedObjectDefinition3.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship5"), "relationship5",
+			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			relatedObjectDefinition3.getObjectDefinitionId(),
+			relatedObjectDefinition4.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship6"), "relationship6",
+			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			relatedObjectDefinition4.getObjectDefinitionId(),
+			relatedObjectDefinition5.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship7"), "relationship7",
+			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, TestPropsValues.getUserId(),
+			relatedObjectDefinition5.getObjectDefinitionId(),
+			relatedObjectDefinition6.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap("relationship8"), "relationship8",
+			false, ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+
+		ObjectFieldUtil.createObjectField(
+			ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+			"externalReferenceCode", "externalReferenceCode", false);
+
+		_assertOpenAPI("expected_openapi.json", _objectDefinition);
+		_assertOpenAPI(
+			"expected_openapi_related.json", relatedObjectDefinition1);
+		_assertOpenAPI(
+			"expected_openapi_site.json",
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object8",
 				Collections.singletonList(
 					ObjectFieldUtil.createObjectField(
-						"Text", "String", true, true, null,
-						RandomTestUtil.randomString(), _OBJECT_FIELD_NAME,
-						false)),
-				ObjectDefinitionConstants.SCOPE_SITE,
-				TestPropsValues.getUserId());
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field", "field", false)),
+				ObjectDefinitionConstants.SCOPE_SITE));
 
-		_testGetOpenAPI(_siteScopedObjectDefinition, _objectDefinition2);
+		ObjectDefinition categorizationDisabledObjectDefinition =
+			ObjectDefinitionTestUtil.publishObjectDefinition(
+				"Object9",
+				Collections.singletonList(
+					ObjectFieldUtil.createObjectField(
+						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+						ObjectFieldConstants.DB_TYPE_STRING, true, true, null,
+						"field", "field", false)),
+				ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		categorizationDisabledObjectDefinition.setEnableCategorization(false);
+
+		categorizationDisabledObjectDefinition =
+			_objectDefinitionLocalService.updateObjectDefinition(
+				categorizationDisabledObjectDefinition);
+
+		_assertOpenAPI(
+			"expected_openapi_categorization_disabled.json",
+			categorizationDisabledObjectDefinition);
 	}
 
-	@Ignore
 	@Test
-	public void testGetOpenAPIWithCategorizationDisabled() throws Exception {
-		_objectDefinition1.setEnableCategorization(false);
+	public void testGetOpenAPIInDifferentCompany() throws Exception {
+		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
+			JSONUtil.put(
+				"domain", "able.com"
+			).put(
+				"portalInstanceId", "able.com"
+			).put(
+				"virtualHost", "www.able.com"
+			).toString(),
+			"headless-portal-instances/v1.0/portal-instances",
+			Http.Method.POST);
 
-		_objectDefinition1 =
-			_objectDefinitionLocalService.updateObjectDefinition(
-				_objectDefinition1);
+		long companyId = jsonObject.getLong("companyId");
 
 		try {
-			_user = UserTestUtil.addUser(_company);
+			HTTPTestUtil.customize(
+			).withBaseURL(
+				"http://www.able.com:8080"
+			).withCredentials(
+				"test@able.com", PropsValues.DEFAULT_ADMIN_PASSWORD
+			).apply(
+				() -> {
+					User user = UserTestUtil.addUser(
+						_companyLocalService.getCompany(companyId));
 
-			JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
-				null, _objectDefinition1.getRESTContextPath() + "/openapi.json",
-				Http.Method.GET);
+					ObjectDefinition companyObjectDefinition =
+						ObjectDefinitionTestUtil.publishObjectDefinition(
+							ObjectDefinitionTestUtil.getRandomName(),
+							Collections.singletonList(
+								ObjectFieldUtil.createObjectField(
+									ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+									ObjectFieldConstants.DB_TYPE_STRING, true,
+									true, null, "field", "field", false)),
+							ObjectDefinitionConstants.SCOPE_COMPANY,
+							user.getUserId());
 
-			JSONObject schemasJSONObject = jsonObject.getJSONObject(
-				"components"
-			).getJSONObject(
-				"schemas"
+					Assert.assertEquals(
+						200,
+						HTTPTestUtil.invokeToHttpCode(
+							null, companyObjectDefinition.getRESTContextPath(),
+							Http.Method.GET));
+
+					JSONObject openAPIJSONObject =
+						HTTPTestUtil.invokeToJSONObject(
+							null, "/openapi", Http.Method.GET);
+
+					JSONArray jsonArray = openAPIJSONObject.getJSONArray(
+						companyObjectDefinition.getRESTContextPath());
+
+					Assert.assertEquals(1, jsonArray.length());
+					Assert.assertEquals(
+						"http://www.able.com:8080/o" +
+							companyObjectDefinition.getRESTContextPath() +
+								"/openapi.yaml",
+						jsonArray.get(0));
+				}
 			);
-
-			Assert.assertNull(
-				schemasJSONObject.getJSONObject("TaxonomyCategoryBrief"));
-
-			JSONObject propertiesJSONObject = schemasJSONObject.getJSONObject(
-				_objectDefinition1.getShortName()
-			).getJSONObject(
-				"properties"
-			);
-
-			Assert.assertNull(propertiesJSONObject.getJSONObject("keywords"));
-			Assert.assertNull(
-				propertiesJSONObject.getJSONObject("taxonomyCategoryBriefs"));
-			Assert.assertNull(
-				propertiesJSONObject.getJSONObject("taxonomyCategoryIds"));
 		}
 		finally {
-			_objectDefinition1.setEnableCategorization(true);
-
-			_objectDefinition1 =
-				_objectDefinitionLocalService.updateObjectDefinition(
-					_objectDefinition1);
+			if (companyId != 0) {
+				_companyLocalService.deleteCompany(companyId);
+			}
 		}
 	}
 
-	private void _assertJSONObjectOpenAPI(
-		JSONObject openAPIJSONObject, ObjectDefinition objectDefinition1,
-		ObjectDefinition objectDefinition2) {
+	@FeatureFlag("LPS-180090")
+	@Test
+	public void testGetOpenAPIWithActions() throws Exception {
+		_assertOpenAPI("expected_openapi_actions.json", _objectDefinition);
 
-		Assert.assertNotNull(openAPIJSONObject.getString("openapi"));
-		Assert.assertNull(
-			openAPIJSONObject.getJSONArray(
-				objectDefinition2.getRESTContextPath()));
+		_objectActionLocalService.addObjectAction(
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_objectDefinition.getObjectDefinitionId(), true, StringPool.BLANK,
+			RandomTestUtil.randomString(),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			"objectAction", ObjectActionExecutorConstants.KEY_WEBHOOK,
+			ObjectActionTriggerConstants.KEY_STANDALONE,
+			UnicodePropertiesBuilder.put(
+				"secret", "standalone"
+			).put(
+				"url", "https://standalone.com"
+			).build(),
+			false);
 
-		JSONObject schemasJSONObject = openAPIJSONObject.getJSONObject(
-			"components"
-		).getJSONObject(
-			"schemas"
-		);
-
-		Assert.assertNotNull(
-			schemasJSONObject.getJSONObject("TaxonomyCategoryBrief"));
-
-		JSONObject propertiesJSONObject = schemasJSONObject.getJSONObject(
-			objectDefinition1.getShortName()
-		).getJSONObject(
-			"properties"
-		);
-
-		Assert.assertNull(propertiesJSONObject.getJSONObject("createDate"));
-		Assert.assertNotNull(propertiesJSONObject.getJSONObject("keywords"));
-		Assert.assertNull(propertiesJSONObject.getJSONObject("modifiedDate"));
-		Assert.assertNotNull(
-			propertiesJSONObject.getJSONObject("taxonomyCategoryBriefs"));
-		Assert.assertNotNull(
-			propertiesJSONObject.getJSONObject("taxonomyCategoryIds"));
+		_assertOpenAPI(
+			"expected_openapi_actions_object_action.json", _objectDefinition);
 	}
 
-	private void _assertObjectRelationshipEndpoints(
-		boolean active, JSONObject jsonObject,
-		ObjectRelationship objectRelationship) {
+	@Test
+	public void testGetOpenAPIWithSystemObjectRelationship() throws Exception {
+		_user = TestPropsValues.getUser();
 
-		if (active) {
-			Assert.assertNotNull(
-				jsonObject.getJSONObject(
-					StringBundler.concat(
-						"/{",
-						StringUtil.lowerCaseFirstLetter(
-							_objectDefinition1.getShortName()),
-						"Id}/", objectRelationship.getName())));
-			Assert.assertNotNull(
-				jsonObject.getJSONObject(
-					StringBundler.concat(
-						"/{",
-						StringUtil.lowerCaseFirstLetter(
-							_objectDefinition1.getShortName()),
-						"Id}/", objectRelationship.getName(), "/{",
-						StringUtil.lowerCaseFirstLetter(
-							_objectDefinition2.getShortName()),
-						"Id}")));
-		}
-		else {
-			Assert.assertNull(
-				jsonObject.getJSONObject(
-					StringBundler.concat(
-						"/{",
-						StringUtil.lowerCaseFirstLetter(
-							_objectDefinition1.getShortName()),
-						"Id}/", objectRelationship.getName())));
-			Assert.assertNull(
-				jsonObject.getJSONObject(
-					StringBundler.concat(
-						"/{",
-						StringUtil.lowerCaseFirstLetter(
-							_objectDefinition1.getShortName()),
-						"Id}/", objectRelationship.getName(), "/{",
-						StringUtil.lowerCaseFirstLetter(
-							_objectDefinition2.getShortName()),
-						"Id}")));
-		}
+		SystemObjectDefinitionManager userSystemObjectDefinitionManager =
+			_systemObjectDefinitionManagerRegistry.
+				getSystemObjectDefinitionManager("User");
+
+		_userSystemObjectDefinition =
+			_objectDefinitionLocalService.fetchSystemObjectDefinition(
+				TestPropsValues.getCompanyId(),
+				userSystemObjectDefinitionManager.getName());
+
+		JaxRsApplicationDescriptor jaxRsApplicationDescriptor =
+			userSystemObjectDefinitionManager.getJaxRsApplicationDescriptor();
+
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, _user.getUserId(),
+			_userSystemObjectDefinition.getObjectDefinitionId(),
+			_objectDefinition.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			"relation1ToM", false, ObjectRelationshipConstants.TYPE_ONE_TO_MANY,
+			null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, _user.getUserId(), _objectDefinition.getObjectDefinitionId(),
+			_userSystemObjectDefinition.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			"relationMTo1", false, ObjectRelationshipConstants.TYPE_ONE_TO_MANY,
+			null);
+		ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+			null, _user.getUserId(),
+			_userSystemObjectDefinition.getObjectDefinitionId(),
+			_objectDefinition.getObjectDefinitionId(), 0,
+			ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			"relationMToM", false,
+			ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+
+		JSONAssert.assertEquals(
+			new String(
+				FileUtil.getBytes(
+					getClass(),
+					"dependencies" +
+						"/expected_openapi_system_object_relationship.json")),
+			HTTPTestUtil.invokeToJSONObject(
+				null,
+				StringBundler.concat(
+					jaxRsApplicationDescriptor.getApplicationPath(),
+					StringPool.SLASH, jaxRsApplicationDescriptor.getVersion(),
+					"/openapi.json"),
+				Http.Method.GET
+			).toString(),
+			JSONCompareMode.LENIENT);
 	}
 
-	private String _getNestedEntitySchema(
-		boolean active, JSONObject jsonObject,
-		ObjectRelationship objectRelationship,
-		ObjectDefinition objectDefinition) {
-
-		String nestedEntitySchema;
-
-		JSONObject nestedEntitySchemaJSONObject = jsonObject.getJSONObject(
-			"components"
-		).getJSONObject(
-			"schemas"
-		).getJSONObject(
-			objectDefinition.getShortName()
-		).getJSONObject(
-			"properties"
-		).getJSONObject(
-			objectRelationship.getName()
-		);
-
-		if (!active && (nestedEntitySchemaJSONObject == null)) {
-			return null;
-		}
-
-		if (Objects.equals(
-				objectRelationship.getType(),
-				ObjectRelationshipConstants.TYPE_ONE_TO_MANY) &&
-			(objectDefinition.getObjectDefinitionId() ==
-				_objectDefinition2.getObjectDefinitionId())) {
-
-			nestedEntitySchema = (String)nestedEntitySchemaJSONObject.get(
-				"$ref");
-		}
-		else {
-			nestedEntitySchema =
-				(String)nestedEntitySchemaJSONObject.getJSONObject(
-					"items"
-				).get(
-					"$ref"
-				);
-		}
-
-		return StringUtil.extractLast(nestedEntitySchema, "/");
-	}
-
-	private void _testGetActionsOpenAPI(List<String> actions, String schemaName)
+	private void _assertOpenAPI(
+			String fileName, ObjectDefinition objectDefinition)
 		throws Exception {
 
-		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
-			null, _objectDefinition1.getRESTContextPath() + "/openapi.json",
-			Http.Method.GET);
-
-		JSONObject actionsJSONObject = jsonObject.getJSONObject(
-			"components"
-		).getJSONObject(
-			"schemas"
-		).getJSONObject(
-			schemaName
-		).getJSONObject(
-			"properties"
-		).getJSONObject(
-			"actions"
-		).getJSONObject(
-			"properties"
-		);
-
-		for (String action : actions) {
-			JSONObject actionJSONObject = actionsJSONObject.getJSONObject(
-				action);
-
-			Assert.assertNotNull(actionJSONObject.get("properties"));
-		}
+		JSONAssert.assertEquals(
+			new String(
+				FileUtil.getBytes(getClass(), "dependencies/" + fileName)),
+			HTTPTestUtil.invokeToJSONObject(
+				null, objectDefinition.getRESTContextPath() + "/openapi.json",
+				Http.Method.GET
+			).toString(),
+			JSONCompareMode.STRICT);
 	}
-
-	private void _testGetNestedEntityInObjectRelationship(
-			String objectRelationshipType)
-		throws Exception {
-
-		_objectDefinition2 = ObjectDefinitionTestUtil.publishObjectDefinition(
-			Collections.singletonList(
-				ObjectFieldUtil.createObjectField(
-					"Text", "String", true, true, null,
-					RandomTestUtil.randomString(), _OBJECT_FIELD_NAME, false)));
-
-		ObjectRelationship objectRelationship =
-			ObjectRelationshipTestUtil.addObjectRelationship(
-				_objectDefinition1, _objectDefinition2,
-				TestPropsValues.getUserId(), objectRelationshipType);
-
-		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
-			null, _objectDefinition1.getRESTContextPath() + "/openapi.json",
-			Http.Method.GET);
-
-		Assert.assertNotNull(jsonObject.getString("openapi"));
-
-		Assert.assertEquals(
-			_getNestedEntitySchema(
-				true, jsonObject, objectRelationship, _objectDefinition1),
-			_objectDefinition2.getShortName());
-
-		jsonObject = HTTPTestUtil.invokeToJSONObject(
-			null, _objectDefinition2.getRESTContextPath() + "/openapi.json",
-			Http.Method.GET);
-
-		Assert.assertNotNull(jsonObject.getString("openapi"));
-
-		Assert.assertEquals(
-			_getNestedEntitySchema(
-				true, jsonObject, objectRelationship, _objectDefinition2),
-			_objectDefinition1.getShortName());
-	}
-
-	private void _testGetObjectRelationshipEndpoints(
-			boolean active, String objectRelationshipType)
-		throws Exception {
-
-		if (active) {
-			_objectDefinition2 =
-				ObjectDefinitionTestUtil.publishObjectDefinition(
-					Collections.singletonList(
-						ObjectFieldUtil.createObjectField(
-							"Text", "String", true, true, null,
-							RandomTestUtil.randomString(), _OBJECT_FIELD_NAME,
-							false)));
-		}
-		else {
-			_objectDefinition2 =
-				ObjectDefinitionTestUtil.addCustomObjectDefinition(
-					Collections.singletonList(
-						ObjectFieldUtil.createObjectField(
-							"Text", "String", true, true, null,
-							RandomTestUtil.randomString(), _OBJECT_FIELD_NAME,
-							false)));
-		}
-
-		ObjectRelationship objectRelationship =
-			ObjectRelationshipTestUtil.addObjectRelationship(
-				_objectDefinition1, _objectDefinition2,
-				TestPropsValues.getUserId(), objectRelationshipType);
-
-		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
-			null, _objectDefinition1.getRESTContextPath() + "/openapi.json",
-			Http.Method.GET);
-
-		Assert.assertNotNull(jsonObject.getString("openapi"));
-
-		if (active) {
-			Assert.assertEquals(
-				_getNestedEntitySchema(
-					active, jsonObject, objectRelationship, _objectDefinition1),
-				_objectDefinition2.getShortName());
-		}
-		else {
-			Assert.assertNull(
-				_getNestedEntitySchema(
-					active, jsonObject, objectRelationship,
-					_objectDefinition1));
-		}
-
-		_assertObjectRelationshipEndpoints(
-			active, jsonObject.getJSONObject("paths"), objectRelationship);
-	}
-
-	private void _testGetOpenAPI(
-			ObjectDefinition objectDefinition1,
-			ObjectDefinition objectDefinition2)
-		throws Exception {
-
-		JSONObject openAPIJSONObject = HTTPTestUtil.invokeToJSONObject(
-			null, "/openapi", Http.Method.GET);
-
-		JSONArray jsonArray = openAPIJSONObject.getJSONArray(
-			objectDefinition1.getRESTContextPath());
-
-		Assert.assertEquals(1, jsonArray.length());
-		Assert.assertEquals(
-			"http://localhost:8080/o" + objectDefinition1.getRESTContextPath() +
-				"/openapi.yaml",
-			jsonArray.get(0));
-
-		openAPIJSONObject = HTTPTestUtil.invokeToJSONObject(
-			null, objectDefinition1.getRESTContextPath() + "/openapi.json",
-			Http.Method.GET);
-
-		_assertJSONObjectOpenAPI(
-			openAPIJSONObject, objectDefinition1, objectDefinition2);
-
-		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
-			null, objectDefinition2.getRESTContextPath() + "/openapi.json",
-			Http.Method.GET);
-
-		Assert.assertEquals("NOT_FOUND", jsonObject.getString("status"));
-
-		String openAPIYAMLString = HTTPTestUtil.invokeToString(
-			null, objectDefinition1.getRESTContextPath() + "/openapi.yaml",
-			Http.Method.GET);
-
-		_assertJSONObjectOpenAPI(
-			_toJSONObject(openAPIYAMLString), objectDefinition1,
-			objectDefinition2);
-	}
-
-	private JSONObject _toJSONObject(String yamlString) throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper();
-
-		ObjectMapper yamlObjectMapper = new ObjectMapper(new YAMLFactory());
-
-		return JSONFactoryUtil.createJSONObject(
-			objectMapper.writeValueAsString(
-				yamlObjectMapper.readValue(yamlString, Object.class)));
-	}
-
-	private static final String _OBJECT_FIELD_NAME =
-		"x" + RandomTestUtil.randomString();
-
-	private static Company _company;
 
 	@Inject
 	private static CompanyLocalService _companyLocalService;
 
-	private static String _originalName;
+	@Inject
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
 
 	@Inject
 	private ObjectActionLocalService _objectActionLocalService;
 
 	@DeleteAfterTestRun
-	private ObjectDefinition _objectDefinition1;
-
-	@DeleteAfterTestRun
-	private ObjectDefinition _objectDefinition2;
+	private ObjectDefinition _objectDefinition;
 
 	@Inject
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 	@DeleteAfterTestRun
-	private ObjectDefinition _siteScopedObjectDefinition;
+	private final List<ObjectDefinition> _objectDefinitions = new ArrayList<>();
+
+	@Inject
+	private SystemObjectDefinitionManagerRegistry
+		_systemObjectDefinitionManagerRegistry;
+
+	private User _user;
+	private ObjectDefinition _userSystemObjectDefinition;
 
 	@DeleteAfterTestRun
-	private User _user;
+	private ObjectField _userSystemObjectField;
 
 }

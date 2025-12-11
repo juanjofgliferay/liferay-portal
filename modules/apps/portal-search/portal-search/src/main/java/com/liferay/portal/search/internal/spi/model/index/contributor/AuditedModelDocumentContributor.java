@@ -5,11 +5,14 @@
 
 package com.liferay.portal.search.internal.spi.model.index.contributor;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.AuditedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentContributor;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Portal;
 
 import org.osgi.service.component.annotations.Component;
@@ -41,9 +44,33 @@ public class AuditedModelDocumentContributor
 			portal.getUserName(
 				auditedModel.getUserId(), auditedModel.getUserName()),
 			true);
+		document.addKeyword(
+			"userExternalReferenceCode",
+			_getUserExternalReferenceCode(auditedModel));
 	}
 
 	@Reference
 	protected Portal portal;
+
+	@Reference
+	protected UserLocalService userLocalService;
+
+	private String _getUserExternalReferenceCode(AuditedModel auditedModel) {
+		String userExternalReferenceCode = StringPool.BLANK;
+
+		long userId = auditedModel.getUserId();
+
+		if (userId == 0) {
+			return userExternalReferenceCode;
+		}
+
+		User user = userLocalService.fetchUser(userId);
+
+		if (user != null) {
+			userExternalReferenceCode = user.getExternalReferenceCode();
+		}
+
+		return userExternalReferenceCode;
+	}
 
 }

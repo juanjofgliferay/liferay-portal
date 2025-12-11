@@ -25,13 +25,19 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -591,6 +597,15 @@ public class AccountEntryPersistenceImpl
 			return findByUuid(uuid, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid(
+					uuid, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -639,7 +654,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -847,7 +862,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -980,6 +995,14 @@ public class AccountEntryPersistenceImpl
 	public int filterCountByUuid(String uuid) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByUuid(uuid);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<AccountEntry> accountEntries = findByUuid(uuid);
+
+			accountEntries = InlineSQLHelperUtil.filter(accountEntries);
+
+			return accountEntries.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -1586,6 +1609,15 @@ public class AccountEntryPersistenceImpl
 			return findByUuid_C(uuid, companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid_C(
+					uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -1636,7 +1668,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -1851,7 +1883,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -1995,6 +2027,14 @@ public class AccountEntryPersistenceImpl
 	public int filterCountByUuid_C(String uuid, long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByUuid_C(uuid, companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<AccountEntry> accountEntries = findByUuid_C(uuid, companyId);
+
+			accountEntries = InlineSQLHelperUtil.filter(accountEntries);
+
+			return accountEntries.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -2547,6 +2587,15 @@ public class AccountEntryPersistenceImpl
 			return findByCompanyId(companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCompanyId(
+					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -2584,7 +2633,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -2779,7 +2828,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -2898,6 +2947,14 @@ public class AccountEntryPersistenceImpl
 	public int filterCountByCompanyId(long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByCompanyId(companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<AccountEntry> accountEntries = findByCompanyId(companyId);
+
+			accountEntries = InlineSQLHelperUtil.filter(accountEntries);
+
+			return accountEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(2);
@@ -3456,6 +3513,15 @@ public class AccountEntryPersistenceImpl
 			return findByC_S(companyId, status, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_S(
+					companyId, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -3495,7 +3561,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -3697,7 +3763,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -3826,6 +3892,14 @@ public class AccountEntryPersistenceImpl
 	public int filterCountByC_S(long companyId, int status) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_S(companyId, status);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<AccountEntry> accountEntries = findByC_S(companyId, status);
+
+			accountEntries = InlineSQLHelperUtil.filter(accountEntries);
+
+			return accountEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -4414,6 +4488,15 @@ public class AccountEntryPersistenceImpl
 			return findByU_T(userId, type, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByU_T(
+					userId, type, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		type = Objects.toString(type, "");
 
 		StringBundler sb = null;
@@ -4464,7 +4547,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -4677,7 +4760,7 @@ public class AccountEntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(AccountEntryModelImpl.ORDER_BY_JPQL);
+				sb.append(AccountEntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(AccountEntryModelImpl.ORDER_BY_SQL);
@@ -4822,6 +4905,14 @@ public class AccountEntryPersistenceImpl
 			return countByU_T(userId, type);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<AccountEntry> accountEntries = findByU_T(userId, type);
+
+			accountEntries = InlineSQLHelperUtil.filter(accountEntries);
+
+			return accountEntries.size();
+		}
+
 		type = Objects.toString(type, "");
 
 		StringBundler sb = new StringBundler(3);
@@ -4891,7 +4982,6 @@ public class AccountEntryPersistenceImpl
 		"(accountEntry.type_ IS NULL OR accountEntry.type_ = '')";
 
 	private FinderPath _finderPathFetchByERC_C;
-	private FinderPath _finderPathCountByERC_C;
 
 	/**
 	 * Returns the account entry where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
@@ -5079,62 +5169,14 @@ public class AccountEntryPersistenceImpl
 	 */
 	@Override
 	public int countByERC_C(String externalReferenceCode, long companyId) {
-		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+		AccountEntry accountEntry = fetchByERC_C(
+			externalReferenceCode, companyId);
 
-		FinderPath finderPath = _finderPathCountByERC_C;
-
-		Object[] finderArgs = new Object[] {externalReferenceCode, companyId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_ACCOUNTENTRY_WHERE);
-
-			boolean bindExternalReferenceCode = false;
-
-			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
-			}
-			else {
-				bindExternalReferenceCode = true;
-
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
-			}
-
-			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindExternalReferenceCode) {
-					queryPos.add(externalReferenceCode);
-				}
-
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (accountEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
@@ -5257,7 +5299,6 @@ public class AccountEntryPersistenceImpl
 			accountEntryModelImpl.getCompanyId()
 		};
 
-		finderCache.putResult(_finderPathCountByERC_C, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByERC_C, args, accountEntryModelImpl);
 	}
@@ -5403,6 +5444,39 @@ public class AccountEntryPersistenceImpl
 			accountEntry.setExternalReferenceCode(accountEntry.getUuid());
 		}
 		else {
+			if (!Objects.equals(
+					accountEntryModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					accountEntry.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = accountEntry.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = accountEntry.getPrimaryKey();
+					}
+
+					try {
+						accountEntry.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								AccountEntry.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								accountEntry.getExternalReferenceCode(), null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
 			AccountEntry ercAccountEntry = fetchByERC_C(
 				accountEntry.getExternalReferenceCode(),
 				accountEntry.getCompanyId());
@@ -5856,11 +5930,6 @@ public class AccountEntryPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"externalReferenceCode", "companyId"}, true);
-
-		_finderPathCountByERC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByERC_C",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"externalReferenceCode", "companyId"}, false);
 
 		AccountEntryUtil.setPersistence(this);
 	}

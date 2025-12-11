@@ -44,6 +44,7 @@ public class LayoutServiceUtil {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -67,7 +68,8 @@ public class LayoutServiceUtil {
 	 To see how the URL is normalized when accessed, see {@link
 	 com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
 	 String)}.
-	 * @param masterLayoutPlid the primary key of the master layout
+	 * @param masterLayoutPageTemplateEntryERC the external reference code key
+	 of the master layout page template entry
 	 * @param serviceContext the service context to be applied. Must set the
 	 UUID for the layout. Can set the creation date, modification
 	 date, and expando bridge attributes for the layout. For layouts
@@ -78,81 +80,24 @@ public class LayoutServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			long classNameId, long classPK,
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, long classNameId, long classPK,
 			Map<java.util.Locale, String> localeNamesMap,
 			Map<java.util.Locale, String> localeTitlesMap,
 			Map<java.util.Locale, String> descriptionMap,
 			Map<java.util.Locale, String> keywordsMap,
 			Map<java.util.Locale, String> robotsMap, String type,
 			String typeSettings, boolean hidden, boolean system,
-			Map<java.util.Locale, String> friendlyURLMap, long masterLayoutPlid,
+			Map<java.util.Locale, String> friendlyURLMap,
+			String masterLayoutPageTemplateEntryERC,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addLayout(
-			groupId, privateLayout, parentLayoutId, classNameId, classPK,
-			localeNamesMap, localeTitlesMap, descriptionMap, keywordsMap,
-			robotsMap, type, typeSettings, hidden, system, friendlyURLMap,
-			masterLayoutPlid, serviceContext);
-	}
-
-	/**
-	 * Adds a layout with additional parameters.
-	 *
-	 * <p>
-	 * This method handles the creation of the layout including its resources,
-	 * metadata, and internal data structures. It is not necessary to make
-	 * subsequent calls to any methods to setup default groups, resources, ...
-	 * etc.
-	 * </p>
-	 *
-	 * @param groupId the primary key of the group
-	 * @param privateLayout whether the layout is private to the group
-	 * @param parentLayoutId the layout ID of the parent layout (optionally
-	 {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
-	 * @param localeNamesMap the layout's locales and localized names
-	 * @param localeTitlesMap the layout's locales and localized titles
-	 * @param descriptionMap the layout's locales and localized descriptions
-	 * @param keywordsMap the layout's locales and localized keywords
-	 * @param robotsMap the layout's locales and localized robots
-	 * @param type the layout's type (optionally {@link
-	 LayoutConstants#TYPE_PORTLET}). The possible types can be found
-	 in {@link LayoutConstants}.
-	 * @param typeSettings the settings to load the unicode properties object.
-	 See {@link com.liferay.portal.kernel.util.UnicodeProperties
-	 #fastLoad(String)}.
-	 * @param hidden whether the layout is hidden
-	 * @param friendlyURLMap the layout's locales and localized friendly URLs.
-	 To see how the URL is normalized when accessed, see {@link
-	 com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
-	 String)}.
-	 * @param masterLayoutPlid the primary key of the master layout
-	 * @param serviceContext the service context to be applied. Must set the
-	 UUID for the layout. Can set the creation date, modification
-	 date, and expando bridge attributes for the layout. For layouts
-	 that belong to a layout set prototype, an attribute named
-	 <code>layoutUpdateable</code> can be used to specify whether site
-	 administrators can modify this page within their site.
-	 * @return the layout
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public static Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			Map<java.util.Locale, String> localeNamesMap,
-			Map<java.util.Locale, String> localeTitlesMap,
-			Map<java.util.Locale, String> descriptionMap,
-			Map<java.util.Locale, String> keywordsMap,
-			Map<java.util.Locale, String> robotsMap, String type,
-			String typeSettings, boolean hidden,
-			Map<java.util.Locale, String> friendlyURLMap, long masterLayoutPlid,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addLayout(
-			groupId, privateLayout, parentLayoutId, localeNamesMap,
-			localeTitlesMap, descriptionMap, keywordsMap, robotsMap, type,
-			typeSettings, hidden, friendlyURLMap, masterLayoutPlid,
+			externalReferenceCode, groupId, privateLayout, parentLayoutId,
+			classNameId, classPK, localeNamesMap, localeTitlesMap,
+			descriptionMap, keywordsMap, robotsMap, type, typeSettings, hidden,
+			system, friendlyURLMap, masterLayoutPageTemplateEntryERC,
 			serviceContext);
 	}
 
@@ -166,6 +111,7 @@ public class LayoutServiceUtil {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -196,8 +142,8 @@ public class LayoutServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			Map<java.util.Locale, String> localeNamesMap,
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, Map<java.util.Locale, String> localeNamesMap,
 			Map<java.util.Locale, String> localeTitlesMap,
 			Map<java.util.Locale, String> descriptionMap,
 			Map<java.util.Locale, String> keywordsMap,
@@ -208,9 +154,72 @@ public class LayoutServiceUtil {
 		throws PortalException {
 
 		return getService().addLayout(
-			groupId, privateLayout, parentLayoutId, localeNamesMap,
-			localeTitlesMap, descriptionMap, keywordsMap, robotsMap, type,
-			typeSettings, hidden, friendlyURLMap, serviceContext);
+			externalReferenceCode, groupId, privateLayout, parentLayoutId,
+			localeNamesMap, localeTitlesMap, descriptionMap, keywordsMap,
+			robotsMap, type, typeSettings, hidden, friendlyURLMap,
+			serviceContext);
+	}
+
+	/**
+	 * Adds a layout with additional parameters.
+	 *
+	 * <p>
+	 * This method handles the creation of the layout including its resources,
+	 * metadata, and internal data structures. It is not necessary to make
+	 * subsequent calls to any methods to setup default groups, resources, ...
+	 * etc.
+	 * </p>
+	 *
+	 * @param externalReferenceCode the layout's external reference code
+	 * @param groupId the primary key of the group
+	 * @param privateLayout whether the layout is private to the group
+	 * @param parentLayoutId the layout ID of the parent layout (optionally
+	 {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
+	 * @param localeNamesMap the layout's locales and localized names
+	 * @param localeTitlesMap the layout's locales and localized titles
+	 * @param descriptionMap the layout's locales and localized descriptions
+	 * @param keywordsMap the layout's locales and localized keywords
+	 * @param robotsMap the layout's locales and localized robots
+	 * @param type the layout's type (optionally {@link
+	 LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 in {@link LayoutConstants}.
+	 * @param typeSettings the settings to load the unicode properties object.
+	 See {@link com.liferay.portal.kernel.util.UnicodeProperties
+	 #fastLoad(String)}.
+	 * @param hidden whether the layout is hidden
+	 * @param friendlyURLMap the layout's locales and localized friendly URLs.
+	 To see how the URL is normalized when accessed, see {@link
+	 com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
+	 String)}.
+	 * @param masterLayoutPageTemplateEntryERC the external reference code key
+	 of the master layout page template entry
+	 * @param serviceContext the service context to be applied. Must set the
+	 UUID for the layout. Can set the creation date, modification
+	 date, and expando bridge attributes for the layout. For layouts
+	 that belong to a layout set prototype, an attribute named
+	 <code>layoutUpdateable</code> can be used to specify whether site
+	 administrators can modify this page within their site.
+	 * @return the layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	public static Layout addLayout(
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, Map<java.util.Locale, String> localeNamesMap,
+			Map<java.util.Locale, String> localeTitlesMap,
+			Map<java.util.Locale, String> descriptionMap,
+			Map<java.util.Locale, String> keywordsMap,
+			Map<java.util.Locale, String> robotsMap, String type,
+			String typeSettings, boolean hidden,
+			Map<java.util.Locale, String> friendlyURLMap,
+			String masterLayoutPageTemplateEntryERC,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addLayout(
+			externalReferenceCode, groupId, privateLayout, parentLayoutId,
+			localeNamesMap, localeTitlesMap, descriptionMap, keywordsMap,
+			robotsMap, type, typeSettings, hidden, friendlyURLMap,
+			masterLayoutPageTemplateEntryERC, serviceContext);
 	}
 
 	/**
@@ -224,6 +233,7 @@ public class LayoutServiceUtil {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -249,14 +259,15 @@ public class LayoutServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			String name, String title, String description, String type,
-			boolean hidden, String friendlyURL, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, String name, String title, String description,
+			String type, boolean hidden, String friendlyURL,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addLayout(
-			groupId, privateLayout, parentLayoutId, name, title, description,
-			type, hidden, friendlyURL, serviceContext);
+			externalReferenceCode, groupId, privateLayout, parentLayoutId, name,
+			title, description, type, hidden, friendlyURL, serviceContext);
 	}
 
 	public static com.liferay.portal.kernel.repository.model.FileEntry
@@ -314,6 +325,12 @@ public class LayoutServiceUtil {
 		getService().deleteLayout(plid, serviceContext);
 	}
 
+	public static void deleteLayout(String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		getService().deleteLayout(externalReferenceCode, groupId);
+	}
+
 	public static void deleteTempFileEntry(
 			long groupId, String folderName, String fileName)
 		throws PortalException {
@@ -321,11 +338,32 @@ public class LayoutServiceUtil {
 		getService().deleteTempFileEntry(groupId, folderName, fileName);
 	}
 
+	public static Layout fetchFirstLayout(
+		long groupId, boolean privateLayout, boolean published) {
+
+		return getService().fetchFirstLayout(groupId, privateLayout, published);
+	}
+
 	public static Layout fetchLayout(
 			long groupId, boolean privateLayout, long layoutId)
 		throws PortalException {
 
 		return getService().fetchLayout(groupId, privateLayout, layoutId);
+	}
+
+	public static Layout fetchLayoutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().fetchLayoutByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	public static long fetchLayoutPlid(
+			String uuid, long groupId, boolean privateLayout)
+		throws PortalException {
+
+		return getService().fetchLayoutPlid(uuid, groupId, privateLayout);
 	}
 
 	/**
@@ -389,6 +427,25 @@ public class LayoutServiceUtil {
 		throws PortalException {
 
 		return getService().getDefaultPlid(groupId, scopeGroupId, portletId);
+	}
+
+	public static Layout getLayout(long plid) throws PortalException {
+		return getService().getLayout(plid);
+	}
+
+	public static Layout getLayout(
+			long groupId, boolean privateLayout, long layoutId)
+		throws PortalException {
+
+		return getService().getLayout(groupId, privateLayout, layoutId);
+	}
+
+	public static Layout getLayoutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getLayoutByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -585,6 +642,15 @@ public class LayoutServiceUtil {
 
 	public static int getLayoutsCount(long groupId, String type) {
 		return getService().getLayoutsCount(groupId, type);
+	}
+
+	public static Layout getOrAddEmptyLayout(
+			String externalReferenceCode, long groupId,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		return getService().getOrAddEmptyLayout(
+			externalReferenceCode, groupId, serviceContext);
 	}
 
 	/**
@@ -795,9 +861,10 @@ public class LayoutServiceUtil {
 	 String)}.
 	 * @param hasIconImage if the layout has a custom icon image
 	 * @param iconBytes the byte array of the layout's new icon image
-	 * @param styleBookEntryId the primary key of the style book entry
+	 * @param styleBookEntryERC the external reference code of the style book entry
 	 * @param faviconFileEntryId the file entry ID of the layout's new favicon
-	 * @param masterLayoutPlid the primary key of the master layout
+	 * @param masterLayoutPageTemplateEntryERC the external reference code key
+	 of the master layout page template entry
 	 * @param serviceContext the service context to be applied. Can set the
 	 modification date and expando bridge attributes for the layout.
 	 * @return the updated layout
@@ -811,37 +878,17 @@ public class LayoutServiceUtil {
 			Map<java.util.Locale, String> keywordsMap,
 			Map<java.util.Locale, String> robotsMap, String type,
 			boolean hidden, Map<java.util.Locale, String> friendlyURLMap,
-			boolean hasIconImage, byte[] iconBytes, long styleBookEntryId,
-			long faviconFileEntryId, long masterLayoutPlid,
+			boolean hasIconImage, byte[] iconBytes, String styleBookEntryERC,
+			long faviconFileEntryId, String masterLayoutPageTemplateEntryERC,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateLayout(
 			groupId, privateLayout, layoutId, parentLayoutId, localeNamesMap,
 			localeTitlesMap, descriptionMap, keywordsMap, robotsMap, type,
-			hidden, friendlyURLMap, hasIconImage, iconBytes, styleBookEntryId,
-			faviconFileEntryId, masterLayoutPlid, serviceContext);
-	}
-
-	/**
-	 * Updates the layout replacing its type settings.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param privateLayout whether the layout is private to the group
-	 * @param layoutId the layout ID of the layout
-	 * @param typeSettings the settings to load the unicode properties object.
-	 See {@link com.liferay.portal.kernel.util.UnicodeProperties
-	 #fastLoad(String)}.
-	 * @return the updated layout
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public static Layout updateLayout(
-			long groupId, boolean privateLayout, long layoutId,
-			String typeSettings)
-		throws PortalException {
-
-		return getService().updateLayout(
-			groupId, privateLayout, layoutId, typeSettings);
+			hidden, friendlyURLMap, hasIconImage, iconBytes, styleBookEntryERC,
+			faviconFileEntryId, masterLayoutPageTemplateEntryERC,
+			serviceContext);
 	}
 
 	/**
@@ -1016,6 +1063,27 @@ public class LayoutServiceUtil {
 		throws PortalException {
 
 		return getService().updateType(plid, type);
+	}
+
+	/**
+	 * Updates the layout replacing its type settings.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param privateLayout whether the layout is private to the group
+	 * @param layoutId the layout ID of the layout
+	 * @param typeSettings the settings to load the unicode properties object.
+	 See {@link com.liferay.portal.kernel.util.UnicodeProperties
+	 #fastLoad(String)}.
+	 * @return the updated layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	public static Layout updateTypeSettings(
+			long groupId, boolean privateLayout, long layoutId,
+			String typeSettings)
+		throws PortalException {
+
+		return getService().updateTypeSettings(
+			groupId, privateLayout, layoutId, typeSettings);
 	}
 
 	public static LayoutService getService() {

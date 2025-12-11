@@ -1,4 +1,4 @@
-@component-name = "portal-object"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -1995,8 +1995,10 @@ definition {
 		}
 
 		task ("Assert that there is an error in syntax") {
-			AssertTextEquals(
-				locator1 = "Message#WARNING_FEEDBACK",
+			SelectFrame(locator1 = "Message#ERROR_DISMISSIBLE");
+
+			AssertElementPresent(
+				locator1 = "Message#ERROR_DISMISSIBLE",
 				value1 = "Syntax Error");
 		}
 	}
@@ -2170,8 +2172,10 @@ definition {
 		}
 
 		task ("Assert that there is an error in syntax") {
-			AssertTextEquals(
-				locator1 = "Message#WARNING_FEEDBACK",
+			SelectFrame(locator1 = "Message#ERROR_DISMISSIBLE");
+
+			AssertElementPresent(
+				locator1 = "Message#ERROR_DISMISSIBLE",
 				value1 = "Syntax Error");
 		}
 	}

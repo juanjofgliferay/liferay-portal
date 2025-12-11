@@ -8,6 +8,7 @@ package com.liferay.segments.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -33,8 +34,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface SegmentsEntryModel
-	extends BaseModel<SegmentsEntry>, CTModel<SegmentsEntry>, LocalizedModel,
-			MVCCModel, ShardedModel, StagedGroupedModel {
+	extends BaseModel<SegmentsEntry>, CTModel<SegmentsEntry>,
+			ExternalReferenceCodeModel, LocalizedModel, MVCCModel, ShardedModel,
+			StagedGroupedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -106,6 +108,23 @@ public interface SegmentsEntryModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this segments entry.
+	 *
+	 * @return the external reference code of this segments entry
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this segments entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this segments entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the segments entry ID of this segments entry.
@@ -499,21 +518,6 @@ public interface SegmentsEntryModel
 	 * @param source the source of this segments entry
 	 */
 	public void setSource(String source);
-
-	/**
-	 * Returns the type of this segments entry.
-	 *
-	 * @return the type of this segments entry
-	 */
-	@AutoEscape
-	public String getType();
-
-	/**
-	 * Sets the type of this segments entry.
-	 *
-	 * @param type the type of this segments entry
-	 */
-	public void setType(String type);
 
 	/**
 	 * Returns the last publish date of this segments entry.

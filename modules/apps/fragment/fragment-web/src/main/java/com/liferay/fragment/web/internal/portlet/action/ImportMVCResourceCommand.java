@@ -10,7 +10,6 @@ import com.liferay.fragment.importer.FragmentsImportStrategy;
 import com.liferay.fragment.importer.FragmentsImporter;
 import com.liferay.fragment.importer.FragmentsImporterResultEntry;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManager;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -28,14 +27,14 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.File;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +44,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 		"mvc.command.name=/fragment/import"
 	},
 	service = MVCResourceCommand.class
@@ -89,13 +88,16 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 					FragmentsImportStrategy.DO_NOT_OVERWRITE;
 			}
 
+			boolean marketplace = ParamUtil.getBoolean(
+				resourceRequest, "marketplace");
+
 			jsonObject = _importFragmentEntries(
 				file, fragmentCollectionId, themeDisplay.getScopeGroupId(),
-				fragmentsImportStrategy, themeDisplay.getLocale(),
+				fragmentsImportStrategy, themeDisplay.getLocale(), marketplace,
 				themeDisplay.getUserId());
 		}
 		else {
-			jsonObject.put("valid", false);
+			jsonObject.put("invalid", true);
 		}
 
 		JSONPortletResponseUtil.writeJSON(
@@ -121,7 +123,7 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 	private JSONObject _importFragmentEntries(
 		File file, long fragmentCollectionId, long groupId,
 		FragmentsImportStrategy fragmentsImportStrategy, Locale locale,
-		long userId) {
+		boolean marketplace, long userId) {
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
@@ -129,7 +131,7 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 			List<FragmentsImporterResultEntry> fragmentsImporterResultEntries =
 				_fragmentsImporter.importFragmentEntries(
 					userId, groupId, fragmentCollectionId, file,
-					fragmentsImportStrategy);
+					fragmentsImportStrategy, marketplace);
 
 			JSONObject importResultsJSONObject =
 				_jsonFactory.createJSONObject();
@@ -181,9 +183,6 @@ public class ImportMVCResourceCommand extends BaseMVCResourceCommand {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ImportMVCResourceCommand.class);
-
-	@Reference
-	private FeatureFlagManager _featureFlagManager;
 
 	@Reference
 	private FragmentsImporter _fragmentsImporter;

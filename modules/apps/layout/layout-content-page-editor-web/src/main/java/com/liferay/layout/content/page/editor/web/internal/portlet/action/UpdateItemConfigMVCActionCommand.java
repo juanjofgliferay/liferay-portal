@@ -6,7 +6,6 @@
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
-import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -14,11 +13,11 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/update_item_config"
 	},
 	service = MVCActionCommand.class
@@ -41,11 +40,10 @@ public class UpdateItemConfigMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		return _updateItemConfig(actionRequest, actionResponse);
+		return _updateItemConfig(actionRequest);
 	}
 
-	private JSONObject _updateItemConfig(
-			ActionRequest actionRequest, ActionResponse actionResponse)
+	private JSONObject _updateItemConfig(ActionRequest actionRequest)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -54,31 +52,35 @@ public class UpdateItemConfigMVCActionCommand
 		long segmentsExperienceId = ParamUtil.getLong(
 			actionRequest, "segmentsExperienceId");
 		String itemConfig = ParamUtil.getString(actionRequest, "itemConfig");
+
+		String[] itemIds = null;
+
 		String itemId = ParamUtil.getString(actionRequest, "itemId");
+
+		if (Validator.isNotNull(itemId)) {
+			itemIds = new String[] {itemId};
+		}
+		else {
+			itemIds = ParamUtil.getStringValues(actionRequest, "itemIds");
+		}
+
+		String[] finalItemIds = itemIds;
 
 		return JSONUtil.put(
 			"layoutData",
 			LayoutStructureUtil.updateLayoutPageTemplateData(
 				themeDisplay.getScopeGroupId(), segmentsExperienceId,
 				themeDisplay.getPlid(),
-				layoutStructure -> layoutStructure.updateItemConfig(
-					_jsonFactory.createJSONObject(itemConfig), itemId))
-		).put(
-			"pageContents",
-			_contentManager.getPageContentsJSONArray(
-				_portal.getHttpServletRequest(actionRequest),
-				_portal.getHttpServletResponse(actionResponse),
-				themeDisplay.getPlid(), segmentsExperienceId)
-		);
+				layoutStructure -> {
+					for (String curItemId : finalItemIds) {
+						layoutStructure.updateItemConfig(
+							_jsonFactory.createJSONObject(itemConfig),
+							curItemId);
+					}
+				}));
 	}
 
 	@Reference
-	private ContentManager _contentManager;
-
-	@Reference
 	private JSONFactory _jsonFactory;
-
-	@Reference
-	private Portal _portal;
 
 }

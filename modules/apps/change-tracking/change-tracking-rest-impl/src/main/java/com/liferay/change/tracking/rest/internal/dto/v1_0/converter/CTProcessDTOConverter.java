@@ -55,22 +55,27 @@ public class CTProcessDTOConverter
 
 		return new CTProcess() {
 			{
-				actions = dtoConverterContext.getActions();
-				ctCollectionId = ctCollection.getCtCollectionId();
-				datePublished = ctProcess.getCreateDate();
-				description = ctCollection.getDescription();
-				id = ctProcess.getCtProcessId();
-				name = ctCollection.getName();
-				ownerName = _getUserName(ctProcess.getUserId());
-				status = _toStatus(
-					dtoConverterContext.getLocale(),
-					ctProcess.getBackgroundTaskId());
+				setActions(dtoConverterContext::getActions);
+				setCtCollectionId(ctCollection::getCtCollectionId);
+				setDatePublished(ctProcess::getCreateDate);
+				setDescription(ctCollection::getDescription);
+				setId(ctProcess::getCtProcessId);
+				setName(ctCollection::getName);
+				setOwnerName(() -> _getUserName(ctProcess.getUserId()));
+				setStatus(
+					() -> _toStatus(
+						dtoConverterContext.getLocale(),
+						ctProcess.getBackgroundTaskId()));
 			}
 		};
 	}
 
-	private String _getUserName(long userId) throws Exception {
-		User user = _userLocalService.getUser(userId);
+	private String _getUserName(long userId) {
+		User user = _userLocalService.fetchUser(userId);
+
+		if (user == null) {
+			return StringPool.BLANK;
+		}
 
 		return user.getFullName();
 	}
@@ -91,6 +96,9 @@ public class CTProcessDTOConverter
 		else if (status == BackgroundTaskConstants.STATUS_IN_PROGRESS) {
 			statusLabel = "in-progress";
 		}
+		else if (status == BackgroundTaskConstants.STATUS_QUEUED) {
+			statusLabel = "queued";
+		}
 		else if (status == BackgroundTaskConstants.STATUS_SUCCESSFUL) {
 			statusLabel = "published";
 		}
@@ -100,9 +108,9 @@ public class CTProcessDTOConverter
 
 		return new Status() {
 			{
-				code = status;
-				label = statusLabel;
-				label_i18n = _language.get(locale, statusLabel);
+				setCode(() -> status);
+				setLabel(() -> statusLabel);
+				setLabel_i18n(() -> _language.get(locale, statusLabel));
 			}
 		};
 	}

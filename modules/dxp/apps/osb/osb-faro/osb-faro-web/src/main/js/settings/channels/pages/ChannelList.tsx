@@ -1,7 +1,8 @@
 import * as API from 'shared/api';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
+import ClayLink from '@clayui/link';
 import CrossPageSelect from 'shared/hoc/CrossPageSelect';
 import ListComponent from 'shared/hoc/ListComponent';
 import Nav from 'shared/components/Nav';
@@ -19,7 +20,7 @@ import {
 import {addAlert} from 'shared/actions/alerts';
 import {Alert} from 'shared/types';
 import {close, modalTypes, open} from 'shared/actions/modals';
-import {compose, withCurrentUser} from 'shared/hoc';
+import {compose} from 'shared/hoc';
 import {connect, ConnectedProps} from 'react-redux';
 import {CREATE_TIME, createOrderIOMap} from 'shared/util/pagination';
 import {formatDateToTimeZone} from 'shared/util/date';
@@ -29,12 +30,13 @@ import {IPagination} from 'shared/types';
 import {Link} from 'react-router-dom';
 import {RootState} from 'shared/store';
 import {Routes, toRoute} from 'shared/util/router';
-import {setBackURL} from 'shared/actions/settings';
 import {Sizes} from 'shared/util/constants';
 import {UNAUTHORIZED_ACCESS} from 'shared/util/request';
 import {updateDefaultChannelId} from 'shared/actions/preferences';
-import {useQueryPagination, useRequest} from 'shared/hooks';
-import {User} from 'shared/util/records';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useRequest} from 'shared/hooks/useRequest';
+import {useTimeZone} from 'shared/hooks/useTimeZone';
 
 type ChannelNameFn = (attrs: {
 	data: {id: string; name: string};
@@ -56,28 +58,20 @@ const ChannelName: ChannelNameFn = ({data, hrefFormatter}) => (
 );
 
 const connector = connect(
-	(state: RootState, {groupId}: {groupId: string}) => ({
+	(state: RootState) => ({
 		defaultChannelId: state.getIn([
 			'preferences',
 			'user',
 			'defaultChannelId',
 			'data'
-		]),
-		timeZoneId: state.getIn([
-			'projects',
-			groupId,
-			'data',
-			'timeZone',
-			'timeZoneId'
 		])
 	}),
-	{addAlert, close, open, setBackURL, updateDefaultChannelId}
+	{addAlert, close, open, updateDefaultChannelId}
 );
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IChannelListProps extends IPagination, PropsFromRedux {
-	currentUser: User;
 	groupId: string;
 	history: {
 		push: (href: string) => void;
@@ -87,13 +81,10 @@ interface IChannelListProps extends IPagination, PropsFromRedux {
 const ChannelList: React.FC<IChannelListProps> = ({
 	addAlert,
 	close,
-	currentUser,
 	defaultChannelId,
 	groupId,
 	history,
 	open,
-	setBackURL,
-	timeZoneId,
 	updateDefaultChannelId
 }) => {
 	const {selectedItems, selectionDispatch} = useSelectionContext();
@@ -112,6 +103,10 @@ const ChannelList: React.FC<IChannelListProps> = ({
 			query
 		}
 	});
+
+	const currentUser = useCurrentUser();
+
+	const {timeZoneId} = useTimeZone();
 
 	const handleAddChannel = () => {
 		open(modalTypes.ADD_CHANNEL_MODAL, {
@@ -267,12 +262,6 @@ const ChannelList: React.FC<IChannelListProps> = ({
 								defaultChannelId: null,
 								groupId
 							});
-
-							setBackURL(
-								toRoute(Routes.WORKSPACE_WITH_ID, {
-									groupId
-								})
-							);
 						}
 
 						selectionDispatch({type: ACTION_TYPES.clearAll});
@@ -428,7 +417,6 @@ const ChannelList: React.FC<IChannelListProps> = ({
 
 	return (
 		<BasePage
-			groupId={groupId}
 			key='sitesListPage'
 			pageDescription={
 				<>
@@ -510,7 +498,7 @@ const ChannelList: React.FC<IChannelListProps> = ({
 										'create-a-property-to-get-started'
 									)}
 
-									<a
+									<ClayLink
 										className='d-block mb-3'
 										href={URLConstants.CreateProperty}
 										key='DOCUMENTATION'
@@ -519,13 +507,13 @@ const ChannelList: React.FC<IChannelListProps> = ({
 										{Liferay.Language.get(
 											'access-our-documentation-to-learn-more'
 										)}
-									</a>
+									</ClayLink>
 								</>
 							}
 							icon={{
 								border: false,
 								size: Sizes.XXXLarge,
-								symbol: 'ac-satellite'
+								symbol: 'ac_satellite'
 							}}
 							title={Liferay.Language.get('no-properties-found')}
 						/>
@@ -546,8 +534,4 @@ const ChannelList: React.FC<IChannelListProps> = ({
 	);
 };
 
-export default compose(
-	connector,
-	withCurrentUser,
-	withSelectionProvider
-)(ChannelList);
+export default compose(connector, withSelectionProvider)(ChannelList);

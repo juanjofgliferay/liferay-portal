@@ -352,6 +352,14 @@ public class ObjectValidationRuleLocalServiceWrapper
 			getObjectValidationRuleByUuidAndCompanyId(uuid, companyId);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectValidationRule>
+		getObjectValidationRules(boolean active, String engine) {
+
+		return _objectValidationRuleLocalService.getObjectValidationRules(
+			active, engine);
+	}
+
 	/**
 	 * Returns a range of all the object validation rules.
 	 *
@@ -492,6 +500,16 @@ public class ObjectValidationRuleLocalServiceWrapper
 
 		_objectValidationRuleLocalService.validate(
 			baseModel, objectDefinitionId, payloadJSONObject, userId);
+	}
+
+	@Override
+	public void validate(
+			java.util.List<String> externalReferenceCodes,
+			com.liferay.object.model.ObjectEntry objectEntry, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectValidationRuleLocalService.validate(
+			externalReferenceCodes, objectEntry, userId);
 	}
 
 	@Override

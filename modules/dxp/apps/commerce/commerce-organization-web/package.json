@@ -1,37 +1,39 @@
 {
 	"dependencies": {
-		"@clayui/autocomplete": "3.107.1",
-		"@clayui/button": "3.107.0",
-		"@clayui/data-provider": "3.107.0",
-		"@clayui/date-picker": "3.107.1",
-		"@clayui/drop-down": "3.107.1",
-		"@clayui/form": "3.107.0",
-		"@clayui/icon": "3.106.1",
-		"@clayui/modal": "3.107.0",
-		"@clayui/multi-select": "3.107.1",
+		"@clayui/alert": "3.148.0",
+		"@clayui/autocomplete": "3.155.0",
+		"@clayui/button": "3.144.1",
+		"@clayui/data-provider": "3.151.0",
+		"@clayui/date-picker": "3.155.0",
+		"@clayui/drop-down": "3.155.0",
+		"@clayui/form": "3.151.0",
+		"@clayui/icon": "3.144.1",
+		"@clayui/management-toolbar": "3.144.1",
+		"@clayui/modal": "3.151.0",
+		"@clayui/multi-select": "3.155.0",
 		"@liferay/frontend-js-react-web": "*",
 		"classnames": "2.3.1",
 		"commerce-frontend-js": "*",
 		"d3": "5.9.3",
 		"frontend-js-components-web": "*",
 		"frontend-js-web": "*",
-		"moment": "2.29.4",
 		"prop-types": "15.7.2",
-		"react": "16.12.0"
+		"react": "18.2.0"
 	},
 	"jest": {
 		"testPathIgnorePatterns": [
 			"<rootDir>/test/dev/"
 		]
 	},
+	"main": "js/index.ts",
 	"name": "commerce-organization-web",
 	"private": true,
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix",
-		"test": "liferay-npm-scripts test",
-		"test:watch": "liferay-npm-scripts test --watch"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format",
+		"test": "node-scripts test",
+		"test:watch": "node-scripts test --watch"
 	},
-	"version": "5.0.59"
+	"version": "5.0.93"
 }

@@ -48,7 +48,6 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchContextFactory;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.SortFactoryUtil;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.theme.PortletDisplay;
@@ -66,12 +65,16 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.portal.search.sort.FieldSort;
 import com.liferay.portal.search.sort.SortOrder;
 import com.liferay.portal.search.sort.Sorts;
+
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
@@ -86,11 +89,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
 
-import javax.portlet.PortletMode;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -102,7 +100,7 @@ public class AssetHelperImpl implements AssetHelper {
 
 	@Override
 	public Set<String> addLayoutTags(
-		HttpServletRequest httpServletRequest, List<AssetTag> tags) {
+		HttpServletRequest httpServletRequest, List<AssetTag> assetTags) {
 
 		Set<String> tagNames = (Set<String>)httpServletRequest.getAttribute(
 			WebKeys.ASSET_LAYOUT_TAG_NAMES);
@@ -114,8 +112,8 @@ public class AssetHelperImpl implements AssetHelper {
 				WebKeys.ASSET_LAYOUT_TAG_NAMES, tagNames);
 		}
 
-		for (AssetTag tag : tags) {
-			tagNames.add(tag.getName());
+		for (AssetTag assetTag : assetTags) {
+			tagNames.add(assetTag.getName());
 		}
 
 		return tagNames;
@@ -284,6 +282,7 @@ public class AssetHelperImpl implements AssetHelper {
 		return assetEntries;
 	}
 
+	@Override
 	public List<AssetEntry> getAssetEntries(SearchHits searchHits) {
 		if (searchHits.getTotalHits() <= 0) {
 			return Collections.emptyList();
@@ -354,14 +353,14 @@ public class AssetHelperImpl implements AssetHelper {
 			String redirect)
 		throws Exception {
 
+		List<AssetPublisherAddItemHolder> assetPublisherAddItemHolders =
+			new ArrayList<>();
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
 		Locale locale = themeDisplay.getLocale();
-
-		List<AssetPublisherAddItemHolder> assetPublisherAddItemHolders =
-			new ArrayList<>();
 
 		for (long classNameId : classNameIds) {
 			String className = _portal.getClassName(classNameId);
@@ -731,6 +730,9 @@ public class AssetHelperImpl implements AssetHelper {
 							BooleanClauseOccur.SHOULD.getName())));
 			}
 		}
+
+		searchContext.setEnd(end);
+		searchContext.setStart(start);
 	}
 
 	private void _prepareSearchContext(
@@ -821,9 +823,6 @@ public class AssetHelperImpl implements AssetHelper {
 	private AssetTagLocalService _assetTagLocalService;
 
 	@Reference
-	private ClassNameLocalService _classNameLocalService;
-
-	@Reference
 	private DDMIndexer _ddmIndexer;
 
 	@Reference
@@ -834,9 +833,6 @@ public class AssetHelperImpl implements AssetHelper {
 
 	@Reference
 	private PortletLocalService _portletLocalService;
-
-	@Reference
-	private Queries _queries;
 
 	@Reference
 	private Searcher _searcher;

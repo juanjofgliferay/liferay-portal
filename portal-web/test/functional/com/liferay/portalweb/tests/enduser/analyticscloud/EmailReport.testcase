@@ -166,12 +166,9 @@ definition {
 	}
 
 	@description = "Story: LRAC-11663 | Automation ID: LRAC-11835 | Test Summary: Check that the Email Reports widget appears on the property settings page for all users"
-	@ignore = "true"
 	@priority = 2
 	test CheckEmailReportsAppearsForAllUsers {
 		var emailAddressList = "bryan.cheung@faro.io,michelle.hoshi@faro.io,corbin.murakami@faro.io";
-
-		// The default AC users do not appear in Users and Organizations. The bug will be resolved after LRAC-14468
 
 		task ("Sign in AC as Test Test user") {
 			ACUtils.launchAC();
@@ -181,9 +178,7 @@ definition {
 			task ("Sign in AC") {
 				ACWorkspace.signOut();
 
-				ACLogin.loginAs(emailAddress = ${emailAddress});
-
-				ACWorkspace.openWorkspace();
+				ACUtils.launchAC(emailAddress = ${emailAddress});
 			}
 
 			task ("Go to property and Select the property you are using") {
@@ -350,7 +345,7 @@ definition {
 		}
 
 		task ("Go to admin page") {
-			ACAdmin.goToACAdmin(userScreenNameToResetPassword = "test");
+			ACAdmin.goToACAdmin(userScreenNameToResetPassword = PropsUtil.get("default.admin.password"));
 		}
 
 		task ("Go to Server Administration > Change SMTP Server Port") {
@@ -406,7 +401,7 @@ definition {
 			SelectWindow(value1 = "title=Analytics Cloud");
 
 			if (IsElementPresent(locator1 = "ACLogin#EMAIL_LOGIN_FIELD")) {
-				ACLogin.loginAs(emailAddress = ${emailAddress});
+				ACUtils.launchAC(emailAddress = ${emailAddress});
 			}
 
 			ACProperties.assertCurrentActiveProperty(propertyName = ${assignedPropertyName});

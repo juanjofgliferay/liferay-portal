@@ -8,13 +8,13 @@ package com.liferay.portal.search.elasticsearch7.internal.logging;
 import com.liferay.portal.kernel.search.generic.MatchAllQuery;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.search.elasticsearch7.internal.ElasticsearchIndexSearcher;
-import com.liferay.portal.search.elasticsearch7.internal.LiferayElasticsearchIndexingFixtureFactory;
+import com.liferay.portal.search.elasticsearch7.internal.indexing.LiferayElasticsearchIndexingFixtureFactory;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.search.CountSearchRequestExecutorImpl;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.search.SearchSearchRequestExecutorImpl;
+import com.liferay.portal.search.test.rule.logging.ExpectedLogMethodTestRule;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
 import com.liferay.portal.search.test.util.indexing.IndexingFixture;
 import com.liferay.portal.search.test.util.logging.ExpectedLog;
-import com.liferay.portal.search.test.util.logging.ExpectedLogMethodTestRule;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.ClassRule;
@@ -66,20 +66,30 @@ public class ElasticsearchIndexSearcherLoggingTest
 
 	@ExpectedLog(
 		expectedClass = SearchSearchRequestExecutorImpl.class,
-		expectedLevel = ExpectedLog.Level.FINEST, expectedLog = "Search query:"
+		expectedLevel = ExpectedLog.Level.FINE,
+		expectedLog = "The search engine processed the request in"
 	)
 	@Test
-	public void testSearchSearchRequestExecutorLogsPrettyPrintedString() {
+	public void testSearchSearchRequestExecutorLogsExecutionTime() {
 		search(createSearchContext());
 	}
 
 	@ExpectedLog(
 		expectedClass = SearchSearchRequestExecutorImpl.class,
 		expectedLevel = ExpectedLog.Level.FINE,
-		expectedLog = "The search engine processed"
+		expectedLog = "Search request string for"
 	)
 	@Test
-	public void testSearchSearchRequestExecutorLogsViaIndexer() {
+	public void testSearchSearchRequestExecutorLogsRequestString() {
+		search(createSearchContext());
+	}
+
+	@ExpectedLog(
+		expectedClass = SearchSearchRequestExecutorImpl.class,
+		expectedLevel = ExpectedLog.Level.INFO, expectedLog = "Stack trace for"
+	)
+	@Test
+	public void testSearchSearchRequestExecutorLogsStackTraceInfo() {
 		search(createSearchContext());
 	}
 

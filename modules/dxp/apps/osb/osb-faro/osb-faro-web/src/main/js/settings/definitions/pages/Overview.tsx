@@ -1,11 +1,10 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayLink from '@clayui/link';
 import ClayList from '@clayui/list';
 import React from 'react';
 import {ACCOUNTS, Routes, toRoute} from 'shared/util/router';
 import {DEVELOPER_MODE, ENABLE_BLOCKLIST_KEYWORDS} from 'shared/util/constants';
-import {withCurrentUser} from 'shared/hoc';
 
 interface IOverviewProps {
 	groupId: string;
@@ -96,7 +95,6 @@ const items = (devMode: boolean = false): ListItem[] => [
 export const Overview: React.FC<IOverviewProps> = ({groupId}) => (
 	<BasePage
 		className='definitions-overview-root'
-		groupId={groupId}
 		pageDescription={Liferay.Language.get(
 			'select-the-entity-to-view-its-data-model'
 		)}
@@ -156,4 +154,4 @@ export const Overview: React.FC<IOverviewProps> = ({groupId}) => (
 	</BasePage>
 );
 
-export default withCurrentUser(Overview);
+export default Overview;

@@ -29,17 +29,20 @@ import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -81,6 +84,9 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		String layoutMode = ParamUtil.getString(
+			httpServletRequest, "p_l_mode", Constants.VIEW);
+
 		Boolean hasUpdatePermissions = null;
 
 		if (layout.isDraftLayout()) {
@@ -91,18 +97,29 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 				curLayout = layout;
 			}
 
-			hasUpdatePermissions = _hasUpdatePermissions(
-				themeDisplay.getPermissionChecker(), curLayout);
+			if (layoutMode.equals(Constants.PREVIEW) ||
+				layoutMode.equals(Constants.VIEW)) {
 
-			if (!hasUpdatePermissions) {
-				throw new PrincipalException.MustHavePermission(
-					themeDisplay.getPermissionChecker(), Layout.class.getName(),
-					layout.getLayoutId(), ActionKeys.UPDATE);
+				if (!_hasPreviewPermission(curLayout, themeDisplay)) {
+					throw new PrincipalException.MustHavePermission(
+						themeDisplay.getPermissionChecker(),
+						Layout.class.getName(), layout.getLayoutId(),
+						ActionKeys.UPDATE);
+				}
+			}
+			else {
+				hasUpdatePermissions = _hasUpdatePermissions(
+					themeDisplay.getPermissionChecker(), curLayout);
+
+				if (!hasUpdatePermissions) {
+					throw new PrincipalException.MustHavePermission(
+						themeDisplay.getPermissionChecker(),
+						Layout.class.getName(), layout.getLayoutId(),
+						ActionKeys.UPDATE);
+				}
 			}
 		}
 
-		String layoutMode = ParamUtil.getString(
-			httpServletRequest, "p_l_mode", Constants.VIEW);
 		String redirect = StringPool.BLANK;
 
 		if (layoutMode.equals(Constants.EDIT)) {
@@ -113,6 +130,17 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 
 			if (!hasUpdatePermissions) {
 				layoutMode = Constants.VIEW;
+			}
+			else if (!layout.isLayoutUpdateable()) {
+				Layout redirectLayout = layout;
+
+				if (layout.isDraftLayout()) {
+					redirectLayout = _layoutLocalService.fetchLayout(
+						layout.getClassPK());
+				}
+
+				redirect = _portal.getLayoutFullURL(
+					redirectLayout, themeDisplay);
 			}
 			else if (!layout.isUnlocked(layoutMode, themeDisplay.getUserId())) {
 				redirect = _layoutLockManager.getLockedLayoutURL(
@@ -133,6 +161,18 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			if (!hasUpdatePermissions) {
 				throw new NoSuchLayoutException();
 			}
+		}
+
+		String segmentsExperienceId = ParamUtil.getString(
+			httpServletRequest, "segmentsExperienceId");
+
+		if (Validator.isNull(redirect) &&
+			Validator.isNotNull(segmentsExperienceId) &&
+			!_isValidSegmentsExperienceId(
+				layout, GetterUtil.getLong(segmentsExperienceId, -1))) {
+
+			redirect = HttpComponentsUtil.removeParameter(
+				themeDisplay.getURLCurrent(), "segmentsExperienceId");
 		}
 
 		String page = getViewPage();
@@ -261,13 +301,14 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			httpServletRequest.setAttribute(
 				ContentPageEditorWebKeys.CLASS_PK,
 				layoutPageTemplateEntry.getLayoutPageTemplateEntryId());
+
+			return;
 		}
-		else {
-			httpServletRequest.setAttribute(
-				ContentPageEditorWebKeys.CLASS_NAME, Layout.class.getName());
-			httpServletRequest.setAttribute(
-				ContentPageEditorWebKeys.CLASS_PK, layout.getPlid());
-		}
+
+		httpServletRequest.setAttribute(
+			ContentPageEditorWebKeys.CLASS_NAME, Layout.class.getName());
+		httpServletRequest.setAttribute(
+			ContentPageEditorWebKeys.CLASS_PK, layout.getPlid());
 	}
 
 	private LayoutPageTemplateEntry _fetchLayoutPageTemplateEntry(
@@ -281,15 +322,12 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			return layoutPageTemplateEntry;
 		}
 
-		if (layout.isDraftLayout()) {
-			Layout publishedLayout = _layoutLocalService.fetchLayout(
-				layout.getClassPK());
-
-			return _layoutPageTemplateEntryLocalService.
-				fetchLayoutPageTemplateEntryByPlid(publishedLayout.getPlid());
+		if (!layout.isDraftLayout()) {
+			return null;
 		}
 
-		return null;
+		return _layoutPageTemplateEntryLocalService.
+			fetchLayoutPageTemplateEntryByPlid(layout.getClassPK());
 	}
 
 	private String _getDraftLayoutFullURL(
@@ -324,12 +362,25 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 		long segmentsExperienceId = ParamUtil.getLong(
 			httpServletRequest, "segmentsExperienceId", -1);
 
-		if (segmentsExperienceId != -1) {
+		if (_isValidSegmentsExperienceId(layout, segmentsExperienceId)) {
 			layoutFullURL = HttpComponentsUtil.setParameter(
 				layoutFullURL, "segmentsExperienceId", segmentsExperienceId);
 		}
 
 		return layoutFullURL;
+	}
+
+	private boolean _hasPreviewPermission(
+			Layout layout, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		if (_fetchLayoutPageTemplateEntry(layout) != null) {
+			return _hasUpdatePermissions(
+				themeDisplay.getPermissionChecker(), layout);
+		}
+
+		return _layoutPermission.containsLayoutPreviewDraftPermission(
+			themeDisplay.getPermissionChecker(), layout);
 	}
 
 	private boolean _hasUpdatePermissions(
@@ -348,6 +399,27 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			if (_log.isDebugEnabled()) {
 				_log.debug(portalException);
 			}
+		}
+
+		return false;
+	}
+
+	private boolean _isValidSegmentsExperienceId(
+		Layout layout, long segmentsExperienceId) {
+
+		if (segmentsExperienceId == -1) {
+			return false;
+		}
+
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				segmentsExperienceId);
+
+		if ((segmentsExperience != null) &&
+			((segmentsExperience.getPlid() == layout.getPlid()) ||
+			 (segmentsExperience.getPlid() == layout.getClassPK()))) {
+
+			return true;
 		}
 
 		return false;
@@ -383,6 +455,9 @@ public class ContentLayoutTypeController extends BaseLayoutTypeControllerImpl {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.content)"

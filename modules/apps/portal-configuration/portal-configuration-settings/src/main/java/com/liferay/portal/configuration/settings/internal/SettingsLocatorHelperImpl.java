@@ -12,6 +12,7 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.concurrent.DCLSingleton;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.configuration.metatype.definitions.ExtendedMetaTypeInformation;
@@ -46,19 +47,22 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PrefsProps;
-import com.liferay.portal.kernel.util.Props;
+import com.liferay.portal.kernel.util.PropsUtil;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.io.Serializable;
 
 import java.lang.reflect.Method;
 
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -122,8 +126,7 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 
 		_bundleTrackerDCLSingleton.getSingleton(this::_createBundleTracker);
 
-		return _configurationPidMappingServiceTrackerMap.getService(
-			configurationId);
+		return _serviceTrackerMap.getService(configurationId);
 	}
 
 	@Override
@@ -219,21 +222,19 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 				new ClassLoaderResourceManager(
 					PortalClassLoaderUtil.getClassLoader()),
 				this),
-			_props.getProperties());
+			PropsUtil.getProperties());
 
 		_bundleContext = bundleContext;
 
-		_configurationPidMappingServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, ConfigurationPidMapping.class, null,
-				ServiceReferenceMapperFactory.createFromFunction(
-					bundleContext,
-					ConfigurationPidMapping::getConfigurationPid));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, ConfigurationPidMapping.class, null,
+			ServiceReferenceMapperFactory.createFromFunction(
+				bundleContext, ConfigurationPidMapping::getConfigurationPid));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_configurationPidMappingServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 
 		_bundleTrackerDCLSingleton.destroy(BundleTracker::close);
 	}
@@ -312,21 +313,17 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 			return null;
 		}
 
-		for (Method methods : configurationBeanClass.getMethods()) {
-			Meta.AD annotation = methods.getAnnotation(Meta.AD.class);
+		Set<String> requiredKeys = new HashSet<>();
+
+		for (Method method : configurationBeanClass.getMethods()) {
+			Meta.AD annotation = method.getAnnotation(Meta.AD.class);
 
 			if (annotation == null) {
 				continue;
 			}
 
 			if (annotation.required()) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Skipping registration for class because Meta.AD is " +
-							"required: " + configurationBeanClass.getName());
-				}
-
-				return null;
+				requiredKeys.add(method.getName());
 			}
 		}
 
@@ -359,13 +356,23 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 						properties = new HashMapDictionary<>();
 					}
 
-					_configurationBeanSettings.put(
-						configurationPid,
-						new ConfigurationBeanSettings(
-							locationVariableResolver,
-							ConfigurableUtil.createConfigurable(
-								configurationBeanClass, properties),
-							_portalPropertiesSettings));
+					Enumeration<String> enumeration = properties.keys();
+
+					Set<String> localRequiredKeys = new HashSet<>(requiredKeys);
+
+					while (enumeration.hasMoreElements()) {
+						localRequiredKeys.remove(enumeration.nextElement());
+					}
+
+					if (localRequiredKeys.isEmpty()) {
+						_configurationBeanSettings.put(
+							configurationPid,
+							new ConfigurationBeanSettings(
+								locationVariableResolver,
+								ConfigurableUtil.createConfigurable(
+									configurationBeanClass, properties),
+								_portalPropertiesSettings));
+					}
 
 					countDownLatch.countDown();
 				},
@@ -458,8 +465,6 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 		new DCLSingleton<>();
 	private final Map<String, Settings> _configurationBeanSettings =
 		new ConcurrentHashMap<>();
-	private ServiceTrackerMap<String, ConfigurationPidMapping>
-		_configurationPidMappingServiceTrackerMap;
 
 	@Reference
 	private ExtendedMetaTypeService _extendedMetaTypeService;
@@ -481,11 +486,10 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 	@Reference
 	private PrefsProps _prefsProps;
 
-	@Reference
-	private Props _props;
-
 	private final Map<String, ScopedConfigurationManagedServiceFactory>
 		_scopedConfigurationManagedServiceFactories = new ConcurrentHashMap<>();
+	private ServiceTrackerMap<String, ConfigurationPidMapping>
+		_serviceTrackerMap;
 
 	private class ConfigurationBeanClassBundleTrackerCustomizer
 		implements BundleTrackerCustomizer<List<SafeCloseable>> {
@@ -503,6 +507,9 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 							bundleSymbolicName);
 				}
 
+				return null;
+			}
+			else if (bundleSymbolicName.startsWith("org.apache")) {
 				return null;
 			}
 
@@ -526,10 +533,12 @@ public class SettingsLocatorHelperImpl implements SettingsLocatorHelper {
 					configurationBeanClass = bundle.loadClass(pid);
 				}
 				catch (ClassNotFoundException classNotFoundException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Class not found: " +
-								classNotFoundException.getMessage());
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							StringBundler.concat(
+								"Unable to find configuration interface with ",
+								"fully qualified class name \"", pid, "\""),
+							classNotFoundException);
 					}
 
 					continue;

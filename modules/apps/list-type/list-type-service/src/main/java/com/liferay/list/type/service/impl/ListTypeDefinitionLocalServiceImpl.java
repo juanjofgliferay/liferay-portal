@@ -17,19 +17,29 @@ import com.liferay.object.definition.util.ObjectDefinitionUtil;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.ResourcePermission;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.service.PermissionService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -51,7 +61,7 @@ public class ListTypeDefinitionLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public ListTypeDefinition addListTypeDefinition(
-			String externalReferenceCode, long userId)
+			String externalReferenceCode, long userId, boolean system)
 		throws PortalException {
 
 		ListTypeDefinition listTypeDefinition =
@@ -62,7 +72,7 @@ public class ListTypeDefinitionLocalServiceImpl
 			listTypeDefinition, externalReferenceCode, userId,
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), externalReferenceCode),
-			false);
+			system);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -70,7 +80,7 @@ public class ListTypeDefinitionLocalServiceImpl
 	public ListTypeDefinition addListTypeDefinition(
 			String externalReferenceCode, long userId,
 			Map<Locale, String> nameMap, boolean system,
-			List<ListTypeEntry> listTypeEntries)
+			List<ListTypeEntry> listTypeEntries, ServiceContext serviceContext)
 		throws PortalException {
 
 		ListTypeDefinitionUtil.validateInvokerBundle(
@@ -89,6 +99,8 @@ public class ListTypeDefinitionLocalServiceImpl
 		_addOrUpdateListTypeEntries(
 			userId, listTypeDefinition.getListTypeDefinitionId(),
 			listTypeEntries);
+
+		_updateResourcePermissions(listTypeDefinition, serviceContext);
 
 		return listTypeDefinition;
 	}
@@ -142,7 +154,7 @@ public class ListTypeDefinitionLocalServiceImpl
 	public ListTypeDefinition updateListTypeDefinition(
 			String externalReferenceCode, long listTypeDefinitionId,
 			long userId, Map<Locale, String> nameMap,
-			List<ListTypeEntry> listTypeEntries)
+			List<ListTypeEntry> listTypeEntries, ServiceContext serviceContext)
 		throws PortalException {
 
 		_validateName(nameMap, LocaleUtil.getSiteDefault());
@@ -165,7 +177,22 @@ public class ListTypeDefinitionLocalServiceImpl
 		_addOrUpdateListTypeEntries(
 			userId, listTypeDefinitionId, listTypeEntries);
 
+		_updateResourcePermissions(listTypeDefinition, serviceContext);
+
 		return listTypeDefinition;
+	}
+
+	@Override
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws PortalException {
+
+		for (ListTypeDefinition listTypeDefinition :
+				listTypeDefinitionPersistence.findByC_U(companyId, oldUserId)) {
+
+			listTypeDefinition.setUserId(newUserId);
+
+			listTypeDefinitionPersistence.update(listTypeDefinition);
+		}
 	}
 
 	private ListTypeDefinition _addListTypeDefinition(
@@ -223,11 +250,19 @@ public class ListTypeDefinitionLocalServiceImpl
 							listTypeEntry.getCompanyId(), listTypeDefinitionId);
 			}
 
+			if ((existingListTypeEntry == null) &&
+				Validator.isNotNull(listTypeEntry.getKey())) {
+
+				existingListTypeEntry =
+					_listTypeEntryLocalService.fetchListTypeEntry(
+						listTypeDefinitionId, listTypeEntry.getKey());
+			}
+
 			if (existingListTypeEntry == null) {
 				_listTypeEntryLocalService.addListTypeEntry(
 					listTypeEntry.getExternalReferenceCode(), userId,
 					listTypeDefinitionId, listTypeEntry.getKey(),
-					listTypeEntry.getNameMap());
+					listTypeEntry.getNameMap(), listTypeEntry.isSystem());
 
 				continue;
 			}
@@ -246,6 +281,64 @@ public class ListTypeDefinitionLocalServiceImpl
 			_listTypeEntryLocalService.deleteListTypeEntry(
 				listTypeEntry.getListTypeEntryId());
 		}
+	}
+
+	private void _updateResourcePermissions(
+			ListTypeDefinition listTypeDefinition,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		if (serviceContext == null) {
+			return;
+		}
+
+		ModelPermissions modelPermissions =
+			serviceContext.getModelPermissions();
+
+		if (modelPermissions == null) {
+			return;
+		}
+
+		_permissionService.checkPermission(
+			0, listTypeDefinition.getModelClassName(),
+			String.valueOf(listTypeDefinition.getListTypeDefinitionId()));
+
+		Collection<String> roleNames = modelPermissions.getRoleNames();
+
+		for (ResourcePermission resourcePermission :
+				_resourcePermissionLocalService.getResourcePermissions(
+					listTypeDefinition.getCompanyId(),
+					listTypeDefinition.getModelClassName(),
+					ResourceConstants.SCOPE_INDIVIDUAL,
+					String.valueOf(
+						listTypeDefinition.getListTypeDefinitionId()))) {
+
+			Role role = _roleLocalService.fetchRole(
+				resourcePermission.getRoleId());
+
+			if ((role == null) || roleNames.contains(role.getName())) {
+				continue;
+			}
+
+			for (ResourceAction resourceAction :
+					_resourceActionLocalService.getResourceActions(
+						listTypeDefinition.getModelClassName())) {
+
+				_resourcePermissionLocalService.removeResourcePermission(
+					listTypeDefinition.getCompanyId(),
+					listTypeDefinition.getModelClassName(),
+					ResourceConstants.SCOPE_INDIVIDUAL,
+					String.valueOf(
+						listTypeDefinition.getListTypeDefinitionId()),
+					role.getRoleId(), resourceAction.getActionId());
+			}
+		}
+
+		_resourcePermissionLocalService.updateResourcePermissions(
+			listTypeDefinition.getCompanyId(), 0,
+			listTypeDefinition.getModelClassName(),
+			String.valueOf(listTypeDefinition.getListTypeDefinitionId()),
+			modelPermissions);
 	}
 
 	private void _validateName(
@@ -268,7 +361,19 @@ public class ListTypeDefinitionLocalServiceImpl
 	private ObjectFieldLocalService _objectFieldLocalService;
 
 	@Reference
+	private PermissionService _permissionService;
+
+	@Reference
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Reference
 	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

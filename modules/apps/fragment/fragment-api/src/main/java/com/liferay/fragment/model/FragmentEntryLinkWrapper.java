@@ -39,6 +39,7 @@ public class FragmentEntryLinkWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fragmentEntryLinkId", getFragmentEntryLinkId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -47,8 +48,9 @@ public class FragmentEntryLinkWrapper
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put(
-			"originalFragmentEntryLinkId", getOriginalFragmentEntryLinkId());
-		attributes.put("fragmentEntryId", getFragmentEntryId());
+			"originalFragmentEntryLinkERC", getOriginalFragmentEntryLinkERC());
+		attributes.put("fragmentEntryERC", getFragmentEntryERC());
+		attributes.put("fragmentEntryScopeERC", getFragmentEntryScopeERC());
 		attributes.put("segmentsExperienceId", getSegmentsExperienceId());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
@@ -87,6 +89,13 @@ public class FragmentEntryLinkWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fragmentEntryLinkId = (Long)attributes.get("fragmentEntryLinkId");
@@ -131,17 +140,24 @@ public class FragmentEntryLinkWrapper
 			setModifiedDate(modifiedDate);
 		}
 
-		Long originalFragmentEntryLinkId = (Long)attributes.get(
-			"originalFragmentEntryLinkId");
+		String originalFragmentEntryLinkERC = (String)attributes.get(
+			"originalFragmentEntryLinkERC");
 
-		if (originalFragmentEntryLinkId != null) {
-			setOriginalFragmentEntryLinkId(originalFragmentEntryLinkId);
+		if (originalFragmentEntryLinkERC != null) {
+			setOriginalFragmentEntryLinkERC(originalFragmentEntryLinkERC);
 		}
 
-		Long fragmentEntryId = (Long)attributes.get("fragmentEntryId");
+		String fragmentEntryERC = (String)attributes.get("fragmentEntryERC");
 
-		if (fragmentEntryId != null) {
-			setFragmentEntryId(fragmentEntryId);
+		if (fragmentEntryERC != null) {
+			setFragmentEntryERC(fragmentEntryERC);
+		}
+
+		String fragmentEntryScopeERC = (String)attributes.get(
+			"fragmentEntryScopeERC");
+
+		if (fragmentEntryScopeERC != null) {
+			setFragmentEntryScopeERC(fragmentEntryScopeERC);
 		}
 
 		Long segmentsExperienceId = (Long)attributes.get(
@@ -297,6 +313,20 @@ public class FragmentEntryLinkWrapper
 		return model.getConfiguration();
 	}
 
+	@Override
+	public com.liferay.portal.kernel.json.JSONObject
+		getConfigurationJSONObject() {
+
+		return model.getConfigurationJSONObject();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.json.JSONObject getConfigurationJSONObject(
+		boolean strict) {
+
+		return model.getConfigurationJSONObject(strict);
+	}
+
 	/**
 	 * Returns the create date of this fragment entry link.
 	 *
@@ -347,14 +377,43 @@ public class FragmentEntryLinkWrapper
 		return model.getEditableValues();
 	}
 
+	@Override
+	public com.liferay.portal.kernel.json.JSONObject
+		getEditableValuesJSONObject() {
+
+		return model.getEditableValuesJSONObject();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.json.JSONObject
+		getEditableValuesJSONObject(boolean strict) {
+
+		return model.getEditableValuesJSONObject(strict);
+	}
+
 	/**
-	 * Returns the fragment entry ID of this fragment entry link.
+	 * Returns the external reference code of this fragment entry link.
 	 *
-	 * @return the fragment entry ID of this fragment entry link
+	 * @return the external reference code of this fragment entry link
 	 */
 	@Override
-	public long getFragmentEntryId() {
-		return model.getFragmentEntryId();
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
+	 * Returns the fragment entry erc of this fragment entry link.
+	 *
+	 * @return the fragment entry erc of this fragment entry link
+	 */
+	@Override
+	public String getFragmentEntryERC() {
+		return model.getFragmentEntryERC();
+	}
+
+	@Override
+	public long getFragmentEntryGroupId() {
+		return model.getFragmentEntryGroupId();
 	}
 
 	/**
@@ -365,6 +424,16 @@ public class FragmentEntryLinkWrapper
 	@Override
 	public long getFragmentEntryLinkId() {
 		return model.getFragmentEntryLinkId();
+	}
+
+	/**
+	 * Returns the fragment entry scope erc of this fragment entry link.
+	 *
+	 * @return the fragment entry scope erc of this fragment entry link
+	 */
+	@Override
+	public String getFragmentEntryScopeERC() {
+		return model.getFragmentEntryScopeERC();
 	}
 
 	/**
@@ -448,13 +517,13 @@ public class FragmentEntryLinkWrapper
 	}
 
 	/**
-	 * Returns the original fragment entry link ID of this fragment entry link.
+	 * Returns the original fragment entry link erc of this fragment entry link.
 	 *
-	 * @return the original fragment entry link ID of this fragment entry link
+	 * @return the original fragment entry link erc of this fragment entry link
 	 */
 	@Override
-	public long getOriginalFragmentEntryLinkId() {
-		return model.getOriginalFragmentEntryLinkId();
+	public String getOriginalFragmentEntryLinkERC() {
+		return model.getOriginalFragmentEntryLinkERC();
 	}
 
 	/**
@@ -580,9 +649,7 @@ public class FragmentEntryLinkWrapper
 	}
 
 	@Override
-	public boolean isSystem()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
+	public boolean isSystem() {
 		return model.isSystem();
 	}
 
@@ -712,13 +779,23 @@ public class FragmentEntryLinkWrapper
 	}
 
 	/**
-	 * Sets the fragment entry ID of this fragment entry link.
+	 * Sets the external reference code of this fragment entry link.
 	 *
-	 * @param fragmentEntryId the fragment entry ID of this fragment entry link
+	 * @param externalReferenceCode the external reference code of this fragment entry link
 	 */
 	@Override
-	public void setFragmentEntryId(long fragmentEntryId) {
-		model.setFragmentEntryId(fragmentEntryId);
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the fragment entry erc of this fragment entry link.
+	 *
+	 * @param fragmentEntryERC the fragment entry erc of this fragment entry link
+	 */
+	@Override
+	public void setFragmentEntryERC(String fragmentEntryERC) {
+		model.setFragmentEntryERC(fragmentEntryERC);
 	}
 
 	/**
@@ -729,6 +806,16 @@ public class FragmentEntryLinkWrapper
 	@Override
 	public void setFragmentEntryLinkId(long fragmentEntryLinkId) {
 		model.setFragmentEntryLinkId(fragmentEntryLinkId);
+	}
+
+	/**
+	 * Sets the fragment entry scope erc of this fragment entry link.
+	 *
+	 * @param fragmentEntryScopeERC the fragment entry scope erc of this fragment entry link
+	 */
+	@Override
+	public void setFragmentEntryScopeERC(String fragmentEntryScopeERC) {
+		model.setFragmentEntryScopeERC(fragmentEntryScopeERC);
 	}
 
 	/**
@@ -812,15 +899,15 @@ public class FragmentEntryLinkWrapper
 	}
 
 	/**
-	 * Sets the original fragment entry link ID of this fragment entry link.
+	 * Sets the original fragment entry link erc of this fragment entry link.
 	 *
-	 * @param originalFragmentEntryLinkId the original fragment entry link ID of this fragment entry link
+	 * @param originalFragmentEntryLinkERC the original fragment entry link erc of this fragment entry link
 	 */
 	@Override
-	public void setOriginalFragmentEntryLinkId(
-		long originalFragmentEntryLinkId) {
+	public void setOriginalFragmentEntryLinkERC(
+		String originalFragmentEntryLinkERC) {
 
-		model.setOriginalFragmentEntryLinkId(originalFragmentEntryLinkId);
+		model.setOriginalFragmentEntryLinkERC(originalFragmentEntryLinkERC);
 	}
 
 	/**

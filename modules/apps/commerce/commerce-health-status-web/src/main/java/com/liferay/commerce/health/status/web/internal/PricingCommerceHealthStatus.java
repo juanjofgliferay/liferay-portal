@@ -21,7 +21,6 @@ import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
-import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -39,6 +38,8 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.List;
@@ -46,8 +47,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -225,8 +224,7 @@ public class PricingCommerceHealthStatus implements CommerceHealthStatus {
 			commercePriceList =
 				_commercePriceListLocalService.addCatalogBaseCommercePriceList(
 					commerceCatalog.getGroupId(), serviceContext.getUserId(),
-					commerceCurrency.getCommerceCurrencyId(), type, name,
-					serviceContext);
+					commerceCurrency.getCode(), type, name, serviceContext);
 
 			List<CPDefinition> cpDefinitions =
 				_cpDefinitionLocalService.getCPDefinitions(
@@ -268,10 +266,6 @@ public class PricingCommerceHealthStatus implements CommerceHealthStatus {
 
 	@Reference
 	private CPInstanceLocalService _cpInstanceLocalService;
-
-	@Reference
-	private CPInstanceUnitOfMeasureLocalService
-		_cpInstanceUnitOfMeasureLocalService;
 
 	@Reference
 	private Language _language;

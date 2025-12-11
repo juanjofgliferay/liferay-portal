@@ -27,7 +27,6 @@ import com.liferay.osb.faro.web.internal.model.display.asah.FaroChannelDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.FaroUserDisplay;
 import com.liferay.osb.faro.web.internal.model.preferences.WorkspacePreferences;
 import com.liferay.osb.faro.web.internal.param.FaroParam;
-import com.liferay.osb.faro.web.internal.util.FaroQueryUtil;
 import com.liferay.osb.faro.web.internal.util.JSONUtil;
 import com.liferay.osb.faro.web.internal.util.comparator.FaroChannelComparator;
 import com.liferay.osb.faro.web.internal.util.comparator.FaroUserComparator;
@@ -43,24 +42,24 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -185,7 +184,7 @@ public class ChannelController extends BaseFaroController {
 	@GET
 	@Path("/{id}")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public FaroChannelDisplay get(
+	public FaroChannelDisplay getFaroChannelDisplay(
 			@PathParam("groupId") long groupId, @PathParam("id") String id)
 		throws PortalException {
 
@@ -320,8 +319,6 @@ public class ChannelController extends BaseFaroController {
 			orderByFields = Collections.singletonList(
 				new OrderByField("createTime", "asc"));
 		}
-
-		query = FaroQueryUtil.sanitizeQuery(query);
 
 		List<FaroChannel> faroChannels = _faroChannelLocalService.search(
 			groupId, query, startAndEnd[0], startAndEnd[1],

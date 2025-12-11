@@ -13,7 +13,6 @@ import com.liferay.headless.common.spi.resource.SPIRatingResource;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.headless.delivery.dto.v1_0.MessageBoardMessage;
 import com.liferay.headless.delivery.dto.v1_0.Rating;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.RatingUtil;
 import com.liferay.headless.delivery.internal.odata.entity.v1_0.MessageBoardMessageEntityModel;
 import com.liferay.headless.delivery.resource.v1_0.MessageBoardMessageResource;
@@ -32,7 +31,6 @@ import com.liferay.message.boards.util.comparator.MessageCreateDateComparator;
 import com.liferay.message.boards.util.comparator.MessageModifiedDateComparator;
 import com.liferay.message.boards.util.comparator.MessageSubjectComparator;
 import com.liferay.message.boards.util.comparator.MessageURLSubjectComparator;
-import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
@@ -59,6 +57,7 @@ import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
@@ -68,13 +67,13 @@ import com.liferay.portal.vulcan.util.SearchUtil;
 import com.liferay.portal.vulcan.util.UriInfoUtil;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriBuilder;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriBuilder;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -87,7 +86,6 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/message-board-message.properties",
 	scope = ServiceScope.PROTOTYPE, service = MessageBoardMessageResource.class
 )
-@CTAware
 public class MessageBoardMessageResourceImpl
 	extends BaseMessageBoardMessageResourceImpl {
 
@@ -145,6 +143,8 @@ public class MessageBoardMessageResourceImpl
 				Pagination pagination, Sort[] sorts)
 		throws Exception {
 
+		flatten = GetterUtil.getBoolean(flatten);
+
 		MBMessage mbMessage = _mbMessageService.getMessage(
 			parentMessageBoardMessageId);
 
@@ -165,9 +165,7 @@ public class MessageBoardMessageResourceImpl
 					mbMessage.getGroupId())
 			).build();
 
-		if ((search == null) && (filter == null)) {
-			flatten = GetterUtil.getBoolean(flatten);
-
+		if ((search == null) && (filter == null) && !flatten) {
 			int status = WorkflowConstants.STATUS_APPROVED;
 
 			PermissionChecker permissionChecker =
@@ -344,6 +342,7 @@ public class MessageBoardMessageResourceImpl
 			sorts);
 	}
 
+	@Override
 	public Page<MessageBoardMessage>
 			getSiteUserMessageBoardMessagesActivityPage(
 				Long siteId, Long userId, Pagination pagination)
@@ -419,6 +418,13 @@ public class MessageBoardMessageResourceImpl
 	}
 
 	@Override
+	public void putMessageBoardMessageMarkAsAnswer(Long messageBoardMessageId)
+		throws Exception {
+
+		_mbMessageService.updateAnswer(messageBoardMessageId, true, false);
+	}
+
+	@Override
 	public Rating putMessageBoardMessageMyRating(
 			Long messageBoardMessageId, Rating rating)
 		throws Exception {
@@ -434,6 +440,13 @@ public class MessageBoardMessageResourceImpl
 		throws Exception {
 
 		_mbMessageService.subscribeMessage(messageBoardMessageId);
+	}
+
+	@Override
+	public void putMessageBoardMessageUnmarkAsAnswer(Long messageBoardMessageId)
+		throws Exception {
+
+		_mbMessageService.updateAnswer(messageBoardMessageId, false, false);
 	}
 
 	@Override
@@ -567,19 +580,19 @@ public class MessageBoardMessageResourceImpl
 			String fieldName = sort.getFieldName();
 
 			if (Objects.equals(fieldName, "createDate_sortable")) {
-				orderByComparator = new MessageCreateDateComparator(
+				orderByComparator = MessageCreateDateComparator.getInstance(
 					!sort.isReverse());
 			}
 			else if (Objects.equals(fieldName, "modified_sortable")) {
-				orderByComparator = new MessageModifiedDateComparator(
+				orderByComparator = MessageModifiedDateComparator.getInstance(
 					!sort.isReverse());
 			}
 			else if (fieldName.contains("title")) {
-				orderByComparator = new MessageSubjectComparator(
+				orderByComparator = MessageSubjectComparator.getInstance(
 					!sort.isReverse());
 			}
 			else if (fieldName.contains("urlSubject")) {
-				orderByComparator = new MessageURLSubjectComparator(
+				orderByComparator = MessageURLSubjectComparator.getInstance(
 					!sort.isReverse());
 			}
 		}

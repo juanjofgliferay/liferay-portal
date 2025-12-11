@@ -8,13 +8,13 @@ package com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.delivery.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0.AttachmentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -48,16 +48,66 @@ public class Attachment implements Cloneable, Serializable {
 
 	protected String attachment;
 
-	public CustomField[] getCustomFields() {
+	public Boolean getCdnEnabled() {
+		return cdnEnabled;
+	}
+
+	public void setCdnEnabled(Boolean cdnEnabled) {
+		this.cdnEnabled = cdnEnabled;
+	}
+
+	public void setCdnEnabled(
+		UnsafeSupplier<Boolean, Exception> cdnEnabledUnsafeSupplier) {
+
+		try {
+			cdnEnabled = cdnEnabledUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean cdnEnabled;
+
+	public String getCdnURL() {
+		return cdnURL;
+	}
+
+	public void setCdnURL(String cdnURL) {
+		this.cdnURL = cdnURL;
+	}
+
+	public void setCdnURL(
+		UnsafeSupplier<String, Exception> cdnURLUnsafeSupplier) {
+
+		try {
+			cdnURL = cdnURLUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String cdnURL;
+
+	public com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+		CustomField[] getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+			CustomField[] customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+				CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -67,7 +117,9 @@ public class Attachment implements Cloneable, Serializable {
 		}
 	}
 
-	protected CustomField[] customFields;
+	protected
+		com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+			CustomField[] customFields;
 
 	public Date getDisplayDate() {
 		return displayDate;
@@ -110,6 +162,48 @@ public class Attachment implements Cloneable, Serializable {
 	}
 
 	protected Date expirationDate;
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
+
+	public Long getFileEntryId() {
+		return fileEntryId;
+	}
+
+	public void setFileEntryId(Long fileEntryId) {
+		this.fileEntryId = fileEntryId;
+	}
+
+	public void setFileEntryId(
+		UnsafeSupplier<Long, Exception> fileEntryIdUnsafeSupplier) {
+
+		try {
+			fileEntryId = fileEntryIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long fileEntryId;
 
 	public Boolean getGalleryEnabled() {
 		return galleryEnabled;

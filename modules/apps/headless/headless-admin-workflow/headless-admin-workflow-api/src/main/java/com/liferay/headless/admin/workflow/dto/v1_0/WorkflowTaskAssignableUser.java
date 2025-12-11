@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -51,62 +50,88 @@ public class WorkflowTaskAssignableUser implements Serializable {
 			WorkflowTaskAssignableUser.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Assignee[] getAssignableUsers() {
+		if (_assignableUsersSupplier != null) {
+			assignableUsers = _assignableUsersSupplier.get();
+
+			_assignableUsersSupplier = null;
+		}
+
 		return assignableUsers;
 	}
 
 	public void setAssignableUsers(Assignee[] assignableUsers) {
 		this.assignableUsers = assignableUsers;
+
+		_assignableUsersSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAssignableUsers(
 		UnsafeSupplier<Assignee[], Exception> assignableUsersUnsafeSupplier) {
 
-		try {
-			assignableUsers = assignableUsersUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assignableUsersSupplier = () -> {
+			try {
+				return assignableUsersUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Assignee[] assignableUsers;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Assignee[]> _assignableUsersSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getWorkflowTaskId() {
+		if (_workflowTaskIdSupplier != null) {
+			workflowTaskId = _workflowTaskIdSupplier.get();
+
+			_workflowTaskIdSupplier = null;
+		}
+
 		return workflowTaskId;
 	}
 
 	public void setWorkflowTaskId(Long workflowTaskId) {
 		this.workflowTaskId = workflowTaskId;
+
+		_workflowTaskIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWorkflowTaskId(
 		UnsafeSupplier<Long, Exception> workflowTaskIdUnsafeSupplier) {
 
-		try {
-			workflowTaskId = workflowTaskIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_workflowTaskIdSupplier = () -> {
+			try {
+				return workflowTaskIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long workflowTaskId;
+
+	@JsonIgnore
+	private Supplier<Long> _workflowTaskIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -137,6 +162,8 @@ public class WorkflowTaskAssignableUser implements Serializable {
 
 		sb.append("{");
 
+		Assignee[] assignableUsers = getAssignableUsers();
+
 		if (assignableUsers != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -157,6 +184,8 @@ public class WorkflowTaskAssignableUser implements Serializable {
 			sb.append("]");
 		}
 
+		Long workflowTaskId = getWorkflowTaskId();
+
 		if (workflowTaskId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -172,8 +201,8 @@ public class WorkflowTaskAssignableUser implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTaskAssignableUser",
 		name = "x-class-name"
 	)
@@ -219,7 +248,10 @@ public class WorkflowTaskAssignableUser implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

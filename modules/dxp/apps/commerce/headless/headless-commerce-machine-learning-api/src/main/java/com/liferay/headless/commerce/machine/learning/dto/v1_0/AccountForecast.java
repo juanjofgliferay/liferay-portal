@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
@@ -53,203 +52,294 @@ public class AccountForecast implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(AccountForecast.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getAccount() {
+		if (_accountSupplier != null) {
+			account = _accountSupplier.get();
+
+			_accountSupplier = null;
+		}
+
 		return account;
 	}
 
 	public void setAccount(Long account) {
 		this.account = account;
+
+		_accountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccount(
 		UnsafeSupplier<Long, Exception> accountUnsafeSupplier) {
 
-		try {
-			account = accountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountSupplier = () -> {
+			try {
+				return accountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long account;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _accountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getActual() {
+		if (_actualSupplier != null) {
+			actual = _actualSupplier.get();
+
+			_actualSupplier = null;
+		}
+
 		return actual;
 	}
 
 	public void setActual(Float actual) {
 		this.actual = actual;
+
+		_actualSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActual(
 		UnsafeSupplier<Float, Exception> actualUnsafeSupplier) {
 
-		try {
-			actual = actualUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actualSupplier = () -> {
+			try {
+				return actualUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float actual;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _actualSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getForecast() {
+		if (_forecastSupplier != null) {
+			forecast = _forecastSupplier.get();
+
+			_forecastSupplier = null;
+		}
+
 		return forecast;
 	}
 
 	public void setForecast(Float forecast) {
 		this.forecast = forecast;
+
+		_forecastSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setForecast(
 		UnsafeSupplier<Float, Exception> forecastUnsafeSupplier) {
 
-		try {
-			forecast = forecastUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_forecastSupplier = () -> {
+			try {
+				return forecastUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float forecast;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _forecastSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getForecastLowerBound() {
+		if (_forecastLowerBoundSupplier != null) {
+			forecastLowerBound = _forecastLowerBoundSupplier.get();
+
+			_forecastLowerBoundSupplier = null;
+		}
+
 		return forecastLowerBound;
 	}
 
 	public void setForecastLowerBound(Float forecastLowerBound) {
 		this.forecastLowerBound = forecastLowerBound;
+
+		_forecastLowerBoundSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setForecastLowerBound(
 		UnsafeSupplier<Float, Exception> forecastLowerBoundUnsafeSupplier) {
 
-		try {
-			forecastLowerBound = forecastLowerBoundUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_forecastLowerBoundSupplier = () -> {
+			try {
+				return forecastLowerBoundUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float forecastLowerBound;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _forecastLowerBoundSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getForecastUpperBound() {
+		if (_forecastUpperBoundSupplier != null) {
+			forecastUpperBound = _forecastUpperBoundSupplier.get();
+
+			_forecastUpperBoundSupplier = null;
+		}
+
 		return forecastUpperBound;
 	}
 
 	public void setForecastUpperBound(Float forecastUpperBound) {
 		this.forecastUpperBound = forecastUpperBound;
+
+		_forecastUpperBoundSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setForecastUpperBound(
 		UnsafeSupplier<Float, Exception> forecastUpperBoundUnsafeSupplier) {
 
-		try {
-			forecastUpperBound = forecastUpperBoundUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_forecastUpperBoundSupplier = () -> {
+			try {
+				return forecastUpperBoundUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float forecastUpperBound;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _forecastUpperBoundSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getTimestamp() {
+		if (_timestampSupplier != null) {
+			timestamp = _timestampSupplier.get();
+
+			_timestampSupplier = null;
+		}
+
 		return timestamp;
 	}
 
 	public void setTimestamp(Date timestamp) {
 		this.timestamp = timestamp;
+
+		_timestampSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTimestamp(
 		UnsafeSupplier<Date, Exception> timestampUnsafeSupplier) {
 
-		try {
-			timestamp = timestampUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_timestampSupplier = () -> {
+			try {
+				return timestampUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date timestamp;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _timestampSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getUnit() {
+		if (_unitSupplier != null) {
+			unit = _unitSupplier.get();
+
+			_unitSupplier = null;
+		}
+
 		return unit;
 	}
 
 	public void setUnit(String unit) {
 		this.unit = unit;
+
+		_unitSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnit(UnsafeSupplier<String, Exception> unitUnsafeSupplier) {
-		try {
-			unit = unitUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitSupplier = () -> {
+			try {
+				return unitUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unit;
+
+	@JsonIgnore
+	private Supplier<String> _unitSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -281,6 +371,8 @@ public class AccountForecast implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Long account = getAccount();
+
 		if (account != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -290,6 +382,8 @@ public class AccountForecast implements Serializable {
 
 			sb.append(account);
 		}
+
+		Float actual = getActual();
 
 		if (actual != null) {
 			if (sb.length() > 1) {
@@ -301,6 +395,8 @@ public class AccountForecast implements Serializable {
 			sb.append(actual);
 		}
 
+		Float forecast = getForecast();
+
 		if (forecast != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -310,6 +406,8 @@ public class AccountForecast implements Serializable {
 
 			sb.append(forecast);
 		}
+
+		Float forecastLowerBound = getForecastLowerBound();
 
 		if (forecastLowerBound != null) {
 			if (sb.length() > 1) {
@@ -321,6 +419,8 @@ public class AccountForecast implements Serializable {
 			sb.append(forecastLowerBound);
 		}
 
+		Float forecastUpperBound = getForecastUpperBound();
+
 		if (forecastUpperBound != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -330,6 +430,8 @@ public class AccountForecast implements Serializable {
 
 			sb.append(forecastUpperBound);
 		}
+
+		Date timestamp = getTimestamp();
 
 		if (timestamp != null) {
 			if (sb.length() > 1) {
@@ -344,6 +446,8 @@ public class AccountForecast implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String unit = getUnit();
 
 		if (unit != null) {
 			if (sb.length() > 1) {
@@ -364,8 +468,8 @@ public class AccountForecast implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.machine.learning.dto.v1_0.AccountForecast",
 		name = "x-class-name"
 	)
@@ -411,7 +515,10 @@ public class AccountForecast implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

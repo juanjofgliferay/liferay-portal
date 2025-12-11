@@ -113,6 +113,13 @@ export function mergePages(
 					},
 				};
 			}
+			else {
+				newField = {
+					...newField,
+					editOnlyInDefaultLanguage:
+						sourceField.editOnlyInDefaultLanguage,
+				};
+			}
 
 			return newField;
 		},
@@ -123,6 +130,7 @@ export function mergePages(
 
 const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 	const {
+		containerId,
 		defaultLanguageId,
 		editingLanguageId,
 		formId,
@@ -146,7 +154,10 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 
 	makeFetch({
 		body: convertToFormData({
-			languageId: editingLanguageId,
+			languageId:
+				containerId === 'editObjectEntry'
+					? defaultLanguageId
+					: editingLanguageId,
 			p_auth: Liferay.authToken,
 			p_l_id: themeDisplay.getPlid(),
 			p_v_l_s_g_id: themeDisplay.getSiteGroupId(),
@@ -161,6 +172,10 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 			}),
 			trigger: fieldName,
 		}),
+		headers: {
+			'Accept': 'application/json',
+			'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
+		},
 		signal: controller && controller.signal,
 		url: EVALUATOR_URL,
 	})
@@ -181,7 +196,7 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 			callback(null, mergedPages);
 		})
 		.catch((error) => callback(error));
-}, 200);
+}, 350);
 
 export function evaluate(fieldName, evaluatorContext) {
 	return new Promise((resolve, reject) => {

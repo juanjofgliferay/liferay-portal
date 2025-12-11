@@ -12,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -35,6 +37,7 @@ public class DepotEntryWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("depotEntryId", getDepotEntryId());
 		attributes.put("groupId", getGroupId());
@@ -43,6 +46,7 @@ public class DepotEntryWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("type", getType());
 
 		return attributes;
 	}
@@ -53,6 +57,12 @@ public class DepotEntryWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -102,6 +112,12 @@ public class DepotEntryWrapper
 		if (modifiedDate != null) {
 			setModifiedDate(modifiedDate);
 		}
+
+		Integer type = (Integer)attributes.get("type");
+
+		if (type != null) {
+			setType(type);
+		}
 	}
 
 	@Override
@@ -127,6 +143,16 @@ public class DepotEntryWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this depot entry.
+	 *
+	 * @return the ct collection ID of this depot entry
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -184,6 +210,16 @@ public class DepotEntryWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
+	}
+
+	/**
+	 * Returns the type of this depot entry.
+	 *
+	 * @return the type of this depot entry
+	 */
+	@Override
+	public int getType() {
+		return model.getType();
 	}
 
 	/**
@@ -252,6 +288,16 @@ public class DepotEntryWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this depot entry.
+	 *
+	 * @param ctCollectionId the ct collection ID of this depot entry
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the depot entry ID of this depot entry.
 	 *
 	 * @param depotEntryId the depot entry ID of this depot entry
@@ -302,6 +348,16 @@ public class DepotEntryWrapper
 	}
 
 	/**
+	 * Sets the type of this depot entry.
+	 *
+	 * @param type the type of this depot entry
+	 */
+	@Override
+	public void setType(int type) {
+		model.setType(type);
+	}
+
+	/**
 	 * Sets the user ID of this depot entry.
 	 *
 	 * @param userId the user ID of this depot entry
@@ -344,6 +400,20 @@ public class DepotEntryWrapper
 	@Override
 	public String toXmlString() {
 		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<DepotEntry, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<DepotEntry, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

@@ -5,36 +5,47 @@
 
 package com.liferay.journal.web.internal.display.context;
 
+import com.liferay.change.tracking.spi.history.util.CTTimelineUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
-import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.util.DDMUtil;
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
 import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.web.internal.configuration.JournalWebConfiguration;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.servlet.taglib.aui.ESImport;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -42,19 +53,34 @@ import javax.servlet.http.HttpServletRequest;
 public class JournalEditDDMStructuresDisplayContext {
 
 	public JournalEditDDMStructuresDisplayContext(
-		HttpServletRequest httpServletRequest,
-		LiferayPortletResponse liferayPortletResponse) {
+			Portal portal, RenderRequest renderRequest,
+			RenderResponse renderResponse)
+		throws ConfigurationException {
 
-		_httpServletRequest = httpServletRequest;
-		_liferayPortletResponse = liferayPortletResponse;
+		_httpServletRequest = portal.getHttpServletRequest(renderRequest);
+		_liferayPortletResponse = portal.getLiferayPortletResponse(
+			renderResponse);
+
+		_themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		_journalServiceConfiguration =
+			ConfigurationProviderUtil.getCompanyConfiguration(
+				JournalServiceConfiguration.class,
+				_themeDisplay.getCompanyId());
 
 		_journalWebConfiguration =
-			(JournalWebConfiguration)httpServletRequest.getAttribute(
+			(JournalWebConfiguration)renderRequest.getAttribute(
 				JournalWebConfiguration.class.getName());
 	}
 
-	public List<Map<String, Object>> getAdditionalPanels(
-		String npmResolvedPackageName) {
+	public List<Map<String, Object>> getAdditionalPanels() {
+		ESImport esImport = ESImportUtil.getESImport(
+			_absolutePortalURLBuilderFactorySnapshot.get(
+			).getAbsolutePortalURLBuilder(
+				_httpServletRequest
+			),
+			"{BasicInfoPanel} from journal-web");
 
 		return ListUtil.fromArray(
 			HashMapBuilder.<String, Object>put(
@@ -63,7 +89,8 @@ public class JournalEditDDMStructuresDisplayContext {
 				"label", LanguageUtil.get(_httpServletRequest, "properties")
 			).put(
 				"pluginEntryPoint",
-				npmResolvedPackageName + "/js/data_engine/panels/index.es"
+				StringBundler.concat(
+					"{", esImport.getSymbol(), "} from ", esImport.getModule())
 			).put(
 				"sidebarPanelId", "properties"
 			).put(
@@ -148,6 +175,9 @@ public class JournalEditDDMStructuresDisplayContext {
 		_ddmStructureId = ParamUtil.getLong(
 			_httpServletRequest, "ddmStructureId");
 
+		CTTimelineUtil.setCTTimelineKeys(
+			_httpServletRequest, DDMStructure.class, _ddmStructureId);
+
 		return _ddmStructureId;
 	}
 
@@ -159,6 +189,14 @@ public class JournalEditDDMStructuresDisplayContext {
 		}
 
 		return LocaleUtil.toLanguageId(ddmForm.getDefaultLocale());
+	}
+
+	public boolean getDisplayFieldName() {
+		if (_journalServiceConfiguration == null) {
+			return false;
+		}
+
+		return _journalServiceConfiguration.displayFieldName();
 	}
 
 	public Map<String, Object> getLocaleChangedHandlerContext() {
@@ -192,25 +230,6 @@ public class JournalEditDDMStructuresDisplayContext {
 		return _script;
 	}
 
-	public String getStorageType() {
-		String storageType = StorageType.DEFAULT.getValue();
-
-		try {
-			JournalServiceConfiguration journalServiceConfiguration =
-				ConfigurationProviderUtil.getCompanyConfiguration(
-					JournalServiceConfiguration.class,
-					CompanyThreadLocal.getCompanyId());
-
-			storageType =
-				journalServiceConfiguration.journalArticleStorageType();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
-
-		return storageType;
-	}
-
 	public boolean isStructureFieldIndexableEnable() {
 		return _journalWebConfiguration.structureFieldIndexableEnable();
 	}
@@ -233,17 +252,28 @@ public class JournalEditDDMStructuresDisplayContext {
 	}
 
 	private boolean _isAutogenerateDDMStructureKey() {
-		return _journalWebConfiguration.autogenerateDDMStructureKey();
+		if (_journalServiceConfiguration == null) {
+			return true;
+		}
+
+		return _journalServiceConfiguration.autogenerateDDMStructureKey();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalEditDDMStructuresDisplayContext.class);
 
+	private static final Snapshot<AbsolutePortalURLBuilderFactory>
+		_absolutePortalURLBuilderFactorySnapshot = new Snapshot<>(
+			JournalEditDDMStructuresDisplayContext.class,
+			AbsolutePortalURLBuilderFactory.class);
+
 	private DDMStructure _ddmStructure;
 	private Long _ddmStructureId;
 	private final HttpServletRequest _httpServletRequest;
+	private final JournalServiceConfiguration _journalServiceConfiguration;
 	private final JournalWebConfiguration _journalWebConfiguration;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private String _script;
+	private final ThemeDisplay _themeDisplay;
 
 }

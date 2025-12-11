@@ -10,7 +10,8 @@ import {
 	openToast,
 	saveAndReload,
 } from '@liferay/object-js-components-web';
-import React, {useEffect} from 'react';
+import {ILearnResourceContext} from 'frontend-js-components-web';
+import React, {useEffect, useState} from 'react';
 
 import {EditObjectFieldContent} from './EditObjectFieldContent';
 import {useObjectFieldForm} from './useObjectFieldForm';
@@ -19,14 +20,16 @@ import './EditObjectField.scss';
 
 export interface EditObjectFieldProps {
 	baseResourceURL: string;
+	ckEditor5Config?: object;
 	creationLanguageId: Liferay.Language.Locale;
+	decimalSeparator: string;
 	filterOperators: TFilterOperators;
 	forbiddenChars: string[];
 	forbiddenLastChars: string[];
 	forbiddenNames: string[];
-	isApproved: boolean;
 	isDefaultStorageType: boolean;
-	learnResources: ObjectWebLearnResources;
+	isRootDescendantNode: boolean;
+	learnResources: ILearnResourceContext;
 	objectDefinitionExternalReferenceCode: string;
 	objectFieldId: number;
 	readOnly: boolean;
@@ -35,7 +38,7 @@ export interface EditObjectFieldProps {
 
 export const objectFieldInitialValues: Partial<ObjectField> = {
 	DBType: '',
-	businessType: 'Text',
+	businessType: undefined,
 	externalReferenceCode: '',
 	id: 0,
 	indexed: true,
@@ -54,19 +57,24 @@ export const objectFieldInitialValues: Partial<ObjectField> = {
 
 export default function EditObjectField({
 	baseResourceURL,
+	ckEditor5Config,
 	creationLanguageId,
+	decimalSeparator,
 	filterOperators,
 	forbiddenChars,
 	forbiddenLastChars,
 	forbiddenNames,
-	isApproved,
 	isDefaultStorageType,
+	isRootDescendantNode,
 	learnResources,
 	objectDefinitionExternalReferenceCode,
 	objectFieldId,
 	readOnly,
 	workflowStatuses,
 }: EditObjectFieldProps) {
+	const [objectDefinition, setObjectDefinition] =
+		useState<ObjectDefinition>();
+
 	const onSubmit = async ({id, ...objectField}: ObjectField) => {
 		delete objectField.defaultValue;
 		delete objectField.listTypeDefinitionId;
@@ -90,30 +98,28 @@ export default function EditObjectField({
 		}
 	};
 
-	const {
-		errors,
-		handleChange,
-		handleSubmit,
-		setValues,
-		values,
-	} = useObjectFieldForm({
-		forbiddenChars,
-		forbiddenLastChars,
-		forbiddenNames,
-		initialValues: objectFieldInitialValues,
-		onSubmit,
-	});
+	const {errors, handleChange, handleSubmit, setValues, values} =
+		useObjectFieldForm({
+			forbiddenChars,
+			forbiddenLastChars,
+			forbiddenNames,
+			initialValues: objectFieldInitialValues,
+			objectFields: objectDefinition?.objectFields,
+			onSubmit,
+		});
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const objectFieldResponse = await API.getObjectField(objectFieldId);
+			const objectDefinitionResponse =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
-			setValues(objectFieldResponse);
+			setObjectDefinition(objectDefinitionResponse);
 		};
 
 		makeFetch();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [objectFieldId]);
+	}, [objectDefinitionExternalReferenceCode]);
 
 	useEffect(() => {
 		if (errors.defaultValue) {
@@ -135,17 +141,18 @@ export default function EditObjectField({
 		>
 			<EditObjectFieldContent
 				baseResourceURL={baseResourceURL}
+				ckEditor5Config={ckEditor5Config}
 				containerWrapper={Card}
 				creationLanguageId={creationLanguageId}
+				decimalSeparator={decimalSeparator}
 				errors={errors}
 				filterOperators={filterOperators}
 				handleChange={handleChange}
-				isApproved={isApproved}
 				isDefaultStorageType={isDefaultStorageType}
+				isRootDescendantNode={isRootDescendantNode}
 				learnResources={learnResources}
-				objectDefinitionExternalReferenceCode={
-					objectDefinitionExternalReferenceCode
-				}
+				objectDefinition={objectDefinition}
+				objectFieldId={objectFieldId}
 				readOnly={readOnly}
 				setValues={setValues}
 				values={values}

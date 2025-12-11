@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,31 +53,41 @@ public class FragmentFieldAction implements Serializable {
 			FragmentFieldAction.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The fragment field's action. Must be mapped to an external value."
 	)
 	@Valid
 	public Object getAction() {
+		if (_actionSupplier != null) {
+			action = _actionSupplier.get();
+
+			_actionSupplier = null;
+		}
+
 		return action;
 	}
 
 	public void setAction(Object action) {
 		this.action = action;
+
+		_actionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAction(
 		UnsafeSupplier<Object, Exception> actionUnsafeSupplier) {
 
-		try {
-			action = actionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionSupplier = () -> {
+			try {
+				return actionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -87,16 +96,27 @@ public class FragmentFieldAction implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object action;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Object> _actionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The action execution result in case the action fails."
 	)
 	@Valid
 	public ActionExecutionResult getOnError() {
+		if (_onErrorSupplier != null) {
+			onError = _onErrorSupplier.get();
+
+			_onErrorSupplier = null;
+		}
+
 		return onError;
 	}
 
 	public void setOnError(ActionExecutionResult onError) {
 		this.onError = onError;
+
+		_onErrorSupplier = null;
 	}
 
 	@JsonIgnore
@@ -104,15 +124,17 @@ public class FragmentFieldAction implements Serializable {
 		UnsafeSupplier<ActionExecutionResult, Exception>
 			onErrorUnsafeSupplier) {
 
-		try {
-			onError = onErrorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_onErrorSupplier = () -> {
+			try {
+				return onErrorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -121,16 +143,27 @@ public class FragmentFieldAction implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ActionExecutionResult onError;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<ActionExecutionResult> _onErrorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The action execution result in case the action succeeds."
 	)
 	@Valid
 	public ActionExecutionResult getOnSuccess() {
+		if (_onSuccessSupplier != null) {
+			onSuccess = _onSuccessSupplier.get();
+
+			_onSuccessSupplier = null;
+		}
+
 		return onSuccess;
 	}
 
 	public void setOnSuccess(ActionExecutionResult onSuccess) {
 		this.onSuccess = onSuccess;
+
+		_onSuccessSupplier = null;
 	}
 
 	@JsonIgnore
@@ -138,15 +171,17 @@ public class FragmentFieldAction implements Serializable {
 		UnsafeSupplier<ActionExecutionResult, Exception>
 			onSuccessUnsafeSupplier) {
 
-		try {
-			onSuccess = onSuccessUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_onSuccessSupplier = () -> {
+			try {
+				return onSuccessUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -155,32 +190,50 @@ public class FragmentFieldAction implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ActionExecutionResult onSuccess;
 
-	@Schema(description = "The fragment field's text.")
+	@JsonIgnore
+	private Supplier<ActionExecutionResult> _onSuccessSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment field's text."
+	)
 	@Valid
 	public Object getText() {
+		if (_textSupplier != null) {
+			text = _textSupplier.get();
+
+			_textSupplier = null;
+		}
+
 		return text;
 	}
 
 	public void setText(Object text) {
 		this.text = text;
+
+		_textSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setText(UnsafeSupplier<Object, Exception> textUnsafeSupplier) {
-		try {
-			text = textUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_textSupplier = () -> {
+			try {
+				return textUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment field's text.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object text;
+
+	@JsonIgnore
+	private Supplier<Object> _textSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -209,6 +262,8 @@ public class FragmentFieldAction implements Serializable {
 
 		sb.append("{");
 
+		Object action = getAction();
+
 		if (action != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -229,6 +284,8 @@ public class FragmentFieldAction implements Serializable {
 			}
 		}
 
+		ActionExecutionResult onError = getOnError();
+
 		if (onError != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -239,6 +296,8 @@ public class FragmentFieldAction implements Serializable {
 			sb.append(String.valueOf(onError));
 		}
 
+		ActionExecutionResult onSuccess = getOnSuccess();
+
 		if (onSuccess != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -248,6 +307,8 @@ public class FragmentFieldAction implements Serializable {
 
 			sb.append(String.valueOf(onSuccess));
 		}
+
+		Object text = getText();
 
 		if (text != null) {
 			if (sb.length() > 1) {
@@ -274,8 +335,8 @@ public class FragmentFieldAction implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentFieldAction",
 		name = "x-class-name"
 	)
@@ -321,7 +382,10 @@ public class FragmentFieldAction implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -7,6 +7,7 @@ package com.liferay.fragment.model.impl;
 
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.MVCCModel;
@@ -15,6 +16,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 
 import java.util.Date;
 
@@ -69,7 +73,7 @@ public class FragmentEntryLinkCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(57);
+		StringBundler sb = new StringBundler(61);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -77,6 +81,8 @@ public class FragmentEntryLinkCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", fragmentEntryLinkId=");
 		sb.append(fragmentEntryLinkId);
 		sb.append(", groupId=");
@@ -91,10 +97,12 @@ public class FragmentEntryLinkCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
-		sb.append(", originalFragmentEntryLinkId=");
-		sb.append(originalFragmentEntryLinkId);
-		sb.append(", fragmentEntryId=");
-		sb.append(fragmentEntryId);
+		sb.append(", originalFragmentEntryLinkERC=");
+		sb.append(originalFragmentEntryLinkERC);
+		sb.append(", fragmentEntryERC=");
+		sb.append(fragmentEntryERC);
+		sb.append(", fragmentEntryScopeERC=");
+		sb.append(fragmentEntryScopeERC);
 		sb.append(", segmentsExperienceId=");
 		sb.append(segmentsExperienceId);
 		sb.append(", classNameId=");
@@ -147,6 +155,14 @@ public class FragmentEntryLinkCacheModel
 			fragmentEntryLinkImpl.setUuid(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			fragmentEntryLinkImpl.setExternalReferenceCode("");
+		}
+		else {
+			fragmentEntryLinkImpl.setExternalReferenceCode(
+				externalReferenceCode);
+		}
+
 		fragmentEntryLinkImpl.setFragmentEntryLinkId(fragmentEntryLinkId);
 		fragmentEntryLinkImpl.setGroupId(groupId);
 		fragmentEntryLinkImpl.setCompanyId(companyId);
@@ -173,9 +189,29 @@ public class FragmentEntryLinkCacheModel
 			fragmentEntryLinkImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
-		fragmentEntryLinkImpl.setOriginalFragmentEntryLinkId(
-			originalFragmentEntryLinkId);
-		fragmentEntryLinkImpl.setFragmentEntryId(fragmentEntryId);
+		if (originalFragmentEntryLinkERC == null) {
+			fragmentEntryLinkImpl.setOriginalFragmentEntryLinkERC("");
+		}
+		else {
+			fragmentEntryLinkImpl.setOriginalFragmentEntryLinkERC(
+				originalFragmentEntryLinkERC);
+		}
+
+		if (fragmentEntryERC == null) {
+			fragmentEntryLinkImpl.setFragmentEntryERC("");
+		}
+		else {
+			fragmentEntryLinkImpl.setFragmentEntryERC(fragmentEntryERC);
+		}
+
+		if (fragmentEntryScopeERC == null) {
+			fragmentEntryLinkImpl.setFragmentEntryScopeERC("");
+		}
+		else {
+			fragmentEntryLinkImpl.setFragmentEntryScopeERC(
+				fragmentEntryScopeERC);
+		}
+
 		fragmentEntryLinkImpl.setSegmentsExperienceId(segmentsExperienceId);
 		fragmentEntryLinkImpl.setClassNameId(classNameId);
 		fragmentEntryLinkImpl.setClassPK(classPK);
@@ -253,6 +289,17 @@ public class FragmentEntryLinkCacheModel
 
 		fragmentEntryLinkImpl.resetOriginalValues();
 
+		try {
+			_configurationJSONObjectMethodHandle.invokeExact(
+				fragmentEntryLinkImpl, configurationJSONObject);
+
+			_editableValuesJSONObjectMethodHandle.invokeExact(
+				fragmentEntryLinkImpl, editableValuesJSONObject);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
+
 		return fragmentEntryLinkImpl;
 	}
 
@@ -264,6 +311,7 @@ public class FragmentEntryLinkCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		fragmentEntryLinkId = objectInput.readLong();
 
@@ -275,10 +323,9 @@ public class FragmentEntryLinkCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
-
-		originalFragmentEntryLinkId = objectInput.readLong();
-
-		fragmentEntryId = objectInput.readLong();
+		originalFragmentEntryLinkERC = objectInput.readUTF();
+		fragmentEntryERC = objectInput.readUTF();
+		fragmentEntryScopeERC = objectInput.readUTF();
 
 		segmentsExperienceId = objectInput.readLong();
 
@@ -302,6 +349,12 @@ public class FragmentEntryLinkCacheModel
 		type = objectInput.readInt();
 		lastPropagationDate = objectInput.readLong();
 		lastPublishDate = objectInput.readLong();
+
+		configurationJSONObject =
+			(com.liferay.portal.kernel.json.JSONObject)objectInput.readObject();
+
+		editableValuesJSONObject =
+			(com.liferay.portal.kernel.json.JSONObject)objectInput.readObject();
 	}
 
 	@Override
@@ -315,6 +368,13 @@ public class FragmentEntryLinkCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(fragmentEntryLinkId);
@@ -335,9 +395,26 @@ public class FragmentEntryLinkCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
-		objectOutput.writeLong(originalFragmentEntryLinkId);
+		if (originalFragmentEntryLinkERC == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(originalFragmentEntryLinkERC);
+		}
 
-		objectOutput.writeLong(fragmentEntryId);
+		if (fragmentEntryERC == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(fragmentEntryERC);
+		}
+
+		if (fragmentEntryScopeERC == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(fragmentEntryScopeERC);
+		}
 
 		objectOutput.writeLong(segmentsExperienceId);
 
@@ -403,11 +480,16 @@ public class FragmentEntryLinkCacheModel
 		objectOutput.writeInt(type);
 		objectOutput.writeLong(lastPropagationDate);
 		objectOutput.writeLong(lastPublishDate);
+
+		objectOutput.writeObject(configurationJSONObject);
+
+		objectOutput.writeObject(editableValuesJSONObject);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long fragmentEntryLinkId;
 	public long groupId;
 	public long companyId;
@@ -415,8 +497,9 @@ public class FragmentEntryLinkCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
-	public long originalFragmentEntryLinkId;
-	public long fragmentEntryId;
+	public String originalFragmentEntryLinkERC;
+	public String fragmentEntryERC;
+	public String fragmentEntryScopeERC;
 	public long segmentsExperienceId;
 	public long classNameId;
 	public long classPK;
@@ -433,5 +516,29 @@ public class FragmentEntryLinkCacheModel
 	public int type;
 	public long lastPropagationDate;
 	public long lastPublishDate;
+	public volatile com.liferay.portal.kernel.json.JSONObject
+		configurationJSONObject;
+	public volatile com.liferay.portal.kernel.json.JSONObject
+		editableValuesJSONObject;
+
+	private static final MethodHandle _configurationJSONObjectMethodHandle;
+	private static final MethodHandle _editableValuesJSONObjectMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_configurationJSONObjectMethodHandle = lookup.findSetter(
+				FragmentEntryLinkImpl.class, "_configurationJSONObject",
+				com.liferay.portal.kernel.json.JSONObject.class);
+
+			_editableValuesJSONObjectMethodHandle = lookup.findSetter(
+				FragmentEntryLinkImpl.class, "_editableValuesJSONObject",
+				com.liferay.portal.kernel.json.JSONObject.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
 
 }

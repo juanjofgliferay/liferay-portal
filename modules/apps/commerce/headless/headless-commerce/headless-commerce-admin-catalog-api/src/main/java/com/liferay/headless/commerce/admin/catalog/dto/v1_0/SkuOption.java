@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -49,117 +48,169 @@ public class SkuOption implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SkuOption.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String key;
 
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "31130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "31130")
 	public Long getOptionId() {
+		if (_optionIdSupplier != null) {
+			optionId = _optionIdSupplier.get();
+
+			_optionIdSupplier = null;
+		}
+
 		return optionId;
 	}
 
 	public void setOptionId(Long optionId) {
 		this.optionId = optionId;
+
+		_optionIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptionId(
 		UnsafeSupplier<Long, Exception> optionIdUnsafeSupplier) {
 
-		try {
-			optionId = optionIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionIdSupplier = () -> {
+			try {
+				return optionIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long optionId;
 
+	@JsonIgnore
+	private Supplier<Long> _optionIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "31130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "31130")
 	public Long getOptionValueId() {
+		if (_optionValueIdSupplier != null) {
+			optionValueId = _optionValueIdSupplier.get();
+
+			_optionValueIdSupplier = null;
+		}
+
 		return optionValueId;
 	}
 
 	public void setOptionValueId(Long optionValueId) {
 		this.optionValueId = optionValueId;
+
+		_optionValueIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptionValueId(
 		UnsafeSupplier<Long, Exception> optionValueIdUnsafeSupplier) {
 
-		try {
-			optionValueId = optionValueIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionValueIdSupplier = () -> {
+			try {
+				return optionValueIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long optionValueId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _optionValueIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getValue() {
+		if (_valueSupplier != null) {
+			value = _valueSupplier.get();
+
+			_valueSupplier = null;
+		}
+
 		return value;
 	}
 
 	public void setValue(String value) {
 		this.value = value;
+
+		_valueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValue(
 		UnsafeSupplier<String, Exception> valueUnsafeSupplier) {
 
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valueSupplier = () -> {
+			try {
+				return valueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String value;
+
+	@JsonIgnore
+	private Supplier<String> _valueSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -188,6 +239,8 @@ public class SkuOption implements Serializable {
 
 		sb.append("{");
 
+		String key = getKey();
+
 		if (key != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -202,6 +255,8 @@ public class SkuOption implements Serializable {
 			sb.append("\"");
 		}
 
+		Long optionId = getOptionId();
+
 		if (optionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -212,6 +267,8 @@ public class SkuOption implements Serializable {
 			sb.append(optionId);
 		}
 
+		Long optionValueId = getOptionValueId();
+
 		if (optionValueId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -221,6 +278,8 @@ public class SkuOption implements Serializable {
 
 			sb.append(optionValueId);
 		}
+
+		String value = getValue();
 
 		if (value != null) {
 			if (sb.length() > 1) {
@@ -241,8 +300,8 @@ public class SkuOption implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.SkuOption",
 		name = "x-class-name"
 	)
@@ -288,7 +347,10 @@ public class SkuOption implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

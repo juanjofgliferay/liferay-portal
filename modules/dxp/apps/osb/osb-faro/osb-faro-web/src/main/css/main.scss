@@ -1,8 +1,6 @@
 @import 'custom_clay';
 
-@import 'atlas';
-
-@import '~clay-charts-shared/src/scss/main.scss';
+@import '@clayui/css/src/scss/cadmin-variables';
 
 @import 'variables';
 
@@ -22,7 +20,6 @@
 @import 'applied_filters';
 @import 'associated_segments_card';
 @import 'attribute_view';
-@import 'audience_report';
 @import 'avatar';
 @import 'bar_chart_html';
 @import 'base_configuration_item';
@@ -90,7 +87,6 @@
 @import 'event_analysis_editor';
 @import 'event_analysis_breakdown';
 @import 'event_analysis_toolbar';
-@import 'export_log_modal';
 @import 'file_drop_target';
 @import 'filter';
 @import 'footer';
@@ -121,7 +117,6 @@
 @import 'liferay_data_source';
 @import 'list';
 @import 'list_card';
-@import 'list_group';
 @import 'loading';
 @import 'loading_modal';
 @import 'locations_card';
@@ -206,7 +201,6 @@
 @import 'training_items_card';
 @import 'transitions';
 @import 'trend';
-@import 'trendline';
 @import 'type_trend';
 @import 'ui-kit/colors';
 @import 'ui-kit/item';
@@ -222,6 +216,7 @@
 @import 'vertical_timeline';
 @import 'vertical_timeline_deprecated';
 @import 'with_sidebar';
+@import 'wizard_page';
 @import 'workspace_list';
 @import 'workspace_not_found';
 @import 'workspaces_base_page';

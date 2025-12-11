@@ -18,6 +18,7 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.rest.dto.v1_0.ObjectEntry;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -39,6 +40,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
@@ -162,17 +164,20 @@ public class ObjectEntryExtensionProviderTest {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
-				TestPropsValues.getUserId(), 0, false, false, false,
+				null, TestPropsValues.getUserId(), 0, null, false, true, false,
+				true, false, false, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null, null,
+				ObjectDefinitionTestUtil.getRandomName(), null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				true, ObjectDefinitionConstants.SCOPE_COMPANY,
 				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+				Collections.emptyList(),
 				Arrays.asList(
 					ObjectFieldUtil.createObjectField(
 						ObjectFieldConstants.BUSINESS_TYPE_TEXT,
 						ObjectFieldConstants.DB_TYPE_STRING,
-						RandomTestUtil.randomString(), StringUtil.randomId())));
+						RandomTestUtil.randomString(), StringUtil.randomId())),
+				Collections.emptyList());
 
 		objectDefinition =
 			_objectDefinitionLocalService.publishCustomObjectDefinition(
@@ -263,11 +268,8 @@ public class ObjectEntryExtensionProviderTest {
 		Assert.assertEquals(
 			values.get("decimal"), extendedProperties.get("decimal"));
 
-		BigDecimal bigDecimal = new BigDecimal(
-			String.valueOf(values.get("precisionDecimal")));
-
 		Assert.assertEquals(
-			bigDecimal.setScale(16),
+			new BigDecimal(String.valueOf(values.get("precisionDecimal"))),
 			extendedProperties.get("precisionDecimal"));
 	}
 

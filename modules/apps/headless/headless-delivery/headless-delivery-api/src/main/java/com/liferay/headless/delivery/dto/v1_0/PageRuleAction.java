@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,113 +49,130 @@ public class PageRuleAction implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PageRuleAction.class, json);
 	}
 
-	@Schema(description = "The page rule action's action.")
-	public String getAction() {
-		return action;
-	}
-
-	public void setAction(String action) {
-		this.action = action;
-	}
-
-	@JsonIgnore
-	public void setAction(
-		UnsafeSupplier<String, Exception> actionUnsafeSupplier) {
-
-		try {
-			action = actionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField(description = "The page rule action's action.")
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String action;
-
-	@Schema(description = "The page rule action's ID.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page rule action's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page rule action's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String id;
 
-	@Schema(description = "The page rule condition's item ID.")
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page rule condition's item ID."
+	)
 	public String getItemId() {
+		if (_itemIdSupplier != null) {
+			itemId = _itemIdSupplier.get();
+
+			_itemIdSupplier = null;
+		}
+
 		return itemId;
 	}
 
 	public void setItemId(String itemId) {
 		this.itemId = itemId;
+
+		_itemIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setItemId(
 		UnsafeSupplier<String, Exception> itemIdUnsafeSupplier) {
 
-		try {
-			itemId = itemIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemIdSupplier = () -> {
+			try {
+				return itemIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page rule condition's item ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String itemId;
 
-	@Schema(description = "The page rule action's type.")
+	@JsonIgnore
+	private Supplier<String> _itemIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page rule action's type."
+	)
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page rule action's type.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String type;
+
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -185,19 +201,7 @@ public class PageRuleAction implements Serializable {
 
 		sb.append("{");
 
-		if (action != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"action\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(action));
-
-			sb.append("\"");
-		}
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -213,6 +217,8 @@ public class PageRuleAction implements Serializable {
 			sb.append("\"");
 		}
 
+		String itemId = getItemId();
+
 		if (itemId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -226,6 +232,8 @@ public class PageRuleAction implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -246,8 +254,8 @@ public class PageRuleAction implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageRuleAction",
 		name = "x-class-name"
 	)
@@ -293,7 +301,10 @@ public class PageRuleAction implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

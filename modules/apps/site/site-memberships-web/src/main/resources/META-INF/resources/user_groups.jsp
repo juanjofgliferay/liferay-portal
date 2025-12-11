@@ -22,14 +22,14 @@ Role role = userGroupsDisplayContext.getRole();
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= userGroupsManagementToolbarDisplayContext %>"
-	propsTransformer="js/UserGroupsManagementToolbarPropsTransformer"
+	propsTransformer="{UserGroupsManagementToolbarPropsTransformer} from site-memberships-web"
 />
 
 <portlet:actionURL name="deleteGroupUserGroups" var="deleteGroupUserGroupsURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteGroupUserGroupsURL %>" cssClass="container-fluid container-fluid-max-xl portlet-site-memberships-user-groups" name="fm">
+<aui:form action="<%= deleteGroupUserGroupsURL %>" cssClass="container-fluid portlet-site-memberships-user-groups" name="fm">
 	<aui:input name="tabs1" type="hidden" value="user-groups" />
 	<aui:input name="navigation" type="hidden" value="<%= userGroupsDisplayContext.getNavigation() %>" />
 	<aui:input name="roleId" type="hidden" value="<%= (role != null) ? role.getRoleId() : 0 %>" />
@@ -73,14 +73,18 @@ Role role = userGroupsDisplayContext.getRole();
 	<aui:input name="tabs1" type="hidden" value="user-groups" />
 </aui:form>
 
-<portlet:actionURL name="addUserGroupGroupRole" var="addUserGroupGroupRoleURL" />
+<portlet:actionURL name="addUserGroupGroupRole" var="addUserGroupGroupRoleURL">
+	<portlet:param name="redirect" value="<%= currentURL %>" />
+</portlet:actionURL>
 
 <aui:form action="<%= addUserGroupGroupRoleURL %>" cssClass="hide" name="addUserGroupGroupRoleFm">
 	<aui:input name="tabs1" type="hidden" value="user-groups" />
 	<aui:input name="userGroupId" type="hidden" />
 </aui:form>
 
-<portlet:actionURL name="unassignUserGroupGroupRole" var="unassignUserGroupGroupRoleURL" />
+<portlet:actionURL name="unassignUserGroupGroupRole" var="unassignUserGroupGroupRoleURL">
+	<portlet:param name="redirect" value="<%= currentURL %>" />
+</portlet:actionURL>
 
 <aui:form action="<%= unassignUserGroupGroupRoleURL %>" cssClass="hide" name="unassignUserGroupGroupRoleFm">
 	<aui:input name="tabs1" type="hidden" value="user-groups" />

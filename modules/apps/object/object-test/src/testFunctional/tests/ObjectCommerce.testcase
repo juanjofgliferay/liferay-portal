@@ -1,4 +1,4 @@
-@component-name = "portal-object"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -44,11 +44,7 @@ definition {
 		}
 
 		task ("Create a Commerce Product Group") {
-			Navigator.openURL();
-
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CPCommerceCatalog.newProductsEntry(
 				productCatalog = "Master",
@@ -92,7 +88,6 @@ definition {
 	@description = "LPS-152408 - Verify that it's possible to create an object entry related to Commerce Products"
 	@priority = 4
 	test CanCreateEntryRelatedToCommerceProducts {
-		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -113,11 +108,7 @@ definition {
 		}
 
 		task ("Create a Commerce Product") {
-			Navigator.openURL();
-
-			CommerceNavigator.gotoPortlet(
-				category = "Product Management",
-				portlet = "Products");
+			CommerceProducts.openProductsAdmin();
 
 			CPCommerceCatalog.newProductsEntry(
 				productCatalog = "Master",
@@ -185,9 +176,7 @@ definition {
 
 		ObjectAdmin.publishObjectViaAPI(objectName = "CustomObject145735");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -198,7 +187,7 @@ definition {
 
 		WaitForPageLoad();
 
-		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates");
+		CommerceEntry.gotoMenuTab(menuTab = "Notification Templates DEPRECATED");
 
 		LexiconEntry.gotoAdd();
 

@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -24,6 +24,8 @@ taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
 <%@ page import="com.liferay.asset.kernel.model.AssetVocabularyConstants" %><%@
 page import="com.liferay.frontend.taglib.form.navigator.constants.FormNavigatorConstants" %><%@
+page import="com.liferay.item.selector.ItemSelector" %><%@
+page import="com.liferay.item.selector.criteria.GroupItemSelectorReturnType" %><%@
 page import="com.liferay.map.constants.MapProviderWebKeys" %><%@
 page import="com.liferay.petra.function.transform.TransformUtil" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
@@ -55,9 +57,9 @@ page import="com.liferay.portal.kernel.model.Organization" %><%@
 page import="com.liferay.portal.kernel.model.Portlet" %><%@
 page import="com.liferay.portal.kernel.model.SiteConstants" %><%@
 page import="com.liferay.portal.kernel.model.UserGroup" %><%@
-page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletProvider" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletProviderUtil" %><%@
+page import="com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.kernel.security.permission.ResourceActionsUtil" %><%@
@@ -82,6 +84,7 @@ page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
 page import="com.liferay.portal.kernel.util.PrefsPropsUtil" %><%@
 page import="com.liferay.portal.kernel.util.PropertiesParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.PropsKeys" %><%@
+page import="com.liferay.portal.kernel.util.PropsValues" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.TextFormatter" %><%@
 page import="com.liferay.portal.kernel.util.TreeMapBuilder" %><%@
@@ -91,7 +94,6 @@ page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
 page import="com.liferay.portal.liveusers.LiveUsers" %><%@
-page import="com.liferay.portal.util.PropsValues" %><%@
 page import="com.liferay.ratings.kernel.RatingsType" %><%@
 page import="com.liferay.ratings.kernel.display.context.CompanyPortletRatingsDefinitionDisplayContext" %><%@
 page import="com.liferay.ratings.kernel.display.context.GroupPortletRatingsDefinitionDisplayContext" %><%@
@@ -108,20 +110,21 @@ page import="com.liferay.site.admin.web.internal.display.context.SiteAdminDispla
 page import="com.liferay.site.admin.web.internal.display.context.SiteAdminManagementToolbarDisplayContext" %><%@
 page import="com.liferay.site.admin.web.internal.frontend.taglib.clay.servlet.taglib.SelectSiteInitializerVerticalCard" %><%@
 page import="com.liferay.site.admin.web.internal.frontend.taglib.clay.servlet.taglib.SiteVerticalCard" %><%@
+page import="com.liferay.site.item.selector.SiteItemSelectorCriterion" %><%@
 page import="com.liferay.site.settings.configuration.admin.display.SiteSettingsConfigurationScreenContributor" %><%@
 page import="com.liferay.sites.kernel.util.Sites" %>
+
+<%@ page import="jakarta.portlet.PortletPreferences" %><%@
+page import="jakarta.portlet.PortletRequest" %><%@
+page import="jakarta.portlet.PortletURL" %>
 
 <%@ page import="java.util.ArrayList" %><%@
 page import="java.util.List" %><%@
 page import="java.util.Locale" %><%@
 page import="java.util.Map" %><%@
+page import="java.util.NavigableMap" %><%@
 page import="java.util.Objects" %><%@
-page import="java.util.Set" %><%@
-page import="java.util.TreeMap" %>
-
-<%@ page import="javax.portlet.PortletPreferences" %><%@
-page import="javax.portlet.PortletRequest" %><%@
-page import="javax.portlet.PortletURL" %>
+page import="java.util.Set" %>
 
 <%@ page import="org.osgi.service.cm.ConfigurationException" %>
 

@@ -62,7 +62,7 @@ public class TaxonomyVocabularyResourceImpl
 			transform(
 				assetCategoriesMap.entrySet(),
 				entry -> _toTaxonomyVocabulary(
-					entry.getValue(), entry.getKey())));
+					entry.getValue(), entry.getKey(), siteId)));
 	}
 
 	private Set<AssetCategory> _getAssetCategories(
@@ -141,26 +141,27 @@ public class TaxonomyVocabularyResourceImpl
 	private List<AssetVocabulary> _getAssetVocabularies(Long siteId)
 		throws Exception {
 
-		List<AssetVocabulary> assetVocabularies = new ArrayList<>();
+		return transform(
+			_assetVocabularyLocalService.getGroupVocabularies(
+				_siteConnectedGroupGroupProvider.
+					getCurrentAndAncestorSiteAndDepotGroupIds(siteId)),
+			assetVocabulary -> {
+				if (!assetVocabulary.isAssociatedToClassNameId(
+						_getClassNameId())) {
 
-		for (AssetVocabulary assetVocabulary :
-				_assetVocabularyLocalService.getGroupVocabularies(
-					_siteConnectedGroupGroupProvider.
-						getCurrentAndAncestorSiteAndDepotGroupIds(siteId))) {
+					return null;
+				}
 
-			if (!assetVocabulary.isAssociatedToClassNameId(_getClassNameId())) {
-				continue;
-			}
+				int count =
+					_assetCategoryLocalService.getVocabularyCategoriesCount(
+						assetVocabulary.getVocabularyId());
 
-			int count = _assetCategoryLocalService.getVocabularyCategoriesCount(
-				assetVocabulary.getVocabularyId());
+				if (count > 0) {
+					return assetVocabulary;
+				}
 
-			if (count > 0) {
-				assetVocabularies.add(assetVocabulary);
-			}
-		}
-
-		return assetVocabularies;
+				return null;
+			});
 	}
 
 	private long _getClassNameId() {
@@ -169,25 +170,29 @@ public class TaxonomyVocabularyResourceImpl
 	}
 
 	private TaxonomyVocabulary _toTaxonomyVocabulary(
-		List<AssetCategory> assetCategories, AssetVocabulary assetVocabulary) {
+		List<AssetCategory> assetCategories, AssetVocabulary assetVocabulary,
+		long siteId) {
 
 		return new TaxonomyVocabulary() {
 			{
-				multiValued = assetVocabulary.isMultiValued();
-				name = assetVocabulary.getName();
-				required = assetVocabulary.isRequired(
-					_getClassNameId(),
-					AssetCategoryConstants.ALL_CLASS_TYPE_PK);
-				taxonomyCategories = transformToArray(
-					assetCategories,
-					assetCategory -> new TaxonomyCategory() {
-						{
-							taxonomyCategoryId = assetCategory.getCategoryId();
-							taxonomyCategoryName = assetCategory.getName();
-						}
-					},
-					TaxonomyCategory.class);
-				taxonomyVocabularyId = assetVocabulary.getVocabularyId();
+				setMultiValued(assetVocabulary::isMultiValued);
+				setName(assetVocabulary::getName);
+				setRequired(
+					() -> assetVocabulary.isRequired(
+						_getClassNameId(),
+						AssetCategoryConstants.ALL_CLASS_TYPE_PK, siteId));
+				setTaxonomyCategories(
+					() -> transformToArray(
+						assetCategories,
+						assetCategory -> new TaxonomyCategory() {
+							{
+								setTaxonomyCategoryId(
+									assetCategory::getCategoryId);
+								setTaxonomyCategoryName(assetCategory::getName);
+							}
+						},
+						TaxonomyCategory.class));
+				setTaxonomyVocabularyId(assetVocabulary::getVocabularyId);
 			}
 		};
 	}

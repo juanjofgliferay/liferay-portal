@@ -22,6 +22,8 @@ if (!ddmFormAdminDisplayContext.isFormPublished()) {
 	disableCopyButton = true;
 }
 
+JSONObject formBuilderContextJSONObject = ddmFormAdminDisplayContext.getFormBuilderContextJSONObject();
+
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(redirect);
 
@@ -135,7 +137,7 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 
 		<div id="<portlet:namespace />-container">
 			<react:component
-				module="admin/js/App.es"
+				module="{App} from dynamic-data-mapping-form-web"
 				props='<%=
 					HashMapBuilder.<String, Object>put(
 						"autocompleteUserURL", ddmFormAdminDisplayContext.getAutocompleteUserURL()
@@ -145,6 +147,8 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 						"autosaveURL", autoSaveFormInstanceURL.toString()
 					).put(
 						"availableLanguageIds", ddmFormAdminDisplayContext.getAvailableLanguageIdsJSONArray()
+					).put(
+						"availableLocales", ddmFormAdminDisplayContext.getAvailableLocalesJSONArray()
 					).put(
 						"context", formBuilderContextJSONObject
 					).put(
@@ -179,8 +183,6 @@ renderResponse.setTitle((formInstance == null) ? LanguageUtil.get(request, "new-
 						"localizedDescription", ddmFormAdminDisplayContext.getFormLocalizedDescriptionJSONObject()
 					).put(
 						"localizedName", ddmFormAdminDisplayContext.getFormLocalizedNameJSONObject(formInstance)
-					).put(
-						"mainRequire", ddmFormAdminDisplayContext.getMainRequire()
 					).put(
 						"portletNamespace", liferayPortletResponse.getNamespace()
 					).put(

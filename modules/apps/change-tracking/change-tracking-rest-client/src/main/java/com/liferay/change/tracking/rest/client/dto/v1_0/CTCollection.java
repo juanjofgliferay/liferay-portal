@@ -8,13 +8,13 @@ package com.liferay.change.tracking.rest.client.dto.v1_0;
 import com.liferay.change.tracking.rest.client.function.UnsafeSupplier;
 import com.liferay.change.tracking.rest.client.serdes.v1_0.CTCollectionSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author David Truong
@@ -233,6 +233,27 @@ public class CTCollection implements Cloneable, Serializable {
 	}
 
 	protected Status status;
+
+	public String getStatusMessage() {
+		return statusMessage;
+	}
+
+	public void setStatusMessage(String statusMessage) {
+		this.statusMessage = statusMessage;
+	}
+
+	public void setStatusMessage(
+		UnsafeSupplier<String, Exception> statusMessageUnsafeSupplier) {
+
+		try {
+			statusMessage = statusMessageUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String statusMessage;
 
 	@Override
 	public CTCollection clone() throws CloneNotSupportedException {

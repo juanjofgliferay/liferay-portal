@@ -11,8 +11,6 @@
 PanelCategory panelCategory = (PanelCategory)request.getAttribute(ApplicationListWebKeys.PANEL_CATEGORY);
 
 SiteAdministrationPanelCategoryDisplayContext siteAdministrationPanelCategoryDisplayContext = new SiteAdministrationPanelCategoryDisplayContext(liferayPortletRequest, null);
-
-Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
 %>
 
 <c:if test="<%= siteAdministrationPanelCategoryDisplayContext.getGroup() != null %>">
@@ -105,14 +103,14 @@ Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
 	</c:if>
 </c:if>
 
-<c:if test="<%= (group != null) && !group.isCompany() && !group.isDepot() %>">
+<c:if test="<%= (siteAdministrationPanelCategoryDisplayContext.getGroup() != null) && siteAdministrationPanelCategoryDisplayContext.isShowLayoutsTree() %>">
 	<aui:script sandbox="<%= true %>">
 		var pagesTreeToggle = document.getElementById(
 			'<portlet:namespace />pagesTreeSidenavToggleId'
 		);
 
 		pagesTreeToggle.addEventListener('click', (event) => {
-			Liferay.Portlet.destroy('#p_p_id<portlet:namespace />', true);
+			Liferay.Portlet.destroy('#p_p_id<portlet:namespace />');
 
 			Liferay.Util.Session.set(
 				'com.liferay.product.navigation.product.menu.web_pagesTreeState',

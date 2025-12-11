@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -50,59 +49,85 @@ public class ReindexStatus implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ReindexStatus.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getCompletionPercentage() {
+		if (_completionPercentageSupplier != null) {
+			completionPercentage = _completionPercentageSupplier.get();
+
+			_completionPercentageSupplier = null;
+		}
+
 		return completionPercentage;
 	}
 
 	public void setCompletionPercentage(Long completionPercentage) {
 		this.completionPercentage = completionPercentage;
+
+		_completionPercentageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCompletionPercentage(
 		UnsafeSupplier<Long, Exception> completionPercentageUnsafeSupplier) {
 
-		try {
-			completionPercentage = completionPercentageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_completionPercentageSupplier = () -> {
+			try {
+				return completionPercentageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long completionPercentage;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _completionPercentageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String key;
+
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -131,6 +156,8 @@ public class ReindexStatus implements Serializable {
 
 		sb.append("{");
 
+		Long completionPercentage = getCompletionPercentage();
+
 		if (completionPercentage != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -140,6 +167,8 @@ public class ReindexStatus implements Serializable {
 
 			sb.append(completionPercentage);
 		}
+
+		String key = getKey();
 
 		if (key != null) {
 			if (sb.length() > 1) {
@@ -160,8 +189,8 @@ public class ReindexStatus implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.ReindexStatus",
 		name = "x-class-name"
 	)
@@ -207,7 +236,10 @@ public class ReindexStatus implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

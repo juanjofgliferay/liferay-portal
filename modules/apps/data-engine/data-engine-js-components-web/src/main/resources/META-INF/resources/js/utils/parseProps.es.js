@@ -22,6 +22,7 @@ const validator = (props) => {
 };
 
 export function parseProps({
+	activePage,
 	allowInvalidAvailableLocalesForProperty,
 	allowNestedFields,
 	autocompleteUserURL,
@@ -38,7 +39,9 @@ export function parseProps({
 	dataProviderInstanceParameterSettingsURL,
 	dataProviderInstancesURL,
 	defaultSiteLanguageId,
+	disableFieldRepetition,
 	displayChartAsTable,
+	displayFieldName,
 	fieldSetDefinitionURL,
 	fieldTypes,
 	formInstanceId,
@@ -83,7 +86,9 @@ export function parseProps({
 			dataProviderInstanceParameterSettingsURL,
 			dataProviderInstancesURL,
 			defaultSiteLanguageId,
+			disableFieldRepetition,
 			displayChartAsTable,
+			displayFieldName,
 			fieldSetDefinitionURL,
 			fieldTypes,
 			formInstanceId,
@@ -113,6 +118,7 @@ export function parseProps({
 		state: validator({
 			...otherProps,
 			...otherContext,
+			activePage: activePage ?? 0,
 			rules,
 		}),
 	};

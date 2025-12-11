@@ -65,15 +65,6 @@ definition {
 		}
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-9119 | Test Summary: Property list loading a lot of values"
-	@ignore = "true"
-	@priority = 2
-	test CanPropertyListLoadingALotOfValues {
-
-		// TODO LRAC-9119 CanPropertyListLoadingALotOfValues pending implementation
-
-	}
-
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9121 | Test Summary: Settings page properties list is searchable"
 	@priority = 3
 	test CanSearchForPagePropertiesList {
@@ -246,7 +237,7 @@ definition {
 	@priority = 2
 	test DeletedPropertiesNotAppearAsOptionInSyncSites {
 		task ("Go to properties page and add 2 new properties") {
-			var propertyList = "Property DeletedPropertiesNotAppearAsOptionInSyncSites 1,Property DeletedPropertiesNotAppearAsOptionInSyncSites 2";
+			var propertyList = "DeletedProperty 1,DeletedProperty 2";
 
 			ACNavigation.goToSettings();
 
@@ -260,7 +251,7 @@ definition {
 		task ("Delete a property") {
 			ACSettings.goToProperties();
 
-			ACSettings.deletePropertyByCheckbox(propertyName = "Property DeletedPropertiesNotAppearAsOptionInSyncSites 2");
+			ACSettings.deletePropertyByCheckbox(propertyName = "DeletedProperty 2");
 		}
 
 		task ("Copy the token from AC") {
@@ -280,11 +271,11 @@ definition {
 		}
 
 		task ("Check that the existing properties in the AC appear in the list") {
-			ACDXPSettings.viewGenericListItem(itemValueList = "Property DeletedPropertiesNotAppearAsOptionInSyncSites 1");
+			ACDXPSettings.viewGenericListItem(itemValueList = "DeletedProperty 1");
 		}
 
 		task ("Check that the deleted AC properties do not appear in the list") {
-			ACDXPSettings.viewGenericListItemNotPresent(itemValueList = "Property DeletedPropertiesNotAppearAsOptionInSyncSites 2");
+			ACDXPSettings.viewGenericListItemNotPresent(itemValueList = "DeletedProperty 2");
 		}
 
 		task ("Disconnect the DXP to AC") {

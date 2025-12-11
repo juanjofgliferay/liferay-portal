@@ -43,11 +43,12 @@ export function SearchableContainer({
 		values.businessType !== 'Aggregation';
 
 	useEffect(() => {
-		if (!values.indexedLanguageId) {
+		if (isSearchableString && !values.indexedLanguageId) {
 			setValues({
 				indexedLanguageId: defaultLanguageId,
 			});
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -56,7 +57,8 @@ export function SearchableContainer({
 			className={classNames({
 				'lfr-objects__edit-object-field-card-content':
 					modelBuilder === false,
-				'lfr-objects__edit-object-field-model-builder-panel': modelBuilder,
+				'lfr-objects__edit-object-field-model-builder-panel':
+					modelBuilder,
 			})}
 		>
 			{isApproved && (
@@ -70,7 +72,10 @@ export function SearchableContainer({
 			<ClayForm.Group>
 				<Toggle
 					disabled={
-						values.businessType === 'Encrypted' || values.system
+						values.businessType === 'Aggregation' ||
+						values.businessType === 'Encrypted' ||
+						values.businessType === 'Formula' ||
+						values.system
 					}
 					label={Liferay.Language.get('searchable')}
 					name="indexed"

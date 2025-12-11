@@ -8,7 +8,7 @@ import DataSourceList, {
 } from '../DataSourceList';
 import mockStore, {mockStoreData} from 'test/mock-store';
 import React from 'react';
-import {cleanup, render} from '@testing-library/react';
+import {cleanup, fireEvent, render} from '@testing-library/react';
 import {DataSourceStates} from 'shared/util/constants';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {Provider} from 'react-redux';
@@ -75,10 +75,6 @@ describe('DataSourceList', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		jest.runAllTimers();
-
-		await waitForLoadingToBeRemoved(container);
-
 		expect(container).toMatchSnapshot();
 	});
 
@@ -94,10 +90,6 @@ describe('DataSourceList', () => {
 		const {container} = render(
 			<DefaultComponent queryString='?query=foo' />
 		);
-
-		await waitForLoadingToBeRemoved(container);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -117,11 +109,18 @@ describe('DataSourceList', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		jest.runAllTimers();
+		expect(container.querySelector('.no-results-root')).toMatchSnapshot();
+	});
+
+	it('should open a dropdown with "Liferay DXP" and "Salesforce" when clicking the "Add Data Source" button', async () => {
+		const {container, getByText} = render(<DefaultComponent />);
 
 		await waitForLoadingToBeRemoved(container);
 
-		expect(container.querySelector('.no-results-root')).toMatchSnapshot();
+		fireEvent.click(getByText('Add Data Source'));
+
+		expect(getByText('Liferay DXP')).toBeTruthy();
+		expect(getByText('Salesforce')).toBeTruthy();
 	});
 
 	it('should render toast for one data source with invalid credentials', async () => {
@@ -154,10 +153,6 @@ describe('DataSourceList', () => {
 		);
 
 		const {container} = render(<DefaultComponent />);
-
-		await waitForLoadingToBeRemoved(container);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -195,10 +190,6 @@ describe('DataSourceList', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		jest.runAllTimers();
-
-		await waitForLoadingToBeRemoved(container);
-
 		expect(container.querySelector('.no-results-root')).toMatchSnapshot();
 	});
 
@@ -225,10 +216,6 @@ describe('DataSourceList', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		jest.runAllTimers();
-
-		await waitForLoadingToBeRemoved(container);
-
 		expect(
 			container.querySelectorAll('.embedded-alert-list-root')[1]
 		).toMatchSnapshot();
@@ -250,10 +237,6 @@ describe('DataSourceList', () => {
 		);
 
 		const {container} = render(<DefaultComponent />);
-
-		await waitForLoadingToBeRemoved(container);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -282,10 +265,6 @@ describe('DataSourceList', () => {
 		);
 
 		const {container} = render(<DefaultUserComponent />);
-
-		await waitForLoadingToBeRemoved(container);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 

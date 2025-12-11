@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,13 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -51,144 +50,209 @@ public class Pin implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "33130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "33130")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public MappedProduct getMappedProduct() {
+		if (_mappedProductSupplier != null) {
+			mappedProduct = _mappedProductSupplier.get();
+
+			_mappedProductSupplier = null;
+		}
+
 		return mappedProduct;
 	}
 
 	public void setMappedProduct(MappedProduct mappedProduct) {
 		this.mappedProduct = mappedProduct;
+
+		_mappedProductSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMappedProduct(
 		UnsafeSupplier<MappedProduct, Exception> mappedProductUnsafeSupplier) {
 
-		try {
-			mappedProduct = mappedProductUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_mappedProductSupplier = () -> {
+			try {
+				return mappedProductUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected MappedProduct mappedProduct;
 
-	@Schema(example = "33.54")
+	@JsonIgnore
+	private Supplier<MappedProduct> _mappedProductSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "33.54")
 	public Double getPositionX() {
+		if (_positionXSupplier != null) {
+			positionX = _positionXSupplier.get();
+
+			_positionXSupplier = null;
+		}
+
 		return positionX;
 	}
 
 	public void setPositionX(Double positionX) {
 		this.positionX = positionX;
+
+		_positionXSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPositionX(
 		UnsafeSupplier<Double, Exception> positionXUnsafeSupplier) {
 
-		try {
-			positionX = positionXUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_positionXSupplier = () -> {
+			try {
+				return positionXUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double positionX;
 
-	@Schema(example = "33.54")
+	@JsonIgnore
+	private Supplier<Double> _positionXSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "33.54")
 	public Double getPositionY() {
+		if (_positionYSupplier != null) {
+			positionY = _positionYSupplier.get();
+
+			_positionYSupplier = null;
+		}
+
 		return positionY;
 	}
 
 	public void setPositionY(Double positionY) {
 		this.positionY = positionY;
+
+		_positionYSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPositionY(
 		UnsafeSupplier<Double, Exception> positionYUnsafeSupplier) {
 
-		try {
-			positionY = positionYUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_positionYSupplier = () -> {
+			try {
+				return positionYUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double positionY;
 
-	@Schema(example = "1")
+	@JsonIgnore
+	private Supplier<Double> _positionYSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1")
 	public String getSequence() {
+		if (_sequenceSupplier != null) {
+			sequence = _sequenceSupplier.get();
+
+			_sequenceSupplier = null;
+		}
+
 		return sequence;
 	}
 
 	public void setSequence(String sequence) {
 		this.sequence = sequence;
+
+		_sequenceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSequence(
 		UnsafeSupplier<String, Exception> sequenceUnsafeSupplier) {
 
-		try {
-			sequence = sequenceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sequenceSupplier = () -> {
+			try {
+				return sequenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sequence;
+
+	@JsonIgnore
+	private Supplier<String> _sequenceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -217,6 +281,8 @@ public class Pin implements Serializable {
 
 		sb.append("{");
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -226,6 +292,8 @@ public class Pin implements Serializable {
 
 			sb.append(id);
 		}
+
+		MappedProduct mappedProduct = getMappedProduct();
 
 		if (mappedProduct != null) {
 			if (sb.length() > 1) {
@@ -237,6 +305,8 @@ public class Pin implements Serializable {
 			sb.append(String.valueOf(mappedProduct));
 		}
 
+		Double positionX = getPositionX();
+
 		if (positionX != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -247,6 +317,8 @@ public class Pin implements Serializable {
 			sb.append(positionX);
 		}
 
+		Double positionY = getPositionY();
+
 		if (positionY != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -256,6 +328,8 @@ public class Pin implements Serializable {
 
 			sb.append(positionY);
 		}
+
+		String sequence = getSequence();
 
 		if (sequence != null) {
 			if (sb.length() > 1) {
@@ -276,8 +350,8 @@ public class Pin implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Pin",
 		name = "x-class-name"
 	)
@@ -323,7 +397,10 @@ public class Pin implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

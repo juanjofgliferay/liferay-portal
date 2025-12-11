@@ -9,25 +9,27 @@ import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCrite
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.site.provider.GroupSearchProvider;
 import com.liferay.site.search.GroupSearch;
-import com.liferay.site.util.GroupSearchProvider;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -38,14 +40,11 @@ public class MySitesItemSelectorViewDisplayContext
 	public MySitesItemSelectorViewDisplayContext(
 		HttpServletRequest httpServletRequest,
 		GroupItemSelectorCriterion groupItemSelectorCriterion,
-		String itemSelectedEventName, PortletURL portletURL,
-		GroupSearchProvider groupSearchProvider) {
+		String itemSelectedEventName, PortletURL portletURL) {
 
 		super(
 			httpServletRequest, groupItemSelectorCriterion,
 			itemSelectedEventName, portletURL);
-
-		_groupSearchProvider = groupSearchProvider;
 
 		_portletRequest = getPortletRequest();
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
@@ -56,6 +55,13 @@ public class MySitesItemSelectorViewDisplayContext
 
 	@Override
 	public GroupSearch getGroupSearch() throws Exception {
+		if (_groupSearch != null) {
+			return _groupSearch;
+		}
+
+		GroupItemSelectorCriterion groupItemSelectorCriterion =
+			getGroupItemSelectorCriterion();
+
 		PortletURL portletURL = getPortletURL();
 
 		Group group = _getGroup();
@@ -65,16 +71,16 @@ public class MySitesItemSelectorViewDisplayContext
 				"groupId", String.valueOf(group.getGroupId()));
 		}
 
-		GroupSearch groupSearch = _groupSearchProvider.getGroupSearch(
-			_portletRequest, portletURL);
+		_groupSearch = new GroupSearch(_portletRequest, portletURL);
 
-		if (groupSearch.getStart() == 0) {
-			GroupItemSelectorCriterion groupItemSelectorCriterion =
-				getGroupItemSelectorCriterion();
+		GroupSearchProvider.setResultsAndTotal(
+			_getClassNames(), groupItemSelectorCriterion.getExcludedGroupIds(),
+			_groupSearch, _portletRequest);
 
+		if (_groupSearch.getStart() == 0) {
 			if (groupItemSelectorCriterion.isIncludeUserPersonalSite()) {
 				_prependGroup(
-					groupSearch,
+					_groupSearch,
 					GroupLocalServiceUtil.getGroup(
 						_themeDisplay.getCompanyId(),
 						GroupConstants.USER_PERSONAL_SITE));
@@ -82,13 +88,13 @@ public class MySitesItemSelectorViewDisplayContext
 
 			if (groupItemSelectorCriterion.isIncludeFormsSite()) {
 				_prependGroup(
-					groupSearch,
+					_groupSearch,
 					GroupLocalServiceUtil.getGroup(
 						_themeDisplay.getCompanyId(), GroupConstants.FORMS));
 			}
 		}
 
-		return groupSearch;
+		return _groupSearch;
 	}
 
 	@Override
@@ -153,6 +159,17 @@ public class MySitesItemSelectorViewDisplayContext
 			portletURL.toString());
 	}
 
+	private List<String> _getClassNames() {
+		if (groupItemSelectorCriterion.isIncludeCompany()) {
+			return Arrays.asList(
+				Company.class.getName(), Group.class.getName(),
+				Organization.class.getName());
+		}
+
+		return Arrays.asList(
+			Group.class.getName(), Organization.class.getName());
+	}
+
 	private Group _getGroup() {
 		long groupId = ParamUtil.getLong(
 			httpServletRequest, "groupId",
@@ -175,7 +192,7 @@ public class MySitesItemSelectorViewDisplayContext
 	private static final Log _log = LogFactoryUtil.getLog(
 		MySitesItemSelectorViewDisplayContext.class);
 
-	private final GroupSearchProvider _groupSearchProvider;
+	private GroupSearch _groupSearch;
 	private final PortletRequest _portletRequest;
 	private final ThemeDisplay _themeDisplay;
 

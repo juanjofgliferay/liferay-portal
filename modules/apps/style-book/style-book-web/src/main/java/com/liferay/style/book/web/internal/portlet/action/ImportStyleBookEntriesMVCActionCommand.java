@@ -8,11 +8,11 @@ package com.liferay.style.book.web.internal.portlet.action;
 import com.liferay.frontend.token.definition.FrontendToken;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
@@ -29,15 +29,15 @@ import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.zip.processor.StyleBookEntryZipProcessor;
 import com.liferay.style.book.zip.processor.StyleBookEntryZipProcessorImportResultEntry;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.io.File;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,7 +47,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK,
+		"jakarta.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK,
 		"mvc.command.name=/style_book/import_style_book_entries"
 	},
 	service = MVCActionCommand.class
@@ -100,24 +100,6 @@ public class ImportStyleBookEntriesMVCActionCommand
 
 			SessionMessages.add(actionRequest, "success");
 
-			LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-				themeDisplay.getSiteGroupId(), false);
-
-			Set<String> frontendTokenNames = new HashSet<>();
-
-			FrontendTokenDefinition frontendTokenDefinition =
-				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-					layoutSet.getThemeId());
-
-			if (frontendTokenDefinition != null) {
-				Collection<FrontendToken> frontendTokens =
-					frontendTokenDefinition.getFrontendTokens();
-
-				for (FrontendToken frontendToken : frontendTokens) {
-					frontendTokenNames.add(frontendToken.getName());
-				}
-			}
-
 			for (StyleBookEntryZipProcessorImportResultEntry
 					styleBookEntryZipProcessorImportResultEntry :
 						styleBookEntryZipProcessorImportResultEntries) {
@@ -131,7 +113,9 @@ public class ImportStyleBookEntriesMVCActionCommand
 							INVALID) &&
 					(styleBookEntry != null) &&
 					!_isValidFrontendTokenDefinition(
-						frontendTokenNames, styleBookEntry)) {
+						_getFrontendTokenNames(
+							themeDisplay, styleBookEntry.getThemeId()),
+						styleBookEntry)) {
 
 					SessionMessages.add(
 						actionRequest,
@@ -146,6 +130,39 @@ public class ImportStyleBookEntriesMVCActionCommand
 		}
 
 		sendRedirect(actionRequest, actionResponse);
+	}
+
+	private Set<String> _getFrontendTokenNames(
+		ThemeDisplay themeDisplay, String themeId) {
+
+		Set<String> frontendTokenNames = new HashSet<>();
+
+		FrontendTokenDefinition frontendTokenDefinition = null;
+
+		if (FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-30204")) {
+
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					themeDisplay.getCompanyId(), themeId);
+		}
+		else {
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					_layoutSetLocalService.fetchLayoutSet(
+						themeDisplay.getSiteGroupId(), false));
+		}
+
+		if (frontendTokenDefinition != null) {
+			Collection<FrontendToken> frontendTokens =
+				frontendTokenDefinition.getFrontendTokens();
+
+			for (FrontendToken frontendToken : frontendTokens) {
+				frontendTokenNames.add(frontendToken.getName());
+			}
+		}
+
+		return frontendTokenNames;
 	}
 
 	private List<StyleBookEntryZipProcessorImportResultEntry>

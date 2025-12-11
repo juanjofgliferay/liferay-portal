@@ -5,15 +5,23 @@
 
 package com.liferay.portal.search.elasticsearch7.internal.query;
 
+import com.liferay.portal.kernel.search.filter.TermsFilter;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.elasticsearch7.internal.filter.ElasticsearchFilterTranslator;
+import com.liferay.portal.search.elasticsearch7.internal.filter.ElasticsearchFilterTranslatorFixture;
+import com.liferay.portal.search.elasticsearch7.internal.legacy.query.ElasticsearchQueryTranslatorFixture;
+import com.liferay.portal.search.elasticsearch7.internal.util.QueryUtil;
 import com.liferay.portal.search.internal.query.BooleanQueryImpl;
 import com.liferay.portal.search.internal.query.CommonTermsQueryImpl;
 import com.liferay.portal.search.internal.query.FuzzyQueryImpl;
 import com.liferay.portal.search.internal.query.MatchAllQueryImpl;
 import com.liferay.portal.search.internal.query.MoreLikeThisQueryImpl;
 import com.liferay.portal.search.internal.query.TermQueryImpl;
+import com.liferay.portal.search.internal.query.TermsQueryImpl;
 import com.liferay.portal.search.internal.query.WildcardQueryImpl;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.Query;
+import com.liferay.portal.search.query.TermsQuery;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Collections;
@@ -40,13 +48,17 @@ public class ElasticsearchQueryTranslatorTest {
 
 	@Before
 	public void setUp() throws Exception {
-		ElasticsearchQueryTranslatorFixture
-			elasticsearchQueryTranslatorFixture =
-				new ElasticsearchQueryTranslatorFixture();
+		ElasticsearchFilterTranslatorFixture
+			elasticsearchFilterTranslatorFixture =
+				new ElasticsearchFilterTranslatorFixture(
+					new ElasticsearchQueryTranslatorFixture(
+					).getElasticsearchQueryTranslator());
 
-		_elasticsearchQueryTranslator =
-			elasticsearchQueryTranslatorFixture.
-				getElasticsearchQueryTranslator();
+		_elasticsearchFilterTranslator =
+			elasticsearchFilterTranslatorFixture.
+				getElasticsearchFilterTranslator();
+
+		_elasticsearchQueryTranslator = new ElasticsearchQueryTranslator();
 	}
 
 	@Test
@@ -104,6 +116,52 @@ public class ElasticsearchQueryTranslatorTest {
 			String.valueOf(innerQueryBuilder.boost()));
 	}
 
+	@Test
+	public void testTranslateTermsFilterExceedingMaxAllowedTerms() {
+		TermsFilter termsFilter = new TermsFilter("groupId");
+
+		termsFilter.addValues("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+		Integer maxTermsCount = QueryUtil.maxTermsCount;
+
+		QueryUtil.maxTermsCount = 10;
+
+		_assertTermsCount(1, termsFilter);
+
+		QueryUtil.maxTermsCount = 5;
+
+		_assertTermsCount(2, termsFilter);
+
+		QueryUtil.maxTermsCount = 3;
+
+		_assertTermsCount(4, termsFilter);
+
+		QueryUtil.maxTermsCount = maxTermsCount;
+	}
+
+	@Test
+	public void testTranslateTermsQueryExceedingMaxAllowedTerms() {
+		TermsQuery termsQuery = new TermsQueryImpl("groupId");
+
+		termsQuery.addValues("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+		Integer maxTermsCount = QueryUtil.maxTermsCount;
+
+		QueryUtil.maxTermsCount = 10;
+
+		_assertTermsCount(1, termsQuery);
+
+		QueryUtil.maxTermsCount = 5;
+
+		_assertTermsCount(2, termsQuery);
+
+		QueryUtil.maxTermsCount = 3;
+
+		_assertTermsCount(4, termsQuery);
+
+		QueryUtil.maxTermsCount = maxTermsCount;
+	}
+
 	private void _assertBoost(Query query) {
 		query.setBoost(_BOOST);
 
@@ -115,8 +173,27 @@ public class ElasticsearchQueryTranslatorTest {
 			String.valueOf(queryBuilder.boost()));
 	}
 
+	private void _assertTermsCount(int expected, TermsFilter termsFilter) {
+		String queryString = _elasticsearchFilterTranslator.visit(
+			termsFilter
+		).toString();
+
+		Assert.assertEquals(
+			queryString, expected, StringUtil.count(queryString, "terms"));
+	}
+
+	private void _assertTermsCount(int expected, TermsQuery termsQuery) {
+		String queryString = _elasticsearchQueryTranslator.visit(
+			termsQuery
+		).toString();
+
+		Assert.assertEquals(
+			queryString, expected, StringUtil.count(queryString, "terms"));
+	}
+
 	private static final Float _BOOST = 1.5F;
 
+	private ElasticsearchFilterTranslator _elasticsearchFilterTranslator;
 	private ElasticsearchQueryTranslator _elasticsearchQueryTranslator;
 
 }

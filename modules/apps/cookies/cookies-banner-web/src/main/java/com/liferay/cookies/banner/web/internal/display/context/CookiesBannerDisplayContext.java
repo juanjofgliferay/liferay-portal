@@ -7,21 +7,26 @@ package com.liferay.cookies.banner.web.internal.display.context;
 
 import com.liferay.cookies.banner.web.internal.constants.CookiesBannerPortletKeys;
 import com.liferay.cookies.configuration.CookiesConfigurationProvider;
+import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
+import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.RenderRequest;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Eduardo García
@@ -31,15 +36,19 @@ public class CookiesBannerDisplayContext
 
 	public CookiesBannerDisplayContext(
 		CookiesConfigurationProvider cookiesConfigurationProvider,
-		RenderRequest renderRequest, RenderResponse renderResponse) {
+		LayoutUtilityPageEntryLayoutProvider
+			layoutUtilityPageEntryLayoutProvider,
+		RenderRequest renderRequest) {
 
-		super(cookiesConfigurationProvider, renderRequest, renderResponse);
+		super(
+			cookiesConfigurationProvider,
+			PortalUtil.getHttpServletRequest(renderRequest),
+			layoutUtilityPageEntryLayoutProvider);
 	}
 
 	public Object getConfigurationURL() {
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
-			RequestBackedPortletURLFactoryUtil.create(
-				PortalUtil.getLiferayPortletRequest(renderRequest));
+			RequestBackedPortletURLFactoryUtil.create(httpServletRequest);
 
 		return PortletURLBuilder.create(
 			requestBackedPortletURLFactory.createRenderURL(
@@ -59,24 +68,40 @@ public class CookiesBannerDisplayContext
 	}
 
 	public Map<String, Object> getContext(Locale locale) {
-		LocalizedValuesMap titleLocalizedValuesMap =
-			cookiesConsentConfiguration.title();
+		HashMapBuilder.HashMapWrapper<String, Object> hashMapWrapper =
+			HashMapBuilder.<String, Object>put(
+				"configurationNamespace",
+				CookiesBannerPortletKeys.COOKIES_BANNER_CONFIGURATION
+			).put(
+				"configurationURL", getConfigurationURL()
+			).put(
+				"includeDeclineAllButton", isIncludeDeclineAllButton()
+			).put(
+				"optionalConsentCookieTypeNames",
+				getConsentCookieTypeNamesJSONArray(
+					getOptionalConsentCookieTypes())
+			).put(
+				"requiredConsentCookieTypeNames",
+				getConsentCookieTypeNamesJSONArray(
+					getRequiredConsentCookieTypes())
+			).put(
+				"title",
+				() -> {
+					LocalizedValuesMap titleLocalizedValuesMap =
+						cookiesConsentConfiguration.title();
 
-		return HashMapBuilder.<String, Object>put(
-			"configurationNamespace",
-			CookiesBannerPortletKeys.COOKIES_BANNER_CONFIGURATION
+					return titleLocalizedValuesMap.get(locale);
+				}
+			);
+
+		if (!isConsentRenewalPeriodEnabled()) {
+			return hashMapWrapper.build();
+		}
+
+		return hashMapWrapper.put(
+			"consentRenewalPeriod", getConsentRenewalPeriod()
 		).put(
-			"configurationURL", getConfigurationURL()
-		).put(
-			"includeDeclineAllButton", isIncludeDeclineAllButton()
-		).put(
-			"optionalConsentCookieTypeNames",
-			getConsentCookieTypeNamesJSONArray(getOptionalConsentCookieTypes())
-		).put(
-			"requiredConsentCookieTypeNames",
-			getConsentCookieTypeNamesJSONArray(getRequiredConsentCookieTypes())
-		).put(
-			"title", titleLocalizedValuesMap.get(locale)
+			"modifiedDate", getModifiedDate()
 		).build();
 	}
 
@@ -87,7 +112,7 @@ public class CookiesBannerDisplayContext
 		return linkDisplayTextLocalizedValuesMap.get(locale);
 	}
 
-	public String getPrivacyPolicyLink() {
+	public String getPrivacyPolicyLink() throws PortalException {
 		String privacyPolicyLink =
 			cookiesBannerConfiguration.privacyPolicyLink();
 
@@ -95,7 +120,28 @@ public class CookiesBannerDisplayContext
 			return privacyPolicyLink;
 		}
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Layout layout =
+			layoutUtilityPageEntryLayoutProvider.
+				getDefaultLayoutUtilityPageEntryLayout(
+					themeDisplay.getScopeGroupId(),
+					LayoutUtilityPageEntryConstants.TYPE_COOKIE_POLICY);
+
+		if (layout != null) {
+			return PortalUtil.getLayoutURL(layout, themeDisplay);
+		}
+
 		return StringPool.POUND;
+	}
+
+	public String getTitle(Locale locale) {
+		LocalizedValuesMap titleLocalizedValuesMap =
+			cookiesBannerConfiguration.title();
+
+		return titleLocalizedValuesMap.get(locale);
 	}
 
 }

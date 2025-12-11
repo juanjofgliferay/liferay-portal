@@ -7,6 +7,7 @@ package com.liferay.portal.search.tuning.rankings.web.internal;
 
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -23,8 +24,6 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
@@ -44,33 +43,36 @@ import com.liferay.portal.search.filter.ComplexQueryPart;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilder;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
 import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.IdsQuery;
+import com.liferay.portal.search.query.MatchAllQuery;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexName;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexNameBuilder;
+import com.liferay.portal.search.tuning.rankings.helper.RankingHelper;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexName;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexNameBuilder;
+import com.liferay.portal.search.tuning.rankings.web.internal.helper.RankingHelperImpl;
 import com.liferay.portal.search.web.interpreter.SearchResultInterpreterProvider;
+
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.text.SimpleDateFormat;
 
 import java.util.Collections;
 import java.util.Locale;
-import java.util.Properties;
 import java.util.function.Consumer;
-
-import javax.portlet.ActionResponse;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -532,28 +534,6 @@ public abstract class BaseRankingsWebTestCase {
 		);
 	}
 
-	protected void setUpPropsUtil() {
-		Props props = Mockito.mock(Props.class);
-
-		Mockito.doReturn(
-			""
-		).when(
-			props
-		).get(
-			Mockito.anyString()
-		);
-
-		Mockito.doReturn(
-			Mockito.mock(Properties.class)
-		).when(
-			props
-		).getProperties(
-			Mockito.anyString(), Mockito.anyBoolean()
-		);
-
-		PropsUtil.setProps(props);
-	}
-
 	protected void setUpQuery() {
 		IdsQuery idsQuery = Mockito.mock(IdsQuery.class);
 
@@ -572,10 +552,32 @@ public abstract class BaseRankingsWebTestCase {
 		);
 
 		Mockito.doReturn(
+			Mockito.mock(BooleanQuery.class)
+		).when(
+			queries
+		).booleanQuery();
+
+		Mockito.doReturn(
 			idsQuery
 		).when(
 			queries
 		).ids();
+
+		Mockito.doReturn(
+			Mockito.mock(MatchAllQuery.class)
+		).when(
+			queries
+		).matchAll();
+	}
+
+	protected void setUpRankingHelper() {
+		Mockito.doReturn(
+			StringPool.BLANK
+		).when(
+			rankingHelper
+		).getDocumentId(
+			Mockito.anyString()
+		);
 	}
 
 	protected void setUpRankingIndexNameBuilder() {
@@ -832,6 +834,8 @@ public abstract class BaseRankingsWebTestCase {
 	protected Language language = Mockito.mock(Language.class);
 	protected Portal portal = Mockito.mock(Portal.class);
 	protected Queries queries = Mockito.mock(Queries.class);
+	protected RankingHelper rankingHelper = Mockito.spy(
+		RankingHelperImpl.class);
 	protected RankingIndexNameBuilder rankingIndexNameBuilder = Mockito.mock(
 		RankingIndexNameBuilder.class);
 	protected ResourceRequest resourceRequest = Mockito.mock(

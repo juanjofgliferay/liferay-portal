@@ -11,7 +11,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -25,14 +24,14 @@ import com.liferay.sharing.filter.SharedAssetsFilterItem;
 import com.liferay.sharing.web.internal.filter.SharedAssetsFilterItemRegistry;
 import com.liferay.sharing.web.internal.item.selector.SharedAssetsFilterItemItemSelectorCriterion;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -79,15 +78,7 @@ public class ViewSharedAssetsManagementToolbarDisplayContext
 				dropdownGroupItem.setDropdownItems(
 					_getFilterNavigationDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
+					LanguageUtil.get(httpServletRequest, "filter-by"));
 			}
 		).build();
 	}

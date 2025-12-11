@@ -10,13 +10,12 @@ import {
 	convertFieldMappingToOrganizationProperty
 } from '../utils/utils';
 import {createInterestProperty} from '../utils/utils';
-import {
-	DEVELOPER_MODE,
-	ENABLE_ACCOUNTS,
-	FieldContexts,
-	FieldOwnerTypes
-} from 'shared/util/constants';
 import {EventTypes} from 'event-analysis/utils/types';
+import {
+	FieldContexts,
+	FieldOwnerTypes,
+	SegmentTypes
+} from 'shared/util/constants';
 import {
 	INDIVIDUAL_PROPERTIES,
 	ORGANIZATION_PROPERTIES,
@@ -32,7 +31,15 @@ import {withRequest} from 'shared/hoc';
 
 const MAX_DELTA = 500;
 
-const fetchPropertyGroups = ({groupId}: {groupId: string}): Promise<any> =>
+const fetchPropertyGroups = ({
+	channelId,
+	groupId,
+	segmentType
+}: {
+	channelId: string;
+	groupId: string;
+	segmentType?: string;
+}): Promise<any> =>
 	Promise.all([
 		API.fieldMappings.search({
 			context: FieldContexts.Demographics,
@@ -47,7 +54,8 @@ const fetchPropertyGroups = ({groupId}: {groupId: string}): Promise<any> =>
 			ownerType: FieldOwnerTypes.Individual
 		}),
 		API.fieldMappings.search({
-			context: FieldContexts.Organization,
+			channelId,
+			context: FieldContexts.Account,
 			delta: MAX_DELTA,
 			groupId,
 			ownerType: FieldOwnerTypes.Account
@@ -59,39 +67,45 @@ const fetchPropertyGroups = ({groupId}: {groupId: string}): Promise<any> =>
 			groupId,
 			ownerType: FieldOwnerTypes.Organization
 		}),
-		API.interests.searchKeywords({delta: MAX_DELTA, groupId}),
-		Promise.resolve(SESSION_PROPERTIES),
-		// TODO: LRAC-8210 Remove for release 3.1
-		DEVELOPER_MODE
-			? client.query({
-					fetchPolicy: 'network-only',
-					query: EventDefinitionsQuery,
-					variables: {
-						eventType: EventTypes.Custom,
-						hidden: false,
-						page: 0,
-						size: MAX_DELTA,
-						sort: {
-							column: NAME,
-							type: OrderByDirections.Ascending
-						}
-					}
+		client.query({
+			fetchPolicy: 'network-only',
+			query: EventDefinitionsQuery,
+			variables: {
+				eventType: EventTypes.Custom,
+				hidden: false,
+				page: 0,
+				size: MAX_DELTA,
+				sort: {
+					column: NAME,
+					type: OrderByDirections.Ascending
+				}
+			}
+		}),
+		Promise.resolve(WEB_BEHAVIORS),
+		segmentType === SegmentTypes.Batch
+			? API.interests.searchKeywords({
+					channelId,
+					delta: MAX_DELTA,
+					groupId
 			  })
-			: Promise.resolve([]),
-		Promise.resolve(WEB_BEHAVIORS)
+			: Promise.resolve({items: []}),
+		Promise.resolve(SESSION_PROPERTIES)
 	]);
 
-const mapResultToProps = ([
-	individualDemographicsMappings,
-	individualCustomMappings,
-	accountMappings,
-	organizationProperties,
-	organizationCustomMappings,
-	interestKeywords,
-	sessionProperties,
-	eventProperties,
-	webBehaviors
-]) => {
+const mapResultToProps = (
+	[
+		individualDemographicsMappings,
+		individualCustomMappings,
+		accountMappings,
+		organizationProperties,
+		organizationCustomMappings,
+		eventProperties,
+		webBehaviors,
+		interestKeywords,
+		sessionProperties
+	],
+	{type}
+) => {
 	const individualDemographicProperties = individualDemographicsMappings.items.map(
 		convertFieldMappingToIndividualProperty
 	);
@@ -141,22 +155,19 @@ const mapResultToProps = ([
 				propertySubgroups: List(
 					[
 						new PropertySubgroup({
-							// TODO: LRAC-8210 Remove for release 3.1
-							label: DEVELOPER_MODE
-								? Liferay.Language.get('default-events')
-								: null,
+							label: Liferay.Language.get('default-events'),
+
 							properties: webBehaviors
 						}),
-						// TODO: LRAC-8210 Remove for release 3.1
-						DEVELOPER_MODE &&
-							new PropertySubgroup({
-								label: Liferay.Language.get('custom-events'),
-								properties: List(
-									eventProperties?.data?.eventDefinitions?.eventDefinitions?.map(
-										convertEventToProperty
-									)
+
+						new PropertySubgroup({
+							label: Liferay.Language.get('custom-events'),
+							properties: List(
+								eventProperties?.data?.eventDefinitions?.eventDefinitions?.map(
+									convertEventToProperty
 								)
-							})
+							)
+						})
 					].filter(Boolean)
 				)
 			}),
@@ -167,42 +178,47 @@ const mapResultToProps = ([
 				propertyKey: FieldOwnerTypes.Individual,
 				propertySubgroups: individualSubgroupsIList
 			}),
-			ENABLE_ACCOUNTS &&
+			new PropertyGroup({
+				label: sub(Liferay.Language.get('x-attributes'), [
+					Liferay.Language.get('account')
+				]) as string,
+				propertyKey: FieldOwnerTypes.Account,
+				propertySubgroups: List([
+					new PropertySubgroup({
+						properties: List(
+							accountMappings.items.map(
+								convertFieldMappingToAccountProperty
+							)
+						)
+					})
+				])
+			}),
+			type === SegmentTypes.Batch &&
 				new PropertyGroup({
-					label: sub(Liferay.Language.get('x-attributes'), [
-						Liferay.Language.get('account')
-					]) as string,
-					propertyKey: FieldOwnerTypes.Account,
+					label: Liferay.Language.get('interests'),
+					propertyKey: 'interest',
 					propertySubgroups: List([
 						new PropertySubgroup({
 							properties: List(
-								accountMappings.items.map(
-									convertFieldMappingToAccountProperty
+								interestKeywords.items.map(
+									createInterestProperty
 								)
 							)
 						})
 					])
 				}),
-			new PropertyGroup({
-				label: Liferay.Language.get('interests'),
-				propertyKey: 'interest',
-				propertySubgroups: List([
-					new PropertySubgroup({
-						properties: List(
-							interestKeywords.items.map(createInterestProperty)
-						)
-					})
-				])
-			}),
-			new PropertyGroup({
-				label: sub(Liferay.Language.get('x-attributes'), [
-					Liferay.Language.get('session')
-				]) as string,
-				propertyKey: 'session',
-				propertySubgroups: List([
-					new PropertySubgroup({properties: sessionProperties})
-				])
-			})
+			type === SegmentTypes.Batch &&
+				new PropertyGroup({
+					label: sub(Liferay.Language.get('x-attributes'), [
+						Liferay.Language.get('session')
+					]) as string,
+					propertyKey: 'session',
+					propertySubgroups: List([
+						new PropertySubgroup({
+							properties: List(sessionProperties)
+						})
+					])
+				})
 		].filter(Boolean) as PropertyGroup[]
 	);
 

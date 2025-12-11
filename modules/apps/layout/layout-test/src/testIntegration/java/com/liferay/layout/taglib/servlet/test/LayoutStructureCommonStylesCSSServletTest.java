@@ -28,8 +28,8 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -47,6 +47,11 @@ import org.springframework.mock.web.MockHttpServletResponse;
  */
 @RunWith(Arquillian.class)
 public class LayoutStructureCommonStylesCSSServletTest {
+
+	public static final String COMMON_CSS_STYLE =
+		".lfr-layout-structure-item-container {padding: 0;} " +
+			".lfr-layout-structure-item-row {overflow: hidden;} " +
+				".portlet-borderless .portlet-content {padding: 0;}";
 
 	@ClassRule
 	@Rule
@@ -75,7 +80,8 @@ public class LayoutStructureCommonStylesCSSServletTest {
 	public void testDoesNotRender() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
 				_read("layout_structure_container_fixed.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
@@ -85,15 +91,17 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style_container_fixed.css")));
+			_normalize(
+				COMMON_CSS_STYLE +
+					_read("expected_style_container_fixed.css")));
 	}
 
 	@Test
 	public void testRenderCommonStyles() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
-				_read("layout_structure.json"));
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(), _read("layout_structure.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
@@ -102,14 +110,15 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style.css")));
+			_normalize(COMMON_CSS_STYLE + _read("expected_style.css")));
 	}
 
 	@Test
 	public void testRenderCommonStylesWithCustomCSS() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
 				_read("layout_structure_with_custom_css.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
@@ -119,14 +128,17 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style_with_custom_css.css")));
+			_normalize(
+				COMMON_CSS_STYLE +
+					_read("expected_style_with_custom_css.css")));
 	}
 
 	@Test
 	public void testRenderCommonStylesWithResponsive() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
 				_read("layout_structure_with_responsive_styles.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
@@ -136,14 +148,17 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(_read("expected_style_with_responsive_styles.css")));
+			_normalize(
+				COMMON_CSS_STYLE +
+					_read("expected_style_with_responsive_styles.css")));
 	}
 
 	@Test
 	public void testRenderEmptyTagWhenItDoesNotHaveStyles() throws Exception {
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), _layout.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				_layout.getPlid(),
 				_read("layout_structure_without_styles.json"));
 
 		MockHttpServletResponse mockHttpServletResponse =
@@ -153,9 +168,7 @@ public class LayoutStructureCommonStylesCSSServletTest {
 
 		Assert.assertEquals(
 			_normalize(mockHttpServletResponse.getContentAsString()),
-			_normalize(
-				".lfr-layout-structure-item-container {padding: 0;}." +
-					"lfr-layout-structure-item-row {overflow: hidden;}"));
+			_normalize(COMMON_CSS_STYLE));
 	}
 
 	private HttpServletRequest _getHttpServletRequest() throws Exception {

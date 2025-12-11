@@ -10,15 +10,23 @@ exports[`SegmentOverview should render 1`] = `
     >
       <div
         class="card card-root segment-profile-card-root"
+        id="container.report.segmentMembershipCard"
       >
         <div
-          class="card-header"
+          class="card-header align-items-center d-flex justify-content-between"
         >
-          <h5
+          <div
             class="card-title"
           >
-            Segment Membership
-          </h5>
+            Segment Membership Trend
+          </div>
+          <span
+            class="text-secondary text-uppercase"
+          >
+            <strong>
+              Last 30 days
+            </strong>
+          </span>
         </div>
         <div
           class="card-body"
@@ -28,12 +36,8 @@ exports[`SegmentOverview should render 1`] = `
           >
             <div
               class="recharts-responsive-container"
-              style="width: 100%; height: 360px;"
-            >
-              <div
-                style="position: absolute; width: 0px; height: 0px; visibility: hidden; display: none;"
-              />
-            </div>
+              style="width: 100%; height: 360px; min-width: 0;"
+            />
           </div>
         </div>
         <div
@@ -41,7 +45,7 @@ exports[`SegmentOverview should render 1`] = `
         >
           <a
             class="button-root btn btn-outline-borderless btn-sm btn-outline-secondary"
-            href="/workspace/23/contacts/segments/test/membership"
+            href="/workspace/23/contacts/segments/0/membership"
           >
             View Members
             <svg
@@ -49,7 +53,7 @@ exports[`SegmentOverview should render 1`] = `
               role="presentation"
             >
               <use
-                xlink:href="#angle-right-small"
+                href="#angle-right-small"
               />
             </svg>
           </a>
@@ -57,16 +61,17 @@ exports[`SegmentOverview should render 1`] = `
       </div>
       <div
         class="card card-root interests-card-root"
+        id="container.report.topInterestsCard"
         style="min-height: 536px;"
       >
         <div
           class="card-header"
         >
-          <h5
+          <div
             class="card-title"
           >
             Top Interests
-          </h5>
+          </div>
         </div>
         <div
           class="error-display-root flex-grow-1 error-spacer no-results-root flex-grow-1"
@@ -74,11 +79,11 @@ exports[`SegmentOverview should render 1`] = `
           <div
             class="no-results-content"
           >
-            <h4
-              class="no-results-title"
+            <div
+              class="h4 no-results-title"
             >
               An unexpected error occurred.
-            </h4>
+            </div>
             <button
               class="button-root btn btn-secondary"
               type="button"
@@ -92,7 +97,7 @@ exports[`SegmentOverview should render 1`] = `
         >
           <a
             class="button-root c-link link-secondary text-decoration-none"
-            href="/workspace/23/contacts/segments/test/interests"
+            href="/workspace/23/contacts/segments/0/interests"
           >
             View All Interests
             <svg
@@ -100,7 +105,7 @@ exports[`SegmentOverview should render 1`] = `
               role="presentation"
             >
               <use
-                xlink:href="#angle-right-small"
+                href="#angle-right-small"
               />
             </svg>
           </a>
@@ -108,6 +113,7 @@ exports[`SegmentOverview should render 1`] = `
       </div>
       <div
         class="card card-root distribution-card-root"
+        id="container.report.distributionBreakdownCard"
         style="min-height: 536px;"
       >
         <div
@@ -142,7 +148,7 @@ exports[`SegmentOverview should render 1`] = `
                           role="presentation"
                         >
                           <use
-                            xlink:href="#times"
+                            href="#times"
                           />
                         </svg>
                       </button>
@@ -161,7 +167,7 @@ exports[`SegmentOverview should render 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#plus"
+                  href="#plus"
                 />
               </svg>
             </button>
@@ -177,21 +183,27 @@ exports[`SegmentOverview should render 1`] = `
               <div
                 class="no-results-content"
               >
-                <h4
-                  class="no-results-title"
+                <div
+                  class="h4 no-results-title"
                 >
                   There are no results found.
-                </h4>
+                </div>
                 <div
                   class="no-results-description"
                 >
                   Try choosing a different breakdown.
                   <a
                     class="d-block"
-                    href="https://learn.liferay.com/analytics-cloud/latest/en/people/segments/segments.html#distribution-tab"
+                    href="https://learn.liferay.com/w/dxp/personalization/analytics-cloud/people/segments-analytics#distribution-tab"
+                    rel="noreferrer noopener"
                     target="_blank"
                   >
                     Learn more about distribution.
+                    <span
+                      class="sr-only"
+                    >
+                      (Opens a new window)
+                    </span>
                   </a>
                 </div>
               </div>
@@ -203,7 +215,7 @@ exports[`SegmentOverview should render 1`] = `
         >
           <a
             class="button-root btn btn-outline-borderless btn-sm btn-outline-secondary"
-            href="/workspace/23/contacts/segments/test/distribution"
+            href="/workspace/23/contacts/segments/0/distribution"
           >
             Explore Breakdown
             <svg
@@ -211,7 +223,7 @@ exports[`SegmentOverview should render 1`] = `
               role="presentation"
             >
               <use
-                xlink:href="#angle-right-small"
+                href="#angle-right-small"
               />
             </svg>
           </a>
@@ -223,15 +235,16 @@ exports[`SegmentOverview should render 1`] = `
     >
       <div
         class="card card-root composition-card-root"
+        id="container.report.segmentCompositionCard"
       >
         <div
           class="card-header"
         >
-          <h5
+          <div
             class="card-title"
           >
             Segment Composition
-          </h5>
+          </div>
         </div>
         <div
           class="card-body"
@@ -295,13 +308,16 @@ exports[`SegmentOverview should render 1`] = `
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
+                  data-testid="active-count"
                 >
                   0
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
                 >
-                  <b>
+                  <b
+                    data-testid="active-porcentage"
+                  >
                     0%
                   </b>
                 </div>
@@ -326,18 +342,94 @@ exports[`SegmentOverview should render 1`] = `
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
+                  data-testid="active-count"
                 >
                   0
                 </div>
                 <div
                   class="legend-template-column justify-content-end"
                 >
-                  <b>
+                  <b
+                    data-testid="active-porcentage"
+                  >
                     0%
                   </b>
                 </div>
               </li>
             </ul>
+          </div>
+        </div>
+      </div>
+      <div
+        class="panel card-root"
+      >
+        <button
+          aria-controls="clay-id-1"
+          aria-expanded="true"
+          class="panel-header panel-header-link collapse-icon collapse-icon-middle show btn btn-unstyled"
+          type="button"
+        >
+          <div
+            class="card-title"
+          >
+            Segment Criteria
+          </div>
+          <span
+            class="collapse-icon-closed"
+          >
+            <svg
+              class="lexicon-icon lexicon-icon-angle-right"
+              role="presentation"
+            >
+              <use
+                href="#angle-right"
+              />
+            </svg>
+          </span>
+          <span
+            class="collapse-icon-open"
+          >
+            <svg
+              class="lexicon-icon lexicon-icon-angle-down"
+              role="presentation"
+            >
+              <use
+                href="#angle-down"
+              />
+            </svg>
+          </span>
+        </button>
+        <div
+          aria-labelledby="clay-id-1"
+          class="panel-collapse"
+          id="clay-id-1"
+          role="region"
+        >
+          <div
+            class="panel-body criteria-card-root"
+          >
+            <div
+              class="criteria-view-root pt-2"
+            >
+              <div
+                class="criteria-group"
+              >
+                <div
+                  class="criteria-row"
+                >
+                  Individual
+                  <b>
+                    Middle Name
+                  </b>
+                  <span>
+                    is
+                  </span>
+                  <b>
+                    "additionalName"
+                  </b>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

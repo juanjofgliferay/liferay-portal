@@ -30,19 +30,29 @@ public class AddressServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.AddressServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static Address addAddress(
-			String className, long classPK, String street1, String street2,
-			String street3, String city, String zip, long regionId,
-			long countryId, long listTypeId, boolean mailing, boolean primary,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			long countryId, long listTypeId, long regionId, String city,
+			String description, boolean mailing, String name, boolean primary,
+			String street1, String street2, String street3, String subtype,
+			String zip, String phoneNumber, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addAddress(
-			className, classPK, street1, street2, street3, city, zip, regionId,
-			countryId, listTypeId, mailing, primary, serviceContext);
+			externalReferenceCode, className, classPK, countryId, listTypeId,
+			regionId, city, description, mailing, name, primary, street1,
+			street2, street3, subtype, zip, phoneNumber, serviceContext);
 	}
 
 	public static void deleteAddress(long addressId) throws PortalException {
 		getService().deleteAddress(addressId);
+	}
+
+	public static Address fetchAddressByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchAddressByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static Address getAddress(long addressId) throws PortalException {
@@ -55,6 +65,22 @@ public class AddressServiceUtil {
 		return getService().getAddresses(className, classPK);
 	}
 
+	public static List<Address> getListTypeAddresses(
+			String className, long classPK, long[] listTypeIds)
+		throws PortalException {
+
+		return getService().getListTypeAddresses(
+			className, classPK, listTypeIds);
+	}
+
+	public static Address getOrAddEmptyAddress(
+			String externalReferenceCode, String className, long classPK)
+		throws PortalException {
+
+		return getService().getOrAddEmptyAddress(
+			externalReferenceCode, className, classPK);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -65,14 +91,33 @@ public class AddressServiceUtil {
 	}
 
 	public static Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId,
-			long listTypeId, boolean mailing, boolean primary)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws PortalException {
 
 		return getService().updateAddress(
-			addressId, street1, street2, street3, city, zip, regionId,
-			countryId, listTypeId, mailing, primary);
+			externalReferenceCode, addressId, countryId, listTypeId, regionId,
+			city, description, mailing, name, primary, street1, street2,
+			street3, subtype, zip, phoneNumber);
+	}
+
+	public static Address updateExternalReferenceCode(
+			Address address, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			address, externalReferenceCode);
+	}
+
+	public static Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			addressId, externalReferenceCode);
 	}
 
 	public static AddressService getService() {

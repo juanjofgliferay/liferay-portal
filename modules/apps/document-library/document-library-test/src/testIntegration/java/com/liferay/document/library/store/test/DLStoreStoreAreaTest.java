@@ -22,7 +22,7 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -41,7 +41,7 @@ import org.osgi.service.cm.ConfigurationAdmin;
 /**
  * @author Adolfo Pérez
  */
-@FeatureFlags("LPS-174816")
+@FeatureFlag("LPS-174816")
 @RunWith(Arquillian.class)
 public class DLStoreStoreAreaTest {
 
@@ -163,7 +163,7 @@ public class DLStoreStoreAreaTest {
 		_addFile(fileName, Store.VERSION_DEFAULT);
 		_addFile(fileName, "2.0");
 
-		DLStoreUtil.deleteDirectory(
+		DLStoreUtil.deleteFile(
 			TestPropsValues.getCompanyId(), TestPropsValues.getGroupId(),
 			fileName);
 

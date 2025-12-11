@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alejandro Tardín
@@ -47,61 +46,87 @@ public class TaxonomyCategory implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(TaxonomyCategory.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getTaxonomyCategoryId() {
+		if (_taxonomyCategoryIdSupplier != null) {
+			taxonomyCategoryId = _taxonomyCategoryIdSupplier.get();
+
+			_taxonomyCategoryIdSupplier = null;
+		}
+
 		return taxonomyCategoryId;
 	}
 
 	public void setTaxonomyCategoryId(Long taxonomyCategoryId) {
 		this.taxonomyCategoryId = taxonomyCategoryId;
+
+		_taxonomyCategoryIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaxonomyCategoryId(
 		UnsafeSupplier<Long, Exception> taxonomyCategoryIdUnsafeSupplier) {
 
-		try {
-			taxonomyCategoryId = taxonomyCategoryIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxonomyCategoryIdSupplier = () -> {
+			try {
+				return taxonomyCategoryIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long taxonomyCategoryId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _taxonomyCategoryIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getTaxonomyCategoryName() {
+		if (_taxonomyCategoryNameSupplier != null) {
+			taxonomyCategoryName = _taxonomyCategoryNameSupplier.get();
+
+			_taxonomyCategoryNameSupplier = null;
+		}
+
 		return taxonomyCategoryName;
 	}
 
 	public void setTaxonomyCategoryName(String taxonomyCategoryName) {
 		this.taxonomyCategoryName = taxonomyCategoryName;
+
+		_taxonomyCategoryNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaxonomyCategoryName(
 		UnsafeSupplier<String, Exception> taxonomyCategoryNameUnsafeSupplier) {
 
-		try {
-			taxonomyCategoryName = taxonomyCategoryNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taxonomyCategoryNameSupplier = () -> {
+			try {
+				return taxonomyCategoryNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String taxonomyCategoryName;
+
+	@JsonIgnore
+	private Supplier<String> _taxonomyCategoryNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -130,6 +155,8 @@ public class TaxonomyCategory implements Serializable {
 
 		sb.append("{");
 
+		Long taxonomyCategoryId = getTaxonomyCategoryId();
+
 		if (taxonomyCategoryId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -139,6 +166,8 @@ public class TaxonomyCategory implements Serializable {
 
 			sb.append(taxonomyCategoryId);
 		}
+
+		String taxonomyCategoryName = getTaxonomyCategoryName();
 
 		if (taxonomyCategoryName != null) {
 			if (sb.length() > 1) {
@@ -159,8 +188,8 @@ public class TaxonomyCategory implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.bulk.rest.dto.v1_0.TaxonomyCategory",
 		name = "x-class-name"
 	)
@@ -206,7 +235,10 @@ public class TaxonomyCategory implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

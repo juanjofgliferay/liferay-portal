@@ -372,7 +372,7 @@
 </tr>
 <tr>
 	<td>GROUPED_TEXT_INPUT</td>
-	<td>//div[contains(@class,'panel')][@role='tablist'][contains(.,'${key_groupLabel}')]//div[contains(@class,'form-group')][label[normalize-space(text())='${key_fieldLabel}']]//input</td>
+	<td>//div[contains(@class,'panel-unstyled')][contains(.,'${key_groupLabel}')]//div[contains(@class,'form-group')][label[normalize-space(text())='${key_fieldLabel}']]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -603,21 +603,6 @@
 <tr>
 	<td>POSTAL_CODE</td>
 	<td>//div[label[contains(.,'Postal Code')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REDIRECT_DESTINATION_URL</td>
-	<td>//input[contains(@id,'destinationURL')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REDIRECT_SOURCE_URL</td>
-	<td>//input[contains(@id,'sourceURL')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REDIRECT_SOURCE_URL_PREFIX</td>
-	<td>//div[contains(@class,'form-text')]</td>
 	<td></td>
 </tr>
 <tr>

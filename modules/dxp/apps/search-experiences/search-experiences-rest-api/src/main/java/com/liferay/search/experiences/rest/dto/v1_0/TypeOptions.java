@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -50,281 +49,411 @@ public class TypeOptions implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(TypeOptions.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getBoost() {
+		if (_boostSupplier != null) {
+			boost = _boostSupplier.get();
+
+			_boostSupplier = null;
+		}
+
 		return boost;
 	}
 
 	public void setBoost(Boolean boost) {
 		this.boost = boost;
+
+		_boostSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBoost(
 		UnsafeSupplier<Boolean, Exception> boostUnsafeSupplier) {
 
-		try {
-			boost = boostUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_boostSupplier = () -> {
+			try {
+				return boostUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean boost;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _boostSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFormat() {
+		if (_formatSupplier != null) {
+			format = _formatSupplier.get();
+
+			_formatSupplier = null;
+		}
+
 		return format;
 	}
 
 	public void setFormat(String format) {
 		this.format = format;
+
+		_formatSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFormat(
 		UnsafeSupplier<String, Exception> formatUnsafeSupplier) {
 
-		try {
-			format = formatUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formatSupplier = () -> {
+			try {
+				return formatUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String format;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _formatSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getMax() {
+		if (_maxSupplier != null) {
+			max = _maxSupplier.get();
+
+			_maxSupplier = null;
+		}
+
 		return max;
 	}
 
 	public void setMax(Object max) {
 		this.max = max;
+
+		_maxSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMax(UnsafeSupplier<Object, Exception> maxUnsafeSupplier) {
-		try {
-			max = maxUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_maxSupplier = () -> {
+			try {
+				return maxUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object max;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Object> _maxSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getMin() {
+		if (_minSupplier != null) {
+			min = _minSupplier.get();
+
+			_minSupplier = null;
+		}
+
 		return min;
 	}
 
 	public void setMin(Object min) {
 		this.min = min;
+
+		_minSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMin(UnsafeSupplier<Object, Exception> minUnsafeSupplier) {
-		try {
-			min = minUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_minSupplier = () -> {
+			try {
+				return minUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object min;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Object> _minSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getNullable() {
+		if (_nullableSupplier != null) {
+			nullable = _nullableSupplier.get();
+
+			_nullableSupplier = null;
+		}
+
 		return nullable;
 	}
 
 	public void setNullable(Boolean nullable) {
 		this.nullable = nullable;
+
+		_nullableSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setNullable(
 		UnsafeSupplier<Boolean, Exception> nullableUnsafeSupplier) {
 
-		try {
-			nullable = nullableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nullableSupplier = () -> {
+			try {
+				return nullableUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean nullable;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _nullableSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Option[] getOptions() {
+		if (_optionsSupplier != null) {
+			options = _optionsSupplier.get();
+
+			_optionsSupplier = null;
+		}
+
 		return options;
 	}
 
 	public void setOptions(Option[] options) {
 		this.options = options;
+
+		_optionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptions(
 		UnsafeSupplier<Option[], Exception> optionsUnsafeSupplier) {
 
-		try {
-			options = optionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionsSupplier = () -> {
+			try {
+				return optionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Option[] options;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Option[]> _optionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getRequired() {
+		if (_requiredSupplier != null) {
+			required = _requiredSupplier.get();
+
+			_requiredSupplier = null;
+		}
+
 		return required;
 	}
 
 	public void setRequired(Boolean required) {
 		this.required = required;
+
+		_requiredSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRequired(
 		UnsafeSupplier<Boolean, Exception> requiredUnsafeSupplier) {
 
-		try {
-			required = requiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_requiredSupplier = () -> {
+			try {
+				return requiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean required;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _requiredSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getStep() {
+		if (_stepSupplier != null) {
+			step = _stepSupplier.get();
+
+			_stepSupplier = null;
+		}
+
 		return step;
 	}
 
 	public void setStep(Object step) {
 		this.step = step;
+
+		_stepSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStep(UnsafeSupplier<Object, Exception> stepUnsafeSupplier) {
-		try {
-			step = stepUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_stepSupplier = () -> {
+			try {
+				return stepUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object step;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Object> _stepSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getUnit() {
+		if (_unitSupplier != null) {
+			unit = _unitSupplier.get();
+
+			_unitSupplier = null;
+		}
+
 		return unit;
 	}
 
 	public void setUnit(String unit) {
 		this.unit = unit;
+
+		_unitSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnit(UnsafeSupplier<String, Exception> unitUnsafeSupplier) {
-		try {
-			unit = unitUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitSupplier = () -> {
+			try {
+				return unitUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unit;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _unitSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getUnitSuffix() {
+		if (_unitSuffixSupplier != null) {
+			unitSuffix = _unitSuffixSupplier.get();
+
+			_unitSuffixSupplier = null;
+		}
+
 		return unitSuffix;
 	}
 
 	public void setUnitSuffix(String unitSuffix) {
 		this.unitSuffix = unitSuffix;
+
+		_unitSuffixSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitSuffix(
 		UnsafeSupplier<String, Exception> unitSuffixUnsafeSupplier) {
 
-		try {
-			unitSuffix = unitSuffixUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitSuffixSupplier = () -> {
+			try {
+				return unitSuffixUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unitSuffix;
+
+	@JsonIgnore
+	private Supplier<String> _unitSuffixSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -353,6 +482,8 @@ public class TypeOptions implements Serializable {
 
 		sb.append("{");
 
+		Boolean boost = getBoost();
+
 		if (boost != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -362,6 +493,8 @@ public class TypeOptions implements Serializable {
 
 			sb.append(boost);
 		}
+
+		String format = getFormat();
 
 		if (format != null) {
 			if (sb.length() > 1) {
@@ -376,6 +509,8 @@ public class TypeOptions implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Object max = getMax();
 
 		if (max != null) {
 			if (sb.length() > 1) {
@@ -397,6 +532,8 @@ public class TypeOptions implements Serializable {
 			}
 		}
 
+		Object min = getMin();
+
 		if (min != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -417,6 +554,8 @@ public class TypeOptions implements Serializable {
 			}
 		}
 
+		Boolean nullable = getNullable();
+
 		if (nullable != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -426,6 +565,8 @@ public class TypeOptions implements Serializable {
 
 			sb.append(nullable);
 		}
+
+		Option[] options = getOptions();
 
 		if (options != null) {
 			if (sb.length() > 1) {
@@ -447,6 +588,8 @@ public class TypeOptions implements Serializable {
 			sb.append("]");
 		}
 
+		Boolean required = getRequired();
+
 		if (required != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -456,6 +599,8 @@ public class TypeOptions implements Serializable {
 
 			sb.append(required);
 		}
+
+		Object step = getStep();
 
 		if (step != null) {
 			if (sb.length() > 1) {
@@ -477,6 +622,8 @@ public class TypeOptions implements Serializable {
 			}
 		}
 
+		String unit = getUnit();
+
 		if (unit != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -490,6 +637,8 @@ public class TypeOptions implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String unitSuffix = getUnitSuffix();
 
 		if (unitSuffix != null) {
 			if (sb.length() > 1) {
@@ -510,8 +659,8 @@ public class TypeOptions implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.TypeOptions",
 		name = "x-class-name"
 	)
@@ -557,7 +706,10 @@ public class TypeOptions implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -5,13 +5,14 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
 taglib uri="http://liferay.com/tld/clay" prefix="clay" %><%@
 taglib uri="http://liferay.com/tld/ddm" prefix="liferay-ddm" %><%@
+taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
 <%@ page import="com.liferay.petra.string.StringPool" %><%@
@@ -39,8 +40,8 @@ ModifiedFacetPortletInstanceConfiguration modifiedFacetPortletInstanceConfigurat
 %>
 
 <c:if test="<%= !modifiedFacetDisplayContext.isRenderNothing() %>">
-	<aui:form action="#" method="get" name="fm">
-		<aui:input autocomplete="off" name="inputFacetName" type="hidden" value="modified" />
+	<aui:form action="#" autocomplete="off" method="get" name="fm">
+		<aui:input name="inputFacetName" type="hidden" value="modified" />
 		<aui:input cssClass="facet-parameter-name" name="facet-parameter-name" type="hidden" value="<%= HtmlUtil.escapeAttribute(modifiedFacetDisplayContext.getParameterName()) %>" />
 		<aui:input name="start-parameter-name" type="hidden" value="<%= modifiedFacetDisplayContext.getPaginationStartParameterName() %>" />
 
@@ -85,6 +86,10 @@ ModifiedFacetPortletInstanceConfiguration modifiedFacetPortletInstanceConfigurat
 							onClick="Liferay.Search.FacetUtil.clearSelections(event);"
 						>
 							<strong><liferay-ui:message key="clear" /></strong>
+
+							<span class="sr-only">
+								<liferay-ui:message arguments="modified-facet-portlet-instance-configuration-name" key="x-filter" />
+							</span>
 						</clay:button>
 					</c:if>
 
@@ -144,7 +149,7 @@ ModifiedFacetPortletInstanceConfiguration modifiedFacetPortletInstanceConfigurat
 								id='<%= liferayPortletResponse.getNamespace() + "customRangeFrom" %>'
 								md="6"
 							>
-								<aui:field-wrapper label="from">
+								<aui:field-wrapper label="from" name="fromInput">
 									<liferay-ui:input-date
 										cssClass="modified-facet-custom-range-input-date-from"
 										dayParam="fromDay"
@@ -164,7 +169,7 @@ ModifiedFacetPortletInstanceConfiguration modifiedFacetPortletInstanceConfigurat
 								id='<%= liferayPortletResponse.getNamespace() + "customRangeTo" %>'
 								md="6"
 							>
-								<aui:field-wrapper label="to">
+								<aui:field-wrapper label="to[date-time]" name="toInput">
 									<liferay-ui:input-date
 										cssClass="modified-facet-custom-range-input-date-to"
 										dayParam="toDay"
@@ -195,25 +200,30 @@ ModifiedFacetPortletInstanceConfiguration modifiedFacetPortletInstanceConfigurat
 		</liferay-ddm:template-renderer>
 	</aui:form>
 
-	<aui:script use="liferay-search-modified-facet">
-		new Liferay.Search.ModifiedFacetFilter({
+	<liferay-frontend:component
+		context='<%=
+			HashMapBuilder.<String, Object>put(
+				"namespace", liferayPortletResponse.getNamespace()
+			).build()
+		%>'
+		module="{FacetUtil} from portal-search-web"
+	/>
+
+	<aui:script>
+		Liferay.destroyComponent('<portlet:namespace />fromInputDatePicker');
+		Liferay.destroyComponent('<portlet:namespace />toInputDatePicker');
+	</aui:script>
+
+	<aui:script use="liferay-search-custom-range-facet">
+		new Liferay.Search.CustomRangeFacet({
 			form: A.one('#<portlet:namespace />fm'),
-			fromInputDatePicker: Liferay.component(
-				'<portlet:namespace />fromInputDatePicker'
-			),
 			fromInputName: '<portlet:namespace />fromInput',
 			namespace: '<portlet:namespace />',
+			parameterName: 'modified',
 			searchCustomRangeButton: A.one(
 				'#<portlet:namespace />searchCustomRangeButton'
 			),
-			toInputDatePicker: Liferay.component(
-				'<portlet:namespace />toInputDatePicker'
-			),
 			toInputName: '<portlet:namespace />toInput',
 		});
-
-		Liferay.Search.FacetUtil.enableInputs(
-			document.querySelectorAll('#<portlet:namespace />fm .facet-term')
-		);
 	</aui:script>
 </c:if>

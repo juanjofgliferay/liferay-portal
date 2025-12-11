@@ -8,6 +8,7 @@ package com.liferay.fragment.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.AttachedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
@@ -31,8 +32,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface FragmentEntryLinkModel
 	extends AttachedModel, BaseModel<FragmentEntryLink>,
-			CTModel<FragmentEntryLink>, MVCCModel, ShardedModel,
-			StagedGroupedModel {
+			CTModel<FragmentEntryLink>, ExternalReferenceCodeModel, MVCCModel,
+			ShardedModel, StagedGroupedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -104,6 +105,23 @@ public interface FragmentEntryLinkModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this fragment entry link.
+	 *
+	 * @return the external reference code of this fragment entry link
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this fragment entry link.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment entry link
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the fragment entry link ID of this fragment entry link.
@@ -233,33 +251,50 @@ public interface FragmentEntryLinkModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
-	 * Returns the original fragment entry link ID of this fragment entry link.
+	 * Returns the original fragment entry link erc of this fragment entry link.
 	 *
-	 * @return the original fragment entry link ID of this fragment entry link
+	 * @return the original fragment entry link erc of this fragment entry link
 	 */
-	public long getOriginalFragmentEntryLinkId();
+	@AutoEscape
+	public String getOriginalFragmentEntryLinkERC();
 
 	/**
-	 * Sets the original fragment entry link ID of this fragment entry link.
+	 * Sets the original fragment entry link erc of this fragment entry link.
 	 *
-	 * @param originalFragmentEntryLinkId the original fragment entry link ID of this fragment entry link
+	 * @param originalFragmentEntryLinkERC the original fragment entry link erc of this fragment entry link
 	 */
-	public void setOriginalFragmentEntryLinkId(
-		long originalFragmentEntryLinkId);
+	public void setOriginalFragmentEntryLinkERC(
+		String originalFragmentEntryLinkERC);
 
 	/**
-	 * Returns the fragment entry ID of this fragment entry link.
+	 * Returns the fragment entry erc of this fragment entry link.
 	 *
-	 * @return the fragment entry ID of this fragment entry link
+	 * @return the fragment entry erc of this fragment entry link
 	 */
-	public long getFragmentEntryId();
+	@AutoEscape
+	public String getFragmentEntryERC();
 
 	/**
-	 * Sets the fragment entry ID of this fragment entry link.
+	 * Sets the fragment entry erc of this fragment entry link.
 	 *
-	 * @param fragmentEntryId the fragment entry ID of this fragment entry link
+	 * @param fragmentEntryERC the fragment entry erc of this fragment entry link
 	 */
-	public void setFragmentEntryId(long fragmentEntryId);
+	public void setFragmentEntryERC(String fragmentEntryERC);
+
+	/**
+	 * Returns the fragment entry scope erc of this fragment entry link.
+	 *
+	 * @return the fragment entry scope erc of this fragment entry link
+	 */
+	@AutoEscape
+	public String getFragmentEntryScopeERC();
+
+	/**
+	 * Sets the fragment entry scope erc of this fragment entry link.
+	 *
+	 * @param fragmentEntryScopeERC the fragment entry scope erc of this fragment entry link
+	 */
+	public void setFragmentEntryScopeERC(String fragmentEntryScopeERC);
 
 	/**
 	 * Returns the segments experience ID of this fragment entry link.

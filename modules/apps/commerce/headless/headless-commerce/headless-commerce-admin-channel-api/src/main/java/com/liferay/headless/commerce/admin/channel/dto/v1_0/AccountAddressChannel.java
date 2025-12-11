@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -39,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("AccountAddressChannel")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"addressChannelId", "addressId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"addressChannelId", "addressId"})
 @XmlRootElement(name = "AccountAddressChannel")
 public class AccountAddressChannel implements Serializable {
 
@@ -54,43 +55,63 @@ public class AccountAddressChannel implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getAccountAddressChannelId() {
+		if (_accountAddressChannelIdSupplier != null) {
+			accountAddressChannelId = _accountAddressChannelIdSupplier.get();
+
+			_accountAddressChannelIdSupplier = null;
+		}
+
 		return accountAddressChannelId;
 	}
 
 	public void setAccountAddressChannelId(Long accountAddressChannelId) {
 		this.accountAddressChannelId = accountAddressChannelId;
+
+		_accountAddressChannelIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccountAddressChannelId(
 		UnsafeSupplier<Long, Exception> accountAddressChannelIdUnsafeSupplier) {
 
-		try {
-			accountAddressChannelId =
-				accountAddressChannelIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountAddressChannelIdSupplier = () -> {
+			try {
+				return accountAddressChannelIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long accountAddressChannelId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _accountAddressChannelIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -98,23 +119,35 @@ public class AccountAddressChannel implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema(example = "PAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "PAB-34098-789-N")
 	public String getAddressChannelExternalReferenceCode() {
+		if (_addressChannelExternalReferenceCodeSupplier != null) {
+			addressChannelExternalReferenceCode =
+				_addressChannelExternalReferenceCodeSupplier.get();
+
+			_addressChannelExternalReferenceCodeSupplier = null;
+		}
+
 		return addressChannelExternalReferenceCode;
 	}
 
@@ -123,6 +156,8 @@ public class AccountAddressChannel implements Serializable {
 
 		this.addressChannelExternalReferenceCode =
 			addressChannelExternalReferenceCode;
+
+		_addressChannelExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -130,45 +165,59 @@ public class AccountAddressChannel implements Serializable {
 		UnsafeSupplier<String, Exception>
 			addressChannelExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			addressChannelExternalReferenceCode =
-				addressChannelExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressChannelExternalReferenceCodeSupplier = () -> {
+			try {
+				return addressChannelExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String addressChannelExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _addressChannelExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getAddressChannelId() {
+		if (_addressChannelIdSupplier != null) {
+			addressChannelId = _addressChannelIdSupplier.get();
+
+			_addressChannelIdSupplier = null;
+		}
+
 		return addressChannelId;
 	}
 
 	public void setAddressChannelId(Long addressChannelId) {
 		this.addressChannelId = addressChannelId;
+
+		_addressChannelIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAddressChannelId(
 		UnsafeSupplier<Long, Exception> addressChannelIdUnsafeSupplier) {
 
-		try {
-			addressChannelId = addressChannelIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressChannelIdSupplier = () -> {
+			try {
+				return addressChannelIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -176,8 +225,18 @@ public class AccountAddressChannel implements Serializable {
 	@NotNull
 	protected Long addressChannelId;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Long> _addressChannelIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getAddressExternalReferenceCode() {
+		if (_addressExternalReferenceCodeSupplier != null) {
+			addressExternalReferenceCode =
+				_addressExternalReferenceCodeSupplier.get();
+
+			_addressExternalReferenceCodeSupplier = null;
+		}
+
 		return addressExternalReferenceCode;
 	}
 
@@ -185,6 +244,8 @@ public class AccountAddressChannel implements Serializable {
 		String addressExternalReferenceCode) {
 
 		this.addressExternalReferenceCode = addressExternalReferenceCode;
+
+		_addressExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -192,45 +253,59 @@ public class AccountAddressChannel implements Serializable {
 		UnsafeSupplier<String, Exception>
 			addressExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			addressExternalReferenceCode =
-				addressExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressExternalReferenceCodeSupplier = () -> {
+			try {
+				return addressExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String addressExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _addressExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getAddressId() {
+		if (_addressIdSupplier != null) {
+			addressId = _addressIdSupplier.get();
+
+			_addressIdSupplier = null;
+		}
+
 		return addressId;
 	}
 
 	public void setAddressId(Long addressId) {
 		this.addressId = addressId;
+
+		_addressIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAddressId(
 		UnsafeSupplier<Long, Exception> addressIdUnsafeSupplier) {
 
-		try {
-			addressId = addressIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressIdSupplier = () -> {
+			try {
+				return addressIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -238,34 +313,50 @@ public class AccountAddressChannel implements Serializable {
 	@NotNull
 	protected Long addressId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _addressIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Channel getChannel() {
+		if (_channelSupplier != null) {
+			channel = _channelSupplier.get();
+
+			_channelSupplier = null;
+		}
+
 		return channel;
 	}
 
 	public void setChannel(Channel channel) {
 		this.channel = channel;
+
+		_channelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setChannel(
 		UnsafeSupplier<Channel, Exception> channelUnsafeSupplier) {
 
-		try {
-			channel = channelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_channelSupplier = () -> {
+			try {
+				return channelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Channel channel;
+
+	@JsonIgnore
+	private Supplier<Channel> _channelSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -295,6 +386,8 @@ public class AccountAddressChannel implements Serializable {
 
 		sb.append("{");
 
+		Long accountAddressChannelId = getAccountAddressChannelId();
+
 		if (accountAddressChannelId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -305,6 +398,8 @@ public class AccountAddressChannel implements Serializable {
 			sb.append(accountAddressChannelId);
 		}
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -314,6 +409,9 @@ public class AccountAddressChannel implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		String addressChannelExternalReferenceCode =
+			getAddressChannelExternalReferenceCode();
 
 		if (addressChannelExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -329,6 +427,8 @@ public class AccountAddressChannel implements Serializable {
 			sb.append("\"");
 		}
 
+		Long addressChannelId = getAddressChannelId();
+
 		if (addressChannelId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -338,6 +438,8 @@ public class AccountAddressChannel implements Serializable {
 
 			sb.append(addressChannelId);
 		}
+
+		String addressExternalReferenceCode = getAddressExternalReferenceCode();
 
 		if (addressExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -353,6 +455,8 @@ public class AccountAddressChannel implements Serializable {
 			sb.append("\"");
 		}
 
+		Long addressId = getAddressId();
+
 		if (addressId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -362,6 +466,8 @@ public class AccountAddressChannel implements Serializable {
 
 			sb.append(addressId);
 		}
+
+		Channel channel = getChannel();
 
 		if (channel != null) {
 			if (sb.length() > 1) {
@@ -378,8 +484,8 @@ public class AccountAddressChannel implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.channel.dto.v1_0.AccountAddressChannel",
 		name = "x-class-name"
 	)
@@ -425,7 +531,10 @@ public class AccountAddressChannel implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

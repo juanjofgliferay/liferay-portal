@@ -16,12 +16,14 @@ ObjectRelationship objectRelationship = (ObjectRelationship)request.getAttribute
 <liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" var="baseResourceURL" />
 
 <react:component
-	module="js/components/ObjectRelationship/EditObjectRelationship"
+	module="{EditObjectRelationship} from object-web"
 	props='<%=
 		HashMapBuilder.<String, Object>put(
 			"baseResourceURL", String.valueOf(baseResourceURL)
 		).put(
 			"hasUpdateObjectDefinitionPermission", objectDefinitionsRelationshipsDisplayContext.hasUpdateObjectDefinitionPermission()
+		).put(
+			"learnResources", LearnMessageUtil.getReactDataJSONObject("object-web")
 		).put(
 			"objectDefinitionExternalReferenceCode", objectDefinition.getExternalReferenceCode()
 		).put(

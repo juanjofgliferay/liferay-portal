@@ -62,8 +62,8 @@ public interface DLFileEntryService extends BaseService {
 			long folderId, String sourceFileName, String mimeType, String title,
 			String urlTitle, String description, String changeLog,
 			long fileEntryTypeId, Map<String, DDMFormValues> ddmFormValuesMap,
-			File file, InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			File file, InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	public DLFileVersion cancelCheckOut(long fileEntryId)
@@ -97,8 +97,15 @@ public interface DLFileEntryService extends BaseService {
 	public void deleteFileEntry(long groupId, long folderId, String title)
 		throws PortalException;
 
+	public void deleteFileEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	public void deleteFileVersion(long fileEntryId, String version)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DLFileEntry fetchFileEntry(long fileEntryId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry fetchFileEntry(long groupId, long folderId, String title)
@@ -189,7 +196,7 @@ public interface DLFileEntryService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry getFileEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -287,8 +294,8 @@ public interface DLFileEntryService extends BaseService {
 			String title, String urlTitle, String description, String changeLog,
 			DLVersionNumberIncrease dlVersionNumberIncrease,
 			long fileEntryTypeId, Map<String, DDMFormValues> ddmFormValuesMap,
-			File file, InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			File file, InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	public DLFileEntry updateStatus(

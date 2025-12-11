@@ -14,12 +14,12 @@ ProductNavigationControlMenuTagDisplayContext productNavigationControlMenuTagDis
 %>
 
 <c:if test="<%= productNavigationControlMenuTagDisplayContext.hasControlMenuEntries() %>">
-	<div class="cadmin control-menu-container">
+	<nav aria-label="<%= LanguageUtil.get(request, "control-menu") %>" class="cadmin control-menu-container">
 		<liferay-util:dynamic-include key="com.liferay.product.navigation.taglib#/page.jsp#pre" />
 
 		<div class="control-menu control-menu-level-1 control-menu-level-1-<%= applicationsMenuApp ? "light" : "dark" %> d-print-none" data-qa-id="controlMenu" id="<portlet:namespace />ControlMenu">
 			<clay:container-fluid
-				fullWidth='<%= FeatureFlagManagerUtil.isEnabled("LPS-184404") %>'
+				fullWidth="<%= true %>"
 			>
 				<div class="control-menu-level-1-nav control-menu-nav" data-namespace="<portlet:namespace />" data-qa-id="header" id="<portlet:namespace />controlMenu">
 
@@ -48,9 +48,9 @@ ProductNavigationControlMenuTagDisplayContext productNavigationControlMenuTagDis
 		</div>
 
 		<liferay-util:dynamic-include key="com.liferay.product.navigation.taglib#/page.jsp#post" />
-	</div>
+	</nav>
 
 	<liferay-frontend:component
-		module="control_menu/js/ProductNavigationControlMenu"
+		module="{ProductNavigationControlMenu} from product-navigation-taglib"
 	/>
 </c:if>

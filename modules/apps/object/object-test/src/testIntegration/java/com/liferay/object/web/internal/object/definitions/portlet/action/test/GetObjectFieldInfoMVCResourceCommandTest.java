@@ -1,0 +1,142 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.object.web.internal.object.definitions.portlet.action.test;
+
+import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectRelationshipConstants;
+import com.liferay.object.field.builder.FormulaObjectFieldBuilder;
+import com.liferay.object.field.setting.builder.ObjectFieldSettingBuilder;
+import com.liferay.object.field.util.ObjectFieldUtil;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectField;
+import com.liferay.object.service.ObjectRelationshipLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
+import com.liferay.object.test.util.ObjectRelationshipTestUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.test.rule.Inject;
+
+import java.util.Arrays;
+import java.util.Collections;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
+
+/**
+ * @author Carolina Barbosa
+ */
+@RunWith(Arquillian.class)
+public class GetObjectFieldInfoMVCResourceCommandTest
+	extends BaseMVCResourceCommandTestCase {
+
+	@Test
+	public void testGetFormulaObjectFieldInfo() throws Exception {
+		ObjectDefinition objectDefinition1 =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
+		ObjectDefinition objectDefinition2 =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
+
+		ObjectRelationshipTestUtil.addObjectRelationship(
+			_objectRelationshipLocalService, objectDefinition1,
+			objectDefinition2,
+			ObjectRelationshipConstants.DELETION_TYPE_CASCADE,
+			"objectRelationship");
+
+		ObjectField objectField = ObjectFieldUtil.addCustomObjectField(
+			new FormulaObjectFieldBuilder(
+			).labelMap(
+				RandomTestUtil.randomLocaleStringMap()
+			).name(
+				"a" + RandomTestUtil.randomString()
+			).objectDefinitionId(
+				objectDefinition2.getObjectDefinitionId()
+			).objectFieldSettings(
+				Arrays.asList(
+					new ObjectFieldSettingBuilder(
+					).name(
+						"output"
+					).value(
+						ObjectFieldConstants.BUSINESS_TYPE_INTEGER
+					).build(),
+					new ObjectFieldSettingBuilder(
+					).name(
+						"script"
+					).value(
+						String.valueOf(RandomTestUtil.randomInt())
+					).build())
+			).userId(
+				TestPropsValues.getUserId()
+			).build());
+
+		JSONObject jsonObject = getJSONObject(
+			Collections.singletonMap(
+				"objectFieldId",
+				String.valueOf(objectField.getObjectFieldId())));
+
+		JSONAssert.assertEquals(
+			JSONUtil.putAll(
+				JSONUtil.put(
+					"items",
+					JSONUtil.putAll(
+						JSONUtil.put(
+							"content", "id"
+						).put(
+							"label", "ID"
+						))
+				).put(
+					"label", "Fields"
+				),
+				JSONUtil.put(
+					"items",
+					JSONUtil.putAll(
+						JSONUtil.put("label", "Divided By"),
+						JSONUtil.put("label", "Minus"),
+						JSONUtil.put("label", "Plus"),
+						JSONUtil.put("label", "Times"))
+				).put(
+					"label", "Operators"
+				),
+				JSONUtil.put(
+					"items",
+					JSONUtil.putAll(
+						JSONUtil.put(
+							"content",
+							"r_objectRelationship_" +
+								objectDefinition1.getPKObjectFieldName() + "_id"
+						).put(
+							"label", "ID"
+						))
+				).put(
+					"label",
+					objectDefinition1.getLabel(LocaleUtil.US) + " Fields"
+				)
+			).toString(),
+			String.valueOf(jsonObject.getJSONArray("sidebarElements")),
+			JSONCompareMode.LENIENT);
+	}
+
+	@Override
+	protected MVCResourceCommand getMVCResourceCommand() {
+		return _mvcResourceCommand;
+	}
+
+	@Inject(
+		filter = "mvc.command.name=/object_definitions/get_object_field_info"
+	)
+	private MVCResourceCommand _mvcResourceCommand;
+
+	@Inject
+	private ObjectRelationshipLocalService _objectRelationshipLocalService;
+
+}

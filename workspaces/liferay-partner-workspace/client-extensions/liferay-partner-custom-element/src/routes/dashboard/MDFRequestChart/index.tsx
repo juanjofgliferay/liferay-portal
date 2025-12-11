@@ -15,9 +15,11 @@ import {siteURL} from '../../../common/components/dashboard/utils/siteURL';
 import {ObjectActionName} from '../../../common/enums/objectActionName';
 import {PermissionActionType} from '../../../common/enums/permissionActionType';
 import {PRMPageRoute} from '../../../common/enums/prmPageRoute';
+import useIsChannel from '../../../common/hooks/useIsChannel';
 import usePermissionActions from '../../../common/hooks/usePermissionActions';
 import {Liferay} from '../../../common/services/liferay';
 import {LiferayAPIs} from '../../../common/services/liferay/common/enums/apis';
+import {Filters} from '../../../common/utils/constants/filters';
 import {retry} from '../../../common/utils/retry';
 
 const MDFRequestChart = () => {
@@ -29,13 +31,15 @@ const MDFRequestChart = () => {
 	const [loading, setLoading] = useState(false);
 	const actions = usePermissionActions(ObjectActionName.MDF_REQUEST);
 
+	const {isChannel} = useIsChannel();
+
 	const getMDFRequests = async () => {
 		setLoading(true);
 
 		// eslint-disable-next-line @liferay/portal/no-global-fetch
-		const response = await retry<Response>(() =>
+		const mdfRequests = await retry<any>(() =>
 			fetch(
-				`/o/c/mdfrequests?nestedFields=accountEntry,mdfReqToActs,actToBgts,mdfReqToMDFClms&nestedFieldsDepth=2&pageSize=9999&filter=mdfRequestStatus ne 'draft'`,
+				`/o/c/mdfrequests?pageSize=-1&nestedFields=${Filters.MDF_DASHBOARD.fields}&filter=${Filters.MDF_DASHBOARD.requests}`,
 				{
 					headers: {
 						'accept': 'application/json',
@@ -45,7 +49,7 @@ const MDFRequestChart = () => {
 			)
 		);
 
-		const myUserAccountResponse = await retry<Response>(() =>
+		const myUserAccount = await retry<any>(() =>
 			fetch(`/o/${LiferayAPIs.HEADERLESS_ADMIN_USER}/my-user-account`, {
 				headers: {
 					'accept': 'application/json',
@@ -53,11 +57,10 @@ const MDFRequestChart = () => {
 				},
 			})
 		);
-		const myUserAccount = await myUserAccountResponse.json();
 
-		const accountResponse =
+		const account =
 			myUserAccount.accountBriefs[0]?.externalReferenceCode &&
-			(await retry<Response>(() =>
+			(await retry<any>(() =>
 				fetch(
 					`/o/${LiferayAPIs.HEADERLESS_ADMIN_USER}/accounts/by-external-reference-code/${myUserAccount.accountBriefs[0]?.externalReferenceCode}`,
 					{
@@ -69,13 +72,9 @@ const MDFRequestChart = () => {
 				)
 			));
 
-		const account = await accountResponse?.json();
+		const currency = account && !isChannel ? account.currency : 'USD';
 
-		const currency = account ? account.currency : 'USD';
-
-		if (response.ok && currency) {
-			const mdfRequests = await response.json();
-
+		if (mdfRequests && currency) {
 			setCurrencyData(currency);
 
 			getChartColumns(
@@ -96,7 +95,9 @@ const MDFRequestChart = () => {
 
 	useEffect(() => {
 		getMDFRequests();
-	}, []);
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isChannel]);
 
 	const chartData = {
 		colors: mdfChartColumnColors,

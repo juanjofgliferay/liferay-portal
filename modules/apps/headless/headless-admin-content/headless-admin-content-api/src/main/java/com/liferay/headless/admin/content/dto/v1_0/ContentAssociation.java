@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,30 +49,40 @@ public class ContentAssociation implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ContentAssociation.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The subtype of the content. i.e. the Structure name if it's a Structured Content."
 	)
 	public String getContentSubtype() {
+		if (_contentSubtypeSupplier != null) {
+			contentSubtype = _contentSubtypeSupplier.get();
+
+			_contentSubtypeSupplier = null;
+		}
+
 		return contentSubtype;
 	}
 
 	public void setContentSubtype(String contentSubtype) {
 		this.contentSubtype = contentSubtype;
+
+		_contentSubtypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentSubtype(
 		UnsafeSupplier<String, Exception> contentSubtypeUnsafeSupplier) {
 
-		try {
-			contentSubtype = contentSubtypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentSubtypeSupplier = () -> {
+			try {
+				return contentSubtypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -82,30 +91,43 @@ public class ContentAssociation implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentSubtype;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _contentSubtypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The type of the content, i.e. Structure Content, BlogsPosting, etc."
 	)
 	public String getContentType() {
+		if (_contentTypeSupplier != null) {
+			contentType = _contentTypeSupplier.get();
+
+			_contentTypeSupplier = null;
+		}
+
 		return contentType;
 	}
 
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
+
+		_contentTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentType(
 		UnsafeSupplier<String, Exception> contentTypeUnsafeSupplier) {
 
-		try {
-			contentType = contentTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentTypeSupplier = () -> {
+			try {
+				return contentTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -113,6 +135,9 @@ public class ContentAssociation implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentType;
+
+	@JsonIgnore
+	private Supplier<String> _contentTypeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -141,6 +166,8 @@ public class ContentAssociation implements Serializable {
 
 		sb.append("{");
 
+		String contentSubtype = getContentSubtype();
+
 		if (contentSubtype != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -154,6 +181,8 @@ public class ContentAssociation implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String contentType = getContentType();
 
 		if (contentType != null) {
 			if (sb.length() > 1) {
@@ -174,8 +203,8 @@ public class ContentAssociation implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.content.dto.v1_0.ContentAssociation",
 		name = "x-class-name"
 	)
@@ -221,7 +250,10 @@ public class ContentAssociation implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

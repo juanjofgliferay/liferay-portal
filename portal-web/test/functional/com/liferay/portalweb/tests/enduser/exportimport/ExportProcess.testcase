@@ -1,10 +1,10 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Export/Import Framework";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -105,10 +105,7 @@ definition {
 
 			Navigator.openURL();
 
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Server Administration");
+			ServerAdministration.openServerAdmin();
 
 			ServerAdministration.executeServerResourcesActions(actionsDescription = "Clear the database cache.");
 
@@ -116,7 +113,9 @@ definition {
 
 			Navigator.gotoNavItem(navItem = "Scheduled Jobs");
 
-			Click.clickAtNotVisible(locator1 = "Blueprints#PAGINATION_NEXT_LINK");
+			while ((IsElementNotPresent(key_name = "DeleteObsoleteBackgroundTasksSchedulerJobConfiguration", locator1 = "JobScheduler#RUN_NOW_BUTTON")) && (maxIterations = "10")) {
+				Click.clickAtNotVisible(locator1 = "Blueprints#PAGINATION_NEXT_LINK");
+			}
 
 			Click.clickAtNotVisible(
 				key_name = "DeleteObsoleteBackgroundTasksSchedulerJobConfiguration",
@@ -174,7 +173,7 @@ definition {
 
 			ManagementBar.setFilterAndOrder(filterBy = "Completed");
 
-			ManagementBar.toggleViewOrder(order = "down");
+			ManagementBar.sortAssets(sortDirection = "Descending");
 		}
 	}
 

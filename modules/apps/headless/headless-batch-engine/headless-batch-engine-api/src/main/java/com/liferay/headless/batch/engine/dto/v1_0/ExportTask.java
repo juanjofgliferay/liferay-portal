@@ -7,6 +7,7 @@ package com.liferay.headless.batch.engine.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -18,7 +19,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -30,13 +36,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Ivica Cardic
@@ -56,31 +56,41 @@ public class ExportTask implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ExportTask.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The item class name for which data will be exported in batch.",
 		example = "com.liferay.headless.delivery.dto.v1_0.BlogPosting"
 	)
 	public String getClassName() {
+		if (_classNameSupplier != null) {
+			className = _classNameSupplier.get();
+
+			_classNameSupplier = null;
+		}
+
 		return className;
 	}
 
 	public void setClassName(String className) {
 		this.className = className;
+
+		_classNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassName(
 		UnsafeSupplier<String, Exception> classNameUnsafeSupplier) {
 
-		try {
-			className = classNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classNameSupplier = () -> {
+			try {
+				return classNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -89,90 +99,131 @@ public class ExportTask implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String className;
 
-	@Schema(description = "The file content type.", example = "JSON")
+	@JsonIgnore
+	private Supplier<String> _classNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The file content type.", example = "JSON"
+	)
 	public String getContentType() {
+		if (_contentTypeSupplier != null) {
+			contentType = _contentTypeSupplier.get();
+
+			_contentTypeSupplier = null;
+		}
+
 		return contentType;
 	}
 
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
+
+		_contentTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentType(
 		UnsafeSupplier<String, Exception> contentTypeUnsafeSupplier) {
 
-		try {
-			contentType = contentTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentTypeSupplier = () -> {
+			try {
+				return contentTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The file content type.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentType;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _contentTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The end time of export task operation.",
 		example = "2019-27-09'T'08:33:33'Z'"
 	)
 	public Date getEndTime() {
+		if (_endTimeSupplier != null) {
+			endTime = _endTimeSupplier.get();
+
+			_endTimeSupplier = null;
+		}
+
 		return endTime;
 	}
 
 	public void setEndTime(Date endTime) {
 		this.endTime = endTime;
+
+		_endTimeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEndTime(
 		UnsafeSupplier<Date, Exception> endTimeUnsafeSupplier) {
 
-		try {
-			endTime = endTimeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_endTimeSupplier = () -> {
+			try {
+				return endTimeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The end time of export task operation.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date endTime;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Date> _endTimeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The error message in case of export task's failed execution.",
 		example = "File import failed"
 	)
 	public String getErrorMessage() {
+		if (_errorMessageSupplier != null) {
+			errorMessage = _errorMessageSupplier.get();
+
+			_errorMessageSupplier = null;
+		}
+
 		return errorMessage;
 	}
 
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;
+
+		_errorMessageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setErrorMessage(
 		UnsafeSupplier<String, Exception> errorMessageUnsafeSupplier) {
 
-		try {
-			errorMessage = errorMessageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_errorMessageSupplier = () -> {
+			try {
+				return errorMessageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -181,17 +232,29 @@ public class ExportTask implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String errorMessage;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _errorMessageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The status of export task's execution.",
 		example = "INITIALIZED"
 	)
+	@JsonGetter("executeStatus")
 	@Valid
 	public ExecuteStatus getExecuteStatus() {
+		if (_executeStatusSupplier != null) {
+			executeStatus = _executeStatusSupplier.get();
+
+			_executeStatusSupplier = null;
+		}
+
 		return executeStatus;
 	}
 
 	@JsonIgnore
 	public String getExecuteStatusAsString() {
+		ExecuteStatus executeStatus = getExecuteStatus();
+
 		if (executeStatus == null) {
 			return null;
 		}
@@ -201,108 +264,155 @@ public class ExportTask implements Serializable {
 
 	public void setExecuteStatus(ExecuteStatus executeStatus) {
 		this.executeStatus = executeStatus;
+
+		_executeStatusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExecuteStatus(
 		UnsafeSupplier<ExecuteStatus, Exception> executeStatusUnsafeSupplier) {
 
-		try {
-			executeStatus = executeStatusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_executeStatusSupplier = () -> {
+			try {
+				return executeStatusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The status of export task's execution.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ExecuteStatus executeStatus;
 
-	@Schema(description = "The optional external key of this account.")
+	@JsonIgnore
+	private Supplier<ExecuteStatus> _executeStatusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The optional external key of this account."
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The optional external key of this account.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(description = "The task's ID.", example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The task's ID.", example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The task's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
 	@DecimalMin("0")
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Number of items processed by export task opeartion.",
 		example = "100"
 	)
 	public Integer getProcessedItemsCount() {
+		if (_processedItemsCountSupplier != null) {
+			processedItemsCount = _processedItemsCountSupplier.get();
+
+			_processedItemsCountSupplier = null;
+		}
+
 		return processedItemsCount;
 	}
 
 	public void setProcessedItemsCount(Integer processedItemsCount) {
 		this.processedItemsCount = processedItemsCount;
+
+		_processedItemsCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProcessedItemsCount(
 		UnsafeSupplier<Integer, Exception> processedItemsCountUnsafeSupplier) {
 
-		try {
-			processedItemsCount = processedItemsCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_processedItemsCountSupplier = () -> {
+			try {
+				return processedItemsCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -311,63 +421,89 @@ public class ExportTask implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer processedItemsCount;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Integer> _processedItemsCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The start time of export task operation.",
 		example = "2019-27-09'T'08:23:33'Z'"
 	)
 	public Date getStartTime() {
+		if (_startTimeSupplier != null) {
+			startTime = _startTimeSupplier.get();
+
+			_startTimeSupplier = null;
+		}
+
 		return startTime;
 	}
 
 	public void setStartTime(Date startTime) {
 		this.startTime = startTime;
+
+		_startTimeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStartTime(
 		UnsafeSupplier<Date, Exception> startTimeUnsafeSupplier) {
 
-		try {
-			startTime = startTimeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_startTimeSupplier = () -> {
+			try {
+				return startTimeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The start time of export task operation.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date startTime;
 
+	@JsonIgnore
+	private Supplier<Date> _startTimeSupplier;
+
 	@DecimalMin("0")
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Total number of items that will be processed by export task operation.",
 		example = "1000"
 	)
 	public Integer getTotalItemsCount() {
+		if (_totalItemsCountSupplier != null) {
+			totalItemsCount = _totalItemsCountSupplier.get();
+
+			_totalItemsCountSupplier = null;
+		}
+
 		return totalItemsCount;
 	}
 
 	public void setTotalItemsCount(Integer totalItemsCount) {
 		this.totalItemsCount = totalItemsCount;
+
+		_totalItemsCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTotalItemsCount(
 		UnsafeSupplier<Integer, Exception> totalItemsCountUnsafeSupplier) {
 
-		try {
-			totalItemsCount = totalItemsCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_totalItemsCountSupplier = () -> {
+			try {
+				return totalItemsCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -375,6 +511,9 @@ public class ExportTask implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer totalItemsCount;
+
+	@JsonIgnore
+	private Supplier<Integer> _totalItemsCountSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -406,6 +545,8 @@ public class ExportTask implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		String className = getClassName();
+
 		if (className != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -419,6 +560,8 @@ public class ExportTask implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String contentType = getContentType();
 
 		if (contentType != null) {
 			if (sb.length() > 1) {
@@ -434,6 +577,8 @@ public class ExportTask implements Serializable {
 			sb.append("\"");
 		}
 
+		Date endTime = getEndTime();
+
 		if (endTime != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -447,6 +592,8 @@ public class ExportTask implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String errorMessage = getErrorMessage();
 
 		if (errorMessage != null) {
 			if (sb.length() > 1) {
@@ -462,6 +609,8 @@ public class ExportTask implements Serializable {
 			sb.append("\"");
 		}
 
+		ExecuteStatus executeStatus = getExecuteStatus();
+
 		if (executeStatus != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -470,11 +619,11 @@ public class ExportTask implements Serializable {
 			sb.append("\"executeStatus\": ");
 
 			sb.append("\"");
-
 			sb.append(executeStatus);
-
 			sb.append("\"");
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -490,6 +639,8 @@ public class ExportTask implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -500,6 +651,8 @@ public class ExportTask implements Serializable {
 			sb.append(id);
 		}
 
+		Integer processedItemsCount = getProcessedItemsCount();
+
 		if (processedItemsCount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -509,6 +662,8 @@ public class ExportTask implements Serializable {
 
 			sb.append(processedItemsCount);
 		}
+
+		Date startTime = getStartTime();
 
 		if (startTime != null) {
 			if (sb.length() > 1) {
@@ -523,6 +678,8 @@ public class ExportTask implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Integer totalItemsCount = getTotalItemsCount();
 
 		if (totalItemsCount != null) {
 			if (sb.length() > 1) {
@@ -539,8 +696,8 @@ public class ExportTask implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.batch.engine.dto.v1_0.ExportTask",
 		name = "x-class-name"
 	)
@@ -625,7 +782,10 @@ public class ExportTask implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -13,12 +13,15 @@ exports[`TabsCard should render 1`] = `
       >
         <button
           aria-expanded="false"
+          aria-label="Open Menu, Current Page: Default Events"
           class="navbar-toggler navbar-toggler-link collapsed btn btn-unstyled"
           type="button"
         >
           <span
             class="navbar-text-truncate"
-          />
+          >
+            Default Events
+          </span>
           <svg
             class="lexicon-icon lexicon-icon-caret-bottom"
             role="presentation"
@@ -44,9 +47,7 @@ exports[`TabsCard should render 1`] = `
                   class="nav-link"
                   href="/workspace/23/settings/definitions/events/default"
                 >
-                  <span
-                    class="navbar-text-truncate"
-                  >
+                  <span>
                     Default Events
                   </span>
                 </a>
@@ -58,9 +59,7 @@ exports[`TabsCard should render 1`] = `
                   class="nav-link"
                   href="/workspace/23/settings/definitions/events/custom"
                 >
-                  <span
-                    class="navbar-text-truncate"
-                  >
+                  <span>
                     Custom Events
                   </span>
                 </a>

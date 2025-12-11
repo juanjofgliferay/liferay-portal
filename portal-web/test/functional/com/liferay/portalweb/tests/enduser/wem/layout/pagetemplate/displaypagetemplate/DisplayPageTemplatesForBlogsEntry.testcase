@@ -1,16 +1,20 @@
-@component-name = "portal-wcm"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Display Page Templates";
+	property testray.main.component.name = "Blogs";
 
 	setUp {
 		task ("Set up instance and sign in") {
 			TestCase.setUpPortalInstance();
 
 			User.firstLoginPG();
+		}
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
 		}
 
 		task ("Add a site") {
@@ -25,39 +29,23 @@ definition {
 		}
 	}
 
-	tearDown {
-		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
-
-		if (${testLiferayVirtualInstance} == "true") {
-			PortalInstances.tearDownCP();
-		}
-		else {
-			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
-		}
-	}
-
 	@description = "This is a test for LPS-121571. A user can map Reading Time of blogs entry to editable field."
 	@priority = 4
 	test MapReadingTimeToEditableField {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		task ("Enable the Reading Time") {
-			BlogsConfiguration.enableReadingTime();
-		}
-
-		task ("Add a Banner Center fragment to display page template") {
+		task ("Go to display page template") {
 			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
 
 			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
-
-			PageEditor.addFragment(
-				collectionName = "Featured Content",
-				composition = "true",
-				fragmentName = "Banner Center");
 		}
 
 		task ("Map the Reading Time (Simple) to title editable field") {
+			PageEditor.addFragment(
+				collectionName = "Basic Components",
+				fragmentName = "Heading");
+
 			PageEditorMapping.mapEditableTextToField(
 				field = "Reading Time (Simple)",
 				fragmentName = "Heading",
@@ -65,6 +53,11 @@ definition {
 		}
 
 		task ("Map the Reading Time (Descriptive) to subtitle editable field") {
+			PageEditor.addFragment(
+				collectionName = "Basic Components",
+				fragmentName = "Paragraph",
+				targetFragmentName = "Heading");
+
 			PageEditorMapping.mapEditableTextToField(
 				field = "Reading Time (Descriptive)",
 				fragmentName = "Paragraph",
@@ -86,6 +79,7 @@ definition {
 			BlogsNavigator.gotoEditCP(entryTitle = "Blogs Entry Title");
 
 			WebContent.editDisplayPage(
+				assetType = "Blogs Entry",
 				pageName = "Display Page Name",
 				pageType = "Display Page Templates");
 

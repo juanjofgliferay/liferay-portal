@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -16,7 +16,9 @@ taglib uri="http://liferay.com/tld/frontend-data-set" prefix="frontend-data-set"
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
-<%@ page import="com.liferay.commerce.inventory.exception.DuplicateCommerceInventoryWarehouseItemException" %><%@
+<%@ page import="com.liferay.commerce.inventory.exception.CommerceInventoryReplenishmentQuantityException" %><%@
+page import="com.liferay.commerce.inventory.exception.CommerceInventoryWarehouseItemQuantityException" %><%@
+page import="com.liferay.commerce.inventory.exception.DuplicateCommerceInventoryWarehouseItemException" %><%@
 page import="com.liferay.commerce.inventory.exception.MVCCException" %><%@
 page import="com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem" %><%@
 page import="com.liferay.commerce.inventory.model.CommerceInventoryWarehouse" %><%@
@@ -26,7 +28,6 @@ page import="com.liferay.commerce.inventory.web.internal.constants.CommerceInven
 page import="com.liferay.commerce.inventory.web.internal.display.context.CommerceInventoryDisplayContext" %><%@
 page import="com.liferay.commerce.product.exception.CPInstanceUnitOfMeasureKeyException" %><%@
 page import="com.liferay.commerce.product.exception.NoSuchCPInstanceUnitOfMeasureException" %><%@
-page import="com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.security.auth.PrincipalException" %><%@
 page import="com.liferay.portal.kernel.util.CalendarFactoryUtil" %><%@
@@ -35,8 +36,6 @@ page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.HtmlUtil" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %>
-
-<%@ page import="java.math.BigDecimal" %>
 
 <%@ page import="java.util.Calendar" %><%@
 page import="java.util.Date" %>

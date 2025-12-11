@@ -5,7 +5,9 @@
 
 package com.liferay.trash.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
@@ -166,96 +168,100 @@ public class TrashEntryPersistenceImpl
 		OrderByComparator<TrashEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByGroupId;
-				finderArgs = new Object[] {groupId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByGroupId;
+					finderArgs = new Object[] {groupId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByGroupId;
-			finderArgs = new Object[] {groupId, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByGroupId;
+				finderArgs = new Object[] {
+					groupId, start, end, orderByComparator
+				};
+			}
 
-		List<TrashEntry> list = null;
+			List<TrashEntry> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<TrashEntry>)finderCache.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<TrashEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (TrashEntry trashEntry : list) {
-					if (groupId != trashEntry.getGroupId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (TrashEntry trashEntry : list) {
+						if (groupId != trashEntry.getGroupId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
+				sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				list = (List<TrashEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<TrashEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -541,57 +547,51 @@ public class TrashEntryPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId(long groupId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByGroupId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByGroupId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
+				sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_GROUPID_GROUPID_2 =
@@ -673,98 +673,100 @@ public class TrashEntryPersistenceImpl
 		OrderByComparator<TrashEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByCompanyId;
-				finderArgs = new Object[] {companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByCompanyId;
+					finderArgs = new Object[] {companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByCompanyId;
-			finderArgs = new Object[] {
-				companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByCompanyId;
+				finderArgs = new Object[] {
+					companyId, start, end, orderByComparator
+				};
+			}
 
-		List<TrashEntry> list = null;
+			List<TrashEntry> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<TrashEntry>)finderCache.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<TrashEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (TrashEntry trashEntry : list) {
-					if (companyId != trashEntry.getCompanyId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (TrashEntry trashEntry : list) {
+						if (companyId != trashEntry.getCompanyId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
+				sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				list = (List<TrashEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<TrashEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1052,57 +1054,51 @@ public class TrashEntryPersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByCompanyId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByCompanyId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
+				sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_COMPANYID_COMPANYID_2 =
@@ -1188,106 +1184,108 @@ public class TrashEntryPersistenceImpl
 		OrderByComparator<TrashEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByG_LtCD;
-		finderArgs = new Object[] {
-			groupId, _getTime(createDate), start, end, orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByG_LtCD;
+			finderArgs = new Object[] {
+				groupId, _getTime(createDate), start, end, orderByComparator
+			};
 
-		List<TrashEntry> list = null;
+			List<TrashEntry> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<TrashEntry>)finderCache.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<TrashEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (TrashEntry trashEntry : list) {
-					if ((groupId != trashEntry.getGroupId()) ||
-						(createDate.getTime() <= trashEntry.getCreateDate(
-						).getTime())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (TrashEntry trashEntry : list) {
+						if ((groupId != trashEntry.getGroupId()) ||
+							(createDate.getTime() <= trashEntry.getCreateDate(
+							).getTime())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_LTCD_GROUPID_2);
-
-			boolean bindCreateDate = false;
-
-			if (createDate == null) {
-				sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_1);
-			}
-			else {
-				bindCreateDate = true;
-
-				sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindCreateDate) {
-					queryPos.add(new Timestamp(createDate.getTime()));
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<TrashEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_G_LTCD_GROUPID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindCreateDate = false;
+
+				if (createDate == null) {
+					sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_1);
+				}
+				else {
+					bindCreateDate = true;
+
+					sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					if (bindCreateDate) {
+						queryPos.add(new Timestamp(createDate.getTime()));
+					}
+
+					list = (List<TrashEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1610,72 +1608,66 @@ public class TrashEntryPersistenceImpl
 	 */
 	@Override
 	public int countByG_LtCD(long groupId, Date createDate) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathWithPaginationCountByG_LtCD;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId, _getTime(createDate)};
 
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByG_LtCD;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, _getTime(createDate)};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
+				sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_G_LTCD_GROUPID_2);
 
-			sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
+				boolean bindCreateDate = false;
 
-			sb.append(_FINDER_COLUMN_G_LTCD_GROUPID_2);
+				if (createDate == null) {
+					sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_1);
+				}
+				else {
+					bindCreateDate = true;
 
-			boolean bindCreateDate = false;
-
-			if (createDate == null) {
-				sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_1);
-			}
-			else {
-				bindCreateDate = true;
-
-				sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindCreateDate) {
-					queryPos.add(new Timestamp(createDate.getTime()));
+					sb.append(_FINDER_COLUMN_G_LTCD_CREATEDATE_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					if (bindCreateDate) {
+						queryPos.add(new Timestamp(createDate.getTime()));
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_G_LTCD_GROUPID_2 =
@@ -1687,9 +1679,9 @@ public class TrashEntryPersistenceImpl
 	private static final String _FINDER_COLUMN_G_LTCD_CREATEDATE_2 =
 		"trashEntry.createDate < ?";
 
-	private FinderPath _finderPathWithPaginationFindByG_C;
-	private FinderPath _finderPathWithoutPaginationFindByG_C;
-	private FinderPath _finderPathCountByG_C;
+	private FinderPath _finderPathWithPaginationFindByG_CN;
+	private FinderPath _finderPathWithoutPaginationFindByG_CN;
+	private FinderPath _finderPathCountByG_CN;
 
 	/**
 	 * Returns all the trash entries where groupId = &#63; and classNameId = &#63;.
@@ -1699,8 +1691,8 @@ public class TrashEntryPersistenceImpl
 	 * @return the matching trash entries
 	 */
 	@Override
-	public List<TrashEntry> findByG_C(long groupId, long classNameId) {
-		return findByG_C(
+	public List<TrashEntry> findByG_CN(long groupId, long classNameId) {
+		return findByG_CN(
 			groupId, classNameId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 	}
 
@@ -1718,10 +1710,10 @@ public class TrashEntryPersistenceImpl
 	 * @return the range of matching trash entries
 	 */
 	@Override
-	public List<TrashEntry> findByG_C(
+	public List<TrashEntry> findByG_CN(
 		long groupId, long classNameId, int start, int end) {
 
-		return findByG_C(groupId, classNameId, start, end, null);
+		return findByG_CN(groupId, classNameId, start, end, null);
 	}
 
 	/**
@@ -1739,11 +1731,11 @@ public class TrashEntryPersistenceImpl
 	 * @return the ordered range of matching trash entries
 	 */
 	@Override
-	public List<TrashEntry> findByG_C(
+	public List<TrashEntry> findByG_CN(
 		long groupId, long classNameId, int start, int end,
 		OrderByComparator<TrashEntry> orderByComparator) {
 
-		return findByG_C(
+		return findByG_CN(
 			groupId, classNameId, start, end, orderByComparator, true);
 	}
 
@@ -1763,109 +1755,111 @@ public class TrashEntryPersistenceImpl
 	 * @return the ordered range of matching trash entries
 	 */
 	@Override
-	public List<TrashEntry> findByG_C(
+	public List<TrashEntry> findByG_CN(
 		long groupId, long classNameId, int start, int end,
 		OrderByComparator<TrashEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_C;
-				finderArgs = new Object[] {groupId, classNameId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_CN;
+					finderArgs = new Object[] {groupId, classNameId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_C;
-			finderArgs = new Object[] {
-				groupId, classNameId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_CN;
+				finderArgs = new Object[] {
+					groupId, classNameId, start, end, orderByComparator
+				};
+			}
 
-		List<TrashEntry> list = null;
+			List<TrashEntry> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<TrashEntry>)finderCache.getResult(
-				finderPath, finderArgs, this);
+			if (useFinderCache) {
+				list = (List<TrashEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (TrashEntry trashEntry : list) {
-					if ((groupId != trashEntry.getGroupId()) ||
-						(classNameId != trashEntry.getClassNameId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (TrashEntry trashEntry : list) {
+						if ((groupId != trashEntry.getGroupId()) ||
+							(classNameId != trashEntry.getClassNameId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
+				sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_C_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_CN_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_C_CLASSNAMEID_2);
+				sb.append(_FINDER_COLUMN_G_CN_CLASSNAMEID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(classNameId);
+					queryPos.add(classNameId);
 
-				list = (List<TrashEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<TrashEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1878,12 +1872,12 @@ public class TrashEntryPersistenceImpl
 	 * @throws NoSuchEntryException if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry findByG_C_First(
+	public TrashEntry findByG_CN_First(
 			long groupId, long classNameId,
 			OrderByComparator<TrashEntry> orderByComparator)
 		throws NoSuchEntryException {
 
-		TrashEntry trashEntry = fetchByG_C_First(
+		TrashEntry trashEntry = fetchByG_CN_First(
 			groupId, classNameId, orderByComparator);
 
 		if (trashEntry != null) {
@@ -1914,11 +1908,11 @@ public class TrashEntryPersistenceImpl
 	 * @return the first matching trash entry, or <code>null</code> if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry fetchByG_C_First(
+	public TrashEntry fetchByG_CN_First(
 		long groupId, long classNameId,
 		OrderByComparator<TrashEntry> orderByComparator) {
 
-		List<TrashEntry> list = findByG_C(
+		List<TrashEntry> list = findByG_CN(
 			groupId, classNameId, 0, 1, orderByComparator);
 
 		if (!list.isEmpty()) {
@@ -1938,12 +1932,12 @@ public class TrashEntryPersistenceImpl
 	 * @throws NoSuchEntryException if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry findByG_C_Last(
+	public TrashEntry findByG_CN_Last(
 			long groupId, long classNameId,
 			OrderByComparator<TrashEntry> orderByComparator)
 		throws NoSuchEntryException {
 
-		TrashEntry trashEntry = fetchByG_C_Last(
+		TrashEntry trashEntry = fetchByG_CN_Last(
 			groupId, classNameId, orderByComparator);
 
 		if (trashEntry != null) {
@@ -1974,17 +1968,17 @@ public class TrashEntryPersistenceImpl
 	 * @return the last matching trash entry, or <code>null</code> if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry fetchByG_C_Last(
+	public TrashEntry fetchByG_CN_Last(
 		long groupId, long classNameId,
 		OrderByComparator<TrashEntry> orderByComparator) {
 
-		int count = countByG_C(groupId, classNameId);
+		int count = countByG_CN(groupId, classNameId);
 
 		if (count == 0) {
 			return null;
 		}
 
-		List<TrashEntry> list = findByG_C(
+		List<TrashEntry> list = findByG_CN(
 			groupId, classNameId, count - 1, count, orderByComparator);
 
 		if (!list.isEmpty()) {
@@ -2005,7 +1999,7 @@ public class TrashEntryPersistenceImpl
 	 * @throws NoSuchEntryException if a trash entry with the primary key could not be found
 	 */
 	@Override
-	public TrashEntry[] findByG_C_PrevAndNext(
+	public TrashEntry[] findByG_CN_PrevAndNext(
 			long entryId, long groupId, long classNameId,
 			OrderByComparator<TrashEntry> orderByComparator)
 		throws NoSuchEntryException {
@@ -2019,13 +2013,13 @@ public class TrashEntryPersistenceImpl
 
 			TrashEntry[] array = new TrashEntryImpl[3];
 
-			array[0] = getByG_C_PrevAndNext(
+			array[0] = getByG_CN_PrevAndNext(
 				session, trashEntry, groupId, classNameId, orderByComparator,
 				true);
 
 			array[1] = trashEntry;
 
-			array[2] = getByG_C_PrevAndNext(
+			array[2] = getByG_CN_PrevAndNext(
 				session, trashEntry, groupId, classNameId, orderByComparator,
 				false);
 
@@ -2039,7 +2033,7 @@ public class TrashEntryPersistenceImpl
 		}
 	}
 
-	protected TrashEntry getByG_C_PrevAndNext(
+	protected TrashEntry getByG_CN_PrevAndNext(
 		Session session, TrashEntry trashEntry, long groupId, long classNameId,
 		OrderByComparator<TrashEntry> orderByComparator, boolean previous) {
 
@@ -2056,9 +2050,9 @@ public class TrashEntryPersistenceImpl
 
 		sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
 
-		sb.append(_FINDER_COLUMN_G_C_GROUPID_2);
+		sb.append(_FINDER_COLUMN_G_CN_GROUPID_2);
 
-		sb.append(_FINDER_COLUMN_G_C_CLASSNAMEID_2);
+		sb.append(_FINDER_COLUMN_G_CN_CLASSNAMEID_2);
 
 		if (orderByComparator != null) {
 			String[] orderByConditionFields =
@@ -2158,9 +2152,9 @@ public class TrashEntryPersistenceImpl
 	 * @param classNameId the class name ID
 	 */
 	@Override
-	public void removeByG_C(long groupId, long classNameId) {
+	public void removeByG_CN(long groupId, long classNameId) {
 		for (TrashEntry trashEntry :
-				findByG_C(
+				findByG_CN(
 					groupId, classNameId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 					null)) {
 
@@ -2176,72 +2170,615 @@ public class TrashEntryPersistenceImpl
 	 * @return the number of matching trash entries
 	 */
 	@Override
-	public int countByG_C(long groupId, long classNameId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+	public int countByG_CN(long groupId, long classNameId) {
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_CN;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId, classNameId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_C;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, classNameId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
+				sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_G_CN_GROUPID_2);
 
-			sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
+				sb.append(_FINDER_COLUMN_G_CN_CLASSNAMEID_2);
 
-			sb.append(_FINDER_COLUMN_G_C_GROUPID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_C_CLASSNAMEID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(classNameId);
 
-				queryPos.add(groupId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(classNameId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_G_CN_GROUPID_2 =
+		"trashEntry.groupId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_CN_CLASSNAMEID_2 =
+		"trashEntry.classNameId = ?";
+
+	private FinderPath _finderPathWithPaginationFindByC_CN;
+	private FinderPath _finderPathWithoutPaginationFindByC_CN;
+	private FinderPath _finderPathCountByC_CN;
+
+	/**
+	 * Returns all the trash entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the matching trash entries
+	 */
+	@Override
+	public List<TrashEntry> findByC_CN(long companyId, long classNameId) {
+		return findByC_CN(
+			companyId, classNameId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the trash entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>TrashEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of trash entries
+	 * @param end the upper bound of the range of trash entries (not inclusive)
+	 * @return the range of matching trash entries
+	 */
+	@Override
+	public List<TrashEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end) {
+
+		return findByC_CN(companyId, classNameId, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the trash entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>TrashEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of trash entries
+	 * @param end the upper bound of the range of trash entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching trash entries
+	 */
+	@Override
+	public List<TrashEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<TrashEntry> orderByComparator) {
+
+		return findByC_CN(
+			companyId, classNameId, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the trash entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>TrashEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of trash entries
+	 * @param end the upper bound of the range of trash entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching trash entries
+	 */
+	@Override
+	public List<TrashEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<TrashEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_CN;
+					finderArgs = new Object[] {companyId, classNameId};
+				}
 			}
-			finally {
-				closeSession(session);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_CN;
+				finderArgs = new Object[] {
+					companyId, classNameId, start, end, orderByComparator
+				};
+			}
+
+			List<TrashEntry> list = null;
+
+			if (useFinderCache) {
+				list = (List<TrashEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (TrashEntry trashEntry : list) {
+						if ((companyId != trashEntry.getCompanyId()) ||
+							(classNameId != trashEntry.getClassNameId())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
+
+				sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_CN_COMPANYID_2);
+
+				sb.append(_FINDER_COLUMN_C_CN_CLASSNAMEID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					queryPos.add(classNameId);
+
+					list = (List<TrashEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first trash entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching trash entry
+	 * @throws NoSuchEntryException if a matching trash entry could not be found
+	 */
+	@Override
+	public TrashEntry findByC_CN_First(
+			long companyId, long classNameId,
+			OrderByComparator<TrashEntry> orderByComparator)
+		throws NoSuchEntryException {
+
+		TrashEntry trashEntry = fetchByC_CN_First(
+			companyId, classNameId, orderByComparator);
+
+		if (trashEntry != null) {
+			return trashEntry;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("companyId=");
+		sb.append(companyId);
+
+		sb.append(", classNameId=");
+		sb.append(classNameId);
+
+		sb.append("}");
+
+		throw new NoSuchEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the first trash entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching trash entry, or <code>null</code> if a matching trash entry could not be found
+	 */
+	@Override
+	public TrashEntry fetchByC_CN_First(
+		long companyId, long classNameId,
+		OrderByComparator<TrashEntry> orderByComparator) {
+
+		List<TrashEntry> list = findByC_CN(
+			companyId, classNameId, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last trash entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching trash entry
+	 * @throws NoSuchEntryException if a matching trash entry could not be found
+	 */
+	@Override
+	public TrashEntry findByC_CN_Last(
+			long companyId, long classNameId,
+			OrderByComparator<TrashEntry> orderByComparator)
+		throws NoSuchEntryException {
+
+		TrashEntry trashEntry = fetchByC_CN_Last(
+			companyId, classNameId, orderByComparator);
+
+		if (trashEntry != null) {
+			return trashEntry;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("companyId=");
+		sb.append(companyId);
+
+		sb.append(", classNameId=");
+		sb.append(classNameId);
+
+		sb.append("}");
+
+		throw new NoSuchEntryException(sb.toString());
+	}
+
+	/**
+	 * Returns the last trash entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching trash entry, or <code>null</code> if a matching trash entry could not be found
+	 */
+	@Override
+	public TrashEntry fetchByC_CN_Last(
+		long companyId, long classNameId,
+		OrderByComparator<TrashEntry> orderByComparator) {
+
+		int count = countByC_CN(companyId, classNameId);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<TrashEntry> list = findByC_CN(
+			companyId, classNameId, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the trash entries before and after the current trash entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param entryId the primary key of the current trash entry
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next trash entry
+	 * @throws NoSuchEntryException if a trash entry with the primary key could not be found
+	 */
+	@Override
+	public TrashEntry[] findByC_CN_PrevAndNext(
+			long entryId, long companyId, long classNameId,
+			OrderByComparator<TrashEntry> orderByComparator)
+		throws NoSuchEntryException {
+
+		TrashEntry trashEntry = findByPrimaryKey(entryId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			TrashEntry[] array = new TrashEntryImpl[3];
+
+			array[0] = getByC_CN_PrevAndNext(
+				session, trashEntry, companyId, classNameId, orderByComparator,
+				true);
+
+			array[1] = trashEntry;
+
+			array[2] = getByC_CN_PrevAndNext(
+				session, trashEntry, companyId, classNameId, orderByComparator,
+				false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected TrashEntry getByC_CN_PrevAndNext(
+		Session session, TrashEntry trashEntry, long companyId,
+		long classNameId, OrderByComparator<TrashEntry> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(4);
+		}
+
+		sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
+
+		sb.append(_FINDER_COLUMN_C_CN_COMPANYID_2);
+
+		sb.append(_FINDER_COLUMN_C_CN_CLASSNAMEID_2);
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(TrashEntryModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(companyId);
+
+		queryPos.add(classNameId);
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(trashEntry)) {
+
+				queryPos.add(orderByConditionValue);
 			}
 		}
 
-		return count.intValue();
+		List<TrashEntry> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
 	}
 
-	private static final String _FINDER_COLUMN_G_C_GROUPID_2 =
-		"trashEntry.groupId = ? AND ";
+	/**
+	 * Removes all the trash entries where companyId = &#63; and classNameId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 */
+	@Override
+	public void removeByC_CN(long companyId, long classNameId) {
+		for (TrashEntry trashEntry :
+				findByC_CN(
+					companyId, classNameId, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null)) {
 
-	private static final String _FINDER_COLUMN_G_C_CLASSNAMEID_2 =
+			remove(trashEntry);
+		}
+	}
+
+	/**
+	 * Returns the number of trash entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the number of matching trash entries
+	 */
+	@Override
+	public int countByC_CN(long companyId, long classNameId) {
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
+
+			FinderPath finderPath = _finderPathCountByC_CN;
+
+			Object[] finderArgs = new Object[] {companyId, classNameId};
+
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
+
+				sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
+
+				sb.append(_FINDER_COLUMN_C_CN_COMPANYID_2);
+
+				sb.append(_FINDER_COLUMN_C_CN_CLASSNAMEID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					queryPos.add(classNameId);
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_C_CN_COMPANYID_2 =
+		"trashEntry.companyId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_CN_CLASSNAMEID_2 =
 		"trashEntry.classNameId = ?";
 
-	private FinderPath _finderPathFetchByC_C;
-	private FinderPath _finderPathCountByC_C;
+	private FinderPath _finderPathFetchByCN_CPK;
 
 	/**
 	 * Returns the trash entry where classNameId = &#63; and classPK = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
@@ -2252,10 +2789,10 @@ public class TrashEntryPersistenceImpl
 	 * @throws NoSuchEntryException if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry findByC_C(long classNameId, long classPK)
+	public TrashEntry findByCN_CPK(long classNameId, long classPK)
 		throws NoSuchEntryException {
 
-		TrashEntry trashEntry = fetchByC_C(classNameId, classPK);
+		TrashEntry trashEntry = fetchByCN_CPK(classNameId, classPK);
 
 		if (trashEntry == null) {
 			StringBundler sb = new StringBundler(6);
@@ -2288,8 +2825,8 @@ public class TrashEntryPersistenceImpl
 	 * @return the matching trash entry, or <code>null</code> if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry fetchByC_C(long classNameId, long classPK) {
-		return fetchByC_C(classNameId, classPK, true);
+	public TrashEntry fetchByCN_CPK(long classNameId, long classPK) {
+		return fetchByCN_CPK(classNameId, classPK, true);
 	}
 
 	/**
@@ -2301,96 +2838,90 @@ public class TrashEntryPersistenceImpl
 	 * @return the matching trash entry, or <code>null</code> if a matching trash entry could not be found
 	 */
 	@Override
-	public TrashEntry fetchByC_C(
+	public TrashEntry fetchByCN_CPK(
 		long classNameId, long classPK, boolean useFinderCache) {
 
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {classNameId, classPK};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = finderCache.getResult(
-				_finderPathFetchByC_C, finderArgs, this);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
-
-		if (result instanceof TrashEntry) {
-			TrashEntry trashEntry = (TrashEntry)result;
-
-			if ((classNameId != trashEntry.getClassNameId()) ||
-				(classPK != trashEntry.getClassPK())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {classNameId, classPK};
 			}
-			else if (!ctPersistenceHelper.isProductionMode(
-						TrashEntry.class, trashEntry.getPrimaryKey())) {
 
-				result = null;
+			Object result = null;
+
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByCN_CPK, finderArgs, this);
 			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
+			if (result instanceof TrashEntry) {
+				TrashEntry trashEntry = (TrashEntry)result;
 
-			sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
+				if ((classNameId != trashEntry.getClassNameId()) ||
+					(classPK != trashEntry.getClassPK())) {
 
-			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
+					result = null;
+				}
+			}
 
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-			String sql = sb.toString();
+				sb.append(_SQL_SELECT_TRASHENTRY_WHERE);
 
-			Session session = null;
+				sb.append(_FINDER_COLUMN_CN_CPK_CLASSNAMEID_2);
 
-			try {
-				session = openSession();
+				sb.append(_FINDER_COLUMN_CN_CPK_CLASSPK_2);
 
-				Query query = session.createQuery(sql);
+				String sql = sb.toString();
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+				Session session = null;
 
-				queryPos.add(classNameId);
+				try {
+					session = openSession();
 
-				queryPos.add(classPK);
+					Query query = session.createQuery(sql);
 
-				List<TrashEntry> list = query.list();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByC_C, finderArgs, list);
+					queryPos.add(classNameId);
+
+					queryPos.add(classPK);
+
+					List<TrashEntry> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByCN_CPK, finderArgs, list);
+						}
+					}
+					else {
+						TrashEntry trashEntry = list.get(0);
+
+						result = trashEntry;
+
+						cacheResult(trashEntry);
 					}
 				}
-				else {
-					TrashEntry trashEntry = list.get(0);
-
-					result = trashEntry;
-
-					cacheResult(trashEntry);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (TrashEntry)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (TrashEntry)result;
+			}
 		}
 	}
 
@@ -2402,10 +2933,10 @@ public class TrashEntryPersistenceImpl
 	 * @return the trash entry that was removed
 	 */
 	@Override
-	public TrashEntry removeByC_C(long classNameId, long classPK)
+	public TrashEntry removeByCN_CPK(long classNameId, long classPK)
 		throws NoSuchEntryException {
 
-		TrashEntry trashEntry = findByC_C(classNameId, classPK);
+		TrashEntry trashEntry = findByCN_CPK(classNameId, classPK);
 
 		return remove(trashEntry);
 	}
@@ -2418,68 +2949,20 @@ public class TrashEntryPersistenceImpl
 	 * @return the number of matching trash entries
 	 */
 	@Override
-	public int countByC_C(long classNameId, long classPK) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+	public int countByCN_CPK(long classNameId, long classPK) {
+		TrashEntry trashEntry = fetchByCN_CPK(classNameId, classPK);
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_C;
-
-			finderArgs = new Object[] {classNameId, classPK};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
+		if (trashEntry == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_TRASHENTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
-	private static final String _FINDER_COLUMN_C_C_CLASSNAMEID_2 =
+	private static final String _FINDER_COLUMN_CN_CPK_CLASSNAMEID_2 =
 		"trashEntry.classNameId = ? AND ";
 
-	private static final String _FINDER_COLUMN_C_C_CLASSPK_2 =
+	private static final String _FINDER_COLUMN_CN_CPK_CLASSPK_2 =
 		"trashEntry.classPK = ?";
 
 	public TrashEntryPersistenceImpl() {
@@ -2498,17 +2981,20 @@ public class TrashEntryPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(TrashEntry trashEntry) {
-		if (trashEntry.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					trashEntry.getCtCollectionId())) {
+
+			entityCache.putResult(
+				TrashEntryImpl.class, trashEntry.getPrimaryKey(), trashEntry);
+
+			finderCache.putResult(
+				_finderPathFetchByCN_CPK,
+				new Object[] {
+					trashEntry.getClassNameId(), trashEntry.getClassPK()
+				},
+				trashEntry);
 		}
-
-		entityCache.putResult(
-			TrashEntryImpl.class, trashEntry.getPrimaryKey(), trashEntry);
-
-		finderCache.putResult(
-			_finderPathFetchByC_C,
-			new Object[] {trashEntry.getClassNameId(), trashEntry.getClassPK()},
-			trashEntry);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -2528,14 +3014,16 @@ public class TrashEntryPersistenceImpl
 		}
 
 		for (TrashEntry trashEntry : trashEntries) {
-			if (trashEntry.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						trashEntry.getCtCollectionId())) {
 
-			if (entityCache.getResult(
-					TrashEntryImpl.class, trashEntry.getPrimaryKey()) == null) {
+				if (entityCache.getResult(
+						TrashEntryImpl.class, trashEntry.getPrimaryKey()) ==
+							null) {
 
-				cacheResult(trashEntry);
+					cacheResult(trashEntry);
+				}
 			}
 		}
 	}
@@ -2585,13 +3073,18 @@ public class TrashEntryPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		TrashEntryModelImpl trashEntryModelImpl) {
 
-		Object[] args = new Object[] {
-			trashEntryModelImpl.getClassNameId(),
-			trashEntryModelImpl.getClassPK()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					trashEntryModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(_finderPathCountByC_C, args, Long.valueOf(1));
-		finderCache.putResult(_finderPathFetchByC_C, args, trashEntryModelImpl);
+			Object[] args = new Object[] {
+				trashEntryModelImpl.getClassNameId(),
+				trashEntryModelImpl.getClassPK()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByCN_CPK, args, trashEntryModelImpl);
+		}
 	}
 
 	/**
@@ -2758,16 +3251,6 @@ public class TrashEntryPersistenceImpl
 			closeSession(session);
 		}
 
-		if (trashEntry.getCtCollectionId() != 0) {
-			if (isNew) {
-				trashEntry.setNew(false);
-			}
-
-			trashEntry.resetOriginalValues();
-
-			return trashEntry;
-		}
-
 		entityCache.putResult(
 			TrashEntryImpl.class, trashEntryModelImpl, false, true);
 
@@ -2832,10 +3315,20 @@ public class TrashEntryPersistenceImpl
 		if (ctPersistenceHelper.isProductionMode(
 				TrashEntry.class, primaryKey)) {
 
-			return super.fetchByPrimaryKey(primaryKey);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		TrashEntry trashEntry = null;
+		TrashEntry trashEntry = (TrashEntry)entityCache.getResult(
+			TrashEntryImpl.class, primaryKey);
+
+		if (trashEntry != null) {
+			return trashEntry;
+		}
 
 		Session session = null;
 
@@ -2875,7 +3368,12 @@ public class TrashEntryPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (ctPersistenceHelper.isProductionMode(TrashEntry.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -2896,6 +3394,33 @@ public class TrashEntryPersistenceImpl
 				map.put(primaryKey, trashEntry);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						TrashEntry.class, primaryKey)) {
+
+				TrashEntry trashEntry = (TrashEntry)entityCache.getResult(
+					TrashEntryImpl.class, primaryKey);
+
+				if (trashEntry == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, trashEntry);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -3024,78 +3549,80 @@ public class TrashEntryPersistenceImpl
 		int start, int end, OrderByComparator<TrashEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<TrashEntry> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<TrashEntry>)finderCache.getResult(
-				finderPath, finderArgs, this);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_TRASHENTRY);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_TRASHENTRY;
-
-				sql = sql.concat(TrashEntryModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<TrashEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<TrashEntry> list = null;
+
+			if (useFinderCache) {
+				list = (List<TrashEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_TRASHENTRY);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_TRASHENTRY;
+
+					sql = sql.concat(TrashEntryModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<TrashEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -3116,40 +3643,36 @@ public class TrashEntryPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			TrashEntry.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					TrashEntry.class)) {
 
-		Long count = null;
-
-		if (productionMode) {
-			count = (Long)finderCache.getResult(
+			Long count = (Long)finderCache.getResult(
 				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
-		}
 
-		if (count == null) {
-			Session session = null;
+			if (count == null) {
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(_SQL_COUNT_TRASHENTRY);
+					Query query = session.createQuery(_SQL_COUNT_TRASHENTRY);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					finderCache.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -3205,6 +3728,7 @@ public class TrashEntryPersistenceImpl
 
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -3216,12 +3740,13 @@ public class TrashEntryPersistenceImpl
 		ctStrictColumnNames.add("createDate");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("systemEventSetKey");
-		ctStrictColumnNames.add("typeSettings");
-		ctStrictColumnNames.add("status");
+		ctMergeColumnNames.add("systemEventSetKey");
+		ctMergeColumnNames.add("typeSettings");
+		ctMergeColumnNames.add("status");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK, Collections.singleton("entryId"));
 		_ctColumnNamesMap.put(
@@ -3300,8 +3825,8 @@ public class TrashEntryPersistenceImpl
 			new String[] {Long.class.getName(), Date.class.getName()},
 			new String[] {"groupId", "createDate"}, false);
 
-		_finderPathWithPaginationFindByG_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_C",
+		_finderPathWithPaginationFindByG_CN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_CN",
 			new String[] {
 				Long.class.getName(), Long.class.getName(),
 				Integer.class.getName(), Integer.class.getName(),
@@ -3309,25 +3834,39 @@ public class TrashEntryPersistenceImpl
 			},
 			new String[] {"groupId", "classNameId"}, true);
 
-		_finderPathWithoutPaginationFindByG_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByG_C",
+		_finderPathWithoutPaginationFindByG_CN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByG_CN",
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"groupId", "classNameId"}, true);
 
-		_finderPathCountByG_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_C",
+		_finderPathCountByG_CN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_CN",
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"groupId", "classNameId"}, false);
 
-		_finderPathFetchByC_C = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByC_C",
+		_finderPathWithPaginationFindByC_CN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_CN",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {"companyId", "classNameId"}, true);
+
+		_finderPathWithoutPaginationFindByC_CN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_CN",
+			new String[] {Long.class.getName(), Long.class.getName()},
+			new String[] {"companyId", "classNameId"}, true);
+
+		_finderPathCountByC_CN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_CN",
+			new String[] {Long.class.getName(), Long.class.getName()},
+			new String[] {"companyId", "classNameId"}, false);
+
+		_finderPathFetchByCN_CPK = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByCN_CPK",
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"classNameId", "classPK"}, true);
-
-		_finderPathCountByC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"classNameId", "classPK"}, false);
 
 		TrashEntryUtil.setPersistence(this);
 	}

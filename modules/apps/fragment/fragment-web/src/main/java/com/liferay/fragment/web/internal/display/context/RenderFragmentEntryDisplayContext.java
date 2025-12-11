@@ -6,6 +6,7 @@
 package com.liferay.fragment.web.internal.display.context;
 
 import com.liferay.fragment.constants.FragmentConstants;
+import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentEntry;
@@ -20,10 +21,11 @@ import com.liferay.portal.kernel.upload.UploadRequest;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.File;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -60,13 +62,16 @@ public class RenderFragmentEntryDisplayContext {
 		FragmentEntryLink fragmentEntryLink =
 			FragmentEntryLinkLocalServiceUtil.createFragmentEntryLink(0);
 
-		long fragmentEntryId = 0;
+		String fragmentEntryERC = null;
+		String fragmentEntryScopeERC = null;
 
 		if (fragmentEntry != null) {
-			fragmentEntryId = fragmentEntry.getFragmentEntryId();
+			fragmentEntryERC = fragmentEntry.getExternalReferenceCode();
+			fragmentEntryScopeERC = fragmentEntry.getScopeERC();
 		}
 
-		fragmentEntryLink.setFragmentEntryId(fragmentEntryId);
+		fragmentEntryLink.setFragmentEntryERC(fragmentEntryERC);
+		fragmentEntryLink.setFragmentEntryScopeERC(fragmentEntryScopeERC);
 
 		fragmentEntryLink.setCss(css);
 		fragmentEntryLink.setHtml(html);
@@ -76,7 +81,7 @@ public class RenderFragmentEntryDisplayContext {
 
 		String rendererKey = null;
 
-		if ((fragmentEntry != null) && (fragmentEntryId == 0)) {
+		if ((fragmentEntry != null) && Validator.isNull(fragmentEntryERC)) {
 			rendererKey = fragmentEntry.getFragmentEntryKey();
 		}
 
@@ -93,6 +98,8 @@ public class RenderFragmentEntryDisplayContext {
 		DefaultFragmentRendererContext defaultFragmentRendererContext =
 			new DefaultFragmentRendererContext(fragmentEntryLink);
 
+		defaultFragmentRendererContext.setMode(
+			FragmentEntryLinkConstants.PREVIEW);
 		defaultFragmentRendererContext.setUseCachedContent(false);
 
 		return defaultFragmentRendererContext;

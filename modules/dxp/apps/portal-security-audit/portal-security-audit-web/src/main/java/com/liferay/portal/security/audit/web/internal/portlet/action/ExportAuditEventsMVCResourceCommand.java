@@ -27,9 +27,11 @@ import com.liferay.portal.kernel.util.ProgressTracker;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.audit.AuditEvent;
-import com.liferay.portal.security.audit.storage.service.AuditEventLocalService;
 import com.liferay.portal.security.audit.web.internal.constants.AuditPortletKeys;
 import com.liferay.portal.security.audit.web.internal.display.context.AuditDisplayContext;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.sql.Timestamp;
 
@@ -37,9 +39,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Function;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AuditPortletKeys.AUDIT,
+		"jakarta.portlet.name=" + AuditPortletKeys.AUDIT,
 		"mvc.command.name=/audit/export_audit_events"
 	},
 	service = MVCResourceCommand.class
@@ -88,18 +87,6 @@ public class ExportAuditEventsMVCResourceCommand
 		}
 
 		return CSVUtil.encode(String.valueOf(date));
-	}
-
-	private String _getAuditEventCSV(AuditEvent auditEvent) {
-		return StringBundler.concat(
-			StringPool.QUOTE,
-			StringUtil.merge(
-				TransformUtil.transform(
-					_functions.values(),
-					function -> function.apply(auditEvent)),
-				StringBundler.concat(
-					StringPool.QUOTE, StringPool.COMMA, StringPool.QUOTE)),
-			StringPool.QUOTE, StringPool.NEW_LINE);
 	}
 
 	private List<AuditEvent> _getAuditEvents(
@@ -150,7 +137,7 @@ public class ExportAuditEventsMVCResourceCommand
 
 		progressTracker.setPercent(percentage);
 
-		StringBundler sb = new StringBundler(auditEvents.size() + 1);
+		StringBundler sb = new StringBundler((auditEvents.size() * 3) + 4);
 
 		sb.append(StringPool.QUOTE);
 		sb.append(
@@ -163,7 +150,15 @@ public class ExportAuditEventsMVCResourceCommand
 		for (int i = 0; i < auditEvents.size(); i++) {
 			AuditEvent auditEvent = auditEvents.get(i);
 
-			sb.append(_getAuditEventCSV(auditEvent));
+			sb.append(StringPool.QUOTE);
+			sb.append(
+				StringUtil.merge(
+					TransformUtil.transform(
+						_functions.values(),
+						function -> function.apply(auditEvent)),
+					"\", \""));
+
+			sb.append(StringPool.NEW_LINE);
 
 			percentage = Math.min(10 + ((i * 90) / total), 99);
 
@@ -177,9 +172,6 @@ public class ExportAuditEventsMVCResourceCommand
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ExportAuditEventsMVCResourceCommand.class);
-
-	@Reference
-	private AuditEventLocalService _auditEventLocalService;
 
 	private final LinkedHashMap<String, Function<AuditEvent, String>>
 		_functions =
@@ -211,7 +203,10 @@ public class ExportAuditEventsMVCResourceCommand
 			).put(
 				"session-id", AuditEvent::getSessionID
 			).put(
-				"additional-information", AuditEvent::getAdditionalInfo
+				"additional-information",
+				auditEvent -> StringUtil.removeFirst(
+					CSVUtil.encode(auditEvent.getAdditionalInfo()),
+					StringPool.QUOTE)
 			).build();
 
 	@Reference

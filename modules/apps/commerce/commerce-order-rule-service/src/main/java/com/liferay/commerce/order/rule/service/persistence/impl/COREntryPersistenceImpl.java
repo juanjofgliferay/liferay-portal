@@ -25,13 +25,19 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -590,6 +596,15 @@ public class COREntryPersistenceImpl
 			return findByUuid(uuid, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid(
+					uuid, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -636,7 +651,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -839,7 +854,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -972,6 +987,14 @@ public class COREntryPersistenceImpl
 	public int filterCountByUuid(String uuid) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByUuid(uuid);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByUuid(uuid);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -1575,6 +1598,15 @@ public class COREntryPersistenceImpl
 			return findByUuid_C(uuid, companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid_C(
+					uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -1623,7 +1655,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -1832,7 +1864,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -1976,6 +2008,14 @@ public class COREntryPersistenceImpl
 	public int filterCountByUuid_C(String uuid, long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByUuid_C(uuid, companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByUuid_C(uuid, companyId);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -2560,6 +2600,15 @@ public class COREntryPersistenceImpl
 			return findByC_A(companyId, active, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_A(
+					companyId, active, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -2597,7 +2646,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -2793,7 +2842,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -2922,6 +2971,14 @@ public class COREntryPersistenceImpl
 	public int filterCountByC_A(long companyId, boolean active) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_A(companyId, active);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByC_A(companyId, active);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -3504,6 +3561,15 @@ public class COREntryPersistenceImpl
 				companyId, type, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_LikeType(
+					companyId, type, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		type = Objects.toString(type, "");
 
 		StringBundler sb = null;
@@ -3552,7 +3618,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -3761,7 +3827,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -3905,6 +3971,14 @@ public class COREntryPersistenceImpl
 	public int filterCountByC_LikeType(long companyId, String type) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_LikeType(companyId, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByC_LikeType(companyId, type);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
 		}
 
 		type = Objects.toString(type, "");
@@ -4503,6 +4577,15 @@ public class COREntryPersistenceImpl
 				displayDate, status, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByLtD_S(
+					displayDate, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -4549,7 +4632,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -4758,7 +4841,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -4900,6 +4983,14 @@ public class COREntryPersistenceImpl
 	public int filterCountByLtD_S(Date displayDate, int status) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByLtD_S(displayDate, status);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByLtD_S(displayDate, status);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -5490,6 +5581,15 @@ public class COREntryPersistenceImpl
 				expirationDate, status, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByLtE_S(
+					expirationDate, status, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -5536,7 +5636,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -5745,7 +5845,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -5887,6 +5987,14 @@ public class COREntryPersistenceImpl
 	public int filterCountByLtE_S(Date expirationDate, int status) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByLtE_S(expirationDate, status);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByLtE_S(expirationDate, status);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -6517,6 +6625,15 @@ public class COREntryPersistenceImpl
 				companyId, active, type, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_A_LikeType(
+					companyId, active, type, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		type = Objects.toString(type, "");
 
 		StringBundler sb = null;
@@ -6567,7 +6684,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -6784,7 +6901,7 @@ public class COREntryPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(COREntryModelImpl.ORDER_BY_JPQL);
+				sb.append(COREntryModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(COREntryModelImpl.ORDER_BY_SQL);
@@ -6945,6 +7062,15 @@ public class COREntryPersistenceImpl
 			return countByC_A_LikeType(companyId, active, type);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<COREntry> corEntries = findByC_A_LikeType(
+				companyId, active, type);
+
+			corEntries = InlineSQLHelperUtil.filter(corEntries);
+
+			return corEntries.size();
+		}
+
 		type = Objects.toString(type, "");
 
 		StringBundler sb = new StringBundler(4);
@@ -7024,7 +7150,6 @@ public class COREntryPersistenceImpl
 		"(corEntry.type_ IS NULL OR corEntry.type_ LIKE '')";
 
 	private FinderPath _finderPathFetchByERC_C;
-	private FinderPath _finderPathCountByERC_C;
 
 	/**
 	 * Returns the cor entry where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchCOREntryException</code> if it could not be found.
@@ -7206,62 +7331,13 @@ public class COREntryPersistenceImpl
 	 */
 	@Override
 	public int countByERC_C(String externalReferenceCode, long companyId) {
-		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+		COREntry corEntry = fetchByERC_C(externalReferenceCode, companyId);
 
-		FinderPath finderPath = _finderPathCountByERC_C;
-
-		Object[] finderArgs = new Object[] {externalReferenceCode, companyId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_CORENTRY_WHERE);
-
-			boolean bindExternalReferenceCode = false;
-
-			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
-			}
-			else {
-				bindExternalReferenceCode = true;
-
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
-			}
-
-			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindExternalReferenceCode) {
-					queryPos.add(externalReferenceCode);
-				}
-
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (corEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
@@ -7383,7 +7459,6 @@ public class COREntryPersistenceImpl
 			corEntryModelImpl.getCompanyId()
 		};
 
-		finderCache.putResult(_finderPathCountByERC_C, args, Long.valueOf(1));
 		finderCache.putResult(_finderPathFetchByERC_C, args, corEntryModelImpl);
 	}
 
@@ -7524,6 +7599,39 @@ public class COREntryPersistenceImpl
 			corEntry.setExternalReferenceCode(corEntry.getUuid());
 		}
 		else {
+			if (!Objects.equals(
+					corEntryModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					corEntry.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = corEntry.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = corEntry.getPrimaryKey();
+					}
+
+					try {
+						corEntry.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								COREntry.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								corEntry.getExternalReferenceCode(), null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
 			COREntry ercCOREntry = fetchByERC_C(
 				corEntry.getExternalReferenceCode(), corEntry.getCompanyId());
 
@@ -7996,11 +8104,6 @@ public class COREntryPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"externalReferenceCode", "companyId"}, true);
-
-		_finderPathCountByERC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByERC_C",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"externalReferenceCode", "companyId"}, false);
 
 		COREntryUtil.setPersistence(this);
 	}

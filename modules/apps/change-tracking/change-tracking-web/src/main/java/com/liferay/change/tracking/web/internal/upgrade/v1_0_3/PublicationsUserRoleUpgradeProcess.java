@@ -22,8 +22,8 @@ import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.util.PropsUtil;
 
 /**
  * @author Samuel Trong Tran
@@ -56,8 +56,8 @@ public class PublicationsUserRoleUpgradeProcess extends UpgradeProcess {
 
 				if (role == null) {
 					role = _roleLocalService.addRole(
-						_userLocalService.getGuestUserId(companyId), null, 0,
-						RoleConstants.PUBLICATIONS_USER, null,
+						null, _userLocalService.getGuestUserId(companyId), null,
+						0, RoleConstants.PUBLICATIONS_USER, null,
 						HashMapBuilder.put(
 							LocaleUtil.fromLanguageId(
 								UpgradeProcessUtil.getDefaultLanguageId(

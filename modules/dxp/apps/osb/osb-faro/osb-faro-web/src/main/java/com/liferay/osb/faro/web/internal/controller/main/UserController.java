@@ -11,7 +11,6 @@ import com.liferay.osb.faro.engine.client.util.OrderByField;
 import com.liferay.osb.faro.model.FaroUser;
 import com.liferay.osb.faro.service.FaroUserLocalService;
 import com.liferay.osb.faro.web.internal.controller.BaseFaroController;
-import com.liferay.osb.faro.web.internal.controller.FaroController;
 import com.liferay.osb.faro.web.internal.exception.FaroException;
 import com.liferay.osb.faro.web.internal.model.display.FaroResultsDisplay;
 import com.liferay.osb.faro.web.internal.model.display.contacts.FaroUserDisplay;
@@ -27,26 +26,25 @@ import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Matthew Kong
  */
-@Component(service = {FaroController.class, UserController.class})
+@Component(service = UserController.class)
 @Path("/{groupId}/user")
 @Produces(MediaType.APPLICATION_JSON)
 public class UserController extends BaseFaroController {
@@ -62,15 +60,21 @@ public class UserController extends BaseFaroController {
 	@Path("/{id}/accept")
 	@POST
 	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
-	public FaroUserDisplay accept(@PathParam("id") long id)
+	public FaroUserDisplay accept(
+			@PathParam("groupId") long groupId, @PathParam("id") long id)
 		throws PortalException {
 
 		FaroUser faroUser = _faroUserLocalService.getFaroUser(id);
 
+		validateGroup(faroUser.getGroupId(), groupId);
+
 		faroUser.setStatus(FaroUserConstants.STATUS_APPROVED);
 
-		return new FaroUserDisplay(
-			_faroUserLocalService.updateFaroUser(faroUser));
+		faroUser = _faroUserLocalService.updateFaroUser(faroUser);
+
+		_groupLocalService.addUserGroup(faroUser.getLiveUserId(), groupId);
+
+		return new FaroUserDisplay(faroUser);
 	}
 
 	@POST
@@ -83,7 +87,7 @@ public class UserController extends BaseFaroController {
 			@DefaultValue("true") @FormParam("sendEmail") boolean sendEmail)
 		throws Exception {
 
-		validateUpdate(roleName, Collections.emptyList());
+		validateUpdate(groupId, roleName, Collections.emptyList());
 
 		Role role = _roleLocalService.getRole(getCompanyId(), roleName);
 
@@ -103,7 +107,7 @@ public class UserController extends BaseFaroController {
 				FaroParam<List<Long>> idsFaroParam)
 		throws Exception {
 
-		validateFaroUsers(idsFaroParam.getValue());
+		validateFaroUsers(groupId, idsFaroParam.getValue());
 
 		return TransformUtil.transform(
 			idsFaroParam.getValue(), id -> delete(groupId, id));
@@ -116,21 +120,15 @@ public class UserController extends BaseFaroController {
 			@PathParam("groupId") long groupId, @PathParam("id") long id)
 		throws Exception {
 
-		validateFaroUsers(Collections.singletonList(id));
+		validateFaroUsers(groupId, Collections.singletonList(id));
 
 		return new FaroUserDisplay(_faroUserLocalService.deleteFaroUser(id));
 	}
 
 	@GET
-	@Path("/{id}")
-	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public FaroUserDisplay get(@PathParam("id") long id) throws Exception {
-		return new FaroUserDisplay(_faroUserLocalService.getFaroUser(id));
-	}
-
-	@GET
 	@Path("/current")
-	public FaroUserDisplay getCurrent(@PathParam("groupId") long groupId)
+	public FaroUserDisplay getCurrentFaroUserDisplay(
+			@PathParam("groupId") long groupId)
 		throws Exception {
 
 		if (groupId == 0) {
@@ -139,6 +137,20 @@ public class UserController extends BaseFaroController {
 
 		return new FaroUserDisplay(
 			_faroUserLocalService.getFaroUser(groupId, getUserId()));
+	}
+
+	@GET
+	@Path("/{id}")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public FaroUserDisplay getFaroUserDisplay(
+			@PathParam("groupId") long groupId, @PathParam("id") long id)
+		throws Exception {
+
+		FaroUser faroUser = _faroUserLocalService.getFaroUser(id);
+
+		validateGroup(faroUser.getGroupId(), groupId);
+
+		return new FaroUserDisplay(faroUser);
 	}
 
 	@Path("/join_request")
@@ -236,7 +248,7 @@ public class UserController extends BaseFaroController {
 			@FormParam("roleName") String roleName)
 		throws Exception {
 
-		validateUpdate(roleName, idsFaroParam.getValue());
+		validateUpdate(groupId, roleName, idsFaroParam.getValue());
 
 		Role role = _roleLocalService.getRole(getCompanyId(), roleName);
 
@@ -256,11 +268,12 @@ public class UserController extends BaseFaroController {
 	@PUT
 	@RolesAllowed(RoleConstants.SITE_ADMINISTRATOR)
 	public FaroUserDisplay update(
-			@PathParam("id") long id, @FormParam("roleName") String roleName,
+			@PathParam("groupId") long groupId, @PathParam("id") long id,
+			@FormParam("roleName") String roleName,
 			@FormParam("emailAddress") String emailAddress)
 		throws Exception {
 
-		validateUpdate(roleName, Collections.singletonList(id));
+		validateUpdate(groupId, roleName, Collections.singletonList(id));
 
 		FaroUser faroUser = _faroUserLocalService.getFaroUser(id);
 
@@ -309,7 +322,9 @@ public class UserController extends BaseFaroController {
 				FaroUserConstants.STATUS_PENDING, false));
 	}
 
-	protected void validateFaroUsers(List<Long> ids) throws Exception {
+	protected void validateFaroUsers(long groupId, List<Long> ids)
+		throws Exception {
+
 		for (long id : ids) {
 			FaroUser faroUser = _faroUserLocalService.fetchFaroUser(id);
 
@@ -317,9 +332,17 @@ public class UserController extends BaseFaroController {
 				throw new FaroException("No such user with id: " + id);
 			}
 
+			validateGroup(faroUser.getGroupId(), groupId);
+
 			Role role = _roleLocalService.getRole(faroUser.getRoleId());
 
 			validateRoleName(role.getName());
+		}
+	}
+
+	protected void validateGroup(long groupId1, long groupId2) {
+		if (groupId1 != groupId2) {
+			new FaroException("You do not have the required permissions");
 		}
 	}
 
@@ -337,10 +360,11 @@ public class UserController extends BaseFaroController {
 		}
 	}
 
-	protected void validateUpdate(String roleName, List<Long> ids)
+	protected void validateUpdate(
+			long groupId, String roleName, List<Long> userIds)
 		throws Exception {
 
-		validateFaroUsers(ids);
+		validateFaroUsers(groupId, userIds);
 		validateRoleName(roleName);
 	}
 
@@ -357,8 +381,5 @@ public class UserController extends BaseFaroController {
 
 	@Reference
 	private RoleLocalService _roleLocalService;
-
-	@Reference
-	private UserLocalService _userLocalService;
 
 }

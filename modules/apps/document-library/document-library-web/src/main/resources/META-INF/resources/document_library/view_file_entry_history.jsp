@@ -23,7 +23,7 @@ renderResponse.setTitle(fileEntry.getTitle());
 	navigationItems="<%= dlViewEntryHistoryDisplayContext.getNavigationItems() %>"
 />
 
-<div class="container-fluid container-fluid-max-xl">
+<div class="container-fluid container-fluid-max-xxxl">
 	<liferay-ui:search-container
 		id="articleVersions"
 		searchContainer="<%= dlViewEntryHistoryDisplayContext.getSearchContainer() %>"
@@ -73,7 +73,7 @@ renderResponse.setTitle(fileEntry.getTitle());
 				<clay:dropdown-actions
 					aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 					dropdownItems="<%= dlViewFileEntryHistoryDisplayContext.getActionDropdownItems() %>"
-					propsTransformer="document_library/js/DLFileEntryDropdownPropsTransformer"
+					propsTransformer="{DLFileEntryDropdownPropsTransformer} from document-library-web"
 				/>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>

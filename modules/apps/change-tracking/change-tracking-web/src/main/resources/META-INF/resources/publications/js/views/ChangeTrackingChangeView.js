@@ -345,6 +345,10 @@ export default function ChangeTrackingChangeView({
 
 	const getDiscardURL = useCallback(
 		(node) => {
+			if (!discardURL) {
+				return null;
+			}
+
 			const url = setParameter(
 				discardURL,
 				'modelClassNameId',
@@ -358,7 +362,7 @@ export default function ChangeTrackingChangeView({
 
 	const getMoveChangesURL = useCallback(
 		(node) => {
-			if (!Liferay.FeatureFlags['LPS-171364'] || !node.movable) {
+			if (!moveChangesURL) {
 				return null;
 			}
 
@@ -375,7 +379,7 @@ export default function ChangeTrackingChangeView({
 
 	const renderMainContent = () => {
 		return (
-			<div className="container-fluid container-fluid-max-xl">
+			<div>
 				<div className="publications-changes-content row">
 					<div className="col-md-12">
 						{initialNode.modelClassNameId ? (
@@ -392,10 +396,13 @@ export default function ChangeTrackingChangeView({
 								handleNavigation={(nodeId) => navigate(nodeId)}
 								initialDataURL={getDataURL(initialNode)}
 								moveChangesURL={getMoveChangesURL(initialNode)}
+								namespace={namespace}
 								parentEntries={initialNode.parents}
 								showDropdown={initialNode.modelClassNameId}
+								showWorkflow={initialNode.showWorkflow}
 								spritemap={spritemap}
 								title={initialNode.title}
+								workflowStatus={initialNode.workflowStatus}
 							/>
 						) : (
 							<ClayLayout.Sheet>
@@ -404,7 +411,7 @@ export default function ChangeTrackingChangeView({
 									description={Liferay.Language.get(
 										'no-changes-were-found'
 									)}
-									imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.gif`}
+									imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.svg`}
 									title={Liferay.Language.get(
 										'no-results-found'
 									)}

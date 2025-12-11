@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatus;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatusRegistry;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocalManager;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.cluster.Clusterable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.lock.LockManager;
@@ -25,12 +26,12 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
-import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
@@ -63,6 +64,7 @@ import org.osgi.service.component.annotations.Reference;
 	property = "model.class.name=com.liferay.portal.background.task.model.BackgroundTask",
 	service = AopService.class
 )
+@CTAware
 public class BackgroundTaskLocalServiceImpl
 	extends BackgroundTaskLocalServiceBaseImpl {
 
@@ -128,7 +130,7 @@ public class BackgroundTaskLocalServiceImpl
 
 		Folder folder = backgroundTask.addAttachmentsFolder();
 
-		PortletFileRepositoryUtil.addPortletFileEntry(
+		_portletFileRepository.addPortletFileEntry(
 			null, backgroundTask.getGroupId(), userId,
 			BackgroundTask.class.getName(), backgroundTask.getPrimaryKey(),
 			PortletKeys.BACKGROUND_TASK, folder.getFolderId(), file, fileName,
@@ -145,7 +147,7 @@ public class BackgroundTaskLocalServiceImpl
 
 		Folder folder = backgroundTask.addAttachmentsFolder();
 
-		PortletFileRepositoryUtil.addPortletFileEntry(
+		_portletFileRepository.addPortletFileEntry(
 			null, backgroundTask.getGroupId(), userId,
 			BackgroundTask.class.getName(), backgroundTask.getPrimaryKey(),
 			PortletKeys.BACKGROUND_TASK, folder.getFolderId(), inputStream,
@@ -216,7 +218,7 @@ public class BackgroundTaskLocalServiceImpl
 				Message message = new Message();
 
 				message.put(
-					BackgroundTaskConstants.BACKGROUND_TASK_ID,
+					BackgroundTaskConstants.MESSAGE_KEY_BACKGROUND_TASK_ID,
 					backgroundTask.getBackgroundTaskId());
 				message.put("companyId", backgroundTask.getCompanyId());
 				message.put("name", backgroundTask.getName());
@@ -265,7 +267,7 @@ public class BackgroundTaskLocalServiceImpl
 		long folderId = backgroundTask.getAttachmentsFolderId();
 
 		if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-			PortletFileRepositoryUtil.deletePortletFolder(folderId);
+			_portletFileRepository.deletePortletFolder(folderId);
 		}
 
 		if (backgroundTask.getStatus() ==
@@ -648,7 +650,8 @@ public class BackgroundTaskLocalServiceImpl
 		Message message = new Message();
 
 		message.put(
-			BackgroundTaskConstants.BACKGROUND_TASK_ID, backgroundTaskId);
+			BackgroundTaskConstants.MESSAGE_KEY_BACKGROUND_TASK_ID,
+			backgroundTaskId);
 		message.put("companyId", backgroundTask.getCompanyId());
 
 		_messageBus.sendMessage(DestinationNames.BACKGROUND_TASK, message);
@@ -678,7 +681,8 @@ public class BackgroundTaskLocalServiceImpl
 		Message message = new Message();
 
 		message.put(
-			BackgroundTaskConstants.BACKGROUND_TASK_ID, backgroundTaskId);
+			BackgroundTaskConstants.MESSAGE_KEY_BACKGROUND_TASK_ID,
+			backgroundTaskId);
 		message.put("companyId", backgroundTask.getCompanyId());
 
 		_messageBus.sendMessage(DestinationNames.BACKGROUND_TASK, message);
@@ -711,7 +715,8 @@ public class BackgroundTaskLocalServiceImpl
 			backgroundTask.setUserName(user.getFullName());
 		}
 		else {
-			backgroundTask.setCompanyId(CompanyConstants.SYSTEM);
+			backgroundTask.setCompanyId(
+				CompanyThreadLocal.getNonsystemCompanyId());
 			backgroundTask.setUserName(StringPool.BLANK);
 		}
 
@@ -764,6 +769,9 @@ public class BackgroundTaskLocalServiceImpl
 
 	@Reference
 	private MessageBus _messageBus;
+
+	@Reference
+	private PortletFileRepository _portletFileRepository;
 
 	@Reference
 	private UserLocalService _userLocalService;

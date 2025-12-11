@@ -6,7 +6,9 @@
 package com.liferay.portal.security.antisamy.internal.configuration.admin.service;
 
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.security.antisamy.configuration.AntiSamyClassNameConfiguration;
 import com.liferay.portal.security.antisamy.configuration.AntiSamyConfiguration;
 import com.liferay.portal.security.antisamy.internal.AntiSamySanitizerImpl;
@@ -22,11 +24,11 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Tomas Polesovsky
@@ -41,6 +43,10 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 
 	@Override
 	public void deleted(String pid) {
+		if (_sanitizerServiceRegistration == null) {
+			return;
+		}
+
 		String className = _classNames.get(pid);
 
 		_antiSamySanitizerImpl.removePolicy(className);
@@ -52,8 +58,10 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 	}
 
 	@Override
-	public void updated(String pid, Dictionary<String, ?> properties)
-		throws ConfigurationException {
+	public void updated(String pid, Dictionary<String, ?> properties) {
+		if (_sanitizerServiceRegistration == null) {
+			return;
+		}
 
 		AntiSamyClassNameConfiguration antiSamyClassNameConfiguration =
 			ConfigurableUtil.createConfigurable(
@@ -105,7 +113,12 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 			antiSamyConfiguration.whitelist());
 
 		_sanitizerServiceRegistration = bundleContext.registerService(
-			Sanitizer.class, _antiSamySanitizerImpl, null);
+			Sanitizer.class, _antiSamySanitizerImpl,
+			HashMapDictionaryBuilder.<String, Object>put(
+				"component.name", AntiSamySanitizerImpl.class.getCanonicalName()
+			).put(
+				"sanitizer.order", 30
+			).build());
 	}
 
 	@Deactivate
@@ -119,6 +132,10 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 
 	private AntiSamySanitizerImpl _antiSamySanitizerImpl;
 	private final Map<String, String> _classNames = new ConcurrentHashMap<>();
+
+	@Reference(target = ModuleServiceLifecycle.PORTLETS_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
+
 	private ServiceRegistration<Sanitizer> _sanitizerServiceRegistration;
 
 }

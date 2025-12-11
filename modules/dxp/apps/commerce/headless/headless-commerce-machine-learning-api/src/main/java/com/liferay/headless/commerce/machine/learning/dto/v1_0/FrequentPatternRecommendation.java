@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
@@ -55,172 +54,254 @@ public class FrequentPatternRecommendation implements Serializable {
 			FrequentPatternRecommendation.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long[] getAntecedentIds() {
+		if (_antecedentIdsSupplier != null) {
+			antecedentIds = _antecedentIdsSupplier.get();
+
+			_antecedentIdsSupplier = null;
+		}
+
 		return antecedentIds;
 	}
 
 	public void setAntecedentIds(Long[] antecedentIds) {
 		this.antecedentIds = antecedentIds;
+
+		_antecedentIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAntecedentIds(
 		UnsafeSupplier<Long[], Exception> antecedentIdsUnsafeSupplier) {
 
-		try {
-			antecedentIds = antecedentIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_antecedentIdsSupplier = () -> {
+			try {
+				return antecedentIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] antecedentIds;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long[]> _antecedentIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getAntecedentIdsLength() {
+		if (_antecedentIdsLengthSupplier != null) {
+			antecedentIdsLength = _antecedentIdsLengthSupplier.get();
+
+			_antecedentIdsLengthSupplier = null;
+		}
+
 		return antecedentIdsLength;
 	}
 
 	public void setAntecedentIdsLength(Long antecedentIdsLength) {
 		this.antecedentIdsLength = antecedentIdsLength;
+
+		_antecedentIdsLengthSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAntecedentIdsLength(
 		UnsafeSupplier<Long, Exception> antecedentIdsLengthUnsafeSupplier) {
 
-		try {
-			antecedentIdsLength = antecedentIdsLengthUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_antecedentIdsLengthSupplier = () -> {
+			try {
+				return antecedentIdsLengthUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long antecedentIdsLength;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Long> _antecedentIdsLengthSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "2017-07-21")
 	public Date getCreateDate() {
+		if (_createDateSupplier != null) {
+			createDate = _createDateSupplier.get();
+
+			_createDateSupplier = null;
+		}
+
 		return createDate;
 	}
 
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+
+		_createDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCreateDate(
 		UnsafeSupplier<Date, Exception> createDateUnsafeSupplier) {
 
-		try {
-			createDate = createDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_createDateSupplier = () -> {
+			try {
+				return createDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date createDate;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _createDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getJobId() {
+		if (_jobIdSupplier != null) {
+			jobId = _jobIdSupplier.get();
+
+			_jobIdSupplier = null;
+		}
+
 		return jobId;
 	}
 
 	public void setJobId(String jobId) {
 		this.jobId = jobId;
+
+		_jobIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setJobId(
 		UnsafeSupplier<String, Exception> jobIdUnsafeSupplier) {
 
-		try {
-			jobId = jobIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_jobIdSupplier = () -> {
+			try {
+				return jobIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String jobId;
 
-	@Schema(description = "The recommended product identifier.")
+	@JsonIgnore
+	private Supplier<String> _jobIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The recommended product identifier."
+	)
 	public Long getRecommendedProductId() {
+		if (_recommendedProductIdSupplier != null) {
+			recommendedProductId = _recommendedProductIdSupplier.get();
+
+			_recommendedProductIdSupplier = null;
+		}
+
 		return recommendedProductId;
 	}
 
 	public void setRecommendedProductId(Long recommendedProductId) {
 		this.recommendedProductId = recommendedProductId;
+
+		_recommendedProductIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRecommendedProductId(
 		UnsafeSupplier<Long, Exception> recommendedProductIdUnsafeSupplier) {
 
-		try {
-			recommendedProductId = recommendedProductIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_recommendedProductIdSupplier = () -> {
+			try {
+				return recommendedProductIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The recommended product identifier.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long recommendedProductId;
 
-	@Schema(description = "The recommendation score.")
+	@JsonIgnore
+	private Supplier<Long> _recommendedProductIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The recommendation score."
+	)
 	@Valid
 	public Float getScore() {
+		if (_scoreSupplier != null) {
+			score = _scoreSupplier.get();
+
+			_scoreSupplier = null;
+		}
+
 		return score;
 	}
 
 	public void setScore(Float score) {
 		this.score = score;
+
+		_scoreSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setScore(UnsafeSupplier<Float, Exception> scoreUnsafeSupplier) {
-		try {
-			score = scoreUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_scoreSupplier = () -> {
+			try {
+				return scoreUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The recommendation score.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float score;
+
+	@JsonIgnore
+	private Supplier<Float> _scoreSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -254,6 +335,8 @@ public class FrequentPatternRecommendation implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Long[] antecedentIds = getAntecedentIds();
+
 		if (antecedentIds != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -274,6 +357,8 @@ public class FrequentPatternRecommendation implements Serializable {
 			sb.append("]");
 		}
 
+		Long antecedentIdsLength = getAntecedentIdsLength();
+
 		if (antecedentIdsLength != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -283,6 +368,8 @@ public class FrequentPatternRecommendation implements Serializable {
 
 			sb.append(antecedentIdsLength);
 		}
+
+		Date createDate = getCreateDate();
 
 		if (createDate != null) {
 			if (sb.length() > 1) {
@@ -298,6 +385,8 @@ public class FrequentPatternRecommendation implements Serializable {
 			sb.append("\"");
 		}
 
+		String jobId = getJobId();
+
 		if (jobId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -312,6 +401,8 @@ public class FrequentPatternRecommendation implements Serializable {
 			sb.append("\"");
 		}
 
+		Long recommendedProductId = getRecommendedProductId();
+
 		if (recommendedProductId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -321,6 +412,8 @@ public class FrequentPatternRecommendation implements Serializable {
 
 			sb.append(recommendedProductId);
 		}
+
+		Float score = getScore();
 
 		if (score != null) {
 			if (sb.length() > 1) {
@@ -337,8 +430,8 @@ public class FrequentPatternRecommendation implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.machine.learning.dto.v1_0.FrequentPatternRecommendation",
 		name = "x-class-name"
 	)
@@ -384,7 +477,10 @@ public class FrequentPatternRecommendation implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

@@ -9,7 +9,8 @@ import NoResultsDisplay, {
 import React, {useEffect, useState} from 'react';
 import Toolbar from 'shared/components/toolbar';
 import {sub} from 'shared/util/lang';
-import {useRequest, useStatefulPagination} from 'shared/hooks';
+import {useRequest} from 'shared/hooks/useRequest';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 interface ISearchableModalProps {
 	children: React.ReactNode;
@@ -51,13 +52,12 @@ const SearchableModal: React.FC<ISearchableModalProps> = ({
 	title = Liferay.Language.get('see-all'),
 	...otherProps
 }) => {
-	const [searchValue, setSearchValue] = useState<any[]>([]);
+	const [searchValue, setSearchValue] = useState('');
 
 	const {
 		delta,
 		onOrderIOMapChange,
 		onPageChange,
-		onQueryChange,
 		orderIOMap,
 		page,
 		query
@@ -142,7 +142,6 @@ const SearchableModal: React.FC<ISearchableModalProps> = ({
 					alwaysShowSearch
 					autoFocus
 					onOrderIOMapChange={onOrderIOMapChange}
-					onSearchSubmit={onQueryChange}
 					onSearchValueChange={setSearchValue}
 					orderIOMap={orderIOMap}
 					searchValue={searchValue}

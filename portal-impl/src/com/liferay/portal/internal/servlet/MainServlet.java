@@ -8,6 +8,7 @@ package com.liferay.portal.internal.servlet;
 import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.db.index.IndexUpdaterUtil;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.events.ShutdownHelperUtil;
 import com.liferay.portal.events.StartupAction;
@@ -19,6 +20,7 @@ import com.liferay.portal.kernel.dependency.manager.DependencyManagerSyncUtil;
 import com.liferay.portal.kernel.deploy.hot.HotDeployUtil;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -56,11 +58,11 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.PortalLifecycleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ReleaseInfo;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -87,13 +89,22 @@ import com.liferay.portal.tools.DBUpgrader;
 import com.liferay.portal.upgrade.PortalUpgradeProcess;
 import com.liferay.portal.util.MaintenanceUtil;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.ShutdownUtil;
 import com.liferay.portlet.PortletBagFactory;
 import com.liferay.portlet.PortletFilterFactory;
 import com.liferay.portlet.PortletURLListenerFactory;
 import com.liferay.social.kernel.util.SocialConfigurationUtil;
+
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -101,7 +112,6 @@ import java.io.InputStream;
 import java.sql.Connection;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -109,19 +119,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * @author Brian Wing Shun Chan
@@ -145,8 +145,6 @@ public class MainServlet extends HttpServlet {
 
 			listIterator.remove();
 		}
-
-		PortalLifecycleUtil.flushDestroys();
 
 		List<Portlet> portlets = PortletLocalServiceUtil.getPortlets();
 
@@ -217,7 +215,7 @@ public class MainServlet extends HttpServlet {
 		servletContext.setAttribute(MainServlet.class.getName(), Boolean.TRUE);
 
 		_portalRequestProcessor = new PortalRequestProcessor(
-			servletContext, _init());
+			_init(), servletContext, getServletName());
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Verify JVM configuration");
@@ -379,17 +377,18 @@ public class MainServlet extends HttpServlet {
 
 		try {
 			HotDeployUtil.setCapturePrematureEvents(false);
-
-			PortalLifecycleUtil.flushInits();
 		}
 		catch (Exception exception) {
 			_log.error(exception);
 		}
 
 		if (DBUpgrader.isUpgradeDatabaseAutoRunEnabled()) {
-			DBUpgrader.upgradeModules(true);
+			DBUpgrader.upgradeModules();
+		}
+		else if (PropsValues.DATABASE_INDEXES_UPDATE_ON_STARTUP &&
+				 !StartupHelperUtil.isDBNew()) {
 
-			StartupHelperUtil.setUpgrading(false);
+			IndexUpdaterUtil.updateAllIndexes();
 		}
 
 		servletContext.setAttribute(WebKeys.STARTUP_FINISHED, Boolean.TRUE);
@@ -403,7 +402,7 @@ public class MainServlet extends HttpServlet {
 
 			try {
 				SetupWizardSampleDataUtil.addSampleData(
-					PortalInstances.getDefaultCompanyId());
+					PortalInstancePool.getDefaultCompanyId());
 			}
 			catch (Exception exception) {
 				_log.error(exception);
@@ -597,43 +596,39 @@ public class MainServlet extends HttpServlet {
 	}
 
 	private void _checkBuildDate() {
-		if (_releaseManager == null) {
+		ReleaseManager releaseManager = _serviceTracker.getService();
+
+		if ((releaseManager == null) || !StartupHelperUtil.isNewRelease()) {
+			return;
+		}
+
+		if (_log.isWarnEnabled()) {
+			String message = releaseManager.getShortStatusMessage(true);
+
+			if (Validator.isNotNull(message)) {
+				_log.warn(message);
+
+				return;
+			}
+		}
+
+		String message = releaseManager.getShortStatusMessage(false);
+
+		if (Validator.isNotNull(message)) {
+			if (_log.isInfoEnabled()) {
+				_log.info(message);
+			}
+
 			return;
 		}
 
 		try (Connection connection = DataAccess.getConnection()) {
-			Date currentBuildDate = PortalUpgradeProcess.getCurrentBuildDate(
-				connection);
-
-			if (!currentBuildDate.before(ReleaseInfo.getBuildDate())) {
-				return;
-			}
-
-			if (_log.isWarnEnabled()) {
-				String message = _releaseManager.getShortStatusMessage(true);
-
-				if (Validator.isNotNull(message)) {
-					_log.warn(message);
-
-					return;
-				}
-			}
-
-			String message = _releaseManager.getShortStatusMessage(false);
-
-			if (Validator.isNotNull(message)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(message);
-				}
-
-				return;
-			}
-
 			PortalUpgradeProcess.updateBuildInfo(connection);
+			PortalUpgradeProcess.updateVersionDisplayName(connection);
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("Unable to check build date", exception);
+				_log.warn("Unable to update release information", exception);
 			}
 		}
 	}
@@ -773,7 +768,8 @@ public class MainServlet extends HttpServlet {
 				GetterUtil.getString(
 					PropsValues.COMPANY_DEFAULT_VIRTUAL_HOST_MAIL_DOMAIN,
 					PropsValues.COMPANY_DEFAULT_WEB_ID),
-				0, true, null, null, null, null, null, null);
+				0, true, PropsValues.COMPANY_DEFAULT_ADD_DEFAULT_ADMIN_USER,
+				null, null, null, null, null, null);
 		}
 
 		if (Validator.isNull(PropsValues.COMPANY_DEFAULT_WEB_ID)) {
@@ -793,6 +789,8 @@ public class MainServlet extends HttpServlet {
 					PortalInstances.initCompany(company, false);
 				}
 			});
+
+		PortalInstancePool.enableCache();
 	}
 
 	private void _initLayoutTemplates(PluginPackage pluginPackage) {
@@ -984,7 +982,7 @@ public class MainServlet extends HttpServlet {
 
 		if (PropsValues.PORTAL_JAAS_ENABLE) {
 			try {
-				userId = JAASHelper.getJaasUserId(companyId, remoteUser);
+				userId = JAASHelper.getJAASUserId(companyId, remoteUser);
 			}
 			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
@@ -1011,7 +1009,7 @@ public class MainServlet extends HttpServlet {
 				(user.getLastLoginDate() == null)) {
 
 				user = UserLocalServiceUtil.updateLastLogin(
-					userId, httpServletRequest.getRemoteAddr());
+					user, httpServletRequest.getRemoteAddr());
 			}
 		}
 
@@ -1132,29 +1130,10 @@ public class MainServlet extends HttpServlet {
 
 			_log.error(exception);
 
-			httpServletRequest.setAttribute(StrutsUtil.EXCEPTION, exception);
-
 			StrutsUtil.forward(
-				PropsValues.SERVLET_SERVICE_EVENTS_PRE_ERROR_PAGE,
-				getServletContext(), httpServletRequest, httpServletResponse);
-
-			if (exception == httpServletRequest.getAttribute(
-					StrutsUtil.EXCEPTION)) {
-
-				httpServletRequest.removeAttribute(StrutsUtil.EXCEPTION);
-				httpServletRequest.removeAttribute(
-					RequestDispatcher.ERROR_EXCEPTION);
-				httpServletRequest.removeAttribute(
-					RequestDispatcher.ERROR_EXCEPTION_TYPE);
-				httpServletRequest.removeAttribute(
-					RequestDispatcher.ERROR_MESSAGE);
-				httpServletRequest.removeAttribute(
-					RequestDispatcher.ERROR_REQUEST_URI);
-				httpServletRequest.removeAttribute(
-					RequestDispatcher.ERROR_SERVLET_NAME);
-				httpServletRequest.removeAttribute(
-					RequestDispatcher.ERROR_STATUS_CODE);
-			}
+				httpServletRequest, httpServletResponse, getServletContext(),
+				getServletName(), exception,
+				PropsValues.SERVLET_SERVICE_EVENTS_PRE_ERROR_PAGE);
 
 			return true;
 		}
@@ -1328,9 +1307,19 @@ public class MainServlet extends HttpServlet {
 	private static final Snapshot<InactiveRequestHandler>
 		_inactiveRequestHandlerSnapshot = new Snapshot<>(
 			MainServlet.class, InactiveRequestHandler.class);
-	private static volatile ReleaseManager _releaseManager =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			ReleaseManager.class, MainServlet.class, "_releaseManager", false);
+	private static final ServiceTracker<ReleaseManager, ReleaseManager>
+		_serviceTracker;
+
+	static {
+		ServiceTracker<ReleaseManager, ReleaseManager> serviceTracker =
+			new ServiceTracker<>(
+				SystemBundleUtil.getBundleContext(), ReleaseManager.class,
+				null);
+
+		serviceTracker.open();
+
+		_serviceTracker = serviceTracker;
+	}
 
 	private PortalRequestProcessor _portalRequestProcessor;
 	private final List<ServiceRegistration<?>> _serviceRegistrations =

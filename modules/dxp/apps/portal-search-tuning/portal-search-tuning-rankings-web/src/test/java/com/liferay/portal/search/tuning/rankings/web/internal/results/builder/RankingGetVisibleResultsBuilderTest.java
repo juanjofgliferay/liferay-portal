@@ -7,7 +7,7 @@ package com.liferay.portal.search.tuning.rankings.web.internal.results.builder;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.Ranking;
+import com.liferay.portal.search.tuning.rankings.index.Ranking;
 import com.liferay.portal.search.tuning.rankings.web.internal.searcher.helper.RankingSearchRequestHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -48,7 +48,6 @@ public class RankingGetVisibleResultsBuilderTest
 		setUpDLAppLocalService();
 		setUpFastDateFormatFactory();
 		setUpPortalUtil();
-		setUpPropsUtil();
 		setUpQuery();
 
 		Ranking ranking = Mockito.mock(Ranking.class);
@@ -66,8 +65,8 @@ public class RankingGetVisibleResultsBuilderTest
 		setUpSearcher(setUpSearchResponse(setUpDocumentWithGetString()));
 
 		Assert.assertEquals(
-			mapper.readTree(_getExpectedDocumentsString()),
-			mapper.readTree(
+			objectMapper.readTree(_getExpectedDocumentsString()),
+			objectMapper.readTree(
 				_rankingGetVisibleResultsBuilder.build(
 				).toJSONString()));
 	}

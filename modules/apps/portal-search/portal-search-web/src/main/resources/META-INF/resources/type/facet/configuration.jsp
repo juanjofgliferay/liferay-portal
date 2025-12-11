@@ -91,12 +91,12 @@ TypeFacetPortletPreferences typeFacetPortletPreferences = new com.liferay.portal
 			<aui:input name="<%= PortletPreferencesJspUtil.getInputName(TypeFacetPortletPreferences.PREFERENCE_KEY_ASSET_TYPES) %>" type="hidden" value="<%= typeFacetPortletPreferences.getAssetTypes() %>" />
 
 			<liferay-ui:input-move-boxes
-				leftBoxName="currentAssetTypes"
-				leftList="<%= typeFacetPortletPreferences.getCurrentAssetTypes(themeDisplay.getCompanyId(), themeDisplay.getLocale()) %>"
-				leftTitle="current"
-				rightBoxName="availableAssetTypes"
-				rightList="<%= typeFacetPortletPreferences.getAvailableAssetTypes(themeDisplay.getCompanyId(), themeDisplay.getLocale()) %>"
-				rightTitle="available"
+				leftBoxName="availableAssetTypes"
+				leftList="<%= typeFacetPortletPreferences.getAvailableAssetTypes(themeDisplay.getCompanyId(), themeDisplay.getLocale()) %>"
+				leftTitle="available"
+				rightBoxName="currentAssetTypes"
+				rightList="<%= typeFacetPortletPreferences.getCurrentAssetTypes(themeDisplay.getCompanyId(), themeDisplay.getLocale()) %>"
+				rightTitle="in-use"
 			/>
 		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
@@ -106,7 +106,7 @@ TypeFacetPortletPreferences typeFacetPortletPreferences = new com.liferay.portal
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
-<script>
+<aui:script>
 	function <portlet:namespace />saveConfiguration() {
 		var form = document.<portlet:namespace />fm;
 
@@ -125,4 +125,4 @@ TypeFacetPortletPreferences typeFacetPortletPreferences = new com.liferay.portal
 
 		Liferay.Util.postForm(form, {data: data});
 	}
-</script>
+</aui:script>

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 
 import com.liferay.osb.faro.engine.client.model.Asset;
 import com.liferay.osb.faro.engine.client.model.Author;
+import com.liferay.osb.faro.engine.client.model.CustomEvent;
 import com.liferay.osb.faro.engine.client.model.DXPGroup;
 import com.liferay.osb.faro.engine.client.model.DXPRole;
 import com.liferay.osb.faro.engine.client.model.DXPTeam;
@@ -81,6 +82,11 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 					new TypeReference<List<Asset>>() {
 					});
 				_addReferencedObject(
+					referencedObjects, CustomEvent::getName,
+					CustomEventDisplay::new, "custom-events",
+					new TypeReference<List<CustomEvent>>() {
+					});
+				_addReferencedObject(
 					referencedObjects, DXPGroup::getId, DXPGroupDisplay::new,
 					"groups",
 					new TypeReference<List<DXPGroup>>() {
@@ -116,6 +122,8 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 		_individualCount = individualSegment.getIndividualCount();
 		_knownIndividualCount = individualSegment.getKnownIndividualCount();
 		_lastActivityDate = individualSegment.getLastActivityDate();
+		_lastMembershipUpdateDate =
+			individualSegment.getLastMembershipUpdateDate();
 		_name = individualSegment.getName();
 		_segmentType = individualSegment.getSegmentType();
 		_state = individualSegment.getState();
@@ -218,6 +226,7 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 
 	private long _knownIndividualCount;
 	private Date _lastActivityDate;
+	private Date _lastMembershipUpdateDate;
 	private String _name;
 	private final Map<String, Object> _referencedObjects = new HashMap<>();
 	private String _segmentType;

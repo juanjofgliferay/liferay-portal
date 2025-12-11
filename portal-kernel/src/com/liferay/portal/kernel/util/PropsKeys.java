@@ -38,6 +38,15 @@ public interface PropsKeys {
 	public static final String ADMIN_EMAIL_PASSWORD_CHANGED_SUBJECT =
 		"admin.email.password.changed.subject";
 
+	public static final String ADMIN_EMAIL_PASSWORD_LOCKOUT_BODY =
+		"admin.email.password.lockout.body";
+
+	public static final String ADMIN_EMAIL_PASSWORD_LOCKOUT_SUBJECT =
+		"admin.email.password.lockout.subject";
+
+	public static final String ADMIN_EMAIL_PASSWORD_LOCKOUT_UNTIL_BODY =
+		"admin.email.password.lockout.until.body";
+
 	public static final String ADMIN_EMAIL_PASSWORD_RESET_BODY =
 		"admin.email.password.reset.body";
 
@@ -58,6 +67,12 @@ public interface PropsKeys {
 	public static final String ADMIN_EMAIL_PASSWORD_SENT_SUBJECT =
 		"admin.email.password.sent.subject";
 
+	public static final String ADMIN_EMAIL_PASSWORD_UNCHANGEABLE_BODY =
+		"admin.email.password.unchangeable.body";
+
+	public static final String ADMIN_EMAIL_PASSWORD_UNCHANGEABLE_SUBJECT =
+		"admin.email.password.unchangeable.subject";
+
 	/**
 	 * @deprecated As of Mueller (7.2.x), with no direct replacement
 	 */
@@ -76,6 +91,12 @@ public interface PropsKeys {
 
 	public static final String ADMIN_EMAIL_USER_ADDED_SUBJECT =
 		"admin.email.user.added.subject";
+
+	public static final String ADMIN_EMAIL_USER_CREATION_ATTEMPT_BODY =
+		"admin.email.user.creation.attempt.body";
+
+	public static final String ADMIN_EMAIL_USER_CREATION_ATTEMPT_SUBJECT =
+		"admin.email.user.creation.attempt.subject";
 
 	public static final String ADMIN_EMAIL_VERIFICATION_BODY =
 		"admin.email.verification.body";
@@ -99,6 +120,18 @@ public interface PropsKeys {
 
 	public static final String ADMIN_SYNC_DEFAULT_ASSOCIATIONS =
 		"admin.sync.default.associations";
+
+	public static final String ANALYTICS_CLOUD_CLIENT_JS_VERSION =
+		"analytics.cloud.client.js.version";
+
+	public static final String ANALYTICS_CLOUD_CONFIGURATION_DELETE_ON_STARTUP =
+		"analytics.cloud.configuration.delete.on.startup";
+
+	public static final String ANALYTICS_CLOUD_DOMAIN_ALLOWED =
+		"analytics.cloud.domain.allowed";
+
+	public static final String ANALYTICS_CLOUD_MOCK_ENABLED =
+		"analytics.cloud.mock.enabled";
 
 	public static final String ANNOUNCEMENTS_EMAIL_BODY =
 		"announcements.email.body";
@@ -227,9 +260,6 @@ public interface PropsKeys {
 
 	public static final String AUTH_VERIFIER_PIPELINE =
 		"auth.verifier.pipeline";
-
-	public static final String AUTO_DEPLOY_CUSTOM_PORTLET_XML =
-		"auto.deploy.custom.portlet.xml";
 
 	public static final String AUTO_DEPLOY_DEPLOY_DIR =
 		"auto.deploy.deploy.dir";
@@ -370,6 +400,12 @@ public interface PropsKeys {
 
 	public static final String CDN_HOST_HTTPS = "cdn.host.https";
 
+	public static final String CHANGE_TRACKING_DELETION_PROTECTION_ENABLED =
+		"change.tracking.deletion.protection.enabled";
+
+	public static final String CLUSTER_LINK_AUTH_VALUE =
+		"cluster.link.auth.value";
+
 	public static final String CLUSTER_LINK_AUTODETECT_ADDRESS =
 		"cluster.link.autodetect.address";
 
@@ -399,16 +435,27 @@ public interface PropsKeys {
 	public static final String CLUSTERABLE_ADVICE_CALL_MASTER_TIMEOUT =
 		"clusterable.advice.call.master.timeout";
 
+	public static final String CMS_BROKEN_LINKS_CHECKER_ENABLED =
+		"cms.broken.links.checker.enabled";
+
 	public static final String COMBO_ALLOWED_FILE_EXTENSIONS =
 		"combo.allowed.file.extensions";
+
+	public static final String COMBO_ALLOWED_FILE_MAX_SIZE =
+		"combo.allowed.file.max.size";
 
 	public static final String COMBO_CHECK_TIMESTAMP = "combo.check.timestamp";
 
 	public static final String COMBO_CHECK_TIMESTAMP_INTERVAL =
 		"combo.check.timestamp.interval";
 
+	public static final String COMBO_MAX_FILES = "combo.max.files";
+
 	public static final String COMMUNITIES_CONTROL_PANEL_MEMBERS_VISIBLE =
 		"communities.control.panel.members.visible";
+
+	public static final String COMPANY_DEFAULT_ADD_DEFAULT_ADMIN_USER =
+		"company.default.add.default.admin.user";
 
 	public static final String COMPANY_DEFAULT_HOME_URL =
 		"company.default.home.url";
@@ -427,6 +474,9 @@ public interface PropsKeys {
 	public static final String COMPANY_DEFAULT_VIRTUAL_HOST_NAME =
 		"company.default.virtual.host.name";
 
+	public static final String COMPANY_DEFAULT_VIRTUAL_HOST_SYNC_ON_STARTUP =
+		"company.default.virtual.host.sync.on.startup";
+
 	public static final String COMPANY_DEFAULT_WEB_ID =
 		"company.default.web.id";
 
@@ -440,6 +490,11 @@ public interface PropsKeys {
 
 	public static final String COMPANY_LOGIN_PREPOPULATE_DOMAIN =
 		"company.login.prepopulate.domain";
+
+	public static final String COMPANY_MX_UPDATE = "company.mx.update";
+
+	public static final String COMPANY_PREDICTABLE_COMPANY_IDS_ENABLED =
+		"company.predictable.company.ids.enabled";
 
 	public static final String COMPANY_SECURITY_AUTH_TYPE =
 		"company.security.auth.type";
@@ -552,6 +607,15 @@ public interface PropsKeys {
 
 	public static final String DATABASE_ORDER_BY_MAX_COLUMNS =
 		"database.order.by.max.columns";
+
+	public static final String DATABASE_PARTITION_ENABLED =
+		"database.partition.enabled";
+
+	public static final String DATABASE_PARTITION_SCHEMA_NAME_PREFIX =
+		"database.partition.schema.name.prefix";
+
+	public static final String DATABASE_PARTITION_THREAD_POOL_ENABLED =
+		"database.partition.thread.pool.enabled";
 
 	public static final String DATABASE_STRING_INDEX_MAX_LENGTH =
 		"database.string.index.max.length";
@@ -834,10 +898,6 @@ public interface PropsKeys {
 	public static final String DL_FILE_ENTRY_PREVIEW_VIDEO_WIDTH =
 		"dl.file.entry.preview.video.width";
 
-	public static final String
-		DL_FILE_ENTRY_RAW_METADATA_PROCESSOR_EXCLUDED_MIME_TYPES =
-			"dl.file.entry.raw.metadata.processor.excluded.mime.types";
-
 	public static final String DL_FILE_ENTRY_THUMBNAIL_CUSTOM_1_MAX_HEIGHT =
 		"dl.file.entry.thumbnail.custom1.max.height";
 
@@ -930,6 +990,9 @@ public interface PropsKeys {
 
 	public static final String DNS_SECURITY_THREAD_LIMIT =
 		"dns.security.thread.limit";
+
+	public static final String DNS_SECURITY_THREAD_QUEUE_LIMIT =
+		"dns.security.thread.queue.limit";
 
 	public static final String EDITOR_WYSIWYG_DEFAULT =
 		"editor.wysiwyg.default";
@@ -1098,10 +1161,6 @@ public interface PropsKeys {
 		"index.on.startup.delay";
 
 	public static final String
-		INDEX_PERMISSION_FILTER_SEARCH_AMPLIFICATION_FACTOR =
-			"index.permission.filter.search.amplification.factor";
-
-	public static final String
 		INDEX_SEARCH_COLLATED_SPELL_CHECK_RESULT_ENABLED =
 			"index.search.collated.spell.check.result.enabled";
 
@@ -1158,6 +1217,14 @@ public interface PropsKeys {
 	public static final String INITIAL_SYSTEM_CHECK_ENABLED =
 		"initial.system.check.enabled";
 
+	public static final String
+		INVOKER_FILTER_CHAIN_CACHE_QUERY_STRING_IGNORED_KEYS =
+			"invoker.filter.chain.cache.query.string.ignored.keys";
+
+	public static final String
+		INVOKER_FILTER_CHAIN_CACHE_SKIP_QUERY_STRING_URIS =
+			"invoker.filter.chain.cache.skip.query.string.uris";
+
 	public static final String INVOKER_FILTER_CHAIN_ENABLED =
 		"invoker.filter.chain.cache.enabled";
 
@@ -1203,6 +1270,9 @@ public interface PropsKeys {
 
 	public static final String JDBC_DEFAULT_USERNAME = "jdbc.default.username";
 
+	public static final String JDBC_READ_DATA_SOURCE_UNAVAILABLE_TIMEOUT =
+		"jdbc.read.data.source.unavailable.timeout";
+
 	public static final String JNDI_ENVIRONMENT = "jndi.environment.";
 
 	public static final String JSON_DESERIALIZATION_WHITELIST_CLASS_NAMES =
@@ -1222,6 +1292,9 @@ public interface PropsKeys {
 
 	public static final String JSON_SERVICE_SERIALIZE_THROWABLE =
 		"json.service.serialize.throwable";
+
+	public static final String JSON_STRING_MAX_LENGTH =
+		"json.string.max.length";
 
 	public static final String JSON_WEB_SERVICE_ENABLED =
 		"json.web.service.enabled";
@@ -1347,6 +1420,9 @@ public interface PropsKeys {
 
 	public static final String LAYOUT_SITEMAPABLE = "layout.sitemapable";
 
+	public static final String LAYOUT_STATIC_PORTLETS =
+		"layout.static.portlets.";
+
 	public static final String LAYOUT_STATIC_PORTLETS_ALL =
 		"layout.static.portlets.all";
 
@@ -1389,15 +1465,6 @@ public interface PropsKeys {
 
 	public static final String LDAP_ATTRS_TRANSFORMER_IMPL =
 		"ldap.attrs.transformer.impl";
-
-	public static final String LEARN_RESOURCES_CDN_ENABLED =
-		"learn.resources.cdn.enabled";
-
-	public static final String LEARN_RESOURCES_ENABLED =
-		"learn.resources.enabled";
-
-	public static final String LEARN_RESOURCES_REFRESH_TIME =
-		"learn.resources.refresh.time";
 
 	public static final String LIFERAY_HOME = "liferay.home";
 
@@ -1465,54 +1532,11 @@ public interface PropsKeys {
 
 	public static final String LOGOUT_EVENTS_PRE = "logout.events.pre";
 
-	public static final String MAIL_AUDIT_TRAIL = "mail.audit.trail";
+	public static final String MARKETPLACE_CLIENT_ID = "marketplace.client.id";
 
-	public static final String MAIL_BATCH_SIZE = "mail.batch.size";
+	public static final String MARKETPLACE_REDIRECT = "marketplace.redirect";
 
-	public static final String MAIL_MX_UPDATE = "mail.mx.update";
-
-	public static final String MAIL_SEND_BLACKLIST = "mail.send.blacklist";
-
-	public static final String MAIL_SESSION_MAIL = "mail.session.mail";
-
-	public static final String MAIL_SESSION_MAIL_ADVANCED_PROPERTIES =
-		"mail.session.mail.advanced.properties";
-
-	public static final String MAIL_SESSION_MAIL_POP3_HOST =
-		"mail.session.mail.pop3.host";
-
-	public static final String MAIL_SESSION_MAIL_POP3_PASSWORD =
-		"mail.session.mail.pop3.password";
-
-	public static final String MAIL_SESSION_MAIL_POP3_PORT =
-		"mail.session.mail.pop3.port";
-
-	public static final String MAIL_SESSION_MAIL_POP3_USER =
-		"mail.session.mail.pop3.user";
-
-	public static final String MAIL_SESSION_MAIL_SMTP_HOST =
-		"mail.session.mail.smtp.host";
-
-	public static final String MAIL_SESSION_MAIL_SMTP_PASSWORD =
-		"mail.session.mail.smtp.password";
-
-	public static final String MAIL_SESSION_MAIL_SMTP_PORT =
-		"mail.session.mail.smtp.port";
-
-	public static final String MAIL_SESSION_MAIL_SMTP_STARTTLS_ENABLE =
-		"mail.session.mail.smtp.starttls.enable";
-
-	public static final String MAIL_SESSION_MAIL_SMTP_USER =
-		"mail.session.mail.smtp.user";
-
-	public static final String MAIL_SESSION_MAIL_STORE_PROTOCOL =
-		"mail.session.mail.store.protocol";
-
-	public static final String MAIL_SESSION_MAIL_TRANSPORT_PROTOCOL =
-		"mail.session.mail.transport.protocol";
-
-	public static final String MAIL_THROWS_EXCEPTION_ON_FAILURE =
-		"mail.throws.exception.on.failure";
+	public static final String MARKETPLACE_URL = "marketplace.url";
 
 	public static final String MEMBERSHIP_POLICY_AUTO_VERIFY =
 		"membership.policy.auto.verify";
@@ -1980,8 +2004,6 @@ public interface PropsKeys {
 	public static final String PERMISSIONS_CHECK_GUEST_ENABLED =
 		"permissions.check.guest.enabled";
 
-	public static final String PERMISSIONS_CHECKER = "permissions.checker";
-
 	public static final String
 		PERMISSIONS_CUSTOM_ATTRIBUTE_READ_CHECK_BY_DEFAULT =
 			"permissions.custom.attribute.read.check.by.default";
@@ -2009,11 +2031,6 @@ public interface PropsKeys {
 	public static final String PHONE_NUMBER_FORMAT_USA_REGEXP =
 		"phone.number.format.usa.regexp";
 
-	public static final String POP_SERVER_NOTIFICATIONS_ENABLED =
-		"pop.server.notifications.enabled";
-
-	public static final String POP_SERVER_SUBDOMAIN = "pop.server.subdomain";
-
 	public static final String PORTAL_IMPERSONATION_DEFAULT_URL =
 		"portal.impersonation.default.url";
 
@@ -2027,19 +2044,19 @@ public interface PropsKeys {
 		"portal.instance.protocol";
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no replacement
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	public static final String PORTAL_JAAS_AUTH_TYPE = "portal.jaas.auth.type";
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no replacement
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	public static final String PORTAL_JAAS_ENABLE = "portal.jaas.enable";
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no replacement
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	public static final String PORTAL_JAAS_PLAIN_PASSWORD =
@@ -2245,6 +2262,9 @@ public interface PropsKeys {
 		"schema.module.build.auto.upgrade";
 
 	public static final String SCHEMA_RUN_ENABLED = "schema.run.enabled";
+
+	public static final String SCRIPT_MANAGEMENT_CONFIGURATION_ENABLED =
+		"script.management.configuration.enabled";
 
 	public static final String SEARCH_CONTAINER_PAGE_DEFAULT_DELTA =
 		"search.container.page.default.delta";
@@ -2511,11 +2531,10 @@ public interface PropsKeys {
 
 	public static final String SOURCE_FORGE_MIRRORS = "source.forge.mirrors";
 
-	public static final String SPRING_CONFIGS = "spring.configs";
+	public static final String SPRING_BEANFACTORY_STRICT_LIFECYCLE_ENABLED =
+		"spring.beanfactory.strict.lifecycle.enabled";
 
-	public static final String
-		SPRING_HIBERNATE_CONFIGURATION_PROXY_FACTORY_PRELOAD_CLASSLOADER_CLASSES =
-			"spring.hibernate.configuration.proxy.factory.preload.classloader.classes";
+	public static final String SPRING_CONFIGS = "spring.configs";
 
 	public static final String SPRING_HIBERNATE_SESSION_DELEGATED =
 		"spring.hibernate.session.delegated";
@@ -2526,9 +2545,6 @@ public interface PropsKeys {
 
 	public static final String SPRING_HIBERNATE_SESSION_FACTORY_VERIFY =
 		"spring.hibernate.session.factory.verify";
-
-	public static final String SPRING_INFRASTRUCTURE_CONFIGS =
-		"spring.infrastructure.configs";
 
 	public static final String
 		STAGING_DRAFT_EXPORT_IMPORT_CONFIGURATION_CHECK_INTERVAL =
@@ -2575,6 +2591,12 @@ public interface PropsKeys {
 	public static final String TABLE_MAPPER_CACHELESS_MAPPING_TABLE_NAMES =
 		"table.mapper.cacheless.mapping.table.names";
 
+	public static final String TEMPLATE_ENGINE_CACHE_ENABLED =
+		"template.engine.cache.enabled";
+
+	public static final String TEMPLATE_ENGINE_FREEMARKER_COMPANY_RESTRICT =
+		"template.engine.freemarker.company.restrict";
+
 	public static final String
 		TEMPLATE_ENGINE_FREEMARKER_TRANSACTION_READ_ONLY =
 			"template.engine.freemarker.transaction.read.only";
@@ -2620,9 +2642,6 @@ public interface PropsKeys {
 		"thread.dump.speed.threshold";
 
 	public static final String TIME_ZONES = "time.zones";
-
-	public static final String TRANSACTION_ISOLATION_COUNTER =
-		"transaction.isolation.counter";
 
 	public static final String TRANSACTION_ISOLATION_PORTAL =
 		"transaction.isolation.portal";
@@ -2671,6 +2690,20 @@ public interface PropsKeys {
 	public static final String UPGRADE_DATABASE_AUTO_RUN =
 		"upgrade.database.auto.run";
 
+	public static final String UPGRADE_DATABASE_DL_STORAGE_CHECK_DISABLED =
+		"upgrade.database.dl.storage.check.disabled";
+
+	public static final String
+		UPGRADE_DATABASE_PREUPGRADE_DATA_CLEANUP_BLACKLIST =
+			"upgrade.database.preupgrade.data.cleanup.blacklist";
+
+	public static final String
+		UPGRADE_DATABASE_PREUPGRADE_DATA_CLEANUP_ENABLED =
+			"upgrade.database.preupgrade.data.cleanup.enabled";
+
+	public static final String UPGRADE_DATABASE_PREUPGRADE_VERIFY_ENABLED =
+		"upgrade.database.preupgrade.verify.enabled";
+
 	public static final String UPGRADE_DATABASE_TRANSACTIONS_DISABLED =
 		"upgrade.database.transactions.disabled";
 
@@ -2684,6 +2717,12 @@ public interface PropsKeys {
 
 	public static final String UPGRADE_REPORT_ENABLED =
 		"upgrade.report.enabled";
+
+	public static final String UPGRADE_REPORT_SQL_STATEMENT_THRESHOLD =
+		"upgrade.report.sql.statement.threshold";
+
+	public static final String UPGRADE_REPORT_UPGRADE_PROCESS_THRESHOLD =
+		"upgrade.report.upgrade.process.threshold";
 
 	public static final String USER_GROUPS_NAME_ALLOW_NUMERIC =
 		"user.groups.name.allow.numeric";
@@ -2790,6 +2829,12 @@ public interface PropsKeys {
 
 	public static final String USERS_UPDATE_LAST_LOGIN =
 		"users.update.last.login";
+
+	public static final String USERS_UPDATE_LAST_LOGIN_BATCH_INTERVAL =
+		"users.update.last.login.batch.interval";
+
+	public static final String USERS_UPDATE_LAST_LOGIN_BATCH_SIZE =
+		"users.update.last.login.batch.size";
 
 	public static final String USERS_UPDATE_USER_NAME =
 		"users.update.user.name.";
@@ -2899,19 +2944,16 @@ public interface PropsKeys {
 	public static final String WIDGET_SERVLET_MAPPING =
 		"widget.servlet.mapping";
 
-	public static final String WORK_DIR_OVERRIDE_ENABLED =
-		"work.dir.override.enabled";
-
 	public static final String WORKFLOW_EMAIL_FROM_ADDRESS =
 		"workflow.email.from.address";
 
 	public static final String WORKFLOW_EMAIL_FROM_NAME =
 		"workflow.email.from.name";
 
-	public static final String XML_SECURITY_ENABLED = "xml.security.enabled";
+	public static final String XML_RPC_MAX_PARAMETERS =
+		"xml.rpc.max.parameters";
 
-	public static final String XML_SITEMAP_INDEX_ENABLED =
-		"xml.sitemap.index.enabled";
+	public static final String XML_SECURITY_ENABLED = "xml.security.enabled";
 
 	public static final String XML_VALIDATION_ENABLED =
 		"xml.validation.enabled";

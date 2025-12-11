@@ -10,7 +10,6 @@ import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceCatalog;
-import com.liferay.commerce.product.service.CPDisplayLayoutLocalService;
 import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogService;
@@ -82,7 +81,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.addCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
+			externalReferenceCode, getUserId(), groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -128,7 +127,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.addCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
+			externalReferenceCode, getUserId(), groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -144,7 +143,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Override
 	public CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId,
+			String externalReferenceCode, long cpDefinitionId, long groupId,
 			Map<Locale, String> nameMap,
 			Map<Locale, String> shortDescriptionMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
@@ -174,9 +173,9 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
-			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
-			metaDescriptionMap, metaKeywordsMap, productTypeName,
+			externalReferenceCode, getUserId(), cpDefinitionId, groupId,
+			nameMap, shortDescriptionMap, descriptionMap, urlTitleMap,
+			metaTitleMap, metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
 			shippingExtraPrice, width, height, depth, weight, cpTaxCategoryId,
 			taxExempt, telcoOrElectronics, ddmStructureKey, published,
@@ -220,7 +219,7 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 		_checkCommerceCatalog(groupId, ActionKeys.UPDATE);
 
 		return cpDefinitionLocalService.addOrUpdateCPDefinition(
-			externalReferenceCode, groupId, getUserId(), nameMap,
+			externalReferenceCode, getUserId(), groupId, nameMap,
 			shortDescriptionMap, descriptionMap, urlTitleMap, metaTitleMap,
 			metaDescriptionMap, metaKeywordsMap, productTypeName,
 			ignoreSKUCombinations, shippable, freeShipping, shipSeparately,
@@ -645,9 +644,6 @@ public class CPDefinitionServiceImpl extends CPDefinitionServiceBaseImpl {
 
 	@Reference
 	private CommerceCatalogService _commerceCatalogService;
-
-	@Reference
-	private CPDisplayLayoutLocalService _cpDisplayLayoutLocalService;
 
 	@Reference
 	private CProductLocalService _cProductLocalService;

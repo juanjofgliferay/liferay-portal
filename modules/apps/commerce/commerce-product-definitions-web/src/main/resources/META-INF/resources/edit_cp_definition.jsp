@@ -26,7 +26,7 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 request.setAttribute("view.jsp-showSearch", false);
 
 portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
+portletDisplay.setURLBack(ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL())));
 %>
 
 <liferay-portlet:renderURL var="editCProductExternalReferenceCodeURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
@@ -38,6 +38,7 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 	actions="<%= cpDefinitionsDisplayContext.getHeaderActionModels() %>"
 	bean="<%= cpDefinition %>"
 	beanIdLabel="id"
+	displayBeanId="<%= cpDefinition.getCProductId() %>"
 	dropdownItems="<%= cpDefinitionsDisplayContext.getDropdownItems() %>"
 	externalReferenceCode="<%= (cProduct == null) ? StringPool.BLANK : cProduct.getExternalReferenceCode() %>"
 	externalReferenceCodeEditUrl="<%= (cProduct == null) ? StringPool.BLANK : editCProductExternalReferenceCodeURL %>"
@@ -67,5 +68,5 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 			"WORKFLOW_ACTION_PUBLISH", WorkflowConstants.ACTION_PUBLISH
 		).build()
 	%>'
-	module="js/edit_cp_definition"
+	module="{editCpDefinition} from commerce-product-definitions-web"
 />

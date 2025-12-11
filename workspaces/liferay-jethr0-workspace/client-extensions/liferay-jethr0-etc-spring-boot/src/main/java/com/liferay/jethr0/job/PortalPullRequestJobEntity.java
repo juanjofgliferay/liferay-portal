@@ -10,42 +10,18 @@ import java.net.URL;
 /**
  * @author Michael Hashimoto
  */
-public interface PortalPullRequestJobEntity extends JobEntity {
+public interface PortalPullRequestJobEntity extends PullRequestJobEntity {
 
-	public URL getJenkinsGitHubURL();
+	public String getForwardReceiverUserName();
 
-	public String getOriginName();
+	public String getGitHubGistID();
 
-	public URL getPortalPullRequestURL();
+	public URL getPortalBundlesDistURL();
 
-	public String getSenderBranchName();
+	public void setForwardReceiverUserName(String forwardReceiverUserName);
 
-	public String getSenderBranchSHA();
+	public void setGitHubGistID(String gitHubGistID);
 
-	public String getSenderUserName();
-
-	public String getTestSuiteName();
-
-	public String getUpstreamBranchName();
-
-	public String getUpstreamBranchSHA();
-
-	public void setJenkinsGitHubURL(URL jenkinsGitHubURL);
-
-	public void setOriginName(String originName);
-
-	public void setPortalPullRequestURL(URL portalPullRequestURL);
-
-	public void setSenderBranchName(String senderBranchName);
-
-	public void setSenderBranchSHA(String senderBranchSHA);
-
-	public void setSenderUserName(String senderUserName);
-
-	public void setTestSuiteName(String testSuiteName);
-
-	public void setUpstreamBranchName(String upstreamBranchName);
-
-	public void setUpstreamBranchSHA(String upstreamBranchSHA);
+	public void setPortalBundlesDistURL(URL portalBundlesDistURL);
 
 }

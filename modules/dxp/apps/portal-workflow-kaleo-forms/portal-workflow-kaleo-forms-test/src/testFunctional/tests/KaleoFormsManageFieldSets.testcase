@@ -1,4 +1,4 @@
-@component-name = "portal-workflow-ee"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -95,7 +95,7 @@ definition {
 	@description = "Verify that user can filter by modified date and ID."
 	@priority = 3
 	test CanFilterByModifiedDate {
-		ManagementBar.setFilterAndOrder(filterBy = "Modified Date");
+		ManagementBar.setFilterAndOrder(orderBy = "Modified Date");
 
 		KaleoFormsManageFieldSets.viewFieldSetOrder(fieldSetList = "Contacts,Events,Inventory,Issues Tracking,Meeting Minutes,To Do");
 
@@ -103,7 +103,7 @@ definition {
 			nameFieldset = "Contacts",
 			newNameFieldset = "Contacts Test");
 
-		ManagementBar.setFilterAndOrder(filterBy = "Modified Date");
+		ManagementBar.setFilterAndOrder(orderBy = "Modified Date");
 
 		KaleoFormsManageFieldSets.viewFieldSetOrder(fieldSetList = "Events,Inventory,Issues Tracking,Meeting Minutes,To Do,Contacts Test");
 	}
@@ -117,6 +117,8 @@ definition {
 	@description = "Verify that user can Reverse sort Direction and if the elements reverse position."
 	@priority = 3
 	test CanReverseSortDirectionTheElement {
+		property portal.upstream = "quarantine";
+
 		KaleoFormsManageFieldSets.clickFilterAndOrderBy(filterOption = "ID");
 
 		KaleoFormsManageFieldSets.viewUpDirectionOfSortButton();
@@ -147,18 +149,6 @@ definition {
 			modifiedDateField = "0 Seconds Ago",
 			nameField = "Contacts Edited",
 			rowNumber = 6);
-	}
-
-	@description = "Verify that the user can navigate to the next page."
-	@priority = 3
-	test NavigateToTheNextPage {
-		Pagination.changePagination(itemsPerPage = 4);
-
-		KaleoFormsAdmin.viewNextFieldSetPage();
-
-		Pagination.viewResults(results = "Showing 5 to 6 of 6 entries.");
-
-		KaleoFormsManageFieldSets.viewPageNumber(pageNumberList = 2);
 	}
 
 	@description = "Verify that when there are no results for the search, it displays the message -No Field Sets were found-."

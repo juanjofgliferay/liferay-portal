@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -53,9 +52,18 @@ public class FragmentMappedValue implements Serializable {
 			FragmentMappedValue.class, json);
 	}
 
-	@Schema(description = "The default value of the fragment mapped value.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The default value of the fragment mapped value."
+	)
 	@Valid
 	public FragmentInlineValue getDefaultFragmentInlineValue() {
+		if (_defaultFragmentInlineValueSupplier != null) {
+			defaultFragmentInlineValue =
+				_defaultFragmentInlineValueSupplier.get();
+
+			_defaultFragmentInlineValueSupplier = null;
+		}
+
 		return defaultFragmentInlineValue;
 	}
 
@@ -63,6 +71,8 @@ public class FragmentMappedValue implements Serializable {
 		FragmentInlineValue defaultFragmentInlineValue) {
 
 		this.defaultFragmentInlineValue = defaultFragmentInlineValue;
+
+		_defaultFragmentInlineValueSupplier = null;
 	}
 
 	@JsonIgnore
@@ -70,16 +80,17 @@ public class FragmentMappedValue implements Serializable {
 		UnsafeSupplier<FragmentInlineValue, Exception>
 			defaultFragmentInlineValueUnsafeSupplier) {
 
-		try {
-			defaultFragmentInlineValue =
-				defaultFragmentInlineValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultFragmentInlineValueSupplier = () -> {
+			try {
+				return defaultFragmentInlineValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -88,32 +99,45 @@ public class FragmentMappedValue implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentInlineValue defaultFragmentInlineValue;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<FragmentInlineValue> _defaultFragmentInlineValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		deprecated = true,
 		description = "Deprecated as of Athanasius (7.3.x), replaced by defaultFragmentInlineValue"
 	)
 	@Valid
 	public DefaultValue getDefaultValue() {
+		if (_defaultValueSupplier != null) {
+			defaultValue = _defaultValueSupplier.get();
+
+			_defaultValueSupplier = null;
+		}
+
 		return defaultValue;
 	}
 
 	public void setDefaultValue(DefaultValue defaultValue) {
 		this.defaultValue = defaultValue;
+
+		_defaultValueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultValue(
 		UnsafeSupplier<DefaultValue, Exception> defaultValueUnsafeSupplier) {
 
-		try {
-			defaultValue = defaultValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultValueSupplier = () -> {
+			try {
+				return defaultValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@Deprecated
@@ -123,34 +147,52 @@ public class FragmentMappedValue implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DefaultValue defaultValue;
 
-	@Schema(description = "The mapping of the fragment mapped value.")
+	@JsonIgnore
+	private Supplier<DefaultValue> _defaultValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The mapping of the fragment mapped value."
+	)
 	@Valid
 	public Mapping getMapping() {
+		if (_mappingSupplier != null) {
+			mapping = _mappingSupplier.get();
+
+			_mappingSupplier = null;
+		}
+
 		return mapping;
 	}
 
 	public void setMapping(Mapping mapping) {
 		this.mapping = mapping;
+
+		_mappingSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMapping(
 		UnsafeSupplier<Mapping, Exception> mappingUnsafeSupplier) {
 
-		try {
-			mapping = mappingUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_mappingSupplier = () -> {
+			try {
+				return mappingUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The mapping of the fragment mapped value.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Mapping mapping;
+
+	@JsonIgnore
+	private Supplier<Mapping> _mappingSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -179,6 +221,9 @@ public class FragmentMappedValue implements Serializable {
 
 		sb.append("{");
 
+		FragmentInlineValue defaultFragmentInlineValue =
+			getDefaultFragmentInlineValue();
+
 		if (defaultFragmentInlineValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -189,6 +234,8 @@ public class FragmentMappedValue implements Serializable {
 			sb.append(String.valueOf(defaultFragmentInlineValue));
 		}
 
+		DefaultValue defaultValue = getDefaultValue();
+
 		if (defaultValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -198,6 +245,8 @@ public class FragmentMappedValue implements Serializable {
 
 			sb.append(String.valueOf(defaultValue));
 		}
+
+		Mapping mapping = getMapping();
 
 		if (mapping != null) {
 			if (sb.length() > 1) {
@@ -214,8 +263,8 @@ public class FragmentMappedValue implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentMappedValue",
 		name = "x-class-name"
 	)
@@ -261,7 +310,10 @@ public class FragmentMappedValue implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

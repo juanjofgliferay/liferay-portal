@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ILearnResourceContext} from 'frontend-js-components-web';
 import React from 'react';
 import {ReactFlowProvider} from 'react-flow-renderer';
 
@@ -12,48 +13,60 @@ import {ObjectFolderContextProvider} from './ModelBuilderContext/objectFolderCon
 
 interface CustomObjectFolderWrapperProps {
 	baseResourceURL: string;
+	ckEditor5Config?: object;
 	companies: Scope[];
+	decimalSeparator?: string;
 	editObjectDefinitionURL: string;
 	filterOperators: TFilterOperators;
 	forbiddenChars: string[];
 	forbiddenLastChars: string[];
 	forbiddenNames: string[];
+	learnResourceContext: ILearnResourceContext;
 	objectDefinitionPermissionsURL: string;
 	objectDefinitionsStorageTypes: LabelValueObject[];
 	objectRelationshipDeletionTypes: LabelValueObject[];
-	objectWebLearnResources: ObjectWebLearnResources;
 	sites: Scope[];
+	viewObjectDefinitionsURL: string;
 	workflowStatuses: LabelValueObject[];
 }
 
+const ReactFlowProviderWrapper = ReactFlowProvider as React.FC<{
+	children?: React.ReactNode;
+}>;
+
 export default function CustomObjectFolderWrapper({
 	baseResourceURL,
+	ckEditor5Config,
 	companies,
+	decimalSeparator,
 	editObjectDefinitionURL,
 	filterOperators,
 	forbiddenChars,
 	forbiddenLastChars,
 	forbiddenNames,
+	learnResourceContext,
 	objectDefinitionPermissionsURL,
 	objectDefinitionsStorageTypes,
 	objectRelationshipDeletionTypes,
-	objectWebLearnResources,
 	sites,
+	viewObjectDefinitionsURL,
 	workflowStatuses,
 }: CustomObjectFolderWrapperProps) {
 	return (
-		<ReactFlowProvider>
+		<ReactFlowProviderWrapper>
 			<ObjectFolderContextProvider
 				value={{
 					baseResourceURL,
+					ckEditor5Config,
+					decimalSeparator,
 					editObjectDefinitionURL,
 					filterOperators,
 					forbiddenChars,
 					forbiddenLastChars,
 					forbiddenNames,
+					learnResourceContext,
 					objectDefinitionPermissionsURL,
 					objectDefinitionsStorageTypes,
-					objectWebLearnResources,
 					workflowStatuses,
 				}}
 			>
@@ -63,8 +76,9 @@ export default function CustomObjectFolderWrapper({
 						objectRelationshipDeletionTypes
 					}
 					sites={sites}
+					viewObjectDefinitionsURL={viewObjectDefinitionsURL}
 				/>
 			</ObjectFolderContextProvider>
-		</ReactFlowProvider>
+		</ReactFlowProviderWrapper>
 	);
 }

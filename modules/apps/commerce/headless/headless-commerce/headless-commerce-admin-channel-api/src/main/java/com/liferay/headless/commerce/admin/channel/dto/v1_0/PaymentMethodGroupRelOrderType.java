@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -39,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("PaymentMethodGroupRelOrderType")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"paymentMethodGroupRelId", "orderTypeId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"paymentMethodGroupRelId", "orderTypeId"})
 @XmlRootElement(name = "PaymentMethodGroupRelOrderType")
 public class PaymentMethodGroupRelOrderType implements Serializable {
 
@@ -54,14 +55,22 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 			PaymentMethodGroupRelOrderType.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,52 +78,77 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public OrderType getOrderType() {
+		if (_orderTypeSupplier != null) {
+			orderType = _orderTypeSupplier.get();
+
+			_orderTypeSupplier = null;
+		}
+
 		return orderType;
 	}
 
 	public void setOrderType(OrderType orderType) {
 		this.orderType = orderType;
+
+		_orderTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderType(
 		UnsafeSupplier<OrderType, Exception> orderTypeUnsafeSupplier) {
 
-		try {
-			orderType = orderTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeSupplier = () -> {
+			try {
+				return orderTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected OrderType orderType;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<OrderType> _orderTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getOrderTypeExternalReferenceCode() {
+		if (_orderTypeExternalReferenceCodeSupplier != null) {
+			orderTypeExternalReferenceCode =
+				_orderTypeExternalReferenceCodeSupplier.get();
+
+			_orderTypeExternalReferenceCodeSupplier = null;
+		}
+
 		return orderTypeExternalReferenceCode;
 	}
 
@@ -122,6 +156,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 		String orderTypeExternalReferenceCode) {
 
 		this.orderTypeExternalReferenceCode = orderTypeExternalReferenceCode;
+
+		_orderTypeExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -129,45 +165,59 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderTypeExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderTypeExternalReferenceCode =
-				orderTypeExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderTypeExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderTypeExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderTypeExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getOrderTypeId() {
+		if (_orderTypeIdSupplier != null) {
+			orderTypeId = _orderTypeIdSupplier.get();
+
+			_orderTypeIdSupplier = null;
+		}
+
 		return orderTypeId;
 	}
 
 	public void setOrderTypeId(Long orderTypeId) {
 		this.orderTypeId = orderTypeId;
+
+		_orderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderTypeId(
 		UnsafeSupplier<Long, Exception> orderTypeIdUnsafeSupplier) {
 
-		try {
-			orderTypeId = orderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeIdSupplier = () -> {
+			try {
+				return orderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -175,30 +225,42 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 	@NotNull
 	protected Long orderTypeId;
 
+	@JsonIgnore
+	private Supplier<Long> _orderTypeIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getPaymentMethodGroupRelId() {
+		if (_paymentMethodGroupRelIdSupplier != null) {
+			paymentMethodGroupRelId = _paymentMethodGroupRelIdSupplier.get();
+
+			_paymentMethodGroupRelIdSupplier = null;
+		}
+
 		return paymentMethodGroupRelId;
 	}
 
 	public void setPaymentMethodGroupRelId(Long paymentMethodGroupRelId) {
 		this.paymentMethodGroupRelId = paymentMethodGroupRelId;
+
+		_paymentMethodGroupRelIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPaymentMethodGroupRelId(
 		UnsafeSupplier<Long, Exception> paymentMethodGroupRelIdUnsafeSupplier) {
 
-		try {
-			paymentMethodGroupRelId =
-				paymentMethodGroupRelIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_paymentMethodGroupRelIdSupplier = () -> {
+			try {
+				return paymentMethodGroupRelIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -206,9 +268,19 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 	@NotNull
 	protected Long paymentMethodGroupRelId;
 
+	@JsonIgnore
+	private Supplier<Long> _paymentMethodGroupRelIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getPaymentMethodGroupRelOrderTypeId() {
+		if (_paymentMethodGroupRelOrderTypeIdSupplier != null) {
+			paymentMethodGroupRelOrderTypeId =
+				_paymentMethodGroupRelOrderTypeIdSupplier.get();
+
+			_paymentMethodGroupRelOrderTypeIdSupplier = null;
+		}
+
 		return paymentMethodGroupRelOrderTypeId;
 	}
 
@@ -217,6 +289,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 
 		this.paymentMethodGroupRelOrderTypeId =
 			paymentMethodGroupRelOrderTypeId;
+
+		_paymentMethodGroupRelOrderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
@@ -224,50 +298,67 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 		UnsafeSupplier<Long, Exception>
 			paymentMethodGroupRelOrderTypeIdUnsafeSupplier) {
 
-		try {
-			paymentMethodGroupRelOrderTypeId =
-				paymentMethodGroupRelOrderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_paymentMethodGroupRelOrderTypeIdSupplier = () -> {
+			try {
+				return paymentMethodGroupRelOrderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long paymentMethodGroupRelOrderTypeId;
 
+	@JsonIgnore
+	private Supplier<Long> _paymentMethodGroupRelOrderTypeIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1")
 	public Integer getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Integer priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Integer, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer priority;
+
+	@JsonIgnore
+	private Supplier<Integer> _prioritySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -298,6 +389,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -308,6 +401,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		OrderType orderType = getOrderType();
+
 		if (orderType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -317,6 +412,9 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 
 			sb.append(String.valueOf(orderType));
 		}
+
+		String orderTypeExternalReferenceCode =
+			getOrderTypeExternalReferenceCode();
 
 		if (orderTypeExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -332,6 +430,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long orderTypeId = getOrderTypeId();
+
 		if (orderTypeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -341,6 +441,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 
 			sb.append(orderTypeId);
 		}
+
+		Long paymentMethodGroupRelId = getPaymentMethodGroupRelId();
 
 		if (paymentMethodGroupRelId != null) {
 			if (sb.length() > 1) {
@@ -352,6 +454,9 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 			sb.append(paymentMethodGroupRelId);
 		}
 
+		Long paymentMethodGroupRelOrderTypeId =
+			getPaymentMethodGroupRelOrderTypeId();
+
 		if (paymentMethodGroupRelOrderTypeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -361,6 +466,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 
 			sb.append(paymentMethodGroupRelOrderTypeId);
 		}
+
+		Integer priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -377,8 +484,8 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.channel.dto.v1_0.PaymentMethodGroupRelOrderType",
 		name = "x-class-name"
 	)
@@ -424,7 +531,10 @@ public class PaymentMethodGroupRelOrderType implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

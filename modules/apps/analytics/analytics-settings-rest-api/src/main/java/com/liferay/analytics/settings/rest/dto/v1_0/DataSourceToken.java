@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
@@ -47,33 +46,46 @@ public class DataSourceToken implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DataSourceToken.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getToken() {
+		if (_tokenSupplier != null) {
+			token = _tokenSupplier.get();
+
+			_tokenSupplier = null;
+		}
+
 		return token;
 	}
 
 	public void setToken(String token) {
 		this.token = token;
+
+		_tokenSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setToken(
 		UnsafeSupplier<String, Exception> tokenUnsafeSupplier) {
 
-		try {
-			token = tokenUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_tokenSupplier = () -> {
+			try {
+				return tokenUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String token;
+
+	@JsonIgnore
+	private Supplier<String> _tokenSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -102,6 +114,8 @@ public class DataSourceToken implements Serializable {
 
 		sb.append("{");
 
+		String token = getToken();
+
 		if (token != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -121,8 +135,8 @@ public class DataSourceToken implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.analytics.settings.rest.dto.v1_0.DataSourceToken",
 		name = "x-class-name"
 	)
@@ -168,7 +182,10 @@ public class DataSourceToken implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

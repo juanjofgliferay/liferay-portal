@@ -37,11 +37,11 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.HashMap;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -78,7 +78,7 @@ public class PreviewFileEntryContentDashboardItemActionProviderTest {
 			_group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + "." + ContentTypes.IMAGE_JPEG,
 			MimeTypesUtil.getExtensionContentType(ContentTypes.IMAGE_JPEG),
-			new byte[0], null, null,
+			new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		MockHttpServletRequest mockHttpServletRequest =
@@ -91,7 +91,7 @@ public class PreviewFileEntryContentDashboardItemActionProviderTest {
 			WebKeys.THEME_DISPLAY, _getThemeDisplay(mockHttpServletRequest));
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, mockLiferayResourceRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, mockLiferayResourceRequest);
 
 		ContentDashboardItemAction contentDashboardItemAction =
 			_contentDashboardItemActionProvider.getContentDashboardItemAction(
@@ -128,7 +128,7 @@ public class PreviewFileEntryContentDashboardItemActionProviderTest {
 			_group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + "." + ContentTypes.IMAGE_JPEG,
 			MimeTypesUtil.getExtensionContentType(ContentTypes.IMAGE_JPEG),
-			new byte[0], null, null,
+			new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		MockHttpServletRequest mockHttpServletRequest =
@@ -141,7 +141,7 @@ public class PreviewFileEntryContentDashboardItemActionProviderTest {
 			WebKeys.THEME_DISPLAY, _getThemeDisplay(mockHttpServletRequest));
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, mockLiferayResourceRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, mockLiferayResourceRequest);
 
 		Assert.assertTrue(
 			_contentDashboardItemActionProvider.isShow(
@@ -158,7 +158,7 @@ public class PreviewFileEntryContentDashboardItemActionProviderTest {
 				_group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 				RandomTestUtil.randomString() + "." + ContentTypes.IMAGE_JPEG,
 				MimeTypesUtil.getExtensionContentType(ContentTypes.IMAGE_JPEG),
-				new byte[0], null, null,
+				new byte[0], null, null, null,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 			DLFileEntry dlFileEntry = _dlFileEntryLocalService.getFileEntry(
@@ -188,7 +188,7 @@ public class PreviewFileEntryContentDashboardItemActionProviderTest {
 				WebKeys.THEME_DISPLAY, themeDisplay);
 
 			mockHttpServletRequest.setAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST,
+				JavaConstants.JAKARTA_PORTLET_REQUEST,
 				mockLiferayResourceRequest);
 
 			Assert.assertFalse(

@@ -5,19 +5,17 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
 taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
-taglib uri="http://liferay.com/tld/learn" prefix="liferay-learn" %><%@
 taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %><%@
 taglib uri="http://liferay.com/tld/react" prefix="react" %><%@
-taglib uri="http://liferay.com/tld/template" prefix="liferay-template" %><%@
-taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
+taglib uri="http://liferay.com/tld/template" prefix="liferay-template" %>
 
-<%@ page import="com.liferay.learn.LearnMessageUtil" %><%@
+<%@ page import="com.liferay.asset.kernel.service.AssetVocabularyLocalService" %><%@
+page import="com.liferay.learn.LearnMessageUtil" %><%@
+page import="com.liferay.portal.kernel.service.GroupLocalService" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
 page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
@@ -35,7 +33,10 @@ AssetCategoriesSearchFacetDisplayContext assetCategoriesSearchFacetDisplayContex
 
 CategoryFacetPortletInstanceConfiguration categoryFacetPortletInstanceConfiguration = assetCategoriesSearchFacetDisplayContext.getCategoryFacetPortletInstanceConfiguration();
 
-CategoryFacetPortletPreferences categoryFacetPortletPreferences = new CategoryFacetPortletPreferencesImpl(portletPreferences);
+AssetVocabularyLocalService assetVocabularyLocalService = (AssetVocabularyLocalService)request.getAttribute(AssetVocabularyLocalService.class.getName());
+GroupLocalService groupLocalService = (GroupLocalService)request.getAttribute(GroupLocalService.class.getName());
+
+CategoryFacetPortletPreferences categoryFacetPortletPreferences = new CategoryFacetPortletPreferencesImpl(assetVocabularyLocalService, groupLocalService, portletPreferences);
 %>
 
 <liferay-portlet:actionURL portletConfiguration="<%= true %>" var="configurationActionURL" />
@@ -87,33 +88,20 @@ CategoryFacetPortletPreferences categoryFacetPortletPreferences = new CategoryFa
 
 			<div id="<portlet:namespace />selectVocabularies">
 				<react:component
-					module="js/components/SelectVocabularies"
+					module="{SelectVocabularies} from portal-search-web"
 					props='<%=
 						HashMapBuilder.<String, Object>put(
-							"disabled", assetCategoriesSearchFacetDisplayContext.isLegacyFieldSelected()
+							"initialSelectedVocabularyExternalReferenceCodes", StringUtil.merge(categoryFacetPortletPreferences.getGroupVocabularyExternalReferenceCodes())
 						).put(
-							"initialSelectedVocabularyIds", StringUtil.merge(categoryFacetPortletPreferences.getVocabularyIds())
-						).put(
-							"learnMessages", LearnMessageUtil.getJSONObject("portal-search-web")
+							"learnResources", LearnMessageUtil.getReactDataJSONObject("portal-search-web")
 						).put(
 							"namespace", liferayPortletResponse.getNamespace()
 						).put(
-							"vocabularyIdsInputName", PortletPreferencesJspUtil.getInputName(CategoryFacetPortletPreferences.PREFERENCE_VOCABULARY_IDS)
+							"vocabularyExternalReferenceCodesInputName", PortletPreferencesJspUtil.getInputName(CategoryFacetPortletPreferences.PREFERENCE_GROUP_VOCABULARY_EXTERNAL_REFERENCE_CODES)
 						).build()
 					%>'
 				/>
 			</div>
-
-			<c:if test="<%= assetCategoriesSearchFacetDisplayContext.isLegacyFieldSelected() %>">
-				<p class="mt-3 sheet-text">
-					<liferay-ui:message key="select-vocabularies-configuration-disabled-description" />
-
-					<liferay-learn:message
-						key="tag-and-category-facet"
-						resource="portal-search-web"
-					/>
-				</p>
-			</c:if>
 		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 

@@ -88,7 +88,7 @@ public class DLFileEntryDDMFormValuesReaderTest {
 			DLFileEntryMetadata.class.getName());
 
 		return DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			ddmStructure.getStructureId(), null,
 			Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
 			Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
@@ -120,7 +120,7 @@ public class DLFileEntryDDMFormValuesReaderTest {
 			RandomTestUtil.randomString(), null, null,
 			dlFileEntryType.getFileEntryTypeId(), ddmFormValuesMap, null,
 			byteArrayInputStream, byteArrayInputStream.available(), null, null,
-			serviceContext);
+			null, serviceContext);
 	}
 
 	protected DDMForm createDDMForm() {
@@ -138,9 +138,8 @@ public class DLFileEntryDDMFormValuesReaderTest {
 	protected DDMFormFieldValue createDDMFormFieldValue(
 		String instanceId, String name, String value) {
 
-		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
+		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue(instanceId);
 
-		ddmFormFieldValue.setInstanceId(instanceId);
 		ddmFormFieldValue.setName(name);
 		ddmFormFieldValue.setValue(new UnlocalizedValue(value));
 

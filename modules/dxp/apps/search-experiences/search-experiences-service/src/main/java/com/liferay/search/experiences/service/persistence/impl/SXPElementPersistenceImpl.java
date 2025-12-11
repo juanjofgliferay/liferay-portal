@@ -594,6 +594,15 @@ public class SXPElementPersistenceImpl
 			return findByUuid(uuid, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid(
+					uuid, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -640,7 +649,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -844,7 +853,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -977,6 +986,14 @@ public class SXPElementPersistenceImpl
 	public int filterCountByUuid(String uuid) {
 		if (!InlineSQLHelperUtil.isEnabled()) {
 			return countByUuid(uuid);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<SXPElement> sxpElements = findByUuid(uuid);
+
+			sxpElements = InlineSQLHelperUtil.filter(sxpElements);
+
+			return sxpElements.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -1581,6 +1598,15 @@ public class SXPElementPersistenceImpl
 			return findByUuid_C(uuid, companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByUuid_C(
+					uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		uuid = Objects.toString(uuid, "");
 
 		StringBundler sb = null;
@@ -1629,7 +1655,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -1838,7 +1864,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -1982,6 +2008,14 @@ public class SXPElementPersistenceImpl
 	public int filterCountByUuid_C(String uuid, long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByUuid_C(uuid, companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<SXPElement> sxpElements = findByUuid_C(uuid, companyId);
+
+			sxpElements = InlineSQLHelperUtil.filter(sxpElements);
+
+			return sxpElements.size();
 		}
 
 		uuid = Objects.toString(uuid, "");
@@ -2534,6 +2568,15 @@ public class SXPElementPersistenceImpl
 			return findByCompanyId(companyId, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByCompanyId(
+					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -2569,7 +2612,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -2760,7 +2803,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -2879,6 +2922,14 @@ public class SXPElementPersistenceImpl
 	public int filterCountByCompanyId(long companyId) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByCompanyId(companyId);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<SXPElement> sxpElements = findByCompanyId(companyId);
+
+			sxpElements = InlineSQLHelperUtil.filter(sxpElements);
+
+			return sxpElements.size();
 		}
 
 		StringBundler sb = new StringBundler(2);
@@ -3439,6 +3490,15 @@ public class SXPElementPersistenceImpl
 				companyId, readOnly, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_R(
+					companyId, readOnly, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -3476,7 +3536,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -3675,7 +3735,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -3804,6 +3864,14 @@ public class SXPElementPersistenceImpl
 	public int filterCountByC_R(long companyId, boolean readOnly) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_R(companyId, readOnly);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<SXPElement> sxpElements = findByC_R(companyId, readOnly);
+
+			sxpElements = InlineSQLHelperUtil.filter(sxpElements);
+
+			return sxpElements.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -4366,6 +4434,15 @@ public class SXPElementPersistenceImpl
 			return findByC_T(companyId, type, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_T(
+					companyId, type, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -4403,7 +4480,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -4599,7 +4676,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -4728,6 +4805,14 @@ public class SXPElementPersistenceImpl
 	public int filterCountByC_T(long companyId, int type) {
 		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
 			return countByC_T(companyId, type);
+		}
+
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<SXPElement> sxpElements = findByC_T(companyId, type);
+
+			sxpElements = InlineSQLHelperUtil.filter(sxpElements);
+
+			return sxpElements.size();
 		}
 
 		StringBundler sb = new StringBundler(3);
@@ -5329,6 +5414,15 @@ public class SXPElementPersistenceImpl
 				companyId, type, status, start, end, orderByComparator);
 		}
 
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			isPermissionsInMemoryFilterEnabled()) {
+
+			return InlineSQLHelperUtil.filter(
+				findByC_T_S(
+					companyId, type, status, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, orderByComparator));
+		}
+
 		StringBundler sb = null;
 
 		if (orderByComparator != null) {
@@ -5368,7 +5462,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -5572,7 +5666,7 @@ public class SXPElementPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SXPElementModelImpl.ORDER_BY_JPQL);
+				sb.append(SXPElementModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SXPElementModelImpl.ORDER_BY_SQL);
@@ -5712,6 +5806,14 @@ public class SXPElementPersistenceImpl
 			return countByC_T_S(companyId, type, status);
 		}
 
+		if (isPermissionsInMemoryFilterEnabled()) {
+			List<SXPElement> sxpElements = findByC_T_S(companyId, type, status);
+
+			sxpElements = InlineSQLHelperUtil.filter(sxpElements);
+
+			return sxpElements.size();
+		}
+
 		StringBundler sb = new StringBundler(4);
 
 		sb.append(_FILTER_SQL_COUNT_SXPELEMENT_WHERE);
@@ -5769,7 +5871,6 @@ public class SXPElementPersistenceImpl
 		"sxpElement.status = ?";
 
 	private FinderPath _finderPathFetchByERC_C;
-	private FinderPath _finderPathCountByERC_C;
 
 	/**
 	 * Returns the sxp element where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchSXPElementException</code> if it could not be found.
@@ -5954,62 +6055,13 @@ public class SXPElementPersistenceImpl
 	 */
 	@Override
 	public int countByERC_C(String externalReferenceCode, long companyId) {
-		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+		SXPElement sxpElement = fetchByERC_C(externalReferenceCode, companyId);
 
-		FinderPath finderPath = _finderPathCountByERC_C;
-
-		Object[] finderArgs = new Object[] {externalReferenceCode, companyId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_SXPELEMENT_WHERE);
-
-			boolean bindExternalReferenceCode = false;
-
-			if (externalReferenceCode.isEmpty()) {
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
-			}
-			else {
-				bindExternalReferenceCode = true;
-
-				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
-			}
-
-			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindExternalReferenceCode) {
-					queryPos.add(externalReferenceCode);
-				}
-
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (sxpElement == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
@@ -6131,7 +6183,6 @@ public class SXPElementPersistenceImpl
 			sxpElementModelImpl.getCompanyId()
 		};
 
-		finderCache.putResult(_finderPathCountByERC_C, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByERC_C, args, sxpElementModelImpl);
 	}
@@ -6276,6 +6327,39 @@ public class SXPElementPersistenceImpl
 			sxpElement.setExternalReferenceCode(sxpElement.getUuid());
 		}
 		else {
+			if (!Objects.equals(
+					sxpElementModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					sxpElement.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = sxpElement.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = sxpElement.getPrimaryKey();
+					}
+
+					try {
+						sxpElement.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								SXPElement.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								sxpElement.getExternalReferenceCode(), null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
 			SXPElement ercSXPElement = fetchByERC_C(
 				sxpElement.getExternalReferenceCode(),
 				sxpElement.getCompanyId());
@@ -6779,11 +6863,6 @@ public class SXPElementPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"externalReferenceCode", "companyId"}, true);
-
-		_finderPathCountByERC_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByERC_C",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"externalReferenceCode", "companyId"}, false);
 
 		SXPElementUtil.setPersistence(this);
 	}

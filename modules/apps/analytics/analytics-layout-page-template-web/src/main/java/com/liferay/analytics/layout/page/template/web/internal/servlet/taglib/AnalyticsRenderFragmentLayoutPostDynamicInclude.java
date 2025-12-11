@@ -6,27 +6,31 @@
 package com.liferay.analytics.layout.page.template.web.internal.servlet.taglib;
 
 import com.liferay.analytics.layout.page.template.web.internal.servlet.taglib.util.AnalyticsRenderFragmentLayoutUtil;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.taglib.aui.ScriptTag;
+
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 
 import java.util.Locale;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,6 +47,19 @@ public class AnalyticsRenderFragmentLayoutPostDynamicInclude
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, String dynamicIncludeKey)
 		throws IOException {
+
+		try {
+			if (!_analyticsSettingsManager.isAnalyticsEnabled(
+					_portal.getCompanyId(httpServletRequest))) {
+
+				return;
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
 
 		LayoutDisplayPageObjectProvider<?> layoutDisplayPageObjectProvider =
 			(LayoutDisplayPageObjectProvider<?>)httpServletRequest.getAttribute(
@@ -87,9 +104,10 @@ public class AnalyticsRenderFragmentLayoutPostDynamicInclude
 		PageContext pageContext) {
 
 		try {
-			StringBundler sb = new StringBundler(9);
+			StringBundler sb = new StringBundler(10);
 
-			sb.append("Analytics.track(\"");
+			sb.append("window.onload = function() {window.Analytics && ");
+			sb.append("window.Analytics.track(\"");
 
 			InfoItemClassDetails infoItemClassDetails =
 				new InfoItemClassDetails(
@@ -107,10 +125,12 @@ public class AnalyticsRenderFragmentLayoutPostDynamicInclude
 			sb.append(
 				String.valueOf(layoutDisplayPageObjectProvider.getClassPK()));
 			sb.append(", 'title': '");
-			sb.append(layoutDisplayPageObjectProvider.getTitle(locale));
+			sb.append(
+				HtmlUtil.escapeJS(
+					layoutDisplayPageObjectProvider.getTitle(locale)));
 			sb.append("', 'type': '");
 			sb.append(label);
-			sb.append("'});");
+			sb.append("'})};");
 
 			Writer writer = pageContext.getOut();
 
@@ -120,6 +140,12 @@ public class AnalyticsRenderFragmentLayoutPostDynamicInclude
 			ReflectionUtil.throwException(ioException);
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AnalyticsRenderFragmentLayoutPostDynamicInclude.class);
+
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
 	private Portal _portal;

@@ -24,23 +24,24 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.annotation.security.RolesAllowed;
+
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.annotation.security.RolesAllowed;
-
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -67,7 +68,7 @@ public class FieldMappingController extends BaseFaroController {
 			FieldMappingUtil.getNewFieldMappingMaps(
 				contactsEngineClient, faroProject,
 				FieldMappingConstants.CONTEXT_ORGANIZATION,
-				FieldMappingConstants.getSalesforceAccountFieldMappingMaps()));
+				FieldMappingConstants.getAccountFieldMappingMaps()));
 
 		List<FieldMappingMap> fieldMappingMaps = new ArrayList<>();
 
@@ -106,7 +107,7 @@ public class FieldMappingController extends BaseFaroController {
 	@GET
 	@Path("/{fieldName}")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
-	public FieldMappingDisplay get(
+	public FieldMappingDisplay getFieldMappingDisplay(
 			@PathParam("groupId") long groupId,
 			@PathParam("fieldName") String fieldName)
 		throws Exception {
@@ -135,6 +136,35 @@ public class FieldMappingController extends BaseFaroController {
 		if (Validator.isNotNull(orderByType)) {
 			orderByFields = Collections.singletonList(
 				new OrderByField("displayName", orderByType, true));
+		}
+
+		if (Objects.equals(context, "account")) {
+			List<FieldMapping> fieldMappings = new ArrayList<>();
+
+			for (FieldMappingMap fieldMappingMap :
+					FieldMappingConstants.getAccountFieldMappingMaps()) {
+
+				FieldMapping fieldMapping = new FieldMapping();
+
+				fieldMapping.setContext(context);
+				fieldMapping.setDisplayName(
+					FieldMappingConstants.getAccountFieldMappingLanguageKey(
+						fieldMappingMap.getName()));
+				fieldMapping.setDisplayType("input-field");
+				fieldMapping.setFieldName(fieldMappingMap.getName());
+				fieldMapping.setFieldType(fieldMappingMap.getType());
+				fieldMapping.setOwnerType(ownerType);
+
+				fieldMappings.add(fieldMapping);
+			}
+
+			Results<FieldMapping> results = new Results<>(
+				fieldMappings, fieldMappings.size());
+
+			Function<FieldMapping, FieldMappingDisplay> function =
+				FieldMappingDisplay::new;
+
+			return new FaroResultsDisplay(results, function);
 		}
 
 		Results<FieldMapping> results = contactsEngineClient.getFieldMappings(

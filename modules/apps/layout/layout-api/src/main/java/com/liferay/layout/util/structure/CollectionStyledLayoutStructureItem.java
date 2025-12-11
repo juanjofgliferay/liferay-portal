@@ -393,14 +393,49 @@ public class CollectionStyledLayoutStructureItem
 			_viewportConfigurationJSONObjects.getOrDefault(
 				viewportSizeId, JSONFactoryUtil.createJSONObject()
 			).put(
-				"numberOfColumns",
+				"align",
 				() -> {
-					if (configurationJSONObject.has("numberOfColumns")) {
-						return configurationJSONObject.getInt(
-							"numberOfColumns");
+					if (!configurationJSONObject.has("align")) {
+						return null;
 					}
 
-					return null;
+					return configurationJSONObject.getString("align");
+				}
+			).put(
+				"flexWrap",
+				() -> {
+					if (!configurationJSONObject.has("flexWrap")) {
+						return null;
+					}
+
+					return configurationJSONObject.getString("flexWrap");
+				}
+			).put(
+				"styles",
+				() -> {
+					if (!configurationJSONObject.has("styles")) {
+						return null;
+					}
+
+					return configurationJSONObject.getJSONObject("styles");
+				}
+			).put(
+				"justify",
+				() -> {
+					if (!configurationJSONObject.has("justify")) {
+						return null;
+					}
+
+					return configurationJSONObject.getString("justify");
+				}
+			).put(
+				"numberOfColumns",
+				() -> {
+					if (!configurationJSONObject.has("numberOfColumns")) {
+						return null;
+					}
+
+					return configurationJSONObject.getInt("numberOfColumns");
 				}
 			));
 	}
@@ -447,10 +482,6 @@ public class CollectionStyledLayoutStructureItem
 			setJustify(itemConfigJSONObject.getString("justify"));
 		}
 
-		if (itemConfigJSONObject.has("showAllItems")) {
-			setShowAllItems(itemConfigJSONObject.getBoolean("showAllItems"));
-		}
-
 		if (itemConfigJSONObject.has("listItemStyle")) {
 			setListItemStyle(itemConfigJSONObject.getString("listItemStyle"));
 		}
@@ -478,6 +509,10 @@ public class CollectionStyledLayoutStructureItem
 
 		if (itemConfigJSONObject.has("paginationType")) {
 			setPaginationType(itemConfigJSONObject.getString("paginationType"));
+		}
+
+		if (itemConfigJSONObject.has("showAllItems")) {
+			setShowAllItems(itemConfigJSONObject.getBoolean("showAllItems"));
 		}
 
 		if (itemConfigJSONObject.has("templateKey")) {

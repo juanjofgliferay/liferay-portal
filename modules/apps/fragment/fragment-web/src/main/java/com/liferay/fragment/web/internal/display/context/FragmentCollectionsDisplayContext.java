@@ -11,6 +11,7 @@ import com.liferay.fragment.service.FragmentCollectionServiceUtil;
 import com.liferay.fragment.web.internal.util.FragmentPortletUtil;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
@@ -20,13 +21,12 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PortalInstances;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -97,7 +97,7 @@ public class FragmentCollectionsDisplayContext {
 		Group scopeGroup = themeDisplay.getScopeGroup();
 
 		if ((themeDisplay.getCompanyId() ==
-				PortalInstances.getDefaultCompanyId()) &&
+				PortalInstancePool.getDefaultCompanyId()) &&
 			scopeGroup.isCompany()) {
 
 			groupIds = ArrayUtil.append(groupIds, CompanyConstants.SYSTEM);
@@ -106,22 +106,44 @@ public class FragmentCollectionsDisplayContext {
 		long[] allGroupIds = groupIds;
 
 		if (_isSearch()) {
-			searchContainer.setResultsAndTotal(
-				() -> FragmentCollectionServiceUtil.getFragmentCollections(
-					allGroupIds, _getKeywords(), searchContainer.getStart(),
-					searchContainer.getEnd(),
-					searchContainer.getOrderByComparator()),
-				FragmentCollectionServiceUtil.getFragmentCollectionsCount(
-					allGroupIds, _getKeywords()));
+			if (_isIncludeMarketplaceFragmentCollections()) {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, _getKeywords(), searchContainer.getStart(),
+						searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds, _getKeywords()));
+			}
+			else {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, _getKeywords(), false,
+						searchContainer.getStart(), searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds, _getKeywords(), false));
+			}
 		}
 		else {
-			searchContainer.setResultsAndTotal(
-				() -> FragmentCollectionServiceUtil.getFragmentCollections(
-					allGroupIds, searchContainer.getStart(),
-					searchContainer.getEnd(),
-					searchContainer.getOrderByComparator()),
-				FragmentCollectionServiceUtil.getFragmentCollectionsCount(
-					allGroupIds));
+			if (_isIncludeMarketplaceFragmentCollections()) {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, searchContainer.getStart(),
+						searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds));
+			}
+			else {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, false, searchContainer.getStart(),
+						searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds, false));
+			}
 		}
 
 		searchContainer.setRowChecker(
@@ -175,6 +197,9 @@ public class FragmentCollectionsDisplayContext {
 			"includeGlobalFragmentCollections",
 			_isIncludeGlobalFragmentCollections()
 		).setParameter(
+			"includeMarketplaceFragmentCollections",
+			_isIncludeMarketplaceFragmentCollections()
+		).setParameter(
 			"orderByCol",
 			() -> {
 				String orderByCol = _getOrderByCol();
@@ -210,17 +235,25 @@ public class FragmentCollectionsDisplayContext {
 		return _includeGlobalFragmentCollections;
 	}
 
-	private boolean _isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
+	private boolean _isIncludeMarketplaceFragmentCollections() {
+		if (_includeMarketplaceFragmentCollections != null) {
+			return _includeMarketplaceFragmentCollections;
 		}
 
-		return false;
+		_includeMarketplaceFragmentCollections = ParamUtil.getBoolean(
+			_httpServletRequest, "includeMarketplaceFragmentCollections");
+
+		return _includeMarketplaceFragmentCollections;
+	}
+
+	private boolean _isSearch() {
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	private String _eventName;
 	private final HttpServletRequest _httpServletRequest;
 	private Boolean _includeGlobalFragmentCollections;
+	private Boolean _includeMarketplaceFragmentCollections;
 	private String _keywords;
 	private String _orderByCol;
 	private String _orderByType;

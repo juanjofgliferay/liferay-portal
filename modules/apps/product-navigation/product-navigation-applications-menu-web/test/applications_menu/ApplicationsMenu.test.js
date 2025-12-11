@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {configure} from '@testing-library/dom';
 import {cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 import {act} from 'react-dom/test-utils';
 
-import ApplicationsMenu from '../../src/main/resources/META-INF/resources/js/ApplicationsMenu';
+import {ApplicationsMenu} from '../../src/main/resources/META-INF/resources/js/index';
 
 configure({
 	testIdAttribute: 'data-qa-id',
@@ -165,11 +165,8 @@ describe('ApplicationsMenu', () => {
 	});
 
 	it('renders Applications Menu modal with a close button when trigger button is clicked', async () => {
-		const {
-			getByTestId,
-			getByTitle,
-			queryByTitle,
-		} = renderApplicationsMenu();
+		const {getByTestId, getByTitle, queryByTitle} =
+			renderApplicationsMenu();
 
 		const trigger = getByTestId('applicationsMenu');
 
@@ -212,8 +209,8 @@ describe('ApplicationsMenu', () => {
 	});
 
 	it('closes Applications Menu modal when clicking outside', async () => {
-		const {getByTestId, getByTitle} = renderApplicationsMenu();
-		const trigger = getByTestId('applicationsMenu');
+		const {findByTestId, findByTitle} = renderApplicationsMenu();
+		const trigger = await findByTestId('applicationsMenu');
 
 		await act(async () => {
 			fireEvent.click(trigger);
@@ -223,7 +220,7 @@ describe('ApplicationsMenu', () => {
 			jest.runAllTimers();
 		});
 
-		const closeButton = getByTitle('close');
+		const closeButton = await findByTitle('close');
 
 		await act(async () => {
 			const backdropElement = document.querySelector(

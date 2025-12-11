@@ -17,6 +17,7 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
+import com.liferay.portal.vulcan.fields.NestedFieldId;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,12 +34,52 @@ import org.osgi.service.component.annotations.ServiceScope;
 public class PlacedOrderAddressResourceImpl
 	extends BasePlacedOrderAddressResourceImpl {
 
+	@Override
+	public PlacedOrderAddress
+			getPlacedOrderByExternalReferenceCodePlacedOrderBillingAddress(
+				String externalReferenceCode)
+		throws Exception {
+
+		CommerceOrder commerceOrder =
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrder == null) {
+			throw new NoSuchOrderException(
+				"Unable to find order with external reference code " +
+					externalReferenceCode);
+		}
+
+		return getPlacedOrderPlacedOrderBillingAddress(
+			commerceOrder.getCommerceOrderId());
+	}
+
+	@Override
+	public PlacedOrderAddress
+			getPlacedOrderByExternalReferenceCodePlacedOrderShippingAddress(
+				String externalReferenceCode)
+		throws Exception {
+
+		CommerceOrder commerceOrder =
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrder == null) {
+			throw new NoSuchOrderException(
+				"Unable to find order with external reference code " +
+					externalReferenceCode);
+		}
+
+		return getPlacedOrderPlacedOrderShippingAddress(
+			commerceOrder.getCommerceOrderId());
+	}
+
 	@NestedField(
 		parentClass = PlacedOrder.class, value = "placedOrderBillingAddress"
 	)
 	@Override
-	public PlacedOrderAddress getPlacedOrderPlacedOrderBillingAddres(
-			Long placedOrderId)
+	public PlacedOrderAddress getPlacedOrderPlacedOrderBillingAddress(
+			@NestedFieldId(value = "id") Long placedOrderId)
 		throws Exception {
 
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
@@ -69,8 +110,8 @@ public class PlacedOrderAddressResourceImpl
 		parentClass = PlacedOrder.class, value = "placedOrderShippingAddress"
 	)
 	@Override
-	public PlacedOrderAddress getPlacedOrderPlacedOrderShippingAddres(
-			Long placedOrderId)
+	public PlacedOrderAddress getPlacedOrderPlacedOrderShippingAddress(
+			@NestedFieldId(value = "id") Long placedOrderId)
 		throws Exception {
 
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(

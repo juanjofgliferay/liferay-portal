@@ -1,4 +1,5 @@
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import ListComponent from 'shared/hoc/ListComponent';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
@@ -16,7 +17,8 @@ import {Routes} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 import {useParams} from 'react-router-dom';
 import {useQuery} from '@apollo/react-hooks';
-import {useQueryPagination, useQueryRangeSelectors} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 
 const WebContentListCard: React.FC = () => {
 	const {delta, orderIOMap, page, query} = useQueryPagination({
@@ -71,7 +73,7 @@ const WebContentListCard: React.FC = () => {
 									)}
 								</span>
 
-								<a
+								<ClayLink
 									href={
 										URLConstants.AssetsWebContentListDocumentation
 									}
@@ -81,13 +83,13 @@ const WebContentListCard: React.FC = () => {
 									{Liferay.Language.get(
 										'learn-more-about-web-content'
 									)}
-								</a>
+								</ClayLink>
 							</>
 						}
 						icon={{
 							border: false,
 							size: Sizes.XXXLarge,
-							symbol: 'ac-satellite'
+							symbol: 'ac_satellite'
 						}}
 						title={Liferay.Language.get(
 							'there-are-no-visitors-data-found'

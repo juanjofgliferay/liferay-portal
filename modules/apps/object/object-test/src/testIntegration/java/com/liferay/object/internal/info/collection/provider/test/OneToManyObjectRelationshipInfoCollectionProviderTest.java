@@ -12,6 +12,7 @@ import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.pagination.InfoPage;
 import com.liferay.info.pagination.Pagination;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.field.builder.TextObjectFieldBuilder;
 import com.liferay.object.model.ObjectDefinition;
@@ -20,8 +21,7 @@ import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -37,6 +37,7 @@ import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import java.io.Serializable;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Assert;
@@ -91,7 +92,7 @@ public class OneToManyObjectRelationshipInfoCollectionProviderTest {
 			null, TestPropsValues.getUserId(),
 			_parentObjectDefinition.getObjectDefinitionId(),
 			_childObjectDefinition.getObjectDefinitionId(), 0,
-			ObjectRelationshipConstants.DELETION_TYPE_CASCADE,
+			ObjectRelationshipConstants.DELETION_TYPE_CASCADE, false,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			"oneToManyRelationshipName", false,
 			ObjectRelationshipConstants.TYPE_ONE_TO_MANY, null);
@@ -102,8 +103,10 @@ public class OneToManyObjectRelationshipInfoCollectionProviderTest {
 		throws Exception {
 
 		ObjectEntry parentObjectEntry = _objectEntryLocalService.addObjectEntry(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			_group.getGroupId(), TestPropsValues.getUserId(),
 			_parentObjectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
 			HashMapBuilder.<String, Serializable>put(
 				"parentTextObjectFieldName", RandomTestUtil.randomString()
 			).build(),
@@ -120,9 +123,7 @@ public class OneToManyObjectRelationshipInfoCollectionProviderTest {
 		RelatedInfoItemCollectionProvider relatedInfoItemCollectionProvider =
 			_infoItemServiceRegistry.getFirstInfoItemService(
 				RelatedInfoItemCollectionProvider.class,
-				StringBundler.concat(
-					ObjectDefinition.class.getName(), StringPool.POUND,
-					_parentObjectDefinition.getObjectDefinitionId()));
+				_parentObjectDefinition.getClassName());
 
 		Assert.assertNotNull(relatedInfoItemCollectionProvider);
 
@@ -152,8 +153,10 @@ public class OneToManyObjectRelationshipInfoCollectionProviderTest {
 		throws Exception {
 
 		return _objectEntryLocalService.addObjectEntry(
-			TestPropsValues.getUserId(), group.getGroupId(),
+			group.getGroupId(), TestPropsValues.getUserId(),
 			objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
 			HashMapBuilder.<String, Serializable>put(
 				"childTextObjectFieldName", RandomTestUtil.randomString()
 			).put(
@@ -168,13 +171,15 @@ public class OneToManyObjectRelationshipInfoCollectionProviderTest {
 		throws Exception {
 
 		return _objectDefinitionLocalService.addCustomObjectDefinition(
-			TestPropsValues.getUserId(), 0, false, false, false,
+			null, TestPropsValues.getUserId(), 0, null, false, true, false,
+			true, false, false, false, false, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			"A" + RandomTestUtil.randomString(), null, null,
+			ObjectDefinitionTestUtil.getRandomName(), null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			true, ObjectDefinitionConstants.SCOPE_SITE,
 			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
-			Arrays.asList(objectField));
+			Collections.emptyList(), Arrays.asList(objectField),
+			Collections.emptyList());
 	}
 
 	@DeleteAfterTestRun

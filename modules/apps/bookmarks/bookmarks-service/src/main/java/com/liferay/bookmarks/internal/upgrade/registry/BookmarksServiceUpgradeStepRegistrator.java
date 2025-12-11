@@ -11,12 +11,12 @@ import com.liferay.bookmarks.internal.upgrade.v1_0_0.UpgradePortletSettings;
 import com.liferay.bookmarks.internal.upgrade.v2_0_0.UpgradeBookmarksEntryResourceBlock;
 import com.liferay.bookmarks.internal.upgrade.v2_0_0.UpgradeBookmarksFolderResourceBlock;
 import com.liferay.bookmarks.model.BookmarksEntry;
+import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.settings.SettingsLocatorHelper;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.MVCCVersionUpgradeProcess;
 import com.liferay.portal.kernel.upgrade.ViewCountUpgradeProcess;
 import com.liferay.portal.upgrade.registry.UpgradeStepRegistrator;
-import com.liferay.view.count.service.ViewCountEntryLocalService;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,13 +32,17 @@ public class BookmarksServiceUpgradeStepRegistrator
 	public void register(Registry registry) {
 		registry.register("0.0.1", "0.0.2", new UpgradeKernelPackage());
 
+		registry.register("0.0.2", "0.0.3", new UpgradeLastPublishDate());
+
 		registry.register(
-			"0.0.2", "1.0.0", new UpgradeLastPublishDate(),
+			"0.0.3", "1.0.0",
 			new UpgradePortletSettings(_settingsLocatorHelper));
 
 		registry.register(
-			"1.0.0", "2.0.0", new UpgradeBookmarksEntryResourceBlock(),
-			new UpgradeBookmarksFolderResourceBlock());
+			"1.0.0", "1.0.1", new UpgradeBookmarksEntryResourceBlock());
+
+		registry.register(
+			"1.0.1", "2.0.0", new UpgradeBookmarksFolderResourceBlock());
 
 		registry.register(
 			"2.0.0", "2.1.0",
@@ -61,13 +65,12 @@ public class BookmarksServiceUpgradeStepRegistrator
 			new CTModelUpgradeProcess("BookmarksEntry", "BookmarksFolder"));
 	}
 
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.view.count.service)(&(release.schema.version>=1.0.0)))"
+	)
+	private Release _release;
+
 	@Reference
 	private SettingsLocatorHelper _settingsLocatorHelper;
-
-	/**
-	 * See LPS-101587. The ViewCount table needs to exist.
-	 */
-	@Reference
-	private ViewCountEntryLocalService _viewCountEntryLocalService;
 
 }

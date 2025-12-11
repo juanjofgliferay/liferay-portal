@@ -73,14 +73,14 @@ public class SegmentsEntryModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"segmentsEntryId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"segmentsEntryKey", Types.VARCHAR}, {"name", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"active_", Types.BOOLEAN},
-		{"criteria", Types.CLOB}, {"source", Types.VARCHAR},
-		{"type_", Types.VARCHAR}, {"lastPublishDate", Types.TIMESTAMP}
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"segmentsEntryId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"segmentsEntryKey", Types.VARCHAR},
+		{"name", Types.VARCHAR}, {"description", Types.VARCHAR},
+		{"active_", Types.BOOLEAN}, {"criteria", Types.CLOB},
+		{"source", Types.VARCHAR}, {"lastPublishDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -90,6 +90,7 @@ public class SegmentsEntryModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("segmentsEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -103,12 +104,11 @@ public class SegmentsEntryModelImpl
 		TABLE_COLUMNS_MAP.put("active_", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("criteria", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("source", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table SegmentsEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,segmentsEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,segmentsEntryKey VARCHAR(75) null,name STRING null,description STRING null,active_ BOOLEAN,criteria TEXT null,source VARCHAR(75) null,type_ VARCHAR(75) null,lastPublishDate DATE null,primary key (segmentsEntryId, ctCollectionId))";
+		"create table SegmentsEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,segmentsEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,segmentsEntryKey VARCHAR(75) null,name STRING null,description STRING null,active_ BOOLEAN,criteria TEXT null,source VARCHAR(75) null,lastPublishDate DATE null,primary key (segmentsEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table SegmentsEntry";
 
@@ -117,6 +117,9 @@ public class SegmentsEntryModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY SegmentsEntry.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY segmentsEntry.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -140,38 +143,44 @@ public class SegmentsEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 4L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SEGMENTSENTRYKEY_COLUMN_BITMASK = 8L;
+	public static final long GROUPID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SOURCE_COLUMN_BITMASK = 16L;
+	public static final long SEGMENTSENTRYID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 32L;
+	public static final long SEGMENTSENTRYKEY_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 64L;
+	public static final long SOURCE_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MODIFIEDDATE_COLUMN_BITMASK = 128L;
+	public static final long MODIFIEDDATE_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -289,6 +298,9 @@ public class SegmentsEntryModelImpl
 				"ctCollectionId", SegmentsEntry::getCtCollectionId);
 			attributeGetterFunctions.put("uuid", SegmentsEntry::getUuid);
 			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				SegmentsEntry::getExternalReferenceCode);
+			attributeGetterFunctions.put(
 				"segmentsEntryId", SegmentsEntry::getSegmentsEntryId);
 			attributeGetterFunctions.put("groupId", SegmentsEntry::getGroupId);
 			attributeGetterFunctions.put(
@@ -309,7 +321,6 @@ public class SegmentsEntryModelImpl
 			attributeGetterFunctions.put(
 				"criteria", SegmentsEntry::getCriteria);
 			attributeGetterFunctions.put("source", SegmentsEntry::getSource);
-			attributeGetterFunctions.put("type", SegmentsEntry::getType);
 			attributeGetterFunctions.put(
 				"lastPublishDate", SegmentsEntry::getLastPublishDate);
 
@@ -339,6 +350,10 @@ public class SegmentsEntryModelImpl
 			attributeSetterBiConsumers.put(
 				"uuid",
 				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<SegmentsEntry, String>)
+					SegmentsEntry::setExternalReferenceCode);
 			attributeSetterBiConsumers.put(
 				"segmentsEntryId",
 				(BiConsumer<SegmentsEntry, Long>)
@@ -382,9 +397,6 @@ public class SegmentsEntryModelImpl
 			attributeSetterBiConsumers.put(
 				"source",
 				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setSource);
-			attributeSetterBiConsumers.put(
-				"type",
-				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setType);
 			attributeSetterBiConsumers.put(
 				"lastPublishDate",
 				(BiConsumer<SegmentsEntry, Date>)
@@ -457,6 +469,35 @@ public class SegmentsEntryModelImpl
 
 	@JSON
 	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
+	}
+
+	@JSON
+	@Override
 	public long getSegmentsEntryId() {
 		return _segmentsEntryId;
 	}
@@ -468,6 +509,16 @@ public class SegmentsEntryModelImpl
 		}
 
 		_segmentsEntryId = segmentsEntryId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalSegmentsEntryId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("segmentsEntryId"));
 	}
 
 	@JSON
@@ -936,35 +987,6 @@ public class SegmentsEntryModelImpl
 
 	@JSON
 	@Override
-	public String getType() {
-		if (_type == null) {
-			return "";
-		}
-		else {
-			return _type;
-		}
-	}
-
-	@Override
-	public void setType(String type) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_type = type;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalType() {
-		return getColumnOriginalValue("type_");
-	}
-
-	@JSON
-	@Override
 	public Date getLastPublishDate() {
 		return _lastPublishDate;
 	}
@@ -1131,6 +1153,7 @@ public class SegmentsEntryModelImpl
 		segmentsEntryImpl.setMvccVersion(getMvccVersion());
 		segmentsEntryImpl.setCtCollectionId(getCtCollectionId());
 		segmentsEntryImpl.setUuid(getUuid());
+		segmentsEntryImpl.setExternalReferenceCode(getExternalReferenceCode());
 		segmentsEntryImpl.setSegmentsEntryId(getSegmentsEntryId());
 		segmentsEntryImpl.setGroupId(getGroupId());
 		segmentsEntryImpl.setCompanyId(getCompanyId());
@@ -1144,7 +1167,6 @@ public class SegmentsEntryModelImpl
 		segmentsEntryImpl.setActive(isActive());
 		segmentsEntryImpl.setCriteria(getCriteria());
 		segmentsEntryImpl.setSource(getSource());
-		segmentsEntryImpl.setType(getType());
 		segmentsEntryImpl.setLastPublishDate(getLastPublishDate());
 
 		segmentsEntryImpl.resetOriginalValues();
@@ -1161,6 +1183,8 @@ public class SegmentsEntryModelImpl
 		segmentsEntryImpl.setCtCollectionId(
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		segmentsEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		segmentsEntryImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		segmentsEntryImpl.setSegmentsEntryId(
 			this.<Long>getColumnOriginalValue("segmentsEntryId"));
 		segmentsEntryImpl.setGroupId(
@@ -1186,7 +1210,6 @@ public class SegmentsEntryModelImpl
 			this.<String>getColumnOriginalValue("criteria"));
 		segmentsEntryImpl.setSource(
 			this.<String>getColumnOriginalValue("source"));
-		segmentsEntryImpl.setType(this.<String>getColumnOriginalValue("type_"));
 		segmentsEntryImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
 
@@ -1280,6 +1303,18 @@ public class SegmentsEntryModelImpl
 			segmentsEntryCacheModel.uuid = null;
 		}
 
+		segmentsEntryCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			segmentsEntryCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			segmentsEntryCacheModel.externalReferenceCode = null;
+		}
+
 		segmentsEntryCacheModel.segmentsEntryId = getSegmentsEntryId();
 
 		segmentsEntryCacheModel.groupId = getGroupId();
@@ -1356,14 +1391,6 @@ public class SegmentsEntryModelImpl
 			segmentsEntryCacheModel.source = null;
 		}
 
-		segmentsEntryCacheModel.type = getType();
-
-		String type = segmentsEntryCacheModel.type;
-
-		if ((type != null) && (type.length() == 0)) {
-			segmentsEntryCacheModel.type = null;
-		}
-
 		Date lastPublishDate = getLastPublishDate();
 
 		if (lastPublishDate != null) {
@@ -1437,6 +1464,7 @@ public class SegmentsEntryModelImpl
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _segmentsEntryId;
 	private long _groupId;
 	private long _companyId;
@@ -1453,7 +1481,6 @@ public class SegmentsEntryModelImpl
 	private boolean _active;
 	private String _criteria;
 	private String _source;
-	private String _type;
 	private Date _lastPublishDate;
 
 	public <T> T getColumnValue(String columnName) {
@@ -1489,6 +1516,8 @@ public class SegmentsEntryModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("segmentsEntryId", _segmentsEntryId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1502,7 +1531,6 @@ public class SegmentsEntryModelImpl
 		_columnOriginalValues.put("active_", _active);
 		_columnOriginalValues.put("criteria", _criteria);
 		_columnOriginalValues.put("source", _source);
-		_columnOriginalValues.put("type_", _type);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 	}
 
@@ -1513,7 +1541,6 @@ public class SegmentsEntryModelImpl
 
 		attributeNames.put("uuid_", "uuid");
 		attributeNames.put("active_", "active");
-		attributeNames.put("type_", "type");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -1535,33 +1562,33 @@ public class SegmentsEntryModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("segmentsEntryId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("groupId", 16L);
+		columnBitmasks.put("segmentsEntryId", 16L);
 
-		columnBitmasks.put("companyId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userId", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("userName", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("createDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("modifiedDate", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("segmentsEntryKey", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("name", 2048L);
+		columnBitmasks.put("segmentsEntryKey", 2048L);
 
-		columnBitmasks.put("description", 4096L);
+		columnBitmasks.put("name", 4096L);
 
-		columnBitmasks.put("active_", 8192L);
+		columnBitmasks.put("description", 8192L);
 
-		columnBitmasks.put("criteria", 16384L);
+		columnBitmasks.put("active_", 16384L);
 
-		columnBitmasks.put("source", 32768L);
+		columnBitmasks.put("criteria", 32768L);
 
-		columnBitmasks.put("type_", 65536L);
+		columnBitmasks.put("source", 65536L);
 
 		columnBitmasks.put("lastPublishDate", 131072L);
 

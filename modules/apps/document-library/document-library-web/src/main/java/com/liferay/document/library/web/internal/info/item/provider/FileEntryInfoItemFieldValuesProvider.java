@@ -91,7 +91,7 @@ public class FileEntryInfoItemFieldValuesProvider
 				"Caught unexpected exception", portalException);
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("Unexpected exception", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 
@@ -167,7 +167,7 @@ public class FileEntryInfoItemFieldValuesProvider
 				new InfoItemReference(
 					FileEntry.class.getName(), fileEntry.getFileEntryId()),
 				String.valueOf(dlFileEntry.getFileEntryTypeId()),
-				FileEntry.class.getSimpleName(), _getThemeDisplay());
+				FileEntry.class.getSimpleName(), fileEntry, _getThemeDisplay());
 		}
 
 		return Collections.emptyList();

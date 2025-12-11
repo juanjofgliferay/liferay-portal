@@ -43,6 +43,11 @@ public class HypersonicDB extends BaseDB {
 	}
 
 	@Override
+	public String getCharacterSet(Connection connection) {
+		return "UTF-8";
+	}
+
+	@Override
 	public String getDefaultValue(String columnDef) {
 		String defaultValue = super.getDefaultValue(columnDef);
 
@@ -61,6 +66,11 @@ public class HypersonicDB extends BaseDB {
 	@Override
 	public String getRecreateSQL(String databaseName) {
 		return StringPool.BLANK;
+	}
+
+	@Override
+	public boolean isSupportsCharacterSet(Connection connection) {
+		return true;
 	}
 
 	@Override
@@ -202,6 +212,7 @@ public class HypersonicDB extends BaseDB {
 		runSQL(connection, sb.toString());
 	}
 
+	@Override
 	protected String getCopyTableStructureSQL(
 		String tableName, String newTableName) {
 
@@ -228,16 +239,22 @@ public class HypersonicDB extends BaseDB {
 		return _HYPERSONIC;
 	}
 
+	@Override
 	protected boolean isSupportsDDLRollback() {
-		return _SUPPORTS_DDL_ROLLBACK;
+		return false;
 	}
 
+	@Override
 	protected boolean isSupportsDuplicatedIndexName() {
-		return _SUPPORTS_DUPLICATED_INDEX_NAME;
+		return false;
 	}
 
 	@Override
 	protected String reword(String data) throws IOException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -328,9 +345,5 @@ public class HypersonicDB extends BaseDB {
 		Types.DOUBLE, Types.INTEGER, Types.BIGINT, Types.VARCHAR, Types.VARCHAR,
 		Types.VARCHAR
 	};
-
-	private static final boolean _SUPPORTS_DDL_ROLLBACK = false;
-
-	private static final boolean _SUPPORTS_DUPLICATED_INDEX_NAME = false;
 
 }

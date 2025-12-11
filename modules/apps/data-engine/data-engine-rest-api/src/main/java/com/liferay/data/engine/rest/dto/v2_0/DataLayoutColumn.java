@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Jeyvison Nascimento
@@ -47,61 +46,87 @@ public class DataLayoutColumn implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DataLayoutColumn.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getColumnSize() {
+		if (_columnSizeSupplier != null) {
+			columnSize = _columnSizeSupplier.get();
+
+			_columnSizeSupplier = null;
+		}
+
 		return columnSize;
 	}
 
 	public void setColumnSize(Integer columnSize) {
 		this.columnSize = columnSize;
+
+		_columnSizeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setColumnSize(
 		UnsafeSupplier<Integer, Exception> columnSizeUnsafeSupplier) {
 
-		try {
-			columnSize = columnSizeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_columnSizeSupplier = () -> {
+			try {
+				return columnSizeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer columnSize;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _columnSizeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getFieldNames() {
+		if (_fieldNamesSupplier != null) {
+			fieldNames = _fieldNamesSupplier.get();
+
+			_fieldNamesSupplier = null;
+		}
+
 		return fieldNames;
 	}
 
 	public void setFieldNames(String[] fieldNames) {
 		this.fieldNames = fieldNames;
+
+		_fieldNamesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldNames(
 		UnsafeSupplier<String[], Exception> fieldNamesUnsafeSupplier) {
 
-		try {
-			fieldNames = fieldNamesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldNamesSupplier = () -> {
+			try {
+				return fieldNamesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] fieldNames;
+
+	@JsonIgnore
+	private Supplier<String[]> _fieldNamesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -130,6 +155,8 @@ public class DataLayoutColumn implements Serializable {
 
 		sb.append("{");
 
+		Integer columnSize = getColumnSize();
+
 		if (columnSize != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -139,6 +166,8 @@ public class DataLayoutColumn implements Serializable {
 
 			sb.append(columnSize);
 		}
+
+		String[] fieldNames = getFieldNames();
 
 		if (fieldNames != null) {
 			if (sb.length() > 1) {
@@ -169,8 +198,8 @@ public class DataLayoutColumn implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.data.engine.rest.dto.v2_0.DataLayoutColumn",
 		name = "x-class-name"
 	)
@@ -216,7 +245,10 @@ public class DataLayoutColumn implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

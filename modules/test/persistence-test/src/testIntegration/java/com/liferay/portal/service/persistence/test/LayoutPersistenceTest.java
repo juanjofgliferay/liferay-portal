@@ -13,19 +13,24 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateLayoutExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.LayoutPersistence;
 import com.liferay.portal.kernel.service.persistence.LayoutUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -120,6 +125,8 @@ public class LayoutPersistenceTest {
 
 		newLayout.setUuid(RandomTestUtil.randomString());
 
+		newLayout.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newLayout.setGroupId(RandomTestUtil.nextLong());
 
 		newLayout.setCompanyId(RandomTestUtil.nextLong());
@@ -170,7 +177,7 @@ public class LayoutPersistenceTest {
 
 		newLayout.setColorSchemeId(RandomTestUtil.randomString());
 
-		newLayout.setStyleBookEntryId(RandomTestUtil.nextLong());
+		newLayout.setStyleBookEntryERC(RandomTestUtil.randomString());
 
 		newLayout.setCss(RandomTestUtil.randomString());
 
@@ -178,13 +185,14 @@ public class LayoutPersistenceTest {
 
 		newLayout.setFaviconFileEntryId(RandomTestUtil.nextLong());
 
-		newLayout.setMasterLayoutPlid(RandomTestUtil.nextLong());
+		newLayout.setMasterLayoutPageTemplateEntryERC(
+			RandomTestUtil.randomString());
 
 		newLayout.setLayoutPrototypeUuid(RandomTestUtil.randomString());
 
 		newLayout.setLayoutPrototypeLinkEnabled(RandomTestUtil.randomBoolean());
 
-		newLayout.setSourcePrototypeLayoutUuid(RandomTestUtil.randomString());
+		newLayout.setLayoutSetPrototypeLayoutERC(RandomTestUtil.randomString());
 
 		newLayout.setPublishDate(RandomTestUtil.nextDate());
 
@@ -208,6 +216,9 @@ public class LayoutPersistenceTest {
 		Assert.assertEquals(
 			existingLayout.getCtCollectionId(), newLayout.getCtCollectionId());
 		Assert.assertEquals(existingLayout.getUuid(), newLayout.getUuid());
+		Assert.assertEquals(
+			existingLayout.getExternalReferenceCode(),
+			newLayout.getExternalReferenceCode());
 		Assert.assertEquals(existingLayout.getPlid(), newLayout.getPlid());
 		Assert.assertEquals(
 			existingLayout.getGroupId(), newLayout.getGroupId());
@@ -255,8 +266,8 @@ public class LayoutPersistenceTest {
 		Assert.assertEquals(
 			existingLayout.getColorSchemeId(), newLayout.getColorSchemeId());
 		Assert.assertEquals(
-			existingLayout.getStyleBookEntryId(),
-			newLayout.getStyleBookEntryId());
+			existingLayout.getStyleBookEntryERC(),
+			newLayout.getStyleBookEntryERC());
 		Assert.assertEquals(existingLayout.getCss(), newLayout.getCss());
 		Assert.assertEquals(
 			existingLayout.getPriority(), newLayout.getPriority());
@@ -264,8 +275,8 @@ public class LayoutPersistenceTest {
 			existingLayout.getFaviconFileEntryId(),
 			newLayout.getFaviconFileEntryId());
 		Assert.assertEquals(
-			existingLayout.getMasterLayoutPlid(),
-			newLayout.getMasterLayoutPlid());
+			existingLayout.getMasterLayoutPageTemplateEntryERC(),
+			newLayout.getMasterLayoutPageTemplateEntryERC());
 		Assert.assertEquals(
 			existingLayout.getLayoutPrototypeUuid(),
 			newLayout.getLayoutPrototypeUuid());
@@ -273,8 +284,8 @@ public class LayoutPersistenceTest {
 			existingLayout.isLayoutPrototypeLinkEnabled(),
 			newLayout.isLayoutPrototypeLinkEnabled());
 		Assert.assertEquals(
-			existingLayout.getSourcePrototypeLayoutUuid(),
-			newLayout.getSourcePrototypeLayoutUuid());
+			existingLayout.getLayoutSetPrototypeLayoutERC(),
+			newLayout.getLayoutSetPrototypeLayoutERC());
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingLayout.getPublishDate()),
 			Time.getShortTimestamp(newLayout.getPublishDate()));
@@ -290,6 +301,25 @@ public class LayoutPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingLayout.getStatusDate()),
 			Time.getShortTimestamp(newLayout.getStatusDate()));
+	}
+
+	@Test(expected = DuplicateLayoutExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		Layout layout = addLayout();
+
+		Layout newLayout = addLayout();
+
+		newLayout.setGroupId(layout.getGroupId());
+
+		newLayout = _persistence.update(newLayout);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newLayout);
+
+		newLayout.setExternalReferenceCode(layout.getExternalReferenceCode());
+
+		_persistence.update(newLayout);
 	}
 
 	@Test
@@ -360,12 +390,12 @@ public class LayoutPersistenceTest {
 	}
 
 	@Test
-	public void testCountBySourcePrototypeLayoutUuid() throws Exception {
-		_persistence.countBySourcePrototypeLayoutUuid("");
+	public void testCountByLayoutSetPrototypeLayoutERC() throws Exception {
+		_persistence.countByLayoutSetPrototypeLayoutERC("");
 
-		_persistence.countBySourcePrototypeLayoutUuid("null");
+		_persistence.countByLayoutSetPrototypeLayoutERC("null");
 
-		_persistence.countBySourcePrototypeLayoutUuid((String)null);
+		_persistence.countByLayoutSetPrototypeLayoutERC((String)null);
 	}
 
 	@Test
@@ -386,11 +416,12 @@ public class LayoutPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_MLP() throws Exception {
-		_persistence.countByG_MLP(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+	public void testCountByG_MLPTEERC() throws Exception {
+		_persistence.countByG_MLPTEERC(RandomTestUtil.nextLong(), "");
 
-		_persistence.countByG_MLP(0L, 0L);
+		_persistence.countByG_MLPTEERC(0L, "null");
+
+		_persistence.countByG_MLPTEERC(0L, (String)null);
 	}
 
 	@Test
@@ -416,6 +447,13 @@ public class LayoutPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_C(0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_CArrayable() throws Exception {
+		_persistence.countByC_C(
+			RandomTestUtil.nextLong(),
+			new long[] {RandomTestUtil.nextLong(), 0L});
 	}
 
 	@Test
@@ -464,6 +502,16 @@ public class LayoutPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_P_S() throws Exception {
+		_persistence.countByG_P_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(),
+			RandomTestUtil.randomBoolean());
+
+		_persistence.countByG_P_S(
+			0L, RandomTestUtil.randomBoolean(), RandomTestUtil.randomBoolean());
+	}
+
+	@Test
 	public void testCountByG_P_F() throws Exception {
 		_persistence.countByG_P_F(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
@@ -475,14 +523,14 @@ public class LayoutPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_P_SPLU() throws Exception {
-		_persistence.countByG_P_SPLU(
+	public void testCountByG_P_LSPLE() throws Exception {
+		_persistence.countByG_P_LSPLE(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
 
-		_persistence.countByG_P_SPLU(
+		_persistence.countByG_P_LSPLE(
 			0L, RandomTestUtil.randomBoolean(), "null");
 
-		_persistence.countByG_P_SPLU(
+		_persistence.countByG_P_LSPLE(
 			0L, RandomTestUtil.randomBoolean(), (String)null);
 	}
 
@@ -551,6 +599,15 @@ public class LayoutPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		Layout newLayout = addLayout();
 
@@ -575,6 +632,24 @@ public class LayoutPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -582,19 +657,19 @@ public class LayoutPersistenceTest {
 	protected OrderByComparator<Layout> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"Layout", "mvccVersion", true, "ctCollectionId", true, "uuid", true,
-			"plid", true, "groupId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"parentPlid", true, "privateLayout", true, "layoutId", true,
-			"parentLayoutId", true, "classNameId", true, "classPK", true,
-			"name", true, "keywords", true, "robots", true, "type", true,
-			"hidden", true, "system", true, "friendlyURL", true, "iconImageId",
-			true, "themeId", true, "colorSchemeId", true, "styleBookEntryId",
-			true, "priority", true, "faviconFileEntryId", true,
-			"masterLayoutPlid", true, "layoutPrototypeUuid", true,
-			"layoutPrototypeLinkEnabled", true, "sourcePrototypeLayoutUuid",
-			true, "publishDate", true, "lastPublishDate", true, "status", true,
-			"statusByUserId", true, "statusByUserName", true, "statusDate",
-			true);
+			"externalReferenceCode", true, "plid", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "parentPlid", true, "privateLayout",
+			true, "layoutId", true, "parentLayoutId", true, "classNameId", true,
+			"classPK", true, "name", true, "keywords", true, "robots", true,
+			"type", true, "hidden", true, "system", true, "friendlyURL", true,
+			"iconImageId", true, "themeId", true, "colorSchemeId", true,
+			"styleBookEntryERC", true, "priority", true, "faviconFileEntryId",
+			true, "masterLayoutPageTemplateEntryERC", true,
+			"layoutPrototypeUuid", true, "layoutPrototypeLinkEnabled", true,
+			"layoutSetPrototypeLayoutERC", true, "publishDate", true,
+			"lastPublishDate", true, "status", true, "statusByUserId", true,
+			"statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -863,34 +938,6 @@ public class LayoutPersistenceTest {
 				"privateLayout"));
 
 		Assert.assertEquals(
-			Long.valueOf(layout.getIconImageId()),
-			ReflectionTestUtil.<Long>invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"iconImageId"));
-
-		Assert.assertEquals(
-			Boolean.valueOf(layout.getPrivateLayout()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"privateLayout"));
-		Assert.assertEquals(
-			Long.valueOf(layout.getIconImageId()),
-			ReflectionTestUtil.<Long>invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"iconImageId"));
-
-		Assert.assertEquals(
-			Long.valueOf(layout.getClassNameId()),
-			ReflectionTestUtil.<Long>invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"classNameId"));
-		Assert.assertEquals(
-			Long.valueOf(layout.getClassPK()),
-			ReflectionTestUtil.<Long>invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"classPK"));
-
-		Assert.assertEquals(
 			Long.valueOf(layout.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(
 				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -923,20 +970,15 @@ public class LayoutPersistenceTest {
 				"friendlyURL"));
 
 		Assert.assertEquals(
+			layout.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"externalReferenceCode"));
+		Assert.assertEquals(
 			Long.valueOf(layout.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(
 				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
 				"groupId"));
-		Assert.assertEquals(
-			Boolean.valueOf(layout.getPrivateLayout()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"privateLayout"));
-		Assert.assertEquals(
-			layout.getSourcePrototypeLayoutUuid(),
-			ReflectionTestUtil.invoke(
-				layout, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"sourcePrototypeLayoutUuid"));
 	}
 
 	protected Layout addLayout() throws Exception {
@@ -949,6 +991,8 @@ public class LayoutPersistenceTest {
 		layout.setCtCollectionId(RandomTestUtil.nextLong());
 
 		layout.setUuid(RandomTestUtil.randomString());
+
+		layout.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		layout.setGroupId(RandomTestUtil.nextLong());
 
@@ -1000,7 +1044,7 @@ public class LayoutPersistenceTest {
 
 		layout.setColorSchemeId(RandomTestUtil.randomString());
 
-		layout.setStyleBookEntryId(RandomTestUtil.nextLong());
+		layout.setStyleBookEntryERC(RandomTestUtil.randomString());
 
 		layout.setCss(RandomTestUtil.randomString());
 
@@ -1008,13 +1052,14 @@ public class LayoutPersistenceTest {
 
 		layout.setFaviconFileEntryId(RandomTestUtil.nextLong());
 
-		layout.setMasterLayoutPlid(RandomTestUtil.nextLong());
+		layout.setMasterLayoutPageTemplateEntryERC(
+			RandomTestUtil.randomString());
 
 		layout.setLayoutPrototypeUuid(RandomTestUtil.randomString());
 
 		layout.setLayoutPrototypeLinkEnabled(RandomTestUtil.randomBoolean());
 
-		layout.setSourcePrototypeLayoutUuid(RandomTestUtil.randomString());
+		layout.setLayoutSetPrototypeLayoutERC(RandomTestUtil.randomString());
 
 		layout.setPublishDate(RandomTestUtil.nextDate());
 

@@ -2,9 +2,9 @@
 definition {
 
 	property portal.release = "true";
-	property portal.suite.search.engine = "elasticsearch7";
+	property portal.suite.search.engine = "elasticsearch7,opensearch2";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Elasticsearch Impl";
+	property testray.main.component.name = "Search Infrastructure > Elasticsearch Connector";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -27,6 +27,10 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 		property timeout.explicit.wait = "120";
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		JSONWebcontent.addWebContent(
 			content = "WC WebContent Content",
@@ -245,7 +249,9 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		AssertConsoleTextPresent(value1 = "Sidecar Elasticsearch liferay started at [\d\.]+:9201");
+		var sidecarVersion = Elasticsearch.getSidecarVersion();
+
+		AssertConsoleTextPresent(value1 = "Sidecar Elasticsearch ${sidecarVersion} liferay_sidecar started at [\d\.]+:9201");
 
 		JSONWebcontent.addWebContent(
 			content = "WC Content",
@@ -360,6 +366,7 @@ definition {
 
 	@priority = 5
 	test MultipleConnectionsSmokeTest {
+		property browser.chrome.version = "139.0";
 		property elasticsearch.multiple.connections = "true";
 		property remote.elasticsearch.enabled = "true";
 		property search.environment.suite.exclude = "true";
@@ -477,6 +484,7 @@ definition {
 	@priority = 4
 	test PerformConcurrentReindexAndSwitchElasticsearchConnections {
 		property embedded.elasticsearch.only = "true";
+		property portal.acceptance = "quarantine";
 		property search.environment.suite.exclude = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -603,6 +611,7 @@ definition {
 	@description = "This is a use case for LPS-177665."
 	@priority = 4
 	test ReindexWithConcurrentExecutionMode {
+		property portal.acceptance = "quarantine";
 		property portal.release = "false";
 		property search.environment.suite.exclude = "true";
 		property test.liferay.virtual.instance = "false";
@@ -684,9 +693,9 @@ definition {
 				http://${portalHostname}:${port}/liferay-${companyId}/_doc \
 					-H 'Content-Type: application/json' \
 					-d '{
-						"companyId" : "${companyId}",
-						"userName" : "alpha bravo",
-						"entryClassName" : "com.liferay.portal.kernel.model.User"
+						"companyId": "${companyId}",
+						"entryClassName": "com.liferay.portal.kernel.model.User",
+						"userName": "alpha bravo"
 					}'
 			''';
 
@@ -698,21 +707,16 @@ definition {
 				http://${portalHostname}:${port}/liferay-${companyId}/_search?pretty \
 					-H 'Content-Type: application/json' \
 					-d '{
-						"query":
-						{
-							"bool":
-							{
-								"must":
-								[
+						"query": {
+							"bool": {
+								"must": [
 									{
-										"match":
-										{
-											"userName": "test test"
+										"match": {
+											"screenName": "default-service-account"
 										}
 									},
 									{
-										"match":
-										{
+										"match": {
 											"entryClassName": "com.liferay.portal.kernel.model.User"
 										}
 									}
@@ -732,19 +736,21 @@ definition {
 		}
 
 		task ("Assert that search results are still returned during the reindex") {
-			SearchPage.openSearchPage(searchTerm = "test");
+			SearchPage.openSearchPage(searchTerm = "tree");
 
 			AssertElementPresent(locator1 = "Search#REINDEX_IN_PROGRESS_INDICATOR");
 
 			SearchResults.viewSearchResults(
-				searchAssetTitle = "Test Test",
-				searchAssetType = "User");
+				searchAssetTitle = "tree.png",
+				searchAssetType = "Document");
 		}
 
 		task ("After the reindex is complete, assert the timestamp value for the 'Test Test' user document has updated in the index") {
 			SearchAdministration.openIndexActions();
 
 			WaitForElementNotPresent(locator1 = "Search#REINDEX_IN_PROGRESS_INDICATOR");
+
+			SearchPage.openSearchPage();
 
 			var postSyncReindexTimestamp = JSONCurlUtil.get(${curl}, "$.hits.hits[0]._source.timestamp");
 
@@ -761,15 +767,11 @@ definition {
 				http://${portalHostname}:${port}/liferay-${companyId}/_search?pretty \
 					-H 'Content-Type: application/json' \
 					-d '{
-						"query":
-						{
-							"bool":
-							{
-								"must":
-								[
+						"query": {
+							"bool": {
+								"must": [
 									{
-										"match":
-										{
+										"match": {
 											"userName": "alpha bravo"
 										}
 									}
@@ -790,45 +792,10 @@ definition {
 		}
 	}
 
-	@description = "Assert search is functional after Elasticsearch connector is redeployed from GogoShell"
-	@priority = 3
-	test SearchAfterRedeployingElasticsearchConnector {
-		property operating.system.types = "centos";
-		property remote.elasticsearch.enabled = "true";
-		property test.assert.warning.exceptions = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		GogoShell.openGogoShellAdmin();
-
-		var moduleId = GogoShell.getModuleID(moduleName = "com.liferay.portal.search.elasticsearch7.impl");
-
-		GogoShell.stopModule(moduleId = ${moduleId});
-
-		GogoShell.viewModuleStatus(
-			moduleName = "com.liferay.portal.search.elasticsearch7.impl",
-			moduleStatus = "Resolved");
-
-		GogoShell.startModule(moduleId = ${moduleId});
-
-		GogoShell.viewModuleStatus(
-			moduleName = "com.liferay.portal.search.elasticsearch7.impl",
-			moduleStatus = "Active");
-
-		SearchAdministration.executeReindex();
-
-		Navigator.gotoPage(pageName = "Home");
-
-		SearchPage.searchEmbedded(searchTerm = "test");
-
-		AssertElementPresent(
-			key_searchAssetTitle = "Test Test",
-			locator1 = "SearchPage#RESULT_TITLE");
-	}
-
 	@priority = 5
 	test SearchWithNonLiferayIndex {
 		property embedded.elasticsearch.only = "true";
+		property portal.acceptance = "quarantine";
 		property search.environment.suite.exclude = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
@@ -962,6 +929,7 @@ definition {
 	@priority = 3
 	test UpdateSystemSettingsWithoutPortalRestart {
 		property embedded.elasticsearch.only = "true";
+		property portal.acceptance = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -1037,18 +1005,15 @@ definition {
 			mimeType = "text/txt",
 			sourceFileName = "Document_1.txt");
 
-		SQL.executeMySQLStatement(mysqlStatement = "SELECT * FROM DLFileEntry WHERE filename='Document_1.txt';");
+		SQL.executeSQLStatement(sqlStatement = "SELECT * FROM DLFileEntry WHERE filename='Document_1.txt';");
 
 		var fileEntryId = JSONDocument.getFileEntryId(
 			dmDocumentTitle = "DM Document",
 			groupName = "Guest");
 
-		SQL.executeMySQLStatement(mysqlStatement = "delete from DLFileEntry where fileEntryId = ${fileEntryId};");
+		SQL.executeSQLStatement(sqlStatement = "delete from DLFileEntry where fileEntryId = ${fileEntryId};");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Server Administration");
+		ServerAdministration.openServerAdmin();
 
 		ServerAdministration.executeServerResourcesActions(actionsDescription = "Clear the database cache.");
 

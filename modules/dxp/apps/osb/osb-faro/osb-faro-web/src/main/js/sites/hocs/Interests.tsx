@@ -1,16 +1,17 @@
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import Constants, {
 	CompositionTypes,
 	RangeKeyTimeRanges,
 	Sizes
 } from 'shared/util/constants';
-import DropdownRangeKey from 'shared/hoc/DropdownRangeKey';
 import InterestsQuery from 'shared/queries/InterestsQuery';
 import React from 'react';
 import URLConstants from 'shared/util/url-constants';
 import {compose} from 'redux';
 import {compositionListColumns} from 'shared/util/table-columns';
 import {COUNT, createOrderIOMap} from 'shared/util/pagination';
+import {DropdownRangeKey} from 'shared/components/dropdown-range-key/DropdownRangeKey';
 import {
 	getMapResultToProps,
 	mapPropsToOptions
@@ -21,7 +22,8 @@ import {Routes, setUriQueryValues, toRoute} from 'shared/util/router';
 import {sub} from 'shared/util/lang';
 import {useChannelContext} from 'shared/context/channel';
 import {useParams} from 'react-router-dom';
-import {useQueryPagination, useQueryRangeSelectors} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 import {withHistory, withPaginationBar, withTableData} from 'shared/hoc';
 
 const {
@@ -46,19 +48,19 @@ const TableWithData = withTableData(withData, {
 				)}
 			</span>
 
-			<a
+			<ClayLink
 				href={URLConstants.SitesDashboardSearchTermsAndInterests}
 				key='DOCUMENTATION'
 				target='_blank'
 			>
 				{Liferay.Language.get('learn-more-about-interests')}
-			</a>
+			</ClayLink>
 		</>
 	),
 	emptyIcon: {
 		border: false,
 		size: Sizes.XXXLarge,
-		symbol: 'ac-satellite'
+		symbol: 'ac_satellite'
 	},
 	emptyTitle: Liferay.Language.get('there-are-no-interests-found'),
 	getColumns: ({
@@ -70,7 +72,7 @@ const TableWithData = withTableData(withData, {
 	}) => [
 		compositionListColumns.getName({
 			label: Liferay.Language.get('topic'),
-			maxWidth: null,
+			maxWidth: 200,
 			routeFn: ({data: {name}}) =>
 				name &&
 				setUriQueryValues(
@@ -135,7 +137,7 @@ const Interests = ({history}) => {
 
 				<DropdownRangeKey
 					legacy={false}
-					onChange={handleRangeKeyValueChange}
+					onRangeSelectorChange={handleRangeKeyValueChange}
 					rangeKeys={rangeKeys}
 					rangeSelectors={rangeSelectors}
 				/>

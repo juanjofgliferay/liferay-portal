@@ -5,17 +5,16 @@
 
 package com.liferay.map.google.maps.internal;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.map.BaseJSPMapProvider;
 import com.liferay.map.MapProvider;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,19 +60,10 @@ public class GoogleMapsMapProvider extends BaseJSPMapProvider {
 
 	@Override
 	protected void prepareRequest(HttpServletRequest httpServletRequest) {
-		String resolvedModuleName = _npmResolver.resolveModuleName(
-			"@liferay/map-google-maps/js/MapGoogleMaps");
-
-		httpServletRequest.setAttribute(
-			"liferay-map:map:bootstrapRequire",
-			resolvedModuleName + " as MapGoogleMaps");
 	}
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.map.google.maps)")
 	private ServletContext _servletContext;

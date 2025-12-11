@@ -102,6 +102,9 @@ public class UserGroupModelImpl
 
 	public static final String ORDER_BY_SQL = " ORDER BY UserGroup.name ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY userGroup.name ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -214,7 +217,7 @@ public class UserGroupModelImpl
 	public static final boolean FINDER_CACHE_ENABLED_USERS_USERGROUPS = true;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.UserGroup"));
 
 	public UserGroupModelImpl() {

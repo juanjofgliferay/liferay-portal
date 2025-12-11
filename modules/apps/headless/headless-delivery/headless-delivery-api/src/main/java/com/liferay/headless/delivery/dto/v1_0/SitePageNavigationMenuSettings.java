@@ -7,6 +7,7 @@ package com.liferay.headless.delivery.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -18,7 +19,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -26,12 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -56,58 +56,83 @@ public class SitePageNavigationMenuSettings implements Serializable {
 			SitePageNavigationMenuSettings.class, json);
 	}
 
-	@Schema(description = "The default parameter for a page.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The default parameter for a page."
+	)
 	public String getQueryString() {
+		if (_queryStringSupplier != null) {
+			queryString = _queryStringSupplier.get();
+
+			_queryStringSupplier = null;
+		}
+
 		return queryString;
 	}
 
 	public void setQueryString(String queryString) {
 		this.queryString = queryString;
+
+		_queryStringSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setQueryString(
 		UnsafeSupplier<String, Exception> queryStringUnsafeSupplier) {
 
-		try {
-			queryString = queryStringUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_queryStringSupplier = () -> {
+			try {
+				return queryStringUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The default parameter for a page.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String queryString;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _queryStringSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The page's description to be used as summary for search engines."
 	)
 	public String getTarget() {
+		if (_targetSupplier != null) {
+			target = _targetSupplier.get();
+
+			_targetSupplier = null;
+		}
+
 		return target;
 	}
 
 	public void setTarget(String target) {
 		this.target = target;
+
+		_targetSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTarget(
 		UnsafeSupplier<String, Exception> targetUnsafeSupplier) {
 
-		try {
-			target = targetUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_targetSupplier = () -> {
+			try {
+				return targetUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -116,14 +141,28 @@ public class SitePageNavigationMenuSettings implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String target;
 
-	@Schema(description = "The target's type (specific frame or new tab).")
+	@JsonIgnore
+	private Supplier<String> _targetSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The target's type (specific frame or new tab)."
+	)
+	@JsonGetter("targetType")
 	@Valid
 	public TargetType getTargetType() {
+		if (_targetTypeSupplier != null) {
+			targetType = _targetTypeSupplier.get();
+
+			_targetTypeSupplier = null;
+		}
+
 		return targetType;
 	}
 
 	@JsonIgnore
 	public String getTargetTypeAsString() {
+		TargetType targetType = getTargetType();
+
 		if (targetType == null) {
 			return null;
 		}
@@ -133,21 +172,25 @@ public class SitePageNavigationMenuSettings implements Serializable {
 
 	public void setTargetType(TargetType targetType) {
 		this.targetType = targetType;
+
+		_targetTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTargetType(
 		UnsafeSupplier<TargetType, Exception> targetTypeUnsafeSupplier) {
 
-		try {
-			targetType = targetTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_targetTypeSupplier = () -> {
+			try {
+				return targetTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -155,6 +198,9 @@ public class SitePageNavigationMenuSettings implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected TargetType targetType;
+
+	@JsonIgnore
+	private Supplier<TargetType> _targetTypeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -185,6 +231,8 @@ public class SitePageNavigationMenuSettings implements Serializable {
 
 		sb.append("{");
 
+		String queryString = getQueryString();
+
 		if (queryString != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -198,6 +246,8 @@ public class SitePageNavigationMenuSettings implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String target = getTarget();
 
 		if (target != null) {
 			if (sb.length() > 1) {
@@ -213,6 +263,8 @@ public class SitePageNavigationMenuSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		TargetType targetType = getTargetType();
+
 		if (targetType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -221,9 +273,7 @@ public class SitePageNavigationMenuSettings implements Serializable {
 			sb.append("\"targetType\": ");
 
 			sb.append("\"");
-
 			sb.append(targetType);
-
 			sb.append("\"");
 		}
 
@@ -232,8 +282,8 @@ public class SitePageNavigationMenuSettings implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.SitePageNavigationMenuSettings",
 		name = "x-class-name"
 	)
@@ -317,7 +367,10 @@ public class SitePageNavigationMenuSettings implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

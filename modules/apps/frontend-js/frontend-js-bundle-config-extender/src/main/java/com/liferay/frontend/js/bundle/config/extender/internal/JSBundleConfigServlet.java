@@ -13,20 +13,20 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Collection;
 import java.util.Map;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -78,13 +78,13 @@ public class JSBundleConfigServlet extends HttpServlet {
 
 		PrintWriter printWriter = new PrintWriter(servletOutputStream, true);
 
-		Collection<JSBundleConfigRegistry.JSConfig> jsConfigs =
-			_jsBundleConfigRegistry.getJSConfigs();
+		Collection<JSBundleConfigRegistryUtil.JSConfig> jsConfigs =
+			JSBundleConfigRegistryUtil.getJSConfigs();
 
 		if (!jsConfigs.isEmpty()) {
-			printWriter.print("(function(){");
+			printWriter.print("(function() {");
 
-			for (JSBundleConfigRegistry.JSConfig jsConfig : jsConfigs) {
+			for (JSBundleConfigRegistryUtil.JSConfig jsConfig : jsConfigs) {
 				try {
 					printWriter.print("try{");
 
@@ -118,9 +118,6 @@ public class JSBundleConfigServlet extends HttpServlet {
 		JSBundleConfigServlet.class);
 
 	private volatile ComponentContext _componentContext;
-
-	@Reference
-	private JSBundleConfigRegistry _jsBundleConfigRegistry;
 
 	@Reference
 	private Portal _portal;

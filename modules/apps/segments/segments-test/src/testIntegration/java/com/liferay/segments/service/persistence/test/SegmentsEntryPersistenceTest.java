@@ -13,17 +13,22 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.segments.exception.DuplicateSegmentsEntryExternalReferenceCodeException;
 import com.liferay.segments.exception.NoSuchEntryException;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryLocalServiceUtil;
@@ -121,6 +126,9 @@ public class SegmentsEntryPersistenceTest {
 
 		newSegmentsEntry.setUuid(RandomTestUtil.randomString());
 
+		newSegmentsEntry.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newSegmentsEntry.setGroupId(RandomTestUtil.nextLong());
 
 		newSegmentsEntry.setCompanyId(RandomTestUtil.nextLong());
@@ -145,8 +153,6 @@ public class SegmentsEntryPersistenceTest {
 
 		newSegmentsEntry.setSource(RandomTestUtil.randomString());
 
-		newSegmentsEntry.setType(RandomTestUtil.randomString());
-
 		newSegmentsEntry.setLastPublishDate(RandomTestUtil.nextDate());
 
 		_segmentsEntries.add(_persistence.update(newSegmentsEntry));
@@ -162,6 +168,9 @@ public class SegmentsEntryPersistenceTest {
 			newSegmentsEntry.getCtCollectionId());
 		Assert.assertEquals(
 			existingSegmentsEntry.getUuid(), newSegmentsEntry.getUuid());
+		Assert.assertEquals(
+			existingSegmentsEntry.getExternalReferenceCode(),
+			newSegmentsEntry.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingSegmentsEntry.getSegmentsEntryId(),
 			newSegmentsEntry.getSegmentsEntryId());
@@ -197,10 +206,28 @@ public class SegmentsEntryPersistenceTest {
 		Assert.assertEquals(
 			existingSegmentsEntry.getSource(), newSegmentsEntry.getSource());
 		Assert.assertEquals(
-			existingSegmentsEntry.getType(), newSegmentsEntry.getType());
-		Assert.assertEquals(
 			Time.getShortTimestamp(existingSegmentsEntry.getLastPublishDate()),
 			Time.getShortTimestamp(newSegmentsEntry.getLastPublishDate()));
+	}
+
+	@Test(expected = DuplicateSegmentsEntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		SegmentsEntry segmentsEntry = addSegmentsEntry();
+
+		SegmentsEntry newSegmentsEntry = addSegmentsEntry();
+
+		newSegmentsEntry.setGroupId(segmentsEntry.getGroupId());
+
+		newSegmentsEntry = _persistence.update(newSegmentsEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newSegmentsEntry);
+
+		newSegmentsEntry.setExternalReferenceCode(
+			segmentsEntry.getExternalReferenceCode());
+
+		_persistence.update(newSegmentsEntry);
 	}
 
 	@Test
@@ -231,6 +258,19 @@ public class SegmentsEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountBySegmentsEntryId() throws Exception {
+		_persistence.countBySegmentsEntryId(RandomTestUtil.nextLong());
+
+		_persistence.countBySegmentsEntryId(0L);
+	}
+
+	@Test
+	public void testCountBySegmentsEntryIdArrayable() throws Exception {
+		_persistence.countBySegmentsEntryId(
+			new long[] {RandomTestUtil.nextLong(), 0L});
+	}
+
+	@Test
 	public void testCountByGroupId() throws Exception {
 		_persistence.countByGroupId(RandomTestUtil.nextLong());
 
@@ -256,21 +296,19 @@ public class SegmentsEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByActive() throws Exception {
+		_persistence.countByActive(RandomTestUtil.randomBoolean());
+
+		_persistence.countByActive(RandomTestUtil.randomBoolean());
+	}
+
+	@Test
 	public void testCountBySource() throws Exception {
 		_persistence.countBySource("");
 
 		_persistence.countBySource("null");
 
 		_persistence.countBySource((String)null);
-	}
-
-	@Test
-	public void testCountByType() throws Exception {
-		_persistence.countByType("");
-
-		_persistence.countByType("null");
-
-		_persistence.countByType((String)null);
 	}
 
 	@Test
@@ -298,50 +336,28 @@ public class SegmentsEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByA_T() throws Exception {
-		_persistence.countByA_T(RandomTestUtil.randomBoolean(), "");
+	public void testCountByG_SRC() throws Exception {
+		_persistence.countByG_SRC(RandomTestUtil.nextLong(), "");
 
-		_persistence.countByA_T(RandomTestUtil.randomBoolean(), "null");
+		_persistence.countByG_SRC(0L, "null");
 
-		_persistence.countByA_T(RandomTestUtil.randomBoolean(), (String)null);
+		_persistence.countByG_SRC(0L, (String)null);
 	}
 
 	@Test
-	public void testCountByG_A_T() throws Exception {
-		_persistence.countByG_A_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
-
-		_persistence.countByG_A_T(0L, RandomTestUtil.randomBoolean(), "null");
-
-		_persistence.countByG_A_T(
-			0L, RandomTestUtil.randomBoolean(), (String)null);
-	}
-
-	@Test
-	public void testCountByG_A_TArrayable() throws Exception {
-		_persistence.countByG_A_T(
+	public void testCountByG_SRCArrayable() throws Exception {
+		_persistence.countByG_SRC(
 			new long[] {RandomTestUtil.nextLong(), 0L},
-			RandomTestUtil.randomBoolean(), RandomTestUtil.randomString());
-	}
-
-	@Test
-	public void testCountByG_A_S_T() throws Exception {
-		_persistence.countByG_A_S_T(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "", "");
-
-		_persistence.countByG_A_S_T(
-			0L, RandomTestUtil.randomBoolean(), "null", "null");
-
-		_persistence.countByG_A_S_T(
-			0L, RandomTestUtil.randomBoolean(), (String)null, (String)null);
-	}
-
-	@Test
-	public void testCountByG_A_S_TArrayable() throws Exception {
-		_persistence.countByG_A_S_T(
-			new long[] {RandomTestUtil.nextLong(), 0L},
-			RandomTestUtil.randomBoolean(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString());
+	}
+
+	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -369,6 +385,24 @@ public class SegmentsEntryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -376,11 +410,11 @@ public class SegmentsEntryPersistenceTest {
 	protected OrderByComparator<SegmentsEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"SegmentsEntry", "mvccVersion", true, "ctCollectionId", true,
-			"uuid", true, "segmentsEntryId", true, "groupId", true, "companyId",
-			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "segmentsEntryKey", true, "name", true,
-			"description", true, "active", true, "source", true, "type", true,
-			"lastPublishDate", true);
+			"uuid", true, "externalReferenceCode", true, "segmentsEntryId",
+			true, "groupId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true,
+			"segmentsEntryKey", true, "name", true, "description", true,
+			"active", true, "source", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -668,6 +702,17 @@ public class SegmentsEntryPersistenceTest {
 			ReflectionTestUtil.invoke(
 				segmentsEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "segmentsEntryKey"));
+
+		Assert.assertEquals(
+			segmentsEntry.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				segmentsEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(segmentsEntry.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				segmentsEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected SegmentsEntry addSegmentsEntry() throws Exception {
@@ -680,6 +725,8 @@ public class SegmentsEntryPersistenceTest {
 		segmentsEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		segmentsEntry.setUuid(RandomTestUtil.randomString());
+
+		segmentsEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		segmentsEntry.setGroupId(RandomTestUtil.nextLong());
 
@@ -704,8 +751,6 @@ public class SegmentsEntryPersistenceTest {
 		segmentsEntry.setCriteria(RandomTestUtil.randomString());
 
 		segmentsEntry.setSource(RandomTestUtil.randomString());
-
-		segmentsEntry.setType(RandomTestUtil.randomString());
 
 		segmentsEntry.setLastPublishDate(RandomTestUtil.nextDate());
 

@@ -11,6 +11,7 @@ import {COOKIE_TYPES, checkConsent} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
+import './mini_compare.scss';
 import CommerceCookie from '../../utilities/cookies';
 import {
 	ITEM_REMOVED_FROM_COMPARE,
@@ -77,7 +78,14 @@ function Item(props) {
 }
 
 function MiniCompare(props) {
-	const [items, setItems] = useState(props.items);
+	const [items, setItems] = useState(() => {
+		const value = compareCookie.getValue(props.commerceChannelGroupId);
+		const ids = value ? value.split(':') : [];
+
+		return ids.map(
+			(id) => props.items?.find((item) => item.id === id) || {id}
+		);
+	});
 	const [functionalCookiesConsent, setFunctionalCookiesConsent] = useState(
 		checkConsent(COOKIE_TYPES.FUNCTIONAL)
 	);

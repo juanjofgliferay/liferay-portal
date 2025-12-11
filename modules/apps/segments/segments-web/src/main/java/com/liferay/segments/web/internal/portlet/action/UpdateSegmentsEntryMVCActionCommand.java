@@ -37,11 +37,11 @@ import com.liferay.segments.exception.SegmentsEntryNameException;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
 		"mvc.command.name=/segments/update_segments_entry"
 	},
 	service = MVCActionCommand.class
@@ -75,7 +75,6 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
 			actionRequest, "description");
 		boolean active = ParamUtil.getBoolean(actionRequest, "active", true);
-		String type = ParamUtil.getString(actionRequest, "type");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			SegmentsEntry.class.getName(), actionRequest);
@@ -86,7 +85,7 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 			Criteria criteria = ActionUtil.getCriteria(
 				actionRequest,
 				_segmentsCriteriaContributorRegistry.
-					getSegmentsCriteriaContributors(type));
+					getSegmentsCriteriaContributors());
 
 			boolean dynamic = ParamUtil.getBoolean(
 				actionRequest, "dynamic", true);
@@ -99,8 +98,7 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 
 				segmentsEntry = _segmentsEntryService.addSegmentsEntry(
 					segmentsEntryKey, nameMap, descriptionMap, active,
-					CriteriaSerializer.serialize(criteria), type,
-					serviceContext);
+					CriteriaSerializer.serialize(criteria), serviceContext);
 			}
 			else {
 				segmentsEntry = _segmentsEntryService.updateSegmentsEntry(

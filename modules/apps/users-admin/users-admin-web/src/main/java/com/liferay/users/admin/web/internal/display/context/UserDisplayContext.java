@@ -5,28 +5,24 @@
 
 package com.liferay.users.admin.web.internal.display.context;
 
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
 import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.GroupItemSelectorReturnType;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
 import com.liferay.organizations.item.selector.OrganizationItemSelectorCriterion;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.PasswordPolicy;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.UserGroupGroupRole;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
@@ -34,21 +30,26 @@ import com.liferay.portal.kernel.service.OrganizationServiceUtil;
 import com.liferay.portal.kernel.service.PasswordPolicyLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalServiceUtil;
-import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.membershippolicy.RoleMembershipPolicyUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.site.item.selector.SiteItemSelectorCriterion;
 import com.liferay.user.groups.admin.item.selector.UserGroupItemSelectorCriterion;
+
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -56,10 +57,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
-
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -83,7 +80,7 @@ public class UserDisplayContext {
 		_permissionChecker = themeDisplay.getPermissionChecker();
 
 		_renderResponse = (RenderResponse)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		_selUser = PortalUtil.getSelectedUser(httpServletRequest);
 		_themeDisplay = themeDisplay;
@@ -95,6 +92,26 @@ public class UserDisplayContext {
 		}
 
 		return null;
+	}
+
+	public String getGroupItemSelectorURL() {
+		ItemSelector itemSelector =
+			(ItemSelector)_httpServletRequest.getAttribute(
+				ItemSelector.class.getName());
+
+		SiteItemSelectorCriterion siteItemSelectorCriterion =
+			new SiteItemSelectorCriterion();
+
+		siteItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new GroupItemSelectorReturnType());
+		siteItemSelectorCriterion.setIncludeCompany(false);
+		siteItemSelectorCriterion.setIncludeRecentSites(false);
+
+		return String.valueOf(
+			itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				_liferayPortletResponse.getNamespace() + "selectGroup",
+				siteItemSelectorCriterion));
 	}
 
 	public List<Group> getGroups() throws PortalException {
@@ -114,8 +131,13 @@ public class UserDisplayContext {
 		SortedSet<Group> inheritedSiteGroupsSet = new TreeSet<>();
 
 		inheritedSiteGroupsSet.addAll(
-			GroupLocalServiceUtil.getUserGroupsRelatedGroups(getUserGroups()));
-		inheritedSiteGroupsSet.addAll(_getOrganizationRelatedGroups());
+			ListUtil.filter(
+				GroupLocalServiceUtil.getUserGroupsRelatedGroups(
+					getUserGroups()),
+				group -> !group.isDepot()));
+		inheritedSiteGroupsSet.addAll(
+			ListUtil.filter(
+				_getOrganizationRelatedGroups(), group -> !group.isDepot()));
 
 		return ListUtil.fromCollection(inheritedSiteGroupsSet);
 	}
@@ -153,7 +175,8 @@ public class UserDisplayContext {
 	}
 
 	public List<UserGroupRole> getOrganizationRoles() throws PortalException {
-		return ListUtil.filter(_getUserGroupRoles(), this::_isOrganizationRole);
+		return ListUtil.filter(
+			_getUserGroupRoles(), UserGroupRole::hasOrganizationRole);
 	}
 
 	public List<Organization> getOrganizations() throws PortalException {
@@ -231,7 +254,8 @@ public class UserDisplayContext {
 	}
 
 	public List<UserGroupRole> getSiteRoles() throws PortalException {
-		return ListUtil.filter(_getUserGroupRoles(), this::_isSiteRole);
+		return ListUtil.filter(
+			_getUserGroupRoles(), UserGroupRole::hasSiteRole);
 	}
 
 	public String getUserGroupItemSelectorURL() {
@@ -267,32 +291,10 @@ public class UserDisplayContext {
 			_permissionChecker, _selUser.getUserGroups());
 	}
 
-	public List<NavigationItem> getViewNavigationItems() {
-		String toolbarItem = ParamUtil.getString(
-			_httpServletRequest, "toolbarItem", "view-all-users");
-
-		return NavigationItemListBuilder.add(
-			navigationItem -> {
-				navigationItem.setActive(toolbarItem.equals("view-all-users"));
-				navigationItem.setHref(
-					_renderResponse.createRenderURL(), "toolbarItem",
-					"view-all-users", "usersListView",
-					UserConstants.LIST_VIEW_FLAT_USERS);
-				navigationItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "users"));
-			}
-		).add(
-			navigationItem -> {
-				navigationItem.setActive(
-					toolbarItem.equals("view-all-organizations"));
-				navigationItem.setHref(
-					_renderResponse.createRenderURL(), "toolbarItem",
-					"view-all-organizations", "usersListView",
-					UserConstants.LIST_VIEW_FLAT_ORGANIZATIONS);
-				navigationItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "organizations"));
-			}
-		).build();
+	public boolean hasUpdatePermission() {
+		return UserPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(), _selUser.getUserId(),
+			ActionKeys.UPDATE);
 	}
 
 	public boolean isAllowRemoveRole(Role role) throws PortalException {
@@ -350,7 +352,8 @@ public class UserDisplayContext {
 				organization.getParentOrganization();
 
 			if ((parentOrganization != null) &&
-				!organizations.contains(parentOrganization)) {
+				!organizations.contains(parentOrganization) &&
+				!parentOrganizations.contains(parentOrganization)) {
 
 				parentOrganizations.add(parentOrganization);
 			}
@@ -385,9 +388,7 @@ public class UserDisplayContext {
 			return Collections.emptyList();
 		}
 
-		List<UserGroupRole> userGroupRoles =
-			UserGroupRoleLocalServiceUtil.getUserGroupRoles(
-				_selUser.getUserId());
+		List<UserGroupRole> userGroupRoles = _selUser.getUserGroupRoles();
 
 		if (!_initDisplayContext.isFilterManageableUserGroupRoles()) {
 			return userGroupRoles;
@@ -396,41 +397,6 @@ public class UserDisplayContext {
 		return UsersAdminUtil.filterUserGroupRoles(
 			_permissionChecker, userGroupRoles);
 	}
-
-	private boolean _isOrganizationRole(UserGroupRole userGroupRole) {
-		Role role = RoleLocalServiceUtil.fetchRole(userGroupRole.getRoleId());
-
-		if ((role != null) &&
-			(role.getType() == RoleConstants.TYPE_ORGANIZATION)) {
-
-			return true;
-		}
-
-		return false;
-	}
-
-	private boolean _isSiteRole(UserGroupRole userGroupRole) {
-		try {
-			Group group = userGroupRole.getGroup();
-			Role role = userGroupRole.getRole();
-
-			if ((group != null) && group.isSite() && (role != null) &&
-				(role.getType() == RoleConstants.TYPE_SITE)) {
-
-				return true;
-			}
-		}
-		catch (PortalException portalException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(portalException);
-			}
-		}
-
-		return false;
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		UserDisplayContext.class);
 
 	private final HttpServletRequest _httpServletRequest;
 	private final InitDisplayContext _initDisplayContext;

@@ -6,6 +6,7 @@
 package com.liferay.portal.kernel.dao.db;
 
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 
 import java.io.IOException;
@@ -36,6 +37,11 @@ public interface DB {
 	public void addIndexes(
 			Connection connection, List<IndexMetadata> indexMetadatas)
 		throws IOException, SQLException;
+
+	public SafeCloseable addTemporaryIndex(
+			Connection connection, String tableName, boolean unique,
+			String... columnNames)
+		throws Exception;
 
 	public void alterColumnName(
 			Connection connection, String tableName, String oldColumnName,
@@ -68,9 +74,15 @@ public interface DB {
 			Connection connection, String tableName, String newTableName)
 		throws Exception;
 
+	public void dropIndexes(
+			Connection connection, List<String> indexNames, String tableName)
+		throws Exception;
+
 	public List<IndexMetadata> dropIndexes(
 			Connection connection, String tableName, String columnName)
 		throws IOException, SQLException;
+
+	public String getCharacterSet(Connection connection) throws SQLException;
 
 	public DBType getDBType();
 
@@ -78,7 +90,13 @@ public interface DB {
 
 	public List<Index> getIndexes(Connection connection) throws SQLException;
 
-	public ResultSet getIndexResultSet(Connection connection, String tableName)
+	public List<IndexMetadata> getIndexMetadatas(
+			Connection connection, String tableName, String columnName,
+			boolean onlyUnique)
+		throws SQLException;
+
+	public ResultSet getIndexResultSet(
+			Connection connection, String tableName, boolean onlyUnique)
 		throws SQLException;
 
 	public int getMajorVersion();
@@ -114,6 +132,11 @@ public interface DB {
 	public boolean isSupportsAlterColumnName();
 
 	public boolean isSupportsAlterColumnType();
+
+	public boolean isSupportsCharacterSet(Connection connection)
+		throws SQLException;
+
+	public boolean isSupportsDBPartition();
 
 	public boolean isSupportsInlineDistinct();
 
@@ -167,12 +190,36 @@ public interface DB {
 
 	public void runSQL(String[] sqls) throws IOException, SQLException;
 
-	public void runSQLTemplateString(
+	public void runSQLTemplate(
 			Connection connection, String template, boolean failOnError)
 		throws IOException, NamingException, SQLException;
 
-	public void runSQLTemplateString(String template, boolean failOnError)
+	public void runSQLTemplate(String template, boolean failOnError)
 		throws IOException, NamingException, SQLException;
+
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 *             #runSQLTemplate(Connection, String, boolean)}
+	 */
+	@Deprecated
+	public default void runSQLTemplateString(
+			Connection connection, String template, boolean failOnError)
+		throws IOException, NamingException, SQLException {
+
+		runSQLTemplate(connection, template, failOnError);
+	}
+
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 *             #runSQLTemplate(String, boolean)}
+	 */
+	@Deprecated
+	public default void runSQLTemplateString(
+			String template, boolean failOnError)
+		throws IOException, NamingException, SQLException {
+
+		runSQLTemplate(template, failOnError);
+	}
 
 	public void setSupportsStringCaseSensitiveQuery(
 		boolean supportsStringCaseSensitiveQuery);
@@ -184,8 +231,13 @@ public interface DB {
 		throws Exception;
 
 	public void updateIndexes(
-			Connection connection, String tablesSQL, String indexesSQL,
+			Connection connection, String tableName, String indexesSQL,
 			boolean dropStaleIndexes)
+		throws Exception;
+
+	public void updatePrimaryKey(
+			Connection connection, String tableName,
+			String[] primaryKeyColumnNames)
 		throws Exception;
 
 }

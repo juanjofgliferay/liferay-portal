@@ -86,7 +86,7 @@ public class SegmentsCompanyConfigurationDisplayContextTest {
 			new MockHttpServletRequest();
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE,
+			JavaConstants.JAKARTA_PORTLET_RESPONSE,
 			new MockLiferayPortletRenderResponse());
 		mockHttpServletRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, _getThemeDisplay());
@@ -114,7 +114,7 @@ public class SegmentsCompanyConfigurationDisplayContextTest {
 	private CompanyLocalService _companyLocalService;
 
 	@Inject(
-		filter = "component.name=com.liferay.segments.web.internal.configuration.display.SegmentsCompanyConfigurationScreen"
+		filter = "component.name=com.liferay.segments.web.internal.configuration.admin.display.SegmentsCompanyConfigurationScreen"
 	)
 	private ConfigurationScreen _configurationScreen;
 

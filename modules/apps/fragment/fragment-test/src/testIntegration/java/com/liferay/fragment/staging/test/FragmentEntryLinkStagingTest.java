@@ -13,9 +13,9 @@ import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentCollectionLocalServiceUtil;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
-import com.liferay.fragment.util.FragmentEntryTestUtil;
-import com.liferay.fragment.util.FragmentStagingTestUtil;
-import com.liferay.fragment.util.FragmentTestUtil;
+import com.liferay.fragment.test.util.FragmentEntryTestUtil;
+import com.liferay.fragment.test.util.FragmentStagingTestUtil;
+import com.liferay.fragment.test.util.FragmentTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -196,8 +196,9 @@ public class FragmentEntryLinkStagingTest {
 				liveFragmentEntryLink.getUuid(), _liveGroup.getGroupId());
 
 		FragmentEntry liveFragmentEntry =
-			_fragmentEntryLocalService.getFragmentEntry(
-				liveFragmentEntryLink.getFragmentEntryId());
+			_fragmentEntryLocalService.getFragmentEntryByExternalReferenceCode(
+				liveFragmentEntryLink.getFragmentEntryERC(),
+				liveFragmentEntryLink.getFragmentEntryGroupId());
 
 		Assert.assertEquals(
 			liveFragmentEntryLink.getGroupId(), liveFragmentEntry.getGroupId());
@@ -210,8 +211,9 @@ public class FragmentEntryLinkStagingTest {
 				liveFragmentEntryLink.getUuid(), _liveGroup.getGroupId());
 
 		Assert.assertNotNull(
-			_fragmentEntryLocalService.getFragmentEntry(
-				fragmentEntryLink.getFragmentEntryId()));
+			_fragmentEntryLocalService.getFragmentEntryByExternalReferenceCode(
+				fragmentEntryLink.getFragmentEntryERC(),
+				fragmentEntryLink.getFragmentEntryGroupId()));
 	}
 
 	@Inject

@@ -3,13 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {Action} from '../../plugins/page_rules/components/Action';
-import {Condition} from '../../plugins/page_rules/components/Condition';
 import {ConditionType} from '../../plugins/page_rules/components/RuleBuilderSection';
+import {Action, Condition} from '../../types/Rule';
 import {LayoutData} from '../../types/layout_data/LayoutData';
-import updateNetwork from '../actions/updateNetwork';
 import {config} from '../config/index';
-import draftServiceFetch from './draftServiceFetch';
+import draftServiceFetch, {OnNetworkStatus} from './draftServiceFetch';
 import serviceFetch from './serviceFetch';
 
 /**
@@ -20,7 +18,7 @@ type AddRuleProps = {
 	conditionType: ConditionType;
 	conditions: Condition[];
 	name: string;
-	onNetworkStatus: (action: ReturnType<typeof updateNetwork>) => void;
+	onNetworkStatus: OnNetworkStatus;
 	segmentsExperienceId: string;
 };
 
@@ -51,7 +49,7 @@ function addRule({
  * Delete a rule
  */
 type DeleteRuleProps = {
-	onNetworkStatus: (action: ReturnType<typeof updateNetwork>) => void;
+	onNetworkStatus: OnNetworkStatus;
 	ruleId: string;
 	segmentsExperienceId: string;
 };
@@ -77,14 +75,14 @@ function deleteRule({
  * Get roles
  */
 function getRoles(): Promise<Array<{name: string; roleId: string}>> {
-	return serviceFetch(config.getRolesURL, {});
+	return serviceFetch(config.getRolesURL, {method: 'GET'});
 }
 
 /**
  * Get users
  */
 function getUsers(): Promise<Array<{screenName: string; userId: string}>> {
-	return serviceFetch(config.getUsersURL, {});
+	return serviceFetch(config.getUsersURL, {method: 'GET'});
 }
 
 /**
@@ -95,7 +93,7 @@ type UpdateRuleProps = {
 	conditionType: ConditionType;
 	conditions: Condition[];
 	name: string;
-	onNetworkStatus: (action: ReturnType<typeof updateNetwork>) => void;
+	onNetworkStatus: OnNetworkStatus;
 	ruleId: string;
 	segmentsExperienceId: string;
 };

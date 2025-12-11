@@ -15,8 +15,7 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchFixture;
-import com.liferay.portal.search.elasticsearch7.internal.document.DefaultElasticsearchDocumentFactory;
-import com.liferay.portal.search.elasticsearch7.internal.document.ElasticsearchDocumentFactory;
+import com.liferay.portal.search.elasticsearch7.internal.index.constants.IndexMappingsConstants;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.document.DocumentRequestExecutorFixture;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.document.BulkDocumentItemResponse;
@@ -44,7 +43,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -53,6 +51,7 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.xcontent.XContentType;
 
@@ -110,13 +109,14 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 	public void testExecuteBulkDocumentRequest() {
 		Document document1 = new DocumentImpl();
 
-		document1.addKeyword(Field.UID, "1");
 		document1.addKeyword(_FIELD_NAME, Boolean.TRUE.toString());
+		document1.addKeyword(Field.UID, "1");
 
 		IndexDocumentRequest indexDocumentRequest1 = new IndexDocumentRequest(
 			_INDEX_NAME, document1);
 
-		indexDocumentRequest1.setType(_MAPPING_NAME);
+		indexDocumentRequest1.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		BulkDocumentRequest bulkDocumentRequest1 = new BulkDocumentRequest();
 
@@ -124,13 +124,14 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 
 		Document document2 = new DocumentImpl();
 
-		document2.addKeyword(Field.UID, "2");
 		document2.addKeyword(_FIELD_NAME, Boolean.FALSE.toString());
+		document2.addKeyword(Field.UID, "2");
 
 		IndexDocumentRequest indexDocumentRequest2 = new IndexDocumentRequest(
 			_INDEX_NAME, document2);
 
-		indexDocumentRequest2.setType(_MAPPING_NAME);
+		indexDocumentRequest2.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		bulkDocumentRequest1.addBulkableDocumentRequest(indexDocumentRequest2);
 
@@ -159,7 +160,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		DeleteDocumentRequest deleteDocumentRequest = new DeleteDocumentRequest(
 			_INDEX_NAME, "1");
 
-		deleteDocumentRequest.setType(_MAPPING_NAME);
+		deleteDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		BulkDocumentRequest bulkDocumentRequest2 = new BulkDocumentRequest();
 
@@ -167,13 +169,14 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 
 		Document document2Update = new DocumentImpl();
 
-		document2Update.addKeyword(Field.UID, "2");
 		document2Update.addKeyword(_FIELD_NAME, Boolean.TRUE.toString());
+		document2Update.addKeyword(Field.UID, "2");
 
 		UpdateDocumentRequest updateDocumentRequest = new UpdateDocumentRequest(
 			_INDEX_NAME, "2", document2Update);
 
-		updateDocumentRequest.setType(_MAPPING_NAME);
+		updateDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		bulkDocumentRequest2.addBulkableDocumentRequest(updateDocumentRequest);
 
@@ -221,7 +224,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		IndexDocumentRequest indexDocumentRequest1 = new IndexDocumentRequest(
 			_INDEX_NAME, document1);
 
-		indexDocumentRequest1.setType(_MAPPING_NAME);
+		indexDocumentRequest1.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		BulkDocumentRequest bulkDocumentRequest1 = new BulkDocumentRequest();
 
@@ -234,7 +238,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		IndexDocumentRequest indexDocumentRequest2 = new IndexDocumentRequest(
 			_INDEX_NAME, document2);
 
-		indexDocumentRequest2.setType(_MAPPING_NAME);
+		indexDocumentRequest2.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		bulkDocumentRequest1.addBulkableDocumentRequest(indexDocumentRequest2);
 
@@ -265,7 +270,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		DeleteDocumentRequest deleteDocumentRequest = new DeleteDocumentRequest(
 			_INDEX_NAME, bulkDocumentItemResponse1.getId());
 
-		deleteDocumentRequest.setType(_MAPPING_NAME);
+		deleteDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		BulkDocumentRequest bulkDocumentRequest2 = new BulkDocumentRequest();
 
@@ -273,14 +279,15 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 
 		Document document2Update = new DocumentImpl();
 
+		document2Update.addKeyword(_FIELD_NAME, Boolean.TRUE.toString());
 		document2Update.addKeyword(
 			Field.UID, bulkDocumentItemResponse2.getId());
-		document2Update.addKeyword(_FIELD_NAME, Boolean.TRUE.toString());
 
 		UpdateDocumentRequest updateDocumentRequest = new UpdateDocumentRequest(
 			_INDEX_NAME, bulkDocumentItemResponse2.getId(), document2Update);
 
-		updateDocumentRequest.setType(_MAPPING_NAME);
+		updateDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		bulkDocumentRequest2.addBulkableDocumentRequest(updateDocumentRequest);
 
@@ -360,7 +367,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		DeleteDocumentRequest deleteDocumentRequest = new DeleteDocumentRequest(
 			_INDEX_NAME, id);
 
-		deleteDocumentRequest.setType(_MAPPING_NAME);
+		deleteDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		DeleteDocumentResponse deleteDocumentResponse =
 			_searchEngineAdapter.execute(deleteDocumentRequest);
@@ -463,8 +471,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 
 		Document document = new DocumentImpl();
 
-		document.addKeyword(Field.UID, id);
 		document.addKeyword(_FIELD_NAME, false);
+		document.addKeyword(Field.UID, id);
 
 		UpdateDocumentResponse updateDocumentResponse =
 			_updateDocumentWithAdapter(id, document);
@@ -524,8 +532,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 
 		Document document = new DocumentImpl();
 
-		document.addKeyword(Field.UID, id);
 		document.addKeyword(_FIELD_NAME, false);
+		document.addKeyword(Field.UID, id);
 
 		UpdateDocumentResponse updateDocumentResponse =
 			_updateDocumentWithAdapter(null, document);
@@ -597,23 +605,18 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 
 		ReflectionTestUtil.setFieldValue(
 			searchEngineAdapter, "_documentRequestExecutor",
-			_createDocumentRequestExecutor(
-				elasticsearchClientResolver,
-				new DefaultElasticsearchDocumentFactory()));
+			_createDocumentRequestExecutor(elasticsearchClientResolver));
 
 		return searchEngineAdapter;
 	}
 
 	private static DocumentRequestExecutor _createDocumentRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver,
-		ElasticsearchDocumentFactory elasticsearchDocumentFactory) {
+		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		DocumentRequestExecutorFixture documentRequestExecutorFixture =
 			new DocumentRequestExecutorFixture() {
 				{
 					setElasticsearchClientResolver(elasticsearchClientResolver);
-					setElasticsearchDocumentFactory(
-						elasticsearchDocumentFactory);
 				}
 			};
 
@@ -626,8 +629,7 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		CreateIndexRequest createIndexRequest = new CreateIndexRequest(
 			_INDEX_NAME);
 
-		createIndexRequest.mapping(
-			_MAPPING_NAME, _MAPPING_SOURCE, XContentType.JSON);
+		createIndexRequest.mapping(_MAPPING_SOURCE, XContentType.JSON);
 
 		try {
 			_indicesClient.create(createIndexRequest, RequestOptions.DEFAULT);
@@ -669,7 +671,7 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		indexRequest.id(id);
 		indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 		indexRequest.source(documentSource, XContentType.JSON);
-		indexRequest.type(_MAPPING_NAME);
+		indexRequest.type(IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		try {
 			_restHighLevelClient.index(indexRequest, RequestOptions.DEFAULT);
@@ -685,7 +687,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		IndexDocumentRequest indexDocumentRequest = new IndexDocumentRequest(
 			_INDEX_NAME, uid, document);
 
-		indexDocumentRequest.setType(_MAPPING_NAME);
+		indexDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		return _searchEngineAdapter.execute(indexDocumentRequest);
 	}
@@ -696,7 +699,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 		UpdateDocumentRequest updateDocumentRequest = new UpdateDocumentRequest(
 			_INDEX_NAME, uid, document);
 
-		updateDocumentRequest.setType(_MAPPING_NAME);
+		updateDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		return _searchEngineAdapter.execute(updateDocumentRequest);
 	}
@@ -708,7 +712,8 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 			_INDEX_NAME, uid, script);
 
 		updateDocumentRequest.setScriptedUpsert(scriptedUpsert);
-		updateDocumentRequest.setType(_MAPPING_NAME);
+		updateDocumentRequest.setType(
+			IndexMappingsConstants.LIFERAY_DOCUMENT_TYPE);
 
 		return _searchEngineAdapter.execute(updateDocumentRequest);
 	}
@@ -716,8 +721,6 @@ public class ElasticsearchSearchEngineAdapterDocumentRequestTest {
 	private static final String _FIELD_NAME = "matchDocument";
 
 	private static final String _INDEX_NAME = "test_request_index";
-
-	private static final String _MAPPING_NAME = "testDocumentMapping";
 
 	private static final String _MAPPING_SOURCE =
 		"{\"properties\":{\"matchDocument\":{\"type\":\"boolean\"}}}";

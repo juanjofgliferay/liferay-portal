@@ -6,7 +6,6 @@
 package com.liferay.portal.kernel.upgrade;
 
 import com.liferay.counter.kernel.service.CounterLocalServiceUtil;
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.BaseDBProcess;
 import com.liferay.portal.kernel.dao.db.DBInspector;
@@ -17,7 +16,6 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ClassUtil;
-import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.NotificationThreadLocal;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
@@ -118,7 +116,12 @@ public abstract class UpgradeProcess
 						_log.info("Upgrading " + companyInfo);
 					}
 
-					doUpgrade();
+					try {
+						doUpgrade();
+					}
+					finally {
+						closeConnections();
+					}
 				});
 		}
 		catch (Throwable throwable) {
@@ -169,32 +172,6 @@ public abstract class UpgradeProcess
 
 		public boolean shouldDropIndex(Collection<String> columnNames);
 
-	}
-
-	protected SafeCloseable addTemporaryIndex(
-			String tableName, boolean unique, String... columnNames)
-		throws Exception {
-
-		IndexMetadata indexMetadata = new IndexMetadata(
-			"IX_TEMP", tableName, unique, columnNames);
-
-		try (LoggingTimer loggingTimer = new LoggingTimer(tableName)) {
-			addIndexes(
-				connection, new ArrayList<>(Arrays.asList(indexMetadata)));
-		}
-
-		return () -> {
-			try {
-				runSQL("drop index IX_TEMP on " + tableName);
-			}
-			catch (Exception exception) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Unable to drop temporary index IX_TEMP on " +
-							tableName);
-				}
-			}
-		};
 	}
 
 	protected abstract void doUpgrade() throws Exception;

@@ -67,10 +67,19 @@ function PreviewSelector({
 
 			<Picker
 				UNSAFE_menuClassName="cadmin"
-				aria-labelledBy={previewByLabelId}
+				aria-labelledby={previewByLabelId}
 				as={TriggerLabel}
 				id={previewById}
 				items={previewOptions}
+				messages={{
+					itemDescribedby: Liferay.Language.get(
+						'you-are-currently-on-a-text-element,-inside-of-a-list-box'
+					),
+					itemSelected: Liferay.Language.get('x-selected'),
+					scrollToBottomAriaLabel:
+						Liferay.Language.get('scroll-to-bottom'),
+					scrollToTopAriaLabel: Liferay.Language.get('scroll-to-top'),
+				}}
 				onSelectionChange={onSelectPreviewOption}
 				selectedItem={selectedPreviewOption}
 				selectedKey={selectedPreviewOption.value}

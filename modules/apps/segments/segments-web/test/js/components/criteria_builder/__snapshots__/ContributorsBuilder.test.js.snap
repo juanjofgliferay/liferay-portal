@@ -6,11 +6,11 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
     class="contributor-builder-root h-100 editing"
   >
     <div
-      class="criteria-builder-section-sidebar overflow-hidden position-fixed criteria-builder-section-sidebar--with-warning"
+      class="criteria-builder-section-sidebar overflow-hidden criteria-builder-section-sidebar--with-warning"
     >
       <div
         aria-label="segments-contributors-panel"
-        class="criteria-sidebar-root d-flex flex-column position-absolute"
+        class="criteria-sidebar-root d-flex flex-column"
         role="tabpanel"
         tabindex="-1"
       >
@@ -60,34 +60,26 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
           </div>
         </div>
         <div
-          class="c-p-4 overflow-y-auto position-relative sidebar-collapse"
+          class="c-p-4 position-relative sidebar-collapse"
         >
           <div
-            aria-orientation="vertical"
             class="panel-group"
-            role="tablist"
           >
             <div
               class="panel panel-unstyled"
               id="user"
-              role="tablist"
             >
               <button
+                aria-controls="clay-id-1"
                 aria-expanded="true"
                 class="panel-header panel-header-link collapse-icon collapse-icon-middle show btn btn-unstyled"
-                role="tab"
                 tabindex="0"
                 type="button"
               >
                 <div
-                  class="c-inner"
-                  tabindex="-1"
+                  class="d-flex justify-content-between text-uppercase"
                 >
-                  <div
-                    class="d-flex justify-content-between text-uppercase"
-                  >
-                    User
-                  </div>
+                  User
                 </div>
                 <span
                   class="collapse-icon-closed"
@@ -115,8 +107,10 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
                 </span>
               </button>
               <div
+                aria-labelledby="clay-id-1"
                 class="panel-collapse"
-                role="tabpanel"
+                id="clay-id-1"
+                role="region"
               >
                 <div
                   class="panel-body c-px-0"
@@ -731,24 +725,18 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
             <div
               class="panel panel-unstyled"
               id="user-organization"
-              role="tablist"
             >
               <button
+                aria-controls="clay-id-2"
                 aria-expanded="false"
                 class="panel-header panel-header-link collapse-icon collapse-icon-middle collapsed btn btn-unstyled"
-                role="tab"
                 tabindex="-1"
                 type="button"
               >
                 <div
-                  class="c-inner"
-                  tabindex="-1"
+                  class="d-flex justify-content-between text-uppercase"
                 >
-                  <div
-                    class="d-flex justify-content-between text-uppercase"
-                  >
-                    User Organization
-                  </div>
+                  User Organization
                 </div>
                 <span
                   class="collapse-icon-closed"
@@ -776,8 +764,10 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
                 </span>
               </button>
               <div
+                aria-labelledby="clay-id-2"
                 class="panel-collapse collapse"
-                role="tabpanel"
+                id="clay-id-2"
+                role="region"
               >
                 <div
                   class="panel-body c-px-0"
@@ -1065,9 +1055,10 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
     </div>
     <div
       class="c-pr-0 criteria-builder-section-main d-flex h-100 w-100"
+      role="application"
     >
       <div
-        class="contributor-container h-100 overflow-auto position-absolute w-100"
+        class="contributor-container h-100 position-absolute w-100"
       >
         <div
           class="container-fluid container-fluid-max-xl"
@@ -1093,7 +1084,7 @@ exports[`ContributorsBuilder renders builder with sidebar: initialRenderEditing 
                     class="btn-group"
                   >
                     <div
-                      class="btn-group-item inline-item"
+                      class="btn-group-item d-flex flex-wrap inline-item"
                     >
                       <span
                         class="c-mr-4"
@@ -1130,11 +1121,11 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
     class="contributor-builder-root h-100"
   >
     <div
-      class="criteria-builder-section-sidebar overflow-hidden position-fixed criteria-builder-section-sidebar--with-warning"
+      class="criteria-builder-section-sidebar overflow-hidden criteria-builder-section-sidebar--with-warning"
     >
       <div
         aria-label="segments-contributors-panel"
-        class="criteria-sidebar-root d-flex flex-column position-absolute"
+        class="criteria-sidebar-root d-flex flex-column"
         role="tabpanel"
         tabindex="-1"
       >
@@ -1184,34 +1175,26 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
           </div>
         </div>
         <div
-          class="c-p-4 overflow-y-auto position-relative sidebar-collapse"
+          class="c-p-4 position-relative sidebar-collapse"
         >
           <div
-            aria-orientation="vertical"
             class="panel-group"
-            role="tablist"
           >
             <div
               class="panel panel-unstyled"
               id="user"
-              role="tablist"
             >
               <button
+                aria-controls="clay-id-3"
                 aria-expanded="true"
                 class="panel-header panel-header-link collapse-icon collapse-icon-middle show btn btn-unstyled"
-                role="tab"
                 tabindex="0"
                 type="button"
               >
                 <div
-                  class="c-inner"
-                  tabindex="-1"
+                  class="d-flex justify-content-between text-uppercase"
                 >
-                  <div
-                    class="d-flex justify-content-between text-uppercase"
-                  >
-                    User
-                  </div>
+                  User
                 </div>
                 <span
                   class="collapse-icon-closed"
@@ -1239,8 +1222,10 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
                 </span>
               </button>
               <div
+                aria-labelledby="clay-id-3"
                 class="panel-collapse"
-                role="tabpanel"
+                id="clay-id-3"
+                role="region"
               >
                 <div
                   class="panel-body c-px-0"
@@ -1855,24 +1840,18 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
             <div
               class="panel panel-unstyled"
               id="user-organization"
-              role="tablist"
             >
               <button
+                aria-controls="clay-id-4"
                 aria-expanded="false"
                 class="panel-header panel-header-link collapse-icon collapse-icon-middle collapsed btn btn-unstyled"
-                role="tab"
                 tabindex="-1"
                 type="button"
               >
                 <div
-                  class="c-inner"
-                  tabindex="-1"
+                  class="d-flex justify-content-between text-uppercase"
                 >
-                  <div
-                    class="d-flex justify-content-between text-uppercase"
-                  >
-                    User Organization
-                  </div>
+                  User Organization
                 </div>
                 <span
                   class="collapse-icon-closed"
@@ -1900,8 +1879,10 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
                 </span>
               </button>
               <div
+                aria-labelledby="clay-id-4"
                 class="panel-collapse collapse"
-                role="tabpanel"
+                id="clay-id-4"
+                role="region"
               >
                 <div
                   class="panel-body c-px-0"
@@ -2189,9 +2170,10 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
     </div>
     <div
       class="c-pr-0 criteria-builder-section-main d-flex h-100 w-100"
+      role="application"
     >
       <div
-        class="contributor-container h-100 overflow-auto position-absolute w-100"
+        class="contributor-container h-100 position-absolute w-100"
       >
         <div
           class="container-fluid container-fluid-max-xl"
@@ -2217,7 +2199,7 @@ exports[`ContributorsBuilder renders builder without sidebar: initialRenderNotEd
                     class="btn-group"
                   >
                     <div
-                      class="btn-group-item inline-item"
+                      class="btn-group-item d-flex flex-wrap inline-item"
                     >
                       <span
                         class="c-mr-4"

@@ -44,12 +44,12 @@
 	<liferay-staging:alert
 		type="WARNING"
 	>
-		<liferay-ui:message key="an-inital-staging-publish-process-is-in-progress" />
+		<liferay-ui:message key="an-initial-staging-publish-process-is-in-progress" />
 
 		<a id="<portlet:namespace />publishProcessesLink"><liferay-ui:message key="the-status-of-the-publish-process-can-be-checked-on-the-publish-screen" /></a>
 	</liferay-staging:alert>
 
-	<script>
+	<aui:script>
 		(function () {
 			var publishProcessesLink = document.getElementById(
 				'<portlet:namespace />publishProcessesLink'
@@ -57,8 +57,10 @@
 
 			if (publishProcessesLink) {
 				publishProcessesLink.addEventListener('click', (event) => {
-					Liferay.Util.openWindow({
+					Liferay.Util.openModal({
+						containerProps: {},
 						id: 'publishProcesses',
+						iframeBodyCssClass: '',
 						title: '<liferay-ui:message key="initial-publish-process" />',
 
 						<liferay-portlet:renderURL portletName="<%= PortletKeys.EXPORT_IMPORT %>" var="publishProcessesURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
@@ -71,12 +73,12 @@
 							<portlet:param name="localPublishing" value="<%= String.valueOf(stagedLocally) %>" />
 						</liferay-portlet:renderURL>
 
-						uri: '<%= HtmlUtil.escapeJS(publishProcessesURL.toString()) %>',
+						url: '<%= HtmlUtil.escapeJS(publishProcessesURL.toString()) %>',
 					});
 				});
 			}
 		})();
-	</script>
+	</aui:script>
 </c:if>
 
 <liferay-ui:error-marker
@@ -84,7 +86,7 @@
 	value="staging"
 />
 
-<c:if test="<%= privateLayoutSet.isLayoutSetPrototypeLinkActive() || publicLayoutSet.isLayoutSetPrototypeLinkActive() %>">
+<c:if test="<%= privateLayoutSet.isLayoutSetReadyForPropagation() || publicLayoutSet.isLayoutSetReadyForPropagation() %>">
 	<liferay-staging:alert
 		type="WARNING"
 	>

@@ -15,16 +15,17 @@ import AccountCreationModal from './AccountCreationModal';
 import EmptyListView from './EmptyListView';
 import ListView from './ListView';
 
-const {baseURL: ACCOUNTS_RESOURCE_ENDPOINT} = ServiceProvider.AdminAccountAPI(
-	'v1'
-);
+const DeliveryCatalogAPIServiceProvider =
+	ServiceProvider.DeliveryCatalogAPI('v1');
 
 export default function AccountsListView({
 	accountEntryAllowedTypes,
 	changeAccount,
+	commerceChannelId,
 	currentAccount,
 	currentUser,
 	disabled,
+	orderSelectionDisabled,
 	setCurrentView,
 }) {
 	const [modalVisible, setModalVisible] = useState(false);
@@ -36,9 +37,13 @@ export default function AccountsListView({
 	const accountsListRef = useRef();
 
 	const apiUrl = new URL(
-		`${themeDisplay.getPathContext()}${ACCOUNTS_RESOURCE_ENDPOINT}`,
+		`${themeDisplay.getPathContext()}${DeliveryCatalogAPIServiceProvider.baseURL(
+			commerceChannelId
+		)}`,
 		themeDisplay.getPortalURL()
 	);
+
+	apiUrl.searchParams.append('sort', 'name');
 
 	const filterString = accountEntryAllowedTypes
 		.map((accountEntryAllowedType) => `'${accountEntryAllowedType}'`)
@@ -57,7 +62,7 @@ export default function AccountsListView({
 					</span>
 				</span>
 
-				{currentAccount && (
+				{!!currentAccount.id && !orderSelectionDisabled && (
 					<ClayButtonWithIcon
 						displayType="unstyled"
 						onClick={() => setCurrentView(VIEWS.ORDERS_LIST)}
@@ -134,8 +139,9 @@ export default function AccountsListView({
 
 			{modalVisible && (
 				<AccountCreationModal
-					accountTypes={accountEntryAllowedTypes}
+					accountEntryAllowedTypes={accountEntryAllowedTypes}
 					closeModal={onClose}
+					commerceChannelId={commerceChannelId}
 					handleAccountChange={changeAccount}
 					observer={observer}
 				/>

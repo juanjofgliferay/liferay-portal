@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -39,8 +38,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("Catalog")
+@io.swagger.v3.oas.annotations.media.Schema(requiredProperties = {"name"})
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"name"})
 @XmlRootElement(name = "Catalog")
 public class Catalog implements Serializable {
 
@@ -53,42 +52,63 @@ public class Catalog implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getAccountId() {
+		if (_accountIdSupplier != null) {
+			accountId = _accountIdSupplier.get();
+
+			_accountIdSupplier = null;
+		}
+
 		return accountId;
 	}
 
 	public void setAccountId(Long accountId) {
 		this.accountId = accountId;
+
+		_accountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccountId(
 		UnsafeSupplier<Long, Exception> accountIdUnsafeSupplier) {
 
-		try {
-			accountId = accountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountIdSupplier = () -> {
+			try {
+				return accountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long accountId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _accountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -96,152 +116,306 @@ public class Catalog implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema(example = "USD")
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "USD")
 	public String getCurrencyCode() {
+		if (_currencyCodeSupplier != null) {
+			currencyCode = _currencyCodeSupplier.get();
+
+			_currencyCodeSupplier = null;
+		}
+
 		return currencyCode;
 	}
 
 	public void setCurrencyCode(String currencyCode) {
 		this.currencyCode = currencyCode;
+
+		_currencyCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCurrencyCode(
 		UnsafeSupplier<String, Exception> currencyCodeUnsafeSupplier) {
 
-		try {
-			currencyCode = currencyCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_currencyCodeSupplier = () -> {
+			try {
+				return currencyCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String currencyCode;
 
-	@Schema(example = "en_US")
+	@JsonIgnore
+	private Supplier<String> _currencyCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AAB-34098-789-N")
+	public String getCurrencyExternalReferenceCode() {
+		if (_currencyExternalReferenceCodeSupplier != null) {
+			currencyExternalReferenceCode =
+				_currencyExternalReferenceCodeSupplier.get();
+
+			_currencyExternalReferenceCodeSupplier = null;
+		}
+
+		return currencyExternalReferenceCode;
+	}
+
+	public void setCurrencyExternalReferenceCode(
+		String currencyExternalReferenceCode) {
+
+		this.currencyExternalReferenceCode = currencyExternalReferenceCode;
+
+		_currencyExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setCurrencyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			currencyExternalReferenceCodeUnsafeSupplier) {
+
+		_currencyExternalReferenceCodeSupplier = () -> {
+			try {
+				return currencyExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String currencyExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _currencyExternalReferenceCodeSupplier;
+
+	@DecimalMin("0")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
+	public Long getCurrencyId() {
+		if (_currencyIdSupplier != null) {
+			currencyId = _currencyIdSupplier.get();
+
+			_currencyIdSupplier = null;
+		}
+
+		return currencyId;
+	}
+
+	public void setCurrencyId(Long currencyId) {
+		this.currencyId = currencyId;
+
+		_currencyIdSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setCurrencyId(
+		UnsafeSupplier<Long, Exception> currencyIdUnsafeSupplier) {
+
+		_currencyIdSupplier = () -> {
+			try {
+				return currencyIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long currencyId;
+
+	@JsonIgnore
+	private Supplier<Long> _currencyIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "en_US")
 	public String getDefaultLanguageId() {
+		if (_defaultLanguageIdSupplier != null) {
+			defaultLanguageId = _defaultLanguageIdSupplier.get();
+
+			_defaultLanguageIdSupplier = null;
+		}
+
 		return defaultLanguageId;
 	}
 
 	public void setDefaultLanguageId(String defaultLanguageId) {
 		this.defaultLanguageId = defaultLanguageId;
+
+		_defaultLanguageIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultLanguageId(
 		UnsafeSupplier<String, Exception> defaultLanguageIdUnsafeSupplier) {
 
-		try {
-			defaultLanguageId = defaultLanguageIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultLanguageIdSupplier = () -> {
+			try {
+				return defaultLanguageIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String defaultLanguageId;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<String> _defaultLanguageIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(description = "Category Name")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(description = "Category Name")
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Category Name")
@@ -249,33 +423,49 @@ public class Catalog implements Serializable {
 	@NotEmpty
 	protected String name;
 
-	@Schema(example = "false")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "false")
 	public Boolean getSystem() {
+		if (_systemSupplier != null) {
+			system = _systemSupplier.get();
+
+			_systemSupplier = null;
+		}
+
 		return system;
 	}
 
 	public void setSystem(Boolean system) {
 		this.system = system;
+
+		_systemSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSystem(
 		UnsafeSupplier<Boolean, Exception> systemUnsafeSupplier) {
 
-		try {
-			system = systemUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_systemSupplier = () -> {
+			try {
+				return systemUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Boolean system;
+
+	@JsonIgnore
+	private Supplier<Boolean> _systemSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -304,6 +494,8 @@ public class Catalog implements Serializable {
 
 		sb.append("{");
 
+		Long accountId = getAccountId();
+
 		if (accountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -314,6 +506,8 @@ public class Catalog implements Serializable {
 			sb.append(accountId);
 		}
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -323,6 +517,8 @@ public class Catalog implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		String currencyCode = getCurrencyCode();
 
 		if (currencyCode != null) {
 			if (sb.length() > 1) {
@@ -338,6 +534,37 @@ public class Catalog implements Serializable {
 			sb.append("\"");
 		}
 
+		String currencyExternalReferenceCode =
+			getCurrencyExternalReferenceCode();
+
+		if (currencyExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(currencyExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long currencyId = getCurrencyId();
+
+		if (currencyId != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyId\": ");
+
+			sb.append(currencyId);
+		}
+
+		String defaultLanguageId = getDefaultLanguageId();
+
 		if (defaultLanguageId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -351,6 +578,8 @@ public class Catalog implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -366,6 +595,8 @@ public class Catalog implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -375,6 +606,8 @@ public class Catalog implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -389,6 +622,8 @@ public class Catalog implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Boolean system = getSystem();
 
 		if (system != null) {
 			if (sb.length() > 1) {
@@ -405,8 +640,8 @@ public class Catalog implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.Catalog",
 		name = "x-class-name"
 	)
@@ -452,7 +687,10 @@ public class Catalog implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");

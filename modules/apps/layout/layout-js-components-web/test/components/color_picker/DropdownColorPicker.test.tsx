@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {
 	fireEvent,
 	render,
@@ -131,24 +131,18 @@ describe('DropdownColorPicker', () => {
 		});
 
 		await waitFor(() => {
-			[
-				queryByText('Category 1'),
-				queryByText('TokenSet 1'),
-			].forEach((item) => expect(item).toBeInTheDocument());
-			[
-				queryByText('Category 2'),
-				queryByText('TokenSet 2'),
-			].forEach((item) => expect(item).not.toBeInTheDocument());
+			[queryByText('Category 1'), queryByText('TokenSet 1')].forEach(
+				(item) => expect(item).toBeInTheDocument()
+			);
+			[queryByText('Category 2'), queryByText('TokenSet 2')].forEach(
+				(item) => expect(item).not.toBeInTheDocument()
+			);
 		});
 	});
 
 	it('filters by color', async () => {
-		const {
-			getByLabelText,
-			getByTitle,
-			queryByText,
-			queryByTitle,
-		} = renderDropdownColorPicker({active: true});
+		const {getByLabelText, getByTitle, queryByText, queryByTitle} =
+			renderDropdownColorPicker({active: true});
 		const searchForm = getByLabelText('search-form');
 
 		fireEvent.change(searchForm, {
