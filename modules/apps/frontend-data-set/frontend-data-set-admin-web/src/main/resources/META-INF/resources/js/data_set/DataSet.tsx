@@ -135,15 +135,13 @@ const DataSet = ({
 
 				getOpenApiData({restApplication, restSchema}).then(
 					(oApiData) => {
-						if (!oApiData) {
-							return;
+						if (oApiData) {
+							setFieldTreeItems(getFields(oApiData));
+
+							setFilterableFieldTreeItems(
+								getFilterableFields(oApiData)
+							);
 						}
-
-						setFieldTreeItems(getFields(oApiData));
-
-						setFilterableFieldTreeItems(
-							getFilterableFields(oApiData)
-						);
 
 						setLoading(false);
 					}
