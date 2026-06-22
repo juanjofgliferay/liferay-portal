@@ -14,17 +14,22 @@ public class MarkdownSourceProcessorTest extends BaseSourceProcessorTestCase {
 
 	@Test
 	public void testIncorrectCodeBlocks() throws Exception {
-		test("IncorrectCodeBlocks.testmarkdown");
+		test("IncorrectCodeBlocks.testmd");
 	}
 
 	@Test
 	public void testIncorrectNumberedList() throws Exception {
-		test("IncorrectNumberedList.testmarkdown");
+		test("IncorrectNumberedList.testmd");
 	}
 
 	@Test
 	public void testIncorrectWhitespace() throws Exception {
-		test("IncorrectWhitespace.testmarkdown");
+		test("IncorrectWhitespace.testmd");
+	}
+
+	@Test
+	public void testMissingEmptyLines() throws Exception {
+		test("MissingEmptyLines.testmd");
 	}
 
 }

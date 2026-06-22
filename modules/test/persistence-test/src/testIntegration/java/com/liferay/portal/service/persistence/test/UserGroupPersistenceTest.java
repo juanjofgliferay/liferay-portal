@@ -111,11 +111,7 @@ public class UserGroupPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		UserGroup newUserGroup = _persistence.create(pk);
-
-		newUserGroup.setMvccVersion(RandomTestUtil.nextLong());
+		UserGroup newUserGroup = addUserGroup();
 
 		newUserGroup.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -140,6 +136,8 @@ public class UserGroupPersistenceTest {
 		newUserGroup.setDescription(RandomTestUtil.randomString());
 
 		newUserGroup.setAddedByLDAPImport(RandomTestUtil.randomBoolean());
+
+		newUserGroup.setStatus(RandomTestUtil.nextInt());
 
 		_userGroups.add(_persistence.update(newUserGroup));
 
@@ -180,6 +178,8 @@ public class UserGroupPersistenceTest {
 		Assert.assertEquals(
 			existingUserGroup.isAddedByLDAPImport(),
 			newUserGroup.isAddedByLDAPImport());
+		Assert.assertEquals(
+			existingUserGroup.getStatus(), newUserGroup.getStatus());
 	}
 
 	@Test(expected = DuplicateUserGroupExternalReferenceCodeException.class)
@@ -300,7 +300,7 @@ public class UserGroupPersistenceTest {
 			true, "externalReferenceCode", true, "userGroupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "parentUserGroupId", true, "name", true,
-			"description", true, "addedByLDAPImport", true);
+			"description", true, "addedByLDAPImport", true, "status", true);
 	}
 
 	@Test
@@ -591,8 +591,6 @@ public class UserGroupPersistenceTest {
 
 		UserGroup userGroup = _persistence.create(pk);
 
-		userGroup.setMvccVersion(RandomTestUtil.nextLong());
-
 		userGroup.setCtCollectionId(RandomTestUtil.nextLong());
 
 		userGroup.setUuid(RandomTestUtil.randomString());
@@ -617,6 +615,8 @@ public class UserGroupPersistenceTest {
 
 		userGroup.setAddedByLDAPImport(RandomTestUtil.randomBoolean());
 
+		userGroup.setStatus(RandomTestUtil.nextInt());
+
 		_userGroups.add(_persistence.update(userGroup));
 
 		return userGroup;
@@ -627,3 +627,4 @@ public class UserGroupPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:636628432

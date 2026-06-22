@@ -3,29 +3,31 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import Autocomplete from '@clayui/autocomplete';
 import ClayButton from '@clayui/button';
-import {Option} from '@clayui/core';
+import {useResource} from '@clayui/data-provider';
 import ClayForm from '@clayui/form';
 import ClayLabel from '@clayui/label';
 import ClayModal from '@clayui/modal';
-import {Observer} from '@clayui/modal/lib/types';
 import {ClayTooltipProvider} from '@clayui/tooltip';
 import {
 	FormError,
 	Input,
-	REQUIRED_MSG,
-	SingleSelect,
-	getLocalizableLabel,
+	constantsUtils,
+	stringUtils,
 	useForm,
 } from '@liferay/object-js-components-web';
 import classNames from 'classnames';
+import {FieldBase} from 'frontend-js-components-web';
 import React, {useMemo, useState} from 'react';
 
 import {defaultLanguageId} from '../../../utils/constants';
 import {TYPES as EVENT_TYPES, useLayoutContext} from '../objectLayoutContext';
-import {TObjectLayoutTab, TObjectRelationship} from '../types';
+import {TObjectLayoutTab} from '../types';
 
 import './ModalAddObjectLayoutTab.scss';
+
+import type {Observer} from '@clayui/modal/src/types';
 
 type TTabTypes = {
 	[key: string]: {
@@ -76,10 +78,6 @@ interface TabTypeProps extends React.HTMLAttributes<HTMLElement> {
 	type: string;
 }
 
-interface ObjectRelationshipItem extends LabelValueObject {
-	reverse: boolean;
-}
-
 function TabType({
 	description,
 	disabled = false,
@@ -107,7 +105,7 @@ function TabType({
 				onClick={() => onChangeType(type)}
 				{...(disabled && tabProps)}
 			>
-				<h4 className="layout-tab__tab-types__title">{label}</h4>
+				<div className="h4 layout-tab__tab-types__title">{label}</div>
 
 				<span className="tab__tab-types__description">
 					{description}
@@ -133,31 +131,58 @@ export function ModalAddObjectLayoutTab({
 	const [
 		{
 			creationLanguageId,
+			objectDefinitionExternalReferenceCode,
 			objectLayout: {objectLayoutTabs},
 			objectRelationships,
 		},
 		dispatch,
 	] = useLayoutContext();
+
+	const [networkStatus, setNetworkStatus] = useState(4);
 	const [selectedType, setSelectedType] = useState(TYPES.FIELDS);
-	const [selectedRelationship, setSelectedRelationship] = useState<
-		TObjectRelationship
-	>();
+	const [search, setSearch] = useState<string>('');
 
-	const objectRelationshipItems = useMemo(() => {
-		const availableObjectRelationships: ObjectRelationshipItem[] = [];
+	const {
+		resource,
+	}: {
+		resource: {
+			items: ObjectRelationship[];
+		};
+	} = useResource({
+		fetchOptions: {
+			credentials: 'include',
+			headers: new Headers({'x-csrf-token': Liferay.authToken}),
+			method: 'GET',
+		},
+		link: `${Liferay.ThemeDisplay.getPortalURL()}/o/object-admin/v1.0/object-definitions/by-external-reference-code/${objectDefinitionExternalReferenceCode}/object-relationships`,
+		onNetworkStatusChange: setNetworkStatus,
+		variables: {
+			filter: 'edge eq false',
+			search,
+		},
+	});
 
-		objectRelationships.forEach(({id, inLayout, label, name, reverse}) => {
+	const availableObjectRelationshipIds = useMemo(() => {
+		const set = new Set<string>();
+
+		objectRelationships.forEach(({id, inLayout}) => {
 			if (!inLayout) {
-				availableObjectRelationships.push({
-					label: getLocalizableLabel(creationLanguageId, label, name),
-					reverse,
-					value: id.toString(),
-				});
+				set.add(id.toString());
 			}
 		});
 
-		return availableObjectRelationships;
-	}, [creationLanguageId, objectRelationships]);
+		return set;
+	}, [objectRelationships]);
+
+	const filteredRelationshipItems = useMemo(() => {
+		if (!resource?.items) {
+			return [];
+		}
+
+		return resource.items.filter((item) =>
+			availableObjectRelationshipIds.has(item.id.toString())
+		);
+	}, [availableObjectRelationshipIds, resource?.items]);
 
 	const onSubmit = (values: TObjectLayoutTab) => {
 		dispatch({
@@ -176,15 +201,20 @@ export function ModalAddObjectLayoutTab({
 	const onValidate = (values: Partial<TObjectLayoutTab>) => {
 		const errors: FormError<TObjectLayoutTab> = {};
 
-		if (!getLocalizableLabel(creationLanguageId, values.name)) {
-			errors.name = REQUIRED_MSG;
+		if (
+			!stringUtils.getLocalizableLabel({
+				fallbackLanguageId: creationLanguageId,
+				labels: values.name,
+			})
+		) {
+			errors.name = constantsUtils.REQUIRED_MSG;
 		}
 
 		if (
 			!values.objectRelationshipId &&
 			selectedType === TYPES.RELATIONSHIPS
 		) {
-			errors.objectRelationshipId = REQUIRED_MSG;
+			errors.objectRelationshipId = constantsUtils.REQUIRED_MSG;
 		}
 
 		return errors;
@@ -201,7 +231,9 @@ export function ModalAddObjectLayoutTab({
 	return (
 		<ClayModal observer={observer}>
 			<ClayForm onSubmit={handleSubmit}>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					{Liferay.Language.get('add-tab')}
 				</ClayModal.Header>
 
@@ -219,10 +251,10 @@ export function ModalAddObjectLayoutTab({
 							});
 						}}
 						required
-						value={getLocalizableLabel(
-							creationLanguageId,
-							values.name
-						)}
+						value={stringUtils.getLocalizableLabel({
+							fallbackLanguageId: creationLanguageId,
+							labels: values.name,
+						})}
 					/>
 
 					<ClayForm.Group>
@@ -251,53 +283,76 @@ export function ModalAddObjectLayoutTab({
 					</ClayForm.Group>
 
 					{selectedType === TYPES.RELATIONSHIPS && (
-						<SingleSelect
-							error={errors.objectRelationshipId}
-							id="modalAddObjectLayoutTab"
-							items={objectRelationshipItems}
+						<FieldBase
+							errorMessage={errors.objectRelationshipId}
+							id="relationshipAutocomplete"
 							label={Liferay.Language.get('relationship')}
-							onSelectionChange={(value) => {
-								const selectedObjectRelationship = objectRelationships.find(
-									({id}) => id.toString() === value
-								);
-
-								setSelectedRelationship(
-									selectedObjectRelationship
-								);
-								setValues({
-									objectRelationshipId:
-										selectedObjectRelationship?.id,
-								});
-							}}
 							required
-							selectedKey={selectedRelationship?.id.toString()}
 						>
-							{({label, reverse, value}) => {
-								const relationshipInfo = getRelationshipInfo(
-									reverse
-								);
+							<Autocomplete
+								filterKey="label"
+								id="relationshipAutocomplete"
+								items={filteredRelationshipItems}
+								loadingState={networkStatus}
+								menuTrigger="focus"
+								messages={{
+									loading: Liferay.Language.get('loading...'),
+									notFound:
+										Liferay.Language.get(
+											'no-results-found'
+										),
+								}}
+								onChange={(item) => {
+									setSearch(item);
+								}}
+								onItemsChange={() => {}}
+								value={search}
+							>
+								{(item) => {
+									const label =
+										stringUtils.getLocalizableLabel({
+											fallbackLabel: item.name,
+											fallbackLanguageId:
+												creationLanguageId,
+											labels: item.label,
+										});
 
-								return (
-									<Option key={value} textValue={label}>
-										<div className="d-flex justify-content-between">
-											<div>{label}</div>
+									const relationshipInfo =
+										getRelationshipInfo(
+											item.reverse ?? false
+										);
 
-											<div className="object-web-relationship-item-label">
-												<ClayLabel
-													displayType={
-														relationshipInfo.displayType
-													}
-												>
-													{
-														relationshipInfo.labelContent
-													}
-												</ClayLabel>
+									return (
+										<Autocomplete.Item
+											key={item.id}
+											onClick={() => {
+												setValues({
+													objectRelationshipId:
+														item.id,
+												});
+											}}
+											textValue={label}
+										>
+											<div className="d-flex justify-content-between">
+												<div>{label}</div>
+
+												<div className="object-web-relationship-item-label">
+													<ClayLabel
+														displayType={
+															relationshipInfo.displayType
+														}
+													>
+														{
+															relationshipInfo.labelContent
+														}
+													</ClayLabel>
+												</div>
 											</div>
-										</div>
-									</Option>
-								);
-							}}
-						</SingleSelect>
+										</Autocomplete.Item>
+									);
+								}}
+							</Autocomplete>
+						</FieldBase>
 					)}
 				</ClayModal.Body>
 

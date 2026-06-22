@@ -108,9 +108,7 @@ public class BigDecimalEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		BigDecimalEntry newBigDecimalEntry = _persistence.create(pk);
+		BigDecimalEntry newBigDecimalEntry = addBigDecimalEntry();
 
 		newBigDecimalEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -395,3 +393,4 @@ public class BigDecimalEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1732478284

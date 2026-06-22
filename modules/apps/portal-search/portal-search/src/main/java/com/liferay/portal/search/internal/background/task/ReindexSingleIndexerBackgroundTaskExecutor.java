@@ -7,9 +7,9 @@ package com.liferay.portal.search.internal.background.task;
 
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
-import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
@@ -17,6 +17,7 @@ import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
+import com.liferay.portal.kernel.search.ReindexCacheThreadLocal;
 import com.liferay.portal.kernel.search.SearchEngine;
 import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.search.background.task.ReindexBackgroundTaskConstants;
@@ -37,10 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "background.task.executor.class.name=com.liferay.portal.search.internal.background.task.ReindexSingleIndexerBackgroundTaskExecutor",
-	service = {
-		BackgroundTaskExecutor.class,
-		ReindexSingleIndexerBackgroundTaskExecutor.class
-	}
+	service = BackgroundTaskExecutor.class
 )
 public class ReindexSingleIndexerBackgroundTaskExecutor
 	extends BaseReindexBackgroundTaskExecutor {
@@ -98,12 +96,8 @@ public class ReindexSingleIndexerBackgroundTaskExecutor
 						executionMode));
 			}
 
-			CTSQLModeThreadLocal.CTSQLMode ctSQLMode =
-				CTSQLModeThreadLocal.getCTSQLMode();
-
-			try {
-				CTSQLModeThreadLocal.setCTSQLModeWithSafeCloseable(
-					CTSQLModeThreadLocal.CTSQLMode.CT_ALL);
+			try (SafeCloseable safeCloseable =
+					ReindexCacheThreadLocal.openReindexMode()) {
 
 				searchEngine.initialize(companyId);
 
@@ -122,7 +116,7 @@ public class ReindexSingleIndexerBackgroundTaskExecutor
 						companyId, className, true);
 				}
 
-				indexer.reindex(new String[] {String.valueOf(companyId)});
+				indexer.reindexCompany(companyId);
 
 				if (_isExecuteSyncReindex(executionMode)) {
 					SyncReindexManager syncReindexManager =
@@ -136,8 +130,6 @@ public class ReindexSingleIndexerBackgroundTaskExecutor
 				_log.error(exception);
 			}
 			finally {
-				CTSQLModeThreadLocal.setCTSQLModeWithSafeCloseable(ctSQLMode);
-
 				reindexStatusMessageSender.sendStatusMessage(
 					ReindexBackgroundTaskConstants.SINGLE_END, companyId,
 					companyIds);

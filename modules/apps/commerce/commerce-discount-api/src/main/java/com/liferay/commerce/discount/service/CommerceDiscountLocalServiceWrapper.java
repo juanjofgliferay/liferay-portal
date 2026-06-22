@@ -525,29 +525,6 @@ public class CommerceDiscountLocalServiceWrapper
 			dynamicQuery, projection);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.discount.model.CommerceDiscount
-		fetchByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _commerceDiscountLocalService.fetchByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	@Override
-	public com.liferay.commerce.discount.model.CommerceDiscount
-		fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId) {
-
-		return _commerceDiscountLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	@Override
 	public com.liferay.commerce.discount.model.CommerceDiscount
 		fetchCommerceDiscount(long commerceDiscountId) {
@@ -1374,3 +1351,4 @@ public class CommerceDiscountLocalServiceWrapper
 	private CommerceDiscountLocalService _commerceDiscountLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-411383524

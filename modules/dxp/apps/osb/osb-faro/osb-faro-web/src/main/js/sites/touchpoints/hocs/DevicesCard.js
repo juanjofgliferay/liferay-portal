@@ -1,15 +1,16 @@
 import getDevicesMapper from 'cerebro-shared/hocs/mappers/devices';
 import URLConstants from 'shared/util/url-constants';
 import {BROWSER_FRAGMENT, DEVICE_FRAGMENT} from 'shared/queries/fragments';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
-import {gql} from 'apollo-boost';
-import {graphql} from '@apollo/react-hoc';
+import {gql} from '@apollo/client';
+import {graphql} from '@apollo/client/react/hoc';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {withDevicesCard} from 'shared/hoc/DevicesCard';
 
 const TouchpointDevicesQuery = gql`
 	query TouchpointDevicesQuery(
 		$channelId: String
 		$devices: String
+		$experienceId: String
 		$location: String
 		$rangeEnd: String
 		$rangeKey: Int
@@ -22,6 +23,7 @@ const TouchpointDevicesQuery = gql`
 			canonicalUrl: $touchpoint
 			country: $location
 			deviceType: $devices
+			experienceId: $experienceId
 			rangeEnd: $rangeEnd
 			rangeKey: $rangeKey
 			rangeStart: $rangeStart
@@ -56,6 +58,6 @@ export default withDevicesCard(withTouchpointDevices, {
 		'learn-more-about-views-by-technology'
 	),
 	documentationUrl: URLConstants.SitesDashboardPagesViewsByTechnology,
-	id: Containers.ViewsByTechnologyCard,
+	reportContainer: ReportContainer.ViewsByTechnologyCard,
 	title: Liferay.Language.get('there-are-no-views-on-the-selected-period')
 });

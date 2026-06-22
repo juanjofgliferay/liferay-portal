@@ -1,6 +1,5 @@
 import * as API from 'shared/api';
 import autobind from 'autobind-decorator';
-import checkExperimentLink from './CheckExperimentLink';
 import checkProjectState from './CheckProjectState';
 import checkSegmentLink from './CheckSegmentLink';
 import checkValidChannel from './CheckValidChannel';
@@ -33,7 +32,6 @@ import {withError, withLoading} from './util';
 
 export default compose(
 	checkProjectState,
-	checkExperimentLink,
 	checkSegmentLink,
 	withCurrentUser,
 	connect(
@@ -142,7 +140,7 @@ export default compose(
 
 			@autobind
 			handleSidebarToggle() {
-				const {collapsed, collapseSidebar, currentUser} = this.props;
+				const {collapseSidebar, collapsed, currentUser} = this.props;
 
 				collapseSidebar({
 					collapsed: !collapsed,

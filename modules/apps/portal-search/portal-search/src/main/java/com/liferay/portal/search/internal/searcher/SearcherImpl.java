@@ -76,10 +76,14 @@ public class SearcherImpl implements Searcher {
 
 		SearchContext searchContext = searchRequestImpl.getSearchContext();
 
-		if (Validator.isBlank(StringUtil.trim(searchContext.getKeywords())) &&
+		if ((Validator.isBlank(StringUtil.trim(searchContext.getKeywords())) &&
+			 !GetterUtil.getBoolean(
+				 searchContext.getAttribute(
+					 SearchContextAttributes.ATTRIBUTE_KEY_EMPTY_SEARCH))) ||
 			!GetterUtil.getBoolean(
 				searchContext.getAttribute(
-					SearchContextAttributes.ATTRIBUTE_KEY_EMPTY_SEARCH))) {
+					SearchContextAttributes.ATTRIBUTE_KEY_EXECUTE_SEARCH),
+				true)) {
 
 			searchResponseBuilder.hits(new HitsImpl());
 		}
@@ -145,7 +149,8 @@ public class SearcherImpl implements Searcher {
 	private Collection<Function<SearchRequest, SearchRequest>> _getContributors(
 		SearchRequest searchRequest) {
 
-		List<String> contributors = searchRequest.getIncludeContributors();
+		List<String> contributors = new ArrayList<>(
+			searchRequest.getIncludeContributors());
 
 		if (ListUtil.isEmpty(contributors)) {
 			contributors = new ArrayList<>(_serviceTrackerMap.keySet());

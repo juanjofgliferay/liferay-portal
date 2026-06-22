@@ -16,8 +16,11 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.NaturalOrderStringComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -31,8 +34,10 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -88,13 +93,8 @@ public class BatchEngineFileInstaller implements FileInstaller {
 	}
 
 	public boolean isBatchEngineTechnical(String zipEntryName) {
-		if (zipEntryName.endsWith(
-				BatchEngineTaskContentType.JSONT.getFileExtension())) {
-
-			return true;
-		}
-
-		return false;
+		return zipEntryName.endsWith(
+			BatchEngineTaskContentType.JSONT.getFileExtension());
 	}
 
 	@Override
@@ -152,10 +152,13 @@ public class BatchEngineFileInstaller implements FileInstaller {
 			}
 
 			try {
-				batchEngineUnitConfiguration.setUserId(
-					_userLocalService.getUserIdByScreenName(
-						batchEngineUnitConfiguration.getCompanyId(),
-						PropsUtil.get(PropsKeys.DEFAULT_ADMIN_SCREEN_NAME)));
+				List<User> users = _userLocalService.getUsersByRoleName(
+					batchEngineUnitConfiguration.getCompanyId(),
+					RoleConstants.ADMINISTRATOR, 0, 1);
+
+				User user = users.get(0);
+
+				batchEngineUnitConfiguration.setUserId(user.getUserId());
 			}
 			catch (PortalException portalException) {
 				_log.error("Unable to get default user ID", portalException);
@@ -169,7 +172,8 @@ public class BatchEngineFileInstaller implements FileInstaller {
 		ZipFile zipFile) {
 
 		Map<String, ZipEntry> batchEngineZipEntries = new HashMap<>();
-		Map<String, BatchEngineUnit> batchEngineUnits = new HashMap<>();
+		Map<String, BatchEngineUnit> batchEngineUnits = new TreeMap<>(
+			new NaturalOrderStringComparator());
 		Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
 
 		while (enumeration.hasMoreElements()) {

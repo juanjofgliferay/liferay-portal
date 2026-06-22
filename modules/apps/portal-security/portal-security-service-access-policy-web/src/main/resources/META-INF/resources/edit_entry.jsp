@@ -132,14 +132,12 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 	</aui:button-row>
 </aui:form>
 
-<aui:script require="frontend-js-web/index as frontendJsWeb">
-	var {delegate} = frontendJsWeb;
-
+<aui:script sandbox="<%= true %>">
 	var alternatingElements = document.querySelectorAll(
 		'#<portlet:namespace />advancedMode, #<portlet:namespace />friendlyMode, #<portlet:namespace />allowedServiceSignatures, #<portlet:namespace />allowedServiceSignaturesFriendlyContentBox'
 	);
 
-	delegate(
+	Liferay.Util.delegate(
 		document.<portlet:namespace />fm,
 		'click',
 		'#<portlet:namespace />advancedMode, #<portlet:namespace />friendlyMode',
@@ -151,7 +149,7 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 	);
 </aui:script>
 
-<aui:script use="autocomplete,autocomplete-filters,io-base,liferay-auto-fields,liferay-portlet-url">
+<aui:script use="autocomplete,autocomplete-filters,io-base,liferay-auto-fields">
 	var REGEX_DOT = /\./g;
 
 	var actionMethodNamesCache = {};
@@ -160,11 +158,8 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 		<portlet:param name="<%= ActionRequest.ACTION_NAME %>" value="getActionMethodNames" />
 	</liferay-portlet:resourceURL>
 
-	var getActionMethodNamesURL = Liferay.PortletURL.createURL(
-		'<%= getActionMethodNamesURL %>'
-	);
-
-	var serviceClassNamesToContextNames = <%= request.getAttribute(SAPWebKeys.SERVICE_CLASS_NAMES_TO_CONTEXT_NAMES) %>;
+	var serviceClassNamesToContextNames =
+		<%= request.getAttribute(SAPWebKeys.SERVICE_CLASS_NAMES_TO_CONTEXT_NAMES) %>;
 
 	var getActionMethodNames = function (contextName, serviceClassName, callback) {
 		if (contextName && serviceClassName && callback) {
@@ -182,11 +177,14 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 					contextName = '';
 				}
 
-				getActionMethodNamesURL.setParameter('contextName', contextName);
-				getActionMethodNamesURL.setParameter(
-					'serviceClassName',
-					serviceClassName
-				);
+				const getActionMethodNamesURL =
+					Liferay.Util.PortletURL.createPortletURL(
+						'<%= getActionMethodNamesURL %>',
+						{
+							contextName,
+							serviceClassName,
+						}
+					);
 
 				Liferay.Util.fetch(getActionMethodNamesURL.toString())
 					.then((response) => {
@@ -194,7 +192,7 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 					})
 					.then((data) => {
 						methodObj.actionMethodNames = data;
-						callback(actionMethodNames);
+						callback(data);
 					});
 			}
 			else {
@@ -222,6 +220,16 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 		var actionMethodNameInput = rowNode.one('.action-method-name');
 		var serviceClassNameInput = rowNode.one('.service-class-name');
 
+		var syncActionMethodNameDisabled = function () {
+			var hasServiceClassName = serviceClassNameInput.val().trim().length > 0;
+
+			actionMethodNameInput.attr('disabled', !hasServiceClassName);
+		};
+
+		syncActionMethodNameDisabled();
+
+		serviceClassNameInput.on('input', syncActionMethodNameDisabled);
+
 		new A.AutoComplete({
 			inputNode: serviceClassNameInput,
 			on: {
@@ -237,7 +245,7 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 						result.contextName
 					);
 
-					actionMethodNameInput.attr('disabled', false);
+					syncActionMethodNameDisabled();
 				},
 			},
 			resultFilters: 'phraseMatch',
@@ -336,10 +344,7 @@ renderResponse.setTitle((sapEntry == null) ? LanguageUtil.get(request, "new-serv
 			clone: function (event) {
 				var rowNode = event.row;
 
-				var actionMethodNameInput = rowNode.one('.action-method-name');
 				var serviceClassNameInput = rowNode.one('.service-class-name');
-
-				actionMethodNameInput.attr('disabled', true);
 
 				serviceClassNameInput.attr({
 					'data-context-name': '',

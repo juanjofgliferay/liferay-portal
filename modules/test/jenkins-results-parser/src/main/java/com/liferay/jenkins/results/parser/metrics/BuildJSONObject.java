@@ -7,7 +7,11 @@ package com.liferay.jenkins.results.parser.metrics;
 
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import java.util.HashMap;
@@ -31,6 +35,10 @@ public class BuildJSONObject extends JSONObject {
 		super(source);
 
 		_topLevelBuildURL = _getTopLevelBuildURL();
+	}
+
+	public String getBuiltOn() {
+		return optString("builtOn");
 	}
 
 	public long getDuration() {
@@ -62,10 +70,13 @@ public class BuildJSONObject extends JSONObject {
 
 	public String getStartDateString() {
 		if (_startDateString == null) {
-			LocalDate startDate = JenkinsResultsParserUtil.getLocalDate(
-				getStartTime());
+			Instant instant = Instant.ofEpochMilli(getStartTime());
 
-			_startDateString = startDate.format(
+			ZonedDateTime zonedDateTime = instant.atZone(ZoneOffset.UTC);
+
+			LocalDate localDate = zonedDateTime.toLocalDate();
+
+			_startDateString = localDate.format(
 				DateTimeFormatter.ofPattern("yyyyMMdd"));
 		}
 
@@ -73,7 +84,24 @@ public class BuildJSONObject extends JSONObject {
 	}
 
 	public long getStartTime() {
-		return optLong("startTime");
+		String jobName = getJobName();
+
+		long startTime = optLong("startTime");
+
+		if (jobName.equals("maintenance-daily")) {
+			startTime += optLong("queueDuration");
+		}
+
+		ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(
+			Instant.ofEpochMilli(startTime), ZoneId.of("America/Los_Angeles"));
+
+		Instant instant = zonedDateTime.toInstant();
+
+		return instant.toEpochMilli();
+	}
+
+	public String getTestrayBuildURL() {
+		return optString("testrayBuildURL");
 	}
 
 	public String getTopLevelBuildURL() {
@@ -88,7 +116,13 @@ public class BuildJSONObject extends JSONObject {
 		String url = getURL();
 
 		if (url.contains("-batch") || url.contains("-downstream") ||
-			url.contains("maintenance") || url.contains("-validation")) {
+			url.contains("-validation") ||
+			url.contains("app-server-bundle-builder") ||
+			url.contains("approve-github-collaborator-invites") ||
+			url.contains("archive") || url.contains("forward-") ||
+			url.contains("generate-") || url.contains("maintenance") ||
+			url.contains("scancode") || url.contains("sha-propagator") ||
+			url.contains("source-format")) {
 
 			return false;
 		}

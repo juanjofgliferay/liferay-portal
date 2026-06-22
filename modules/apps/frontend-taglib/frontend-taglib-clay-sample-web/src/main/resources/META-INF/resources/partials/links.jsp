@@ -17,14 +17,18 @@
 	<p>Used for stand-alone hyperlinks. Can be a text or an image.</p>
 </blockquote>
 
-<clay:link
-	data-custom-property="customValue"
-	href="#"
-	label="link text"
-	target="_blank"
-/>
+<div>
+	<clay:link
+		cssClass="py-1"
+		data-custom-property="customValue"
+		href="#"
+		label="link text"
+		target="_blank"
+	/>
+</div>
 
 <clay:link
+	cssClass="mt-2"
 	displayType="primary"
 	href="#"
 	label="a button link"
@@ -32,3 +36,16 @@
 	target="_blank"
 	type="button"
 />
+
+<p class="mt-2">
+	This is some inline text with
+
+	<clay:link
+		data-custom-property="customValue"
+		href="#"
+		label="link text"
+		target="_blank"
+	/>
+
+	to test for 3:1 color contrast ratio.
+</p>

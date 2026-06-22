@@ -51,13 +51,26 @@ public interface FragmentEntryLink
 
 			};
 
+	public FragmentEntry fetchFragmentEntry();
+
+	public com.liferay.portal.kernel.json.JSONObject
+		getConfigurationJSONObject();
+
+	public com.liferay.portal.kernel.json.JSONObject getConfigurationJSONObject(
+		boolean strict);
+
+	public com.liferay.portal.kernel.json.JSONObject
+		getEditableValuesJSONObject();
+
+	public com.liferay.portal.kernel.json.JSONObject
+		getEditableValuesJSONObject(boolean strict);
+
 	public boolean isCacheable();
 
 	public boolean isLatestVersion()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public boolean isSystem()
-		throws com.liferay.portal.kernel.exception.PortalException;
+	public boolean isSystem();
 
 	public boolean isTypeComponent();
 
@@ -70,3 +83,4 @@ public interface FragmentEntryLink
 	public boolean isTypeSection();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-815531985

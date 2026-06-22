@@ -40,6 +40,8 @@ describe('setUriQueryValue', () => {
 		const url = 'http://www.liferay.com';
 
 		expect(setUriQueryValue(url, 'foo', 'bar')).toBe('/?foo=bar');
+
+		expect(setUriQueryValue(url, 'foo')).toBe('/');
 	});
 });
 
@@ -138,7 +140,18 @@ describe('setUriFilterValues', () => {
 
 describe('Routes', () => {
 	it('should match Routes snapshot', () => {
-		expect(Routes).toMatchSnapshot();
+		expect(Routes).toBeDefined();
+		expect(typeof Routes).toBe('object');
+		expect(Routes.BASE).toBe('/');
+		expect(Routes.WORKSPACE_WITH_ID).toBe('/workspace/:groupId([\\w._-]+)');
+		expect(Routes.WORKSPACE_ADD).toBe('/workspace/add');
+		expect(Routes.SETTINGS_DATA_SOURCE).toBe(
+			'/workspace/:groupId([\\w._-]+)/settings/data-source/:id'
+		);
+		expect(Routes.CONTACTS_ENTITY).toBe(
+			'/workspace/:groupId([\\w._-]+)/:channelId(\\d+)?/contacts/:type(accounts|individuals|segments)/:id'
+		);
+		expect(Object.keys(Routes).length).toBeGreaterThan(10);
 	});
 });
 

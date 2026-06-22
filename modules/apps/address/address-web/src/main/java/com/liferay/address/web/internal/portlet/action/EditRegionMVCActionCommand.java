@@ -24,13 +24,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AddressPortletKeys.COUNTRIES_MANAGEMENT_ADMIN,
+		"jakarta.portlet.name=" + AddressPortletKeys.COUNTRIES_MANAGEMENT_ADMIN,
 		"mvc.command.name=/address/edit_region"
 	},
 	service = MVCActionCommand.class
@@ -68,7 +68,7 @@ public class EditRegionMVCActionCommand
 				long countryId = ParamUtil.getLong(actionRequest, "countryId");
 
 				region = _regionService.addRegion(
-					countryId, active, name, position, regionCode,
+					null, countryId, active, name, position, regionCode,
 					ServiceContextFactory.getInstance(
 						Region.class.getName(), actionRequest));
 
@@ -81,8 +81,11 @@ public class EditRegionMVCActionCommand
 						region.getRegionId()));
 			}
 			else {
+				region = _regionService.getRegion(regionId);
+
 				region = _regionService.updateRegion(
-					regionId, active, name, position, regionCode);
+					region.getExternalReferenceCode(), regionId, active, name,
+					position, regionCode);
 			}
 
 			if (region != null) {

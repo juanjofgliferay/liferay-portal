@@ -28,6 +28,7 @@ import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLayoutLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -53,18 +54,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marcellus Tavares
@@ -277,7 +278,7 @@ public class DDMFormFieldTemplateContextFactory {
 		Map<String, List<DDMFormFieldValue>> nestedDDMFormFieldValuesMap =
 			parentDDMFormFieldValue.getNestedDDMFormFieldValuesMap();
 
-		Set<String> ddmFormFieldValueNames = new HashSet<>();
+		Set<String> ddmFormFieldValueNames = new LinkedHashSet<>();
 
 		for (DDMFormFieldValue ddmFormFieldValue :
 				parentDDMFormFieldValue.getNestedDDMFormFieldValues()) {
@@ -334,18 +335,13 @@ public class DDMFormFieldTemplateContextFactory {
 	private List<Map<String, String>> _createOptions(
 		List<KeyValuePair> keyValuePairs) {
 
-		List<Map<String, String>> list = new ArrayList<>();
-
-		for (KeyValuePair keyValuePair : keyValuePairs) {
-			list.add(
-				HashMapBuilder.put(
-					"label", keyValuePair.getValue()
-				).put(
-					"value", keyValuePair.getKey()
-				).build());
-		}
-
-		return list;
+		return TransformUtil.transform(
+			keyValuePairs,
+			keyValuePair -> HashMapBuilder.put(
+				"label", keyValuePair.getValue()
+			).put(
+				"value", keyValuePair.getKey()
+			).build());
 	}
 
 	private String _getAffixedDDMFormFieldParameterName(
@@ -465,11 +461,7 @@ public class DDMFormFieldTemplateContextFactory {
 	}
 
 	private boolean _isFieldSetField(DDMFormField ddmFormField) {
-		if (StringUtil.equals(ddmFormField.getType(), "fieldset")) {
-			return true;
-		}
-
-		return false;
+		return StringUtil.equals(ddmFormField.getType(), "fieldset");
 	}
 
 	private void _setDDMFormFieldFieldSetTemplateContextContributedParameters(

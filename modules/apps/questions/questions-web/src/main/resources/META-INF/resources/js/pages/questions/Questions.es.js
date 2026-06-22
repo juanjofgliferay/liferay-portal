@@ -11,10 +11,10 @@ import React, {
 	useMemo,
 	useState,
 } from 'react';
-import {withRouter} from 'react-router-dom';
 
 import {AppContext} from '../../AppContext.es';
 import Breadcrumb from '../../components/Breadcrumb.es';
+import {withRouter} from '../../hooks/withRouter.es';
 import {
 	getSectionThreadsQuery,
 	getTagsOrderByDateCreatedQuery,
@@ -29,20 +29,13 @@ import useQuestionsURLUtil from './hooks/useQuestionsURLUtil.es';
 
 const MAX_NUMBER_OF_QUESTIONS = 500;
 
-export default withRouter(({history, location, match: {params}}) => {
+export default withRouter(({history, location, params}) => {
 	const {creatorId, sectionTitle} = params;
 
 	const urlParams = useQuestionsURLParameters(location);
 
-	const {
-		filterBy,
-		page,
-		pageSize,
-		search,
-		selectedTags,
-		sortBy,
-		taggedWith,
-	} = urlParams;
+	const {filterBy, page, pageSize, search, selectedTags, sortBy, taggedWith} =
+		urlParams;
 
 	const context = useContext(AppContext);
 	const [getThreadsFiltered] = useManualQuery(getSectionThreadsQuery, {
@@ -85,12 +78,8 @@ export default withRouter(({history, location, match: {params}}) => {
 		setLoading,
 	});
 
-	const {
-		buildParams,
-		changePage,
-		historyPushParser,
-		navigateToNewQuestion,
-	} = useQuestionsURLUtil({context, history, params});
+	const {buildParams, changePage, historyPushParser, navigateToNewQuestion} =
+		useQuestionsURLUtil({context, history, params});
 
 	const getMbThreads = useCallback(
 		async (params) => {
@@ -98,6 +87,7 @@ export default withRouter(({history, location, match: {params}}) => {
 
 			const filteredValues = getFilterValues(
 				{
+					creatorId,
 					filterBy: params.filterBy,
 					sortBy: params.sortBy,
 					taggedWith: params.taggedWith,
@@ -106,7 +96,7 @@ export default withRouter(({history, location, match: {params}}) => {
 					? subscribedTags.map((tag) => ({
 							label: tag.name,
 							value: tag.name,
-					  }))
+						}))
 					: params.selectedTags
 			);
 
@@ -162,6 +152,7 @@ export default withRouter(({history, location, match: {params}}) => {
 			setLoading(false);
 		},
 		[
+			creatorId,
 			getThreads,
 			getThreadsFiltered,
 			page,

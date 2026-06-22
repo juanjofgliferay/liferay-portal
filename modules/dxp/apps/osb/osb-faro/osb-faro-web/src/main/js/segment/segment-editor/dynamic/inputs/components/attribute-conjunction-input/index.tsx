@@ -1,6 +1,10 @@
+import ClayButton from '@clayui/button';
+import ClayDropDown from '@clayui/drop-down';
+import ClayIcon from '@clayui/icon';
 import Form from 'shared/components/form';
 import OperatorSelect from './OperatorSelect';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
+import Sticker from 'shared/components/Sticker';
 import ValueInput from './ValueInput';
 import {
 	AddEntity,
@@ -10,19 +14,20 @@ import {
 } from '../../../context/referencedObjects';
 import {Attribute} from 'event-analysis/utils/types';
 import {Criterion} from '../../../utils/types';
+import {DATA_TYPE_ICONS_MAP} from 'event-analysis/utils/utils';
 import {
 	getDefaultAttributeOperator,
 	getDefaultAttributeValue,
 	validateAttributeValue
 } from './utils';
 import {Map} from 'immutable';
-import {Option, Picker} from '@clayui/core';
 
 interface IAttributeFilterConjunctionInputProps {
 	addEntity: AddEntity;
 	attributes: Attribute[];
 	conjunctionCriterion: Criterion;
 	onChange: (params: {
+		attribute: Attribute;
 		criterion: Criterion;
 		touched: {
 			attribute: boolean;
@@ -44,12 +49,13 @@ interface IAttributeFilterConjunctionInputProps {
 	};
 }
 
-const AttributeFilterConjunctionInput: React.FC<IAttributeFilterConjunctionInputProps> = ({
+const AttributeFilterConjunctionInput: React.FC<
+	IAttributeFilterConjunctionInputProps
+> = ({
 	addEntity,
 	attributes,
 	conjunctionCriterion,
 	onChange,
-	referencedEntities,
 	touched,
 	valid
 }) => {
@@ -61,24 +67,43 @@ const AttributeFilterConjunctionInput: React.FC<IAttributeFilterConjunctionInput
 		}
 	}, []);
 
-	const getAttributeFromContext = () => {
+	const [attributesDisplayed, setAttributesDisplayed] =
+		useState<Attribute[]>(attributes);
+	const [searchValue, setSearchValue] = useState<string>('');
+
+	const getAttributeFromContext = (): Attribute => {
 		const attributeId = getAttributeId();
 
-		return referencedEntities
-			.getIn([EntityType.Attributes, attributeId], Map({}))
-			.toJS();
+		return (
+			attributes.find(attribute => attribute?.id === attributeId) ||
+			attributes[0]
+		);
 	};
 
 	const getAttributeId = (): string => {
-		const [, id] = conjunctionCriterion.propertyName.split('/');
+		const [, id] = (conjunctionCriterion.propertyName ?? '').split('/');
 
 		return id;
 	};
 
-	const handleAttributeChange = value => {
+	const handleAttributeChange = (value: string) => {
 		const attribute = attributes.find(({id}) => id === value);
 
-		setAttribute(attribute);
+		if (attribute) {
+			setAttribute(attribute);
+		}
+	};
+
+	const getAttributes = (query: string) => {
+		if (!query) return attributes;
+
+		return attributes.filter(
+			({displayName, name}) =>
+				(displayName ?? '')
+					.toLowerCase()
+					.includes(query.toLowerCase()) ||
+				name.toLowerCase().includes(query.toLowerCase())
+		);
 	};
 
 	const setAttribute = (attribute: Attribute) => {
@@ -89,7 +114,9 @@ const AttributeFilterConjunctionInput: React.FC<IAttributeFilterConjunctionInput
 
 		const defaultAttributeValue = getDefaultAttributeValue(
 			attribute.dataType,
-			conjunctionCriterion.operatorName
+			conjunctionCriterion.operatorName as unknown as
+				| import('../../../utils/constants').RelationalOperators
+				| import('../../../utils/constants').FunctionalOperators
 		);
 
 		const defaultAttributeOperator = getDefaultAttributeOperator(
@@ -97,8 +124,10 @@ const AttributeFilterConjunctionInput: React.FC<IAttributeFilterConjunctionInput
 		);
 
 		onChange({
+			attribute,
 			criterion: {
-				operatorName: defaultAttributeOperator as Criterion['operatorName'],
+				operatorName:
+					defaultAttributeOperator as unknown as Criterion['operatorName'],
 				propertyName: `attribute/${attribute.id}`,
 				value: defaultAttributeValue
 			},
@@ -115,34 +144,96 @@ const AttributeFilterConjunctionInput: React.FC<IAttributeFilterConjunctionInput
 		});
 	};
 
-	const {dataType} = getAttributeFromContext();
+	const attribute = getAttributeFromContext();
 	const {operatorName, value} = conjunctionCriterion;
 
 	return (
 		<>
 			<Form.GroupItem shrink>
-				<Picker
-					className='attribute-input'
-					items={attributes.map(({displayName, id, name}) => ({
-						label: displayName || name,
-						value: id
-					}))}
-					onSelectionChange={handleAttributeChange}
-					selectedKey={getAttributeId()}
+				<ClayDropDown
+					closeOnClick
+					trigger={
+						<ClayButton
+							className='form-control form-control-select form-control-select-secondary'
+							displayType='secondary'
+						>
+							{attribute.displayName || attribute.name}
+						</ClayButton>
+					}
 				>
-					{({label, value}) => <Option key={value}>{label}</Option>}
-				</Picker>
+					<ClayDropDown.Search
+						className='py-2 px-2'
+						onChange={(query: string) => {
+							setSearchValue(query);
+							setAttributesDisplayed(getAttributes(query));
+						}}
+						placeholder={Liferay.Language.get('search')}
+						value={searchValue}
+					/>
+
+					<ClayDropDown.ItemList items={attributesDisplayed}>
+						{(item: unknown) => {
+							const {dataType, displayName, id, name} =
+								item as Attribute;
+							return (
+								<ClayDropDown.Item
+									active={id === attribute.id}
+									key={name}
+									onClick={() => handleAttributeChange(id)}
+									roleItem='option'
+								>
+									<Sticker
+										className='mr-3'
+										display='secondary'
+									>
+										<ClayIcon
+											symbol={
+												DATA_TYPE_ICONS_MAP[dataType]
+											}
+										/>
+									</Sticker>
+
+									{displayName ?? name}
+								</ClayDropDown.Item>
+							);
+						}}
+					</ClayDropDown.ItemList>
+				</ClayDropDown>
 			</Form.GroupItem>
 
 			<OperatorSelect
-				dataType={dataType}
-				onChange={onChange}
+				dataType={attribute.dataType}
+				onChange={(params: {criterion: Criterion}) =>
+					onChange({
+						attribute,
+						criterion: params.criterion,
+						touched,
+						valid
+					})
+				}
 				operatorName={operatorName}
 			/>
 
 			<ValueInput
-				dataType={dataType}
-				onChange={onChange}
+				dataType={attribute.dataType}
+				onChange={params =>
+					onChange({
+						attribute,
+						criterion: params.criterion ?? {},
+						touched: {
+							...touched,
+							attributeValue:
+								params.touched?.attributeValue ??
+								touched.attributeValue
+						},
+						valid: {
+							...valid,
+							attributeValue:
+								params.valid?.attributeValue ??
+								valid.attributeValue
+						}
+					})
+				}
 				operatorName={operatorName}
 				touched={touched.attributeValue}
 				valid={valid.attributeValue}

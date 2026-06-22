@@ -12,10 +12,10 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.site.teams.web.internal.servlet.taglib.util.UserActionDropdownItemsProvider;
 import com.liferay.taglib.util.LexiconUtil;
 
-import java.util.List;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.List;
 
 /**
  * @author Eudaldo Alonso
@@ -44,6 +44,16 @@ public class UserUserCard extends BaseUserCard {
 	@Override
 	public String getUserColorClass() {
 		return "sticker-user-icon " + LexiconUtil.getUserColorCssClass(user);
+	}
+
+	@Override
+	public boolean isDisabled() {
+		return rowChecker.isDisabled(user);
+	}
+
+	@Override
+	public boolean isSelectable() {
+		return !isDisabled();
 	}
 
 	private final RenderResponse _renderResponse;

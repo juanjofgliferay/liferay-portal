@@ -5,8 +5,8 @@
 
 package com.liferay.portal.test.aspects;
 
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
-import com.liferay.portal.kernel.util.StreamUtil;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.ByteArrayInputStream;
@@ -39,6 +39,25 @@ public class URLWeavingAdapter extends WeavingAdaptor {
 		for (Class<?> aspectClass : aspectClasses) {
 			_addAspectClass(aspectClass);
 		}
+
+		ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+
+		ClassLoader platformClassLoader = systemClassLoader.getParent();
+
+		bcelWorld.addTypeDelegateResolver(
+			referenceType -> {
+				try {
+					return bcelWorld.buildBcelDelegate(
+						referenceType,
+						_classToJavaClass(
+							platformClassLoader.loadClass(
+								referenceType.getName())),
+						false, false);
+				}
+				catch (Exception exception) {
+					return null;
+				}
+			});
 
 		weaver.prepareForWeave();
 	}

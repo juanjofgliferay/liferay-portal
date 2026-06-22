@@ -84,6 +84,12 @@ const getLocalizedValue = ({
 	}
 
 	switch (type) {
+		case 'color':
+		case 'numeric':
+		case 'select':
+		case 'text': {
+			return _value;
+		}
 		case 'image': {
 			try {
 				return JSON.parse(value);
@@ -92,12 +98,6 @@ const getLocalizedValue = ({
 				return _value;
 			}
 		}
-		case 'numeric':
-		case 'select':
-		case 'text': {
-			return _value;
-		}
-
 		default:
 			try {
 				return JSON.parse(_value);
@@ -310,6 +310,42 @@ export default function languageReducer(state, action) {
 
 			return {
 				availableLanguageIds: [...availableLanguageIds, languageId],
+			};
+		}
+		case EVENT_TYPES.LANGUAGE.LOCALES_DROPDOWN_CHANGE: {
+			const {defaultLanguageId, focusedField, pages} = state;
+
+			const {editingLanguageId} = action.payload;
+
+			const visitor = new PagesVisitor(pages);
+
+			const newPages = visitor.mapFields(
+				({localizedObjectField, value}) => {
+					if (localizedObjectField) {
+						const parsedValue =
+							typeof value === 'string' && value
+								? JSON.parse(value)
+								: value;
+
+						return {
+							value: {
+								...parsedValue,
+								[editingLanguageId]:
+									parsedValue[editingLanguageId] ??
+									parsedValue[defaultLanguageId],
+							},
+						};
+					}
+				},
+				true,
+				true
+			);
+
+			return {
+				editingLanguageId,
+				focusedField:
+					getField(newPages, focusedField?.fieldName) ?? focusedField,
+				pages: newPages,
 			};
 		}
 		case EVENT_TYPES.LANGUAGE.UPDATE: {

@@ -112,11 +112,7 @@ public class ObjectFolderPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ObjectFolder newObjectFolder = _persistence.create(pk);
-
-		newObjectFolder.setMvccVersion(RandomTestUtil.nextLong());
+		ObjectFolder newObjectFolder = addObjectFolder();
 
 		newObjectFolder.setUuid(RandomTestUtil.randomString());
 
@@ -135,6 +131,8 @@ public class ObjectFolderPersistenceTest {
 		newObjectFolder.setLabel(RandomTestUtil.randomString());
 
 		newObjectFolder.setName(RandomTestUtil.randomString());
+
+		newObjectFolder.setStatus(RandomTestUtil.nextInt());
 
 		_objectFolders.add(_persistence.update(newObjectFolder));
 
@@ -169,6 +167,8 @@ public class ObjectFolderPersistenceTest {
 			existingObjectFolder.getLabel(), newObjectFolder.getLabel());
 		Assert.assertEquals(
 			existingObjectFolder.getName(), newObjectFolder.getName());
+		Assert.assertEquals(
+			existingObjectFolder.getStatus(), newObjectFolder.getStatus());
 	}
 
 	@Test(expected = DuplicateObjectFolderExternalReferenceCodeException.class)
@@ -262,7 +262,7 @@ public class ObjectFolderPersistenceTest {
 			"ObjectFolder", "mvccVersion", true, "uuid", true,
 			"externalReferenceCode", true, "objectFolderId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "label", true, "name", true);
+			"modifiedDate", true, "label", true, "name", true, "status", true);
 	}
 
 	@Test
@@ -557,8 +557,6 @@ public class ObjectFolderPersistenceTest {
 
 		ObjectFolder objectFolder = _persistence.create(pk);
 
-		objectFolder.setMvccVersion(RandomTestUtil.nextLong());
-
 		objectFolder.setUuid(RandomTestUtil.randomString());
 
 		objectFolder.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -577,6 +575,8 @@ public class ObjectFolderPersistenceTest {
 
 		objectFolder.setName(RandomTestUtil.randomString());
 
+		objectFolder.setStatus(RandomTestUtil.nextInt());
+
 		_objectFolders.add(_persistence.update(objectFolder));
 
 		return objectFolder;
@@ -587,3 +587,4 @@ public class ObjectFolderPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-498848516

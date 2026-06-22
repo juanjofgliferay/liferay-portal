@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {cleanup, render} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {render, screen} from '@testing-library/react';
 import React, {useState} from 'react';
 
 import UnsafeHTML from '../../../../src/main/resources/META-INF/resources/page_editor/app/components/UnsafeHTML';
 
 describe('UnsafeHTML', () => {
-	afterEach(cleanup);
-
 	it('renders the given HTML markup', () => {
 		const {container} = render(
 			<UnsafeHTML markup="<h1>Hello <strong>Gürjen</strong></h1>" />
@@ -91,7 +89,7 @@ describe('UnsafeHTML', () => {
 			},
 		]);
 
-		const {getByTestId} = render(
+		render(
 			<UnsafeHTML
 				getPortals={getPortals}
 				markup={`
@@ -103,7 +101,7 @@ describe('UnsafeHTML', () => {
 			/>
 		);
 
-		const portalContent = getByTestId('portal-content');
+		const portalContent = screen.getByTestId('portal-content');
 
 		expect(portalContent).toBeInTheDocument();
 		expect(portalContent.innerHTML).toBe('Some portal 123');

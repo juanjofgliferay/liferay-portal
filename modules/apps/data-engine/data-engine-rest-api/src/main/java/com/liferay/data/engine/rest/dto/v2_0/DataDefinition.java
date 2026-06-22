@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Jeyvison Nascimento
@@ -43,6 +42,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "https://www.schema.org/DataDefinition",
 	value = "DataDefinition"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "https://www.schema.org/DataDefinition"
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "DataDefinition")
@@ -56,13 +58,21 @@ public class DataDefinition implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DataDefinition.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getAvailableLanguageIds() {
+		if (_availableLanguageIdsSupplier != null) {
+			availableLanguageIds = _availableLanguageIdsSupplier.get();
+
+			_availableLanguageIdsSupplier = null;
+		}
+
 		return availableLanguageIds;
 	}
 
 	public void setAvailableLanguageIds(String[] availableLanguageIds) {
 		this.availableLanguageIds = availableLanguageIds;
+
+		_availableLanguageIdsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -70,52 +80,76 @@ public class DataDefinition implements Serializable {
 		UnsafeSupplier<String[], Exception>
 			availableLanguageIdsUnsafeSupplier) {
 
-		try {
-			availableLanguageIds = availableLanguageIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_availableLanguageIdsSupplier = () -> {
+			try {
+				return availableLanguageIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] availableLanguageIds;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String[]> _availableLanguageIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getContentType() {
+		if (_contentTypeSupplier != null) {
+			contentType = _contentTypeSupplier.get();
+
+			_contentTypeSupplier = null;
+		}
+
 		return contentType;
 	}
 
 	public void setContentType(String contentType) {
 		this.contentType = contentType;
+
+		_contentTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentType(
 		UnsafeSupplier<String, Exception> contentTypeUnsafeSupplier) {
 
-		try {
-			contentType = contentTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentTypeSupplier = () -> {
+			try {
+				return contentTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _contentTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public DataDefinitionField[] getDataDefinitionFields() {
+		if (_dataDefinitionFieldsSupplier != null) {
+			dataDefinitionFields = _dataDefinitionFieldsSupplier.get();
+
+			_dataDefinitionFieldsSupplier = null;
+		}
+
 		return dataDefinitionFields;
 	}
 
@@ -123,6 +157,8 @@ public class DataDefinition implements Serializable {
 		DataDefinitionField[] dataDefinitionFields) {
 
 		this.dataDefinitionFields = dataDefinitionFields;
+
+		_dataDefinitionFieldsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -130,199 +166,290 @@ public class DataDefinition implements Serializable {
 		UnsafeSupplier<DataDefinitionField[], Exception>
 			dataDefinitionFieldsUnsafeSupplier) {
 
-		try {
-			dataDefinitionFields = dataDefinitionFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataDefinitionFieldsSupplier = () -> {
+			try {
+				return dataDefinitionFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DataDefinitionField[] dataDefinitionFields;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<DataDefinitionField[]> _dataDefinitionFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDataDefinitionKey() {
+		if (_dataDefinitionKeySupplier != null) {
+			dataDefinitionKey = _dataDefinitionKeySupplier.get();
+
+			_dataDefinitionKeySupplier = null;
+		}
+
 		return dataDefinitionKey;
 	}
 
 	public void setDataDefinitionKey(String dataDefinitionKey) {
 		this.dataDefinitionKey = dataDefinitionKey;
+
+		_dataDefinitionKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDataDefinitionKey(
 		UnsafeSupplier<String, Exception> dataDefinitionKeyUnsafeSupplier) {
 
-		try {
-			dataDefinitionKey = dataDefinitionKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataDefinitionKeySupplier = () -> {
+			try {
+				return dataDefinitionKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String dataDefinitionKey;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _dataDefinitionKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public DataRule[] getDataRules() {
+		if (_dataRulesSupplier != null) {
+			dataRules = _dataRulesSupplier.get();
+
+			_dataRulesSupplier = null;
+		}
+
 		return dataRules;
 	}
 
 	public void setDataRules(DataRule[] dataRules) {
 		this.dataRules = dataRules;
+
+		_dataRulesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDataRules(
 		UnsafeSupplier<DataRule[], Exception> dataRulesUnsafeSupplier) {
 
-		try {
-			dataRules = dataRulesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataRulesSupplier = () -> {
+			try {
+				return dataRulesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DataRule[] dataRules;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<DataRule[]> _dataRulesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
 		return dateCreated;
 	}
 
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCreated(
 		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
 
-		try {
-			dateCreated = dateCreatedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateCreated;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
 		return dateModified;
 	}
 
 	public void setDateModified(Date dateModified) {
 		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateModified(
 		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
 
-		try {
-			dateModified = dateModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateModified;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public DataLayout getDefaultDataLayout() {
+		if (_defaultDataLayoutSupplier != null) {
+			defaultDataLayout = _defaultDataLayoutSupplier.get();
+
+			_defaultDataLayoutSupplier = null;
+		}
+
 		return defaultDataLayout;
 	}
 
 	public void setDefaultDataLayout(DataLayout defaultDataLayout) {
 		this.defaultDataLayout = defaultDataLayout;
+
+		_defaultDataLayoutSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultDataLayout(
 		UnsafeSupplier<DataLayout, Exception> defaultDataLayoutUnsafeSupplier) {
 
-		try {
-			defaultDataLayout = defaultDataLayoutUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultDataLayoutSupplier = () -> {
+			try {
+				return defaultDataLayoutUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DataLayout defaultDataLayout;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<DataLayout> _defaultDataLayoutSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDefaultLanguageId() {
+		if (_defaultLanguageIdSupplier != null) {
+			defaultLanguageId = _defaultLanguageIdSupplier.get();
+
+			_defaultLanguageIdSupplier = null;
+		}
+
 		return defaultLanguageId;
 	}
 
 	public void setDefaultLanguageId(String defaultLanguageId) {
 		this.defaultLanguageId = defaultLanguageId;
+
+		_defaultLanguageIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefaultLanguageId(
 		UnsafeSupplier<String, Exception> defaultLanguageIdUnsafeSupplier) {
 
-		try {
-			defaultLanguageId = defaultLanguageIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultLanguageIdSupplier = () -> {
+			try {
+				return defaultLanguageIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String defaultLanguageId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _defaultLanguageIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(Map<String, Object> description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -330,159 +457,270 @@ public class DataDefinition implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> description;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, Object> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, Object>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSiteId() {
+		if (_siteIdSupplier != null) {
+			siteId = _siteIdSupplier.get();
+
+			_siteIdSupplier = null;
+		}
+
 		return siteId;
 	}
 
 	public void setSiteId(Long siteId) {
 		this.siteId = siteId;
+
+		_siteIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSiteId(
 		UnsafeSupplier<Long, Exception> siteIdUnsafeSupplier) {
 
-		try {
-			siteId = siteIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_siteIdSupplier = () -> {
+			try {
+				return siteIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long siteId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _siteIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getStorageType() {
+		if (_storageTypeSupplier != null) {
+			storageType = _storageTypeSupplier.get();
+
+			_storageTypeSupplier = null;
+		}
+
 		return storageType;
 	}
 
 	public void setStorageType(String storageType) {
 		this.storageType = storageType;
+
+		_storageTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStorageType(
 		UnsafeSupplier<String, Exception> storageTypeUnsafeSupplier) {
 
-		try {
-			storageType = storageTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_storageTypeSupplier = () -> {
+			try {
+				return storageTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String storageType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _storageTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getUserId() {
+		if (_userIdSupplier != null) {
+			userId = _userIdSupplier.get();
+
+			_userIdSupplier = null;
+		}
+
 		return userId;
 	}
 
 	public void setUserId(Long userId) {
 		this.userId = userId;
+
+		_userIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUserId(
 		UnsafeSupplier<Long, Exception> userIdUnsafeSupplier) {
 
-		try {
-			userId = userIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_userIdSupplier = () -> {
+			try {
+				return userIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long userId;
+
+	@JsonIgnore
+	private Supplier<Long> _userIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -514,6 +752,8 @@ public class DataDefinition implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		String[] availableLanguageIds = getAvailableLanguageIds();
+
 		if (availableLanguageIds != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -538,6 +778,8 @@ public class DataDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		String contentType = getContentType();
+
 		if (contentType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -551,6 +793,8 @@ public class DataDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		DataDefinitionField[] dataDefinitionFields = getDataDefinitionFields();
 
 		if (dataDefinitionFields != null) {
 			if (sb.length() > 1) {
@@ -572,6 +816,8 @@ public class DataDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		String dataDefinitionKey = getDataDefinitionKey();
+
 		if (dataDefinitionKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -585,6 +831,8 @@ public class DataDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		DataRule[] dataRules = getDataRules();
 
 		if (dataRules != null) {
 			if (sb.length() > 1) {
@@ -606,6 +854,8 @@ public class DataDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		Date dateCreated = getDateCreated();
+
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -619,6 +869,8 @@ public class DataDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Date dateModified = getDateModified();
 
 		if (dateModified != null) {
 			if (sb.length() > 1) {
@@ -634,6 +886,8 @@ public class DataDefinition implements Serializable {
 			sb.append("\"");
 		}
 
+		DataLayout defaultDataLayout = getDefaultDataLayout();
+
 		if (defaultDataLayout != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -643,6 +897,8 @@ public class DataDefinition implements Serializable {
 
 			sb.append(String.valueOf(defaultDataLayout));
 		}
+
+		String defaultLanguageId = getDefaultLanguageId();
 
 		if (defaultLanguageId != null) {
 			if (sb.length() > 1) {
@@ -658,6 +914,8 @@ public class DataDefinition implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, Object> description = getDescription();
+
 		if (description != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -667,6 +925,24 @@ public class DataDefinition implements Serializable {
 
 			sb.append(_toJSON(description));
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -678,6 +954,8 @@ public class DataDefinition implements Serializable {
 			sb.append(id);
 		}
 
+		Map<String, Object> name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -688,6 +966,8 @@ public class DataDefinition implements Serializable {
 			sb.append(_toJSON(name));
 		}
 
+		Long siteId = getSiteId();
+
 		if (siteId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -697,6 +977,8 @@ public class DataDefinition implements Serializable {
 
 			sb.append(siteId);
 		}
+
+		String storageType = getStorageType();
 
 		if (storageType != null) {
 			if (sb.length() > 1) {
@@ -711,6 +993,8 @@ public class DataDefinition implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long userId = getUserId();
 
 		if (userId != null) {
 			if (sb.length() > 1) {
@@ -727,8 +1011,8 @@ public class DataDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.data.engine.rest.dto.v2_0.DataDefinition",
 		name = "x-class-name"
 	)
@@ -774,7 +1058,10 @@ public class DataDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -820,3 +1107,4 @@ public class DataDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:951420901

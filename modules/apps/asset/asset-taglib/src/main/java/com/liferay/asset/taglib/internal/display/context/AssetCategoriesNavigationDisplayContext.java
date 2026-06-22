@@ -30,16 +30,16 @@ import com.liferay.portlet.asset.util.comparator.AssetCategoryAssetVocabularyLoc
 import com.liferay.portlet.asset.util.comparator.AssetVocabularyGroupLocalizedTitleComparator;
 import com.liferay.taglib.aui.AUIUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -88,10 +88,10 @@ public class AssetCategoriesNavigationDisplayContext {
 
 		PortletRequest portletRequest =
 			(PortletRequest)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 		PortletResponse portletResponse =
 			(PortletResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		_namespace = AUIUtil.getNamespace(portletRequest, portletResponse);
 
@@ -103,37 +103,39 @@ public class AssetCategoriesNavigationDisplayContext {
 	}
 
 	public List<AssetVocabulary> getVocabularies() throws PortalException {
-		if (_vocabularies != null) {
-			return _vocabularies;
+		if (_assetVocabularies != null) {
+			return _assetVocabularies;
 		}
-
-		List<AssetVocabulary> vocabularies = new ArrayList<>();
 
 		if (_vocabularyIds == null) {
-			vocabularies = AssetVocabularyServiceUtil.getGroupVocabularies(
-				SiteConnectedGroupGroupProviderUtil.
-					getCurrentAndAncestorSiteAndDepotGroupIds(
-						_themeDisplay.getScopeGroupId()),
-				new int[] {AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC});
+			_assetVocabularies = ListUtil.sort(
+				AssetVocabularyServiceUtil.getGroupVocabularies(
+					SiteConnectedGroupGroupProviderUtil.
+						getCurrentAndAncestorSiteAndDepotGroupIds(
+							_themeDisplay.getScopeGroupId()),
+					new int[] {
+						AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC
+					}),
+				new AssetVocabularyGroupLocalizedTitleComparator(
+					_themeDisplay.getScopeGroupId(), _themeDisplay.getLocale(),
+					true));
 		}
 		else {
+			List<AssetVocabulary> assetVocabularies = new ArrayList<>();
+
 			for (long vocabularyId : _vocabularyIds) {
 				AssetVocabulary vocabulary =
 					AssetVocabularyServiceUtil.fetchVocabulary(vocabularyId);
 
 				if (vocabulary != null) {
-					vocabularies.add(vocabulary);
+					assetVocabularies.add(vocabulary);
 				}
 			}
+
+			_assetVocabularies = assetVocabularies;
 		}
 
-		_vocabularies = ListUtil.sort(
-			vocabularies,
-			new AssetVocabularyGroupLocalizedTitleComparator(
-				_themeDisplay.getScopeGroupId(), _themeDisplay.getLocale(),
-				true));
-
-		return _vocabularies;
+		return _assetVocabularies;
 	}
 
 	public boolean hasCategories() throws PortalException {
@@ -155,15 +157,15 @@ public class AssetCategoriesNavigationDisplayContext {
 
 		JSONArray categoriesJSONArray = JSONFactoryUtil.createJSONArray();
 
-		List<AssetCategory> categories = ListUtil.sort(
+		List<AssetCategory> assetCategories = ListUtil.sort(
 			AssetCategoryServiceUtil.getVocabularyRootCategories(
 				groupId, vocabularyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 				null),
 			new AssetCategoryAssetVocabularyLocalizedTitleComparator(
 				vocabularyId, _themeDisplay.getLocale(), true));
 
-		for (AssetCategory category : categories) {
-			categoriesJSONArray.put(_getCategoryJSONObject(category));
+		for (AssetCategory assetCategory : assetCategories) {
+			categoriesJSONArray.put(_getCategoryJSONObject(assetCategory));
 		}
 
 		return categoriesJSONArray;
@@ -194,13 +196,14 @@ public class AssetCategoriesNavigationDisplayContext {
 
 		JSONArray childCategoriesJSONArray = JSONFactoryUtil.createJSONArray();
 
-		List<AssetCategory> childCategories = ListUtil.sort(
+		List<AssetCategory> childAssetCategories = ListUtil.sort(
 			AssetCategoryServiceUtil.getChildCategories(categoryId),
 			new AssetCategoryAssetVocabularyLocalizedTitleComparator(
 				0, _themeDisplay.getLocale(), true));
 
-		for (AssetCategory childCategory : childCategories) {
-			childCategoriesJSONArray.put(_getCategoryJSONObject(childCategory));
+		for (AssetCategory childAssetCategory : childAssetCategories) {
+			childCategoriesJSONArray.put(
+				_getCategoryJSONObject(childAssetCategory));
 		}
 
 		return childCategoriesJSONArray;
@@ -251,13 +254,13 @@ public class AssetCategoriesNavigationDisplayContext {
 		return _vocabulariesJSONArray;
 	}
 
+	private List<AssetVocabulary> _assetVocabularies;
 	private Long _categoryId;
 	private final boolean _hidePortletWhenEmpty;
 	private final HttpServletRequest _httpServletRequest;
 	private String _namespace;
 	private final RenderResponse _renderResponse;
 	private final ThemeDisplay _themeDisplay;
-	private List<AssetVocabulary> _vocabularies;
 	private JSONArray _vocabulariesJSONArray;
 	private long[] _vocabularyIds;
 

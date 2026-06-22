@@ -8,8 +8,6 @@
 <%@ include file="/init.jsp" %>
 
 <%
-String redirect = ParamUtil.getString(request, "redirect");
-
 long siteNavigationMenuId = ParamUtil.getLong(request, "siteNavigationMenuId");
 
 String type = ParamUtil.getString(request, "type");
@@ -31,8 +29,7 @@ if (addURL == null) {
 	<liferay-ui:message arguments='<%= ModelHintsUtil.getMaxLength(SiteNavigationMenuItem.class.getName(), "name") %>' key="please-enter-a-name-with-fewer-than-x-characters" translateArguments="<%= false %>" />
 </liferay-ui:error>
 
-<aui:form action="<%= addURL %>" cssClass="add-site-navigation-menu-item container-fluid container-fluid-max-xl" name="fm" onSubmit="event.preventDefault();">
-	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
+<aui:form action="<%= addURL %>" cssClass="add-site-navigation-menu-item container-fluid" name="fm" onSubmit="event.preventDefault();">
 	<aui:input name="siteNavigationMenuId" type="hidden" value="<%= siteNavigationMenuId %>" />
 	<aui:input name="type" type="hidden" value="<%= type %>" />
 
@@ -47,14 +44,14 @@ if (addURL == null) {
 	<aui:button-row cssClass="modal-footer position-fixed">
 		<clay:button
 			id='<%= liferayPortletResponse.getNamespace() + "addButton" %>'
-			label='<%= type.equals("layout") ? "select" : "add" %>'
+			label="add"
 			type="submit"
 		/>
 
 		<clay:button
-			displayType="btn-secondary cancel"
+			displayType="secondary"
+			id='<%= liferayPortletResponse.getNamespace() + "cancelButton" %>'
 			label="cancel"
-			onClick='<%= "Liferay.Util.navigation('" + redirect + "')" %>'
 			type="button"
 		/>
 	</aui:button-row>
@@ -68,5 +65,5 @@ if (addURL == null) {
 			"parentSiteNavigationMenuItemId", ParamUtil.getLong(request, "parentSiteNavigationMenuItemId")
 		).build()
 	%>'
-	module="js/AddSiteNavigationMenuItem"
+	module="{AddSiteNavigationMenuItem} from site-navigation-admin-web"
 />

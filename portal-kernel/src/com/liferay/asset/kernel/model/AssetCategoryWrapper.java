@@ -54,6 +54,7 @@ public class AssetCategoryWrapper
 		attributes.put("description", getDescription());
 		attributes.put("vocabularyId", getVocabularyId());
 		attributes.put("lastPublishDate", getLastPublishDate());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -167,6 +168,12 @@ public class AssetCategoryWrapper
 
 		if (lastPublishDate != null) {
 			setLastPublishDate(lastPublishDate);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -412,6 +419,16 @@ public class AssetCategoryWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
+	}
+
+	/**
+	 * Returns the status of this asset category.
+	 *
+	 * @return the status of this asset category
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
 	}
 
 	/**
@@ -763,6 +780,16 @@ public class AssetCategoryWrapper
 	}
 
 	/**
+	 * Sets the status of this asset category.
+	 *
+	 * @param status the status of this asset category
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets the title of this asset category.
 	 *
 	 * @param title the title of this asset category
@@ -921,3 +948,4 @@ public class AssetCategoryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-39771690

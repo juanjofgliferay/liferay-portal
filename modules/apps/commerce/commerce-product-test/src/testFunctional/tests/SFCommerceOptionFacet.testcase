@@ -1,13 +1,17 @@
 @component-name = "portal-commerce"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp(minium = "true");
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -333,10 +337,6 @@ definition {
 			portletOption = "Configuration");
 
 		IFrame.selectModalFrame();
-
-		AssertElementPresent(
-			key_navItem = "Setup",
-			locator1 = "NavBar#ACTIVE_NAV_ITEM_LINK");
 
 		AssertElementPresent(
 			key_fieldLabel = "Display Template",

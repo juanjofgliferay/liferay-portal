@@ -19,11 +19,14 @@ import com.liferay.commerce.product.service.CPAttachmentFileEntryLocalService;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
+import com.liferay.commerce.product.type.virtual.order.constants.CommerceVirtualOrderActionKeys;
 import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
-import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemLocalService;
+import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItemFileEntry;
+import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemFileEntryLocalService;
 import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemService;
 import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingLocalService;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -46,6 +49,7 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -55,14 +59,14 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -227,6 +231,13 @@ public class CommerceMediaServlet extends HttpServlet {
 				_commerceMediaProvider.getDefaultImageFileEntry(
 					_portal.getCompanyId(httpServletRequest), groupId);
 
+			if (ArrayUtil.contains(
+					CommerceMediaConstants.XML_MIME_TYPES,
+					fileEntry.getMimeType())) {
+
+				contentDisposition = HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT;
+			}
+
 			ServletResponseUtil.sendFile(
 				httpServletRequest, httpServletResponse,
 				fileEntry.getFileName(),
@@ -301,13 +312,27 @@ public class CommerceMediaServlet extends HttpServlet {
 					return;
 				}
 
-				if (commerceVirtualOrderItem.getFileEntryId() != fileEntryId) {
+				if (!ArrayUtil.contains(
+						TransformUtil.transformToLongArray(
+							commerceVirtualOrderItem.
+								getCommerceVirtualOrderItemFileEntries(),
+							commerceVirtualOrderItemFileEntry ->
+								commerceVirtualOrderItemFileEntry.
+									getFileEntryId()),
+						fileEntryId)) {
+
+					_sendError(
+						httpServletResponse, HttpServletResponse.SC_NOT_FOUND,
+						"The commerce virtual order item file entry " +
+							fileEntryId + " does not exist");
+
 					_sendError(
 						httpServletResponse, HttpServletResponse.SC_NOT_FOUND,
 						StringBundler.concat(
 							"The commerce virtual order item ",
 							commerceVirtualOrderItemId,
-							" does not have file entry ", fileEntryId));
+							" does not have commerce virtual order item file ",
+							"entry ", fileEntryId));
 
 					return;
 				}
@@ -322,6 +347,36 @@ public class CommerceMediaServlet extends HttpServlet {
 					return;
 				}
 
+				CommerceVirtualOrderItemFileEntry
+					commerceVirtualOrderItemFileEntry =
+						_commerceVirtualOrderItemFileEntryLocalService.
+							fetchCommerceVirtualOrderItemFileEntry(
+								commerceVirtualOrderItemId, fileEntryId);
+
+				if (commerceVirtualOrderItemFileEntry == null) {
+					_sendError(
+						httpServletResponse, HttpServletResponse.SC_NOT_FOUND,
+						"The file entry " + fileEntryId + " does not exist");
+
+					return;
+				}
+
+				if (!_commerceVirtualOrderItemFileEntryModelResourcePermission.
+						contains(
+							PermissionThreadLocal.getPermissionChecker(),
+							commerceVirtualOrderItemFileEntry,
+							CommerceVirtualOrderActionKeys.
+								DOWNLOAD_COMMERCE_VIRTUAL_ORDER_ITEM)) {
+
+					_sendError(
+						httpServletResponse,
+						HttpServletResponse.SC_UNAUTHORIZED,
+						"You do not have permission to access the requested " +
+							"resource");
+
+					return;
+				}
+
 				ServletResponseUtil.sendFile(
 					httpServletRequest, httpServletResponse,
 					fileEntry.getFileName(),
@@ -329,18 +384,9 @@ public class CommerceMediaServlet extends HttpServlet {
 					fileEntry.getMimeType(),
 					HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT);
 
-				int usages = commerceVirtualOrderItem.getUsages() + 1;
-
-				_commerceVirtualOrderItemLocalService.
-					updateCommerceVirtualOrderItem(
-						commerceVirtualOrderItem.
-							getCommerceVirtualOrderItemId(),
-						commerceVirtualOrderItem.getFileEntryId(),
-						commerceVirtualOrderItem.getUrl(),
-						commerceVirtualOrderItem.getActivationStatus(),
-						commerceVirtualOrderItem.getDuration(), usages,
-						commerceVirtualOrderItem.getMaxUsages(),
-						commerceVirtualOrderItem.isActive());
+				_commerceVirtualOrderItemFileEntryLocalService.incrementUsages(
+					commerceVirtualOrderItemFileEntry.
+						getCommerceVirtualOrderItemFileEntryId());
 
 				return;
 			}
@@ -455,6 +501,13 @@ public class CommerceMediaServlet extends HttpServlet {
 				return;
 			}
 
+			if (ArrayUtil.contains(
+					CommerceMediaConstants.XML_MIME_TYPES,
+					fileEntry.getMimeType())) {
+
+				contentDisposition = HttpHeaders.CONTENT_DISPOSITION_ATTACHMENT;
+			}
+
 			ServletResponseUtil.sendFile(
 				httpServletRequest, httpServletResponse,
 				fileEntry.getFileName(),
@@ -549,19 +602,34 @@ public class CommerceMediaServlet extends HttpServlet {
 
 			if (sample) {
 				fileEntry = cpDefinitionVirtualSetting.getSampleFileEntry();
+
+				if ((fileEntry == null) ||
+					(fileEntry.getFileEntryId() != fileEntryId)) {
+
+					_sendError(
+						httpServletResponse, HttpServletResponse.SC_NOT_FOUND,
+						"The file entry " + fileEntryId + " does not exist");
+
+					return;
+				}
 			}
 			else {
-				fileEntry = cpDefinitionVirtualSetting.getFileEntry();
-			}
+				if (!ArrayUtil.contains(
+						TransformUtil.transformToLongArray(
+							cpDefinitionVirtualSetting.
+								getCPDVirtualSettingFileEntries(),
+							cpdVirtualSettingFileEntry ->
+								cpdVirtualSettingFileEntry.getFileEntryId()),
+						fileEntryId)) {
 
-			if ((fileEntry == null) ||
-				(fileEntry.getFileEntryId() != fileEntryId)) {
+					_sendError(
+						httpServletResponse, HttpServletResponse.SC_NOT_FOUND,
+						"The file entry " + fileEntryId + " does not exist");
 
-				_sendError(
-					httpServletResponse, HttpServletResponse.SC_NOT_FOUND,
-					"The file entry " + fileEntryId + " does not exist");
+					return;
+				}
 
-				return;
+				fileEntry = _getFileEntry(fileEntryId);
 			}
 
 			ServletResponseUtil.sendFile(
@@ -611,8 +679,14 @@ public class CommerceMediaServlet extends HttpServlet {
 	private CommerceProductViewPermission _commerceProductViewPermission;
 
 	@Reference
-	private CommerceVirtualOrderItemLocalService
-		_commerceVirtualOrderItemLocalService;
+	private CommerceVirtualOrderItemFileEntryLocalService
+		_commerceVirtualOrderItemFileEntryLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItemFileEntry)"
+	)
+	private ModelResourcePermission<CommerceVirtualOrderItemFileEntry>
+		_commerceVirtualOrderItemFileEntryModelResourcePermission;
 
 	@Reference
 	private CommerceVirtualOrderItemService _commerceVirtualOrderItemService;

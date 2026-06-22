@@ -5,10 +5,10 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
@@ -403,11 +403,11 @@ public class GitUtil {
 	protected static Set<String> getDirNames(
 		String baseDirName, Iterable<String> fileNames, String markerFileName) {
 
+		Set<String> dirNames = new HashSet<>();
+
 		File baseDir = new File(baseDirName);
 
 		Path baseDirPath = baseDir.toPath();
-
-		Set<String> dirNames = new HashSet<>();
 
 		for (String fileName : fileNames) {
 			File file = new File(baseDir, fileName);

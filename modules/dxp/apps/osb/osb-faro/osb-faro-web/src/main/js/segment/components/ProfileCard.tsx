@@ -3,8 +3,8 @@ import Card from 'shared/components/Card';
 import ClayIcon from '@clayui/icon';
 import ClayLink from '@clayui/link';
 import React from 'react';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {mapGrowthHistory} from 'shared/hoc/mappers/segment';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {Routes, toRoute} from 'shared/util/router';
 import {Segment} from 'shared/util/records';
 import {SegmentGrowthChart} from './Growth';
@@ -16,7 +16,7 @@ const MembershipChart = withRequest(
 	{
 		page: false
 	}
-)(props => <SegmentGrowthChart {...props} />);
+)((props: any) => <SegmentGrowthChart {...props} />);
 
 interface ISegmentProfileCardProps extends React.HTMLAttributes<HTMLElement> {
 	channelId: string;
@@ -33,12 +33,15 @@ const SegmentProfileCard: React.FC<ISegmentProfileCardProps> = ({
 }) => (
 	<Card
 		className='segment-profile-card-root'
-		id={Containers.SegmentMembershipCard}
+		reportContainer={ReportContainer.SegmentMembershipCard}
 	>
-		<Card.Header>
+		<Card.Header className='align-items-center d-flex justify-content-between'>
 			<Card.Title>
-				{Liferay.Language.get('segment-membership')}
+				{Liferay.Language.get('segment-membership-trend')}
 			</Card.Title>
+			<span className='text-secondary text-uppercase'>
+				<strong>{Liferay.Language.get('last-30-days')}</strong>
+			</span>
 		</Card.Header>
 
 		<Card.Body>

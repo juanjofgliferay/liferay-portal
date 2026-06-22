@@ -5,6 +5,9 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.portal.kernel.util.StringUtil;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,16 +53,19 @@ public class JavaMissingXMLPublicIdsCheck extends BaseFileCheck {
 
 		properties.load(new FileInputStream(releasePropertiesFile));
 
-		String lpVersion = properties.getProperty("lp.version");
+		String lpVersion = properties.getProperty("lp.version.dtd");
 
 		if (lpVersion == null) {
 			return content;
 		}
 
+		lpVersion = StringUtil.replace(
+			lpVersion, CharPool.UNDERLINE, CharPool.PERIOD);
+
 		if (content.indexOf(lpVersion + "//EN") == -1) {
 			addMessage(
 				fileName,
-				"Missing public id '" + lpVersion + "' for check XML files");
+				"Missing public id \"" + lpVersion + "\" for check XML files");
 		}
 
 		return content;

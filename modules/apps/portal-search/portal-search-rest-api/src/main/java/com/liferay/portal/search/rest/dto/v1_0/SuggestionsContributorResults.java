@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Petteri Karttunen
@@ -52,91 +51,130 @@ public class SuggestionsContributorResults implements Serializable {
 			SuggestionsContributorResults.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getAttributes() {
+		if (_attributesSupplier != null) {
+			attributes = _attributesSupplier.get();
+
+			_attributesSupplier = null;
+		}
+
 		return attributes;
 	}
 
 	public void setAttributes(Object attributes) {
 		this.attributes = attributes;
+
+		_attributesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAttributes(
 		UnsafeSupplier<Object, Exception> attributesUnsafeSupplier) {
 
-		try {
-			attributes = attributesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attributesSupplier = () -> {
+			try {
+				return attributesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object attributes;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Object> _attributesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDisplayGroupName() {
+		if (_displayGroupNameSupplier != null) {
+			displayGroupName = _displayGroupNameSupplier.get();
+
+			_displayGroupNameSupplier = null;
+		}
+
 		return displayGroupName;
 	}
 
 	public void setDisplayGroupName(String displayGroupName) {
 		this.displayGroupName = displayGroupName;
+
+		_displayGroupNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDisplayGroupName(
 		UnsafeSupplier<String, Exception> displayGroupNameUnsafeSupplier) {
 
-		try {
-			displayGroupName = displayGroupNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_displayGroupNameSupplier = () -> {
+			try {
+				return displayGroupNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String displayGroupName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _displayGroupNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Suggestion[] getSuggestions() {
+		if (_suggestionsSupplier != null) {
+			suggestions = _suggestionsSupplier.get();
+
+			_suggestionsSupplier = null;
+		}
+
 		return suggestions;
 	}
 
 	public void setSuggestions(Suggestion[] suggestions) {
 		this.suggestions = suggestions;
+
+		_suggestionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSuggestions(
 		UnsafeSupplier<Suggestion[], Exception> suggestionsUnsafeSupplier) {
 
-		try {
-			suggestions = suggestionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_suggestionsSupplier = () -> {
+			try {
+				return suggestionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Suggestion[] suggestions;
+
+	@JsonIgnore
+	private Supplier<Suggestion[]> _suggestionsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -167,6 +205,8 @@ public class SuggestionsContributorResults implements Serializable {
 
 		sb.append("{");
 
+		Object attributes = getAttributes();
+
 		if (attributes != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -188,6 +228,8 @@ public class SuggestionsContributorResults implements Serializable {
 			}
 		}
 
+		String displayGroupName = getDisplayGroupName();
+
 		if (displayGroupName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -201,6 +243,8 @@ public class SuggestionsContributorResults implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Suggestion[] suggestions = getSuggestions();
 
 		if (suggestions != null) {
 			if (sb.length() > 1) {
@@ -227,8 +271,8 @@ public class SuggestionsContributorResults implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.search.rest.dto.v1_0.SuggestionsContributorResults",
 		name = "x-class-name"
 	)
@@ -274,7 +318,10 @@ public class SuggestionsContributorResults implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -320,3 +367,4 @@ public class SuggestionsContributorResults implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1993260954

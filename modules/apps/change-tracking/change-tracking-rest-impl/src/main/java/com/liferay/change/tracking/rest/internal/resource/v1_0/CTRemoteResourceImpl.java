@@ -14,6 +14,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -25,10 +26,10 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import java.util.Collections;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -163,6 +164,10 @@ public class CTRemoteResourceImpl extends BaseCTRemoteResourceImpl {
 	private CTRemote _toCTRemote(Long ctRemoteId) throws Exception {
 		com.liferay.change.tracking.model.CTRemote ctRemote =
 			_ctRemoteLocalService.getCTRemote(ctRemoteId);
+
+		_ctRemoteModelResourcePermission.check(
+			PermissionThreadLocal.getPermissionChecker(), ctRemote,
+			ActionKeys.VIEW);
 
 		return _ctRemoteDTOConverter.toDTO(
 			_getDTOConverterContext(ctRemote), ctRemote);

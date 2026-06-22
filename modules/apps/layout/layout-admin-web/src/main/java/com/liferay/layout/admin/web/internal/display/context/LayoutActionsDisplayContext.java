@@ -13,8 +13,6 @@ import com.liferay.layout.admin.web.internal.security.permission.resource.Layout
 import com.liferay.layout.page.template.constants.LayoutPageTemplateActionKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
-import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
-import com.liferay.layout.utility.page.service.LayoutUtilityPageEntryLocalServiceUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -23,6 +21,7 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -39,12 +38,12 @@ import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -82,6 +81,11 @@ public class LayoutActionsDisplayContext {
 									_httpServletRequest, "configure"));
 						}
 					).add(
+						() ->
+							LayoutPermissionUtil.
+								containsLayoutPreviewDraftPermission(
+									_themeDisplay.getPermissionChecker(),
+									layout),
 						dropdownItem -> {
 							String previewLayoutURL = _getPreviewLayoutURL(
 								layout);
@@ -255,10 +259,10 @@ public class LayoutActionsDisplayContext {
 		String pagePreviewURL = HttpComponentsUtil.addParameters(
 			_themeDisplay.getPortalURL() + _themeDisplay.getPathMain() +
 				"/portal/get_page_preview",
-			"p_l_mode", Constants.PREVIEW, "p_p_state",
-			WindowState.UNDEFINED.toString(), "segmentsExperienceId",
-			_getSegmentsExperienceId(draftLayout), "selPlid",
-			draftLayout.getPlid());
+			"p_l_id", draftLayout.getPlid(), "p_l_mode", Constants.PREVIEW,
+			"p_p_state", WindowState.UNDEFINED.toString(),
+			"segmentsExperienceId", _getSegmentsExperienceId(draftLayout),
+			"selPlid", draftLayout.getPlid());
 
 		if (Validator.isNotNull(_themeDisplay.getDoAsUserId())) {
 			pagePreviewURL = PortalUtil.addPreservedParameters(
@@ -320,11 +324,7 @@ public class LayoutActionsDisplayContext {
 		}
 
 		if (layoutPageTemplateEntry == null) {
-			LayoutUtilityPageEntry layoutUtilityPageEntry =
-				LayoutUtilityPageEntryLocalServiceUtil.
-					fetchLayoutUtilityPageEntryByPlid(layout.getPlid());
-
-			if (layoutUtilityPageEntry != null) {
+			if (layout.isTypeUtility()) {
 				_contentLayout = false;
 			}
 			else {

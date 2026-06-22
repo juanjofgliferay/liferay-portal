@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Matija Petanjek
@@ -47,199 +46,290 @@ public class Mapping implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Mapping.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getExternalFieldName() {
+		if (_externalFieldNameSupplier != null) {
+			externalFieldName = _externalFieldNameSupplier.get();
+
+			_externalFieldNameSupplier = null;
+		}
+
 		return externalFieldName;
 	}
 
 	public void setExternalFieldName(String externalFieldName) {
 		this.externalFieldName = externalFieldName;
+
+		_externalFieldNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalFieldName(
 		UnsafeSupplier<String, Exception> externalFieldNameUnsafeSupplier) {
 
-		try {
-			externalFieldName = externalFieldNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalFieldNameSupplier = () -> {
+			try {
+				return externalFieldNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalFieldName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _externalFieldNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getExternalFieldType() {
+		if (_externalFieldTypeSupplier != null) {
+			externalFieldType = _externalFieldTypeSupplier.get();
+
+			_externalFieldTypeSupplier = null;
+		}
+
 		return externalFieldType;
 	}
 
 	public void setExternalFieldType(String externalFieldType) {
 		this.externalFieldType = externalFieldType;
+
+		_externalFieldTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalFieldType(
 		UnsafeSupplier<String, Exception> externalFieldTypeUnsafeSupplier) {
 
-		try {
-			externalFieldType = externalFieldTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalFieldTypeSupplier = () -> {
+			try {
+				return externalFieldTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalFieldType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _externalFieldTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getInternalFieldName() {
+		if (_internalFieldNameSupplier != null) {
+			internalFieldName = _internalFieldNameSupplier.get();
+
+			_internalFieldNameSupplier = null;
+		}
+
 		return internalFieldName;
 	}
 
 	public void setInternalFieldName(String internalFieldName) {
 		this.internalFieldName = internalFieldName;
+
+		_internalFieldNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInternalFieldName(
 		UnsafeSupplier<String, Exception> internalFieldNameUnsafeSupplier) {
 
-		try {
-			internalFieldName = internalFieldNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_internalFieldNameSupplier = () -> {
+			try {
+				return internalFieldNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String internalFieldName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _internalFieldNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getInternalFieldType() {
+		if (_internalFieldTypeSupplier != null) {
+			internalFieldType = _internalFieldTypeSupplier.get();
+
+			_internalFieldTypeSupplier = null;
+		}
+
 		return internalFieldType;
 	}
 
 	public void setInternalFieldType(String internalFieldType) {
 		this.internalFieldType = internalFieldType;
+
+		_internalFieldTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInternalFieldType(
 		UnsafeSupplier<String, Exception> internalFieldTypeUnsafeSupplier) {
 
-		try {
-			internalFieldType = internalFieldTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_internalFieldTypeSupplier = () -> {
+			try {
+				return internalFieldTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String internalFieldType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _internalFieldTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getPlanId() {
+		if (_planIdSupplier != null) {
+			planId = _planIdSupplier.get();
+
+			_planIdSupplier = null;
+		}
+
 		return planId;
 	}
 
 	public void setPlanId(Long planId) {
 		this.planId = planId;
+
+		_planIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPlanId(
 		UnsafeSupplier<Long, Exception> planIdUnsafeSupplier) {
 
-		try {
-			planId = planIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_planIdSupplier = () -> {
+			try {
+				return planIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long planId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _planIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getScript() {
+		if (_scriptSupplier != null) {
+			script = _scriptSupplier.get();
+
+			_scriptSupplier = null;
+		}
+
 		return script;
 	}
 
 	public void setScript(String script) {
 		this.script = script;
+
+		_scriptSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setScript(
 		UnsafeSupplier<String, Exception> scriptUnsafeSupplier) {
 
-		try {
-			script = scriptUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_scriptSupplier = () -> {
+			try {
+				return scriptUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String script;
+
+	@JsonIgnore
+	private Supplier<String> _scriptSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -268,6 +358,8 @@ public class Mapping implements Serializable {
 
 		sb.append("{");
 
+		String externalFieldName = getExternalFieldName();
+
 		if (externalFieldName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -281,6 +373,8 @@ public class Mapping implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String externalFieldType = getExternalFieldType();
 
 		if (externalFieldType != null) {
 			if (sb.length() > 1) {
@@ -296,6 +390,8 @@ public class Mapping implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -305,6 +401,8 @@ public class Mapping implements Serializable {
 
 			sb.append(id);
 		}
+
+		String internalFieldName = getInternalFieldName();
 
 		if (internalFieldName != null) {
 			if (sb.length() > 1) {
@@ -320,6 +418,8 @@ public class Mapping implements Serializable {
 			sb.append("\"");
 		}
 
+		String internalFieldType = getInternalFieldType();
+
 		if (internalFieldType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -334,6 +434,8 @@ public class Mapping implements Serializable {
 			sb.append("\"");
 		}
 
+		Long planId = getPlanId();
+
 		if (planId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -343,6 +445,8 @@ public class Mapping implements Serializable {
 
 			sb.append(planId);
 		}
+
+		String script = getScript();
 
 		if (script != null) {
 			if (sb.length() > 1) {
@@ -363,8 +467,8 @@ public class Mapping implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.batch.planner.rest.dto.v1_0.Mapping",
 		name = "x-class-name"
 	)
@@ -410,7 +514,10 @@ public class Mapping implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -456,3 +563,4 @@ public class Mapping implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1253897065

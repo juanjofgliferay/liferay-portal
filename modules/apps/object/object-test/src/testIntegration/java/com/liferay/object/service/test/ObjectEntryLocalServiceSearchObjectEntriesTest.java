@@ -7,7 +7,10 @@ package com.liferay.object.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.test.util.DLTestUtil;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.field.builder.AttachmentObjectFieldBuilder;
 import com.liferay.object.field.builder.ObjectFieldBuilder;
 import com.liferay.object.field.builder.TextObjectFieldBuilder;
@@ -22,6 +25,7 @@ import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFieldSettingLocalService;
 import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -86,9 +90,16 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 				"alpha"
 			).objectFieldSettings(
 				Arrays.asList(
-					_createObjectFieldSetting("acceptedFileExtensions", "txt"),
-					_createObjectFieldSetting("fileSource", "userComputer"),
-					_createObjectFieldSetting("maximumFileSize", "100"))
+					_createObjectFieldSetting(
+						ObjectFieldSettingConstants.
+							NAME_ACCEPTED_FILE_EXTENSIONS,
+						"txt"),
+					_createObjectFieldSetting(
+						ObjectFieldSettingConstants.NAME_FILE_SOURCE,
+						ObjectFieldSettingConstants.
+							VALUE_USER_COMPUTER_TO_DOCS_AND_MEDIA),
+					_createObjectFieldSetting(
+						ObjectFieldSettingConstants.NAME_MAX_FILE_SIZE, "100"))
 			).build());
 		_testAttachment(
 			attachmentObjectFieldBuilder.indexedAsKeyword(
@@ -110,7 +121,7 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
-				"alpha", new BigDecimal("45")
+				"alpha", new BigDecimal("45.25")
 			).build());
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -118,14 +129,15 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 			).build());
 
 		_assertKeywords("[44 TO 46]", 1);
-		_assertKeywords("[44.9999 TO 45.1111]", 1);
+		_assertKeywords("[44.9999 TO 45.3333]", 1);
 		_assertKeywords("4", 0);
-		_assertKeywords("45", 1);
-		_assertKeywords("45.0000", 1);
-		_assertKeywords("45.0001", 0);
+		_assertKeywords("45", 0);
+		_assertKeywords("45.25", 1);
+		_assertKeywords("45.2500", 1);
+		_assertKeywords("45.2501", 0);
 		_assertKeywords("bravo 4 charlie", 0);
-		_assertKeywords("bravo 45 charlie", 1);
-		_assertKeywords("bravo 45.0 charlie", 1);
+		_assertKeywords("bravo 45 charlie", 0);
+		_assertKeywords("bravo 45.25 charlie", 1);
 		_assertKeywords("search from [ 44 TO 46 ]", 1);
 	}
 
@@ -139,7 +151,7 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
-				"alpha", new BigDecimal("45")
+				"alpha", new BigDecimal("45.25")
 			).build());
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -150,11 +162,12 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 		_assertKeywords("[44.9999 TO 45.1111]", 0);
 		_assertKeywords("4", 1);
 		_assertKeywords("45", 1);
-		_assertKeywords("45.0000", 1);
-		_assertKeywords("45.0001", 0);
+		_assertKeywords("45.25", 1);
+		_assertKeywords("45.2500", 0);
+		_assertKeywords("45.2501", 0);
 		_assertKeywords("bravo 4 charlie", 1);
 		_assertKeywords("bravo 45 charlie", 1);
-		_assertKeywords("bravo 45.0 charlie", 1);
+		_assertKeywords("bravo 45.25 charlie", 1);
 		_assertKeywords("search from [ 44 TO 46 ]", 0);
 	}
 
@@ -221,17 +234,17 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	@Test
 	public void testClob() throws Exception {
 		_testCharacterDataType(
-			false, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
-			ObjectFieldConstants.DB_TYPE_CLOB, false, false);
+			ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, false, false, null);
 		_testCharacterDataType(
-			false, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
-			ObjectFieldConstants.DB_TYPE_CLOB, true, false);
+			ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, true, false, "en_US");
 		_testCharacterDataType(
-			false, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
-			ObjectFieldConstants.DB_TYPE_CLOB, true, true);
+			ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, true, false, null);
 		_testCharacterDataType(
-			true, ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
-			ObjectFieldConstants.DB_TYPE_CLOB, true, false);
+			ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT,
+			ObjectFieldConstants.DB_TYPE_CLOB, true, true, null);
 	}
 
 	@Test
@@ -242,7 +255,7 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 				ObjectFieldConstants.DB_TYPE_DATE, true, false, null, "Alpha",
 				"alpha", false));
 
-		long date = 1632335654272L;
+		long date = 1632268800000L;
 
 		_addObjectEntry(
 			HashMapBuilder.<String, Serializable>put(
@@ -495,26 +508,69 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	}
 
 	@Test
+	public void testSearchWithDoubleQuotes() throws Exception {
+		_addObjectDefinition(
+			ObjectFieldUtil.createObjectField(
+				ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+				ObjectFieldConstants.DB_TYPE_STRING, true, false, null, "Alpha",
+				"alpha", false));
+
+		String string1 = RandomTestUtil.randomString();
+		String string2 = RandomTestUtil.randomString();
+
+		String text = string1 + StringPool.SPACE + string2;
+
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", string1
+			).build());
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", string1 + RandomTestUtil.randomString()
+			).build());
+
+		_assertKeywords(StringPool.QUOTE + string1 + StringPool.QUOTE, 1);
+
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", string2
+			).build());
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", string2 + RandomTestUtil.randomString()
+			).build());
+
+		_assertKeywords(StringPool.QUOTE + string2 + StringPool.QUOTE, 1);
+
+		_addObjectEntry(
+			HashMapBuilder.<String, Serializable>put(
+				"alpha", text
+			).build());
+
+		_assertKeywords(StringPool.QUOTE + text + StringPool.QUOTE, 1);
+	}
+
+	@Test
 	public void testString() throws Exception {
 		_testCharacterDataType(
-			false, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
-			ObjectFieldConstants.DB_TYPE_STRING, false, false);
+			ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, false, false, null);
 		_testCharacterDataType(
-			false, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
-			ObjectFieldConstants.DB_TYPE_STRING, true, false);
+			ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, false, "en_US");
 		_testCharacterDataType(
-			false, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
-			ObjectFieldConstants.DB_TYPE_STRING, true, true);
+			ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, false, null);
 		_testCharacterDataType(
-			true, ObjectFieldConstants.BUSINESS_TYPE_TEXT,
-			ObjectFieldConstants.DB_TYPE_STRING, true, false);
+			ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+			ObjectFieldConstants.DB_TYPE_STRING, true, true, null);
 	}
 
 	private void _addObjectDefinition(ObjectField objectField)
 		throws Exception {
 
 		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			false, _objectDefinitionLocalService, Arrays.asList(objectField));
+			Arrays.asList(objectField));
 
 		_objectDefinition.setTitleObjectFieldId(_getTitleObjectFieldId());
 
@@ -532,9 +588,10 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 		throws Exception {
 
 		return _objectEntryLocalService.addObjectEntry(
-			TestPropsValues.getUserId(), 0,
-			_objectDefinition.getObjectDefinitionId(), values,
-			ServiceContextTestUtil.getServiceContext());
+			0, TestPropsValues.getUserId(),
+			_objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null, values, ServiceContextTestUtil.getServiceContext());
 	}
 
 	private void _assertKeywords(String keywords, int count) throws Exception {
@@ -589,7 +646,7 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 			TestPropsValues.getGroupId(), TestPropsValues.getUserId(),
 			_objectDefinition.getPortletId(),
 			TempFileEntryUtil.getTempFileName("document.txt"),
-			FileUtil.createTempFile(RandomTestUtil.randomBytes()),
+			FileUtil.createTempFile(DLTestUtil.randomTextFileBytes()),
 			ContentTypes.TEXT_PLAIN);
 
 		_addObjectEntry(
@@ -612,8 +669,8 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 	}
 
 	private void _testCharacterDataType(
-			boolean analyzed, String businessType, String dbType,
-			boolean indexed, boolean indexedAsKeyword)
+			String businessType, String dbType, boolean indexed,
+			boolean indexedAsKeyword, String indexedLanguageId)
 		throws Exception {
 
 		if (_objectDefinition != null) {
@@ -624,7 +681,7 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 		_addObjectDefinition(
 			ObjectFieldUtil.createObjectField(
 				businessType, dbType, indexed, indexedAsKeyword,
-				analyzed ? "en_US" : null, "Alpha", "alpha", false));
+				indexedLanguageId, "Alpha", "alpha", false));
 
 		String text = "The quick brown fox jumps over the lazy dog";
 
@@ -648,7 +705,7 @@ public class ObjectEntryLocalServiceSearchObjectEntriesTest {
 		}
 		else if (indexed) {
 			_assertKeywords("fox", 1);
-			_assertKeywords("jump", analyzed ? 1 : 0);
+			_assertKeywords("jump", indexedAsKeyword ? 0 : 1);
 			_assertKeywords("jumps", 1);
 			_assertKeywords("LAZY dog", 1);
 			_assertKeywords("lazy dog", 1);

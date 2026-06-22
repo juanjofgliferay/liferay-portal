@@ -113,11 +113,7 @@ public class AssetListEntryUsagePersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		AssetListEntryUsage newAssetListEntryUsage = _persistence.create(pk);
-
-		newAssetListEntryUsage.setMvccVersion(RandomTestUtil.nextLong());
+		AssetListEntryUsage newAssetListEntryUsage = addAssetListEntryUsage();
 
 		newAssetListEntryUsage.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -669,8 +665,6 @@ public class AssetListEntryUsagePersistenceTest {
 
 		AssetListEntryUsage assetListEntryUsage = _persistence.create(pk);
 
-		assetListEntryUsage.setMvccVersion(RandomTestUtil.nextLong());
-
 		assetListEntryUsage.setCtCollectionId(RandomTestUtil.nextLong());
 
 		assetListEntryUsage.setUuid(RandomTestUtil.randomString());
@@ -712,3 +706,4 @@ public class AssetListEntryUsagePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-251904666

@@ -114,8 +114,8 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"Class implementing '", implementedClassName,
-						"' should be in 'internal' package"));
+						"Class implementing \"", implementedClassName,
+						"\" should be in \"internal\" package"));
 			}
 
 			return;
@@ -190,15 +190,15 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"Package for class implementing '", implementedClassName,
-					"' should end with '", expectedPackageName, "'"));
+					"Package for class implementing \"", implementedClassName,
+					"\" should end with \"", expectedPackageName, "\""));
 		}
 		else {
 			addMessage(
 				fileName,
 				StringBundler.concat(
-					"Package for class extending 'Base", implementedClassName,
-					"' should end with '", expectedPackageName, "'"));
+					"Package for class extending \"Base", implementedClassName,
+					"\" should end with \"", expectedPackageName, "\""));
 		}
 	}
 
@@ -236,18 +236,24 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"Package should not contain '", bundleSymbolicName,
-						"'. It should contain '",
+						"Package should not contain \"", bundleSymbolicName,
+						"\". It should contain \"",
 						bundleSymbolicName.substring(
 							0, bundleSymbolicName.length() - 8),
-						"' (without .service)"));
+						"\" (without .service)"));
 
 				return;
 			}
 		}
 
-		bundleSymbolicName = bundleSymbolicName.replaceAll(
-			"\\.(api|service|test)$", StringPool.BLANK);
+		if (bundleSymbolicName.endsWith(".test.util")) {
+			bundleSymbolicName = bundleSymbolicName.substring(
+				0, bundleSymbolicName.length() - 10);
+		}
+		else {
+			bundleSymbolicName = bundleSymbolicName.replaceAll(
+				"\\.(api|service|test)$", StringPool.BLANK);
+		}
 
 		if (packageName.contains(bundleSymbolicName)) {
 			return;
@@ -274,7 +280,8 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 			if (packagePart.matches("V\\d*(_\\d+)+")) {
 				addMessage(
 					fileName,
-					"Use lower case 'v' when it means version in the package");
+					"Use lower case \"v\" when it means version in the " +
+						"package");
 
 				return;
 			}
@@ -288,8 +295,8 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 		if (!filePath.endsWith(packageName)) {
 			addMessage(
 				fileName,
-				"The declared package '" + packageName +
-					"' does not match the expected package");
+				"The declared package \"" + packageName +
+					"\" does not match the expected package");
 
 			return;
 		}
@@ -299,7 +306,7 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 
 			addMessage(
 				fileName,
-				"Do not use both 'impl' and 'internal' in the package");
+				"Do not use both \"impl\" and \"internal\" in the package");
 		}
 
 		List<String> allowedInternalPackageDirNames = getAttributeValues(
@@ -313,40 +320,13 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 			}
 		}
 
-		if (absolutePath.contains("-api/src/")) {
-			Matcher matcher = _internalPackagePattern.matcher(packageName);
-
-			if (matcher.find()) {
-				addMessage(
-					fileName,
-					"Do not use '" + matcher.group(1) +
-						"' package in API module");
-			}
-
-			if (packageName.contains(".api.") || packageName.endsWith(".api")) {
-				addMessage(
-					fileName,
-					"Do not use 'api' in the package for classes in the API " +
-						"module");
-			}
-		}
-
 		if (className.matches(".*(?<!Display)Context") &&
 			packageName.endsWith(".display.context")) {
 
 			addMessage(
 				fileName,
-				"The name of Class '" + className +
-					"' should be ending with 'DisplayContext'");
-		}
-
-		if (isModulesFile(absolutePath) &&
-			className.equals("ServletContextUtil") &&
-			!packageName.contains(".internal")) {
-
-			addMessage(
-				fileName,
-				"Class '" + className + "' should be in 'internal' package");
+				"The name of Class \"" + className +
+					"\" should be ending with \"DisplayContext\"");
 		}
 	}
 
@@ -354,9 +334,8 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 		String fileName, String absolutePath, String className,
 		String packageName) {
 
-		if ((className.endsWith("Constants") &&
-			 absolutePath.contains("/portal-kernel/")) ||
-			absolutePath.contains("/test/")) {
+		if (className.endsWith("Constants") &&
+			absolutePath.contains("/portal-kernel/")) {
 
 			return;
 		}
@@ -381,9 +360,9 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 					addMessage(
 						fileName,
 						StringBundler.concat(
-							"Class '", className,
-							"' should be in package ending with '", array[1],
-							"'"));
+							"Class \"", className,
+							"\" should be in package ending with \"", array[1],
+							"\""));
 				}
 
 				continue;
@@ -395,8 +374,8 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"Class '", className, "' should be in package .",
-						array[1], "'"));
+						"Class \"", className, "\" should be in package \".",
+						array[1], "\""));
 			}
 		}
 	}
@@ -414,7 +393,5 @@ public class JavaPackagePathCheck extends BaseJavaTermCheck {
 
 	private static final Pattern _apiOrServiceBundleSymbolicNamePattern =
 		Pattern.compile("\\.(api|service)$");
-	private static final Pattern _internalPackagePattern = Pattern.compile(
-		"\\.(impl|internal)(\\.|\\Z)");
 
 }

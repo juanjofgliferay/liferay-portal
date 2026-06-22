@@ -27,6 +27,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -206,6 +208,10 @@ public interface ContactLocalService
 	public Contact fetchContact(long contactId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Serializable, Contact> fetchContacts(
+		Set<Serializable> primaryKeys);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -295,3 +301,4 @@ public interface ContactLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1723468057

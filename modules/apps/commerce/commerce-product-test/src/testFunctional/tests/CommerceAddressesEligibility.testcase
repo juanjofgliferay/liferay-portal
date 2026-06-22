@@ -1,14 +1,18 @@
 @ccomponent-name = "portal-commerce"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -104,7 +108,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -391,7 +395,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -526,7 +530,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -537,10 +541,6 @@ definition {
 				productQuantity = 1);
 
 			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			Uncheck.uncheckToggleSwitch(
-				checkboxName = "Use shipping address as billing address",
-				locator1 = "Checkbox#ANY_CHECKBOX");
 
 			for (var typeList : list "Shipping,Billing") {
 				Click(
@@ -561,6 +561,12 @@ definition {
 					key_fieldLabel = "Choose ${typeList} Address",
 					locator1 = "Select#GENERIC_SELECT_FIELD",
 					value1 = "ValidShippingBilling Test Address");
+
+				if (${typeList} == "Shipping") {
+					Uncheck.uncheckToggleSwitch(
+						checkboxName = "Use shipping address as billing address",
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
 
 				Click(locator1 = "Button#CONTINUE");
 
@@ -717,7 +723,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -728,10 +734,6 @@ definition {
 				productQuantity = 1);
 
 			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			Uncheck.uncheckToggleSwitch(
-				checkboxName = "Use shipping address as billing address",
-				locator1 = "Checkbox#ANY_CHECKBOX");
 
 			for (var typeList : list "Shipping,Billing") {
 				Click(
@@ -752,6 +754,12 @@ definition {
 					key_fieldLabel = "Choose ${typeList} Address",
 					locator1 = "Select#GENERIC_SELECT_FIELD",
 					value1 = "ValidShippingBilling Test Address");
+
+				if (${typeList} == "Shipping") {
+					Uncheck.uncheckToggleSwitch(
+						checkboxName = "Use shipping address as billing address",
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
 
 				Click(locator1 = "Button#CONTINUE");
 
@@ -833,7 +841,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -888,15 +896,11 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
 			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			Uncheck.uncheckToggleSwitch(
-				checkboxName = "Use shipping address as billing address",
-				locator1 = "Checkbox#ANY_CHECKBOX");
 
 			for (var typeList : list "Shipping,Billing") {
 				Click(
@@ -917,6 +921,12 @@ definition {
 					key_fieldLabel = "Choose ${typeList} Address",
 					locator1 = "Select#GENERIC_SELECT_FIELD",
 					value1 = "Test Address");
+
+				if (${typeList} == "Shipping") {
+					Uncheck.uncheckToggleSwitch(
+						checkboxName = "Use shipping address as billing address",
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
 
 				Click(locator1 = "Button#CONTINUE");
 
@@ -983,7 +993,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -994,10 +1004,6 @@ definition {
 				productQuantity = 1);
 
 			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			Uncheck.uncheckToggleSwitch(
-				checkboxName = "Use shipping address as billing address",
-				locator1 = "Checkbox#ANY_CHECKBOX");
 
 			for (var typeList : list "Shipping,Billing") {
 				Click(
@@ -1018,6 +1024,12 @@ definition {
 					key_fieldLabel = "Choose ${typeList} Address",
 					locator1 = "Select#GENERIC_SELECT_FIELD",
 					value1 = "InvalidShippingBilling Test Address");
+
+				if (${typeList} == "Shipping") {
+					Uncheck.uncheckToggleSwitch(
+						checkboxName = "Use shipping address as billing address",
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
 
 				Click(locator1 = "Button#CONTINUE");
 
@@ -1055,7 +1067,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -1073,10 +1085,6 @@ definition {
 		}
 
 		task ("Then is not possible to use that address anymore") {
-			Uncheck.uncheckToggleSwitch(
-				checkboxName = "Use shipping address as billing address",
-				locator1 = "Checkbox#ANY_CHECKBOX");
-
 			for (var typeList : list "Shipping,Billing") {
 				Click(
 					key_fieldLabel = "Choose ${typeList} Address",
@@ -1096,6 +1104,12 @@ definition {
 					key_fieldLabel = "Choose ${typeList} Address",
 					locator1 = "Select#GENERIC_SELECT_FIELD",
 					value1 = "ValidShippingBilling Test Address");
+
+				if (${typeList} == "Shipping") {
+					Uncheck.uncheckToggleSwitch(
+						checkboxName = "Use shipping address as billing address",
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
 
 				Click(locator1 = "Button#CONTINUE");
 
@@ -1177,7 +1191,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -1188,10 +1202,6 @@ definition {
 				productQuantity = 1);
 
 			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			Uncheck.uncheckToggleSwitch(
-				checkboxName = "Use shipping address as billing address",
-				locator1 = "Checkbox#ANY_CHECKBOX");
 
 			for (var typeList : list "Shipping,Billing") {
 				Click(
@@ -1212,6 +1222,12 @@ definition {
 					key_fieldLabel = "Choose ${typeList} Address",
 					locator1 = "Select#GENERIC_SELECT_FIELD",
 					value1 = "Test Address");
+
+				if (${typeList} == "Shipping") {
+					Uncheck.uncheckToggleSwitch(
+						checkboxName = "Use shipping address as billing address",
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
 
 				Click(locator1 = "Button#CONTINUE");
 
@@ -1310,7 +1326,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}

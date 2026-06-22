@@ -14,6 +14,7 @@ import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherSelectionStyleConfigurationUtil;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
 import com.liferay.asset.publisher.web.internal.helper.AssetPublisherWebHelper;
+import com.liferay.asset.publisher.web.internal.util.AssetPublisherUtil;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.journal.service.JournalArticleLocalService;
@@ -33,17 +34,16 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,7 +57,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Zsolt Berentey
  */
 @Component(
-	property = "javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
+	property = "jakarta.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
 	service = PortletLayoutListener.class
 )
 public class AssetPublisherPortletLayoutListener
@@ -111,8 +111,12 @@ public class AssetPublisherPortletLayoutListener
 			AssetPublisherSelectionStyleConfigurationUtil.
 				defaultSelectionStyle());
 
-		long assetListEntryId = GetterUtil.getLong(
-			portletPreferences.getValue("assetListEntryId", null));
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		long assetListEntryId = AssetPublisherUtil.getAssetListEntryId(
+			serviceContext.getCompanyId(), serviceContext.getScopeGroupId(),
+			portletPreferences);
 
 		String infoListProviderKey = portletPreferences.getValue(
 			"infoListProviderKey", StringPool.BLANK);
@@ -246,8 +250,8 @@ public class AssetPublisherPortletLayoutListener
 				}
 
 				_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
-					themeDisplay.getScopeGroupId(), classNameId,
-					assetEntry.getClassPK(), StringPool.BLANK, portletId,
+					themeDisplay.getScopeGroupId(), StringPool.BLANK,
+					classNameId, assetEntry.getClassPK(), portletId,
 					_portal.getClassNameId(Portlet.class), plid,
 					serviceContext);
 			}

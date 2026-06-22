@@ -45,6 +45,7 @@ import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.InputFile;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -150,9 +151,8 @@ public class SetUpTestableTomcatTask
 		return GradleUtil.toString(_managerUserName);
 	}
 
-	@InputDirectory
+	@Internal
 	@Override
-	@PathSensitive(PathSensitivity.RELATIVE)
 	public File getModuleFrameworkBaseDir() {
 		return GradleUtil.toFile(getProject(), _moduleFrameworkBaseDir);
 	}
@@ -233,11 +233,7 @@ public class SetUpTestableTomcatTask
 
 		String fileContent = new String(Files.readAllBytes(file.toPath()));
 
-		if (fileContent.contains(s)) {
-			return true;
-		}
-
-		return false;
+		return fileContent.contains(s);
 	}
 
 	private PrintWriter _getAppendPrintWriter(String fileName)

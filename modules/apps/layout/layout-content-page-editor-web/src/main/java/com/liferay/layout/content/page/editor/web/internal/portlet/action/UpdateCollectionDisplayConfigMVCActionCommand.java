@@ -5,30 +5,27 @@
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
-import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.fragment.service.FragmentEntryLinkService;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
-import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
 import com.liferay.layout.content.page.editor.web.internal.manager.FragmentEntryLinkManager;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Iterator;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/update_collection_display_config"
 	},
 	service = MVCActionCommand.class
@@ -61,77 +58,30 @@ public class UpdateCollectionDisplayConfigMVCActionCommand
 
 		JSONArray fragmentEntryLinksJSONArray = _jsonFactory.createJSONArray();
 
-		List<FragmentEntryLink> fragmentEntryLinks = new ArrayList<>(
-			_fragmentEntryLinkLocalService.
-				getFragmentEntryLinksBySegmentsExperienceId(
-					themeDisplay.getScopeGroupId(), segmentsExperienceId,
-					themeDisplay.getPlid(),
-					_KEY_COLLECTION_FILTER_FRAGMENT_RENDERER));
-
-		fragmentEntryLinks.addAll(
-			_fragmentEntryLinkLocalService.
-				getFragmentEntryLinksBySegmentsExperienceId(
-					themeDisplay.getScopeGroupId(), segmentsExperienceId,
-					themeDisplay.getPlid(),
-					_KEY_COLLECTION_APPLIED_FILTERS_FRAGMENT_RENDERER));
+		JSONObject editableValuesChangesJSONObject =
+			_jsonFactory.createJSONObject(
+				ParamUtil.getString(
+					actionRequest, "editableValuesChanges", "{}"));
 
 		LayoutStructure layoutStructure =
 			LayoutStructureUtil.getLayoutStructure(
 				themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
 				segmentsExperienceId);
 
-		for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
-			JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
+		Iterator<String> keysIterator = editableValuesChangesJSONObject.keys();
 
-			String configuration = editableValuesJSONObject.getString(
-				FragmentEntryProcessorConstants.
-					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+		while (keysIterator.hasNext()) {
+			String fragmentEntryLinkIdString = keysIterator.next();
 
-			if ((configuration == null) ||
-				!JSONUtil.isJSONObject(configuration)) {
+			long fragmentEntryLinkId = GetterUtil.getLong(
+				fragmentEntryLinkIdString);
 
-				continue;
-			}
+			JSONObject editableValuesJSONObject =
+				editableValuesChangesJSONObject.getJSONObject(
+					fragmentEntryLinkIdString);
 
-			JSONObject configurationJSONObject =
-				editableValuesJSONObject.getJSONObject(
-					FragmentEntryProcessorConstants.
-						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
-
-			if (!configurationJSONObject.has("targetCollections")) {
-				continue;
-			}
-
-			List<String> targetCollections = JSONUtil.toStringList(
-				configurationJSONObject.getJSONArray("targetCollections"));
-
-			if (!targetCollections.contains(itemId)) {
-				continue;
-			}
-
-			targetCollections.remove(itemId);
-
-			configurationJSONObject.put(
-				"targetCollections",
-				JSONUtil.toJSONArray(
-					targetCollections,
-					targetCollectionItemId -> targetCollectionItemId));
-
-			if (targetCollections.isEmpty()) {
-				configurationJSONObject.put("filterKey", StringPool.BLANK);
-			}
-
-			editableValuesJSONObject.put(
-				FragmentEntryProcessorConstants.
-					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR,
-				configurationJSONObject);
-
-			long fragmentEntryLinkId =
-				fragmentEntryLink.getFragmentEntryLinkId();
-
-			fragmentEntryLink =
-				_fragmentEntryLinkLocalService.updateFragmentEntryLink(
+			FragmentEntryLink fragmentEntryLink =
+				_fragmentEntryLinkService.updateFragmentEntryLink(
 					fragmentEntryLinkId, editableValuesJSONObject.toString());
 
 			fragmentEntryLinksJSONArray.put(
@@ -151,32 +101,14 @@ public class UpdateCollectionDisplayConfigMVCActionCommand
 				themeDisplay.getPlid(),
 				curLayoutStructure -> curLayoutStructure.updateItemConfig(
 					_jsonFactory.createJSONObject(itemConfig), itemId))
-		).put(
-			"pageContents",
-			_contentManager.getPageContentsJSONArray(
-				_portal.getHttpServletRequest(actionRequest),
-				_portal.getHttpServletResponse(actionResponse),
-				themeDisplay.getPlid(), segmentsExperienceId)
 		);
 	}
 
-	private static final String
-		_KEY_COLLECTION_APPLIED_FILTERS_FRAGMENT_RENDERER =
-			"com.liferay.fragment.renderer.collection.filter.internal." +
-				"CollectionAppliedFiltersFragmentRenderer";
-
-	private static final String _KEY_COLLECTION_FILTER_FRAGMENT_RENDERER =
-		"com.liferay.fragment.renderer.collection.filter.internal." +
-			"CollectionFilterFragmentRenderer";
-
-	@Reference
-	private ContentManager _contentManager;
-
-	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
-
 	@Reference
 	private FragmentEntryLinkManager _fragmentEntryLinkManager;
+
+	@Reference
+	private FragmentEntryLinkService _fragmentEntryLinkService;
 
 	@Reference
 	private JSONFactory _jsonFactory;

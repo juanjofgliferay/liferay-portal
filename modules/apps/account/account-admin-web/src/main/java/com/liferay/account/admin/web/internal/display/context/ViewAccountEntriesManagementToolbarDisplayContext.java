@@ -14,7 +14,6 @@ import com.liferay.account.model.AccountEntry;
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.SearchContainerManagementToolbarDisplayContext;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownGroupItemBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
@@ -43,14 +42,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -144,21 +143,25 @@ public class ViewAccountEntriesManagementToolbarDisplayContext
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (!AccountEntryPermission.contains(
+		if (AccountEntryPermission.contains(
+				themeDisplay.getPermissionChecker(),
+				accountEntryDisplay.getAccountEntryId(),
+				ActionKeys.DEACTIVATE)) {
+
+			if (accountEntryDisplay.isApproved()) {
+				availableActions.add("deactivateAccountEntries");
+			}
+			else if (accountEntryDisplay.isInactive()) {
+				availableActions.add("activateAccountEntries");
+			}
+		}
+
+		if (AccountEntryPermission.contains(
 				themeDisplay.getPermissionChecker(),
 				accountEntryDisplay.getAccountEntryId(), ActionKeys.DELETE)) {
 
-			return availableActions;
+			availableActions.add("deleteAccountEntries");
 		}
-
-		if (accountEntryDisplay.isApproved()) {
-			availableActions.add("deactivateAccountEntries");
-		}
-		else if (accountEntryDisplay.isInactive()) {
-			availableActions.add("activateAccountEntries");
-		}
-
-		availableActions.add("deleteAccountEntries");
 
 		return availableActions;
 	}
@@ -197,11 +200,23 @@ public class ViewAccountEntriesManagementToolbarDisplayContext
 
 	@Override
 	public List<DropdownItem> getFilterDropdownItems() {
-		List<DropdownItem> filterDropdownItems = super.getFilterDropdownItems();
-
-		_addFilterTypeDropdownItems(filterDropdownItems);
-
-		return filterDropdownItems;
+		return DropdownItemListBuilder.addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					super.getFilterDropdownItems());
+				dropdownGroupItem.setLabel(
+					super.getFilterNavigationDropdownItemsLabel());
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					getDropdownItems(
+						getDefaultEntriesMap(_getFilterByTypeKeys()),
+						getPortletURL(), "type", _getType()));
+				dropdownGroupItem.setLabel(
+					LanguageUtil.get(httpServletRequest, "filter-by-type"));
+			}
+		).build();
 	}
 
 	@Override
@@ -293,20 +308,6 @@ public class ViewAccountEntriesManagementToolbarDisplayContext
 	@Override
 	protected String[] getOrderByKeys() {
 		return new String[] {"name"};
-	}
-
-	private void _addFilterTypeDropdownItems(
-		List<DropdownItem> filterDropdownItems) {
-
-		filterDropdownItems.add(
-			1,
-			DropdownGroupItemBuilder.setDropdownItems(
-				getDropdownItems(
-					getDefaultEntriesMap(_getFilterByTypeKeys()),
-					getPortletURL(), "type", _getType())
-			).setLabel(
-				LanguageUtil.get(httpServletRequest, "filter-by-type")
-			).build());
 	}
 
 	private String[] _getFilterByTypeKeys() {

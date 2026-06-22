@@ -5,6 +5,7 @@
 
 package com.liferay.site.navigation.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -24,9 +25,9 @@ import com.liferay.site.navigation.constants.SiteNavigationConstants;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -36,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	property = "javax.portlet.name=" + SiteNavigationAdminPortletKeys.SITE_NAVIGATION_ADMIN,
+	property = "jakarta.portlet.name=" + SiteNavigationAdminPortletKeys.SITE_NAVIGATION_ADMIN,
 	service = PortletDataHandler.class
 )
 public class SiteNavigationMenuPortletDataHandler
@@ -49,6 +50,11 @@ public class SiteNavigationMenuPortletDataHandler
 	@Override
 	public String getSchemaVersion() {
 		return SCHEMA_VERSION;
+	}
+
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_SITE_BUILDER;
 	}
 
 	@Override
@@ -77,14 +83,15 @@ public class SiteNavigationMenuPortletDataHandler
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(SiteNavigationMenu.class),
 			new StagedModelType(SiteNavigationMenuItem.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "navigation-menus", true, false, null,
 				SiteNavigationMenu.class.getName()),
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "navigation-menu-items", true, false, null,
 				SiteNavigationMenuItem.class.getName()));
-		setStagingControls(getExportControls());
+		setStagingPortletDataHandlerControls(
+			getExportPortletDataHandlerControls());
 	}
 
 	@Override

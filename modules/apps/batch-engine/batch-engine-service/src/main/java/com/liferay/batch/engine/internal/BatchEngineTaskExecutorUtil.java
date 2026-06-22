@@ -5,24 +5,43 @@
 
 package com.liferay.batch.engine.internal;
 
+import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.internal.security.permission.LiberalPermissionChecker;
 import com.liferay.batch.engine.internal.util.ItemIndexThreadLocal;
-import com.liferay.petra.function.UnsafeRunnable;
+import com.liferay.batch.engine.jaxrs.uri.BatchEngineUriInfo;
+import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.portal.kernel.audit.AuditRequestThreadLocal;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatusMessageSender;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocal;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+
+import java.io.Serializable;
+
+import java.util.Map;
 
 /**
  * @author Ivica Cardic
  */
 public class BatchEngineTaskExecutorUtil {
 
-	public static void execute(
-			boolean checkPermissions, UnsafeRunnable<Throwable> unsafeRunnable,
-			User user)
+	public static <T> T execute(
+			boolean checkPermissions,
+			UnsafeSupplier<T, Throwable> unsafeSupplier, User user)
 		throws Throwable {
+
+		AuditRequestThreadLocal auditRequestThreadLocal =
+			AuditRequestThreadLocal.getAuditThreadLocal();
+
+		auditRequestThreadLocal.setRealUserEmailAddress(user.getEmailAddress());
+		auditRequestThreadLocal.setRealUserId(user.getUserId());
 
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
@@ -41,13 +60,55 @@ public class BatchEngineTaskExecutorUtil {
 		PrincipalThreadLocal.setName(user.getUserId());
 
 		try {
-			unsafeRunnable.run();
+			return unsafeSupplier.get();
 		}
 		finally {
 			ItemIndexThreadLocal.clear();
 			PermissionThreadLocal.setPermissionChecker(permissionChecker);
 			PrincipalThreadLocal.setName(name);
 		}
+	}
+
+	public static void sendBatchProgressMessage(
+		BackgroundTaskStatusMessageSender backgroundTaskStatusMessageSender,
+		int processedItemsCount) {
+
+		if (backgroundTaskStatusMessageSender == null) {
+			return;
+		}
+
+		Message message = new Message();
+
+		message.put(
+			BackgroundTaskConstants.MESSAGE_KEY_BACKGROUND_TASK_ID,
+			BackgroundTaskThreadLocal.getBackgroundTaskId());
+		message.put("batchEngineProcessedItemsCount", processedItemsCount);
+		message.put("messageType", "batchProgress");
+
+		backgroundTaskStatusMessageSender.sendBackgroundTaskStatusMessage(
+			message);
+	}
+
+	public static void setContextFields(
+			long companyId,
+			BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate,
+			Map<String, Serializable> parameters, User user)
+		throws PortalException {
+
+		batchEngineTaskItemDelegate.setContextCompany(
+			CompanyLocalServiceUtil.getCompany(companyId));
+
+		BatchEngineUriInfo.Builder builder = new BatchEngineUriInfo.Builder();
+
+		for (Map.Entry<String, Serializable> entry : parameters.entrySet()) {
+			builder.queryParameter(
+				entry.getKey(), String.valueOf(entry.getValue()));
+		}
+
+		batchEngineTaskItemDelegate.setContextUriInfo(builder.build());
+
+		batchEngineTaskItemDelegate.setContextUser(user);
+		batchEngineTaskItemDelegate.setLanguageId(user.getLanguageId());
 	}
 
 }

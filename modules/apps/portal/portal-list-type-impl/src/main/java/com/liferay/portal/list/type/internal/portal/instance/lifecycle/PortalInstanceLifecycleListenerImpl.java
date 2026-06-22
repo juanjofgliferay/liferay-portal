@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.ListTypeLocalService;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import org.osgi.service.component.annotations.Component;
@@ -30,6 +31,10 @@ public class PortalInstanceLifecycleListenerImpl
 	@Override
 	public void portalInstancePreunregistered(Company company)
 		throws Exception {
+
+		if (PropsValues.DATABASE_PARTITION_ENABLED) {
+			return;
+		}
 
 		_listTypeLocalService.deleteListTypes(company.getCompanyId());
 	}

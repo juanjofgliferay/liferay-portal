@@ -12,9 +12,9 @@ import java.text.ParseException;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -102,6 +102,15 @@ public class GitCommitFactory {
 			_getGitCommitType(message), commitTime);
 	}
 
+	public static LocalGitCommit newLocalGitCommit(
+		String emailAddress, GitWorkingDirectory gitWorkingDirectory,
+		String message, String patch, String sha, long commitTime) {
+
+		return new DefaultLocalGitCommit(
+			emailAddress, gitWorkingDirectory, message, patch, sha,
+			_getGitCommitType(message), commitTime);
+	}
+
 	private static GitCommit.Type _getGitCommitType(String message) {
 		if (message.startsWith("archive:ignore")) {
 			return GitCommit.Type.LEGACY_ARCHIVE;
@@ -113,11 +122,11 @@ public class GitCommitFactory {
 	private static String _getGitHubCommitURL(
 		String gitHubUsername, String gitRepositoryName, String sha) {
 
-		return JenkinsResultsParserUtil.getGitHubApiUrl(
+		return JenkinsResultsParserUtil.getGitHubAPIURL(
 			gitRepositoryName, gitHubUsername, "commits/" + sha);
 	}
 
 	private static final Map<String, GitHubRemoteGitCommit>
-		_gitHubRemoteGitCommits = new HashMap<>();
+		_gitHubRemoteGitCommits = new ConcurrentHashMap<>();
 
 }

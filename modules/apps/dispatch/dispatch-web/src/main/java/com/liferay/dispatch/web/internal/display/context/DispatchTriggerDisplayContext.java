@@ -23,14 +23,20 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.FastDateFormatConstants;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
+import java.text.Format;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import java.util.TimeZone;
 
 /**
  * @author guywandji
@@ -120,6 +126,35 @@ public class DispatchTriggerDisplayContext extends BaseDisplayContext {
 			dispatchTriggerId);
 	}
 
+	public String getNextFireDateString(DispatchTrigger dispatchTrigger) {
+		DispatchTriggerMetadata dispatchTriggerMetadata =
+			getDispatchTriggerMetadata(dispatchTrigger.getDispatchTriggerId());
+
+		if (!dispatchTriggerMetadata.isDispatchTaskExecutorReady() ||
+			(dispatchTrigger.getNextFireDate() == null)) {
+
+			return LanguageUtil.get(
+				dispatchRequestHelper.getRequest(), "not-scheduled");
+		}
+
+		TimeZone timeZone = null;
+
+		String timeZoneId = dispatchTrigger.getTimeZoneId();
+
+		if (Validator.isNotNull(timeZoneId)) {
+			timeZone = TimeZone.getTimeZone(timeZoneId);
+		}
+		else {
+			timeZone = TimeZoneUtil.getDefault();
+		}
+
+		Format fastDateTimeFormat = FastDateFormatFactoryUtil.getDateTime(
+			FastDateFormatConstants.SHORT, FastDateFormatConstants.LONG,
+			dispatchRequestHelper.getLocale(), timeZone);
+
+		return fastDateTimeFormat.format(dispatchTrigger.getNextFireDate());
+	}
+
 	public String getOrderByCol() {
 		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
@@ -200,6 +235,12 @@ public class DispatchTriggerDisplayContext extends BaseDisplayContext {
 		return _searchContainer;
 	}
 
+	public int getTotalItems() {
+		SearchContainer<DispatchTrigger> searchContainer = getSearchContainer();
+
+		return searchContainer.getTotal();
+	}
+
 	public ViewTypeItemList getViewTypeItems() {
 		return new ViewTypeItemList(getPortletURL(), "list") {
 			{
@@ -209,11 +250,7 @@ public class DispatchTriggerDisplayContext extends BaseDisplayContext {
 	}
 
 	public boolean isClusterModeSingle(String type) {
-		if (_dispatchTaskExecutorRegistry.isClusterModeSingle(type)) {
-			return true;
-		}
-
-		return false;
+		return _dispatchTaskExecutorRegistry.isClusterModeSingle(type);
 	}
 
 	private final DispatchTaskExecutorRegistry _dispatchTaskExecutorRegistry;

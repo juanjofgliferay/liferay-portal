@@ -128,11 +128,18 @@ public class BlogsEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table BlogsEntry";
 
+	public static final String ENTITY_ALIAS = "blogsEntry";
+
+	public static final String FILTER_PK_COLUMN_NAME = "entryId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY blogsEntry.displayDate DESC, blogsEntry.createDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY BlogsEntry.displayDate DESC, BlogsEntry.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY blogsEntry.displayDate DESC, blogsEntry.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1930,3 +1937,4 @@ public class BlogsEntryModelImpl
 	private BlogsEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:293280619

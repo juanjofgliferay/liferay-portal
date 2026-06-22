@@ -34,19 +34,21 @@
 			<waitfor maxwait="120" maxwaitunit="second">
 				<http url="http://127.0.0.1:18080/" />
 			</waitfor>
-		</sequential>
-	</macrodef>
-
-	<macrodef name="stop-keycloak-server">
-		<sequential>
-			<property name="liferay.dependency.dir" value="${project.dir}/portal-web/test/functional/com/liferay/portalweb/dependencies" />
-
-			<exec dir="${liferay.dependency.dir}/keycloak-16.1.0/bin" executable="/bin/bash">
-				<arg value="./jboss-cli.sh" />
-				<arg value="--connect" />
-				<arg value="--controller=localhost:19990" />
-				<arg value="command=:shutdown" />
+			<exec executable="curl" outputproperty="curl.output">
+				<arg line="-s -o /dev/null -w &quot;%{http_code}&quot; http://127.0.0.1:18080" />
 			</exec>
+
+			<echo>${curl.output}</echo>
+
+			<if>
+				<contains string="${curl.output}" substring="200" />
+				<then>
+					<echo>Keycloak started succesfully.</echo>
+				</then>
+				<else>
+					<fail>Keycloak startup failed.</fail>
+				</else>
+			</if>
 		</sequential>
 	</macrodef>
 

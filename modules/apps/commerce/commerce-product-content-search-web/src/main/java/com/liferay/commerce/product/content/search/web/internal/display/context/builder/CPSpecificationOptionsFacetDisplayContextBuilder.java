@@ -6,22 +6,28 @@
 package com.liferay.commerce.product.content.search.web.internal.display.context.builder;
 
 import com.liferay.commerce.product.constants.CPField;
+import com.liferay.commerce.product.content.search.web.internal.configuration.CPSpecificationOptionFacetsPortletInstanceConfiguration;
 import com.liferay.commerce.product.content.search.web.internal.display.context.CPSpecificationOptionFacetsDisplayContext;
 import com.liferay.commerce.product.content.search.web.internal.display.context.CPSpecificationOptionsSearchFacetDisplayContext;
 import com.liferay.commerce.product.content.search.web.internal.display.context.CPSpecificationOptionsSearchFacetTermDisplayContext;
 import com.liferay.commerce.product.content.search.web.internal.util.CPSpecificationOptionFacetsUtil;
+import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.search.facet.collector.TermCollector;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
@@ -29,15 +35,16 @@ import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.RenderRequest;
 
 /**
  * @author Crescenzo Rega
@@ -51,7 +58,12 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 		CPSpecificationOptionFacetsDisplayContext
 			cpSpecificationOptionFacetsDisplayContext =
 				new CPSpecificationOptionFacetsDisplayContext(
+					_configurationProvider, _groupLocalService,
 					_portal.getHttpServletRequest(_renderRequest));
+
+		_cpSpecificationOptionFacetsPortletInstanceConfiguration =
+			cpSpecificationOptionFacetsDisplayContext.
+				getCPSpecificationOptionFacetsPortletInstanceConfiguration();
 
 		cpSpecificationOptionFacetsDisplayContext.
 			setCPSpecificationOptionsSearchFacetDisplayContexts(
@@ -60,10 +72,20 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 		return cpSpecificationOptionFacetsDisplayContext;
 	}
 
+	public void configurationProvider(
+		ConfigurationProvider configurationProvider) {
+
+		_configurationProvider = configurationProvider;
+	}
+
 	public void cpSpecificationOptionLocalService(
 		CPSpecificationOptionLocalService cpSpecificationOptionLocalService) {
 
 		_cpSpecificationOptionLocalService = cpSpecificationOptionLocalService;
+	}
+
+	public void groupLocalService(GroupLocalService groupLocalService) {
+		_groupLocalService = groupLocalService;
 	}
 
 	public void parameterValues(String... parameterValues) {
@@ -85,7 +107,8 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 	}
 
 	private CPSpecificationOptionsSearchFacetDisplayContext
-		_buildCPSpecificationOptionsSearchFacetDisplayContext() {
+			_buildCPSpecificationOptionsSearchFacetDisplayContext()
+		throws PortalException {
 
 		_tuples = _getTuples(_facet.getFacetCollector());
 
@@ -105,6 +128,17 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 			_getFirstParameterValueString());
 		cpSpecificationOptionsSearchFacetDisplayContext.setRenderRequest(
 			_renderRequest);
+
+		CPSpecificationOption cpSpecificationOption = _getCPSpecificationOption(
+			_facet.getFieldName());
+
+		cpSpecificationOptionsSearchFacetDisplayContext.setPriority(
+			_getCPSpecificationOptionsSearchFacetDisplayContextPriority(
+				cpSpecificationOption.getCPOptionCategory(),
+				cpSpecificationOption,
+				_portletSharedSearchResponse.getPortletPreferences(
+					_renderRequest)));
+
 		cpSpecificationOptionsSearchFacetDisplayContext.setTermDisplayContexts(
 			_buildTermDisplayContexts());
 		cpSpecificationOptionsSearchFacetDisplayContext.
@@ -115,10 +149,11 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 	}
 
 	private CPSpecificationOptionsSearchFacetDisplayContext
-		_buildCPSpecificationOptionsSearchFacetDisplayContext(
-			Facet facet,
-			PortletSharedSearchResponse portletSharedSearchResponse,
-			RenderRequest renderRequest) {
+			_buildCPSpecificationOptionsSearchFacetDisplayContext(
+				Facet facet,
+				PortletSharedSearchResponse portletSharedSearchResponse,
+				RenderRequest renderRequest)
+		throws PortalException {
 
 		_facet = facet;
 
@@ -146,22 +181,6 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 		List<Facet> filledFacets = new ArrayList<>();
 
 		FacetCollector facetCollector = facet.getFacetCollector();
-
-		PortletPreferences portletPreferences =
-			_portletSharedSearchResponse.getPortletPreferences(_renderRequest);
-
-		if (portletPreferences != null) {
-			_displayStyle = portletPreferences.getValue(
-				"displayStyle", _displayStyle);
-			_frequencyThreshold = GetterUtil.getInteger(
-				portletPreferences.getValue("frequencyThreshold", null),
-				_frequencyThreshold);
-			_frequenciesVisible = GetterUtil.getBoolean(
-				portletPreferences.getValue("frequenciesVisible", "true"),
-				_frequenciesVisible);
-			_maxTerms = GetterUtil.getInteger(
-				portletPreferences.getValue("maxTerms", null), _maxTerms);
-		}
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -202,8 +221,36 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 						filledFacet, _portletSharedSearchResponse,
 						_renderRequest);
 
-			cpSpecificationOptionsSearchFacetDisplayContexts.add(
-				cpSpecificationOptionsSearchFacetDisplayContext);
+			List<CPSpecificationOptionsSearchFacetTermDisplayContext>
+				cpSpecificationOptionsSearchFacetTermDisplayContexts =
+					cpSpecificationOptionsSearchFacetDisplayContext.
+						getTermDisplayContexts();
+
+			if (!cpSpecificationOptionsSearchFacetTermDisplayContexts.
+					isEmpty()) {
+
+				cpSpecificationOptionsSearchFacetDisplayContexts.add(
+					cpSpecificationOptionsSearchFacetDisplayContext);
+			}
+		}
+
+		String specificationsOrder =
+			_cpSpecificationOptionFacetsPortletInstanceConfiguration.
+				specificationsOrder();
+
+		if (specificationsOrder != null) {
+			Comparator<CPSpecificationOptionsSearchFacetDisplayContext>
+				comparator = Comparator.comparing(
+					CPSpecificationOptionsSearchFacetDisplayContext::
+						getPriority);
+
+			if (StringUtil.equals(specificationsOrder, "label-priority:desc") ||
+				StringUtil.equals(specificationsOrder, "priority:desc")) {
+
+				comparator = comparator.reversed();
+			}
+
+			cpSpecificationOptionsSearchFacetDisplayContexts.sort(comparator);
 		}
 
 		return cpSpecificationOptionsSearchFacetDisplayContexts;
@@ -222,7 +269,8 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 		cpSpecificationOptionsSearchFacetTermDisplayContext.setFrequency(
 			frequency);
 		cpSpecificationOptionsSearchFacetTermDisplayContext.setFrequencyVisible(
-			_frequenciesVisible);
+			_cpSpecificationOptionFacetsPortletInstanceConfiguration.
+				frequenciesVisible());
 		cpSpecificationOptionsSearchFacetTermDisplayContext.setPopularity(
 			popularity);
 		cpSpecificationOptionsSearchFacetTermDisplayContext.setSelected(
@@ -245,8 +293,17 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 		int maxCount = 1;
 		int minCount = 1;
 
-		if (_frequenciesVisible &&
-			_displayStyle.equals(
+		int frequencyThreshold =
+			_cpSpecificationOptionFacetsPortletInstanceConfiguration.
+				frequencyThreshold();
+		int maxTerms =
+			_cpSpecificationOptionFacetsPortletInstanceConfiguration.maxTerms();
+
+		if (_cpSpecificationOptionFacetsPortletInstanceConfiguration.
+				frequenciesVisible() &&
+			StringUtil.equals(
+				_cpSpecificationOptionFacetsPortletInstanceConfiguration.
+					displayStyle(),
 				"ddmTemplate_CP-SPECIFICATION-OPTION-FACET-CLOUD-FTL")) {
 
 			// The cloud style may not list tags in the order of frequency.
@@ -254,7 +311,7 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 			// number of terms or we run out of terms.
 
 			for (int i = 0, j = 0; i < _tuples.size(); i++, j++) {
-				if (j >= _maxTerms) {
+				if (j >= maxTerms) {
 					break;
 				}
 
@@ -262,7 +319,7 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 
 				Integer frequency = (Integer)tuple.getObject(1);
 
-				if (_frequencyThreshold > frequency) {
+				if (frequencyThreshold > frequency) {
 					j--;
 
 					continue;
@@ -280,7 +337,7 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 		}
 
 		for (int i = 0, j = 0; i < _tuples.size(); i++, j++) {
-			if ((_maxTerms > 0) && (j >= _maxTerms)) {
+			if ((maxTerms > 0) && (j >= maxTerms)) {
 				break;
 			}
 
@@ -288,7 +345,7 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 
 			Integer frequency = (Integer)tuple.getObject(1);
 
-			if (_frequencyThreshold > frequency) {
+			if (frequencyThreshold > frequency) {
 				j--;
 
 				continue;
@@ -317,6 +374,35 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 			PortalUtil.getCompanyId(_renderRequest),
 			CPSpecificationOptionFacetsUtil.
 				getCPSpecificationOptionKeyFromIndexFieldName(fieldName));
+	}
+
+	private double _getCPSpecificationOptionsSearchFacetDisplayContextPriority(
+		CPOptionCategory cpOptionCategory,
+		CPSpecificationOption cpSpecificationOption,
+		PortletPreferences portletPreferences) {
+
+		double priority = GetterUtil.DEFAULT_DOUBLE;
+
+		if (portletPreferences != null) {
+			String specificationsOrder = portletPreferences.getValue(
+				"specificationsOrder",
+				_cpSpecificationOptionFacetsPortletInstanceConfiguration.
+					specificationsOrder());
+
+			if (specificationsOrder.equals("label-priority:asc") ||
+				specificationsOrder.equals("label-priority:desc")) {
+
+				priority = cpSpecificationOption.getPriority();
+			}
+			else if (cpOptionCategory != null) {
+				priority = cpOptionCategory.getPriority();
+			}
+		}
+		else if (cpOptionCategory != null) {
+			priority = cpOptionCategory.getPriority();
+		}
+
+		return priority;
 	}
 
 	private String _getFirstParameterValueString() {
@@ -351,18 +437,11 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 	}
 
 	private List<Tuple> _getTuples(FacetCollector facetCollector) {
-		List<TermCollector> termCollectors = facetCollector.getTermCollectors();
-
-		List<Tuple> tuples = new ArrayList<>(termCollectors.size());
-
-		for (TermCollector termCollector : termCollectors) {
-			tuples.add(
-				new Tuple(
-					facetCollector.getFieldName(), termCollector.getFrequency(),
-					termCollector.getTerm()));
-		}
-
-		return tuples;
+		return TransformUtil.transform(
+			facetCollector.getTermCollectors(),
+			termCollector -> new Tuple(
+				facetCollector.getFieldName(), termCollector.getFrequency(),
+				termCollector.getTerm()));
 	}
 
 	private boolean _isCPDefinitionSpecificationOptionValueSelected(
@@ -377,14 +456,14 @@ public class CPSpecificationOptionsFacetDisplayContextBuilder
 			fieldValue);
 	}
 
+	private ConfigurationProvider _configurationProvider;
+	private CPSpecificationOptionFacetsPortletInstanceConfiguration
+		_cpSpecificationOptionFacetsPortletInstanceConfiguration;
 	private CPSpecificationOptionLocalService
 		_cpSpecificationOptionLocalService;
-	private String _displayStyle = StringPool.BLANK;
 	private Facet _facet;
-	private boolean _frequenciesVisible = true;
-	private int _frequencyThreshold = 1;
+	private GroupLocalService _groupLocalService;
 	private Locale _locale;
-	private int _maxTerms = 10;
 	private String _paginationStartParameterName;
 	private String[] _parameterValues;
 	private Portal _portal;

@@ -5,6 +5,7 @@
 
 package com.liferay.headless.commerce.machine.learning.internal.dto.v1_0.converter;
 
+import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
@@ -54,38 +55,58 @@ public class OrderDTOConverter implements DTOConverter<CommerceOrder, Order> {
 			return null;
 		}
 
-		CommerceChannel commerceChannel =
-			_commerceChannelLocalService.fetchCommerceChannelByGroupClassPK(
-				commerceOrder.getGroupId());
-
-		CommerceCurrency commerceCurrency = commerceOrder.getCommerceCurrency();
-
-		ExpandoBridge expandoBridge = commerceOrder.getExpandoBridge();
-
 		return new Order() {
 			{
-				accountId = commerceOrder.getCommerceAccountId();
-				channelId = commerceChannel.getCommerceChannelId();
-				createDate = commerceOrder.getCreateDate();
-				currencyCode = commerceCurrency.getCode();
-				customFields = expandoBridge.getAttributes();
-				externalReferenceCode =
-					commerceOrder.getExternalReferenceCode();
-				id = commerceOrder.getCommerceOrderId();
-				modifiedDate = commerceOrder.getModifiedDate();
-				orderDate = commerceOrder.getOrderDate();
-				orderItems = TransformUtil.transformToArray(
-					commerceOrder.getCommerceOrderItems(),
-					commerceOrderItem -> _orderItemDTOConverter.toDTO(
-						commerceOrderItem),
-					OrderItem.class);
-				orderStatus = commerceOrder.getOrderStatus();
-				orderTypeId = commerceOrder.getCommerceOrderTypeId();
-				paymentMethod = commerceOrder.getCommercePaymentMethodKey();
-				paymentStatus = commerceOrder.getPaymentStatus();
-				status = commerceOrder.getStatus();
-				total = commerceOrder.getTotal();
-				userId = commerceOrder.getUserId();
+				setAccountExternalReferenceCode(
+					() -> {
+						AccountEntry accountEntry =
+							commerceOrder.getAccountEntry();
+
+						return accountEntry.getExternalReferenceCode();
+					});
+				setAccountId(commerceOrder::getCommerceAccountId);
+				setChannelId(
+					() -> {
+						CommerceChannel commerceChannel =
+							_commerceChannelLocalService.
+								fetchCommerceChannelByGroupClassPK(
+									commerceOrder.getGroupId());
+
+						return commerceChannel.getCommerceChannelId();
+					});
+				setCreateDate(commerceOrder::getCreateDate);
+				setCurrencyCode(
+					() -> {
+						CommerceCurrency commerceCurrency =
+							commerceOrder.getCommerceCurrency();
+
+						return commerceCurrency.getCode();
+					});
+				setCustomFields(
+					() -> {
+						ExpandoBridge expandoBridge =
+							commerceOrder.getExpandoBridge();
+
+						return expandoBridge.getAttributes();
+					});
+				setExternalReferenceCode(
+					commerceOrder::getExternalReferenceCode);
+				setId(commerceOrder::getCommerceOrderId);
+				setModifiedDate(commerceOrder::getModifiedDate);
+				setOrderDate(commerceOrder::getOrderDate);
+				setOrderItems(
+					() -> TransformUtil.transformToArray(
+						commerceOrder.getCommerceOrderItems(),
+						commerceOrderItem -> _orderItemDTOConverter.toDTO(
+							commerceOrderItem),
+						OrderItem.class));
+				setOrderStatus(commerceOrder::getOrderStatus);
+				setOrderTypeId(commerceOrder::getCommerceOrderTypeId);
+				setPaymentMethod(commerceOrder::getCommercePaymentMethodKey);
+				setPaymentStatus(commerceOrder::getPaymentStatus);
+				setStatus(commerceOrder::getStatus);
+				setTotal(commerceOrder::getTotal);
+				setUserId(commerceOrder::getUserId);
 			}
 		};
 	}

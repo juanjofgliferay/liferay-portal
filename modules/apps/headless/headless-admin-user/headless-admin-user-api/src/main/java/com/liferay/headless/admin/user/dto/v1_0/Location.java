@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "The organization's postal information (country and region).",
 	value = "Location"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "The organization's postal information (country and region)."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Location")
@@ -52,30 +54,40 @@ public class Location implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Location.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's country. This follows the [`addressCountry`](https://schema.org/addressCountry) specification."
 	)
 	public String getAddressCountry() {
+		if (_addressCountrySupplier != null) {
+			addressCountry = _addressCountrySupplier.get();
+
+			_addressCountrySupplier = null;
+		}
+
 		return addressCountry;
 	}
 
 	public void setAddressCountry(String addressCountry) {
 		this.addressCountry = addressCountry;
+
+		_addressCountrySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAddressCountry(
 		UnsafeSupplier<String, Exception> addressCountryUnsafeSupplier) {
 
-		try {
-			addressCountry = addressCountryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressCountrySupplier = () -> {
+			try {
+				return addressCountryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -84,9 +96,111 @@ public class Location implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String addressCountry;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _addressCountrySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The organization's country isocode."
+	)
+	public String getAddressCountryCode() {
+		if (_addressCountryCodeSupplier != null) {
+			addressCountryCode = _addressCountryCodeSupplier.get();
+
+			_addressCountryCodeSupplier = null;
+		}
+
+		return addressCountryCode;
+	}
+
+	public void setAddressCountryCode(String addressCountryCode) {
+		this.addressCountryCode = addressCountryCode;
+
+		_addressCountryCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAddressCountryCode(
+		UnsafeSupplier<String, Exception> addressCountryCodeUnsafeSupplier) {
+
+		_addressCountryCodeSupplier = () -> {
+			try {
+				return addressCountryCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The organization's country isocode.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String addressCountryCode;
+
+	@JsonIgnore
+	private Supplier<String> _addressCountryCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The organization's country external reference code."
+	)
+	public String getAddressCountryExternalReferenceCode() {
+		if (_addressCountryExternalReferenceCodeSupplier != null) {
+			addressCountryExternalReferenceCode =
+				_addressCountryExternalReferenceCodeSupplier.get();
+
+			_addressCountryExternalReferenceCodeSupplier = null;
+		}
+
+		return addressCountryExternalReferenceCode;
+	}
+
+	public void setAddressCountryExternalReferenceCode(
+		String addressCountryExternalReferenceCode) {
+
+		this.addressCountryExternalReferenceCode =
+			addressCountryExternalReferenceCode;
+
+		_addressCountryExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAddressCountryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			addressCountryExternalReferenceCodeUnsafeSupplier) {
+
+		_addressCountryExternalReferenceCodeSupplier = () -> {
+			try {
+				return addressCountryExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "The organization's country external reference code."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String addressCountryExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _addressCountryExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getAddressCountry_i18n() {
+		if (_addressCountry_i18nSupplier != null) {
+			addressCountry_i18n = _addressCountry_i18nSupplier.get();
+
+			_addressCountry_i18nSupplier = null;
+		}
+
 		return addressCountry_i18n;
 	}
 
@@ -94,6 +208,8 @@ public class Location implements Serializable {
 		Map<String, String> addressCountry_i18n) {
 
 		this.addressCountry_i18n = addressCountry_i18n;
+
+		_addressCountry_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -101,45 +217,60 @@ public class Location implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			addressCountry_i18nUnsafeSupplier) {
 
-		try {
-			addressCountry_i18n = addressCountry_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressCountry_i18nSupplier = () -> {
+			try {
+				return addressCountry_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> addressCountry_i18n;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Map<String, String>> _addressCountry_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's region. This follows the [`addressRegion`](https://schema.org/addressRegion) specification."
 	)
 	public String getAddressRegion() {
+		if (_addressRegionSupplier != null) {
+			addressRegion = _addressRegionSupplier.get();
+
+			_addressRegionSupplier = null;
+		}
+
 		return addressRegion;
 	}
 
 	public void setAddressRegion(String addressRegion) {
 		this.addressRegion = addressRegion;
+
+		_addressRegionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAddressRegion(
 		UnsafeSupplier<String, Exception> addressRegionUnsafeSupplier) {
 
-		try {
-			addressRegion = addressRegionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_addressRegionSupplier = () -> {
+			try {
+				return addressRegionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -148,31 +279,142 @@ public class Location implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String addressRegion;
 
-	@Schema(description = "The location's ID.")
+	@JsonIgnore
+	private Supplier<String> _addressRegionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The organization's region code."
+	)
+	public String getAddressRegionCode() {
+		if (_addressRegionCodeSupplier != null) {
+			addressRegionCode = _addressRegionCodeSupplier.get();
+
+			_addressRegionCodeSupplier = null;
+		}
+
+		return addressRegionCode;
+	}
+
+	public void setAddressRegionCode(String addressRegionCode) {
+		this.addressRegionCode = addressRegionCode;
+
+		_addressRegionCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAddressRegionCode(
+		UnsafeSupplier<String, Exception> addressRegionCodeUnsafeSupplier) {
+
+		_addressRegionCodeSupplier = () -> {
+			try {
+				return addressRegionCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The organization's region code.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String addressRegionCode;
+
+	@JsonIgnore
+	private Supplier<String> _addressRegionCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The organization's region external reference code."
+	)
+	public String getAddressRegionExternalReferenceCode() {
+		if (_addressRegionExternalReferenceCodeSupplier != null) {
+			addressRegionExternalReferenceCode =
+				_addressRegionExternalReferenceCodeSupplier.get();
+
+			_addressRegionExternalReferenceCodeSupplier = null;
+		}
+
+		return addressRegionExternalReferenceCode;
+	}
+
+	public void setAddressRegionExternalReferenceCode(
+		String addressRegionExternalReferenceCode) {
+
+		this.addressRegionExternalReferenceCode =
+			addressRegionExternalReferenceCode;
+
+		_addressRegionExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setAddressRegionExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			addressRegionExternalReferenceCodeUnsafeSupplier) {
+
+		_addressRegionExternalReferenceCodeSupplier = () -> {
+			try {
+				return addressRegionExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "The organization's region external reference code."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String addressRegionExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _addressRegionExternalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The location's ID."
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The location's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
+
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -201,6 +443,8 @@ public class Location implements Serializable {
 
 		sb.append("{");
 
+		String addressCountry = getAddressCountry();
+
 		if (addressCountry != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -215,6 +459,41 @@ public class Location implements Serializable {
 			sb.append("\"");
 		}
 
+		String addressCountryCode = getAddressCountryCode();
+
+		if (addressCountryCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"addressCountryCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(addressCountryCode));
+
+			sb.append("\"");
+		}
+
+		String addressCountryExternalReferenceCode =
+			getAddressCountryExternalReferenceCode();
+
+		if (addressCountryExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"addressCountryExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(addressCountryExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Map<String, String> addressCountry_i18n = getAddressCountry_i18n();
+
 		if (addressCountry_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -224,6 +503,8 @@ public class Location implements Serializable {
 
 			sb.append(_toJSON(addressCountry_i18n));
 		}
+
+		String addressRegion = getAddressRegion();
 
 		if (addressRegion != null) {
 			if (sb.length() > 1) {
@@ -238,6 +519,41 @@ public class Location implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String addressRegionCode = getAddressRegionCode();
+
+		if (addressRegionCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"addressRegionCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(addressRegionCode));
+
+			sb.append("\"");
+		}
+
+		String addressRegionExternalReferenceCode =
+			getAddressRegionExternalReferenceCode();
+
+		if (addressRegionExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"addressRegionExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(addressRegionExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -254,8 +570,8 @@ public class Location implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.Location",
 		name = "x-class-name"
 	)
@@ -301,7 +617,10 @@ public class Location implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -347,3 +666,4 @@ public class Location implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:576845172

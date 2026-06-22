@@ -8,31 +8,25 @@ package com.liferay.document.library.web.internal.display.context;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileShortcutLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
+import com.liferay.document.library.web.internal.util.FolderItemSelectorURLProvider;
 import com.liferay.item.selector.ItemSelector;
-import com.liferay.item.selector.criteria.FolderItemSelectorReturnType;
-import com.liferay.item.selector.criteria.folder.criterion.FolderItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
-import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Galluzzi
@@ -41,11 +35,12 @@ public class CopyDLObjectsDisplayContext {
 
 	public CopyDLObjectsDisplayContext(
 		HttpServletRequest httpServletRequest,
-		LiferayPortletResponse liferayPortletResponse,
+		LiferayPortletResponse liferayPortletResponse, long size,
 		ThemeDisplay themeDisplay) {
 
 		_httpServletRequest = httpServletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
+		_size = size;
 		_themeDisplay = themeDisplay;
 	}
 
@@ -79,24 +74,11 @@ public class CopyDLObjectsDisplayContext {
 			return _dlObjectName;
 		}
 
-		boolean useParentFolderName = false;
-
-		if (dlObjectIds.length > 1) {
-			useParentFolderName = true;
-		}
-
 		DLFileEntry dlFileEntry = DLFileEntryLocalServiceUtil.fetchDLFileEntry(
 			dlObjectIds[0]);
 
 		if (dlFileEntry != null) {
-			if (useParentFolderName) {
-				DLFolder folder = dlFileEntry.getFolder();
-
-				_dlObjectName = folder.getName();
-			}
-			else {
-				_dlObjectName = dlFileEntry.getTitle();
-			}
+			_dlObjectName = _getFolderName(dlFileEntry.getFolder());
 
 			return _dlObjectName;
 		}
@@ -105,20 +87,7 @@ public class CopyDLObjectsDisplayContext {
 			dlObjectIds[0]);
 
 		if (dlFolder != null) {
-			if (useParentFolderName) {
-				DLFolder parentFolder = dlFolder.getParentFolder();
-
-				if (parentFolder == null) {
-					_dlObjectName = LanguageUtil.get(
-						_httpServletRequest, "home");
-				}
-				else {
-					_dlObjectName = parentFolder.getName();
-				}
-			}
-			else {
-				_dlObjectName = dlFolder.getName();
-			}
+			_dlObjectName = _getFolderName(dlFolder.getParentFolder());
 
 			return _dlObjectName;
 		}
@@ -126,14 +95,7 @@ public class CopyDLObjectsDisplayContext {
 		DLFileShortcut dlFileShortcut =
 			DLFileShortcutLocalServiceUtil.getDLFileShortcut(dlObjectIds[0]);
 
-		if (useParentFolderName) {
-			Folder folder = dlFileShortcut.getFolder();
-
-			_dlObjectName = folder.getName();
-		}
-		else {
-			_dlObjectName = dlFileShortcut.getToTitle();
-		}
+		_dlObjectName = _getFolderName(dlFileShortcut.getDLFolder());
 
 		return _dlObjectName;
 	}
@@ -153,13 +115,12 @@ public class CopyDLObjectsDisplayContext {
 			(ItemSelector)_httpServletRequest.getAttribute(
 				ItemSelector.class.getName());
 
-		return String.valueOf(
-			itemSelector.getItemSelectorURL(
-				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
-				_getGroup(getSourceRepositoryId()),
-				_themeDisplay.getScopeGroupId(), _getItemSelectedEventName(),
-				_getFolderItemSelectorCriterion(
-					_getSourceFolderId(), getSourceRepositoryId())));
+		FolderItemSelectorURLProvider folderItemSelectorURLProvider =
+			new FolderItemSelectorURLProvider(
+				_httpServletRequest, itemSelector);
+
+		return folderItemSelectorURLProvider.getSelectCopyToFolderURL(
+			getSourceRepositoryId(), _getSourceFolderId(), _getFolderId());
 	}
 
 	public long getSize() {
@@ -177,10 +138,6 @@ public class CopyDLObjectsDisplayContext {
 		return _sourceRepositoryId;
 	}
 
-	public void setSize(long size) {
-		_size = size;
-	}
-
 	public void setViewAttributes() {
 		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
 
@@ -196,40 +153,30 @@ public class CopyDLObjectsDisplayContext {
 		}
 	}
 
-	private FolderItemSelectorCriterion _getFolderItemSelectorCriterion(
-		long folderId, long repositoryId) {
-
-		FolderItemSelectorCriterion folderItemSelectorCriterion =
-			new FolderItemSelectorCriterion();
-
-		folderItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
-			new FolderItemSelectorReturnType());
-		folderItemSelectorCriterion.setFolderId(folderId);
-		folderItemSelectorCriterion.setIgnoreRootFolder(true);
-		folderItemSelectorCriterion.setRepositoryId(repositoryId);
-		folderItemSelectorCriterion.setSelectedFolderId(folderId);
-		folderItemSelectorCriterion.setSelectedRepositoryId(repositoryId);
-		folderItemSelectorCriterion.setShowGroupSelector(true);
-		folderItemSelectorCriterion.setShowMountFolder(false);
-
-		return folderItemSelectorCriterion;
-	}
-
-	private Group _getGroup(long repositoryId) throws PortalException {
-		Repository repository = RepositoryLocalServiceUtil.fetchRepository(
-			repositoryId);
-
-		if (repository == null) {
-			return GroupLocalServiceUtil.getGroup(repositoryId);
+	private long _getFolderId() {
+		if (_dlObjectIds.length > 1) {
+			return DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
 		}
 
-		return GroupLocalServiceUtil.getGroup(repository.getGroupId());
+		DLFolder dlFolder = DLFolderLocalServiceUtil.fetchDLFolder(
+			_dlObjectIds[0]);
+
+		if (dlFolder == null) {
+			return DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+		}
+
+		return dlFolder.getFolderId();
 	}
 
-	private String _getItemSelectedEventName() {
-		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
+	private String _getFolderName(DLFolder dlFolder) {
+		if ((dlFolder == null) ||
+			(dlFolder.getFolderId() ==
+				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID)) {
 
-		return portletDisplay.getNamespace() + "folderSelected";
+			return LanguageUtil.get(_httpServletRequest, "home");
+		}
+
+		return dlFolder.getName();
 	}
 
 	private long _getSourceFolderId() {
@@ -246,7 +193,7 @@ public class CopyDLObjectsDisplayContext {
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private String _redirect;
-	private long _size;
+	private final long _size;
 	private long _sourceFolderId = -1;
 	private long _sourceRepositoryId;
 	private final ThemeDisplay _themeDisplay;

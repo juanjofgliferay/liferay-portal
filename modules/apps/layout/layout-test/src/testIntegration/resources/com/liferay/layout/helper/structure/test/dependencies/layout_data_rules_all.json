@@ -1,0 +1,123 @@
+{
+	"deletedItems": [
+	],
+	"items": {
+		"container1": {
+			"children": [
+				"fragment1"
+			],
+			"config": {
+			},
+			"itemId": "container1",
+			"parentId": "root",
+			"type": "container"
+		},
+		"container2": {
+			"children": [
+			],
+			"config": {
+			},
+			"itemId": "container2",
+			"parentId": "root",
+			"type": "container"
+		},
+		"fragment1": {
+			"children": [
+			],
+			"config": {
+			},
+			"itemId": "fragment1",
+			"parentId": "container1",
+			"type": "fragment"
+		},
+		"root": {
+			"children": [
+				"container1",
+				"container2"
+			],
+			"itemId": "root",
+			"parentId": "",
+			"type": "root"
+		}
+	},
+	"pageRules": [
+		{
+			"actions": [
+				{
+					"id": "action1",
+					"itemId": "container2",
+					"type": "show"
+				},
+				{
+					"id": "action2",
+					"itemId": "fragment1",
+					"type": "hide"
+				}
+			],
+			"conditionType": "all",
+			"conditions": [
+				{
+					"field": "role",
+					"id": "condition1",
+					"options": {
+						"type": "equal",
+						"value": "${ROLE_ID_1}"
+					},
+					"type": "user"
+				},
+				{
+					"field": "role",
+					"id": "condition2",
+					"options": {
+						"type": "not-equal",
+						"value": "${ROLE_ID_2}"
+					},
+					"type": "user"
+				},
+				{
+					"field": "segment",
+					"id": "condition3",
+					"options": {
+						"type": "equal",
+						"value": "${SEGMENTS_ENTRY_ID_1}"
+					},
+					"type": "user"
+				},
+				{
+					"field": "segment",
+					"id": "condition4",
+					"options": {
+						"type": "not-equal",
+						"value": "${SEGMENTS_ENTRY_ID_2}"
+					},
+					"type": "user"
+				},
+				{
+					"field": "user",
+					"id": "condition5",
+					"options": {
+						"type": "equal",
+						"value": "${USER_ID_1}"
+					},
+					"type": "user"
+				},
+				{
+					"field": "user",
+					"id": "condition6",
+					"options": {
+						"type": "not-equal",
+						"value": "${USER_ID_2}"
+					},
+					"type": "user"
+				}
+			],
+			"id": "rule1",
+			"name": "Rule"
+		}
+	],
+	"rootItems": {
+		"dropZone": "",
+		"main": "root"
+	},
+	"version": 1.1
+}

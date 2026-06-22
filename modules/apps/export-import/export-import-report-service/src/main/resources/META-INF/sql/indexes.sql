@@ -1,0 +1,1 @@
+create unique index IX_31DA6EEF on ExportImportReportEntry (companyId, exportImportConfigurationId, groupId, classExternalReferenceCode[$COLUMN_LENGTH:75$], classNameId, type_);

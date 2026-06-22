@@ -100,7 +100,7 @@ public class SchedulerResponseManagerTest {
 		_company = CompanyTestUtil.addCompany();
 
 		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setWithSafeCloseable(
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
 					_company.getCompanyId())) {
 
 			_schedulerResponseManager.run(
@@ -132,8 +132,9 @@ public class SchedulerResponseManagerTest {
 	private static final String _TEST_NAME =
 		SchedulerResponseManagerTest.class.getName();
 
-	private static Company _company;
 	private static String _originalName;
+
+	private Company _company;
 
 	@Inject
 	private DestinationFactory _destinationFactory;

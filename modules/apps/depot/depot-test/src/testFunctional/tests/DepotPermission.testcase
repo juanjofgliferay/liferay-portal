@@ -1,9 +1,10 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -337,7 +338,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name 2");
 
@@ -369,7 +370,7 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Depot Regrole Name",
@@ -956,13 +957,13 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "ManagementBar#SEARCH_RESULT_SUMMARY",
-			value1 = "1 Result for \"Depot\"");
+			value1 = "1 Result Found for \"Depot\"");
 
 		Search.searchCP(searchTerm = "No View Permissions");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "ManagementBar#SEARCH_RESULT_SUMMARY",
-			value1 = "0 Results for \"No View Permissions\"");
+			value1 = "0 Results Found for \"No View Permissions\"");
 	}
 
 	@description = "This ensures that assets stored in the asset library folder cannot be viewed without permissions Via DM on a connected site."
@@ -1169,7 +1170,7 @@ definition {
 			depotName = "Test Depot Name",
 			userEmailAddress = "userea2@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Depot Regrole Name",
@@ -1222,7 +1223,7 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanSelectAndDeselectScopeFromCollectionsPermissions {
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		Permissions.definePermissionViaJSONAPI(
 			resourceAction = "DELETE",
@@ -1272,7 +1273,7 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanSelectAndDeselectScopeFromDMPermissions {
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		Permissions.definePermissionViaJSONAPI(
 			resourceAction = "ADD_DOCUMENT",
@@ -1322,7 +1323,7 @@ definition {
 	@priority = 3
 	@refactordone
 	test CanSelectAndDeselectScopeFromWCPermissions {
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		Permissions.definePermissionViaJSONAPI(
 			resourceAction = "VIEW",
@@ -1385,7 +1386,7 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Depot Regrole Name",
@@ -1578,7 +1579,7 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanViewScopeFromUnsupportedApplicationPermissions {
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		Role.openRolesAdmin();
 
@@ -1627,7 +1628,7 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Depot Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Depot Regrole Name");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Depot Regrole Name",

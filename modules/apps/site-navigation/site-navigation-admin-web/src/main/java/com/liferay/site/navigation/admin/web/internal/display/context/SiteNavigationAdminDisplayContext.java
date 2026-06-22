@@ -31,7 +31,6 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.NavItem;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -57,16 +56,16 @@ import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 import com.liferay.template.constants.TemplatePortletKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pavel Savinov
@@ -389,19 +388,6 @@ public class SiteNavigationAdminDisplayContext {
 			_liferayPortletResponse
 		).setMVCPath(
 			"/add_site_navigation_menu_item.jsp"
-		).setRedirect(
-			PortletURLBuilder.createRenderURL(
-				_liferayPortletResponse
-			).setMVCPath(
-				"/add_site_navigation_menu_item_redirect.jsp"
-			).setPortletResource(
-				() -> {
-					PortletDisplay portletDisplay =
-						_themeDisplay.getPortletDisplay();
-
-					return portletDisplay.getId();
-				}
-			).buildString()
 		).setParameter(
 			"siteNavigationMenuId", getSiteNavigationMenuId()
 		).setParameter(
@@ -443,16 +429,9 @@ public class SiteNavigationAdminDisplayContext {
 						ddmTemplate.getName(_themeDisplay.getLocale()))
 				).put(
 					"selected",
-					() -> {
-						if (Objects.equals(
-								ddmTemplate.getTemplateKey(),
-								_getDefaultDDMTemplateKey())) {
-
-							return true;
-						}
-
-						return false;
-					}
+					() -> Objects.equals(
+						ddmTemplate.getTemplateKey(),
+						_getDefaultDDMTemplateKey())
 				).put(
 					"value", HtmlUtil.escape(ddmTemplate.getTemplateKey())
 				));
@@ -490,10 +469,10 @@ public class SiteNavigationAdminDisplayContext {
 
 					RenderRequest renderRequest =
 						(RenderRequest)_httpServletRequest.getAttribute(
-							JavaConstants.JAVAX_PORTLET_REQUEST);
+							JavaConstants.JAKARTA_PORTLET_REQUEST);
 					RenderResponse renderResponse =
 						(RenderResponse)_httpServletRequest.getAttribute(
-							JavaConstants.JAVAX_PORTLET_RESPONSE);
+							JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 					return String.valueOf(
 						siteNavigationMenuItemType.getAddURL(

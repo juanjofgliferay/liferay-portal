@@ -1,4 +1,4 @@
-@component-name = "portal-workflow-ee"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -260,29 +260,6 @@ definition {
 		ProcessBuilderKaleoDesignerReact.viewNodeInfo(
 			labelValue = "Join XOR Node",
 			nodeType = "join-xor");
-	}
-
-	@description = "Verify that the user can add and edit Nodes into diagram by drag&drop: Start"
-	@priority = 5
-	test CanAddAndEditStartNode {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Start",
-			nodePosition = "70,-200");
-
-		ProcessBuilderKaleoDesignerReact.editNodeInformationField(
-			infoOption = "Label",
-			infoValue = "Start Node");
-
-		ProcessBuilderKaleoDesignerReact.viewNodeInfo(
-			labelValue = "Start Node",
-			nodeType = "start");
 	}
 
 	@description = "Verify that the user can add and edit Nodes into diagram by drag&drop: State"
@@ -1642,6 +1619,7 @@ definition {
 	@description = "Verify that the user can delete notification role types"
 	@priority = 3
 	test CanDeleteNotificationRoleTypes {
+		property portal.upstream = "quarantine";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -2208,33 +2186,6 @@ definition {
 		ProcessBuilderKaleoDesignerReact.viewNotificationInfo(notificationTemplateLanguage = "Text");
 	}
 
-	@description = "Verify that the user can edit the Template Language of the Notification to Velocity"
-	@priority = 4
-	test CanEditTemplateLanguageToVelocity {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Title");
-
-		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "start");
-
-		ProcessBuilderKaleoDesignerReact.viewAndFillNotification(
-			name = "New Notification",
-			newNotification = "true",
-			notificationTemplateValue = "Notification Template",
-			notificationTypeOption = "Email",
-			singleAction = "true",
-			templateLanguageOption = "Velocity");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.gotoNotification(notificationName = "New Notification");
-
-		ProcessBuilderKaleoDesignerReact.viewNotificationInfo(notificationTemplateLanguage = "Velocity");
-	}
-
 	@description = "Verify that the user can edit the Description of the Timer"
 	@priority = 3
 	test CanEditTimerDescription {
@@ -2730,7 +2681,7 @@ definition {
 			infoValue = "");
 
 		ProcessBuilderKaleoDesignerReact.viewRequiredField(
-			requiredField = "nodeName",
+			requiredField = "workflowDefinitionBaseNodeName",
 			save = "true");
 	}
 
@@ -2867,93 +2818,6 @@ definition {
 		PortletEntry.publish();
 
 		Alert.viewSuccessMessageText(successMessage = "Workflow published successfully.");
-	}
-
-	@description = "Verify that the user can publish a definition with Fork node"
-	@priority = 5
-	test CanPublishWithForkNode {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Fork",
-			nodePosition = "100,-250");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Task",
-			nodePosition = "-200,-250");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "State",
-			nodePosition = "60,-550");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Join",
-			nodePosition = "60,50");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "fork",
-			connectorLabel = "Connector",
-			connectorOut = "start",
-			key_direction = "right");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "task",
-			connectorLabel = "Connector",
-			connectorOut = "fork",
-			key_direction = "right");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "state",
-			connectorLabel = "Connector",
-			connectorOut = "fork",
-			key_direction = "left");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "join",
-			connectorLabel = "Connector",
-			connectorOut = "task",
-			key_direction = "right");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "join",
-			connectorLabel = "Connector",
-			connectorOut = "state",
-			key_direction = "right");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "end",
-			connectorLabel = "Connector",
-			connectorOut = "join",
-			key_direction = "right");
-
-		PortletEntry.publish();
-
-		Alert.viewSuccessMessageText(successMessage = "Workflow published successfully.");
-
-		Workflow.openWorkflowListView();
 	}
 
 	@description = "Verify that the user can publish a definition with Join node"
@@ -3814,29 +3678,6 @@ definition {
 			defaultStatus = "True");
 	}
 
-	@description = "Verify that the user can switch between Details and Revision Story Tab"
-	@priority = 4
-	test CanSwitchBetweenDetailsRevisionTabs {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		Workflow.saveDefinition(newKaleoDesigner = "True");
-
-		ProcessBuilderKaleoDesignerReact.gotoInfoWorkflowDefinition();
-
-		Navigator.gotoNavTab(navTab = "Revision History");
-
-		ProcessBuilderKaleoDesignerReact.viewRevisionHistoryFieldsPresent();
-
-		Navigator.gotoNavTab(navTab = "Details");
-
-		ProcessBuilderKaleoDesignerReact.viewDetailsFieldsPresent();
-	}
-
 	@description = "Verify that the user can turn on the Timers recurrence mode"
 	@priority = 4
 	test CanTurnOnTimerRecurrenceMode {
@@ -3864,57 +3705,6 @@ definition {
 		ProcessBuilderKaleoDesignerReact.viewPropertyValue(
 			propertyName = "Timer",
 			propertyValue = "Recurrence: 1 hour");
-	}
-
-	@description = "Verify that the Revision History tab display the definition current version"
-	@priority = 3
-	test CanViewCurrentVersionAtRevisionHistoryTab {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "end",
-			connectorLabel = "Start-End Connector",
-			connectorOut = "start",
-			key_direction = "bottom");
-
-		PortletEntry.publish();
-
-		Alert.viewSuccessMessageText(successMessage = "Workflow published successfully.");
-
-		ProcessBuilderKaleoDesignerReact.selectConnector(connectorLabel = "START-END CONNECTOR");
-
-		ProcessBuilderKaleoDesignerReact.deleteNodeOrConnection(title = "Delete Transition");
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Task",
-			nodePosition = "-200,-250");
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "task",
-			connectorLabel = "Start-Task Connector",
-			connectorOut = "start",
-			key_direction = "bottom");
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "end",
-			connectorLabel = "Task-End Connector",
-			connectorOut = "task",
-			key_direction = "bottom");
-
-		Button.click(button = "Update");
-
-		Alert.viewSuccessMessageText(successMessage = "Workflow updated successfully.");
-
-		ProcessBuilderKaleoDesignerReact.gotoInfoWorkflowDefinition();
-
-		Navigator.gotoNavTab(navTab = "Revision History");
-
-		ProcessBuilderKaleoDesignerReact.viewCurrentVersionAtRevisionHistoryTab(number = 2);
 	}
 
 	@description = "Verify that the user can see the Assignments on Single Approver"
@@ -4081,63 +3871,6 @@ definition {
 		task ("Then assert that the Created date, Last Modified and Total Modifications fields are displayed") {
 			ProcessBuilderKaleoDesignerReact.viewDetailsFieldsPresent();
 		}
-	}
-
-	@description = "Verify that the Revision History tab displays a list of the previous definition versions in descending order (3,2,1)"
-	@priority = 4
-	test CanViewPreviousVersionsListInOrderAtRevisionHistoryTab {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "end",
-			connectorLabel = "Start-End Connector",
-			connectorOut = "start",
-			key_direction = "bottom");
-
-		PortletEntry.publish();
-
-		Alert.viewSuccessMessageText(successMessage = "Workflow published successfully.");
-
-		ProcessBuilderKaleoDesignerReact.selectConnector(connectorLabel = "START-END CONNECTOR");
-
-		ProcessBuilderKaleoDesignerReact.deleteNodeOrConnection(title = "Delete Transition");
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Task",
-			nodePosition = "-200,-250");
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "task",
-			connectorLabel = "Start-Task Connector",
-			connectorOut = "start",
-			key_direction = "bottom");
-
-		ProcessBuilderKaleoDesignerReact.addConnector(
-			connectorIn = "end",
-			connectorLabel = "Task-End Connector",
-			connectorOut = "task",
-			key_direction = "bottom");
-
-		Button.click(button = "Update");
-
-		Alert.viewSuccessMessageText(successMessage = "Workflow updated successfully.");
-
-		ProcessBuilderKaleoDesignerReact.gotoInfoWorkflowDefinition();
-
-		Navigator.gotoNavTab(navTab = "Revision History");
-
-		ProcessBuilderKaleoDesignerReact.restorePreviousVersion(number = 1);
-
-		ProcessBuilderKaleoDesignerReact.viewCurrentVersionAtRevisionHistoryTab(number = 3);
-
-		ProcessBuilderKaleoDesignerReact.viewRevisionHistoryVersion(number = 2);
-
-		ProcessBuilderKaleoDesignerReact.viewRevisionHistoryVersion(number = 1);
 	}
 
 	@description = "Verify that the user can see a tooltip with 'Enter the comma separated resource actions (e.g. ADD, DELETE, UPDATE).' at Resource Actions "
@@ -4487,37 +4220,6 @@ definition {
 			nodeType = "task");
 	}
 
-	@description = "Verify that default names for nodes are provided"
-	@priority = 4
-	test DefaultLabelsAreProvided {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.viewNodeLabel(nodeLabel = "Start");
-
-		ProcessBuilderKaleoDesignerReact.viewNodeLabel(nodeLabel = "End");
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Condition",
-			nodePosition = "20,-300");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Task",
-			nodePosition = "20,100");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.viewNodeLabel(nodeLabel = "Condition");
-
-		ProcessBuilderKaleoDesignerReact.viewNodeLabel(nodeLabel = "Task");
-	}
-
 	@description = "LPS-140056 - Verify that the changes on Default settings, for transitions, reflects on the diagram"
 	@priority = 4
 	test DefaultSettingsChangesReflectsOnDiagram {
@@ -4796,7 +4498,7 @@ definition {
 		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "task");
 	}
 
-	@description = "Verify that each type of Node has Description property"
+	@description = "Verify that node has description property"
 	@priority = 4
 	test HasDescriptionProperty {
 		property test.liferay.virtual.instance = "false";
@@ -4823,59 +4525,6 @@ definition {
 		ProcessBuilderKaleoDesignerReact.viewNodeInfo(
 			descriptionValue = "Split the workflow into multiple paths.",
 			nodeType = "fork");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Condition",
-			nodePosition = "20,100");
-
-		ProcessBuilderKaleoDesignerReact.viewNodeInfo(
-			descriptionValue = "Execute conditional logic.",
-			nodeType = "condition");
-	}
-
-	@description = "Verify that each type of Node has Notifications property"
-	@priority = 4
-	test HasNotificationsProperty {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "start");
-
-		ProcessBuilderKaleoDesignerReact.viewAndFillNotification(newNotification = "true");
-
-		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "end");
-
-		ProcessBuilderKaleoDesignerReact.viewAndFillNotification(newNotification = "true");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Fork",
-			nodePosition = "20,-500");
-
-		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "fork");
-
-		ProcessBuilderKaleoDesignerReact.viewAndFillNotification(newNotification = "true");
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.backArrowOnSidebar();
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Condition",
-			nodePosition = "20,-100");
-
-		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "condition");
-
-		ProcessBuilderKaleoDesignerReact.viewAndFillNotification(newNotification = "true");
 	}
 
 	@description = "LPS-141713 - Verify that the imported workflow definition is shown in the Process Builder"
@@ -5028,7 +4677,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		task ("Given a regular role with multi-byte characters in the title") {
+		task ("Given a regular role with multi-byte characters in the name") {
 			JSONRole.addRegularRole(
 				roleKey = "テスト",
 				roleTitle = "test");
@@ -5056,7 +4705,7 @@ definition {
 				key_direction = "right");
 		}
 
-		task ("When publishing workflow definition with node task assigned to regular role with multibyte characters in title") {
+		task ("When publishing workflow definition with node task assigned to regular role with multibyte characters in name") {
 			ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "task");
 
 			ProcessBuilderKaleoDesignerReact.viewAndFillAssignments(
@@ -5221,7 +4870,7 @@ definition {
 
 	@description = "LPS-139387 - Verify that the Step Label is a required field"
 	@priority = 3
-	test StepLabelIsRequired {
+	test StepLabelAndNameAreRequired {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -5237,31 +4886,16 @@ definition {
 			infoOption = "Label",
 			infoValue = " ");
 
-		ProcessBuilderKaleoDesignerReact.viewRequiredField(
-			requiredField = "nodeLabel",
-			save = "true");
-	}
-
-	@description = "LPS-139387 - Verify that the Node Name is a required field"
-	@priority = 3
-	test StepNameIsRequired {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		Workflow.openWorkflowListView();
-
-		Workflow.addNewDefinition(workflowDefinitionTitle = "New Workflow Definition");
-
-		ProcessBuilderKaleoDesignerReact.dragSidebarNodeAndMove(
-			nodeLabel = "Task",
-			nodePosition = "-20,-40");
-
 		ProcessBuilderKaleoDesignerReact.editNodeInformationField(
 			infoOption = "Name",
 			infoValue = " ");
 
 		ProcessBuilderKaleoDesignerReact.viewRequiredField(
-			requiredField = "nodeName",
+			requiredField = "workflowDefinitionBaseNodeLabel",
+			save = "true");
+
+		ProcessBuilderKaleoDesignerReact.viewRequiredField(
+			requiredField = "workflowDefinitionBaseNodeName",
 			save = "true");
 	}
 

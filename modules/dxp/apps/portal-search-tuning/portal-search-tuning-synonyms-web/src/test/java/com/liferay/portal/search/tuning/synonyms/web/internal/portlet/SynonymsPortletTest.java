@@ -10,22 +10,20 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCCommandCache;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.engine.SearchEngineInformation;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslator;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -51,13 +49,8 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 		_synonymsPortlet = new SynonymsPortlet();
 
 		ReflectionTestUtil.setFieldValue(
-			_synonymsPortlet, "_documentToSynonymSetTranslator",
-			_documentToSynonymSetTranslator);
-		ReflectionTestUtil.setFieldValue(
 			_synonymsPortlet, "_language", _language);
 		ReflectionTestUtil.setFieldValue(_synonymsPortlet, "_portal", portal);
-		ReflectionTestUtil.setFieldValue(
-			_synonymsPortlet, "_queries", _queries);
 		ReflectionTestUtil.setFieldValue(
 			_synonymsPortlet, "_renderMVCCommandCache",
 			Mockito.mock(MVCCommandCache.class));
@@ -146,11 +139,7 @@ public class SynonymsPortletTest extends BaseSynonymsWebTestCase {
 		};
 	}
 
-	private final DocumentToSynonymSetTranslator
-		_documentToSynonymSetTranslator = Mockito.mock(
-			DocumentToSynonymSetTranslator.class);
 	private final Language _language = Mockito.mock(Language.class);
-	private final Queries _queries = Mockito.mock(Queries.class);
 	private final RenderRequest _renderRequest = Mockito.mock(
 		RenderRequest.class);
 	private final RenderResponse _renderResponse = Mockito.mock(

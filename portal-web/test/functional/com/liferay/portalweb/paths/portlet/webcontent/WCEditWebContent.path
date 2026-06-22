@@ -57,7 +57,7 @@
 </tr>
 <tr>
 	<td>GRID_OPTION</td>
-	<td>//legend[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div//tbody/tr[${key_row}]/td[${key_column}]//input</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div//tbody/tr[${key_row}]/td[${key_column}]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -104,6 +104,56 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PUBLISH_BUTTON</td>
+	<td>//button[contains(text(), 'Publish')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PUBLISH_OPTIONS_BUTTON</td>
+	<td>//button[@aria-label='Publish Options']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DROPDOWN_BUTTON</td>
+	<td>//button[contains(@class, 'dropdown-item') and contains(text(), '${key_text}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PUBLISH_WITH_PERMISSIONS_BUTTON</td>
+	<td>//button[contains(@class, 'dropdown-item') and contains(text(), 'Publish With Permissions')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PUBLISH_IN_MODAL</td>
+	<td>//div[contains(@class,'modal-content')]//button[contains(text(),'Publish')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BUTTON_IN_MODAL</td>
+	<td>//div[contains(@class,'modal-content')]//button[contains(text(),'${key_text}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SAVE_AS_DRAFT_IN_MODAL</td>
+	<td>//div[contains(@class,'modal-content')]//button[contains(text(),'Save as Draft')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SCHEDULE_IN_MODAL</td>
+	<td>//div[contains(@class,'modal-content')]//button[contains(text(),'Schedule')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SCHEDULE_DATE</td>
+	<td>//input[contains(@id,'displayDatePicker')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SCHEDULE_PUBLICATION_BUTTON</td>
+	<td>//button[contains(@class, 'dropdown-item') and contains(text(), 'Schedule Publication')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SELECT_BUTTON_2</td>
 	<td>xpath=(//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div[contains(@class,'form')]//button[normalize-space()='Select'])[2]</td>
 	<td></td>
@@ -129,6 +179,26 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SUBMIT_FOR_WORKFLOW</td>
+	<td>//button[contains(text(), 'Submit for Workflow')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SUBMIT_FOR_WORKFLOW_IN_MODAL</td>
+	<td>//div[contains(@class,'modal-content')]//button[contains(text(),'Submit for Workflow')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SUBMIT_FOR_WORKFLOW_WITH_PERMISSIONS_BUTTON</td>
+	<td>//button[contains(@class, 'dropdown-item') and contains(text(), 'Submit for Workflow With Permissions')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TRANSLATION_MANAGER_BUTTON</td>
+	<td>//button[@role='combobox' and contains(@aria-label, 'Select a language')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SELECTED_IMAGE</td>
 	<td>//input[contains(@id,'JournalPortlet_Image')]</td>
 	<td></td>
@@ -140,7 +210,7 @@
 </tr>
 <tr>
 	<td>SELECTION_OPTION</td>
-	<td>//legend[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div//input//following-sibling::span[normalize-space()='${key_optionValue}']//preceding-sibling::input</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div//input//following-sibling::span[normalize-space()='${key_optionValue}']//preceding-sibling::input</td>
 	<td></td>
 </tr>
 <tr>
@@ -221,7 +291,7 @@
 </tr>
 <tr>
 	<td>REPEATED_FIELD_IN_FIELDS_GROUP</td>
-	<td>xpath=(//div[contains(@data-field-name, '${key_fieldName}')]//div[contains(@class,'repeatable')])[${key_index}]</td>
+	<td>xpath=(//div[contains(@data-field-name, '${key_fieldName}')]/div[contains(@class,'repeatable')][@draggable='true'])[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>

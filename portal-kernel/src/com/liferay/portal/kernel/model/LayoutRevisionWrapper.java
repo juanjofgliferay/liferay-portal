@@ -718,7 +718,7 @@ public class LayoutRevisionWrapper
 
 	@Override
 	public String getRegularURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getRegularURL(httpServletRequest);
@@ -1780,3 +1780,4 @@ public class LayoutRevisionWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-450767589

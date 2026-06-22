@@ -1,6 +1,7 @@
 @component-name = "portal-commerce"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
@@ -51,7 +52,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -86,128 +87,6 @@ definition {
 			AssertElementNotPresent(
 				key_productPrice = "40.00",
 				locator1 = "CommerceAccelerators#CHECKOUT_SUMMARY_PRODUCT_TABLE_PRICE");
-
-			AssertTextEquals(
-				locator1 = "CommerceAccelerators#CHECKOUT_SUCCESS_MESSAGE",
-				value1 = "Success! Your order has been processed.");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-10178. Select a product with no promotion, no discount, no tier pricing, no bulk pricing link and do a checkout"
-	@priority = 3
-	test CanCheckoutAMiniumProduct {
-		property portal.acceptance = "false";
-
-		task ("Given a Commerce Account and Buyer User are created") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And Buyer User logged in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And buyer user add a product to the cart") {
-			FrontStore.addInitializerProductToCart(
-				productName = "Mount",
-				productQuantity = 5);
-		}
-
-		task ("Then by clicking Submit button from minicart, the checkout process is completed") {
-			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			CommerceCheckout.initializersCheckout(
-				newAddressAddress = "Test Address",
-				newAddressCity = "Test City",
-				newAddressCountry = "United States",
-				newAddressName = "Address Name",
-				newAddressZipCode = "Test Zip Code",
-				productName = "Mount",
-				productQuantity = 5,
-				productUnitPrice = 3,
-				shippingMethod = "Standard");
-
-			AssertTextEquals(
-				locator1 = "CommerceAccelerators#CHECKOUT_SUCCESS_MESSAGE",
-				value1 = "Success! Your order has been processed.");
-		}
-	}
-
-	@description = "This is a test for COMMERCE-10258. Create a new product with no promotion, no discount, no tier pricing, no bulk pricing link and do a checkout"
-	@priority = 3
-	test CanCheckoutNewProduct {
-		property portal.acceptance = "false";
-
-		task ("Given a Commerce Account and Buyer User are created") {
-			CommerceEntry.addAccountEntryUser(
-				accountName = "Commerce Account",
-				accountType = "Business",
-				agreeToTermsAndAnswerReminderQuery = "true",
-				createNewAccount = "true",
-				requireReset = "false",
-				userEmailAddress = "buyer@liferay.com",
-				userFirstName = "Buyer",
-				userLastName = "User",
-				userRole = "Buyer",
-				userScreenName = "buyeruser",
-				userSiteMembership = "Minium");
-		}
-
-		task ("And new product created") {
-			CommerceJSONProductsAPI._addCommerceProduct(
-				catalogName = "Minium",
-				neverExpire = "false",
-				price = 50,
-				productDescription = "Full Description",
-				productName = "Soft Tyre",
-				productType = "Simple",
-				shortDescription = "Short Description",
-				sku = "SKU1007");
-		}
-
-		task ("And Buyer User logged in") {
-			User.logoutPG();
-
-			CommerceLogin.miniumLogin(
-				password = "test",
-				urlAppend = "web/minium",
-				userEmailAddress = "buyer@liferay.com");
-		}
-
-		task ("And buyer user add a product to the cart") {
-			FrontStore.addInitializerProductToCart(
-				productName = "Soft Tyre",
-				productQuantity = 5);
-		}
-
-		task ("Then by clicking Submit button from minicart, the checkout process is completed") {
-			CommerceCheckout.gotoCheckoutViaMiniCart();
-
-			CommerceCheckout.initializersCheckout(
-				newAddressAddress = "Test Address",
-				newAddressCity = "Test City",
-				newAddressCountry = "United States",
-				newAddressName = "Address Name",
-				newAddressZipCode = "Test Zip Code",
-				productName = "Soft Tyre",
-				productQuantity = 5,
-				productUnitPrice = 50,
-				shippingMethod = "Standard");
 
 			AssertTextEquals(
 				locator1 = "CommerceAccelerators#CHECKOUT_SUCCESS_MESSAGE",
@@ -256,7 +135,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -335,7 +214,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -435,7 +314,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -525,7 +404,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -603,7 +482,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}

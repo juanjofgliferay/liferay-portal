@@ -8,15 +8,16 @@ package com.liferay.object.internal.action.util;
 import com.liferay.dynamic.data.mapping.expression.CreateExpressionRequest;
 import com.liferay.dynamic.data.mapping.expression.DDMExpression;
 import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
+import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.internal.dynamic.data.mapping.expression.ObjectEntryDDMExpressionParameterAccessor;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectFieldLocalServiceUtil;
-import com.liferay.object.service.ObjectFieldSettingLocalServiceUtil;
 import com.liferay.object.system.JaxRsApplicationDescriptor;
 import com.liferay.object.system.SystemObjectDefinitionManager;
 import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -46,6 +47,7 @@ public class ObjectEntryVariablesUtil {
 
 	public static Map<String, Object> getValues(
 			DDMExpressionFactory ddmExpressionFactory,
+			ObjectDefinition objectDefinition,
 			UnicodeProperties parametersUnicodeProperties,
 			Map<String, Object> variables)
 		throws Exception {
@@ -64,27 +66,175 @@ public class ObjectEntryVariablesUtil {
 				continue;
 			}
 
-			if (!jsonObject.getBoolean("inputAsValue")) {
-				DDMExpression<Serializable> ddmExpression =
-					ddmExpressionFactory.createExpression(
-						CreateExpressionRequest.Builder.newBuilder(
-							value.toString()
-						).withDDMExpressionParameterAccessor(
-							new ObjectEntryDDMExpressionParameterAccessor(
-								(Map<String, Object>)variables.get(
-									"originalBaseModel"))
-						).build());
+			ObjectField objectField =
+				ObjectFieldLocalServiceUtil.fetchObjectField(
+					objectDefinition.getObjectDefinitionId(),
+					jsonObject.getString("name"));
 
-				ddmExpression.setVariables(
-					(Map<String, Object>)variables.get("baseModel"));
+			if ((objectField != null) &&
+				objectField.compareBusinessType(
+					ObjectFieldConstants.BUSINESS_TYPE_ASSIGNEE)) {
 
-				value = ddmExpression.evaluate();
+				JSONObject valueJSONObject = JSONFactoryUtil.createJSONObject(
+					value.toString());
+
+				values.put(
+					jsonObject.getString("name"),
+					HashMapBuilder.put(
+						"externalReferenceCode",
+						_evaluate(
+							ddmExpressionFactory, jsonObject,
+							valueJSONObject.getString("externalReferenceCode"),
+							variables)
+					).put(
+						"type", valueJSONObject.getString("type")
+					).build());
 			}
-
-			values.put(jsonObject.getString("name"), value);
+			else {
+				values.put(
+					jsonObject.getString("name"),
+					_evaluate(
+						ddmExpressionFactory, jsonObject, value, variables));
+			}
 		}
 
 		return values;
+	}
+
+	public static Map<String, Object> getVariables(
+		DTOConverterRegistry dtoConverterRegistry,
+		ObjectDefinition objectDefinition, boolean oldValues,
+		JSONObject payloadJSONObject,
+		SystemObjectDefinitionManagerRegistry
+			systemObjectDefinitionManagerRegistry) {
+
+		Map<String, Object> objectEntry =
+			(Map<String, Object>)payloadJSONObject.get("objectEntry");
+
+		Map<String, Object> allowedVariables =
+			HashMapBuilder.<String, Object>put(
+				"creator",
+				() -> {
+					if (objectDefinition.isUnmodifiableSystemObject()) {
+						return null;
+					}
+
+					return MapUtil.getLong(objectEntry, "userId");
+				}
+			).put(
+				"currentDate",
+				() -> {
+					ObjectField objectField =
+						ObjectFieldLocalServiceUtil.fetchObjectField(
+							objectDefinition.getObjectDefinitionId(),
+							"currentDate");
+
+					if (objectField != null) {
+						return null;
+					}
+
+					DateFormat dateFormat =
+						DateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd");
+
+					return dateFormat.format(new Date());
+				}
+			).put(
+				"currentUserExternalReferenceCode",
+				payloadJSONObject.getString("userExternalReferenceCode")
+			).put(
+				"currentUserId", payloadJSONObject.getLong("userId")
+			).put(
+				"groupId",
+				() -> {
+					if (objectEntry != null) {
+						return MapUtil.getString(objectEntry, "groupId");
+					}
+
+					return null;
+				}
+			).build();
+
+		Map<String, Object> variables = new HashMap<>();
+
+		if (objectDefinition.isUnmodifiableSystemObject()) {
+			SystemObjectDefinitionManager systemObjectDefinitionManager =
+				systemObjectDefinitionManagerRegistry.
+					getSystemObjectDefinitionManager(
+						objectDefinition.getName());
+
+			String contentType = _getContentType(
+				dtoConverterRegistry, objectDefinition,
+				systemObjectDefinitionManagerRegistry);
+
+			variables = systemObjectDefinitionManager.getVariables(
+				contentType, objectDefinition, oldValues, payloadJSONObject);
+
+			if (variables == null) {
+				return HashMapBuilder.<String, Object>putAll(
+					allowedVariables
+				).putAll(
+					payloadJSONObject.toMap()
+				).build();
+			}
+
+			allowedVariables.put(
+				"creator", MapUtil.getString(variables, "userId"));
+
+			allowedVariables.put(
+				"entryDTO", payloadJSONObject.get("modelDTO" + contentType));
+		}
+		else {
+			if (oldValues) {
+				variables.putAll(
+					(Map<String, Object>)payloadJSONObject.get(
+						"originalObjectEntry"));
+			}
+			else {
+				variables.putAll(
+					(Map<String, Object>)payloadJSONObject.get("objectEntry"));
+			}
+
+			variables.putAll((Map<String, Object>)variables.get("values"));
+
+			variables.remove("values");
+
+			allowedVariables.put(
+				"entryDTO",
+				payloadJSONObject.get(
+					"objectEntryDTO" + objectDefinition.getShortName()));
+
+			Object objectEntryId = variables.get("objectEntryId");
+
+			if (objectEntryId != null) {
+				allowedVariables.put("id", objectEntryId);
+			}
+
+			Object objectEntryFolderId = variables.get("objectEntryFolderId");
+
+			if (FeatureFlagManagerUtil.isEnabled(
+					objectDefinition.getCompanyId(), "LPD-17564") &&
+				(objectEntryFolderId != null)) {
+
+				allowedVariables.put(
+					"objectEntryFolderId", objectEntryFolderId);
+			}
+		}
+
+		variables.remove("creator");
+
+		List<ObjectField> objectFields =
+			ObjectFieldLocalServiceUtil.getObjectFields(
+				objectDefinition.getObjectDefinitionId());
+
+		for (ObjectField objectField : objectFields) {
+			if (!allowedVariables.containsKey(objectField.getName())) {
+				allowedVariables.put(
+					objectField.getName(),
+					variables.get(objectField.getName()));
+			}
+		}
+
+		return allowedVariables;
 	}
 
 	public static Map<String, Object> getVariables(
@@ -93,7 +243,7 @@ public class ObjectEntryVariablesUtil {
 		SystemObjectDefinitionManagerRegistry
 			systemObjectDefinitionManagerRegistry) {
 
-		Map<String, Object> currentVariables = _getVariables(
+		Map<String, Object> currentVariables = getVariables(
 			dtoConverterRegistry, objectDefinition, false, payloadJSONObject,
 			systemObjectDefinitionManagerRegistry);
 
@@ -108,7 +258,7 @@ public class ObjectEntryVariablesUtil {
 					objectDefinition, systemObjectDefinitionManagerRegistry);
 
 				if (payloadJSONObject.has("original" + suffix)) {
-					return _getVariables(
+					return getVariables(
 						dtoConverterRegistry, objectDefinition, true,
 						payloadJSONObject,
 						systemObjectDefinitionManagerRegistry);
@@ -118,7 +268,35 @@ public class ObjectEntryVariablesUtil {
 					objectDefinition,
 					Collections.unmodifiableSet(currentVariables.keySet()));
 			}
+		).put(
+			"originalEntryDTO",
+			payloadJSONObject.get(
+				"originalObjectEntryDTO" + objectDefinition.getShortName())
 		).build();
+	}
+
+	private static Object _evaluate(
+			DDMExpressionFactory ddmExpressionFactory, JSONObject jsonObject,
+			Object value, Map<String, Object> variables)
+		throws Exception {
+
+		if (jsonObject.getBoolean("inputAsValue")) {
+			return value;
+		}
+
+		DDMExpression<Serializable> ddmExpression =
+			ddmExpressionFactory.createExpression(
+				CreateExpressionRequest.Builder.newBuilder(
+					value.toString()
+				).withDDMExpressionParameterAccessor(
+					new ObjectEntryDDMExpressionParameterAccessor(
+						(Map<String, Object>)variables.get("originalBaseModel"))
+				).build());
+
+		ddmExpression.setVariables(
+			(Map<String, Object>)variables.get("baseModel"));
+
+		return ddmExpression.evaluate();
 	}
 
 	private static String _getContentType(
@@ -157,10 +335,8 @@ public class ObjectEntryVariablesUtil {
 				ObjectFieldLocalServiceUtil.getObjectFields(
 					objectDefinition.getObjectDefinitionId())) {
 
-			String defaultValue =
-				ObjectFieldSettingUtil.getDefaultValueAsString(
-					null, objectField.getObjectFieldId(),
-					ObjectFieldSettingLocalServiceUtil.getService(), null);
+			Object defaultValue = ObjectFieldSettingUtil.getDefaultValue(
+				null, objectField, null);
 
 			if (Validator.isNotNull(defaultValue) &&
 				keys.contains(objectField.getName())) {
@@ -188,119 +364,6 @@ public class ObjectEntryVariablesUtil {
 		Class<?> modelClass = systemObjectDefinitionManager.getModelClass();
 
 		return modelClass.getSimpleName();
-	}
-
-	private static Map<String, Object> _getVariables(
-		DTOConverterRegistry dtoConverterRegistry,
-		ObjectDefinition objectDefinition, boolean oldValues,
-		JSONObject payloadJSONObject,
-		SystemObjectDefinitionManagerRegistry
-			systemObjectDefinitionManagerRegistry) {
-
-		Map<String, Object> objectEntry =
-			(Map<String, Object>)payloadJSONObject.get("objectEntry");
-		String userId = payloadJSONObject.getString("userId");
-
-		Map<String, Object> allowedVariables =
-			HashMapBuilder.<String, Object>put(
-				"creator",
-				() -> {
-					if (objectDefinition.isUnmodifiableSystemObject()) {
-						return userId;
-					}
-
-					return MapUtil.getString(objectEntry, "userId");
-				}
-			).put(
-				"currentDate",
-				() -> {
-					ObjectField objectField =
-						ObjectFieldLocalServiceUtil.fetchObjectField(
-							objectDefinition.getObjectDefinitionId(),
-							"currentDate");
-
-					if (objectField != null) {
-						return null;
-					}
-
-					DateFormat dateFormat =
-						DateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd");
-
-					return dateFormat.format(new Date());
-				}
-			).put(
-				"currentUserId", userId
-			).put(
-				"groupId",
-				() -> {
-					if (objectEntry != null) {
-						return MapUtil.getString(objectEntry, "groupId");
-					}
-
-					return null;
-				}
-			).build();
-
-		Map<String, Object> variables = new HashMap<>();
-
-		if (objectDefinition.isUnmodifiableSystemObject()) {
-			SystemObjectDefinitionManager systemObjectDefinitionManager =
-				systemObjectDefinitionManagerRegistry.
-					getSystemObjectDefinitionManager(
-						objectDefinition.getName());
-
-			variables = systemObjectDefinitionManager.getVariables(
-				_getContentType(
-					dtoConverterRegistry, objectDefinition,
-					systemObjectDefinitionManagerRegistry),
-				objectDefinition, oldValues, payloadJSONObject);
-
-			if (variables == null) {
-				return payloadJSONObject.toMap();
-			}
-		}
-		else {
-			if (oldValues) {
-				variables.putAll(
-					(Map<String, Object>)payloadJSONObject.get(
-						"originalObjectEntry"));
-			}
-			else {
-				variables.putAll(
-					(Map<String, Object>)payloadJSONObject.get("objectEntry"));
-			}
-
-			variables.putAll((Map<String, Object>)variables.get("values"));
-
-			variables.remove("values");
-
-			allowedVariables.put(
-				"entryDTO",
-				payloadJSONObject.get(
-					"objectEntryDTO" + objectDefinition.getShortName()));
-
-			Object objectEntryId = variables.get("objectEntryId");
-
-			if (objectEntryId != null) {
-				allowedVariables.put("id", objectEntryId);
-			}
-		}
-
-		variables.remove("creator");
-
-		List<ObjectField> objectFields =
-			ObjectFieldLocalServiceUtil.getObjectFields(
-				objectDefinition.getObjectDefinitionId());
-
-		for (ObjectField objectField : objectFields) {
-			if (!allowedVariables.containsKey(objectField.getName())) {
-				allowedVariables.put(
-					objectField.getName(),
-					variables.get(objectField.getName()));
-			}
-		}
-
-		return allowedVariables;
 	}
 
 }

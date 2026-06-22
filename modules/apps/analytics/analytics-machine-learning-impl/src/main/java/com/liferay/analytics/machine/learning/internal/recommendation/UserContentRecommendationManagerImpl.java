@@ -7,8 +7,9 @@ package com.liferay.analytics.machine.learning.internal.recommendation;
 
 import com.liferay.analytics.machine.learning.content.UserContentRecommendation;
 import com.liferay.analytics.machine.learning.content.UserContentRecommendationManager;
+import com.liferay.analytics.machine.learning.internal.recommendation.constants.RecommendationIndexNames;
 import com.liferay.analytics.machine.learning.internal.recommendation.search.RecommendationField;
-import com.liferay.analytics.machine.learning.internal.search.api.RecommendationIndexer;
+import com.liferay.analytics.machine.learning.internal.recommendation.search.RecommendationIndexer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
@@ -20,14 +21,15 @@ import com.liferay.portal.kernel.search.SortFactoryUtil;
 import com.liferay.portal.kernel.search.TermQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 
 import java.util.Collections;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -74,6 +76,13 @@ public class UserContentRecommendationManagerImpl
 			_getSearchSearchRequest(assetCategoryIds, companyId, userId));
 	}
 
+	@Activate
+	protected void activate() {
+		_recommendationIndexer = new RecommendationIndexer(
+			RecommendationIndexNames.USER_CONTENT_RECOMMENDATION,
+			_indexNameBuilder, _searchCapabilities, searchEngineAdapter);
+	}
+
 	@Override
 	protected Document toDocument(
 		UserContentRecommendation userContentRecommendation) {
@@ -83,25 +92,25 @@ public class UserContentRecommendationManagerImpl
 		document.addNumber(
 			Field.ASSET_CATEGORY_IDS,
 			userContentRecommendation.getAssetCategoryIds());
+		document.addNumber(
+			Field.COMPANY_ID, userContentRecommendation.getCompanyId());
 		document.addDate(
 			Field.CREATE_DATE, userContentRecommendation.getCreateDate());
 		document.addNumber(
-			Field.COMPANY_ID, userContentRecommendation.getCompanyId());
-		document.addNumber(
 			Field.ENTRY_CLASS_PK, userContentRecommendation.getEntryClassPK());
-		document.addNumber(
-			RecommendationField.RECOMMENDED_ENTRY_CLASS_PK,
-			userContentRecommendation.getRecommendedEntryClassPK());
-		document.addNumber(
-			RecommendationField.SCORE, userContentRecommendation.getScore());
-		document.addText(
-			RecommendationField.JOB_ID, userContentRecommendation.getJobId());
 		document.addKeyword(
 			Field.UID,
 			String.valueOf(
 				getHash(
 					userContentRecommendation.getEntryClassPK(),
 					userContentRecommendation.getRecommendedEntryClassPK())));
+		document.addText(
+			RecommendationField.JOB_ID, userContentRecommendation.getJobId());
+		document.addNumber(
+			RecommendationField.RECOMMENDED_ENTRY_CLASS_PK,
+			userContentRecommendation.getRecommendedEntryClassPK());
+		document.addNumber(
+			RecommendationField.SCORE, userContentRecommendation.getScore());
 
 		return document;
 	}
@@ -140,7 +149,7 @@ public class UserContentRecommendationManagerImpl
 		searchSearchRequest.setIndexNames(
 			new String[] {_recommendationIndexer.getIndexName(companyId)});
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
 		booleanQuery.setPreBooleanFilter(
 			new BooleanFilter() {
@@ -158,7 +167,7 @@ public class UserContentRecommendationManagerImpl
 
 		if (assetCategoryIds != null) {
 			for (long assetCategoryId : assetCategoryIds) {
-				TermQuery categoryIdTermQuery = new TermQueryImpl(
+				TermQuery categoryIdTermQuery = new TermQuery(
 					Field.ASSET_CATEGORY_IDS, String.valueOf(assetCategoryId));
 
 				booleanQuery.add(categoryIdTermQuery, BooleanClauseOccur.MUST);
@@ -181,9 +190,12 @@ public class UserContentRecommendationManagerImpl
 
 	private static final int _SEARCH_SEARCH_REQUEST_SIZE = 10;
 
-	@Reference(
-		target = "(component.name=com.liferay.analytics.machine.learning.internal.recommendation.search.UserContentRecommendationIndexer)"
-	)
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
+
 	private RecommendationIndexer _recommendationIndexer;
+
+	@Reference
+	private SearchCapabilities _searchCapabilities;
 
 }

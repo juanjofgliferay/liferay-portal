@@ -1,22 +1,16 @@
-jest.unmock('clay-charts');
-
 import moment from 'moment';
 import {
-	Colors,
 	dateRangeFormatter,
 	formatTooltipDate,
 	formatXAxisDate,
 	getAxisFormatter,
 	getAxisMeasures,
-	getAxisMeasuresFromCompositeData,
 	getAxisMeasuresFromData,
 	getDataFormatter,
 	getDateTitle,
 	getIntervals,
 	getLocationsData,
-	getMetricFormatter,
-	isEmptyData,
-	nextColor
+	getMetricFormatter
 } from '../charts';
 import {getDate} from 'shared/util/date';
 import {INTERVAL_KEY_MAP} from 'shared/util/time';
@@ -572,23 +566,6 @@ describe('getAxisMeasures', () => {
 	});
 });
 
-describe('getAxisMeasuresFromCompositeData', () => {
-	it('should be return the max value from composite data', () => {
-		expect(
-			getAxisMeasuresFromCompositeData([
-				[0, 1001, 145],
-				[100, 400, 3450],
-				[0, 50, 200]
-			])
-		).toEqual({
-			intervalCount: 5,
-			intervals: [0, 1000, 2000, 3000, 4000, 5000],
-			intervalValue: 1000,
-			maxValue: 5000
-		});
-	});
-});
-
 describe('getAxisMeasuresFromData', () => {
 	it('should be return the max value from a data', () => {
 		expect(
@@ -615,54 +592,38 @@ describe('getAxisFormatter', () => {
 	});
 
 	it('should be return the value to any', () => {
-		expect(getAxisFormatter()(10)).toEqual(10);
+		expect(getAxisFormatter()(10)).toEqual('10');
 	});
 });
 
 describe('getDataFormatter', () => {
 	it('should be return the value to any', () => {
 		expect(getDataFormatter()([1, 100, 1000, 10000])).toEqual([
-			1,
-			100,
-			1000,
-			10000
+			1, 100, 1000, 10000
 		]);
 	});
 
 	it('should be return the data formatted to percentage', () => {
 		expect(getDataFormatter('percentage')([1, 100, 1000, 10000])).toEqual([
-			1,
-			100,
-			1000,
-			10000
+			1, 100, 1000, 10000
 		]);
 	});
 
 	it('should be return the data formatted to time', () => {
 		expect(getDataFormatter('time')([1, 100, 500, 1000, 10000])).toEqual([
-			0,
-			0,
-			1000,
-			1000,
-			10000
+			0, 0, 1000, 1000, 10000
 		]);
 	});
 
 	it('should be return the data formatted to numbers', () => {
 		expect(getDataFormatter('numbers')([1, 100, 1000, 10000])).toEqual([
-			1,
-			100,
-			1000,
-			10000
+			1, 100, 1000, 10000
 		]);
 	});
 
 	it('should be return the data formatted to ratings', () => {
 		expect(getDataFormatter('ratings')([1, 100, 1000, 10000])).toEqual([
-			1,
-			100,
-			1000,
-			10000
+			1, 100, 1000, 10000
 		]);
 	});
 });
@@ -672,36 +633,6 @@ describe('getMetricFormatter', () => {
 		expect(getMetricFormatter('number')(1)).toEqual('1');
 		expect(getMetricFormatter('percentage')(1)).toEqual('100%');
 		expect(getMetricFormatter('time')(1)).toEqual('00s');
-		expect(getMetricFormatter('any')(1)).toEqual(1);
-	});
-});
-
-describe('isEmptyData', () => {
-	it('should return true if the data arrays are empty', () => {
-		const mockChartData = [[], []];
-
-		expect(isEmptyData(mockChartData)).toBe(true);
-	});
-
-	it('should return true if the data arrays contain values that are all zero', () => {
-		const mockChartData = [
-			[0, 0, 0],
-			[0, 0, 0]
-		];
-
-		expect(isEmptyData(mockChartData)).toBe(true);
-	});
-});
-
-describe('nextColor', () => {
-	it('should be return a color based on index', () => {
-		expect(nextColor(1)).toEqual(Colors.pallete[0]);
-		expect(nextColor(2)).toEqual(Colors.pallete[1]);
-		expect(nextColor(3)).toEqual(Colors.pallete[2]);
-		expect(nextColor(4)).toEqual(Colors.pallete[3]);
-		expect(nextColor(5)).toEqual(Colors.pallete[4]);
-		expect(nextColor(6)).toEqual(Colors.pallete[5]);
-		expect(nextColor(7)).toEqual(Colors.pallete[6]);
-		expect(nextColor(8)).toEqual(Colors.pallete[7]);
+		expect(getMetricFormatter('any')(1)).toEqual('1');
 	});
 });

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
-import StatusLabel from '../../../src/main/resources/META-INF/resources/workflow_status/js/components/status-label/StatusLabel';
+import StatusLabel from '../../../src/main/resources/META-INF/resources/js/components/status-label/StatusLabel';
 
 describe('The WorkflowStatus should', () => {
 	const INITIAL_PROPS = {
@@ -32,9 +32,7 @@ describe('The WorkflowStatus should', () => {
 	});
 
 	it('render as not Linked Label', () => {
-		render(
-			<StatusLabel {...{...INITIAL_PROPS, showInstanceTracker: false}} />
-		);
+		render(<StatusLabel {...INITIAL_PROPS} showInstanceTracker={false} />);
 
 		const hasLink = document.querySelector('a');
 
@@ -50,9 +48,8 @@ describe('The WorkflowStatus should', () => {
 			fireEvent.click(link);
 		});
 
-		const instanceTrackerModal = document.querySelector(
-			'.modal-full-screen'
-		);
+		const instanceTrackerModal =
+			document.querySelector('.modal-full-screen');
 
 		expect(instanceTrackerModal).toBeInTheDocument();
 	});

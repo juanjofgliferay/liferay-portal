@@ -4,23 +4,23 @@ import {isArray, isNil, isObject, isString} from 'lodash';
 import {sub} from 'shared/util/lang';
 
 /**
- * Wraps value with a Promise. If passed an error message Promise will reject.
- * @param {Promise|Object} value
- * @return {Promise}
+ * Wraps a validator result with a Promise.
+ *
+ * Formik v2 expects field validators to resolve with the error message
+ * (or a falsy value if valid) rather than reject, so this helper always
+ * resolves. When passed a Promise, it is returned unchanged.
  */
 
 export function toPromise<T>(value: Promise<T> | T): Promise<T> {
 	if (value instanceof Promise) {
 		return value;
-	} else if (value) {
-		return Promise.reject(value);
 	}
 
 	return Promise.resolve(value);
 }
 
 export function validateInputMessage(messageValue: string) {
-	return value => {
+	return (value: string) => {
 		let error = '';
 
 		const invalid =
@@ -73,7 +73,10 @@ export const validateIsInteger = (value: string) => {
 	return toPromise(error);
 };
 
-export function validateRequired(value: {value: any} | string | Array<string>) {
+export function validateRequired(
+	value: {value: any} | string | Array<string>,
+	errorMessage?: string
+) {
 	let error = '';
 
 	if (
@@ -82,7 +85,7 @@ export function validateRequired(value: {value: any} | string | Array<string>) {
 		(isArray(value) && !value.length) ||
 		(!isArray(value) && isObject(value) && !value.value)
 	) {
-		error = Liferay.Language.get('required');
+		error = errorMessage || Liferay.Language.get('required');
 	}
 
 	return toPromise(error);
@@ -111,7 +114,7 @@ export function validateMinDuration(minDuration: string) {
 }
 
 export function validateMinLength(minLength: number) {
-	return value => {
+	return (value: string) => {
 		let error = '';
 
 		if (value.length && value.length < minLength) {
@@ -125,7 +128,7 @@ export function validateMinLength(minLength: number) {
 }
 
 export function validateMinValue(minValue: number) {
-	return value => {
+	return (value: string) => {
 		let error = '';
 
 		if (Number(value) < minValue) {
@@ -139,7 +142,7 @@ export function validateMinValue(minValue: number) {
 }
 
 export function validateMaxLength(maxLength: number) {
-	return value => {
+	return (value: string) => {
 		let error = '';
 
 		if (value.length > maxLength) {
@@ -151,10 +154,10 @@ export function validateMaxLength(maxLength: number) {
 }
 
 export function validatePattern(
-	regex,
+	regex: RegExp,
 	errorMessage: string
 ): (value: any) => Promise<any> {
-	return value => {
+	return (value: string) => {
 		let error = '';
 
 		if (value.length && !regex.test(value)) {
@@ -169,5 +172,34 @@ export const validateProtocol = validatePattern(
 	/^(http[s]?:\/\/)/i,
 	Liferay.Language.get(
 		'your-url-is-missing-the-protocol.-please-include-http-or-https'
+	)
+);
+
+export const validateSalesforceDomain = validatePattern(
+	/^https:\/\/.*$/,
+	Liferay.Language.get('please-enter-a-valid-salesforce-url')
+);
+
+export const composeValidators =
+	(...validators: Array<(value: any) => Promise<string> | string>) =>
+	async (value: any) => {
+		for (const validator of validators) {
+			const error = await validator(value);
+
+			if (error) {
+				return error;
+			}
+		}
+
+		return '';
+	};
+
+export const validateExternalReferenceCode = composeValidators(
+	validateRequired,
+	validatePattern(
+		/^[a-z0-9_-]+$/,
+		Liferay.Language.get(
+			'erc-must-contain-only-lowercase-letters-numbers-hyphens-and-underscores'
+		)
 	)
 );

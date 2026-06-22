@@ -1,34 +1,49 @@
 {
 	"dependencies": {
-		"@clayui/button": "3.107.0",
-		"@clayui/card": "3.107.1",
-		"@clayui/drop-down": "3.107.1",
-		"@clayui/form": "3.107.0",
-		"@clayui/icon": "3.106.1",
-		"@clayui/label": "3.106.1",
-		"@clayui/layout": "3.106.1",
-		"@clayui/link": "3.106.1",
-		"@clayui/loading-indicator": "3.106.1",
-		"@clayui/localized-input": "3.107.1",
-		"@clayui/modal": "3.107.0",
-		"@clayui/popover": "3.107.0",
-		"@clayui/sticker": "3.106.1",
-		"@clayui/table": "3.106.1",
-		"@clayui/tooltip": "3.107.0",
+		"@clayui/alert": "^3.165.0",
+		"@clayui/badge": "^3.165.0",
+		"@clayui/button": "^3.165.0",
+		"@clayui/card": "^3.165.0",
+		"@clayui/core": "^3.165.0",
+		"@clayui/data-provider": "^3.165.0",
+		"@clayui/date-picker": "^3.165.0",
+		"@clayui/drop-down": "^3.165.0",
+		"@clayui/form": "^3.165.0",
+		"@clayui/icon": "^3.165.0",
+		"@clayui/label": "^3.165.0",
+		"@clayui/layout": "^3.165.0",
+		"@clayui/link": "^3.165.0",
+		"@clayui/loading-indicator": "^3.165.0",
+		"@clayui/localized-input": "^3.165.0",
+		"@clayui/modal": "^3.165.0",
+		"@clayui/multi-select": "^3.165.0",
+		"@clayui/panel": "^3.165.0",
+		"@clayui/popover": "^3.165.0",
+		"@clayui/sticker": "^3.165.0",
+		"@clayui/table": "^3.165.0",
+		"@clayui/tooltip": "^3.165.0",
 		"@liferay/frontend-js-react-web": "*",
 		"@liferay/frontend-js-state-web": "*",
 		"classnames": "2.3.1",
 		"frontend-js-web": "*",
-		"react": "16.12.0",
+		"prop-types": "15.7.2",
+		"react": "18.2.0",
+		"react-dom": "18.2.0",
+		"react-dropzone": "^14.3.8",
 		"uuid": "9.0.0"
 	},
-	"main": "index.js",
+	"jest": {
+		"setupFiles": [
+			"<rootDir>/jest-setup.config.ts"
+		]
+	},
+	"main": "index.ts",
 	"name": "frontend-js-components-web",
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix",
-		"test": "liferay-npm-scripts test"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format",
+		"test": "node-scripts test"
 	},
-	"version": "2.0.59"
+	"version": "2.0.104"
 }

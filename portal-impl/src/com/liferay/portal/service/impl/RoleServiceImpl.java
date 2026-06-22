@@ -6,6 +6,7 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Role;
@@ -13,6 +14,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
@@ -24,7 +26,6 @@ import com.liferay.portal.service.base.RoleServiceBaseImpl;
 
 import java.io.Serializable;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -38,29 +39,12 @@ import java.util.Map;
  */
 public class RoleServiceImpl extends RoleServiceBaseImpl {
 
-	/**
-	 * Adds a role. The user is reindexed after role is added.
-	 *
-	 * @param  className the name of the class for which the role is created
-	 * @param  classPK the primary key of the class for which the role is
-	 *         created (optionally <code>0</code>)
-	 * @param  name the role's name
-	 * @param  titleMap the role's localized titles (optionally
-	 *         <code>null</code>)
-	 * @param  descriptionMap the role's localized descriptions (optionally
-	 *         <code>null</code>)
-	 * @param  type the role's type (optionally <code>0</code>)
-	 * @param  subtype the role's subtype (optionally <code>null</code>)
-	 * @param  serviceContext the service context to be applied (optionally
-	 *         <code>null</code>). Can set the expando bridge attributes for the
-	 *         role.
-	 * @return the role
-	 */
 	@Override
 	public Role addRole(
-			String className, long classPK, String name,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			int type, String subtype, ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			String name, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, int type, String subtype,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		PortalPermissionUtil.check(getPermissionChecker(), ActionKeys.ADD_ROLE);
@@ -68,8 +52,8 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 		User user = getUser();
 
 		Role role = roleLocalService.addRole(
-			user.getUserId(), className, classPK, name, titleMap,
-			descriptionMap, type, subtype, serviceContext);
+			externalReferenceCode, user.getUserId(), className, classPK, name,
+			titleMap, descriptionMap, type, subtype, serviceContext);
 
 		if (type == RoleConstants.TYPE_ORGANIZATION) {
 			OrganizationMembershipPolicyUtil.verifyPolicy(role);
@@ -109,6 +93,19 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 			new long[] {userId}, roleIds, null);
 	}
 
+	@Override
+	public Role copyRole(
+			long userId, String name, long sourceRoleId,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		PortalPermissionUtil.contains(
+			getPermissionChecker(), ActionKeys.ADD_ROLE);
+
+		return roleLocalService.copyRole(
+			userId, name, sourceRoleId, serviceContext);
+	}
+
 	/**
 	 * Deletes the role with the primary key and its associated permissions.
 	 *
@@ -134,6 +131,34 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 		return role;
 	}
 
+	@Override
+	public Role fetchRole(long companyId, String name) throws PortalException {
+		Role role = roleLocalService.fetchRole(companyId, name);
+
+		if (role != null) {
+			RolePermissionUtil.check(
+				getPermissionChecker(), role.getRoleId(), ActionKeys.VIEW);
+		}
+
+		return role;
+	}
+
+	@Override
+	public Role fetchRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Role role = roleLocalService.fetchRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (role != null) {
+			RolePermissionUtil.check(
+				getPermissionChecker(), role.getRoleId(), ActionKeys.VIEW);
+		}
+
+		return role;
+	}
+
 	/**
 	 * Returns all the roles associated with the group.
 	 *
@@ -150,23 +175,44 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 	@Override
 	public List<Role> getGroupRolesAndTeamRoles(
 		long companyId, String name, List<String> excludedNames, String title,
-		String description, int[] types, long excludedTeamRoleId,
-		long teamGroupId, int start, int end) {
+		String description, int[] types, String subtype,
+		long excludedTeamRoleId, long teamGroupId, int start, int end) {
 
 		return roleFinder.filterFindByGroupRoleAndTeamRole(
-			companyId, name, excludedNames, title, description, types,
+			companyId, name, excludedNames, title, description, types, subtype,
 			excludedTeamRoleId, teamGroupId, start, end);
 	}
 
 	@Override
 	public int getGroupRolesAndTeamRolesCount(
 		long companyId, String name, List<String> excludedNames, String title,
-		String description, int[] types, long excludedTeamRoleId,
-		long teamGroupId) {
+		String description, int[] types, String subtype,
+		long excludedTeamRoleId, long teamGroupId) {
 
 		return roleFinder.filterCountByGroupRoleAndTeamRole(
-			companyId, name, excludedNames, title, description, types,
+			companyId, name, excludedNames, title, description, types, subtype,
 			excludedTeamRoleId, teamGroupId);
+	}
+
+	public Role getOrAddEmptyRole(
+			String externalReferenceCode, String className, long classPK,
+			String name, int type)
+		throws Exception {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		Role role = fetchRoleByExternalReferenceCode(
+			externalReferenceCode, permissionChecker.getCompanyId());
+
+		if (role != null) {
+			return role;
+		}
+
+		PortalPermissionUtil.check(getPermissionChecker(), ActionKeys.ADD_ROLE);
+
+		return roleLocalService.getOrAddEmptyRole(
+			externalReferenceCode, permissionChecker.getCompanyId(),
+			permissionChecker.getUserId(), className, classPK, name, type);
 	}
 
 	/**
@@ -206,6 +252,20 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 	}
 
 	@Override
+	public Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Role role = roleLocalService.getRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		RolePermissionUtil.check(
+			getPermissionChecker(), role.getRoleId(), ActionKeys.VIEW);
+
+		return role;
+	}
+
+	@Override
 	public List<Role> getRoles(int type, String subtype)
 		throws PortalException {
 
@@ -213,9 +273,7 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 	}
 
 	@Override
-	public List<Role> getRoles(long companyId, int[] types)
-		throws PortalException {
-
+	public List<Role> getRoles(long companyId, int[] types) {
 		return filterRoles(roleLocalService.getRoles(companyId, types));
 	}
 
@@ -386,6 +444,27 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 			new long[] {userId}, null, roleIds);
 	}
 
+	@Override
+	public Role updateExternalReferenceCode(
+			long roleId, String externalReferenceCode)
+		throws PortalException {
+
+		return updateExternalReferenceCode(
+			getRole(roleId), externalReferenceCode);
+	}
+
+	@Override
+	public Role updateExternalReferenceCode(
+			Role role, String externalReferenceCode)
+		throws PortalException {
+
+		RolePermissionUtil.check(
+			getPermissionChecker(), role.getRoleId(), ActionKeys.UPDATE);
+
+		return roleLocalService.updateExternalReferenceCode(
+			role, externalReferenceCode);
+	}
+
 	/**
 	 * Updates the role with the primary key.
 	 *
@@ -403,9 +482,9 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 	 */
 	@Override
 	public Role updateRole(
-			long roleId, String name, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String subtype,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long roleId, String name,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String subtype, ServiceContext serviceContext)
 		throws PortalException {
 
 		RolePermissionUtil.check(
@@ -419,7 +498,8 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 			oldExpandoBridge.getAttributes();
 
 		Role role = roleLocalService.updateRole(
-			roleId, name, titleMap, descriptionMap, subtype, serviceContext);
+			externalReferenceCode, roleId, name, titleMap, descriptionMap,
+			subtype, serviceContext);
 
 		if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
 			OrganizationMembershipPolicyUtil.verifyPolicy(
@@ -446,19 +526,19 @@ public class RoleServiceImpl extends RoleServiceBaseImpl {
 		}
 	}
 
-	protected List<Role> filterRoles(List<Role> roles) throws PortalException {
-		List<Role> filteredRoles = new ArrayList<>();
+	protected List<Role> filterRoles(List<Role> roles) {
+		return TransformUtil.transform(
+			roles,
+			role -> {
+				if (RolePermissionUtil.contains(
+						getPermissionChecker(), role.getRoleId(),
+						ActionKeys.VIEW)) {
 
-		for (Role role : roles) {
-			if (RolePermissionUtil.contains(
-					getPermissionChecker(), role.getRoleId(),
-					ActionKeys.VIEW)) {
+					return role;
+				}
 
-				filteredRoles.add(role);
-			}
-		}
-
-		return filteredRoles;
+				return null;
+			});
 	}
 
 }

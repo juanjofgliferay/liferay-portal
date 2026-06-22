@@ -42,10 +42,10 @@ public class ThreadNameCheck extends BaseCheck {
 			return;
 		}
 
-		List<DetailAST> exprDetailASTList = getAllChildTokens(
+		List<DetailAST> exprDetailASTs = getAllChildTokens(
 			elistDetailAST, false, TokenTypes.EXPR);
 
-		for (DetailAST exprDetailAST : exprDetailASTList) {
+		for (DetailAST exprDetailAST : exprDetailASTs) {
 			firstChildDetailAST = exprDetailAST.getFirstChild();
 
 			if (firstChildDetailAST.getType() != TokenTypes.STRING_LITERAL) {
@@ -55,6 +55,10 @@ public class ThreadNameCheck extends BaseCheck {
 			String name = firstChildDetailAST.getText();
 
 			name = name.substring(1, name.length() - 1);
+
+			if (name.length() == 0) {
+				continue;
+			}
 
 			Matcher matcher = _camelCasePattern.matcher(name);
 

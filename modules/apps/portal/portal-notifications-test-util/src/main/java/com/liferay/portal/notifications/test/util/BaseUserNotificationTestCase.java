@@ -5,6 +5,7 @@
 
 package com.liferay.portal.notifications.test.util;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModel;
@@ -39,7 +40,7 @@ public abstract class BaseUserNotificationTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		user = UserTestUtil.addOmniAdminUser();
+		user = UserTestUtil.addOmniadminUser();
 
 		group = GroupTestUtil.addGroup();
 
@@ -47,6 +48,8 @@ public abstract class BaseUserNotificationTestCase {
 
 		_userNotificationDeliveries = _getUserNotificationDeliveries(
 			user.getUserId());
+
+		MailServiceTestUtil.clearMessages();
 	}
 
 	@After
@@ -288,22 +291,11 @@ public abstract class BaseUserNotificationTestCase {
 	protected List<JSONObject> getUserNotificationEventsJSONObjects(long userId)
 		throws Exception {
 
-		List<UserNotificationEvent> userNotificationEvents =
+		return TransformUtil.transform(
 			_userNotificationEventLocalService.getUserNotificationEvents(
-				userId);
-
-		List<JSONObject> userNotificationEventJSONObjects = new ArrayList<>(
-			userNotificationEvents.size());
-
-		for (UserNotificationEvent userNotificationEvent :
-				userNotificationEvents) {
-
-			userNotificationEventJSONObjects.add(
-				_jsonFactory.createJSONObject(
-					userNotificationEvent.getPayload()));
-		}
-
-		return userNotificationEventJSONObjects;
+				userId),
+			userNotificationEvent -> _jsonFactory.createJSONObject(
+				userNotificationEvent.getPayload()));
 	}
 
 	protected boolean isValidUserNotificationEventObject(

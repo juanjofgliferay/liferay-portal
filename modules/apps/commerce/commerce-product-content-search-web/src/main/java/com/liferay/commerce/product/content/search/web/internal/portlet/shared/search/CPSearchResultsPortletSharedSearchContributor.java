@@ -8,35 +8,38 @@ package com.liferay.commerce.product.content.search.web.internal.portlet.shared.
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.content.search.web.internal.configuration.CPSearchResultsPortletInstanceConfiguration;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.util.CommerceAccountHelper;
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.generic.BooleanClauseImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryImpl;
+import com.liferay.portal.kernel.search.TermQuery;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchContributor;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchSettings;
 
-import java.util.NoSuchElementException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletPreferences;
-import javax.portlet.RenderRequest;
+import java.util.NoSuchElementException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Shuyang Zhou
  */
 @Component(
-	property = "javax.portlet.name=" + CPPortletKeys.CP_SEARCH_RESULTS,
+	property = "jakarta.portlet.name=" + CPPortletKeys.CP_SEARCH_RESULTS,
 	service = PortletSharedSearchContributor.class
 )
 public class CPSearchResultsPortletSharedSearchContributor
@@ -88,17 +91,25 @@ public class CPSearchResultsPortletSharedSearchContributor
 		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		CommerceChannel commerceChannel =
-			_commerceChannelLocalService.fetchCommerceChannelBySiteGroupId(
-				themeDisplay.getScopeGroupId());
+		String parameterValue = GetterUtil.getString(
+			portletSharedSearchSettings.getParameter(
+				GetterUtil.getString(
+					portletSharedSearchSettings.getKeywordsParameterName(),
+					"q")));
 
-		portletSharedSearchSettings.setKeywords(
-			GetterUtil.getString(
-				portletSharedSearchSettings.getParameter("q")));
+		if (!Validator.isBlank(parameterValue)) {
+			if ((parameterValue.length() > 1) &&
+				(parameterValue.charAt(0) == CharPool.STAR)) {
+
+				parameterValue = parameterValue.substring(1);
+			}
+
+			portletSharedSearchSettings.setKeywords(parameterValue);
+		}
 
 		portletSharedSearchSettings.addCondition(
-			new BooleanClauseImpl<Query>(
-				new TermQueryImpl(
+			new BooleanClause<Query>(
+				new TermQuery(
 					Field.ENTRY_CLASS_NAME, CPDefinition.class.getName()),
 				BooleanClauseOccur.MUST));
 
@@ -107,8 +118,8 @@ public class CPSearchResultsPortletSharedSearchContributor
 
 		if (assetCategory != null) {
 			portletSharedSearchSettings.addCondition(
-				new BooleanClauseImpl<Query>(
-					new TermQueryImpl(
+				new BooleanClause<Query>(
+					new TermQuery(
 						Field.ASSET_CATEGORY_IDS,
 						String.valueOf(assetCategory.getCategoryId())),
 					BooleanClauseOccur.MUST));
@@ -121,6 +132,10 @@ public class CPSearchResultsPortletSharedSearchContributor
 		searchContext.setEntryClassNames(
 			new String[] {CPDefinition.class.getName()});
 
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.fetchCommerceChannelBySiteGroupId(
+				themeDisplay.getScopeGroupId());
+
 		if (commerceChannel != null) {
 			searchContext.setAttribute(
 				"commerceChannelGroupId", commerceChannel.getGroupId());
@@ -131,6 +146,8 @@ public class CPSearchResultsPortletSharedSearchContributor
 					_portal.getHttpServletRequest(renderRequest));
 
 			if (accountEntry != null) {
+				searchContext.setAttribute(
+					"accountEntryId", accountEntry.getAccountEntryId());
 				searchContext.setAttribute(
 					"commerceAccountGroupIds",
 					_accountGroupLocalService.getAccountGroupIds(
@@ -180,23 +197,35 @@ public class CPSearchResultsPortletSharedSearchContributor
 		if (paginationDeltaParameterValue != null) {
 			portletSharedSearchSettings.setPaginationDelta(
 				Integer.valueOf(paginationDeltaParameterValue));
+		}
+		else {
+			int configurationPaginationDelta =
+				cpSearchResultsPortletInstanceConfiguration.paginationDelta();
 
-			return;
+			PortletPreferences portletPreferences =
+				portletSharedSearchSettings.getPortletPreferences();
+
+			if (portletPreferences != null) {
+				configurationPaginationDelta = GetterUtil.getInteger(
+					portletPreferences.getValue("paginationDelta", null),
+					configurationPaginationDelta);
+			}
+
+			portletSharedSearchSettings.setPaginationDelta(
+				configurationPaginationDelta);
 		}
 
-		int configurationPaginationDelta =
-			cpSearchResultsPortletInstanceConfiguration.paginationDelta();
+		SearchContext searchContext =
+			portletSharedSearchSettings.getSearchContext();
 
-		PortletPreferences portletPreferences =
-			portletSharedSearchSettings.getPortletPreferences();
+		int[] startAndEnd = SearchPaginationUtil.calculateStartAndEnd(
+			GetterUtil.getInteger(
+				portletSharedSearchSettings.getPaginationStart()),
+			GetterUtil.getInteger(
+				portletSharedSearchSettings.getPaginationDelta()));
 
-		if (portletPreferences != null) {
-			configurationPaginationDelta = GetterUtil.getInteger(
-				portletPreferences.getValue("paginationDelta", null));
-		}
-
-		portletSharedSearchSettings.setPaginationDelta(
-			configurationPaginationDelta);
+		searchContext.setEnd(startAndEnd[1]);
+		searchContext.setStart(startAndEnd[0]);
 	}
 
 	@Reference

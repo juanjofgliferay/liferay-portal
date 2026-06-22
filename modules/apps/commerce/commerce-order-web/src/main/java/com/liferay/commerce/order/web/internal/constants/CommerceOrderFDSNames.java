@@ -16,6 +16,9 @@ public class CommerceOrderFDSNames {
 	public static final String ALL_ORDERS =
 		CommercePortletKeys.COMMERCE_ORDER + "-allOrders";
 
+	public static final String ATTACHMENTS =
+		CommercePortletKeys.COMMERCE_ORDER + "-attachments";
+
 	public static final String BILLING_ADDRESSES =
 		CommercePortletKeys.COMMERCE_ORDER + "-billingAddresses";
 
@@ -48,6 +51,9 @@ public class CommerceOrderFDSNames {
 
 	public static final String PROCESSING_ORDERS =
 		CommercePortletKeys.COMMERCE_ORDER + "-processingOrders";
+
+	public static final String REFUNDS =
+		CommercePortletKeys.COMMERCE_ORDER + "-refunds";
 
 	public static final String SHIPPING_ADDRESSES =
 		CommercePortletKeys.COMMERCE_ORDER + "-shippingAddresses";

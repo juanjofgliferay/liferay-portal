@@ -7,15 +7,24 @@ package com.liferay.client.extension.service.impl;
 
 import com.liferay.client.extension.exception.ClientExtensionEntryNameException;
 import com.liferay.client.extension.model.ClientExtensionEntry;
+import com.liferay.client.extension.service.ClientExtensionEntryLocalService;
 import com.liferay.client.extension.service.ClientExtensionEntryRelLocalService;
 import com.liferay.client.extension.service.base.ClientExtensionEntryLocalServiceBaseImpl;
 import com.liferay.client.extension.type.deployer.CETDeployer;
 import com.liferay.client.extension.type.factory.CETFactory;
-import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.cluster.ClusterExecutorUtil;
+import com.liferay.portal.kernel.cluster.ClusterInvokeAcceptor;
+import com.liferay.portal.kernel.cluster.ClusterNodeResponse;
+import com.liferay.portal.kernel.cluster.ClusterRequest;
 import com.liferay.portal.kernel.cluster.Clusterable;
+import com.liferay.portal.kernel.cluster.ClusterableInvokerUtil;
+import com.liferay.portal.kernel.cluster.FutureClusterResponses;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -39,6 +48,7 @@ import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
@@ -47,13 +57,18 @@ import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 
 import java.io.Serializable;
 
+import java.lang.reflect.Method;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Component;
@@ -78,20 +93,19 @@ public class ClientExtensionEntryLocalServiceImpl
 		throws PortalException {
 
 		_validateName(nameMap);
-		_validateTypeSettings(typeSettings, null, type);
+
+		User user = _userLocalService.getUser(userId);
+
+		_validateTypeSettings(user.getCompanyId(), typeSettings, null, type);
 
 		ClientExtensionEntry clientExtensionEntry =
 			clientExtensionEntryPersistence.create(
 				counterLocalService.increment());
 
 		clientExtensionEntry.setExternalReferenceCode(externalReferenceCode);
-
-		User user = _userLocalService.getUser(userId);
-
 		clientExtensionEntry.setCompanyId(user.getCompanyId());
 		clientExtensionEntry.setUserId(user.getUserId());
 		clientExtensionEntry.setUserName(user.getFullName());
-
 		clientExtensionEntry.setDescription(description);
 		clientExtensionEntry.setNameMap(nameMap);
 		clientExtensionEntry.setProperties(properties);
@@ -126,7 +140,7 @@ public class ClientExtensionEntryLocalServiceImpl
 					externalReferenceCode, user.getCompanyId());
 
 		if (clientExtensionEntry != null) {
-			return clientExtensionEntryLocalService.updateClientExtensionEntry(
+			return updateClientExtensionEntry(
 				userId, clientExtensionEntry.getClientExtensionEntryId(),
 				description, nameMap, properties, sourceCodeURL, typeSettings);
 		}
@@ -175,14 +189,45 @@ public class ClientExtensionEntryLocalServiceImpl
 	@Clusterable
 	@Override
 	public void deployClientExtensionEntry(
-			ClientExtensionEntry clientExtensionEntry)
-		throws PortalException {
+		ClientExtensionEntry clientExtensionEntry) {
 
-		undeployClientExtensionEntry(clientExtensionEntry);
+		try {
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"Deploying client extension entry " +
+						clientExtensionEntry.getName(LocaleUtil.getDefault()));
+			}
 
-		_serviceRegistrationsMap.put(
-			clientExtensionEntry.getClientExtensionEntryId(),
-			_cetDeployer.deploy(_cetFactory.create(clientExtensionEntry)));
+			undeployClientExtensionEntry(clientExtensionEntry);
+
+			List<ServiceRegistration<?>> serviceRegistrations =
+				_cetDeployer.deploy(
+					_cetFactory.create(clientExtensionEntry, true));
+
+			if (_log.isInfoEnabled()) {
+				for (ServiceRegistration<?> serviceRegistration :
+						serviceRegistrations) {
+
+					_log.info("Registered " + serviceRegistration);
+				}
+			}
+
+			_serviceRegistrationsMap.put(
+				clientExtensionEntry.getClientExtensionEntryId(),
+				serviceRegistrations);
+
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"Finished deploying client extension entry " +
+						clientExtensionEntry.getName(LocaleUtil.getDefault()));
+			}
+		}
+		catch (PortalException | RuntimeException exception) {
+			_log.error(
+				"Unable to deploy client extension entry " +
+					clientExtensionEntry.getName(LocaleUtil.getDefault()),
+				exception);
+		}
 	}
 
 	@Override
@@ -263,12 +308,7 @@ public class ClientExtensionEntryLocalServiceImpl
 				for (ClientExtensionEntry clientExtensionEntry :
 						clientExtensionEntries) {
 
-					try {
-						deployClientExtensionEntry(clientExtensionEntry);
-					}
-					catch (PortalException portalException) {
-						ReflectionUtil.throwException(portalException);
-					}
+					deployClientExtensionEntry(clientExtensionEntry);
 				}
 			});
 	}
@@ -278,15 +318,42 @@ public class ClientExtensionEntryLocalServiceImpl
 	public void undeployClientExtensionEntry(
 		ClientExtensionEntry clientExtensionEntry) {
 
-		List<ServiceRegistration<?>> serviceRegistrations =
-			_serviceRegistrationsMap.remove(
-				clientExtensionEntry.getClientExtensionEntryId());
+		try {
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"Undeploying client extension entry " +
+						clientExtensionEntry.getName(LocaleUtil.getDefault()));
+			}
 
-		if (serviceRegistrations != null) {
-			for (ServiceRegistration<?> serviceRegistration :
-					serviceRegistrations) {
+			List<ServiceRegistration<?>> serviceRegistrations =
+				_serviceRegistrationsMap.remove(
+					clientExtensionEntry.getClientExtensionEntryId());
 
-				serviceRegistration.unregister();
+			if (serviceRegistrations != null) {
+				for (ServiceRegistration<?> serviceRegistration :
+						serviceRegistrations) {
+
+					if (_log.isInfoEnabled()) {
+						_log.info("Unregistering " + serviceRegistration);
+					}
+
+					serviceRegistration.unregister();
+				}
+			}
+		}
+		catch (RuntimeException runtimeException) {
+			_log.error(
+				"Unable to undeploy client extension entry " +
+					clientExtensionEntry.getName(LocaleUtil.getDefault()),
+				runtimeException);
+
+			throw runtimeException;
+		}
+		finally {
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					"Finished undeploying client extension entry " +
+						clientExtensionEntry.getName(LocaleUtil.getDefault()));
 			}
 		}
 	}
@@ -304,11 +371,24 @@ public class ClientExtensionEntryLocalServiceImpl
 				clientExtensionEntryId);
 
 		_validateTypeSettings(
-			typeSettings, clientExtensionEntry.getTypeSettings(),
+			clientExtensionEntry.getCompanyId(), typeSettings,
+			clientExtensionEntry.getTypeSettings(),
 			clientExtensionEntry.getType());
 
-		clientExtensionEntryLocalService.undeployClientExtensionEntry(
-			clientExtensionEntry);
+		undeployClientExtensionEntry(clientExtensionEntry);
+
+		try {
+			_synchronousInvokeOnCluster(
+				ClusterInvokeAcceptor.class, this,
+				_undeployClientExtensionEntryMethod,
+				new Object[] {clientExtensionEntry}, _CLUSTER_TIMEOUT,
+				TimeUnit.MILLISECONDS);
+		}
+		catch (Throwable throwable) {
+			throw new PortalException(
+				"Unable to undeploy client extension entry across the cluster",
+				throwable);
+		}
 
 		clientExtensionEntry.setDescription(description);
 		clientExtensionEntry.setNameMap(nameMap);
@@ -336,6 +416,14 @@ public class ClientExtensionEntryLocalServiceImpl
 				clientExtensionEntryId);
 
 		int oldStatus = clientExtensionEntry.getStatus();
+
+		if (_log.isInfoEnabled()) {
+			_log.info(
+				StringBundler.concat(
+					"Updating workflow status for client extension entry ",
+					clientExtensionEntry.getName(LocaleUtil.getDefault()),
+					" from ", oldStatus, " to ", status));
+		}
 
 		if (status == oldStatus) {
 			return clientExtensionEntry;
@@ -457,6 +545,52 @@ public class ClientExtensionEntryLocalServiceImpl
 			clientExtensionEntry, serviceContext, new HashMap<>());
 	}
 
+	private void _synchronousInvokeOnCluster(
+			Class<? extends ClusterInvokeAcceptor> clusterInvokeAcceptorClass,
+			Object targetObject, Method method, Object[] arguments,
+			long timeout, TimeUnit timeoutUnit)
+		throws Throwable {
+
+		if (!ClusterExecutorUtil.isEnabled()) {
+			return;
+		}
+
+		MethodHandler methodHandler =
+			ClusterableInvokerUtil.createMethodHandler(
+				clusterInvokeAcceptorClass, targetObject, method, arguments);
+
+		ClusterRequest clusterRequest = ClusterRequest.createMulticastRequest(
+			methodHandler, true);
+
+		FutureClusterResponses futureClusterResponses =
+			ClusterExecutorUtil.execute(clusterRequest);
+
+		if (futureClusterResponses == null) {
+			return;
+		}
+
+		BlockingQueue<ClusterNodeResponse> clusterNodeResponses =
+			futureClusterResponses.getPartialResults();
+
+		while (!(clusterNodeResponses.isEmpty() &&
+				 futureClusterResponses.isDone())) {
+
+			ClusterNodeResponse clusterNodeResponse = clusterNodeResponses.poll(
+				timeout, timeoutUnit);
+
+			if (clusterNodeResponse == null) {
+				throw new TimeoutException(
+					"Timeout waiting for undeployment in the cluster");
+			}
+
+			Exception exception = clusterNodeResponse.getException();
+
+			if (exception != null) {
+				throw exception;
+			}
+		}
+	}
+
 	private void _validateName(Map<Locale, String> nameMap)
 		throws PortalException {
 
@@ -466,7 +600,8 @@ public class ClientExtensionEntryLocalServiceImpl
 	}
 
 	private void _validateTypeSettings(
-			String newTypeSettings, String oldTypeSettings, String type)
+			long companyId, String newTypeSettings, String oldTypeSettings,
+			String type)
 		throws PortalException {
 
 		UnicodeProperties newTypeSettingsUnicodeProperties =
@@ -487,8 +622,30 @@ public class ClientExtensionEntryLocalServiceImpl
 		}
 
 		_cetFactory.validate(
-			newTypeSettingsUnicodeProperties, oldTypeSettingsUnicodeProperties,
-			type);
+			companyId, newTypeSettingsUnicodeProperties,
+			oldTypeSettingsUnicodeProperties, type);
+	}
+
+	private static final long _CLUSTER_TIMEOUT = 10000;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ClientExtensionEntryLocalServiceImpl.class);
+
+	private static final Method _undeployClientExtensionEntryMethod;
+
+	static {
+		try {
+			_undeployClientExtensionEntryMethod =
+				ClientExtensionEntryLocalService.class.getMethod(
+					"undeployClientExtensionEntry", ClientExtensionEntry.class);
+		}
+		catch (NoSuchMethodException noSuchMethodException) {
+			_log.error(
+				"Unable to get undeployClientExtensionEntry method",
+				noSuchMethodException);
+
+			throw new RuntimeException(noSuchMethodException);
+		}
 	}
 
 	@Reference

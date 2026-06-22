@@ -7,7 +7,6 @@ package com.liferay.segments.asah.rest.internal.graphql.mutation.v1_0;
 
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -15,22 +14,24 @@ import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTa
 import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
+import com.liferay.segments.asah.rest.dto.v1_0.AsahSegmentsEntry;
 import com.liferay.segments.asah.rest.dto.v1_0.Experiment;
 import com.liferay.segments.asah.rest.dto.v1_0.ExperimentRun;
 import com.liferay.segments.asah.rest.dto.v1_0.Status;
+import com.liferay.segments.asah.rest.resource.v1_0.AsahSegmentsEntryResource;
 import com.liferay.segments.asah.rest.resource.v1_0.ExperimentResource;
 import com.liferay.segments.asah.rest.resource.v1_0.ExperimentRunResource;
 import com.liferay.segments.asah.rest.resource.v1_0.StatusResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -40,6 +41,14 @@ import org.osgi.service.component.ComponentServiceObjects;
  */
 @Generated("")
 public class Mutation {
+
+	public static void setAsahSegmentsEntryResourceComponentServiceObjects(
+		ComponentServiceObjects<AsahSegmentsEntryResource>
+			asahSegmentsEntryResourceComponentServiceObjects) {
+
+		_asahSegmentsEntryResourceComponentServiceObjects =
+			asahSegmentsEntryResourceComponentServiceObjects;
+	}
 
 	public static void setExperimentResourceComponentServiceObjects(
 		ComponentServiceObjects<ExperimentResource>
@@ -63,6 +72,34 @@ public class Mutation {
 
 		_statusResourceComponentServiceObjects =
 			statusResourceComponentServiceObjects;
+	}
+
+	@GraphQLField
+	public Response createAsahSegmentsEntry(
+			@GraphQLName("asahSegmentsEntry") AsahSegmentsEntry
+				asahSegmentsEntry)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_asahSegmentsEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			asahSegmentsEntryResource ->
+				asahSegmentsEntryResource.postAsahSegmentsEntry(
+					asahSegmentsEntry));
+	}
+
+	@GraphQLField
+	public Response createAsahSegmentsEntryBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_asahSegmentsEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			asahSegmentsEntryResource ->
+				asahSegmentsEntryResource.postAsahSegmentsEntryBatch(
+					callbackURL, object));
 	}
 
 	@GraphQLField
@@ -170,6 +207,28 @@ public class Mutation {
 		}
 	}
 
+	private void _populateResourceContext(
+			AsahSegmentsEntryResource asahSegmentsEntryResource)
+		throws Exception {
+
+		asahSegmentsEntryResource.setContextAcceptLanguage(_acceptLanguage);
+		asahSegmentsEntryResource.setContextCompany(_company);
+		asahSegmentsEntryResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		asahSegmentsEntryResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		asahSegmentsEntryResource.setContextUriInfo(_uriInfo);
+		asahSegmentsEntryResource.setContextUser(_user);
+		asahSegmentsEntryResource.setGroupLocalService(_groupLocalService);
+		asahSegmentsEntryResource.setRoleLocalService(_roleLocalService);
+
+		asahSegmentsEntryResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		asahSegmentsEntryResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
+	}
+
 	private void _populateResourceContext(ExperimentResource experimentResource)
 		throws Exception {
 
@@ -223,6 +282,8 @@ public class Mutation {
 			_vulcanBatchEngineImportTaskResource);
 	}
 
+	private static ComponentServiceObjects<AsahSegmentsEntryResource>
+		_asahSegmentsEntryResourceComponentServiceObjects;
 	private static ComponentServiceObjects<ExperimentResource>
 		_experimentResourceComponentServiceObjects;
 	private static ComponentServiceObjects<ExperimentRunResource>
@@ -236,7 +297,8 @@ public class Mutation {
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 	private VulcanBatchEngineExportTaskResource
@@ -245,3 +307,4 @@ public class Mutation {
 		_vulcanBatchEngineImportTaskResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1764862839

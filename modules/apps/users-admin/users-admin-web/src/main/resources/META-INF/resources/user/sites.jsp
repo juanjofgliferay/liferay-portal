@@ -162,8 +162,10 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 			Util.openSelectionModal({
 				onSelect: (selectedItem) => {
 					if (selectedItem) {
-						const entityId = selectedItem.entityid;
-						const entityName = selectedItem.entityname;
+						const entityId = selectedItem.groupid;
+						const entityName = A.Escape.html(
+							selectedItem.groupdescriptivename
+						);
 						const label = Liferay.Util.sub(
 							'<liferay-ui:message key="remove-x" />',
 							entityName
@@ -192,42 +194,17 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 							return deleteGroupId !== entityId;
 						});
 
-						document.<portlet:namespace />fm.<portlet:namespace />addGroupIds.value = addGroupIds.join(
-							','
-						);
-						document.<portlet:namespace />fm.<portlet:namespace />deleteGroupIds.value = deleteGroupIds.join(
-							','
-						);
+						document.<portlet:namespace />fm.<portlet:namespace />addGroupIds.value =
+							addGroupIds.join(',');
+						document.<portlet:namespace />fm.<portlet:namespace />deleteGroupIds.value =
+							deleteGroupIds.join(',');
 					}
 				},
-
-				<%
-				String eventName = liferayPortletResponse.getNamespace() + "selectSite";
-				%>
-
-				selectEventName: '<%= eventName %>',
+				selectEventName:
+					'<%= liferayPortletResponse.getNamespace() + "selectGroup" %>',
 				selectedData: [searchContainerData],
 				title: '<liferay-ui:message arguments="site" key="select-x" />',
-
-				<%
-				PortletURL groupSelectorURL = PortletURLBuilder.create(
-					PortletProviderUtil.getPortletURL(request, Group.class.getName(), PortletProvider.Action.BROWSE)
-				).setParameter(
-					"eventName", eventName
-				).setParameter(
-					"filterManageableGroups", false
-				).setParameter(
-					"includeCurrentGroup", false
-				).setParameter(
-					"manualMembership", true
-				).setParameter(
-					"p_u_i_d", (selUser == null) ? "0" : String.valueOf(selUser.getUserId())
-				).setWindowState(
-					LiferayWindowState.POP_UP
-				).buildPortletURL();
-				%>
-
-				url: '<%= groupSelectorURL.toString() %>',
+				url: '<%= userDisplayContext.getGroupItemSelectorURL() %>',
 			});
 		});
 
@@ -257,12 +234,10 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 
 				deleteGroupIds.push(rowId);
 
-				document.<portlet:namespace />fm.<portlet:namespace />addGroupIds.value = addGroupIds.join(
-					','
-				);
-				document.<portlet:namespace />fm.<portlet:namespace />deleteGroupIds.value = deleteGroupIds.join(
-					','
-				);
+				document.<portlet:namespace />fm.<portlet:namespace />addGroupIds.value =
+					addGroupIds.join(',');
+				document.<portlet:namespace />fm.<portlet:namespace />deleteGroupIds.value =
+					deleteGroupIds.join(',');
 			},
 			'.modify-link'
 		);
@@ -295,7 +270,7 @@ currentURLObj.setParameter("historyKey", liferayPortletResponse.getNamespace() +
 </c:if>
 
 <c:if test="<%= !inheritedSiteGroups.isEmpty() %>">
-	<h4 class="sheet-tertiary-title"><liferay-ui:message key="inherited-sites" /></h4>
+	<div class="sheet-tertiary-title"><liferay-ui:message key="inherited-sites" /></div>
 
 	<liferay-ui:search-container
 		cssClass="lfr-search-container-inherited-sites"

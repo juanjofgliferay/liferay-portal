@@ -116,6 +116,9 @@ public interface FaroUserLocalService
 
 	public void deleteFaroUsers(long groupId);
 
+	public void deleteFaroUsersByLiveUserId(long liveUserId)
+		throws PortalException;
+
 	/**
 	 * @throws PortalException
 	 */
@@ -311,3 +314,4 @@ public interface FaroUserLocalService
 	public FaroUser updateFaroUser(FaroUser faroUser);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-395554746

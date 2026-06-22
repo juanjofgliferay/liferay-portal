@@ -12,7 +12,7 @@ import {
 } from '@liferay/object-js-components-web';
 import React, {useCallback, useEffect, useState} from 'react';
 
-import {ActionError} from '../..';
+import {ActionError} from '../../ObjectActionContainer';
 import PredefinedValuesTable from '../../PredefinedValuesTable';
 import {
 	ObjectOptionsListItem,
@@ -22,7 +22,9 @@ import {WarningStates} from '../ActionBuilder';
 import {ThenContainer} from './ThenContainer';
 interface ActionContainerProps {
 	currentObjectDefinitionFields: ObjectField[];
+	disableGroovyAction: boolean;
 	errors: ActionError;
+	hasUserNotificationHandler: boolean;
 	newObjectActionExecutors: ObjectActionTriggerExecutorItem[];
 	objectActionCodeEditorElements: SidebarCategory[];
 	objectActionExecutors: ObjectActionTriggerExecutorItem[];
@@ -40,7 +42,9 @@ interface ActionContainerProps {
 
 export function ActionContainer({
 	currentObjectDefinitionFields,
+	disableGroovyAction,
 	errors,
+	hasUserNotificationHandler,
 	newObjectActionExecutors,
 	objectActionCodeEditorElements,
 	objectActionExecutors,
@@ -59,9 +63,8 @@ export function ActionContainer({
 		AddObjectEntryDefinitions[]
 	>([]);
 
-	const [creationLanguageId, setCreationLanguageId] = useState<
-		Liferay.Language.Locale
-	>();
+	const [creationLanguageId, setCreationLanguageId] =
+		useState<Liferay.Language.Locale>();
 
 	const isValidField = (
 		{businessType, name, objectFieldSettings, system}: ObjectField,
@@ -93,7 +96,7 @@ export function ActionContainer({
 					!system;
 	};
 
-	const updateParameters = useCallback(
+	const updateObjectDefinitionParameters = useCallback(
 		async (value: ObjectOptionsListItem) => {
 			const {
 				isSystemObjectDefinition,
@@ -121,9 +124,10 @@ export function ActionContainer({
 			if (object?.related) {
 				parameters.relatedObjectEntries = false;
 			}
-			const items = await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
-				objectDefinitionExternalReferenceCode
-			);
+			const items =
+				await API.getObjectDefinitionByExternalReferenceCodeObjectFields(
+					objectDefinitionExternalReferenceCode
+				);
 
 			const validFields: ObjectField[] = [];
 
@@ -176,6 +180,7 @@ export function ActionContainer({
 				),
 			}));
 		},
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 		[
 			addObjectEntryDefinitions,
@@ -186,7 +191,7 @@ export function ActionContainer({
 
 	useEffect(() => {
 		if (values.objectActionExecutorKey === 'update-object-entry') {
-			updateParameters({
+			updateObjectDefinitionParameters({
 				isSystemObjectDefinition: systemObject,
 				objectDefinitionExternalReferenceCode,
 				objectDefinitionId,
@@ -201,6 +206,7 @@ export function ActionContainer({
 				setValues
 			);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		objectDefinitionId,
@@ -212,9 +218,10 @@ export function ActionContainer({
 
 	useEffect(() => {
 		const makeFetch = async () => {
-			const objectDefinition = await API.getObjectDefinitionByExternalReferenceCode(
-				objectDefinitionExternalReferenceCode
-			);
+			const objectDefinition =
+				await API.getObjectDefinitionByExternalReferenceCode(
+					objectDefinitionExternalReferenceCode
+				);
 
 			setCreationLanguageId(objectDefinition.defaultLanguageId);
 		};
@@ -225,7 +232,9 @@ export function ActionContainer({
 	return (
 		<Card title={Liferay.Language.get('action')}>
 			<ThenContainer
+				disabled={disableGroovyAction}
 				errors={errors}
+				hasUserNotificationHandler={hasUserNotificationHandler}
 				isValidField={isValidField}
 				newObjectActionExecutors={newObjectActionExecutors}
 				objectActionExecutors={objectActionExecutors}
@@ -242,7 +251,9 @@ export function ActionContainer({
 				}
 				setValues={setValues}
 				systemObject={systemObject}
-				updateParameters={updateParameters}
+				updateObjectDefinitionParameters={
+					updateObjectDefinitionParameters
+				}
 				values={values}
 			/>
 
@@ -283,6 +294,7 @@ export function ActionContainer({
 					<Input
 						disabled={values.system}
 						error={errors.url}
+						id="urlInput"
 						label={Liferay.Language.get('url')}
 						name="url"
 						onChange={({target: {value}}) => {
@@ -299,6 +311,7 @@ export function ActionContainer({
 
 					<Input
 						disabled={values.system}
+						id="secretInput"
 						label={Liferay.Language.get('secret')}
 						name="secret"
 						onChange={({target: {value}}) => {
@@ -327,9 +340,9 @@ export function ActionContainer({
 							},
 						})
 					}
-					readOnly={values.system}
+					readOnly={values.system || disableGroovyAction}
 					sidebarElements={objectActionCodeEditorElements.filter(
-						(element) => element.label === 'Fields'
+						(element) => element.key === 'fields'
 					)}
 					sidebarElementsDisabled={values.system}
 					value={values.parameters?.script ?? ''}

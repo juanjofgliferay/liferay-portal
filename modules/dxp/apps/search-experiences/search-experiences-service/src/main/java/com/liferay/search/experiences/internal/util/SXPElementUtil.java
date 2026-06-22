@@ -7,11 +7,11 @@ package com.liferay.search.experiences.internal.util;
 
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -44,15 +45,15 @@ public class SXPElementUtil {
 
 		Set<String> externalReferenceCodes = new HashSet<>();
 
-		for (com.liferay.search.experiences.model.SXPElement sxpPElement :
+		for (com.liferay.search.experiences.model.SXPElement sxpElement :
 				sxpElementLocalService.getSXPElements(
 					company.getCompanyId(), true)) {
 
-			externalReferenceCodes.add(sxpPElement.getExternalReferenceCode());
+			externalReferenceCodes.add(sxpElement.getExternalReferenceCode());
 		}
 
 		for (SXPElement sxpElement : _getOrCreateSXPElements()) {
-			if ((!FeatureFlagManagerUtil.isEnabled("LPS-122920") &&
+			if ((!PortalRunMode.isTestMode() &&
 				 Objects.equals(
 					 sxpElement.getExternalReferenceCode(),
 					 "RESCORE_BY_TEXT_EMBEDDING")) ||
@@ -62,60 +63,58 @@ public class SXPElementUtil {
 				continue;
 			}
 
+			Map<String, String> descriptionMap =
+				sxpElement.getDescription_i18n();
+			Map<String, String> titleMap = sxpElement.getTitle_i18n();
+
 			User user = company.getGuestUser();
 
+			long userId = user.getUserId();
+
 			sxpElementLocalService.addSXPElement(
-				sxpElement.getExternalReferenceCode(), user.getUserId(),
-				LocalizedMapUtil.getLocalizedMap(
-					sxpElement.getDescription_i18n()),
+				sxpElement.getExternalReferenceCode(), userId,
+				LocalizedMapUtil.getLocalizedMap(descriptionMap, true),
 				String.valueOf(sxpElement.getElementDefinition()),
-				sxpElement.getDescription_i18n(
-				).get(
-					LocaleUtil.US.toString()
-				),
-				sxpElement.getTitle_i18n(
-				).get(
-					LocaleUtil.US.toString()
-				),
-				true, _SCHEMA_VERSION,
-				LocalizedMapUtil.getLocalizedMap(sxpElement.getTitle_i18n()), 0,
+				descriptionMap.get(LocaleUtil.US.toString()),
+				titleMap.get(LocaleUtil.US.toString()), true, _SCHEMA_VERSION,
+				LocalizedMapUtil.getLocalizedMap(titleMap, true), 0,
 				new ServiceContext() {
 					{
 						setAddGuestPermissions(true);
 						setCompanyId(company.getCompanyId());
 						setScopeGroupId(company.getGroupId());
-						setUserId(user.getUserId());
+						setUserId(userId);
 					}
 				});
 		}
 	}
 
 	private static List<SXPElement> _createSXPElements() {
-		Bundle bundle = FrameworkUtil.getBundle(CompanyModelListener.class);
-
-		Package pkg = CompanyModelListener.class.getPackage();
-
-		String path = StringUtil.replace(
-			pkg.getName(), CharPool.PERIOD, CharPool.SLASH);
-
-		List<SXPElement> sxpElements = new ArrayList<>();
-
-		Enumeration<URL> enumeration = bundle.findEntries(
-			path.concat("/dependencies"), "*.json", false);
-
 		try {
+			List<SXPElement> sxpElements = new ArrayList<>();
+
+			Bundle bundle = FrameworkUtil.getBundle(CompanyModelListener.class);
+
+			Package pkg = CompanyModelListener.class.getPackage();
+
+			String path = StringUtil.replace(
+				pkg.getName(), CharPool.PERIOD, CharPool.SLASH);
+
+			Enumeration<URL> enumeration = bundle.findEntries(
+				path.concat("/dependencies"), "*.json", false);
+
 			while (enumeration.hasMoreElements()) {
 				sxpElements.add(
 					com.liferay.search.experiences.rest.dto.v1_0.util.
 						SXPElementUtil.toSXPElement(
 							URLUtil.toString(enumeration.nextElement())));
 			}
+
+			return sxpElements;
 		}
 		catch (IOException ioException) {
 			throw new ExceptionInInitializerError(ioException);
 		}
-
-		return sxpElements;
 	}
 
 	private static List<SXPElement> _getOrCreateSXPElements() {

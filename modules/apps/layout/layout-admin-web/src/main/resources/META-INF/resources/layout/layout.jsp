@@ -18,29 +18,35 @@ Layout selLayout = layoutsAdminDisplayContext.getSelLayout();
 
 <aui:model-context bean="<%= selLayout %>" model="<%= Layout.class %>" />
 
-<c:if test="<%= Validator.isNotNull(selLayout.getLayoutPrototypeUuid()) %>">
+<c:if test="<%= Validator.isNotNull(selLayout.getPortletLayoutPageTemplateEntryERC()) %>">
+	<aui:input name="applyLayoutPrototype" type="hidden" value="<%= false %>" />
+	<aui:input name="portletLayoutPageTemplateEntryERC" type="hidden" value="<%= selLayout.getPortletLayoutPageTemplateEntryERC() %>" />
+	<aui:input name="portletLayoutPageTemplateEntryScopeERC" type="hidden" value="<%= selLayout.getPortletLayoutPageTemplateEntryScopeERC() %>" />
+
+	<aui:input aria-describedby='<%= liferayPortletResponse.getNamespace() + "inheritChangesDescription" %>' label="inherit-changes" labelCssClass="font-weight-normal" name="portletLayoutPageTemplateEntryLinkEnabled" type="checkbox" value="<%= selLayout.isPortletLayoutPageTemplateEntryLinkEnabled() %>" wrapperCssClass="c-mb-2" />
 
 	<%
-	LayoutPrototype layoutPrototype = LayoutPrototypeLocalServiceUtil.getLayoutPrototypeByUuidAndCompanyId(selLayout.getLayoutPrototypeUuid(), company.getCompanyId());
+	String layoutPrototypeName = selLayout.getPortletLayoutPageTemplateEntryERC();
+
+	LayoutPrototype layoutPrototype = LayoutPageTemplateEntryLayoutProviderUtil.getLayoutPageTemplateEntryLayoutPrototype(company.getCompanyId(), selLayout.getPortletLayoutPageTemplateEntryERC(), selLayout.getPortletLayoutPageTemplateEntryScopeERC(), selLayout.getGroupId());
+
+	if (layoutPrototype != null) {
+		layoutPrototypeName = layoutPrototype.getName(user.getLocale());
+	}
 	%>
 
-	<aui:input name="applyLayoutPrototype" type="hidden" value="<%= false %>" />
-	<aui:input name="layoutPrototypeUuid" type="hidden" value="<%= selLayout.getLayoutPrototypeUuid() %>" />
-
-	<aui:input aria-describedby='<%= liferayPortletResponse.getNamespace() + "inheritChangesDescription" %>' label="inherit-changes" labelCssClass="font-weight-normal" name="layoutPrototypeLinkEnabled" type="checkbox" value="<%= selLayout.isLayoutPrototypeLinkEnabled() %>" wrapperCssClass="c-mb-2" />
-
 	<p class="text-3 text-secondary" id="<portlet:namespace />inheritChangesDescription">
-		<liferay-ui:message arguments="<%= HtmlUtil.escape(layoutPrototype.getName(user.getLocale())) %>" key="if-enabled-this-page-will-inherit-changes-made-to-the-x-page-template" />
+		<liferay-ui:message arguments="<%= HtmlUtil.escape(layoutPrototypeName) %>" key="if-enabled-this-page-will-inherit-changes-made-to-the-x-page-template" />
 	</p>
 
 	<clay:alert
-		cssClass='<%= selLayout.isLayoutPrototypeLinkActive() ? "layout-prototype-info-message" : "layout-prototype-info-message hide" %>'
+		cssClass='<%= selLayout.isPortletLayoutPageTemplateEntryLinkActive() ? "layout-prototype-info-message" : "layout-prototype-info-message hide" %>'
 		displayType="warning"
 	>
 		<liferay-ui:message arguments='<%= new String[] {"inherit-changes", "general"} %>' key="some-page-settings-are-unavailable-because-x-is-enabled" translateArguments="<%= true %>" />
 	</clay:alert>
 
-	<div class="<%= selLayout.isLayoutPrototypeLinkEnabled() ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />layoutPrototypeMergeAlert">
+	<div class="<%= selLayout.isPortletLayoutPageTemplateEntryLinkActive() ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />layoutPrototypeMergeAlert">
 
 		<%
 		request.setAttribute("edit_layout_prototype.jsp-layoutPrototype", layoutPrototype);
@@ -53,7 +59,7 @@ Layout selLayout = layoutsAdminDisplayContext.getSelLayout();
 </c:if>
 
 <c:if test="<%= !selLayout.isTypeAssetDisplay() && !selLayout.isTypeContent() %>">
-	<div class="<%= selLayout.isLayoutPrototypeLinkActive() ? "hide" : StringPool.BLANK %>" id="<portlet:namespace />typeOptions">
+	<div class="<%= selLayout.isPortletLayoutPageTemplateEntryLinkActive() ? "hide" : StringPool.BLANK %>" id="<portlet:namespace />typeOptions">
 		<liferay-util:include page="/layout_type_resources.jsp" servletContext="<%= application %>">
 			<liferay-util:param name="id" value="<%= selLayout.getType() %>" />
 			<liferay-util:param name="type" value="<%= selLayout.getType() %>" />
@@ -63,51 +69,58 @@ Layout selLayout = layoutsAdminDisplayContext.getSelLayout();
 
 <aui:script sandbox="<%= true %>">
 	Liferay.Util.toggleBoxes(
-		'<portlet:namespace />layoutPrototypeLinkEnabled',
+		'<portlet:namespace />portletLayoutPageTemplateEntryLinkEnabled',
 		'<portlet:namespace />layoutPrototypeMergeAlert'
 	);
 	Liferay.Util.toggleBoxes(
-		'<portlet:namespace />layoutPrototypeLinkEnabled',
+		'<portlet:namespace />portletLayoutPageTemplateEntryLinkEnabled',
 		'<portlet:namespace />typeOptions',
 		true
 	);
 
-	var layoutPrototypeLinkEnabled = document.getElementById(
-		'<portlet:namespace />layoutPrototypeLinkEnabled'
+	var portletLayoutPageTemplateEntryLinkEnabled = document.getElementById(
+		'<portlet:namespace />portletLayoutPageTemplateEntryLinkEnabled'
 	);
 
-	if (layoutPrototypeLinkEnabled) {
-		layoutPrototypeLinkEnabled.addEventListener('change', (event) => {
-			var layoutPrototypeLinkChecked = event.currentTarget.checked;
+	if (portletLayoutPageTemplateEntryLinkEnabled) {
+		portletLayoutPageTemplateEntryLinkEnabled.addEventListener(
+			'change',
+			(event) => {
+				var portletLayoutPageTemplateEntryLinkChecked =
+					event.currentTarget.checked;
 
-			var layoutPrototypeInfoMessage = document.querySelector(
-				'.layout-prototype-info-message'
-			);
+				var layoutPrototypeInfoMessage = document.querySelector(
+					'.layout-prototype-info-message'
+				);
 
-			var applyLayoutPrototype = document.getElementById(
-				'<portlet:namespace />applyLayoutPrototype'
-			);
+				var applyLayoutPrototype = document.getElementById(
+					'<portlet:namespace />applyLayoutPrototype'
+				);
 
-			if (layoutPrototypeInfoMessage) {
-				if (layoutPrototypeLinkChecked) {
-					layoutPrototypeInfoMessage.classList.remove('hide');
+				if (layoutPrototypeInfoMessage) {
+					if (portletLayoutPageTemplateEntryLinkChecked) {
+						layoutPrototypeInfoMessage.classList.remove('hide');
 
-					applyLayoutPrototype.value = '<%= true %>';
+						applyLayoutPrototype.value = '<%= true %>';
+					}
+					else {
+						layoutPrototypeInfoMessage.classList.add('hide');
+
+						applyLayoutPrototype.value = '<%= false %>';
+					}
 				}
-				else {
-					layoutPrototypeInfoMessage.classList.add('hide');
 
-					applyLayoutPrototype.value = '<%= false %>';
-				}
+				var propagatableFields = document.querySelectorAll(
+					'#<portlet:namespace />editLayoutFm .propagatable-field'
+				);
+
+				Array.prototype.forEach.call(propagatableFields, (field, index) => {
+					Liferay.Util.toggleDisabled(
+						field,
+						portletLayoutPageTemplateEntryLinkChecked
+					);
+				});
 			}
-
-			var propagatableFields = document.querySelectorAll(
-				'#<portlet:namespace />editLayoutFm .propagatable-field'
-			);
-
-			Array.prototype.forEach.call(propagatableFields, (field, index) => {
-				Liferay.Util.toggleDisabled(field, layoutPrototypeLinkChecked);
-			});
-		});
+		);
 	}
 </aui:script>

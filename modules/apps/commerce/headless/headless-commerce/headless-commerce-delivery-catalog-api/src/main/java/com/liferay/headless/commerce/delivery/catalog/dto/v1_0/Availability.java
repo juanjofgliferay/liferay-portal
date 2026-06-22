@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -26,19 +30,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
  * @generated
  */
 @Generated("")
-@GraphQLName("Availability")
+@GraphQLName(
+	description = "Stock-availability snapshot for a SKU resolved in the active commerce channel and inventory engine. Computed at response time and never persisted.",
+	value = "Availability"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Stock-availability snapshot for a SKU resolved in the active commerce channel and inventory engine. Computed at response time and never persisted."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Availability")
 public class Availability implements Serializable {
@@ -51,90 +56,144 @@ public class Availability implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Availability.class, json);
 	}
 
-	@Schema(example = "available")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Untranslated availability label key. Computed from the inventory engine's view of current stock against the SKU's thresholds.",
+		example = "available"
+	)
 	public String getLabel() {
+		if (_labelSupplier != null) {
+			label = _labelSupplier.get();
+
+			_labelSupplier = null;
+		}
+
 		return label;
 	}
 
 	public void setLabel(String label) {
 		this.label = label;
+
+		_labelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel(
 		UnsafeSupplier<String, Exception> labelUnsafeSupplier) {
 
-		try {
-			label = labelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_labelSupplier = () -> {
+			try {
+				return labelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Untranslated availability label key. Computed from the inventory engine's view of current stock against the SKU's thresholds."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String label;
 
-	@Schema(example = "Available")
+	@JsonIgnore
+	private Supplier<String> _labelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized availability label resolved for the request locale.",
+		example = "Available"
+	)
 	public String getLabel_i18n() {
+		if (_label_i18nSupplier != null) {
+			label_i18n = _label_i18nSupplier.get();
+
+			_label_i18nSupplier = null;
+		}
+
 		return label_i18n;
 	}
 
 	public void setLabel_i18n(String label_i18n) {
 		this.label_i18n = label_i18n;
+
+		_label_i18nSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel_i18n(
 		UnsafeSupplier<String, Exception> label_i18nUnsafeSupplier) {
 
-		try {
-			label_i18n = label_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_label_i18nSupplier = () -> {
+			try {
+				return label_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized availability label resolved for the request locale."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String label_i18n;
 
-	@Schema(example = "10.1")
+	@JsonIgnore
+	private Supplier<String> _label_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Quantity currently available across the active inventory engine, expressed in the SKU's primary unit of measure.",
+		example = "10.1"
+	)
 	@Valid
 	public BigDecimal getStockQuantity() {
+		if (_stockQuantitySupplier != null) {
+			stockQuantity = _stockQuantitySupplier.get();
+
+			_stockQuantitySupplier = null;
+		}
+
 		return stockQuantity;
 	}
 
 	public void setStockQuantity(BigDecimal stockQuantity) {
 		this.stockQuantity = stockQuantity;
+
+		_stockQuantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStockQuantity(
 		UnsafeSupplier<BigDecimal, Exception> stockQuantityUnsafeSupplier) {
 
-		try {
-			stockQuantity = stockQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_stockQuantitySupplier = () -> {
+			try {
+				return stockQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Quantity currently available across the active inventory engine, expressed in the SKU's primary unit of measure."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal stockQuantity;
+
+	@JsonIgnore
+	private Supplier<BigDecimal> _stockQuantitySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -163,6 +222,8 @@ public class Availability implements Serializable {
 
 		sb.append("{");
 
+		String label = getLabel();
+
 		if (label != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -177,6 +238,8 @@ public class Availability implements Serializable {
 			sb.append("\"");
 		}
 
+		String label_i18n = getLabel_i18n();
+
 		if (label_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -190,6 +253,8 @@ public class Availability implements Serializable {
 
 			sb.append("\"");
 		}
+
+		BigDecimal stockQuantity = getStockQuantity();
 
 		if (stockQuantity != null) {
 			if (sb.length() > 1) {
@@ -206,8 +271,8 @@ public class Availability implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Availability",
 		name = "x-class-name"
 	)
@@ -253,7 +318,10 @@ public class Availability implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -299,3 +367,4 @@ public class Availability implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:594145990

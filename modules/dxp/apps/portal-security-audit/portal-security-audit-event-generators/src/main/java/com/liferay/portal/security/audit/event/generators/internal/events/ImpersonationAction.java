@@ -19,9 +19,9 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -90,10 +90,10 @@ public class ImpersonationAction extends Action {
 				);
 
 				AuditMessage auditMessage = new AuditMessage(
-					EventTypes.IMPERSONATE, themeDisplay.getCompanyId(),
-					realUser.getUserId(), realUser.getFullName(),
+					themeDisplay.getCompanyId(), realUser.getUserId(),
+					realUser.getFullName(), additionalInfoJSONObject,
 					User.class.getName(), String.valueOf(user.getUserId()),
-					null, additionalInfoJSONObject);
+					EventTypes.IMPERSONATE, null);
 
 				_auditRouter.route(auditMessage);
 			}

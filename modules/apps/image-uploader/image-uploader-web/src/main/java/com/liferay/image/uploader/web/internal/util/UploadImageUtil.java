@@ -16,7 +16,7 @@ import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.users.admin.kernel.file.uploads.UserFileUploadsSettings;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 /**
  * @author Peter Fellwock
@@ -30,11 +30,15 @@ public class UploadImageUtil {
 
 	public static long getMaxFileSize(PortletRequest portletRequest) {
 		String currentLogoURL = portletRequest.getParameter("currentLogoURL");
+		String type = portletRequest.getParameter("type");
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		if (StringUtil.startsWith(
+				currentLogoURL,
+				themeDisplay.getPathImage() + "/organization_logo") ||
+			StringUtil.startsWith(
 				currentLogoURL,
 				themeDisplay.getPathImage() + "/user_female_portrait") ||
 			StringUtil.startsWith(
@@ -42,12 +46,18 @@ public class UploadImageUtil {
 				themeDisplay.getPathImage() + "/user_male_portrait") ||
 			StringUtil.startsWith(
 				currentLogoURL,
-				themeDisplay.getPathImage() + "/user_portrait")) {
+				themeDisplay.getPathImage() + "/user_portrait") ||
+			StringUtil.equals(type, "organization_portrait") ||
+			StringUtil.equals(type, "user_portrait")) {
 
 			UserFileUploadsSettings userFileUploadsSettings =
 				_userFileUploadSettingsSnapshot.get();
 
-			return userFileUploadsSettings.getImageMaxSize();
+			if (userFileUploadsSettings.getImageMaxSize() > 0) {
+				return Math.min(
+					userFileUploadsSettings.getImageMaxSize(),
+					UploadServletRequestConfigurationProviderUtil.getMaxSize());
+			}
 		}
 
 		return UploadServletRequestConfigurationProviderUtil.getMaxSize();

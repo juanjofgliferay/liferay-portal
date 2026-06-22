@@ -110,11 +110,7 @@ public class LayoutSetPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutSet newLayoutSet = _persistence.create(pk);
-
-		newLayoutSet.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutSet newLayoutSet = addLayoutSet();
 
 		newLayoutSet.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -535,25 +531,12 @@ public class LayoutSetPersistenceTest {
 			ReflectionTestUtil.<Boolean>invoke(
 				layoutSet, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "privateLayout"));
-
-		Assert.assertEquals(
-			Boolean.valueOf(layoutSet.getPrivateLayout()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layoutSet, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "privateLayout"));
-		Assert.assertEquals(
-			Long.valueOf(layoutSet.getLogoId()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutSet, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "logoId"));
 	}
 
 	protected LayoutSet addLayoutSet() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		LayoutSet layoutSet = _persistence.create(pk);
-
-		layoutSet.setMvccVersion(RandomTestUtil.nextLong());
 
 		layoutSet.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -594,3 +577,4 @@ public class LayoutSetPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:247259149

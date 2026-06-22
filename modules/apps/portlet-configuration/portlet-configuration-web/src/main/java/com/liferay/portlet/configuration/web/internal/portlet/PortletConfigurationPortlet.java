@@ -13,6 +13,7 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.GroupConstants;
@@ -64,12 +65,12 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.configuration.kernel.util.PortletConfigurationUtil;
 import com.liferay.portlet.configuration.web.internal.constants.PortletConfigurationPortletKeys;
 import com.liferay.portlet.configuration.web.internal.constants.PortletConfigurationWebKeys;
@@ -77,6 +78,23 @@ import com.liferay.portlet.configuration.web.internal.portlet.action.ActionUtil;
 import com.liferay.portlet.portletconfiguration.util.PublicRenderParameterConfiguration;
 import com.liferay.roles.admin.constants.RolesAdminWebKeys;
 import com.liferay.roles.admin.role.type.contributor.provider.RoleTypeContributorProvider;
+
+import jakarta.portlet.ActionParameters;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.EventRequest;
+import jakarta.portlet.EventResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -91,26 +109,10 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import javax.portlet.ActionParameters;
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.EventRequest;
-import javax.portlet.EventResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -125,15 +127,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.system=true",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Portlet Configuration",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/edit_configuration.jsp",
-		"javax.portlet.name=" + PortletConfigurationPortletKeys.PORTLET_CONFIGURATION,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Portlet Configuration",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/edit_configuration.jsp",
+		"jakarta.portlet.name=" + PortletConfigurationPortletKeys.PORTLET_CONFIGURATION,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.version=4.0"
 	},
-	service = javax.portlet.Portlet.class
+	service = jakarta.portlet.Portlet.class
 )
 public class PortletConfigurationPortlet extends MVCPortlet {
 
@@ -188,7 +190,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 		}
 
 		PortletConfig portletConfig = (PortletConfig)actionRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG);
+			JavaConstants.JAKARTA_PORTLET_CONFIG);
 
 		configurationAction.processAction(
 			portletConfig, actionRequest, actionResponse);
@@ -278,15 +280,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		Portlet portlet = ActionUtil.getPortlet(actionRequest);
-
-		PortletPreferences portletPreferences =
-			ActionUtil.getLayoutPortletSetup(actionRequest, portlet);
-
-		actionRequest = ActionUtil.getWrappedActionRequest(
-			actionRequest, portletPreferences);
-
-		_updateScope(actionRequest, portlet);
+		_updateScope(actionRequest);
 
 		if (!SessionErrors.isEmpty(actionRequest)) {
 			return;
@@ -397,7 +391,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 		_portletRequestThreadLocal.set(actionRequest);
 
 		actionRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG, getPortletConfig());
+			JavaConstants.JAKARTA_PORTLET_CONFIG, getPortletConfig());
 
 		super.processAction(actionRequest, actionResponse);
 	}
@@ -410,7 +404,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 		_portletRequestThreadLocal.set(eventRequest);
 
 		eventRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG, getPortletConfig());
+			JavaConstants.JAKARTA_PORTLET_CONFIG, getPortletConfig());
 
 		super.processEvent(eventRequest, eventResponse);
 	}
@@ -423,7 +417,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 		_portletRequestThreadLocal.set(renderRequest);
 
 		renderRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG, getPortletConfig());
+			JavaConstants.JAKARTA_PORTLET_CONFIG, getPortletConfig());
 
 		super.render(renderRequest, renderResponse);
 	}
@@ -475,7 +469,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 		_portletRequestThreadLocal.set(resourceRequest);
 
 		resourceRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG, getPortletConfig());
+			JavaConstants.JAKARTA_PORTLET_CONFIG, getPortletConfig());
 
 		super.serveResource(resourceRequest, resourceResponse);
 	}
@@ -561,7 +555,9 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 
 		PermissionPropagator permissionPropagator = null;
 
-		if (PropsValues.PERMISSIONS_PROPAGATION_ENABLED) {
+		if (PropsValues.PERMISSIONS_PROPAGATION_ENABLED &&
+			Validator.isNotNull(portletResource)) {
+
 			Portlet portlet = _portletLocalService.getPortletById(
 				themeDisplay.getCompanyId(), portletResource);
 
@@ -614,6 +610,15 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 			themeDisplay.getLayout(),
 			ServiceContextFactory.getInstance(actionRequest),
 			themeDisplay.getUserId());
+
+		if (resourcePrimKeys.length > 1) {
+			SessionMessages.add(
+				actionRequest, "requestProcessed",
+				_language.format(
+					themeDisplay.getLocale(),
+					"x-permissions-were-updated-successfully",
+					resourcePrimKeys.length));
+		}
 	}
 
 	@Activate
@@ -628,6 +633,11 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 
 				emitter.emit(modelClass.getName());
 			});
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
 	}
 
 	@Override
@@ -845,7 +855,7 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 
 			if (!scopeLayout.hasScopeGroup()) {
 				_groupLocalService.addGroup(
-					themeDisplay.getUserId(),
+					StringPool.BLANK, themeDisplay.getUserId(),
 					GroupConstants.DEFAULT_PARENT_GROUP_ID,
 					Layout.class.getName(), scopeLayout.getPlid(),
 					GroupConstants.DEFAULT_LIVE_GROUP_ID,
@@ -853,9 +863,9 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 						LocaleUtil.getDefault(),
 						String.valueOf(scopeLayout.getPlid())
 					).build(),
-					null, 0, true,
+					null, 0, null, true,
 					GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, null, false,
-					true, null);
+					false, true, null);
 			}
 
 			scopeGroupId = scopeLayout.getGroupId();
@@ -937,7 +947,8 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 			WebKeys.THEME_DISPLAY);
 
 		String portletTitle = PortletConfigurationUtil.getPortletTitle(
-			portletPreferences, themeDisplay.getLanguageId());
+			portlet.getPortletId(), portletPreferences,
+			themeDisplay.getLanguageId());
 
 		if (Validator.isNull(portletTitle)) {
 			ServletContext servletContext =
@@ -1051,12 +1062,20 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 			String.valueOf(netvibesShowAddAppLink));
 	}
 
-	private void _updateScope(ActionRequest actionRequest, Portlet portlet)
-		throws Exception {
+	private void _updateScope(ActionRequest actionRequest) throws Exception {
+		Portlet portlet = ActionUtil.getPortlet(actionRequest);
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		PortletPreferences portletPreferences =
+			themeDisplay.getStrictLayoutPortletSetup(
+				themeDisplay.getLayout(), portlet.getPortletId());
+
+		actionRequest = ActionUtil.getWrappedActionRequest(
+			actionRequest, portletPreferences);
 
 		String oldScopeName = _getOldScopeName(actionRequest);
-
-		PortletPreferences portletPreferences = actionRequest.getPreferences();
 
 		String[] scopes = StringUtil.split(
 			ParamUtil.getString(actionRequest, "scope"));
@@ -1084,9 +1103,6 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 			portletTitle, oldScopeName, newScopeName);
 
 		if (!newPortletTitle.equals(portletTitle)) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
-
 			portletPreferences.setValue(
 				"portletSetupTitle_" + themeDisplay.getLanguageId(),
 				newPortletTitle);
@@ -1114,6 +1130,9 @@ public class PortletConfigurationPortlet extends MVCPortlet {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

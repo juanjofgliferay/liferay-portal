@@ -22,17 +22,17 @@
 	</tr>
 	<tr>
 		<td>OPTIONS_TAB_RELATIONSHIPS_LABEL_AND_RELATED_OBJECT</td>
-		<td>//div[contains(@class,'dnd-tr') and contains(.,'${key_label}')and contains(.,'${key_relatedObject}')]</td>
+		<td>//tr[contains(.,'${key_label}')and contains(.,'${key_relatedObject}')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>OPTIONS_TAB_RELATIONSHIPS_TYPE_AND_HIERARCHY</td>
-		<td>//div[contains(@class,'dnd-tr') and contains(.,'${key_relationType}')and contains(.,'${key_relationHierarchy}')]</td>
+		<td>//tr[contains(.,'${key_relationType}')and contains(.,'${key_relationHierarchy}')]</td>
 		<td></td>
 	</tr>
 	<tr>
 		<td>SELECT_RELATIONSHIP_DETAILS_HIERARCHY_AND_LABEL</td>
-		<td>//div[contains(@class, 'dnd-td') and contains(., '${key_relationHierarchy}')]//preceding-sibling::div//*[contains(text(), '${key_labelName}')]</td>
+		<td>//td[contains(., '${key_relationHierarchy}')]//preceding-sibling::td//*[contains(text(), '${key_labelName}')]</td>
 		<td></td>
 	</tr>
 	<tr>
@@ -67,7 +67,7 @@
 	</tr>
 	<tr>
 		<td>SELECTED_OBJECT_IN_MODAL</td>
-		<td>//div[@class='form-group']//label[contains(.,'${key_relationType}')]/../input[contains(@value,'${key_relationObject}')] | //div[@class='form-group']//label[contains(.,'${key_relationType}')]/../div[contains(.,'${key_relationObject}')] </td>
+		<td>//label[contains(.,'${key_relationType}')]/../button[.='${key_relationObject}'] | //label[contains(.,'${key_relationType}')]//..//input[@value='${key_relationObject}']</td>
 		<td></td>
 	</tr>
 	<tr>

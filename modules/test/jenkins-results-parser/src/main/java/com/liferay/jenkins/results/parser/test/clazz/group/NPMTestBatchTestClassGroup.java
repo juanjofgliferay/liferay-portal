@@ -20,7 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import org.json.JSONObject;
 
@@ -154,7 +154,7 @@ public class NPMTestBatchTestClassGroup extends BatchTestClassGroup {
 				continue;
 			}
 
-			testClasses.add(testClass);
+			addTestClass(testClass);
 
 			axisTestClassGroup.addTestClass(testClass);
 		}

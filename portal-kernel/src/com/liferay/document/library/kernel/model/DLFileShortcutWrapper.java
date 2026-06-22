@@ -39,6 +39,7 @@ public class DLFileShortcutWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fileShortcutId", getFileShortcutId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -78,6 +79,13 @@ public class DLFileShortcutWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fileShortcutId = (Long)attributes.get("fileShortcutId");
@@ -240,6 +248,16 @@ public class DLFileShortcutWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getDLFolder();
+	}
+
+	/**
+	 * Returns the external reference code of this document library file shortcut.
+	 *
+	 * @return the external reference code of this document library file shortcut
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -613,6 +631,16 @@ public class DLFileShortcutWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this document library file shortcut.
+	 *
+	 * @param externalReferenceCode the external reference code of this document library file shortcut
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the file shortcut ID of this document library file shortcut.
 	 *
 	 * @param fileShortcutId the file shortcut ID of this document library file shortcut
@@ -837,3 +865,4 @@ public class DLFileShortcutWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2142280566

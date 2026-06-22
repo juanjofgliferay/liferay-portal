@@ -9,9 +9,12 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TextFormatter;
@@ -24,6 +27,8 @@ import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parse
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser.ResourceTestCaseOpenAPIParser;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser.util.OpenAPIParserUtil;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.util.ConfigUtil;
+import com.liferay.portal.tools.rest.builder.internal.freemarker.util.OpenAPIUtil;
+import com.liferay.portal.tools.rest.builder.internal.util.GraphQLNamingUtil;
 import com.liferay.portal.tools.rest.builder.internal.yaml.config.Application;
 import com.liferay.portal.tools.rest.builder.internal.yaml.config.ConfigYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Components;
@@ -36,8 +41,6 @@ import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Parameter;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.PathItem;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.RequestBody;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Schema;
-import com.liferay.portal.vulcan.graphql.util.GraphQLNamingUtil;
-import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,8 +49,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,6 +65,18 @@ public class FreeMarkerTool {
 
 	public static FreeMarkerTool getInstance() {
 		return _freeMarkerTool;
+	}
+
+	public static String getPropertyType(
+		ConfigYAML configYAML, OpenAPIYAML openAPIYAML, Schema propertySchema,
+		String propertySchemaName) {
+
+		Map<String, String> javaDataTypeMap =
+			OpenAPIParserUtil.getJavaDataTypeMap(configYAML, openAPIYAML);
+
+		return DTOOpenAPIParser.getPropertyType(
+			configYAML, javaDataTypeMap, openAPIYAML, propertySchema,
+			propertySchemaName);
 	}
 
 	public boolean containsJavaMethodSignature(
@@ -118,6 +133,37 @@ public class FreeMarkerTool {
 				javaDataType, javaMethodSignatures)) {
 
 			return true;
+		}
+
+		return false;
+	}
+
+	public boolean generateCRUD(
+		ConfigYAML configYAML, List<JavaMethodSignature> javaMethodSignatures,
+		String schemaName) {
+
+		if (!configYAML.isGenerateCRUD() ||
+			!isVersionCompatible(configYAML, 7)) {
+
+			return false;
+		}
+
+		JavaMethodSignature javaMethodSignature = getJavaMethodSignature(
+			javaMethodSignatures, "get" + schemaName);
+
+		if (javaMethodSignature == null) {
+			return false;
+		}
+
+		for (JavaMethodParameter javaMethodParameter :
+				javaMethodSignature.getPathJavaMethodParameters()) {
+
+			if (isIdParameter(javaMethodParameter, schemaName) &&
+				StringUtil.equals(
+					javaMethodParameter.getParameterType(), "java.lang.Long")) {
+
+				return true;
+			}
 		}
 
 		return false;
@@ -278,24 +324,29 @@ public class FreeMarkerTool {
 
 		Map<String, Schema> schemas = getSchemas(openAPIYAML);
 
-		for (Map.Entry<String, Schema> entry : schemas.entrySet()) {
-			Schema schema = entry.getValue();
+		Schema schema = schemas.get(schemaName);
 
-			if (schema.getOneOfSchemas() == null) {
+		if (schema == null) {
+			return null;
+		}
+
+		List<Schema> allOfSchemas = schema.getAllOfSchemas();
+
+		if (allOfSchemas == null) {
+			return null;
+		}
+
+		for (Schema allOfSchema : allOfSchemas) {
+			if (allOfSchema.getReference() == null) {
 				continue;
 			}
 
-			for (Schema oneOfSchema : schema.getOneOfSchemas()) {
-				Map<String, Schema> propertySchemas =
-					oneOfSchema.getPropertySchemas();
+			String referenceName = getReferenceName(allOfSchema.getReference());
 
-				Set<String> keys = propertySchemas.keySet();
+			allOfSchema = schemas.get(referenceName);
 
-				Iterator<String> iterator = keys.iterator();
-
-				if (StringUtil.equalsIgnoreCase(schemaName, iterator.next())) {
-					return entry.getKey();
-				}
+			if (allOfSchema.getDiscriminator() != null) {
+				return referenceName;
 			}
 		}
 
@@ -329,13 +380,35 @@ public class FreeMarkerTool {
 	public String getEnumFieldName(String value) {
 		String fieldName = TextFormatter.format(value, TextFormatter.H);
 
-		fieldName = fieldName.replaceAll("[ \\-\\/]", "_");
+		fieldName = fieldName.replaceFirst("^([0-9])", "positive_$1");
+		fieldName = fieldName.replaceFirst("^\\-([0-9])", "negative_$1");
 
+		fieldName = fieldName.replaceAll("\\.", "_point_");
+
+		fieldName = fieldName.replaceAll("[ \\-\\/]", "_");
 		fieldName = fieldName.replaceAll("[^a-zA-Z0-9_]", "");
 
 		fieldName = fieldName.replaceAll("_+", "_");
 
 		return StringUtil.toUpperCase(fieldName);
+	}
+
+	public String getExternalReferenceCodeParameterName(
+		JavaMethodSignature javaMethodSignature, String schemaName) {
+
+		for (JavaMethodParameter javaMethodParameter :
+				javaMethodSignature.getJavaMethodParameters()) {
+
+			String parameterName = javaMethodParameter.getParameterName();
+
+			if (isExternalReferenceCodeParameterName(
+					parameterName, schemaName)) {
+
+				return parameterName;
+			}
+		}
+
+		return null;
 	}
 
 	public String getGraphQLArguments(
@@ -388,11 +461,7 @@ public class FreeMarkerTool {
 					requiredType = "query";
 				}
 
-				if (requiredType.equals(graphQLType)) {
-					return true;
-				}
-
-				return false;
+				return requiredType.equals(graphQLType);
 			});
 	}
 
@@ -431,6 +500,27 @@ public class FreeMarkerTool {
 		return GraphQLNamingUtil.getGraphQLMutationName(methodName);
 	}
 
+	public String getGraphQLNamespace(
+		ConfigYAML configYAML, OpenAPIYAML openAPIYAML) {
+
+		Application application = configYAML.getApplication();
+
+		String baseURI = application.getBaseURI();
+
+		if (baseURI.startsWith("/")) {
+			baseURI = baseURI.substring(1);
+		}
+
+		int index = baseURI.indexOf("-rest");
+
+		if (index != -1) {
+			baseURI = baseURI.substring(0, index);
+		}
+
+		return CamelCaseUtil.toCamelCase(
+			baseURI + "_" + OpenAPIUtil.escapeVersion(openAPIYAML));
+	}
+
 	public String getGraphQLParameters(
 		List<JavaMethodParameter> javaMethodParameters, Operation operation,
 		boolean annotation) {
@@ -440,8 +530,20 @@ public class FreeMarkerTool {
 
 		parameters = StringUtil.replace(
 			parameters,
+			"@GraphQLName(\"assetLibraryExternalReferenceCode\") " +
+				"java.lang.String assetLibraryExternalReferenceCode",
+			"@GraphQLName(\"assetLibraryExternalReferenceCode\") @NotEmpty " +
+				"String assetLibraryExternalReferenceCode");
+		parameters = StringUtil.replace(
+			parameters,
 			"@GraphQLName(\"assetLibraryId\") java.lang.Long assetLibraryId",
 			"@GraphQLName(\"assetLibraryId\") @NotEmpty String assetLibraryId");
+		parameters = StringUtil.replace(
+			parameters,
+			"@GraphQLName(\"siteExternalReferenceCode\") java.lang.String " +
+				"siteExternalReferenceCode",
+			"@GraphQLName(\"siteExternalReferenceCode\") @NotEmpty String " +
+				"siteExternalReferenceCode");
 		parameters = StringUtil.replace(
 			parameters, "@GraphQLName(\"siteId\") java.lang.Long siteId",
 			"@GraphQLName(\"siteKey\") @NotEmpty String siteKey");
@@ -481,7 +583,7 @@ public class FreeMarkerTool {
 		Map<String, Schema> schemas = getSchemas(openAPIYAML);
 
 		Map<String, JavaMethodSignature> javaMethodSignatureMap =
-			new HashMap<>();
+			new LinkedHashMap<>();
 
 		for (JavaMethodSignature javaMethodSignature : javaMethodSignatures) {
 			List<JavaMethodParameter> javaMethodParameters =
@@ -598,10 +700,16 @@ public class FreeMarkerTool {
 	public String getObjectFieldStringValue(String type, Object value) {
 		if (value instanceof Date) {
 			if (type.equals("Date")) {
-				return _dateFormat.format(value);
+				return _dateFormat.get(
+				).format(
+					value
+				);
 			}
 
-			return _dateTimeDateFormat.format(value);
+			return _dateTimeDateFormat.get(
+			).format(
+				value
+			);
 		}
 
 		return value.toString();
@@ -675,14 +783,65 @@ public class FreeMarkerTool {
 		return parentJavaMethodSignatures;
 	}
 
+	public JavaMethodSignature getParentPermissionsPageJavaMethodSignature(
+		String httpMethod, List<JavaMethodSignature> javaMethodSignatures,
+		String parentSchemaName, String schemaName) {
+
+		if ((parentSchemaName == null) ||
+			!(Objects.equals(parentSchemaName, "AssetLibrary") ||
+			  Objects.equals(parentSchemaName, "Site"))) {
+
+			return null;
+		}
+
+		for (JavaMethodSignature javaMethodSignature : javaMethodSignatures) {
+			if (Objects.equals(
+					javaMethodSignature.getMethodName(),
+					StringBundler.concat(
+						httpMethod, parentSchemaName, schemaName,
+						"PermissionsPage")) &&
+				hasPathParameter(
+					javaMethodSignature,
+					TextFormatter.format(parentSchemaName, TextFormatter.I) +
+						"ExternalReferenceCode") &&
+				hasPathParameter(
+					javaMethodSignature,
+					TextFormatter.format(schemaName, TextFormatter.I) +
+						"ExternalReferenceCode")) {
+
+				return javaMethodSignature;
+			}
+		}
+
+		return null;
+	}
+
 	public JavaMethodSignature getPostSchemaJavaMethodSignature(
 		List<JavaMethodSignature> javaMethodSignatures, String parameterName,
 		String schemaName) {
 
+		String parentSchemaName = parameterName;
+
+		if (parentSchemaName.startsWith("parent")) {
+			parentSchemaName = parentSchemaName.substring(6);
+		}
+
+		if (parentSchemaName.endsWith("ExternalReferenceCode")) {
+			parentSchemaName = parentSchemaName.substring(
+				0, parentSchemaName.length() - 21);
+		}
+
+		if (parentSchemaName.endsWith("Id")) {
+			parentSchemaName = parentSchemaName.substring(
+				0, parentSchemaName.length() - 2);
+		}
+
 		for (JavaMethodSignature javaMethodSignature : javaMethodSignatures) {
 			Operation operation = javaMethodSignature.getOperation();
 
-			if (!Objects.equals(getHTTPMethod(operation), "post")) {
+			if (!Objects.equals(getHTTPMethod(operation), "post") ||
+				!hasParameter(javaMethodSignature, parameterName)) {
+
 				continue;
 			}
 
@@ -690,16 +849,7 @@ public class FreeMarkerTool {
 
 			sb.append(getHTTPMethod(operation));
 
-			if (parameterName.startsWith("parent")) {
-				parameterName = parameterName.substring(6);
-			}
-
-			if (parameterName.endsWith("Id")) {
-				parameterName = parameterName.substring(
-					0, parameterName.length() - 2);
-			}
-
-			sb.append(StringUtil.upperCaseFirstLetter(parameterName));
+			sb.append(StringUtil.upperCaseFirstLetter(parentSchemaName));
 
 			sb.append(StringUtil.upperCaseFirstLetter(schemaName));
 
@@ -719,10 +869,34 @@ public class FreeMarkerTool {
 				continue;
 			}
 
+			List<JavaMethodParameter> bodyJavaMethodParameters =
+				getBodyJavaMethodParameters(javaMethodSignature);
+
+			if (bodyJavaMethodParameters.isEmpty()) {
+				continue;
+			}
+
+			JavaMethodParameter bodyJavaMethodParameter =
+				bodyJavaMethodParameters.get(0);
+
+			String parameterType = bodyJavaMethodParameter.getParameterType();
+
+			if (!hasRequestBodyMediaType(
+					javaMethodSignature, "multipart/form-data") &&
+				!parameterType.equals(schemaName) &&
+				!parameterType.endsWith("." + schemaName)) {
+
+				continue;
+			}
+
 			return javaMethodSignature;
 		}
 
 		return null;
+	}
+
+	public String getReferenceName(String reference) {
+		return OpenAPIParserUtil.getReferenceName(reference);
 	}
 
 	public String getResourceArguments(
@@ -739,9 +913,10 @@ public class FreeMarkerTool {
 	}
 
 	public String getResourceMethodAnnotations(
-		JavaMethodSignature javaMethodSignature) {
+		ConfigYAML configYAML, JavaMethodSignature javaMethodSignature) {
 
-		return ResourceOpenAPIParser.getMethodAnnotations(javaMethodSignature);
+		return ResourceOpenAPIParser.getMethodAnnotations(
+			configYAML, javaMethodSignature);
 	}
 
 	public String getResourceMethodName(
@@ -815,7 +990,7 @@ public class FreeMarkerTool {
 		Components components = openAPIYAML.getComponents();
 
 		if (components == null) {
-			return new HashMap<>();
+			return new TreeMap<>();
 		}
 
 		return new TreeMap<>(components.getSchemas());
@@ -918,6 +1093,13 @@ public class FreeMarkerTool {
 		return false;
 	}
 
+	public boolean hasPathParameter(
+		JavaMethodSignature javaMethodSignature, String parameterName) {
+
+		return ResourceOpenAPIParser.hasPathParameter(
+			javaMethodSignature, parameterName);
+	}
+
 	public boolean hasPostSchemaJavaMethodSignature(
 		List<JavaMethodSignature> javaMethodSignatures, String parameterName,
 		String schemaName) {
@@ -973,11 +1155,7 @@ public class FreeMarkerTool {
 
 		Set<String> mediaTypes = contents.keySet();
 
-		if (!mediaTypes.contains(mediaType)) {
-			return false;
-		}
-
-		return true;
+		return mediaTypes.contains(mediaType);
 	}
 
 	public boolean isCollection(
@@ -1012,6 +1190,119 @@ public class FreeMarkerTool {
 			configYAML, propertyName, schema, schemas);
 	}
 
+	public boolean isExternalReferenceCodeExclusiveMethod(
+		String httpMethod, JavaMethodSignature javaMethodSignature) {
+
+		return StringUtil.equals(
+			StringBundler.concat(
+				httpMethod,
+				GetterUtil.getString(javaMethodSignature.getParentSchemaName()),
+				GetterUtil.getString(javaMethodSignature.getSchemaName())),
+			javaMethodSignature.getMethodName());
+	}
+
+	public boolean isExternalReferenceCodeMethod(
+		String httpMethod, JavaMethodSignature javaMethodSignature) {
+
+		return ResourceOpenAPIParser.isExternalReferenceCodeMethod(
+			httpMethod, javaMethodSignature);
+	}
+
+	public boolean isExternalReferenceCodeParameter(
+		JavaMethodParameter javaMethodParameter, String schemaName) {
+
+		return isExternalReferenceCodeParameterName(
+			javaMethodParameter.getParameterName(), schemaName);
+	}
+
+	public boolean isExternalReferenceCodeParameterName(
+		String parameterName, String schemaName) {
+
+		if (StringUtil.equals(parameterName, "externalReferenceCode") ||
+			StringUtil.equals(
+				parameterName,
+				TextFormatter.format(schemaName, TextFormatter.I) +
+					"ExternalReferenceCode")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isGeneratePermissions(
+		ConfigYAML configYAML, JavaMethodSignature javaMethodSignature,
+		List<JavaMethodSignature> javaMethodSignatures, Schema schema,
+		String schemaName) {
+
+		if (!configYAML.isGeneratePermissions()) {
+			return false;
+		}
+
+		Map<String, Schema> propertySchemas = schema.getPropertySchemas();
+
+		if (MapUtil.isEmpty(propertySchemas) ||
+			!propertySchemas.containsKey("permissions")) {
+
+			return false;
+		}
+
+		String methodName = javaMethodSignature.getMethodName();
+		String parentSchemaName = GetterUtil.getString(
+			javaMethodSignature.getParentSchemaName());
+		String pluralSchemaName = TextFormatter.formatPlural(schemaName);
+
+		if (!(methodName.equals(
+				StringBundler.concat(
+					"get", parentSchemaName, pluralSchemaName, "Page")) ||
+			  methodName.equals("get" + parentSchemaName + schemaName) ||
+			  methodName.equals(
+				  StringBundler.concat(
+					  "get", parentSchemaName, schemaName,
+					  "ByExternalReferenceCode")) ||
+			  methodName.equals("post" + parentSchemaName + schemaName) ||
+			  methodName.equals("put" + parentSchemaName + schemaName) ||
+			  methodName.equals(
+				  StringBundler.concat(
+					  "put", parentSchemaName, schemaName,
+					  "ByExternalReferenceCode")))) {
+
+			return false;
+		}
+
+		Schema permissionsSchema = propertySchemas.get("permissions");
+
+		if (permissionsSchema.isReadOnly() || permissionsSchema.isWriteOnly()) {
+			throw new IllegalStateException(
+				StringBundler.concat(
+					"The attribute \"", schemaName,
+					".permissions\" cannot be \"",
+					permissionsSchema.isReadOnly() ? "readOnly" : "writeOnly",
+					"\""));
+		}
+
+		return true;
+	}
+
+	public boolean isIdParameter(
+		JavaMethodParameter javaMethodParameter, String schemaName) {
+
+		return isIdParameterName(
+			javaMethodParameter.getParameterName(), schemaName);
+	}
+
+	public boolean isIdParameterName(String parameterName, String schemaName) {
+		if (StringUtil.equals(parameterName, "id") ||
+			StringUtil.equals(
+				parameterName,
+				TextFormatter.format(schemaName, TextFormatter.I) + "Id")) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public boolean isParameter(
 		JavaMethodParameter javaMethodParameter, Operation operation,
 		String type) {
@@ -1032,19 +1323,82 @@ public class FreeMarkerTool {
 	public boolean isParameterNameSchemaRelated(
 		String parameterName, String path, String schemaName) {
 
-		String parameterNameSubpath = "/{" + parameterName + "}";
+		String schemaVarName = TextFormatter.format(
+			schemaName, TextFormatter.I);
 
-		if (StringUtil.endsWith(path, parameterNameSubpath)) {
+		if (StringUtil.equals(
+				parameterName, schemaVarName + "ExternalReferenceCode") ||
+			StringUtil.equals(parameterName, schemaVarName + "Id")) {
+
 			return true;
 		}
 
-		String prefixPath = path.substring(
-			0, path.indexOf(parameterNameSubpath));
+		String parameterNameSubpath = "/{" + parameterName + "}";
 
-		if (prefixPath.contains(
-				TextFormatter.format(schemaName, TextFormatter.I)) ||
-			prefixPath.contains(
-				TextFormatter.format(schemaName, TextFormatter.K))) {
+		if (StringUtil.endsWith(path, parameterNameSubpath) &&
+			(StringUtil.equals(parameterName, "externalReferenceCode") ||
+			 StringUtil.equals(parameterName, "id"))) {
+
+			return true;
+		}
+
+		int parameterIndex = path.indexOf(parameterNameSubpath);
+
+		if (parameterIndex == -1) {
+			return false;
+		}
+
+		String[] pathSegments = path.substring(
+			0, parameterIndex
+		).split(
+			"/"
+		);
+
+		String parameterSchemaName = null;
+
+		for (int i = pathSegments.length - 1; i >= 0; i--) {
+			String segment = pathSegments[i];
+
+			if (StringUtil.startsWith(segment, "by-") ||
+				(StringUtil.startsWith(segment, "{") &&
+				 StringUtil.endsWith(segment, "}"))) {
+
+				continue;
+			}
+
+			parameterSchemaName = segment;
+
+			break;
+		}
+
+		if (parameterSchemaName == null) {
+			return false;
+		}
+
+		String formattedParameterSchemaName = TextFormatter.format(
+			parameterSchemaName, TextFormatter.K);
+		String formattedSchemaNamePlural = TextFormatter.format(
+			TextFormatter.formatPlural(schemaName), TextFormatter.K);
+		String formattedSchemaNameSingular = TextFormatter.format(
+			schemaName, TextFormatter.K);
+
+		if (StringUtil.equals(
+				formattedParameterSchemaName, formattedSchemaNamePlural) ||
+			StringUtil.equals(
+				formattedParameterSchemaName, formattedSchemaNameSingular)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isParameterNameScopeRelated(String parameterName) {
+		if (StringUtil.equals(
+				parameterName, "assetLibraryExternalReferenceCode") ||
+			StringUtil.equals(parameterName, "assetLibraryId") ||
+			StringUtil.equals(parameterName, "siteExternalReferenceCode") ||
+			StringUtil.equals(parameterName, "siteId")) {
 
 			return true;
 		}
@@ -1066,7 +1420,7 @@ public class FreeMarkerTool {
 				javaMethodParameter.getParameterName(), "pagination") &&
 			 Objects.equals(
 				 javaMethodParameter.getParameterType(),
-				 Pagination.class.getName())) ||
+				 "com.liferay.portal.vulcan.pagination.Pagination")) ||
 			(Objects.equals(javaMethodParameter.getParameterName(), "sorts") &&
 			 Objects.equals(
 				 javaMethodParameter.getParameterType(),
@@ -1090,6 +1444,29 @@ public class FreeMarkerTool {
 			String string = returnTypeParts[returnTypeParts.length - 1];
 
 			return relatedSchemaNames.contains(string);
+		}
+
+		return false;
+	}
+
+	public boolean isSchemaPropertyRequired(
+		OpenAPIYAML openAPIYAML, String schemaName, String propertyName) {
+
+		Map<String, Schema> schemas = getSchemas(openAPIYAML);
+
+		Schema schema = schemas.get(schemaName);
+
+		if (schema == null) {
+			return false;
+		}
+
+		List<String> requiredPropertyNames =
+			schema.getRequiredPropertySchemaNames();
+
+		if ((requiredPropertyNames != null) &&
+			requiredPropertyNames.contains(propertyName)) {
+
+			return true;
 		}
 
 		return false;
@@ -1415,9 +1792,11 @@ public class FreeMarkerTool {
 		return parameterName;
 	}
 
-	private static final DateFormat _dateFormat = _getDateFormat("yyyy-MM-dd");
-	private static final DateFormat _dateTimeDateFormat = _getDateFormat(
-		DateUtil.ISO_8601_PATTERN);
+	private static final ThreadLocal<DateFormat> _dateFormat =
+		ThreadLocal.withInitial(() -> _getDateFormat("yyyy-MM-dd"));
+	private static final ThreadLocal<DateFormat> _dateTimeDateFormat =
+		ThreadLocal.withInitial(
+			() -> _getDateFormat(DateUtil.ISO_8601_PATTERN));
 	private static final FreeMarkerTool _freeMarkerTool = new FreeMarkerTool();
 
 }

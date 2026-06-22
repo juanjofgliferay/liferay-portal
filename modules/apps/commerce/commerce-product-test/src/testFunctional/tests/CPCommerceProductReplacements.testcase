@@ -3,11 +3,14 @@ definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property release.feature.flags.disable.DISABLE_PRIVATE_LAYOUTS = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
 		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
@@ -17,6 +20,7 @@ definition {
 	@description = "Verify users can view the end of life date for a discontinued product in the product details page"
 	@priority = 5
 	test AssertEndOfLifeDateIsVisibleInProductDetailsPage {
+		property browser.chrome.version = "139.0";
 		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "true";
 
@@ -52,7 +56,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 
@@ -69,6 +73,7 @@ definition {
 	@description = "COMMERCE-8165. The existing replacement product can be edited"
 	@priority = 5
 	test CanEditReplacementProduct {
+		property browser.chrome.version = "139.0";
 		property portal.acceptance = "true";
 
 		task ("Given a site created using Minium") {
@@ -123,6 +128,7 @@ definition {
 	@description = "COMMERCE-9093. As a buyer, I want to be able to view a discontinued product's information on the product card."
 	@priority = 3
 	test CanViewDiscontinuedProductInformationOnProductCard {
+		property browser.chrome.version = "139.0";
 		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 		property portal.acceptance = "false";
 
@@ -153,7 +159,7 @@ definition {
 			User.logoutPG();
 
 			CommerceLogin.miniumLogin(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				urlAppend = "web/minium",
 				userEmailAddress = "buyer@liferay.com");
 		}
@@ -181,7 +187,7 @@ definition {
 		task ("Given a simple replacement product with a SKU") {
 			CommerceJSONProductsAPI._addCommerceProduct(
 				catalogName = "Master",
-				productName = "Test Simple Product Replacement",
+				productName = "Test Simple Replacement Product",
 				productType = "Simple",
 				sku = "SKU1001");
 		}

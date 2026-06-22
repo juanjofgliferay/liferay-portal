@@ -18,6 +18,7 @@ import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.dynamic.data.mapping.util.DDMFieldsCounter;
 import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverter;
 import com.liferay.dynamic.data.mapping.util.NumericDDMFormFieldUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -28,6 +29,7 @@ import java.text.DecimalFormat;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,6 +48,9 @@ public class FieldsToDDMFormValuesConverterImpl
 	public DDMFormValues convert(DDMStructure ddmStructure, Fields fields)
 		throws PortalException {
 
+		DDMFieldsCounter ddmFieldsCounter = new DDMFieldsCounter();
+		String[] ddmFieldsDisplayValues = null;
+
 		DDMForm ddmForm = ddmStructure.getFullHierarchyDDMForm();
 
 		Map<String, DDMFormField> ddmFormFieldsMap =
@@ -54,17 +59,48 @@ public class FieldsToDDMFormValuesConverterImpl
 		DDMFormValues ddmFormValues = createDDMFormValues(
 			ddmForm, fields.getAvailableLocales(), fields.getDefaultLocale());
 
-		DDMFieldsCounter ddmFieldsCounter = new DDMFieldsCounter();
+		Field fieldsDisplayField = fields.get(DDMImpl.FIELDS_DISPLAY_NAME);
+		Map<String, List<String>> instanceIdsByFieldNamesMap = null;
+
+		if (fieldsDisplayField != null) {
+			String[] parts = splitFieldsDisplayValue(fieldsDisplayField);
+
+			List<String> ddmFieldsDisplayValuesList = new ArrayList<>(
+				parts.length);
+
+			instanceIdsByFieldNamesMap = new HashMap<>();
+
+			for (String part : parts) {
+				String fieldName = StringUtil.extractFirst(
+					part, DDMImpl.INSTANCE_SEPARATOR);
+
+				if (ddmFormFieldsMap.containsKey(fieldName)) {
+					ddmFieldsDisplayValuesList.add(fieldName);
+				}
+
+				String instanceId = StringUtil.extractLast(
+					part, DDMImpl.INSTANCE_SEPARATOR);
+
+				List<String> instanceIds =
+					instanceIdsByFieldNamesMap.computeIfAbsent(
+						fieldName, key -> new ArrayList<>());
+
+				instanceIds.add(instanceId);
+			}
+
+			ddmFieldsDisplayValues = ddmFieldsDisplayValuesList.toArray(
+				new String[0]);
+		}
 
 		for (String fieldName :
 				_getDDMFormFieldNames(ddmForm.getDDMFormFields())) {
 
 			int repetitions = _countDDMFieldRepetitions(
-				ddmFormFieldsMap, fields, fieldName, null, -1);
+				fields, ddmFieldsDisplayValues, fieldName, null, -1);
 
 			for (int i = 0; i < repetitions; i++) {
 				DDMFormFieldValue ddmFormFieldValue = createDDMFormFieldValue(
-					fieldName);
+					ddmFieldsCounter, instanceIdsByFieldNamesMap, fieldName);
 
 				DDMFormField ddmFormField = ddmFormFieldsMap.get(fieldName);
 
@@ -74,8 +110,9 @@ public class FieldsToDDMFormValuesConverterImpl
 				}
 
 				_setDDMFormFieldValueProperties(
-					ddmFormFieldValue, ddmFormFieldsMap, fields,
-					ddmFieldsCounter);
+					fields, ddmFieldsCounter, ddmFieldsDisplayValues,
+					ddmFormFieldValue, ddmFormFieldsMap,
+					instanceIdsByFieldNamesMap);
 
 				ddmFormValues.addDDMFormFieldValue(ddmFormFieldValue);
 			}
@@ -84,8 +121,13 @@ public class FieldsToDDMFormValuesConverterImpl
 		return ddmFormValues;
 	}
 
-	protected DDMFormFieldValue createDDMFormFieldValue(String name) {
-		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
+	protected DDMFormFieldValue createDDMFormFieldValue(
+		DDMFieldsCounter ddmFieldsCounter,
+		Map<String, List<String>> instanceIdsByFieldNamesMap, String name) {
+
+		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue(
+			_getDDMFieldInstanceId(
+				name, ddmFieldsCounter.get(name), instanceIdsByFieldNamesMap));
 
 		ddmFormFieldValue.setName(name);
 
@@ -110,23 +152,16 @@ public class FieldsToDDMFormValuesConverterImpl
 	}
 
 	private int _countDDMFieldRepetitions(
-			Map<String, DDMFormField> ddmFormFieldsMap, Fields ddmFields,
-			String fieldName, String parentFieldName, int parentOffset)
-		throws PortalException {
+		Fields ddmFields, String[] ddmFieldsDisplayValues, String fieldName,
+		String parentFieldName, int parentOffset) {
 
-		Field ddmFieldsDisplayField = ddmFields.get(
-			DDMImpl.FIELDS_DISPLAY_NAME);
-
-		if (ddmFieldsDisplayField == null) {
+		if (ddmFieldsDisplayValues == null) {
 			if (ddmFields.contains(fieldName)) {
 				return 1;
 			}
 
 			return 0;
 		}
-
-		String[] ddmFieldsDisplayValues = _getDDMFieldsDisplayValues(
-			ddmFormFieldsMap, ddmFieldsDisplayField);
 
 		int offset = -1;
 
@@ -152,58 +187,20 @@ public class FieldsToDDMFormValuesConverterImpl
 	}
 
 	private String _getDDMFieldInstanceId(
-		Fields ddmFields, String fieldName, int index) {
+		String fieldName, int index,
+		Map<String, List<String>> instanceIdsByFieldNamesMap) {
 
-		Field ddmFieldsDisplayField = ddmFields.get(
-			DDMImpl.FIELDS_DISPLAY_NAME);
-
-		if (ddmFieldsDisplayField == null) {
+		if (instanceIdsByFieldNamesMap == null) {
 			return StringUtil.randomString();
 		}
 
-		String prefix = fieldName.concat(DDMImpl.INSTANCE_SEPARATOR);
+		List<String> instanceIds = instanceIdsByFieldNamesMap.get(fieldName);
 
-		String[] ddmFieldsDisplayValues = StringUtil.split(
-			(String)ddmFieldsDisplayField.getValue());
-
-		for (String ddmFieldsDisplayValue : ddmFieldsDisplayValues) {
-			if (ddmFieldsDisplayValue.startsWith(prefix)) {
-				index--;
-
-				if (index < 0) {
-					return StringUtil.extractLast(
-						ddmFieldsDisplayValue, DDMImpl.INSTANCE_SEPARATOR);
-				}
-			}
+		if ((instanceIds == null) || (index >= instanceIds.size())) {
+			return null;
 		}
 
-		return null;
-	}
-
-	private String[] _getDDMFieldsDisplayValues(
-			Map<String, DDMFormField> ddmFormFieldsMap,
-			Field ddmFieldsDisplayField)
-		throws PortalException {
-
-		try {
-			List<String> fieldsDisplayValues = new ArrayList<>();
-
-			String[] values = splitFieldsDisplayValue(ddmFieldsDisplayField);
-
-			for (String value : values) {
-				String fieldName = StringUtil.extractFirst(
-					value, DDMImpl.INSTANCE_SEPARATOR);
-
-				if (ddmFormFieldsMap.containsKey(fieldName)) {
-					fieldsDisplayValues.add(fieldName);
-				}
-			}
-
-			return fieldsDisplayValues.toArray(new String[0]);
-		}
-		catch (Exception exception) {
-			throw new PortalException(exception);
-		}
+		return instanceIds.get(index);
 	}
 
 	private String _getDDMFieldValueString(
@@ -242,24 +239,8 @@ public class FieldsToDDMFormValuesConverterImpl
 	private List<String> _getDDMFormFieldNames(
 		List<DDMFormField> ddmFormFields) {
 
-		List<String> fieldNames = new ArrayList<>();
-
-		for (DDMFormField ddmFormField : ddmFormFields) {
-			fieldNames.add(ddmFormField.getName());
-		}
-
-		return fieldNames;
-	}
-
-	private void _setDDMFormFieldValueInstanceId(
-		DDMFormFieldValue ddmFormFieldValue, Fields ddmFields,
-		DDMFieldsCounter ddmFieldsCounter) {
-
-		String name = ddmFormFieldValue.getName();
-
-		ddmFormFieldValue.setInstanceId(
-			_getDDMFieldInstanceId(
-				ddmFields, name, ddmFieldsCounter.get(name)));
+		return TransformUtil.transform(
+			ddmFormFields, ddmFormField -> ddmFormField.getName());
 	}
 
 	private void _setDDMFormFieldValueLocalizedValue(
@@ -278,16 +259,16 @@ public class FieldsToDDMFormValuesConverterImpl
 	}
 
 	private void _setDDMFormFieldValueProperties(
+			Fields ddmFields, DDMFieldsCounter ddmFieldsCounter,
+			String[] ddmFieldsDisplayValues,
 			DDMFormFieldValue ddmFormFieldValue,
-			Map<String, DDMFormField> ddmFormFieldsMap, Fields ddmFields,
-			DDMFieldsCounter ddmFieldsCounter)
+			Map<String, DDMFormField> ddmFormFieldsMap,
+			Map<String, List<String>> instanceIdsByFieldNamesMap)
 		throws PortalException {
 
-		_setDDMFormFieldValueInstanceId(
-			ddmFormFieldValue, ddmFields, ddmFieldsCounter);
-
 		_setNestedDDMFormFieldValues(
-			ddmFormFieldValue, ddmFormFieldsMap, ddmFields, ddmFieldsCounter);
+			ddmFields, ddmFieldsCounter, ddmFieldsDisplayValues,
+			ddmFormFieldValue, ddmFormFieldsMap, instanceIdsByFieldNamesMap);
 
 		_setDDMFormFieldValueValues(
 			ddmFormFieldValue, ddmFormFieldsMap, ddmFields, ddmFieldsCounter);
@@ -331,9 +312,11 @@ public class FieldsToDDMFormValuesConverterImpl
 	}
 
 	private void _setNestedDDMFormFieldValues(
+			Fields ddmFields, DDMFieldsCounter ddmFieldsCounter,
+			String[] ddmFieldsDisplayValues,
 			DDMFormFieldValue ddmFormFieldValue,
-			Map<String, DDMFormField> ddmFormFieldsMap, Fields ddmFields,
-			DDMFieldsCounter ddmFieldsCounter)
+			Map<String, DDMFormField> ddmFormFieldsMap,
+			Map<String, List<String>> instanceIdsByFieldNamesMap)
 		throws PortalException {
 
 		String fieldName = ddmFormFieldValue.getName();
@@ -347,12 +330,14 @@ public class FieldsToDDMFormValuesConverterImpl
 
 		for (String nestedFieldName : nestedFieldNames) {
 			int repetitions = _countDDMFieldRepetitions(
-				ddmFormFieldsMap, ddmFields, nestedFieldName, fieldName,
+				ddmFields, ddmFieldsDisplayValues, nestedFieldName, fieldName,
 				parentOffset);
 
 			for (int i = 0; i < repetitions; i++) {
 				DDMFormFieldValue nestedDDMFormFieldValue =
-					createDDMFormFieldValue(nestedFieldName);
+					createDDMFormFieldValue(
+						ddmFieldsCounter, instanceIdsByFieldNamesMap,
+						nestedFieldName);
 
 				DDMFormField nestedDDMFormField = ddmFormFieldsMap.get(
 					nestedFieldName);
@@ -363,8 +348,9 @@ public class FieldsToDDMFormValuesConverterImpl
 				}
 
 				_setDDMFormFieldValueProperties(
-					nestedDDMFormFieldValue, ddmFormFieldsMap, ddmFields,
-					ddmFieldsCounter);
+					ddmFields, ddmFieldsCounter, ddmFieldsDisplayValues,
+					nestedDDMFormFieldValue, ddmFormFieldsMap,
+					instanceIdsByFieldNamesMap);
 
 				ddmFormFieldValue.addNestedDDMFormFieldValue(
 					nestedDDMFormFieldValue);

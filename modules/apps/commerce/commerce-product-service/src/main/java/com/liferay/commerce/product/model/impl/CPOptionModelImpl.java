@@ -111,9 +111,16 @@ public class CPOptionModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CPOption";
 
+	public static final String ENTITY_ALIAS = "cpOption";
+
+	public static final String FILTER_PK_COLUMN_NAME = "CPOptionId";
+
 	public static final String ORDER_BY_JPQL = " ORDER BY cpOption.name ASC";
 
 	public static final String ORDER_BY_SQL = " ORDER BY CPOption.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY cpOption.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1509,3 +1516,4 @@ public class CPOptionModelImpl
 	private CPOption _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1126494367

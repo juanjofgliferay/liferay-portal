@@ -15,7 +15,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -61,7 +61,7 @@ public class UserItemSelectorViewDescriptor
 
 	@Override
 	public TableItemView getTableItemView(User user) {
-		return new UserTableItemView(user);
+		return new UserTableItemView(user, _multipleSelection);
 	}
 
 	@Override

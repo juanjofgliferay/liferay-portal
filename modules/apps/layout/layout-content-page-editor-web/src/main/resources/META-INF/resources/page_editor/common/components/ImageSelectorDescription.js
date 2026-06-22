@@ -5,21 +5,19 @@
 
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
+import {PopoverTooltip} from '@liferay/layout-js-components-web';
 import {useId} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useState} from 'react';
 
 import CurrentLanguageFlag from './CurrentLanguageFlag';
-import {PopoverTooltip} from './PopoverTooltip';
 
 export function ImageSelectorDescription({
 	imageDescription,
 	onImageDescriptionChanged,
 }) {
-	const [
-		imageDescriptionInputElement,
-		setImageDescriptionInputElement,
-	] = useState();
+	const [imageDescriptionInputElement, setImageDescriptionInputElement] =
+		useState();
 
 	const imageDescriptionInputId = useId();
 	const tooltipId = useId();

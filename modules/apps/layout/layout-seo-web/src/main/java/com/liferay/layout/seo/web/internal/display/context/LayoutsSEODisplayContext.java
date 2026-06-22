@@ -11,11 +11,7 @@ import com.liferay.asset.kernel.model.ClassType;
 import com.liferay.asset.kernel.model.ClassTypeReader;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.util.DLURLHelper;
-import com.liferay.dynamic.data.mapping.exception.StorageException;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureServiceUtil;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.SelectOption;
 import com.liferay.info.exception.NoSuchFormVariationException;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemClassDetails;
@@ -27,6 +23,7 @@ import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.URLItemSelectorReturnType;
 import com.liferay.item.selector.criteria.image.criterion.ImageItemSelectorCriterion;
+import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.seo.canonical.url.LayoutSEOCanonicalURLProvider;
@@ -35,10 +32,12 @@ import com.liferay.layout.seo.model.LayoutSEOEntry;
 import com.liferay.layout.seo.model.LayoutSEOSite;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalServiceUtil;
 import com.liferay.layout.seo.service.LayoutSEOSiteLocalService;
+import com.liferay.layout.seo.web.internal.helper.LayoutSEOMetaRobotsHelper;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -50,29 +49,35 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.site.display.context.GroupDisplayContextHelper;
 
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Alicia García
@@ -80,18 +85,17 @@ import javax.servlet.http.HttpServletRequest;
 public class LayoutsSEODisplayContext {
 
 	public LayoutsSEODisplayContext(
-		DDMStorageEngineManager ddmStorageEngineManager,
 		DLAppService dlAppService, DLURLHelper dlurlHelper,
 		InfoItemServiceRegistry infoItemServiceRegistry,
 		ItemSelector itemSelector, LayoutLocalService layoutLocalService,
 		LayoutPageTemplateEntryLocalService layoutPageTemplateEntryLocalService,
 		LayoutSEOCanonicalURLProvider layoutSEOCanonicalURLProvider,
 		LayoutSEOLinkManager layoutSEOLinkManager,
+		LayoutSEOMetaRobotsHelper layoutSEOMetaRobotsHelper,
 		LayoutSEOSiteLocalService layoutSEOSiteLocalService,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse) {
 
-		_ddmStorageEngineManager = ddmStorageEngineManager;
 		_dlAppService = dlAppService;
 		_dlurlHelper = dlurlHelper;
 		_infoItemServiceRegistry = infoItemServiceRegistry;
@@ -101,6 +105,7 @@ public class LayoutsSEODisplayContext {
 			layoutPageTemplateEntryLocalService;
 		_layoutSEOCanonicalURLProvider = layoutSEOCanonicalURLProvider;
 		_layoutSEOLinkManager = layoutSEOLinkManager;
+		_layoutSEOMetaRobotsHelper = layoutSEOMetaRobotsHelper;
 		_layoutSEOSiteLocalService = layoutSEOSiteLocalService;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
@@ -117,38 +122,22 @@ public class LayoutsSEODisplayContext {
 			WebKeys.THEME_DISPLAY);
 	}
 
-	public DDMFormValues getDDMFormValues() throws StorageException {
-		LayoutSEOEntry selLayoutSEOEntry = getSelLayoutSEOEntry();
-
-		if ((selLayoutSEOEntry == null) ||
-			(selLayoutSEOEntry.getDDMStorageId() == 0)) {
-
-			return null;
+	public String getBackURL() throws PortalException {
+		if (Validator.isNotNull(_backURL)) {
+			return _backURL;
 		}
 
-		try {
-			return _ddmStorageEngineManager.getDDMFormValues(
-				selLayoutSEOEntry.getDDMStorageId());
-		}
-		catch (PortalException portalException) {
-			throw new StorageException(portalException);
-		}
-	}
+		String backURL = ParamUtil.getString(
+			_httpServletRequest, "backURL", _getRedirect());
 
-	public long getDDMStructurePrimaryKey() throws PortalException {
-		if (_ddmStructure != null) {
-			return _ddmStructure.getPrimaryKey();
+		if (Validator.isNull(backURL)) {
+			backURL = PortalUtil.getLayoutFullURL(
+				getSelLayout(), _themeDisplay);
 		}
 
-		Company company = _themeDisplay.getCompany();
+		_backURL = backURL;
 
-		_ddmStructure = DDMStructureServiceUtil.getStructure(
-			company.getGroupId(),
-			ClassNameLocalServiceUtil.getClassNameId(
-				LayoutSEOEntry.class.getName()),
-			"custom-meta-tags");
-
-		return _ddmStructure.getPrimaryKey();
+		return _backURL;
 	}
 
 	public String getDefaultCanonicalURL() throws PortalException {
@@ -291,18 +280,31 @@ public class LayoutsSEODisplayContext {
 		return _layoutId;
 	}
 
+	public List<String> getMetaRobotsProviderPortletTitles() {
+		Layout selLayout = getSelLayout();
+
+		if (selLayout == null) {
+			return Collections.emptyList();
+		}
+
+		return _layoutSEOMetaRobotsHelper.getProviderPortletTitles(
+			selLayout, _themeDisplay.getLocale());
+	}
+
 	public String getOpenGraphImageTitle() {
 		LayoutSEOEntry layoutSEOEntry = getSelLayoutSEOEntry();
 
 		if ((layoutSEOEntry == null) ||
-			(layoutSEOEntry.getOpenGraphImageFileEntryId() == 0)) {
+			Validator.isNull(layoutSEOEntry.getOpenGraphImageFileEntryERC())) {
 
 			return StringPool.BLANK;
 		}
 
 		try {
-			FileEntry fileEntry = _dlAppService.getFileEntry(
-				layoutSEOEntry.getOpenGraphImageFileEntryId());
+			FileEntry fileEntry =
+				_dlAppService.getFileEntryByExternalReferenceCode(
+					layoutSEOEntry.getOpenGraphImageFileEntryERC(),
+					layoutSEOEntry.getOpenGraphImageFileEntryGroupId());
 
 			if (fileEntry.isInTrash()) {
 				return StringPool.BLANK;
@@ -321,14 +323,16 @@ public class LayoutsSEODisplayContext {
 		LayoutSEOEntry layoutSEOEntry = getSelLayoutSEOEntry();
 
 		if ((layoutSEOEntry == null) ||
-			(layoutSEOEntry.getOpenGraphImageFileEntryId() == 0)) {
+			Validator.isNull(layoutSEOEntry.getOpenGraphImageFileEntryERC())) {
 
 			return StringPool.BLANK;
 		}
 
 		try {
-			FileEntry fileEntry = _dlAppService.getFileEntry(
-				layoutSEOEntry.getOpenGraphImageFileEntryId());
+			FileEntry fileEntry =
+				_dlAppService.getFileEntryByExternalReferenceCode(
+					layoutSEOEntry.getOpenGraphImageFileEntryERC(),
+					layoutSEOEntry.getOpenGraphImageFileEntryGroupId());
 
 			if (fileEntry.isInTrash()) {
 				return StringPool.BLANK;
@@ -362,6 +366,47 @@ public class LayoutsSEODisplayContext {
 			"openGraphTitle",
 			_selLayout.getTypeSettingsProperty(
 				"mapped-openGraphTitle", "${title}")
+		).build();
+	}
+
+	public Map<String, Object> getOpenGraphPreviewSeoProperties()
+		throws Exception {
+
+		return HashMapBuilder.<String, Object>put(
+			"displayType", "og"
+		).put(
+			"targets",
+			HashMapBuilder.<String, Object>put(
+				"description",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue",
+					() -> {
+						Layout selLayout = getSelLayout();
+
+						return selLayout.getDescriptionMap();
+					}
+				).put(
+					"id", "openGraphDescription"
+				).build()
+			).put(
+				"imgUrl",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue", getDefaultOpenGraphImageURL()
+				).put(
+					"value", getOpenGraphImageURL()
+				).build()
+			).put(
+				"title",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue", getDefaultPageTitleWithSuffixMap()
+				).put(
+					"id", "openGraphTitle"
+				).build()
+			).put(
+				"url",
+				Collections.singletonMap(
+					"defaultValue", getDefaultCanonicalURLMap())
+			).build()
 		).build();
 	}
 
@@ -425,7 +470,7 @@ public class LayoutsSEODisplayContext {
 			layout.getLayoutId());
 	}
 
-	public HashMap<String, Object> getSEOMappingData() throws PortalException {
+	public Map<String, Object> getSEOMappingData() throws PortalException {
 		return HashMapBuilder.<String, Object>putAll(
 			_getBaseSEOMappingData()
 		).put(
@@ -438,29 +483,113 @@ public class LayoutsSEODisplayContext {
 		).build();
 	}
 
-	public boolean isDefaultAssetDisplayPage() {
+	public Map<String, Object> getSEOPreviewSeoProperties()
+		throws PortalException {
+
+		return HashMapBuilder.<String, Object>put(
+			"targets",
+			HashMapBuilder.<String, Object>put(
+				"description",
+				HashMapBuilder.put(
+					"defaultValue",
+					() -> {
+						Layout selLayout = getSelLayout();
+
+						return selLayout.getDescription(
+							_themeDisplay.getLocale());
+					}
+				).put(
+					"id", "descriptionSEO"
+				).build()
+			).put(
+				"title",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue", getDefaultPageTitleMap()
+				).put(
+					"id", "title"
+				).build()
+			).put(
+				"url",
+				() -> {
+					if (isLayoutUtilityPageEntry()) {
+						return null;
+					}
+
+					return HashMapBuilder.<String, Object>put(
+						"defaultValue", getDefaultCanonicalURLMap()
+					).put(
+						"id", "canonicalURL"
+					).build();
+				}
+			).build()
+		).put(
+			"titleSuffix", getPageTitleSuffix()
+		).build();
+	}
+
+	public List<SelectOption> getSitemapChangeFrequencySelectOptions() {
+		Layout selLayout = getSelLayout();
+
+		UnicodeProperties layoutTypeSettingsUnicodeProperties =
+			selLayout.getTypeSettingsProperties();
+
+		String selectedSitemapChangeFrequencyOption =
+			layoutTypeSettingsUnicodeProperties.getProperty(
+				"sitemap-changefreq",
+				PropsValues.SITES_SITEMAP_DEFAULT_CHANGE_FREQUENCY);
+
+		return TransformUtil.transform(
+			Arrays.asList(
+				"always", "hourly", "daily", "weekly", "monthly", "yearly",
+				"never"),
+			sitemapChangeFrequencyOption -> new SelectOption(
+				LanguageUtil.get(
+					_httpServletRequest, sitemapChangeFrequencyOption),
+				sitemapChangeFrequencyOption,
+				Objects.equals(
+					sitemapChangeFrequencyOption,
+					selectedSitemapChangeFrequencyOption)));
+	}
+
+	public List<SelectOption> getSitemapIncludeSelectOptions() {
+		Layout selLayout = getSelLayout();
+
+		UnicodeProperties layoutTypeSettingsUnicodeProperties =
+			selLayout.getTypeSettingsProperties();
+
+		boolean sitemapInclude = GetterUtil.getBoolean(
+			layoutTypeSettingsUnicodeProperties.getProperty(
+				LayoutTypePortletConstants.SITEMAP_INCLUDE),
+			true);
+
+		return Arrays.asList(
+			new SelectOption(
+				LanguageUtil.get(_httpServletRequest, "yes"), "1",
+				sitemapInclude),
+			new SelectOption(
+				LanguageUtil.get(_httpServletRequest, "no"), "0",
+				!sitemapInclude));
+	}
+
+	public boolean isIncludeChildLayoutsInSitemap() {
+		Layout selLayout = getSelLayout();
+
+		UnicodeProperties layoutTypeSettingsUnicodeProperties =
+			selLayout.getTypeSettingsProperties();
+
+		return GetterUtil.getBoolean(
+			layoutTypeSettingsUnicodeProperties.getProperty(
+				"sitemap-include-child-layouts", Boolean.TRUE.toString()));
+	}
+
+	public boolean isLayoutUtilityPageEntry() {
 		Layout layout = getSelLayout();
 
-		if ((layout == null) || !layout.isTypeAssetDisplay()) {
-			return false;
-		}
-
-		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			_getLayoutPageTemplateEntry();
-
-		return layoutPageTemplateEntry.isDefaultTemplate();
+		return layout.isTypeUtility();
 	}
 
 	public boolean isPrivateLayout() {
 		if (_privateLayout != null) {
-			return _privateLayout;
-		}
-
-		Group selGroup = getSelGroup();
-
-		if (selGroup.isLayoutSetPrototype()) {
-			_privateLayout = true;
-
 			return _privateLayout;
 		}
 
@@ -484,6 +613,12 @@ public class LayoutsSEODisplayContext {
 			_liferayPortletRequest, "privateLayout");
 
 		return _privateLayout;
+	}
+
+	public boolean showIncludeChildLayoutsInSitemap() {
+		Layout selLayout = getSelLayout();
+
+		return !selLayout.isTypeAssetDisplay();
 	}
 
 	private HashMap<String, Object> _getBaseSEOMappingData()
@@ -586,6 +721,16 @@ public class LayoutsSEODisplayContext {
 		return _layoutPageTemplateEntry;
 	}
 
+	private String _getRedirect() {
+		if (Validator.isNotNull(_redirect)) {
+			return _redirect;
+		}
+
+		_redirect = ParamUtil.getString(_httpServletRequest, "redirect");
+
+		return _redirect;
+	}
+
 	private Long _getSelPlid() {
 		if (_selPlid != null) {
 			return _selPlid;
@@ -633,8 +778,7 @@ public class LayoutsSEODisplayContext {
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutsSEODisplayContext.class);
 
-	private final DDMStorageEngineManager _ddmStorageEngineManager;
-	private DDMStructure _ddmStructure;
+	private String _backURL;
 	private final DLAppService _dlAppService;
 	private final DLURLHelper _dlurlHelper;
 	private final GroupDisplayContextHelper _groupDisplayContextHelper;
@@ -648,10 +792,12 @@ public class LayoutsSEODisplayContext {
 		_layoutPageTemplateEntryLocalService;
 	private final LayoutSEOCanonicalURLProvider _layoutSEOCanonicalURLProvider;
 	private final LayoutSEOLinkManager _layoutSEOLinkManager;
+	private final LayoutSEOMetaRobotsHelper _layoutSEOMetaRobotsHelper;
 	private final LayoutSEOSiteLocalService _layoutSEOSiteLocalService;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private Boolean _privateLayout;
+	private String _redirect;
 	private Layout _selLayout;
 	private Long _selPlid;
 	private final ThemeDisplay _themeDisplay;

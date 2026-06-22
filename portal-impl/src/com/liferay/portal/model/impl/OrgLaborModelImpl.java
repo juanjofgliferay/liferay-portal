@@ -101,6 +101,8 @@ public class OrgLaborModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table OrgLabor";
 
+	public static final String ENTITY_ALIAS = "orgLabor";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY orgLabor.organizationId ASC, orgLabor.listTypeId ASC";
 
@@ -145,7 +147,7 @@ public class OrgLaborModelImpl
 	public static final long LISTTYPEID_COLUMN_BITMASK = 2L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.OrgLabor"));
 
 	public OrgLaborModelImpl() {
@@ -1072,3 +1074,4 @@ public class OrgLaborModelImpl
 	private OrgLabor _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1213253782

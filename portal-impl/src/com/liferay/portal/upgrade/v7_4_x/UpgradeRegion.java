@@ -11,9 +11,9 @@ import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,7 +25,7 @@ public class UpgradeRegion extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		runSQLTemplate("update-7.3.0-7.4.0-region.sql", false);
+		runSQLFile("update-7.3.0-7.4.0-region.sql", false);
 
 		long companyId = 0;
 		long userId = 0;
@@ -39,12 +39,13 @@ public class UpgradeRegion extends UpgradeProcess {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				SQLTransformer.transform(sql));
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			if (resultSet.next()) {
-				companyId = resultSet.getLong(1);
-				userId = resultSet.getLong(2);
-				languageId = resultSet.getString(3);
+				companyId = resultSet.getLong("companyId");
+				userId = resultSet.getLong("userId");
+				languageId = resultSet.getString("languageId");
 			}
 		}
 
@@ -77,7 +78,8 @@ public class UpgradeRegion extends UpgradeProcess {
 
 				while (resultSet.next()) {
 					preparedStatement2.setString(1, PortalUUIDUtil.generate());
-					preparedStatement2.setLong(2, resultSet.getLong(1));
+					preparedStatement2.setLong(
+						2, resultSet.getLong("regionId"));
 
 					preparedStatement2.addBatch();
 				}

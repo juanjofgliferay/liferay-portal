@@ -20,6 +20,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.criteria.AssetEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.asset.criterion.AssetEntryItemSelectorCriterion;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -44,23 +45,22 @@ import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.Serializable;
 
 import java.text.Collator;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author José Manuel Navarro
@@ -79,9 +79,9 @@ public class InputAssetLinksDisplayContext {
 			_httpServletRequest.getAttribute(
 				"liferay-asset:input-asset-links:className"));
 		_portletRequest = (PortletRequest)_httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
 		_portletResponse = (PortletResponse)_httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -262,37 +262,35 @@ public class InputAssetLinksDisplayContext {
 	}
 
 	private List<AssetLink> _createAssetLinks() throws PortalException {
-		List<AssetLink> assetLinks = new ArrayList<>();
-
 		String assetLinksSearchContainerPrimaryKeys = ParamUtil.getString(
 			_httpServletRequest, "assetLinksSearchContainerPrimaryKeys");
 
 		if (Validator.isNull(assetLinksSearchContainerPrimaryKeys) &&
 			SessionErrors.isEmpty(_portletRequest) && (_assetEntryId > 0)) {
 
-			List<AssetLink> directAssetLinks =
-				AssetLinkLocalServiceUtil.getDirectLinks(_assetEntryId, false);
+			return TransformUtil.transform(
+				AssetLinkLocalServiceUtil.getDirectLinks(_assetEntryId, false),
+				assetLink -> {
+					AssetEntry assetLinkEntry = getAssetLinkEntry(assetLink);
 
-			for (AssetLink assetLink : directAssetLinks) {
-				AssetEntry assetLinkEntry = getAssetLinkEntry(assetLink);
+					AssetRendererFactory<?> assetRendererFactory =
+						AssetRendererFactoryRegistryUtil.
+							getAssetRendererFactoryByClassName(
+								assetLinkEntry.getClassName());
 
-				AssetRendererFactory<?> assetRendererFactory =
-					AssetRendererFactoryRegistryUtil.
-						getAssetRendererFactoryByClassName(
-							assetLinkEntry.getClassName());
+					if (assetRendererFactory.isActive(
+							_themeDisplay.getCompanyId())) {
 
-				if (assetRendererFactory.isActive(
-						_themeDisplay.getCompanyId())) {
+						return assetLink;
+					}
 
-					assetLinks.add(assetLink);
-				}
-			}
+					return null;
+				});
 		}
-		else {
-			String[] assetEntriesPrimaryKeys = StringUtil.split(
-				assetLinksSearchContainerPrimaryKeys);
 
-			for (String assetEntryPrimaryKey : assetEntriesPrimaryKeys) {
+		return TransformUtil.transformToList(
+			StringUtil.split(assetLinksSearchContainerPrimaryKeys),
+			assetEntryPrimaryKey -> {
 				long assetEntryPrimaryKeyLong = GetterUtil.getLong(
 					assetEntryPrimaryKey);
 
@@ -311,11 +309,8 @@ public class InputAssetLinksDisplayContext {
 
 				assetLink.setEntryId2(assetEntry.getEntryId());
 
-				assetLinks.add(assetLink);
-			}
-		}
-
-		return assetLinks;
+				return assetLink;
+			});
 	}
 
 	private long _getAssetBrowserGroupId(
@@ -323,18 +318,18 @@ public class InputAssetLinksDisplayContext {
 
 		Group scopeGroup = _themeDisplay.getScopeGroup();
 
-		long groupId = scopeGroup.getGroupId();
-
-		if (_isStagedLocally() && scopeGroup.isStagingGroup()) {
-			boolean stagedReferencePortlet = scopeGroup.isStagedPortlet(
-				assetRendererFactory.getPortletId());
-
-			if (_isStagedReferrerPortlet() && !stagedReferencePortlet) {
-				groupId = scopeGroup.getLiveGroupId();
-			}
+		if (!_isStagedLocally() || !scopeGroup.isStagingGroup()) {
+			return scopeGroup.getGroupId();
 		}
 
-		return groupId;
+		boolean stagedReferencePortlet = scopeGroup.isStagedPortlet(
+			assetRendererFactory.getPortletId());
+
+		if (_isStagedReferrerPortlet() && !stagedReferencePortlet) {
+			return scopeGroup.getLiveGroupId();
+		}
+
+		return scopeGroup.getGroupId();
 	}
 
 	private PortletURL _getAssetEntryItemSelectorPortletURL(
@@ -342,10 +337,10 @@ public class InputAssetLinksDisplayContext {
 
 		PortletRequest portletRequest =
 			(PortletRequest)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_REQUEST);
+				JavaConstants.JAKARTA_PORTLET_REQUEST);
 		PortletResponse portletResponse =
 			(PortletResponse)_httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
+				JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 		PortletURL portletURL = assetRendererFactory.getItemSelectorURL(
 			PortalUtil.getLiferayPortletRequest(portletRequest),

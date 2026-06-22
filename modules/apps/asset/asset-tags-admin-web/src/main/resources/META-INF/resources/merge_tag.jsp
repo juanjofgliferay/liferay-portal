@@ -55,7 +55,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "merge-tags"));
 				for (String tagName : assetTagsDisplayContext.getMergeTagNames()) {
 				%>
 
-					<aui:option label="<%= tagName %>" />
+					<aui:option label="<%= tagName %>" localizeLabel="<%= false %>" />
 
 				<%
 				}
@@ -82,13 +82,12 @@ renderResponse.setTitle(LanguageUtil.get(request, "merge-tags"));
 			var value = item.value;
 
 			if (value !== undefined) {
-				targetTagNameSelect.append(
-					Liferay.Util.sub(
-						'<option value="{0}">{1}</option>',
-						value,
-						value
-					)
-				);
+				var option = document.createElement('option');
+
+				option.textContent = value;
+				option.value = value;
+
+				targetTagNameSelect.appendChild(option);
 			}
 		};
 

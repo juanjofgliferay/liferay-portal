@@ -1,9 +1,9 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -106,6 +106,8 @@ definition {
 	@priority = 4
 	@refactordone
 	test ExportedDepotWithCustomizeDMCanBeImportedToDepot {
+		property portal.release = "quarantine";
+
 		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
 
 		DMNavigator.gotoMetadataSets();
@@ -207,7 +209,7 @@ definition {
 			webContentText = "WC WebContent Text",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		DepotNavigator.openDepotExportImportAdmin(
 			depotName = "Test Depot Name",

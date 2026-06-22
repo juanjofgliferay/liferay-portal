@@ -8,6 +8,7 @@ configurations {
 
 task buildAlloyUITheme(type: Copy)
 task buildClay(type: Copy)
+task buildClayCustomProperties(type: Copy)
 task buildClayFonts(type: Copy)
 task buildClayIcons(type: Copy)
 task buildFontAwesome(type: Copy)
@@ -15,7 +16,7 @@ task buildLexiconIcons(type: Copy)
 task buildTheme
 task publishNodeModule(type: PublishNodeModuleTask)
 
-String alloyUIVersion = "3.1.0-deprecated.117"
+String alloyUIVersion = "3.1.0-deprecated.131"
 
 String fontAwesomeVersion = "3.2.1"
 
@@ -87,28 +88,6 @@ buildClay {
 				return line
 			}
 		}
-		else if (name in ["bootstrap.scss"]) {
-			filter {
-				String line ->
-
-				if (line == "// INSERT CUSTOM EXTENSIONS") {
-					line = '''\
-@import "variables";
-
-@import "../liferay_variables_custom";
-@import "../liferay_variables";
-@import "bourbon";
-@import "../clay_custom";
-@import "../liferay_custom";'''
-				}
-				else if (line == "// INSERT CUSTOM VARS") {
-					line = '''\
-@import "../clay_variables";'''
-				}
-
-				return line
-			}
-		}
 		else if (name in ["atlas-variables.scss", "base-variables.scss"]) {
 			filter {
 				String line ->
@@ -145,9 +124,36 @@ buildClay {
 		}
 	}
 
-	eachFile new StripPathSegmentsAction(4)
-	from npmInstall.nodeModulesDir
-	include "@clayui/css/src/scss/"
+	eachFile new StripPathSegmentsAction(2)
+	from "../../frontend-js/frontend-js-clay-web/clay/clay-css"
+	include "src/scss/"
+	includeEmptyDirs = false
+	into clayDestinationDir
+}
+
+buildClayCustomProperties {
+	File clayDestinationDir = new File(themeDestinationDir, "css/clay")
+
+	dependsOn buildClay
+
+	eachFile {
+		if (name == "atlas.scss") {
+			name = "atlas-custom-properties.scss"
+
+			filter {
+				String line ->
+
+				if (line == '@import "../clay_variables";') {
+					line = '@import "atlas-custom-properties/_variables";'
+				}
+
+				return line
+			}
+		}
+	}
+
+	from clayDestinationDir
+	include "atlas.scss"
 	includeEmptyDirs = false
 	into clayDestinationDir
 }
@@ -177,9 +183,9 @@ buildClayIcons {
 		delete clayIconsDestinationDir
 	}
 
-	eachFile new StripPathSegmentsAction(5)
-	from npmInstall.nodeModulesDir
-	include "@clayui/css/lib/images/icons/"
+	eachFile new StripPathSegmentsAction(3)
+	from "../../frontend-js/frontend-js-clay-web/clay/clay-css"
+	include "src/images/icons/"
 	includeEmptyDirs = false
 	into clayIconsDestinationDir
 }
@@ -193,15 +199,16 @@ buildLexiconIcons {
 		delete lexiconIconsDestinationDir
 	}
 
-	eachFile new StripPathSegmentsAction(5)
-	from npmInstall.nodeModulesDir
-	include "@clayui/css/lib/images/icons/"
+	eachFile new StripPathSegmentsAction(3)
+	from "../../frontend-js/frontend-js-clay-web/clay/clay-css"
+	include "src/images/icons/"
 	includeEmptyDirs = false
 	into lexiconIconsDestinationDir
 }
 
 buildTheme {
 	dependsOn buildAlloyUITheme
+	dependsOn buildClayCustomProperties
 	dependsOn buildClayFonts
 	dependsOn buildClayIcons
 	dependsOn buildFontAwesome
@@ -212,8 +219,25 @@ classes {
 	dependsOn buildTheme
 }
 
+copyCSS {
+	mustRunAfter buildAlloyUITheme
+	mustRunAfter buildClay
+	mustRunAfter buildClayCustomProperties
+	mustRunAfter buildClayIcons
+	mustRunAfter buildLexiconIcons
+}
+
 dependencies {
 	alloyUI group: "com.liferay.webjars", name: "com.liferay.webjars.alloy-ui", transitive: false, version: alloyUIVersion
+}
+
+jarSources {
+	mustRunAfter buildAlloyUITheme
+	mustRunAfter buildClay
+	mustRunAfter buildClayCustomProperties
+	mustRunAfter buildClayFonts
+	mustRunAfter buildClayIcons
+	mustRunAfter buildLexiconIcons
 }
 
 publishNodeModule {

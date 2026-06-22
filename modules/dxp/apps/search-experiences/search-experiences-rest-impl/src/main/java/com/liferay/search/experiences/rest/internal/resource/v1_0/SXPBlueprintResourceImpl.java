@@ -25,24 +25,26 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.search.experiences.constants.SXPActionKeys;
+import com.liferay.search.experiences.constants.SXPBlueprintConstants;
 import com.liferay.search.experiences.constants.SXPConstants;
 import com.liferay.search.experiences.exception.DuplicateSXPBlueprintExternalReferenceCodeException;
 import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 import com.liferay.search.experiences.rest.dto.v1_0.util.ElementInstanceUtil;
 import com.liferay.search.experiences.rest.dto.v1_0.util.SXPBlueprintUtil;
 import com.liferay.search.experiences.rest.internal.odata.entity.v1_0.SXPBlueprintEntityModel;
+import com.liferay.search.experiences.rest.internal.resource.v1_0.util.DecodeSXPUtil;
 import com.liferay.search.experiences.rest.internal.resource.v1_0.util.SearchUtil;
 import com.liferay.search.experiences.rest.internal.resource.v1_0.util.TitleMapUtil;
 import com.liferay.search.experiences.rest.resource.v1_0.SXPBlueprintResource;
 import com.liferay.search.experiences.service.SXPBlueprintService;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
-
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -188,7 +190,7 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 						getName();
 
 				sxpBlueprint.setActions(
-					HashMapBuilder.put(
+					() -> HashMapBuilder.put(
 						"create",
 						() -> addAction(
 							SXPActionKeys.ADD_SXP_BLUEPRINT, "postSXPBlueprint",
@@ -221,6 +223,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 
 		SXPBlueprintUtil.unpack(sxpBlueprint);
 
+		DecodeSXPUtil.decodeSXPBlueprint(sxpBlueprint);
+
 		return _sxpBlueprintDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
 				contextAcceptLanguage.isAcceptAllLanguages(), new HashMap<>(),
@@ -235,7 +239,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getDescription(),
 					sxpBlueprint.getDescription_i18n()),
-				_getElementInstancesJSON(sxpBlueprint), _getSchemaVersion(),
+				_getElementInstancesJSON(sxpBlueprint),
+				_getSchemaVersion(sxpBlueprint),
 				LocalizedMapUtil.getLocalizedMap(
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getTitle(), sxpBlueprint.getTitle_i18n()),
@@ -281,7 +286,7 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 
 		SXPBlueprintUtil.unpack(sxpBlueprint);
 
-		sxpBlueprint.setId(sxpBlueprintId);
+		sxpBlueprint.setId(() -> sxpBlueprintId);
 
 		com.liferay.search.experiences.model.SXPBlueprint
 			serviceBuilderSXPBlueprint = _sxpBlueprintService.fetchSXPBlueprint(
@@ -304,7 +309,7 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 				_sxpBlueprintService.fetchSXPBlueprintByExternalReferenceCode(
 					externalReferenceCode, contextCompany.getCompanyId());
 
-		sxpBlueprint.setExternalReferenceCode(externalReferenceCode);
+		sxpBlueprint.setExternalReferenceCode(() -> externalReferenceCode);
 
 		if (serviceBuilderSXPBlueprint != null) {
 			return _updateSXPBlueprint(
@@ -331,13 +336,21 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 			ElementInstanceUtil.unpack(sxpBlueprint.getElementInstances()));
 	}
 
-	private String _getSchemaVersion() {
-		return "1.0";
+	private String _getSchemaVersion(SXPBlueprint sxpBlueprint) {
+		if (sxpBlueprint.getSchemaVersion() != null) {
+			return sxpBlueprint.getSchemaVersion();
+		}
+
+		return SXPBlueprintConstants.SCHEMA_VERSION;
 	}
 
 	private SXPBlueprint _updateSXPBlueprint(
 			Long sxpBlueprintId, SXPBlueprint sxpBlueprint)
 		throws Exception {
+
+		SXPBlueprintUtil.unpack(sxpBlueprint);
+
+		DecodeSXPUtil.decodeSXPBlueprint(sxpBlueprint);
 
 		return _sxpBlueprintDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -353,7 +366,8 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getDescription(),
 					sxpBlueprint.getDescription_i18n()),
-				_getElementInstancesJSON(sxpBlueprint), _getSchemaVersion(),
+				_getElementInstancesJSON(sxpBlueprint),
+				_getSchemaVersion(sxpBlueprint),
 				LocalizedMapUtil.getLocalizedMap(
 					contextAcceptLanguage.getPreferredLocale(),
 					sxpBlueprint.getTitle(), sxpBlueprint.getTitle_i18n()),
@@ -384,11 +398,11 @@ public class SXPBlueprintResourceImpl extends BaseSXPBlueprintResourceImpl {
 		}
 	}
 
+	private static final SXPBlueprintEntityModel _entityEntityModel =
+		new SXPBlueprintEntityModel();
+
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
-
-	private final SXPBlueprintEntityModel _entityEntityModel =
-		new SXPBlueprintEntityModel();
 
 	@Reference
 	private JSONFactory _jsonFactory;

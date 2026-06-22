@@ -22,11 +22,15 @@ import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.account.service.test.util.AccountEntryArgs;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.Ticket;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -315,8 +319,9 @@ public class AccountEntryUserRelLocalServiceTest {
 		throws Exception {
 
 		AccountRole accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_accountEntry.getAccountEntryId(), RandomTestUtil.randomString(),
+			null, null);
 
 		User user = UserTestUtil.addUser(
 			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(), null,
@@ -345,8 +350,9 @@ public class AccountEntryUserRelLocalServiceTest {
 		throws Exception {
 
 		AccountRole accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_accountEntry.getAccountEntryId(), RandomTestUtil.randomString(),
+			null, null);
 
 		Assert.assertNull(
 			_userLocalService.fetchUserByEmailAddress(
@@ -379,20 +385,27 @@ public class AccountEntryUserRelLocalServiceTest {
 		users.add(UserTestUtil.addUser());
 		users.add(UserTestUtil.addUser());
 
+		List<Long> userIds = ListUtil.toList(users, User.USER_ID_ACCESSOR);
+
+		userIds.sort(null);
+
 		_accountEntryUserRelLocalService.addAccountEntryUserRels(
-			_accountEntry.getAccountEntryId(),
-			ListUtil.toLongArray(users, User.USER_ID_ACCESSOR));
+			_accountEntry.getAccountEntryId(), ArrayUtil.toLongArray(userIds));
 
 		Assert.assertEquals(
 			2,
 			_accountUserRetriever.getAccountUsersCount(
 				_accountEntry.getAccountEntryId()));
 
-		List<User> accountUsers = _accountUserRetriever.getAccountUsers(
-			_accountEntry.getAccountEntryId());
+		List<Long> accountUserIds = ListUtil.toList(
+			_accountEntryUserRelLocalService.
+				getAccountEntryUserRelsByAccountEntryId(
+					_accountEntry.getAccountEntryId()),
+			AccountEntryUserRel::getAccountUserId);
 
-		Assert.assertTrue(accountUsers.containsAll(users));
-		Assert.assertTrue(users.containsAll(accountUsers));
+		accountUserIds.sort(null);
+
+		Assert.assertEquals(userIds, accountUserIds);
 	}
 
 	@Test
@@ -419,6 +432,38 @@ public class AccountEntryUserRelLocalServiceTest {
 		_assertPersonTypeAccountEntryUser(
 			new long[] {accountEntryUserRel2.getAccountUserId()},
 			personTypeAccountEntry.getAccountEntryId());
+	}
+
+	@Test
+	public void testAddUserInvitationTicket() throws Exception {
+		long[] accountRoleIds = {RandomTestUtil.randomLong()};
+		String emailAddress =
+			"A" + RandomTestUtil.randomString() + "@liferay.com";
+		int initialInboxSize = MailServiceTestUtil.getInboxSize();
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext();
+
+		serviceContext.setRequest(new MockHttpServletRequest());
+
+		Ticket ticket =
+			_accountEntryUserRelLocalService.addUserInvitationTicket(
+				_accountEntry.getAccountEntryId(), accountRoleIds, emailAddress,
+				TestPropsValues.getUser(), serviceContext);
+
+		Assert.assertEquals(
+			AccountEntry.class.getName(), ticket.getClassName());
+		Assert.assertEquals(
+			_accountEntry.getAccountEntryId(), ticket.getClassPK());
+
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			ticket.getExtraInfo());
+
+		Assert.assertNotNull(jsonObject.getJSONArray("accountRoleIds"));
+		Assert.assertEquals(emailAddress, jsonObject.getString("emailAddress"));
+
+		Assert.assertEquals(
+			initialInboxSize, MailServiceTestUtil.getInboxSize());
 	}
 
 	@Test
@@ -620,6 +665,90 @@ public class AccountEntryUserRelLocalServiceTest {
 	}
 
 	@Test
+	public void testInviteUserWithCustomSenderEmailAddress() throws Exception {
+		String invitationEmailSenderEmailAddress = "custom@liferay.com";
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AccountEntryEmailConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"invitationEmailSenderEmailAddress",
+							invitationEmailSenderEmailAddress
+						).build())) {
+
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext();
+
+			serviceContext.setRequest(new MockHttpServletRequest());
+
+			_accountEntryUserRelLocalService.inviteUser(
+				_accountEntry.getAccountEntryId(), null, "user@test.com",
+				TestPropsValues.getUser(), serviceContext);
+
+			MailMessage mailMessage = MailServiceTestUtil.getLastMailMessage();
+
+			String from = mailMessage.getFirstHeaderValue("From");
+
+			Assert.assertEquals(
+				from,
+				StringBundler.concat(
+					"Test Test <", invitationEmailSenderEmailAddress, ">"));
+		}
+	}
+
+	@Test
+	public void testInviteUserWithCustomSenderName() throws Exception {
+		String invitationEmailSenderName = "Custom sender name";
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AccountEntryEmailConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"invitationEmailSenderName",
+							invitationEmailSenderName
+						).build())) {
+
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext();
+
+			serviceContext.setRequest(new MockHttpServletRequest());
+
+			_accountEntryUserRelLocalService.inviteUser(
+				_accountEntry.getAccountEntryId(), null, "user@test.com",
+				TestPropsValues.getUser(), serviceContext);
+
+			MailMessage mailMessage = MailServiceTestUtil.getLastMailMessage();
+
+			String from = mailMessage.getFirstHeaderValue("From");
+
+			Assert.assertEquals(
+				from, invitationEmailSenderName + " <test@liferay.com>");
+		}
+	}
+
+	@Test
+	public void testInviteUserWithDefaultSender() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext();
+
+		serviceContext.setRequest(new MockHttpServletRequest());
+
+		_accountEntryUserRelLocalService.inviteUser(
+			_accountEntry.getAccountEntryId(), null, "user@test.com",
+			TestPropsValues.getUser(), serviceContext);
+
+		MailMessage mailMessage = MailServiceTestUtil.getLastMailMessage();
+
+		String from = mailMessage.getFirstHeaderValue("From");
+
+		Assert.assertEquals("Test Test <test@liferay.com>", from);
+	}
+
+	@Test
 	public void testIsAccountEntryUser() throws Exception {
 		User user1 = UserTestUtil.addUser();
 
@@ -690,23 +819,23 @@ public class AccountEntryUserRelLocalServiceTest {
 		_accountEntryUserRelLocalService.updateAccountEntryUserRels(
 			addAccountEntryIds2, new long[] {addAccountEntryIds1[0]}, userId);
 
-		List<Long> expectedAccountEntryIdsList = new ArrayList<>(
+		List<Long> expectedAccountEntryIds = new ArrayList<>(
 			ListUtil.fromArray(addAccountEntryIds2));
 
-		expectedAccountEntryIdsList.add(addAccountEntryIds1[1]);
-		expectedAccountEntryIdsList.add(addAccountEntryIds1[2]);
+		expectedAccountEntryIds.add(addAccountEntryIds1[1]);
+		expectedAccountEntryIds.add(addAccountEntryIds1[2]);
 
 		accountEntryUserRels =
 			_accountEntryUserRelLocalService.
 				getAccountEntryUserRelsByAccountUserId(userId);
 
 		Assert.assertEquals(
-			accountEntryUserRels.toString(), expectedAccountEntryIdsList.size(),
+			accountEntryUserRels.toString(), expectedAccountEntryIds.size(),
 			accountEntryUserRels.size());
 
 		for (AccountEntryUserRel accountEntryUserRel : accountEntryUserRels) {
 			Assert.assertTrue(
-				expectedAccountEntryIdsList.contains(
+				expectedAccountEntryIds.contains(
 					accountEntryUserRel.getAccountEntryId()));
 		}
 
@@ -714,7 +843,7 @@ public class AccountEntryUserRelLocalServiceTest {
 
 		long[] addAccountEntryIds3 = new long[0];
 		long[] deleteAccountEntryIds3 = ArrayUtil.toLongArray(
-			expectedAccountEntryIdsList);
+			expectedAccountEntryIds);
 
 		_accountEntryUserRelLocalService.updateAccountEntryUserRels(
 			addAccountEntryIds3, deleteAccountEntryIds3, userId);

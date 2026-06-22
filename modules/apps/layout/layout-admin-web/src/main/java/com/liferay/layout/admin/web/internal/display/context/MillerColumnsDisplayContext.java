@@ -23,14 +23,20 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
 import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.model.LayoutTypeController;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetBranchLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -43,11 +49,11 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Carlos Lancha
@@ -162,13 +168,6 @@ public class MillerColumnsDisplayContext {
 					return group.isLayoutSetPrototype();
 				}
 			).put(
-				"isPrivateLayoutsEnabled",
-				() -> {
-					Group group = _themeDisplay.getScopeGroup();
-
-					return group.isPrivateLayoutsEnabled();
-				}
-			).put(
 				"languageId", _themeDisplay.getLanguageId()
 			).put(
 				"layoutColumns", getLayoutColumnsJSONArray()
@@ -204,141 +203,118 @@ public class MillerColumnsDisplayContext {
 				LayoutTypeControllerTracker.getLayoutTypeController(
 					layout.getType());
 
-			JSONObject layoutJSONObject = JSONUtil.put(
-				"active", _layoutsAdminDisplayContext.isActive(layout.getPlid())
-			).put(
-				"bulkActions",
-				StringUtil.merge(
-					_layoutsAdminDisplayContext.getAvailableActions(layout))
-			).put(
-				"description",
-				LanguageUtil.get(
-					_httpServletRequest,
-					ResourceBundleUtil.getBundle(
-						"content.Language", _themeDisplay.getLocale(),
-						layoutTypeController.getClass()),
-					"layout.types." + layout.getType())
-			).put(
-				"draggable", true
-			);
+			layoutsJSONArray.put(
+				JSONUtil.put(
+					"active",
+					_layoutsAdminDisplayContext.isActive(layout.getPlid())
+				).put(
+					"addChildLayoutURL",
+					() -> {
+						if (!_layoutsAdminDisplayContext.
+								isShowAddChildPageAction(layout)) {
 
-			int childLayoutsCount = LayoutServiceUtil.getLayoutsCount(
-				_layoutsAdminDisplayContext.getSelGroupId(),
-				layout.isPrivateLayout(), layout.getLayoutId());
+							return null;
+						}
 
-			layoutJSONObject.put(
-				"hasChild", childLayoutsCount > 0
-			).put(
-				"hasScopeGroup", _hasScopeGroup(layout)
-			).put(
-				"id", layout.getPlid()
-			).put(
-				"key", String.valueOf(layout.getPlid())
-			);
-
-			LayoutType layoutType = layout.getLayoutType();
-
-			layoutJSONObject.put(
-				"hasDuplicatedFriendlyURL",
-				() -> {
-					if (!FeatureFlagManagerUtil.isEnabled("LPS-174417")) {
-						return false;
+						return _layoutsAdminDisplayContext.
+							getSelectLayoutPageTemplateEntryURL(
+								0, layout.getPlid(), layout.isPrivateLayout());
 					}
+				).put(
+					"bulkActions",
+					StringUtil.merge(
+						_layoutsAdminDisplayContext.getAvailableActions(layout))
+				).put(
+					"description",
+					LanguageUtil.get(
+						_httpServletRequest,
+						ResourceBundleUtil.getBundle(
+							"content.Language", _themeDisplay.getLocale(),
+							layoutTypeController.getClass()),
+						"layout.types." + layout.getType())
+				).put(
+					"draggable", true
+				).put(
+					"hasChild",
+					() -> {
+						int childLayoutsCount =
+							LayoutServiceUtil.getLayoutsCount(
+								_layoutsAdminDisplayContext.getSelGroupId(),
+								layout.isPrivateLayout(), layout.getLayoutId());
 
-					List<Long> duplicatedFriendlyURLPlids =
-						_getDuplicatedFriendlyURLPlids();
+						return childLayoutsCount > 0;
+					}
+				).put(
+					"hasDuplicatedFriendlyURL",
+					() -> {
+						if (!FeatureFlagManagerUtil.isEnabled(
+								layout.getCompanyId(), "LPS-174417")) {
 
-					return duplicatedFriendlyURLPlids.contains(
-						layout.getPlid());
-				}
-			).put(
-				"parentable", layoutType.isParentable()
-			).put(
-				"quickActions", _getQuickActionsJSONArray(layout)
-			).put(
-				"selectable", true
-			).put(
-				"states", _getLayoutStatesJSONArray(layout)
-			).put(
-				"target",
-				HtmlUtil.escape(layout.getTypeSettingsProperty("target"))
-			).put(
-				"title", layout.getName(_themeDisplay.getLocale())
-			).put(
-				"url",
-				PortletURLBuilder.create(
-					_layoutsAdminDisplayContext.getPortletURL()
-				).setParameter(
-					"layoutSetBranchId",
-					_layoutsAdminDisplayContext.getActiveLayoutSetBranchId()
-				).setParameter(
-					"privateLayout", layout.isPrivateLayout()
-				).setParameter(
-					"selPlid", layout.getPlid()
-				).buildString()
-			).put(
-				"viewUrl",
-				_layoutsAdminDisplayContext.getEditOrViewLayoutURL(layout)
-			);
+							return false;
+						}
 
-			layoutsJSONArray.put(layoutJSONObject);
+						List<Long> duplicatedFriendlyURLPlids =
+							_getDuplicatedFriendlyURLPlids();
+
+						return duplicatedFriendlyURLPlids.contains(
+							layout.getPlid());
+					}
+				).put(
+					"hasGuestViewPermission",
+					() -> {
+						Role role = RoleLocalServiceUtil.getRole(
+							layout.getCompanyId(), RoleConstants.GUEST);
+
+						return ResourcePermissionLocalServiceUtil.
+							hasResourcePermission(
+								layout.getCompanyId(), Layout.class.getName(),
+								ResourceConstants.SCOPE_INDIVIDUAL,
+								String.valueOf(layout.getPlid()),
+								role.getRoleId(), ActionKeys.VIEW);
+					}
+				).put(
+					"hasScopeGroup", _hasScopeGroup(layout)
+				).put(
+					"id", layout.getPlid()
+				).put(
+					"key", String.valueOf(layout.getPlid())
+				).put(
+					"parentable",
+					() -> {
+						LayoutType layoutType = layout.getLayoutType();
+
+						return layoutType.isParentable();
+					}
+				).put(
+					"quickActions", JSONFactoryUtil.createJSONArray()
+				).put(
+					"selectable", true
+				).put(
+					"states", _getLayoutStatesJSONArray(layout)
+				).put(
+					"target",
+					HtmlUtil.escape(layout.getTypeSettingsProperty("target"))
+				).put(
+					"title", layout.getName(_themeDisplay.getLocale())
+				).put(
+					"url",
+					PortletURLBuilder.create(
+						_layoutsAdminDisplayContext.getPortletURL()
+					).setParameter(
+						"layoutSetBranchId",
+						_layoutsAdminDisplayContext.getActiveLayoutSetBranchId()
+					).setParameter(
+						"privateLayout", layout.isPrivateLayout()
+					).setParameter(
+						"selPlid", layout.getPlid()
+					).buildString()
+				).put(
+					"viewUrl",
+					_layoutsAdminDisplayContext.getEditOrViewLayoutURL(layout)
+				));
 		}
 
 		return layoutsJSONArray;
-	}
-
-	private JSONObject _getAddChildPageActionJSONObject(
-		Layout layout, String actionType) {
-
-		return JSONUtil.put(
-			actionType, true
-		).put(
-			"icon", "plus"
-		).put(
-			"id", "add"
-		).put(
-			"label", LanguageUtil.get(_httpServletRequest, "add-page")
-		).put(
-			"url",
-			_layoutsAdminDisplayContext.getSelectLayoutPageTemplateEntryURL(
-				0, layout.getPlid(), layout.isPrivateLayout())
-		);
-	}
-
-	private JSONObject _getAddLayoutCollectionActionJSONObject(
-		long plid, boolean privateLayout) {
-
-		return JSONUtil.put(
-			"id", "addCollectionPage"
-		).put(
-			"label",
-			LanguageUtil.get(_httpServletRequest, "add-collection-page")
-		).put(
-			"layoutAction", true
-		).put(
-			"url",
-			_layoutsAdminDisplayContext.getSelectLayoutCollectionURL(
-				plid, null, privateLayout)
-		);
-	}
-
-	private JSONObject _getAddRootLayoutActionJSONObject(
-			boolean privatePages, String actionType)
-		throws Exception {
-
-		return JSONUtil.put(
-			actionType, true
-		).put(
-			"icon", "plus"
-		).put(
-			"id", "add"
-		).put(
-			"label", LanguageUtil.get(_httpServletRequest, "add-page")
-		).put(
-			"url",
-			_layoutsAdminDisplayContext.getSelectLayoutPageTemplateEntryURL(
-				privatePages)
-		);
 	}
 
 	private JSONArray _getBreadcrumbEntriesJSONArray() throws Exception {
@@ -458,7 +434,19 @@ public class MillerColumnsDisplayContext {
 		return JSONUtil.put(
 			"active", active
 		).put(
+			"addChildLayoutURL",
+			() -> {
+				if (!_layoutsAdminDisplayContext.isShowAddRootLayoutButton()) {
+					return null;
+				}
+
+				return _layoutsAdminDisplayContext.
+					getSelectLayoutPageTemplateEntryURL(privatePages);
+			}
+		).put(
 			"hasChild", true
+		).put(
+			"hasGuestViewPermission", !privatePages
 		).put(
 			"hasScopeGroup", true
 		).put(
@@ -487,15 +475,6 @@ public class MillerColumnsDisplayContext {
 		throws Exception {
 
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
-
-		if (_layoutsAdminDisplayContext.isShowAddRootLayoutButton()) {
-			jsonArray.put(
-				_getAddRootLayoutActionJSONObject(privatePages, "layoutAction")
-			).put(
-				_getAddLayoutCollectionActionJSONObject(
-					LayoutConstants.DEFAULT_PLID, privatePages)
-			);
-		}
 
 		if (_layoutsAdminDisplayContext.isShowFirstColumnConfigureAction()) {
 			jsonArray.put(
@@ -541,6 +520,8 @@ public class MillerColumnsDisplayContext {
 						_layoutsAdminDisplayContext.getActiveLayoutSetBranchId()
 				).put(
 					"hasChild", true
+				).put(
+					"hasGuestViewPermission", true
 				).put(
 					"hasScopeGroup", true
 				).put(
@@ -622,6 +603,15 @@ public class MillerColumnsDisplayContext {
 				));
 		}
 
+		if (layout.isTypeEmpty()) {
+			jsonArray.put(
+				JSONUtil.put(
+					"id", "empty"
+				).put(
+					"label", LanguageUtil.get(_httpServletRequest, "empty")
+				));
+		}
+
 		return jsonArray;
 	}
 
@@ -633,23 +623,6 @@ public class MillerColumnsDisplayContext {
 		).setRedirect(
 			_themeDisplay.getURLCurrent()
 		).buildString();
-	}
-
-	private JSONArray _getQuickActionsJSONArray(Layout layout)
-		throws Exception {
-
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
-
-		if (_layoutsAdminDisplayContext.isShowAddChildPageAction(layout)) {
-			jsonArray.put(
-				_getAddChildPageActionJSONObject(layout, "layoutAction")
-			).put(
-				_getAddLayoutCollectionActionJSONObject(
-					layout.getPlid(), layout.isPrivateLayout())
-			);
-		}
-
-		return jsonArray;
 	}
 
 	private boolean _hasScopeGroup(Layout layout) throws Exception {

@@ -1,5 +1,5 @@
 import * as API from 'shared/api';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
@@ -19,51 +19,39 @@ import {
 import {addAlert} from 'shared/actions/alerts';
 import {Alert} from 'shared/types';
 import {close, modalTypes, open} from 'shared/actions/modals';
-import {compose, withCurrentUser} from 'shared/hoc';
+import {compose} from 'shared/hoc';
 import {connect, ConnectedProps} from 'react-redux';
 import {CREATE_DATE, createOrderIOMap, KEYWORD} from 'shared/util/pagination';
 import {formatDateToTimeZone} from 'shared/util/date';
 import {getDefinitions} from 'shared/util/breadcrumbs';
 import {partition} from 'lodash';
-import {RootState} from 'shared/store';
 import {Routes, toRoute} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
 import {UNAUTHORIZED_ACCESS} from 'shared/util/request';
-import {useQueryPagination, useRequest} from 'shared/hooks';
-import {User} from 'shared/util/records';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
+import {useRequest} from 'shared/hooks/useRequest';
+import {useTimeZone} from 'shared/hooks/useTimeZone';
 
 const INITIAL_PAGE = 1;
 
-const connector = connect(
-	(store: RootState, {groupId}: {groupId: string}) => ({
-		timeZoneId: store.getIn([
-			'projects',
-			groupId,
-			'data',
-			'timeZone',
-			'timeZoneId'
-		])
-	}),
-	{addAlert, close, open}
-);
+const connector = connect(null, {addAlert, close, open});
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IInterestTopicsProps extends PropsFromRedux {
-	currentUser: User;
 	groupId: string;
-	timeZoneId: string;
 }
 
 const InterestTopics: React.FC<IInterestTopicsProps> = ({
 	addAlert,
 	close,
-	currentUser,
 	groupId,
-	open,
-	timeZoneId
+	open
 }) => {
+	const currentUser = useCurrentUser();
+	const {timeZoneId} = useTimeZone();
 	const {selectedItems, selectionDispatch} = useSelectionContext();
 
 	const {delta, orderIOMap, page, query} = useQueryPagination({
@@ -92,8 +80,6 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 		API.blockedKeywords
 			.insertMany({groupId, keywords})
 			.then(response => {
-				analytics.track('Added Interest Keywords to Block List');
-
 				const [duplicate, nonDuplicate] = partition(
 					response.items,
 					({duplicate}) => duplicate
@@ -182,7 +168,7 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 							)
 						});
 
-						selectionDispatch({type: ActionTypes.ClearAll});
+						selectionDispatch?.({type: ActionTypes.ClearAll});
 
 						refetch();
 					})
@@ -245,14 +231,14 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 			<>
 				{Liferay.Language.get('add-a-keyword-to-be-blocked')}
 
-				<a
+				<ClayLink
 					className='d-block mb-3'
 					href={URLConstants.InterestTopicsDocumentation}
 					key='DOCUMENTATION'
 					target='_blank'
 				>
 					{Liferay.Language.get('learn-more-about-interest-topics')}
-				</a>
+				</ClayLink>
 			</>
 		) : (
 			Liferay.Language.get(
@@ -284,7 +270,7 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 				icon={{
 					border: false,
 					size: Sizes.XXXLarge,
-					symbol: 'ac-satellite'
+					symbol: 'ac_satellite'
 				}}
 				primary
 				title={Liferay.Language.get('no-keywords-found')}
@@ -292,7 +278,13 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 		);
 	};
 
-	const renderInlineRowActions = ({data: {id}, itemsSelected}) => (
+	const renderInlineRowActions = ({
+		data: {id},
+		itemsSelected
+	}: {
+		data: {id: string};
+		itemsSelected: boolean;
+	}) => (
 		<ClayButton
 			aria-label={Liferay.Language.get('delete')}
 			borderless
@@ -318,7 +310,9 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 				)}
 			</p>
 
-			<h4>{Liferay.Language.get('keywords-blocklist')}</h4>
+			<div className='h4'>
+				{Liferay.Language.get('keywords-blocklist')}
+			</div>
 			<p>
 				{Liferay.Language.get(
 					'keywords-can-be-excluded-by-adding-them-to-a-blocklist-manage-the-keywords-that-you-dont-want-listed-in-liferay-analytics-cloud-and-dont-want-them-to-be-used-to-generate-content-recommendation-in-liferay-dxp'
@@ -336,7 +330,6 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 					label: Liferay.Language.get('interest-topics')
 				}
 			]}
-			groupId={groupId}
 			key='interestTopicsPage'
 			pageDescription={renderPageDescription()}
 			pageTitle={Liferay.Language.get('interest-topics')}
@@ -352,7 +345,7 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 						},
 						{
 							accessor: CREATE_DATE,
-							dataFormatter: date =>
+							dataFormatter: (date: string) =>
 								formatDateToTimeZone(date, 'll', timeZoneId),
 							label: Liferay.Language.get('added')
 						}
@@ -380,8 +373,7 @@ const InterestTopics: React.FC<IInterestTopicsProps> = ({
 	);
 };
 
-export default compose(
+export default compose<React.ComponentType<any>>(
 	connector,
-	withCurrentUser,
 	withSelectionProvider
 )(InterestTopics);

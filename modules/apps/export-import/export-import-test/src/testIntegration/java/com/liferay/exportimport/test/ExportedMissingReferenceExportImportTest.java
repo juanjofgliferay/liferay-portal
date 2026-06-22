@@ -28,16 +28,16 @@ import com.liferay.exportimport.test.util.model.util.DummyTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.dao.orm.hibernate.DynamicQueryFactoryImpl;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
-import com.liferay.portal.kernel.portlet.PortletBag;
-import com.liferay.portal.kernel.portlet.PortletBagPool;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.kernel.zip.ZipReader;
 import com.liferay.portal.kernel.zip.ZipReaderFactory;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -56,7 +56,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Akos Thurzo
@@ -148,18 +150,16 @@ public class ExportedMissingReferenceExportImportTest
 
 	@Test
 	public void testMissingDummy() throws Exception {
-		List<PortletDataHandler> portletDataHandlers = setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			DummyFolderWithMissingDummyPortletDataHandler.class);
+		try (SafeCloseable safeCloseable =
+				setPortletDataHandlerWithSafeCloseable(
+					DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
+					DummyFolderWithMissingDummyPortletDataHandler.class)) {
 
-		exportImportLayouts(
-			new long[] {layout.getLayoutId()}, getImportParameterMap());
+			exportImportLayouts(
+				new long[] {layout.getLayoutId()}, getImportParameterMap());
 
-		assertMissingReferences();
-
-		setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			portletDataHandlers);
+			assertMissingReferences();
+		}
 	}
 
 	@Test
@@ -174,39 +174,39 @@ public class ExportedMissingReferenceExportImportTest
 
 	@Test
 	public void testMissingLayout() throws Exception {
-		List<PortletDataHandler> portletDataHandlers = setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			DummyFolderWithMissingLayoutPortletDataHandler.class);
+		try (SafeCloseable safeCloseable =
+				setPortletDataHandlerWithSafeCloseable(
+					DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
+					DummyFolderWithMissingLayoutPortletDataHandler.class)) {
 
-		exportImportLayouts(
-			new long[] {layout.getLayoutId()}, getImportParameterMap());
+			exportImportLayouts(
+				new long[] {layout.getLayoutId()}, getImportParameterMap());
 
-		assertMissingReferences();
-
-		setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			portletDataHandlers);
+			assertMissingReferences();
+		}
 	}
 
 	protected void assertMissingReferences() throws Exception {
-		PortletDataContext portletDataContext =
-			PortletDataContextFactoryUtil.createImportPortletDataContext(
-				TestPropsValues.getCompanyId(), group.getGroupId(),
-				getImportParameterMap(),
-				ExportImportHelperUtil.getUserIdStrategy(
-					TestPropsValues.getUserId(),
-					TestUserIdStrategy.CURRENT_USER_ID),
-				_zipReaderFactory.getZipReader(larFile));
+		try (ZipReader zipReader = _zipReaderFactory.getZipReader(larFile)) {
+			PortletDataContext portletDataContext =
+				PortletDataContextFactoryUtil.createImportPortletDataContext(
+					TestPropsValues.getCompanyId(), group.getGroupId(),
+					getImportParameterMap(),
+					ExportImportHelperUtil.getUserIdStrategy(
+						TestPropsValues.getUserId(),
+						TestUserIdStrategy.CURRENT_USER_ID),
+					zipReader);
 
-		Element missingReferencesElement =
-			portletDataContext.getMissingReferencesElement();
+			Element missingReferencesElement =
+				portletDataContext.getMissingReferencesElement();
 
-		List<Element> missingReferenceElements =
-			missingReferencesElement.elements();
+			List<Element> missingReferenceElements =
+				missingReferencesElement.elements();
 
-		Assert.assertFalse(
-			missingReferenceElements.toString(),
-			missingReferenceElements.isEmpty());
+			Assert.assertFalse(
+				missingReferenceElements.toString(),
+				missingReferenceElements.isEmpty());
+		}
 	}
 
 	@Override
@@ -255,75 +255,6 @@ public class ExportedMissingReferenceExportImportTest
 		return portletDataHandlerInstance.getRank();
 	}
 
-	protected List<PortletDataHandler> setPortletDataHandler(
-			String portletId, Class<?> portletDataHandlerClass)
-		throws Exception {
-
-		Bundle bundle = FrameworkUtil.getBundle(
-			ExportedMissingReferenceExportImportTest.class);
-
-		ServiceTrackerList<PortletDataHandler> portletDataHandlerInstances =
-			ServiceTrackerListFactory.open(
-				bundle.getBundleContext(), PortletDataHandler.class,
-				"(component.name=" + portletDataHandlerClass.getName() + ")");
-
-		Iterator<PortletDataHandler> iterator =
-			portletDataHandlerInstances.iterator();
-
-		List<PortletDataHandler> portletDataHandlerList = new ArrayList<>();
-
-		iterator.forEachRemaining(portletDataHandlerList::add);
-
-		return setPortletDataHandler(portletId, portletDataHandlerList);
-	}
-
-	protected List<PortletDataHandler> setPortletDataHandler(
-			String portletId,
-			List<PortletDataHandler> portletDataHandlerInstances)
-		throws Exception {
-
-		PortletBag portletBag = PortletBagPool.get(portletId);
-
-		List<PortletDataHandler> oldDataHandlerInstances =
-			portletBag.getPortletDataHandlerInstances();
-
-		Map<Class<?>, Object> serviceTrackerListMap =
-			ReflectionTestUtil.getFieldValue(
-				portletBag, "_serviceTrackerListMap");
-
-		serviceTrackerListMap.put(
-			PortletDataHandler.class,
-			new ServiceTrackerList<PortletDataHandler>() {
-
-				@Override
-				public void close() {
-				}
-
-				@Override
-				public Iterator<PortletDataHandler> iterator() {
-					return portletDataHandlerInstances.iterator();
-				}
-
-				@Override
-				public int size() {
-					return portletDataHandlerInstances.size();
-				}
-
-				@Override
-				public <E> E[] toArray(E[] array) {
-					return portletDataHandlerInstances.toArray(array);
-				}
-
-				@Override
-				public List<PortletDataHandler> toList() {
-					return portletDataHandlerInstances;
-				}
-
-			});
-
-		return oldDataHandlerInstances;
-	}
-
 	protected void setPortletDataHandlerRank(
 		Class<?> portletDataHandlerClass, int rank) {
 
@@ -347,6 +278,46 @@ public class ExportedMissingReferenceExportImportTest
 		portletDataHandlerInstance.setRank(rank);
 	}
 
+	protected SafeCloseable setPortletDataHandlerWithSafeCloseable(
+			String portletId, Class<?> portletDataHandlerClass)
+		throws Exception {
+
+		Bundle bundle = FrameworkUtil.getBundle(
+			ExportedMissingReferenceExportImportTest.class);
+
+		ServiceTrackerList<PortletDataHandler> portletDataHandlerInstances =
+			ServiceTrackerListFactory.open(
+				bundle.getBundleContext(), PortletDataHandler.class,
+				"(component.name=" + portletDataHandlerClass.getName() + ")");
+
+		Iterator<PortletDataHandler> iterator =
+			portletDataHandlerInstances.iterator();
+
+		return setPortletDataHandlerWithSafeCloseable(
+			portletId, iterator.next());
+	}
+
+	protected SafeCloseable setPortletDataHandlerWithSafeCloseable(
+			String portletId, PortletDataHandler portletDataHandler)
+		throws Exception {
+
+		Bundle bundle = FrameworkUtil.getBundle(
+			ExportedMissingReferenceExportImportTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		ServiceRegistration<PortletDataHandler> serviceRegistration =
+			bundleContext.registerService(
+				PortletDataHandler.class, portletDataHandler,
+				HashMapDictionaryBuilder.<String, Object>put(
+					"jakarta.portlet.name", portletId
+				).put(
+					"service.ranking", Integer.MAX_VALUE
+				).build());
+
+		return serviceRegistration::unregister;
+	}
+
 	private void _testMissingDummyOrder(boolean missingFirst) throws Exception {
 		int dummyFolderPortletDataHandlerRank = getPortletDataHandlerRank(
 			DummyFolderPortletDataHandler.class);
@@ -354,18 +325,16 @@ public class ExportedMissingReferenceExportImportTest
 			getPortletDataHandlerRank(
 				DummyFolderWithMissingDummyPortletDataHandler.class);
 
-		List<PortletDataHandler> portletDataHandlers = null;
+		try (SafeCloseable safeCloseable =
+				setPortletDataHandlerWithSafeCloseable(
+					DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
+					DummyFolderWithMissingDummyPortletDataHandler.class)) {
 
-		try {
 			setPortletDataHandlerRank(
 				DummyFolderPortletDataHandler.class, missingFirst ? 200 : 100);
 			setPortletDataHandlerRank(
 				DummyFolderWithMissingDummyPortletDataHandler.class,
 				missingFirst ? 100 : 200);
-
-			portletDataHandlers = setPortletDataHandler(
-				DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-				DummyFolderWithMissingDummyPortletDataHandler.class);
 
 			LayoutTestUtil.addPortletToLayout(
 				layout,
@@ -379,10 +348,6 @@ public class ExportedMissingReferenceExportImportTest
 			}
 		}
 		finally {
-			setPortletDataHandler(
-				DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-				portletDataHandlers);
-
 			setPortletDataHandlerRank(
 				DummyFolderPortletDataHandler.class,
 				dummyFolderPortletDataHandlerRank);

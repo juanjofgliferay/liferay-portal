@@ -10,11 +10,14 @@ import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.commerce.product.url.CPFriendlyURL;
+import com.liferay.friendly.url.constants.FriendlyURLEntryConstants;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.ERCInfoItemIdentifier;
 import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.layout.display.page.BaseLayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -35,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = LayoutDisplayPageProvider.class)
 public class CPDefinitionLayoutDisplayPageProvider
-	implements LayoutDisplayPageProvider<CPDefinition> {
+	extends BaseLayoutDisplayPageProvider<CPDefinition> {
 
 	@Override
 	public String getClassName() {
@@ -44,26 +47,9 @@ public class CPDefinitionLayoutDisplayPageProvider
 
 	@Override
 	public LayoutDisplayPageObjectProvider<CPDefinition>
-		getLayoutDisplayPageObjectProvider(
-			InfoItemReference infoItemReference) {
+		getLayoutDisplayPageObjectProvider(CPDefinition cpDefinition) {
 
-		InfoItemIdentifier infoItemIdentifier =
-			infoItemReference.getInfoItemIdentifier();
-
-		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
-			return null;
-		}
-
-		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
-			(ClassPKInfoItemIdentifier)
-				infoItemReference.getInfoItemIdentifier();
-
-		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
-			classPKInfoItemIdentifier.getClassPK());
-
-		if ((cpDefinition == null) ||
-			(cpDefinition.getStatus() == WorkflowConstants.STATUS_IN_TRASH)) {
-
+		if (cpDefinition.getStatus() == WorkflowConstants.STATUS_IN_TRASH) {
 			return null;
 		}
 
@@ -93,7 +79,10 @@ public class CPDefinitionLayoutDisplayPageProvider
 			FriendlyURLEntry friendlyURLEntry =
 				_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
 					companyGroup.getGroupId(),
-					_portal.getClassNameId(CProduct.class), urlTitle);
+					_portal.getClassNameId(CProduct.class),
+					FriendlyURLEntryConstants.
+						FRIENDLY_URL_ENTRY_PARENT_CLASS_PK_DEFAULT,
+					urlTitle);
 
 			if (friendlyURLEntry == null) {
 				return null;
@@ -118,6 +107,62 @@ public class CPDefinitionLayoutDisplayPageProvider
 	public String getURLSeparator() {
 		return _cpFriendlyURL.getProductURLSeparator(
 			CompanyThreadLocal.getCompanyId());
+	}
+
+	@Override
+	protected LayoutDisplayPageObjectProvider<CPDefinition>
+		doGetLayoutDisplayPageObjectProvider(
+			long groupId, InfoItemReference infoItemReference) {
+
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier) &&
+			!(infoItemIdentifier instanceof ERCInfoItemIdentifier)) {
+
+			return null;
+		}
+
+		if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
+			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+				(ClassPKInfoItemIdentifier)
+					infoItemReference.getInfoItemIdentifier();
+
+			CPDefinition cpDefinition =
+				_cpDefinitionLocalService.fetchCPDefinition(
+					classPKInfoItemIdentifier.getClassPK());
+
+			if ((cpDefinition == null) ||
+				(cpDefinition.getStatus() ==
+					WorkflowConstants.STATUS_IN_TRASH)) {
+
+				return null;
+			}
+
+			return new CPDefinitionLayoutDisplayPageObjectProvider(
+				cpDefinition, groupId);
+		}
+
+		ERCInfoItemIdentifier ercInfoItemIdentifier =
+			(ERCInfoItemIdentifier)infoItemIdentifier;
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		CPDefinition cpDefinition =
+			_cpDefinitionLocalService.
+				fetchCPDefinitionByCProductExternalReferenceCode(
+					ercInfoItemIdentifier.getExternalReferenceCode(),
+					serviceContext.getCompanyId(), true);
+
+		if ((cpDefinition == null) ||
+			(cpDefinition.getStatus() == WorkflowConstants.STATUS_IN_TRASH)) {
+
+			return null;
+		}
+
+		return new CPDefinitionLayoutDisplayPageObjectProvider(
+			cpDefinition, cpDefinition.getGroupId());
 	}
 
 	@Reference

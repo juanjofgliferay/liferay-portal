@@ -6,17 +6,16 @@
 package com.liferay.application.list.taglib.servlet.taglib;
 
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.RootPanelCategory;
-import com.liferay.application.list.constants.ApplicationListWebKeys;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
+import java.util.List;
 
 /**
  * @author Adolfo Pérez
@@ -72,15 +71,11 @@ public class PanelTag extends BasePanelTag {
 	private List<PanelCategory> _getChildPanelCategories(
 		HttpServletRequest httpServletRequest) {
 
-		PanelCategoryRegistry panelCategoryRegistry =
-			(PanelCategoryRegistry)httpServletRequest.getAttribute(
-				ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY);
-
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		return panelCategoryRegistry.getChildPanelCategories(
+		return PanelCategoryRegistryUtil.getChildPanelCategories(
 			_getPanelCategory(), themeDisplay.getPermissionChecker(),
 			getGroup());
 	}

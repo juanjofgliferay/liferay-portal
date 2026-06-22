@@ -10,6 +10,7 @@ import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.frontend.data.set.model.FDSSortItemBuilder;
 import com.liferay.frontend.data.set.model.FDSSortItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.object.constants.ObjectActionKeys;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
@@ -42,18 +43,18 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -78,13 +79,22 @@ public class ViewObjectEntriesDisplayContext {
 		_objectScopeProvider = objectScopeProvider;
 		_objectViewLocalService = objectViewLocalService;
 		_portletResourcePermission = portletResourcePermission;
+		_restContextPath = restContextPath;
 
-		_apiURL = _getAPIURL(restContextPath);
+		_apiURL = _getAPIURL();
 		_objectRequestHelper = new ObjectRequestHelper(httpServletRequest);
 	}
 
 	public String getAPIURL() {
 		return _apiURL + _getQueryString();
+	}
+
+	public List<DropdownItem> getBulkActionDropdownItems() {
+		return ListUtil.fromArray(
+			new FDSActionDropdownItem(
+				null, "trash", "delete",
+				LanguageUtil.get(_httpServletRequest, "delete"), null, "delete",
+				null));
 	}
 
 	public String getByExternalReferenceCodePath() {
@@ -139,6 +149,12 @@ public class ViewObjectEntriesDisplayContext {
 				LanguageUtil.get(_objectRequestHelper.getRequest(), "view"),
 				"get", null, null),
 			new FDSActionDropdownItem(
+				getByExternalReferenceCodePath() +
+					"/{externalReferenceCode}/expire",
+				"time", "expire",
+				LanguageUtil.get(_objectRequestHelper.getRequest(), "expire"),
+				"post", "expire", "async"),
+			new FDSActionDropdownItem(
 				null, "trash", "deleteObjectEntry",
 				LanguageUtil.get(_objectRequestHelper.getRequest(), "delete"),
 				"delete", "delete", null),
@@ -146,7 +162,21 @@ public class ViewObjectEntriesDisplayContext {
 				_getPermissionsURL(), "password-policies", "permissions",
 				LanguageUtil.get(
 					_objectRequestHelper.getRequest(), "permissions"),
-				"get", "permissions", "modal-permissions"));
+				"get", "permissions", "modal-permissions"),
+			new FDSActionDropdownItem(
+				getByExternalReferenceCodePath() +
+					"/{externalReferenceCode}/subscribe",
+				"bell-on", "subscribe",
+				LanguageUtil.get(
+					_objectRequestHelper.getRequest(), "subscribe"),
+				"post", "subscribe", "async"),
+			new FDSActionDropdownItem(
+				getByExternalReferenceCodePath() +
+					"/{externalReferenceCode}/unsubscribe",
+				"bell-off", "unsubscribe",
+				LanguageUtil.get(
+					_objectRequestHelper.getRequest(), "unsubscribe"),
+				"post", "unsubscribe", "async"));
 
 		ObjectDefinition objectDefinition = getObjectDefinition();
 
@@ -193,6 +223,8 @@ public class ViewObjectEntriesDisplayContext {
 							objectViewFilterColumn);
 
 				return objectFieldFDSFilterFactory.create(
+					_objectScopeProvider.getGroupId(
+						_objectRequestHelper.getRequest()),
 					_objectRequestHelper.getLocale(),
 					_objectDefinition.getObjectDefinitionId(),
 					objectViewFilterColumn);
@@ -204,10 +236,10 @@ public class ViewObjectEntriesDisplayContext {
 	}
 
 	public FDSSortItemList getFDSSortItemList() {
+		FDSSortItemList fdsSortItemList = new FDSSortItemList();
+
 		ObjectView objectView = _objectViewLocalService.fetchDefaultObjectView(
 			_objectDefinition.getObjectDefinitionId());
-
-		FDSSortItemList fdsSortItemList = new FDSSortItemList();
 
 		if (objectView == null) {
 			return fdsSortItemList;
@@ -256,8 +288,8 @@ public class ViewObjectEntriesDisplayContext {
 			_objectRequestHelper.getLiferayPortletResponse());
 	}
 
-	private String _getAPIURL(String restContextPath) {
-		String apiURL = "/o" + restContextPath;
+	private String _getAPIURL() {
+		String apiURL = _getRESTContextPathURL();
 
 		try {
 			long groupId = _objectScopeProvider.getGroupId(_httpServletRequest);
@@ -360,6 +392,10 @@ public class ViewObjectEntriesDisplayContext {
 			StringUtil.merge(queryStrings, StringPool.AMPERSAND);
 	}
 
+	private String _getRESTContextPathURL() {
+		return "/o" + _restContextPath;
+	}
+
 	private String _getSearchByObjectViewQueryString() {
 		ObjectView objectView = _objectViewLocalService.fetchDefaultObjectView(
 			_objectDefinition.getObjectDefinitionId());
@@ -385,5 +421,6 @@ public class ViewObjectEntriesDisplayContext {
 	private final ObjectScopeProvider _objectScopeProvider;
 	private final ObjectViewLocalService _objectViewLocalService;
 	private final PortletResourcePermission _portletResourcePermission;
+	private final String _restContextPath;
 
 }

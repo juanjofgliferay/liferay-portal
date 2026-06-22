@@ -21,22 +21,22 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.tuning.rankings.helper.RankingHelper;
+import com.liferay.portal.search.tuning.rankings.index.RankingIndexReader;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexName;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexNameBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.constants.ResultRankingsPortletKeys;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.RankingIndexReader;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexName;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexNameBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.results.builder.RankingGetHiddenResultsBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.results.builder.RankingGetSearchResultsBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.results.builder.RankingGetVisibleResultsBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.searcher.helper.RankingSearchRequestHelper;
 
-import java.io.IOException;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ResultRankingsPortletKeys.RESULT_RANKINGS,
+		"jakarta.portlet.name=" + ResultRankingsPortletKeys.RESULT_RANKINGS,
 		"mvc.command.name=/result_rankings/get_results"
 	},
 	service = MVCResourceCommand.class
@@ -84,7 +84,7 @@ public class GetResultsMVCResourceCommand implements MVCResourceCommand {
 
 		RankingGetHiddenResultsBuilder rankingGetHiddenResultsBuilder =
 			new RankingGetHiddenResultsBuilder(
-				dlAppLocalService, fastDateFormatFactory, queries,
+				dlAppLocalService, fastDateFormatFactory, rankingHelper,
 				getRankingIndexName(resourceRequest), rankingIndexReader,
 				resourceActions, resourceRequest, resourceResponse,
 				searchEngineAdapter);
@@ -137,8 +137,8 @@ public class GetResultsMVCResourceCommand implements MVCResourceCommand {
 		RankingGetSearchResultsBuilder rankingGetSearchResultsBuilder =
 			new RankingGetSearchResultsBuilder(
 				complexQueryPartBuilderFactory, dlAppLocalService,
-				fastDateFormatFactory, groupLocalService, queries,
-				resourceActions, resourceRequest, resourceResponse, searcher,
+				fastDateFormatFactory, groupLocalService, resourceActions,
+				resourceRequest, resourceResponse, searcher,
 				searchRequestBuilderFactory);
 
 		RankingMVCResourceRequest rankingMVCResourceRequest =
@@ -164,8 +164,7 @@ public class GetResultsMVCResourceCommand implements MVCResourceCommand {
 				fastDateFormatFactory, groupLocalService,
 				getRankingIndexName(resourceRequest), rankingIndexReader,
 				rankingSearchRequestHelper, resourceActions, resourceRequest,
-				resourceResponse, queries, searcher,
-				searchRequestBuilderFactory);
+				resourceResponse, searcher, searchRequestBuilderFactory);
 
 		RankingMVCResourceRequest rankingMVCResourceRequest =
 			new RankingMVCResourceRequest(resourceRequest);
@@ -220,7 +219,7 @@ public class GetResultsMVCResourceCommand implements MVCResourceCommand {
 	protected Portal portal;
 
 	@Reference
-	protected Queries queries;
+	protected RankingHelper rankingHelper;
 
 	@Reference
 	protected RankingIndexNameBuilder rankingIndexNameBuilder;

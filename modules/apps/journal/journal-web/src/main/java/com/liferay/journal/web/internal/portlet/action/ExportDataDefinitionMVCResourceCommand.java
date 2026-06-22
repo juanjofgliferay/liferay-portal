@@ -20,11 +20,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.Date;
 import java.util.Map;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/export_data_definition"
 	},
 	service = MVCResourceCommand.class
@@ -81,22 +81,21 @@ public class ExportDataDefinitionMVCResourceCommand
 	}
 
 	private void _sanitize(DataDefinition dataDefinition) {
-		dataDefinition.setDataDefinitionKey((String)null);
-		dataDefinition.setDateCreated((Date)null);
-		dataDefinition.setDateModified((Date)null);
-		dataDefinition.setId((Long)null);
-		dataDefinition.setSiteId((Long)null);
-		dataDefinition.setUserId((Long)null);
+		dataDefinition.setDateCreated(() -> (Date)null);
+		dataDefinition.setDateModified(() -> (Date)null);
+		dataDefinition.setId(() -> (Long)null);
+		dataDefinition.setSiteId(() -> (Long)null);
+		dataDefinition.setUserId(() -> (Long)null);
 
 		DataLayout dataLayout = dataDefinition.getDefaultDataLayout();
 
-		dataLayout.setDataDefinitionId((Long)null);
-		dataLayout.setDataLayoutKey((String)null);
-		dataLayout.setDateCreated((Date)null);
-		dataLayout.setDateModified((Date)null);
-		dataLayout.setId((Long)null);
-		dataLayout.setSiteId((Long)null);
-		dataLayout.setUserId((Long)null);
+		dataLayout.setDataDefinitionId(() -> (Long)null);
+		dataLayout.setDataLayoutKey(() -> (String)null);
+		dataLayout.setDateCreated(() -> (Date)null);
+		dataLayout.setDateModified(() -> (Date)null);
+		dataLayout.setId(() -> (Long)null);
+		dataLayout.setSiteId(() -> (Long)null);
+		dataLayout.setUserId(() -> (Long)null);
 	}
 
 	@Reference

@@ -7,8 +7,8 @@ package com.liferay.portal.search.solr8.internal.facet;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
@@ -24,22 +24,14 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrQuery;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Michael C. Han
  * @author Tibor Lipusz
  */
-@Component(
-	property = {
-		"class.name=com.liferay.portal.kernel.search.facet.RangeFacet",
-		"class.name=com.liferay.portal.search.internal.facet.ModifiedFacetImpl",
-		"class.name=com.liferay.portal.search.internal.facet.RangeFacetImpl"
-	},
-	service = FacetProcessor.class
-)
 public class RangeFacetProcessor implements FacetProcessor<SolrQuery> {
+
+	public static final RangeFacetProcessor INSTANCE =
+		new RangeFacetProcessor();
 
 	@Override
 	public Map<String, JSONObject> processFacet(Facet facet) {
@@ -81,10 +73,9 @@ public class RangeFacetProcessor implements FacetProcessor<SolrQuery> {
 		for (int i = 0; i < jsonArray.length(); i++) {
 			JSONObject rangeJSONObject = jsonArray.getJSONObject(i);
 
-			String label = rangeJSONObject.getString("label");
 			String range = rangeJSONObject.getString("range");
 
-			putFacetParameters(map, facet, label, range);
+			putFacetParameters(map, facet, range);
 		}
 	}
 
@@ -98,35 +89,28 @@ public class RangeFacetProcessor implements FacetProcessor<SolrQuery> {
 			return;
 		}
 
-		putFacetParameters(map, facet, "custom-range", range);
+		putFacetParameters(map, facet, range);
 	}
 
 	protected JSONObject getFacetParametersJSONObject(
 		Facet facet, String range) {
 
-		JSONObject jsonObject = jsonFactory.createJSONObject();
-
-		jsonObject.put(
+		return JSONUtil.put(
 			"q", facet.getFieldName() + StringPool.COLON + range
 		).put(
 			"type", "query"
 		);
-
-		return jsonObject;
 	}
 
 	protected void putFacetParameters(
-		Map<String, JSONObject> map, Facet facet, String label, String range) {
+		Map<String, JSONObject> map, Facet facet, String range) {
 
 		String name =
-			FacetUtil.getAggregationName(facet) + StringPool.UNDERLINE + label;
+			FacetUtil.getAggregationName(facet) + StringPool.UNDERLINE + range;
 
 		JSONObject jsonObject = getFacetParametersJSONObject(facet, range);
 
 		map.put(name, jsonObject);
 	}
-
-	@Reference
-	protected JSONFactory jsonFactory;
 
 }

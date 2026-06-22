@@ -5,11 +5,14 @@
 
 package com.liferay.contacts.internal.search;
 
+import com.liferay.contacts.internal.search.spi.model.result.contributor.ContactModelSummaryContributor;
 import com.liferay.portal.kernel.model.Contact;
+import com.liferay.portal.kernel.service.ContactLocalService;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -37,14 +40,17 @@ public class ContactModelSearchConfigurator
 		return _modelSummaryContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.kernel.model.Contact)"
-	)
-	private ModelIndexerWriterContributor<Contact> _modelIndexWriterContributor;
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_contactLocalService::getIndexableActionableDynamicQuery);
+	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.kernel.model.Contact)"
-	)
-	private ModelSummaryContributor _modelSummaryContributor;
+	@Reference
+	private ContactLocalService _contactLocalService;
+
+	private ModelIndexerWriterContributor<Contact> _modelIndexWriterContributor;
+	private final ModelSummaryContributor _modelSummaryContributor =
+		new ContactModelSummaryContributor();
 
 }

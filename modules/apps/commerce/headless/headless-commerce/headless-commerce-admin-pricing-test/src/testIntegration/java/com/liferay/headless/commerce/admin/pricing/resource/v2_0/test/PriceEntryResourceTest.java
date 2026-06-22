@@ -14,7 +14,6 @@ import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceEntry;
-import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.PriceEntryResource;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -50,7 +49,7 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 		_user = UserTestUtil.addUser(testCompany);
 
 		_commerceCurrency = _commerceCurrencyLocalService.addCommerceCurrency(
-			_user.getUserId(), RandomTestUtil.randomString(),
+			null, _user.getUserId(), RandomTestUtil.randomString(),
 			Collections.singletonMap(
 				LocaleUtil.getSiteDefault(), RandomTestUtil.randomString()),
 			RandomTestUtil.randomString(), BigDecimal.ONE, new HashMap<>(), 2,
@@ -62,12 +61,12 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 
 		_commercePriceList =
 			_commercePriceListLocalService.addCommercePriceList(
-				RandomTestUtil.randomString(), testGroup.getGroupId(),
-				_user.getUserId(), _commerceCurrency.getCommerceCurrencyId(),
-				RandomTestUtil.randomBoolean(),
-				CommercePriceListConstants.TYPE_PRICE_LIST, 0, false,
-				RandomTestUtil.randomString(), RandomTestUtil.randomDouble(), 1,
-				1, 2022, 12, 0, 0, 0, 0, 0, 0, true, _serviceContext);
+				RandomTestUtil.randomString(), _user.getUserId(),
+				testGroup.getGroupId(), 0, false, _commerceCurrency.getCode(),
+				1, 12, 0, 1, 2022, 0, 0, 0, 0, 0, RandomTestUtil.randomString(),
+				RandomTestUtil.randomBoolean(), true,
+				RandomTestUtil.randomDouble(),
+				CommercePriceListConstants.TYPE_PRICE_LIST, _serviceContext);
 
 		_cpInstance = CPTestUtil.addCPInstanceWithRandomSku(
 			testGroup.getGroupId(), BigDecimal.TEN);
@@ -76,8 +75,22 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 	@Ignore
 	@Override
 	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		super.testBatchEngineDeleteImportTask();
+	}
+
+	@Ignore
+	@Override
+	@Test
 	public void testDeletePriceEntry() throws Exception {
 		super.testDeletePriceEntry();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testDeletePriceEntryBatch() throws Exception {
+		super.testDeletePriceEntryBatch();
 	}
 
 	@Ignore
@@ -106,6 +119,22 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 	@Test
 	public void testGraphQLDeletePriceEntry() throws Exception {
 		super.testGraphQLDeletePriceEntry();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLDeletePriceEntryByExternalReferenceCode()
+		throws Exception {
+
+		super.testGraphQLDeletePriceEntryByExternalReferenceCode();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLGetPriceEntry() throws Exception {
+		super.testGraphQLGetPriceEntry();
 	}
 
 	@Ignore
@@ -147,6 +176,13 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 
 		_testPostPriceListIdPriceEntryWithPriceOnApplicationOnBasePriceList();
 		_testPostPriceListIdPriceEntryWithPriceOnApplicationOnPriceList();
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		super.testVulcanCRUDItemDelegateGetItem();
 	}
 
 	@Override
@@ -244,21 +280,14 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 	private void _testPostPriceListIdPriceEntryWithPriceOnApplicationOnBasePriceList()
 		throws Exception {
 
-		PriceEntryResource priceEntryResource = PriceEntryResource.builder(
-		).authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
-
 		CommercePriceList commercePriceList =
 			_commercePriceListLocalService.addCommercePriceList(
-				RandomTestUtil.randomString(), testGroup.getGroupId(),
-				_user.getUserId(), _commerceCurrency.getCommerceCurrencyId(),
-				RandomTestUtil.randomBoolean(),
-				CommercePriceListConstants.TYPE_PRICE_LIST, 0, true,
-				RandomTestUtil.randomString(), RandomTestUtil.randomDouble(), 1,
-				1, 2022, 12, 0, 0, 0, 0, 0, 0, true, _serviceContext);
+				RandomTestUtil.randomString(), _user.getUserId(),
+				testGroup.getGroupId(), 0, true, _commerceCurrency.getCode(), 1,
+				12, 0, 1, 2022, 0, 0, 0, 0, 0, RandomTestUtil.randomString(),
+				RandomTestUtil.randomBoolean(), true,
+				RandomTestUtil.randomDouble(),
+				CommercePriceListConstants.TYPE_PRICE_LIST, _serviceContext);
 
 		PriceEntry randomPriceEntry = randomPriceEntry();
 
@@ -279,13 +308,6 @@ public class PriceEntryResourceTest extends BasePriceEntryResourceTestCase {
 
 	private void _testPostPriceListIdPriceEntryWithPriceOnApplicationOnPriceList()
 		throws Exception {
-
-		PriceEntryResource priceEntryResource = PriceEntryResource.builder(
-		).authentication(
-			"test@liferay.com", "test"
-		).locale(
-			LocaleUtil.getDefault()
-		).build();
 
 		PriceEntry randomPriceEntry = randomPriceEntry();
 

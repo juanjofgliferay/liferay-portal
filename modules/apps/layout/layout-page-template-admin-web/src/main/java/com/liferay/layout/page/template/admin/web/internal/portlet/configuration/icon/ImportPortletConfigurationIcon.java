@@ -19,10 +19,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rubén Pulido
  */
 @Component(
-	property = "javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+	property = "jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 	service = PortletConfigurationIcon.class
 )
 public class ImportPortletConfigurationIcon
@@ -95,14 +95,13 @@ public class ImportPortletConfigurationIcon
 
 		Group scopeGroup = themeDisplay.getScopeGroup();
 
-		if (_portletResourcePermission.contains(
-				themeDisplay.getPermissionChecker(), scopeGroup.getGroupId(),
-				LayoutPageTemplateActionKeys.ADD_LAYOUT_PAGE_TEMPLATE_ENTRY)) {
-
-			return true;
+		if (scopeGroup.isCompany()) {
+			return false;
 		}
 
-		return false;
+		return _portletResourcePermission.contains(
+			themeDisplay.getPermissionChecker(), scopeGroup.getGroupId(),
+			LayoutPageTemplateActionKeys.ADD_LAYOUT_PAGE_TEMPLATE_ENTRY);
 	}
 
 	@Override

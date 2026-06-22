@@ -1,6 +1,6 @@
 import InterestPagesList from '../InterestPagesList';
 import React from 'react';
-import {render} from '@testing-library/react';
+import {render, waitFor} from '@testing-library/react';
 import {StaticRouter} from 'react-router';
 
 jest.unmock('react-dom');
@@ -12,13 +12,17 @@ jest.unmock('react-dom');
  * of the order button on those tests.
  */
 describe('InterestPagesList', () => {
-	it('should render', () => {
+	it('should render', async () => {
 		const {container} = render(
 			<StaticRouter>
-				<InterestPagesList dataSourceParams={{}} />
+				<InterestPagesList dataSourceParams={{active: true}} />
 			</StaticRouter>
 		);
 
-		expect(container).toMatchSnapshot();
+		await waitFor(() => {});
+
+		expect(
+			container.querySelector('.searchable-table-root')
+		).toBeInTheDocument();
 	});
 });

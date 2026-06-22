@@ -13,6 +13,7 @@ import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.relationship.util.ObjectRelationshipUtil;
+import com.liferay.object.rest.internal.odata.entity.ReferenceStringEntityField;
 import com.liferay.object.service.ObjectFieldLocalServiceUtil;
 import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
 import com.liferay.petra.string.StringPool;
@@ -31,13 +32,15 @@ import com.liferay.portal.odata.entity.IdEntityField;
 import com.liferay.portal.odata.entity.IntegerEntityField;
 import com.liferay.portal.odata.entity.StringEntityField;
 
-import java.util.ArrayList;
+import jakarta.ws.rs.BadRequestException;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.ws.rs.BadRequestException;
+import java.util.function.Function;
 
 /**
  * @author Javier de Arcos
@@ -45,11 +48,16 @@ import javax.ws.rs.BadRequestException;
 public class ObjectEntryEntityModel implements EntityModel {
 
 	public ObjectEntryEntityModel(
-			ObjectDefinition objectDefinition, List<ObjectField> objectFields)
-		throws Exception {
+		ObjectDefinition objectDefinition, List<ObjectField> objectFields,
+		boolean useLegacyStatus) {
+
+		_useLegacyStatus = useLegacyStatus;
 
 		_entityFieldsMap = _getStringEntityFieldsMap(
 			objectDefinition, objectFields);
+
+		_entityFieldsMaps.put(
+			objectDefinition.getObjectDefinitionId(), _entityFieldsMap);
 
 		List<ObjectRelationship> objectRelationships =
 			ObjectRelationshipLocalServiceUtil.getAllObjectRelationships(
@@ -58,18 +66,27 @@ public class ObjectEntryEntityModel implements EntityModel {
 		for (ObjectRelationship objectRelationship : objectRelationships) {
 			_entityFieldsMap.put(
 				objectRelationship.getName(),
-				new ComplexEntityField(
-					objectRelationship.getName(),
-					_getRelatedObjectDefinitionEntityFields(
-						objectRelationship, objectDefinition)));
-
-			_handledObjectDefinitions.clear();
+				_getComplexEntityField(objectDefinition, objectRelationship));
 		}
 	}
 
 	@Override
 	public Map<String, EntityField> getEntityFieldsMap() {
 		return _entityFieldsMap;
+	}
+
+	private ComplexEntityField _getComplexEntityField(
+		ObjectDefinition objectDefinition,
+		ObjectRelationship objectRelationship) {
+
+		ObjectDefinition relatedObjectDefinition =
+			ObjectRelationshipUtil.getRelatedObjectDefinition(
+				objectDefinition, objectRelationship);
+
+		return new ComplexEntityField(
+			objectRelationship.getName(),
+			_getObjectDefinitionEntityFieldsMap(relatedObjectDefinition),
+			relatedObjectDefinition.getName());
 	}
 
 	private EntityField _getEntityField(ObjectField objectField) {
@@ -140,63 +157,43 @@ public class ObjectEntryEntityModel implements EntityModel {
 		}
 
 		throw new BadRequestException(
-			"Unable to get entity field for bject field " + objectField);
+			"Unable to get entity field for object field " + objectField);
 	}
 
-	private List<EntityField> _getRelatedObjectDefinitionEntityFields(
-			ObjectRelationship objectRelationship,
-			ObjectDefinition objectDefinition)
-		throws Exception {
+	private Function<Locale, String> _getExternalReferenceCodeFunction() {
+		return locale -> "externalReferenceCode";
+	}
 
-		_handledObjectDefinitions.add(objectDefinition.getObjectDefinitionId());
+	private Map<String, EntityField> _getObjectDefinitionEntityFieldsMap(
+		ObjectDefinition objectDefinition) {
 
-		ObjectDefinition relatedObjectDefinition =
-			ObjectRelationshipUtil.getRelatedObjectDefinition(
+		if (_entityFieldsMaps.containsKey(
+				objectDefinition.getObjectDefinitionId())) {
+
+			return _entityFieldsMaps.get(
+				objectDefinition.getObjectDefinitionId());
+		}
+
+		Map<String, EntityField> entityFieldsMap = _getStringEntityFieldsMap(
+			objectDefinition,
+			ObjectFieldLocalServiceUtil.getObjectFields(
+				objectDefinition.getObjectDefinitionId()));
+
+		_entityFieldsMaps.put(
+			objectDefinition.getObjectDefinitionId(), entityFieldsMap);
+
+		for (ObjectRelationship objectRelationship :
+				ObjectRelationshipLocalServiceUtil.getAllObjectRelationships(
+					objectDefinition.getObjectDefinitionId())) {
+
+			ComplexEntityField complexEntityField = _getComplexEntityField(
 				objectDefinition, objectRelationship);
 
-		Map<String, EntityField> relatedObjectDefinitionEntityFieldsMap =
-			_getStringEntityFieldsMap(
-				objectDefinition,
-				ObjectFieldLocalServiceUtil.getObjectFields(
-					relatedObjectDefinition.getObjectDefinitionId()));
-
-		List<EntityField> relatedObjectDefinitionEntityFields = new ArrayList<>(
-			relatedObjectDefinitionEntityFieldsMap.values());
-
-		if (_handledObjectDefinitions.contains(
-				relatedObjectDefinition.getObjectDefinitionId())) {
-
-			_handledObjectDefinitions.remove(
-				objectDefinition.getObjectDefinitionId());
-
-			return relatedObjectDefinitionEntityFields;
+			entityFieldsMap.put(
+				complexEntityField.getName(), complexEntityField);
 		}
 
-		List<ObjectRelationship> relatedObjectDefinitionObjectRelationships =
-			ObjectRelationshipLocalServiceUtil.getAllObjectRelationships(
-				relatedObjectDefinition.getObjectDefinitionId());
-
-		for (ObjectRelationship relatedObjectRelationship :
-				relatedObjectDefinitionObjectRelationships) {
-
-			if ((relatedObjectRelationship.getObjectRelationshipId() ==
-					objectRelationship.getObjectRelationshipId()) ||
-				_isHandledObjectDefinition(
-					relatedObjectDefinition, relatedObjectRelationship)) {
-
-				continue;
-			}
-
-			relatedObjectDefinitionEntityFields.add(
-				new ComplexEntityField(
-					relatedObjectRelationship.getName(),
-					new ArrayList<>(
-						_getRelatedObjectDefinitionEntityFields(
-							relatedObjectRelationship,
-							relatedObjectDefinition))));
-		}
-
-		return relatedObjectDefinitionEntityFields;
+		return entityFieldsMap;
 	}
 
 	private Map<String, EntityField> _getStringEntityFieldsMap(
@@ -221,39 +218,50 @@ public class ObjectEntryEntityModel implements EntityModel {
 			).put(
 				"externalReferenceCode",
 				() -> new StringEntityField(
-					"externalReferenceCode", locale -> "externalReferenceCode")
+					"externalReferenceCode",
+					_getExternalReferenceCodeFunction())
+			).put(
+				"folderId",
+				new IntegerEntityField(
+					"folderId", locale -> "objectEntryFolderId")
 			).put(
 				"id", new IdEntityField("id", locale -> "id", String::valueOf)
 			).put(
 				"keywords",
 				new CollectionEntityField(
 					new StringEntityField(
-						"keywords", locale -> "assetTagNames.raw"))
-			).put(
-				"objectDefinitionId",
-				new IntegerEntityField(
-					"objectDefinitionId", locale -> "objectDefinitionId")
-			).put(
-				"siteId",
-				new IntegerEntityField("siteId", locale -> Field.GROUP_ID)
+						"keywords", locale -> "assetTagNames.lowercase"))
 			).put(
 				"status",
-				new CollectionEntityField(
-					new IntegerEntityField("status", locale -> Field.STATUS))
+				() -> {
+					IntegerEntityField statusEntityField =
+						new IntegerEntityField(
+							"status", locale -> Field.STATUS);
+
+					if (_useLegacyStatus) {
+						return new CollectionEntityField(statusEntityField);
+					}
+
+					return statusEntityField;
+				}
 			).put(
 				"taxonomyCategoryIds",
 				new CollectionEntityField(
 					new IntegerEntityField(
 						"taxonomyCategoryIds", locale -> "assetCategoryIds"))
 			).put(
+				"title", new StringEntityField("title", locale -> Field.TITLE)
+			).put(
 				"userId",
 				new IntegerEntityField("userId", locale -> Field.USER_ID)
+			).put(
+				"version",
+				new IntegerEntityField("version", locale -> "version")
 			).build();
 
 		for (ObjectField objectField : objectFields) {
 			if (objectField.isSystem() &&
-				!(objectDefinition.isModifiable() &&
-				  objectDefinition.isSystem())) {
+				!objectDefinition.isModifiableAndSystem()) {
 
 				continue;
 			}
@@ -286,11 +294,32 @@ public class ObjectEntryEntityModel implements EntityModel {
 						NAME_OBJECT_RELATIONSHIP_ERC_OBJECT_FIELD_NAME,
 					objectField);
 
-			entityFieldsMap.put(
-				objectRelationshipERCObjectFieldName,
-				new StringEntityField(
+			// TODO: Temporary workaround for LPD-59378. Remove when filtering
+			// is supported for system objects.
+
+			ObjectDefinition relatedObjectDefinition =
+				ObjectRelationshipUtil.getRelatedObjectDefinition(
+					objectDefinition,
+					ObjectRelationshipLocalServiceUtil.
+						fetchObjectRelationshipByObjectFieldId2(
+							objectField.getObjectFieldId()));
+
+			if (relatedObjectDefinition.isUnmodifiableSystemObject()) {
+				entityFieldsMap.put(
 					objectRelationshipERCObjectFieldName,
-					locale -> objectFieldName));
+					new StringEntityField(
+						objectRelationshipERCObjectFieldName,
+						locale -> objectFieldName));
+			}
+			else {
+				entityFieldsMap.put(
+					objectRelationshipERCObjectFieldName,
+					new ReferenceStringEntityField(
+						objectRelationshipERCObjectFieldName,
+						_getExternalReferenceCodeFunction(),
+						objectFieldName.split(StringPool.UNDERLINE)[1] +
+							"/externalReferenceCode"));
+			}
 
 			String relationshipIdName = objectFieldName.substring(
 				objectFieldName.lastIndexOf(StringPool.UNDERLINE) + 1);
@@ -305,25 +334,14 @@ public class ObjectEntryEntityModel implements EntityModel {
 		return entityFieldsMap;
 	}
 
-	private boolean _isHandledObjectDefinition(
-			ObjectDefinition relatedObjectDefinition,
-			ObjectRelationship relatedObjectRelationship)
-		throws Exception {
-
-		ObjectDefinition objectDefinition =
-			ObjectRelationshipUtil.getRelatedObjectDefinition(
-				relatedObjectDefinition, relatedObjectRelationship);
-
-		return _handledObjectDefinitions.contains(
-			objectDefinition.getObjectDefinitionId());
-	}
-
 	private final Map<String, EntityField> _entityFieldsMap;
-	private final List<Long> _handledObjectDefinitions = new ArrayList<>();
+	private final Map<Long, Map<String, EntityField>> _entityFieldsMaps =
+		new HashMap<>();
 	private final Set<String> _unsupportedBusinessTypes = SetUtil.fromArray(
 		ObjectFieldConstants.BUSINESS_TYPE_AGGREGATION,
 		ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT,
 		ObjectFieldConstants.BUSINESS_TYPE_FORMULA,
 		ObjectFieldConstants.BUSINESS_TYPE_RICH_TEXT);
+	private final boolean _useLegacyStatus;
 
 }

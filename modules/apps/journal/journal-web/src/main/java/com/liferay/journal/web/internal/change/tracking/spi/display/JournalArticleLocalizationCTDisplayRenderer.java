@@ -22,11 +22,11 @@ import com.liferay.translation.constants.TranslationPortletKeys;
 import com.liferay.translation.model.TranslationEntry;
 import com.liferay.translation.service.TranslationEntryLocalService;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -87,6 +87,11 @@ public class JournalArticleLocalizationCTDisplayRenderer
 	}
 
 	@Override
+	public boolean isShowPreviewDiff() {
+		return true;
+	}
+
+	@Override
 	public String renderPreview(
 			DisplayContext<JournalArticleLocalization> displayContext)
 		throws Exception {
@@ -99,11 +104,6 @@ public class JournalArticleLocalizationCTDisplayRenderer
 				journalArticleLocalization.getArticlePK()),
 			LocaleUtil.fromLanguageId(
 				journalArticleLocalization.getLanguageId()));
-	}
-
-	@Override
-	public boolean showPreviewDiff() {
-		return true;
 	}
 
 	@Override

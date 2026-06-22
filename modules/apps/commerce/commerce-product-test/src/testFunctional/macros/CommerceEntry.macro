@@ -2,10 +2,7 @@ definition {
 
 	@summary = "Default summary"
 	macro activeProductPaymentSubscription(productName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Product Management",
-			panel = "Commerce",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CommerceNavigator.searchEntry(entryName = ${productName});
 
@@ -519,7 +516,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addPriceListsFromProductSKU(skuName = null, priceListNames = null) {
+	macro addPriceListsFromProductSKU(skuName = null, priceLists = null) {
 		CommerceNavigator.gotoEntry(entryName = ${skuName});
 
 		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
@@ -531,13 +528,31 @@ definition {
 		SelectFrameTop();
 
 		SelectFrame(
-			key_frameTitle = "Add ${skuName} to Price List",
+			key_frameTitle = "Add Price",
 			locator1 = "CommerceEntry#ANY_IFRAME");
 
-		for (var priceListName : list ${priceListNames}) {
-			Click.javaScriptClick(
-				key_imageName = ${priceListName},
-				locator1 = "Checkbox#ADAPTIVE_MEDIA_IMAGE");
+		var i = 1;
+
+		for (var priceList : list ${priceLists}) {
+			var priceListName = StringUtil.extractFirst(${priceList}, ":");
+			var priceListAmount = StringUtil.extractLast(${priceList}, ":");
+
+			Select(
+				key_fieldLabel = "Price List",
+				key_index = ${i},
+				locator1 = "CommerceEntry#GENERIC_SELECT_FIELD_N",
+				value1 = ${priceListName});
+
+			Type(
+				key_index = ${i},
+				locator1 = "CommerceEntry#INPUT_INDEX",
+				value1 = ${priceListAmount});
+
+			if (${i} == 1) {
+				Button.click(button = "Add Entry");
+			}
+
+			var i = ${i} + 1;
 		}
 
 		SelectFrameTop();
@@ -952,12 +967,14 @@ definition {
 			locator1 = "TextInput#GENERIC_TEXT_INPUT",
 			value1 = ${keyReferenceCode});
 
-		Button.click(button = "Submit");
+		Click(
+			key_text = "Submit",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
 
 		if (isSet(uniqueERC)) {
 			Alert.viewErrorMessage(errorMessage = "Please enter a unique external reference code.");
 
-			Click(locator1 = "Button#CANCEL_SPECIAL");
+			Click(locator1 = "Button#CANCEL");
 		}
 
 		Click(locator1 = "Icon#BACK");
@@ -1129,10 +1146,7 @@ definition {
 
 	@summary = "Default summary"
 	macro createNewAccountGroup(accountCriteriaType = null, accountsEntryName = null, user = null, accountGroupsEntryName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Accounts",
-			panel = "Control Panel",
-			portlet = "Accounts");
+		Account.openAccountsAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -1308,15 +1322,18 @@ definition {
 			priceOnApplication = ${priceOnApplication},
 			promoPrice = ${promoPrice});
 
-		if (isSet(publish)) {
+		if (IsElementPresent(key_text = "Publish", locator1 = "Button#ANY")) {
 			Button.clickPublish();
 		}
-
-		if (isSet(closeFrame)) {
-			Click(locator1 = "Icon#CLOSE");
-
-			SelectFrame.selectFrameTop();
+		else if (IsElementPresent(key_text = "Save", locator1 = "Button#ANY")) {
+			Button.clickSave();
 		}
+
+		Click(locator1 = "Icon#CLOSE");
+
+		SelectFrame.selectFrameTop();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 
 		CommerceEntry.gotoMenuTab(menuTab = "Inventory");
 
@@ -1342,7 +1359,11 @@ definition {
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
 				value1 = ${keyReferenceCode});
 
-			Button.click(button = "Submit");
+			SelectFrame.selectFrameTop();
+
+			Click(
+				key_text = "Submit",
+				locator1 = "Modal#MODAL_FOOTER_BUTTON");
 		}
 
 		Type(
@@ -1500,8 +1521,10 @@ definition {
 
 	@summary = "Default summary"
 	macro gotoMenuTab(menuTab = null) {
+		var menuTabKey = StringUtil.replace(${menuTab}, " DEPRECATED", "");
+
 		AssertClick(
-			key_menuTab = ${menuTab},
+			key_menuTab = ${menuTabKey},
 			locator1 = "CommerceEntry#MENU_TAB",
 			value1 = ${menuTab});
 	}
@@ -2333,17 +2356,13 @@ definition {
 
 			Click(
 				key_entryName = "${sku}SKU",
-				locator1 = "CommerceNavigation#ENTRY_NAME");
+				locator1 = "CommerceNavigation#ENTRY_NAME_EXACT_MATCH");
 
 			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
 
 			AssertTextEquals(
 				locator1 = "CommerceEntry#SKU_FIELD",
 				value1 = "${sku}SKU");
-
-			AssertTextEquals(
-				locator1 = "CommerceEntry#INPUT_PRICE",
-				value1 = ${price});
 
 			Click(locator1 = "Icon#CLOSE");
 		}

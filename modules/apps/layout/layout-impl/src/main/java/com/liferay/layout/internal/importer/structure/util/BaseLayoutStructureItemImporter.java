@@ -17,6 +17,9 @@ import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.internal.importer.LayoutStructureItemImporterContext;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
+import com.liferay.object.model.ObjectEntry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -32,14 +35,12 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Pavel Savinov
@@ -80,6 +81,9 @@ public abstract class BaseLayoutStructureItemImporter {
 		long groupId = currentLayout.getGroupId();
 
 		if (Validator.isNotNull(siteKey)) {
+			GroupLocalService groupLocalService =
+				layoutStructureItemImporterContext.getGroupLocalService();
+
 			Group group = groupLocalService.fetchGroup(
 				currentLayout.getCompanyId(), siteKey);
 
@@ -97,10 +101,70 @@ public abstract class BaseLayoutStructureItemImporter {
 			groupId = group.getGroupId();
 		}
 
+		LayoutLocalService layoutLocalService =
+			layoutStructureItemImporterContext.getLayoutLocalService();
+
 		Layout layout = layoutLocalService.fetchLayoutByFriendlyURL(
 			groupId, privatePage, friendlyURL);
 
 		return _getLayoutJSONObject("friendlyURL", friendlyURL, layout);
+	}
+
+	public JSONObject toDisplayPageFormSubmissionResultJSONObject(
+		Map<String, Object> formSuccessSubmissionResultMap,
+		LayoutStructureItemImporterContext layoutStructureItemImporterContext) {
+
+		if (GetterUtil.getBoolean(
+				formSuccessSubmissionResultMap.get("defaultDisplayPage"))) {
+
+			return _getDefaultDisplayPageJSONObject();
+		}
+
+		Map<String, Object> mapping =
+			(Map<String, Object>)formSuccessSubmissionResultMap.get("mapping");
+
+		Map<String, Object> itemReferenceMap = (Map<String, Object>)mapping.get(
+			"itemReference");
+
+		if (MapUtil.isEmpty(itemReferenceMap)) {
+			return _getDefaultDisplayPageJSONObject();
+		}
+
+		String externalReferenceCode = null;
+
+		List<Map<String, String>> fields =
+			(List<Map<String, String>>)itemReferenceMap.get("fields");
+
+		for (Map<String, String> field : fields) {
+			if (Objects.equals(
+					field.get("fieldName"), "externalReferenceCode")) {
+
+				externalReferenceCode = field.get("fieldValue");
+
+				break;
+			}
+		}
+
+		Layout layout = layoutStructureItemImporterContext.getLayout();
+
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			LayoutPageTemplateEntryLocalServiceUtil.
+				fetchLayoutPageTemplateEntryByExternalReferenceCode(
+					externalReferenceCode, layout.getGroupId());
+
+		if (layoutPageTemplateEntry != null) {
+			return JSONUtil.put(
+				"displayPage",
+				StringBundler.concat(
+					LayoutPageTemplateEntry.class.getSimpleName(),
+					StringPool.UNDERLINE,
+					layoutPageTemplateEntry.getLayoutPageTemplateEntryId())
+			).put(
+				"type", "displayPage"
+			);
+		}
+
+		return _getDefaultDisplayPageJSONObject();
 	}
 
 	protected Map<String, Object> getDefinitionMap(Object definition)
@@ -192,6 +256,9 @@ public abstract class BaseLayoutStructureItemImporter {
 
 			String fieldValue = (String)itemReferenceMap.get("fieldValue");
 
+			LayoutLocalService layoutLocalService =
+				layoutStructureItemImporterContext.getLayoutLocalService();
+
 			Layout layout = layoutLocalService.fetchLayout(
 				GetterUtil.getLong(fieldValue));
 
@@ -213,7 +280,7 @@ public abstract class BaseLayoutStructureItemImporter {
 		String classNameId = null;
 
 		try {
-			classNameId = String.valueOf(portal.getClassNameId(className));
+			classNameId = String.valueOf(PortalUtil.getClassNameId(className));
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
@@ -266,15 +333,15 @@ public abstract class BaseLayoutStructureItemImporter {
 				() -> {
 					Object hidden = fragmentViewportStyle.get("hidden");
 
-					if (hidden != null) {
-						if (GetterUtil.getBoolean(hidden)) {
-							return "none";
-						}
-
-						return "block";
+					if (hidden == null) {
+						return null;
 					}
 
-					return null;
+					if (GetterUtil.getBoolean(hidden)) {
+						return "none";
+					}
+
+					return "block";
 				}
 			).put(
 				"fontFamily", fragmentViewportStyle.get("fontFamily")
@@ -466,24 +533,13 @@ public abstract class BaseLayoutStructureItemImporter {
 		);
 	}
 
-	@Reference
-	protected GroupLocalService groupLocalService;
-
-	@Reference
-	protected InfoItemServiceRegistry infoItemServiceRegistry;
-
-	@Reference
-	protected InfoSearchClassMapperRegistry infoSearchClassMapperRegistry;
-
-	@Reference
-	protected LayoutLocalService layoutLocalService;
-
-	@Reference
-	protected LayoutPageTemplateEntryLocalService
-		layoutPageTemplateEntryLocalService;
-
-	@Reference
-	protected Portal portal;
+	private JSONObject _getDefaultDisplayPageJSONObject() {
+		return JSONUtil.put(
+			"displayPage", ObjectEntry.class.getSimpleName() + "_displayPageURL"
+		).put(
+			"type", "displayPage"
+		);
+	}
 
 	private JSONObject _getLayoutJSONObject(
 		String fieldKey, String fieldValue, Layout layout) {
@@ -527,12 +583,20 @@ public abstract class BaseLayoutStructureItemImporter {
 		}
 
 		if (layout.isDraftLayout()) {
+			LayoutLocalService layoutLocalService =
+				layoutStructureItemImporterContext.getLayoutLocalService();
+
 			layout = layoutLocalService.fetchLayout(layout.getClassPK());
 		}
 
 		if (layout == null) {
 			return false;
 		}
+
+		LayoutPageTemplateEntryLocalService
+			layoutPageTemplateEntryLocalService =
+				layoutStructureItemImporterContext.
+					getLayoutPageTemplateEntryLocalService();
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			layoutPageTemplateEntryLocalService.
@@ -542,11 +606,18 @@ public abstract class BaseLayoutStructureItemImporter {
 			return false;
 		}
 
+		InfoItemServiceRegistry infoItemServiceRegistry =
+			layoutStructureItemImporterContext.getInfoItemServiceRegistry();
+
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry =
+			layoutStructureItemImporterContext.
+				getInfoSearchClassMapperRegistry();
+
 		InfoItemFormProvider<Object> infoItemFormProvider =
 			infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFormProvider.class,
 				infoSearchClassMapperRegistry.getClassName(
-					portal.getClassName(
+					PortalUtil.fetchClassName(
 						layoutPageTemplateEntry.getClassNameId())));
 
 		if (infoItemFormProvider == null) {
@@ -555,7 +626,9 @@ public abstract class BaseLayoutStructureItemImporter {
 
 		try {
 			InfoForm infoForm = infoItemFormProvider.getInfoForm(
-				String.valueOf(layoutPageTemplateEntry.getClassTypeId()),
+				String.valueOf(
+					LayoutPageTemplateEntryUtil.getClassTypeId(
+						layoutPageTemplateEntry)),
 				layout.getGroupId());
 
 			InfoField<?> infoField = infoForm.getInfoField(fieldKey);

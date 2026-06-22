@@ -5,6 +5,7 @@
 
 package com.liferay.change.tracking.store.internal;
 
+import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
 import com.liferay.change.tracking.constants.CTConstants;
 import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.CTEntryLocalService;
@@ -16,12 +17,14 @@ import com.liferay.document.library.kernel.store.Store;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.util.Portal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +43,7 @@ public class CTStoreCTEventListener implements CTEventListener {
 	@Override
 	public void onAfterPublish(long ctCollectionId) throws CTEventException {
 		List<CTEntry> ctEntries = _ctEntryLocalService.getCTEntries(
-			ctCollectionId, _ctsContentClassNameId);
+			ctCollectionId, _portal.getClassNameId(CTSContent.class.getName()));
 
 		if (ctEntries.isEmpty()) {
 			return;
@@ -77,7 +80,7 @@ public class CTStoreCTEventListener implements CTEventListener {
 							ctEntry.getModelClassPK());
 
 					if (ctsContent != null) {
-						Store store = _storeServiceTrackerMap.getService(
+						Store store = _serviceTrackerMap.getService(
 							ctsContent.getStoreType());
 
 						store.deleteFile(
@@ -101,12 +104,20 @@ public class CTStoreCTEventListener implements CTEventListener {
 					CTCollectionThreadLocal.
 						setProductionModeWithSafeCloseable()) {
 
+				CTSettingsConfiguration ctSettingsConfiguration =
+					_configurationProvider.getCompanyConfiguration(
+						CTSettingsConfiguration.class,
+						CompanyThreadLocal.getCompanyId());
+
+				boolean cleanUpCTSContentData =
+					ctSettingsConfiguration.cleanUpCTSContentData();
+
 				for (CTEntry ctEntry : addOrModifiedCTEntries) {
 					CTSContent ctsContent =
 						_ctsContentLocalService.getCTSContent(
 							ctEntry.getModelClassPK());
 
-					Store store = _storeServiceTrackerMap.getService(
+					Store store = _serviceTrackerMap.getService(
 						ctsContent.getStoreType());
 
 					store.addFile(
@@ -114,6 +125,12 @@ public class CTStoreCTEventListener implements CTEventListener {
 						ctsContent.getPath(), ctsContent.getVersion(),
 						_ctsContentLocalService.openDataInputStream(
 							ctsContent.getCtsContentId()));
+
+					if (cleanUpCTSContentData) {
+						_ctEntryLocalService.deleteCTEntry(ctEntry, true);
+
+						_ctsContentLocalService.deleteCTSContent(ctsContent);
+					}
 				}
 			}
 			catch (PortalException portalException) {
@@ -126,7 +143,8 @@ public class CTStoreCTEventListener implements CTEventListener {
 	public void onBeforeRemove(long ctCollectionId) throws CTEventException {
 		List<Long> ctsContentIds =
 			_ctEntryLocalService.getExclusiveModelClassPKs(
-				ctCollectionId, _ctsContentClassNameId);
+				ctCollectionId,
+				_portal.getClassNameId(CTSContent.class.getName()));
 
 		if (ctsContentIds.isEmpty()) {
 			return;
@@ -148,10 +166,7 @@ public class CTStoreCTEventListener implements CTEventListener {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_ctsContentClassNameId = _classNameLocalService.getClassNameId(
-			CTSContent.class);
-
-		_storeServiceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, Store.class, "store.type");
 	}
 
@@ -159,16 +174,17 @@ public class CTStoreCTEventListener implements CTEventListener {
 		CTStoreCTEventListener.class);
 
 	@Reference
-	private ClassNameLocalService _classNameLocalService;
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private CTEntryLocalService _ctEntryLocalService;
 
-	private long _ctsContentClassNameId;
-
 	@Reference
 	private CTSContentLocalService _ctsContentLocalService;
 
-	private ServiceTrackerMap<String, Store> _storeServiceTrackerMap;
+	@Reference
+	private Portal _portal;
+
+	private ServiceTrackerMap<String, Store> _serviceTrackerMap;
 
 }

@@ -66,9 +66,12 @@ public class AssetVocabularyTable extends BaseTable<AssetVocabularyTable> {
 		createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,
 			Column.FLAG_DEFAULT);
+	public final Column<AssetVocabularyTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private AssetVocabularyTable() {
 		super("AssetVocabulary", AssetVocabularyTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1079201385

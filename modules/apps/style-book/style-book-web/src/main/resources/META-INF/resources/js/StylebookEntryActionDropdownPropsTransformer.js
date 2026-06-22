@@ -7,8 +7,8 @@ import {
 	openConfirmModal,
 	openSelectionModal,
 	openSimpleInputModal,
-	setFormValues,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {setFormValues} from 'frontend-js-web';
 
 import openDeleteStyleBookModal from './openDeleteStyleBookModal';
 
@@ -50,6 +50,7 @@ const ACTIONS = {
 	) {
 		openSimpleInputModal({
 			dialogTitle: Liferay.Language.get('rename-style-book'),
+			disableSubmitOnError: true,
 			formSubmitURL: updateStyleBookEntryURL,
 			idFieldName: 'id',
 			idFieldValue: styleBookEntryId,

@@ -26,6 +26,7 @@ import com.liferay.commerce.exception.CommerceOrderShippingAddressException;
 import com.liferay.commerce.exception.CommerceOrderShippingMethodException;
 import com.liferay.commerce.exception.CommerceOrderStatusException;
 import com.liferay.commerce.exception.CommerceOrderValidatorException;
+import com.liferay.commerce.helper.CommerceShippingHelper;
 import com.liferay.commerce.internal.order.status.CompletedCommerceOrderStatusImpl;
 import com.liferay.commerce.internal.order.status.PartiallyShippedCommerceOrderStatusImpl;
 import com.liferay.commerce.internal.order.status.ShippedCommerceOrderStatusImpl;
@@ -38,7 +39,7 @@ import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceOrderItemModel;
 import com.liferay.commerce.model.CommerceShippingMethod;
 import com.liferay.commerce.model.attributes.provider.CommerceModelAttributesProvider;
-import com.liferay.commerce.notification.util.CommerceNotificationHelper;
+import com.liferay.commerce.notification.CommerceNotificationSender;
 import com.liferay.commerce.order.CommerceOrderValidatorRegistry;
 import com.liferay.commerce.order.engine.CommerceOrderEngine;
 import com.liferay.commerce.order.status.CommerceOrderStatus;
@@ -51,7 +52,6 @@ import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceShipmentLocalService;
 import com.liferay.commerce.service.CommerceShippingMethodLocalService;
 import com.liferay.commerce.subscription.CommerceSubscriptionEntryHelperUtil;
-import com.liferay.commerce.util.CommerceShippingHelper;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -71,6 +71,7 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -78,12 +79,18 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+import com.liferay.portal.vulcan.extension.EntityExtensionHandler;
+import com.liferay.portal.vulcan.extension.ExtensionProviderRegistry;
+import com.liferay.portal.vulcan.extension.util.ExtensionUtil;
+
+import java.io.Serializable;
 
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.osgi.service.component.annotations.Component;
@@ -141,11 +148,11 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 			CommerceOrder commerceOrder)
 		throws PortalException {
 
+		List<CommerceOrderStatus> nextCommerceOrderStatuses = new ArrayList<>();
+
 		CommerceOrderStatus currentCommerceOrderStatus =
 			_commerceOrderStatusRegistry.getCommerceOrderStatus(
 				commerceOrder.getOrderStatus());
-
-		List<CommerceOrderStatus> nextCommerceOrderStatuses = new ArrayList<>();
 
 		if (currentCommerceOrderStatus == null) {
 			return nextCommerceOrderStatuses;
@@ -230,13 +237,13 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 			String externalReferenceCode, long commerceOrderId,
 			long billingAddressId, long commerceShippingMethodId,
 			long shippingAddressId, String advanceStatus,
-			String commercePaymentMethodKey, String purchaseOrderNumber,
-			BigDecimal shippingAmount, String shippingOptionName,
-			BigDecimal shippingWithTaxAmount, BigDecimal subtotal,
-			BigDecimal subtotalWithTaxAmount, BigDecimal taxAmount,
-			BigDecimal total, BigDecimal totalDiscountAmount,
-			BigDecimal totalWithTaxAmount, CommerceContext commerceContext,
-			boolean recalculatePrice)
+			String commercePaymentMethodKey, String name,
+			String purchaseOrderNumber, BigDecimal shippingAmount,
+			String shippingOptionName, BigDecimal shippingWithTaxAmount,
+			BigDecimal subtotal, BigDecimal subtotalWithTaxAmount,
+			BigDecimal taxAmount, BigDecimal total,
+			BigDecimal totalDiscountAmount, BigDecimal totalWithTaxAmount,
+			CommerceContext commerceContext, boolean recalculatePrice)
 		throws PortalException {
 
 		try {
@@ -247,12 +254,11 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 							externalReferenceCode, commerceOrderId,
 							billingAddressId, commerceShippingMethodId,
 							shippingAddressId, advanceStatus,
-							commercePaymentMethodKey, purchaseOrderNumber,
+							commercePaymentMethodKey, name, purchaseOrderNumber,
 							shippingAmount, shippingOptionName,
 							shippingWithTaxAmount, subtotal,
 							subtotalWithTaxAmount, taxAmount, total,
-							totalDiscountAmount, totalWithTaxAmount,
-							commerceContext);
+							totalDiscountAmount, totalWithTaxAmount);
 
 					if (recalculatePrice) {
 						updatedCommerceOrder =
@@ -399,8 +405,9 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 		long commerceOrderId = commerceOrder.getCommerceOrderId();
 
 		CommerceContext commerceContext = _commerceContextFactory.create(
-			commerceOrder.getCompanyId(), commerceOrder.getGroupId(), userId,
-			commerceOrderId, commerceOrder.getCommerceAccountId());
+			commerceOrder.getCommerceAccountId(), commerceOrder.getGroupId(),
+			commerceOrder.getCommerceCurrencyCode(), commerceOrderId,
+			commerceOrder.getCompanyId());
 
 		TransactionCommitCallbackUtil.registerCallback(
 			() -> {
@@ -440,6 +447,16 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 
 			commerceOrder.setShippingAddressId(
 				commerceAddress.getCommerceAddressId());
+		}
+
+		if (BigDecimalUtil.eq(commerceOrder.getTotal(), BigDecimal.ZERO)) {
+			commerceOrder = _commerceOrderLocalService.updatePaymentStatus(
+				userId, commerceOrder.getCommerceOrderId(),
+				CommerceOrderPaymentConstants.STATUS_NOT_REQUIRED);
+
+			return transitionCommerceOrder(
+				commerceOrder, CommerceOrderConstants.ORDER_STATUS_PENDING,
+				userId, true);
 		}
 
 		CommercePaymentMethod commercePaymentMethod =
@@ -490,7 +507,7 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 		dtoConverterContext.setAttribute("secure", Boolean.FALSE);
 
 		JSONObject commerceOrderJSONObject = _jsonFactory.createJSONObject(
-			String.valueOf(
+			_jsonFactory.looseSerializeDeep(
 				commerceOrderDTOConverter.toDTO(dtoConverterContext)));
 
 		JSONArray commerceOrderItemsJSONArray = _jsonFactory.createJSONArray();
@@ -536,7 +553,7 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 	}
 
 	private void _sendOrderStatusMessage(
-		CommerceOrder commerceOrder, int orderStatus) {
+		CommerceOrder commerceOrder, int orderStatus, long userId) {
 
 		CommerceOrder originalCommerceOrder =
 			commerceOrder.cloneWithOriginalValues();
@@ -552,7 +569,7 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 						checkCommerceSubscriptions(commerceOrder);
 				}
 
-				_commerceNotificationHelper.sendNotifications(
+				_commerceNotificationSender.sendNotifications(
 					commerceOrder.getGroupId(), commerceOrder.getUserId(),
 					CommerceOrderConstants.getNotificationKey(orderStatus),
 					commerceOrder);
@@ -564,6 +581,23 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 						"Liferay.Headless.Commerce.Admin.Order",
 						CommerceOrder.class.getName(), "v1.0");
 
+				EntityExtensionHandler entityExtensionHandler =
+					ExtensionUtil.getEntityExtensionHandler(
+						commerceOrderDTOConverter.getExternalDTOClassName(),
+						commerceOrder.getCompanyId(),
+						_extensionProviderRegistry);
+
+				Map<String, Serializable> extendedProperties = null;
+
+				if (entityExtensionHandler != null) {
+					extendedProperties =
+						entityExtensionHandler.getExtendedProperties(
+							commerceOrder.getCompanyId(), userId,
+							HashMapBuilder.<String, Object>put(
+								"id", commerceOrder.getCommerceOrderId()
+							).build());
+				}
+
 				message.setPayload(
 					JSONUtil.put(
 						"classPK", commerceOrder.getCommerceOrderId()
@@ -573,6 +607,8 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 							commerceOrder, commerceOrderDTOConverter)
 					).put(
 						"commerceOrderId", commerceOrder.getCommerceOrderId()
+					).put(
+						"extendedProperties", extendedProperties
 					).put(
 						"model" + CommerceOrder.class.getSimpleName(),
 						commerceOrder.getModelAttributes()
@@ -612,7 +648,7 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 			commerceOrderStatus.isTransitionCriteriaMet(commerceOrder)) {
 
 			_sendOrderStatusMessage(
-				commerceOrder, commerceOrderStatus.getKey());
+				commerceOrder, commerceOrderStatus.getKey(), userId);
 
 			return commerceOrderStatus.doTransition(
 				commerceOrder, userId, secure);
@@ -634,7 +670,8 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 			throw new CommerceOrderStatusException();
 		}
 
-		_sendOrderStatusMessage(commerceOrder, commerceOrderStatus.getKey());
+		_sendOrderStatusMessage(
+			commerceOrder, commerceOrderStatus.getKey(), userId);
 
 		return commerceOrderStatus.doTransition(commerceOrder, userId, secure);
 	}
@@ -741,7 +778,7 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 	private CommerceModelAttributesProvider _commerceModelAttributesProvider;
 
 	@Reference
-	private CommerceNotificationHelper _commerceNotificationHelper;
+	private CommerceNotificationSender _commerceNotificationSender;
 
 	@Reference
 	private CommerceOrderItemLocalService _commerceOrderItemLocalService;
@@ -779,6 +816,9 @@ public class CommerceOrderEngineImpl implements CommerceOrderEngine {
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
+
+	@Reference
+	private ExtensionProviderRegistry _extensionProviderRegistry;
 
 	@Reference
 	private JSONFactory _jsonFactory;

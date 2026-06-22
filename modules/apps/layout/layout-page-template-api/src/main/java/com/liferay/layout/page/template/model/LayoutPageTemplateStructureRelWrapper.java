@@ -225,6 +225,11 @@ public class LayoutPageTemplateStructureRelWrapper
 		return model.getData();
 	}
 
+	@Override
+	public com.liferay.portal.kernel.json.JSONObject getDataJSONObject() {
+		return model.getDataJSONObject();
+	}
+
 	/**
 	 * Returns the group ID of this layout page template structure rel.
 	 *
@@ -728,3 +733,4 @@ public class LayoutPageTemplateStructureRelWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1281743439

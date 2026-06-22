@@ -81,6 +81,8 @@ public class BrowserTrackerModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table BrowserTracker";
 
+	public static final String ENTITY_ALIAS = "browserTracker";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY browserTracker.browserTrackerId ASC";
 
@@ -125,7 +127,7 @@ public class BrowserTrackerModelImpl
 	public static final long BROWSERTRACKERID_COLUMN_BITMASK = 2L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.BrowserTracker"));
 
 	public BrowserTrackerModelImpl() {
@@ -667,3 +669,4 @@ public class BrowserTrackerModelImpl
 	private BrowserTracker _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1461013653

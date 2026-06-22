@@ -22,6 +22,8 @@ AUI.add(
 
 		const CSS_PORTLET = '.portlet';
 
+		const CSS_SHOW = 'show';
+
 		const DEFAULT_ALIGN_POINTS = ['tl', 'bl'];
 
 		const EVENT_CLICK = 'click';
@@ -79,7 +81,8 @@ AUI.add(
 
 		const MAP_LIVE_SEARCH = {};
 
-		const REGEX_DIRECTION = /\bdirection-(downleft|downright|down|left|right|up)\b/;
+		const REGEX_DIRECTION =
+			/\bdirection-(downleft|downright|down|left|right|up)\b/;
 
 		const REGEX_MAX_DISPLAY_ITEMS = /max-display-items-(\d+)/;
 
@@ -121,7 +124,9 @@ AUI.add(
 					);
 
 					if (overlay) {
-						overlay.hide();
+						overlay.destroy();
+
+						instance._overlayMap.clear();
 					}
 
 					instance._activeMenu = null;
@@ -165,8 +170,10 @@ AUI.add(
 					defaultOverlayHorizontalAlign = STR_LEFT;
 					defaultTriggerHorizontalAlign = STR_RIGHT;
 
-					mapAlignHorizontalOverlay = MAP_ALIGN_HORIZONTAL_OVERLAY_RTL;
-					mapAlignHorizontalTrigger = MAP_ALIGN_HORIZONTAL_TRIGGER_RTL;
+					mapAlignHorizontalOverlay =
+						MAP_ALIGN_HORIZONTAL_OVERLAY_RTL;
+					mapAlignHorizontalTrigger =
+						MAP_ALIGN_HORIZONTAL_TRIGGER_RTL;
 				}
 
 				if (cssClass.indexOf(AUTO) === -1) {
@@ -276,6 +283,8 @@ AUI.add(
 
 					menu = A.Node.create(TPL_MENU);
 
+					menu.addClass(CSS_SHOW);
+
 					listContainer.placeBefore(menu);
 
 					listItems.last().addClass('last');
@@ -293,16 +302,14 @@ AUI.add(
 							(event) => {
 								const selectedListItem = event.currentTarget;
 
-								const selectedListItemIcon = selectedListItem.one(
-									'i'
-								);
+								const selectedListItemIcon =
+									selectedListItem.one('i');
 
 								const triggerIcon = trigger.one('i');
 
 								if (selectedListItemIcon && triggerIcon) {
-									const selectedListItemIconClass = selectedListItemIcon.attr(
-										'class'
-									);
+									const selectedListItemIconClass =
+										selectedListItemIcon.attr('class');
 
 									triggerIcon.attr(
 										'class',
@@ -310,9 +317,8 @@ AUI.add(
 									);
 								}
 
-								const selectedListItemMessage = selectedListItem.one(
-									'.lfr-icon-menu-text'
-								);
+								const selectedListItemMessage =
+									selectedListItem.one('.lfr-icon-menu-text');
 
 								const triggerMessage = trigger.one(
 									'.lfr-icon-menu-text'
@@ -691,6 +697,7 @@ AUI.add(
 						if (portlet) {
 							portlet.removeClass(CSS_OPEN);
 						}
+						menuInstance._closeActiveMenu();
 					}
 					else {
 						menuInstance._closeActiveMenu();
@@ -710,9 +717,8 @@ AUI.add(
 					});
 
 					if (!handles.length) {
-						const listContainer = trigger.getData(
-							'menuListContainer'
-						);
+						const listContainer =
+							trigger.getData('menuListContainer');
 
 						A.Event.defineOutside('touchend');
 
@@ -786,6 +792,6 @@ AUI.add(
 	},
 	'',
 	{
-		requires: ['array-invoke', 'aui-debounce', 'aui-node'],
+		requires: ['aui-component', 'array-invoke', 'aui-debounce', 'aui-node'],
 	}
 );

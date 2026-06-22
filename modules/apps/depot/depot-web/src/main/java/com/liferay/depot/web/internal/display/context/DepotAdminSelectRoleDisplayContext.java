@@ -7,11 +7,13 @@ package com.liferay.depot.web.internal.display.context;
 
 import com.liferay.depot.constants.DepotRolesConstants;
 import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.util.DepotRoleUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Role;
@@ -44,16 +46,16 @@ import com.liferay.roles.admin.search.RoleSearch;
 import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.site.search.GroupSearch;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Cristina González
@@ -151,6 +153,21 @@ public class DepotAdminSelectRoleDisplayContext {
 			_renderRequest = renderRequest;
 			_renderResponse = renderResponse;
 			_user = user;
+
+			_themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+		}
+
+		public String getInfoAlertKey() {
+			if (FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-17564")) {
+
+				return "please-select-an-asset-library-or-space-to-which-you-" +
+					"will-assign-an-asset-library-or-space-role";
+			}
+
+			return "please-select-an-asset-library-to-which-you-will-assign-" +
+				"an-asset-library-role";
 		}
 
 		@Override
@@ -165,7 +182,17 @@ public class DepotAdminSelectRoleDisplayContext {
 				_renderRequest,
 				_getPortletURL(_renderRequest, _renderResponse, _user));
 
-			groupSearch.setEmptyResultsMessage("no-asset-libraries-were-found");
+			if (FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-17564")) {
+
+				groupSearch.setEmptyResultsMessage(
+					"no-asset-libraries-or-spaces-were-found");
+			}
+			else {
+				groupSearch.setEmptyResultsMessage(
+					"no-asset-libraries-were-found");
+			}
+
 			groupSearch.setResultsAndTotal(_getDepotGroups());
 
 			_groupSearch = groupSearch;
@@ -218,6 +245,7 @@ public class DepotAdminSelectRoleDisplayContext {
 		private GroupSearch _groupSearch;
 		private final RenderRequest _renderRequest;
 		private final RenderResponse _renderResponse;
+		private final ThemeDisplay _themeDisplay;
 		private final User _user;
 
 	}
@@ -250,6 +278,14 @@ public class DepotAdminSelectRoleDisplayContext {
 			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 				_themeDisplay.getLocale(), getClass());
 
+			String key = "asset-libraries";
+
+			if (FeatureFlagManagerUtil.isEnabled(
+					_themeDisplay.getCompanyId(), "LPD-17564")) {
+
+				key = "asset-libraries-and-spaces";
+			}
+
 			return StringBundler.concat(
 				"<a href=\"",
 				PortletURLBuilder.create(
@@ -257,8 +293,7 @@ public class DepotAdminSelectRoleDisplayContext {
 				).setParameter(
 					"step", Step1.TYPE
 				).buildString(),
-				"\">",
-				ResourceBundleUtil.getString(resourceBundle, "asset-libraries"),
+				"\">", ResourceBundleUtil.getString(resourceBundle, key),
 				"</a> &raquo; ",
 				HtmlUtil.escape(
 					_group.getDescriptiveName(_themeDisplay.getLocale())));
@@ -303,6 +338,14 @@ public class DepotAdminSelectRoleDisplayContext {
 
 			if (_group != null) {
 				roles = _filterGroupRoles(roles);
+
+				if (FeatureFlagManagerUtil.isEnabled(
+						_themeDisplay.getCompanyId(), "LPD-17564") ||
+					FeatureFlagManagerUtil.isEnabled(
+						_themeDisplay.getCompanyId(), "LPD-58677")) {
+
+					roles = DepotRoleUtil.filter(_group.getGroupId(), roles);
+				}
 			}
 
 			roleSearch.setResultsAndTotal(roles);
@@ -352,13 +395,8 @@ public class DepotAdminSelectRoleDisplayContext {
 				userId = _user.getUserId();
 			}
 
-			if (SiteMembershipPolicyUtil.isRoleAllowed(
-					userId, groupId, role.getRoleId())) {
-
-				return true;
-			}
-
-			return false;
+			return SiteMembershipPolicyUtil.isRoleAllowed(
+				userId, groupId, role.getRoleId());
 		}
 
 		/**

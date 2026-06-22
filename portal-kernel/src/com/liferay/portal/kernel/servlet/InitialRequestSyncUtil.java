@@ -5,8 +5,8 @@
 
 package com.liferay.portal.kernel.servlet;
 
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.FutureListener;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.FutureListener;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
@@ -17,6 +17,10 @@ import java.util.concurrent.Future;
  * @author Shuyang Zhou
  */
 public class InitialRequestSyncUtil {
+
+	public static boolean isSynced() {
+		return _syncCallableDefaultNoticeableFuture.isDone();
+	}
 
 	public static void registerSyncCallable(Callable<?> syncCallable) {
 		_addFutureListener(

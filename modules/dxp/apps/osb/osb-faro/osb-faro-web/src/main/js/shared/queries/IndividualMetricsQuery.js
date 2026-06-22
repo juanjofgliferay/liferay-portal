@@ -1,4 +1,4 @@
-import {gql} from 'apollo-boost';
+import {gql} from '@apollo/client';
 
 export default gql`
 	query IndividualMetrics(
@@ -27,6 +27,7 @@ export default gql`
 		value
 		trend {
 			percentage
+			trendClassification
 		}
 	}
 `;

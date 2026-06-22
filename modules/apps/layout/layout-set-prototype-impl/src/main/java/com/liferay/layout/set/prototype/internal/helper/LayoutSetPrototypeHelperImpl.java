@@ -29,7 +29,6 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalService;
-import com.liferay.portal.kernel.service.LayoutSetService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
 import com.liferay.portal.kernel.util.UnicodeProperties;
@@ -127,7 +126,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 				).and(
 					LayoutTable.INSTANCE.system.eq(false)
 				).and(
-					LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.isNull()
+					LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.isNull()
 				)
 			));
 	}
@@ -181,7 +180,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 					tempLayoutTable.friendlyURL.eq(
 						LayoutTable.INSTANCE.friendlyURL)
 				).and(
-					tempLayoutTable.sourcePrototypeLayoutUuid.isNull()
+					tempLayoutTable.layoutSetPrototypeLayoutERC.isNull()
 				)
 			).where(
 				LayoutTable.INSTANCE.groupId.eq(
@@ -194,16 +193,16 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 
 	@Override
 	public boolean hasDuplicatedFriendlyURLs(
-			String layoutUuid, long groupId, boolean privateLayout,
-			String friendlyURL)
+			String layoutExternalReferenceCode, long groupId,
+			boolean privateLayout, String friendlyURL)
 		throws PortalException {
 
 		Group group = _groupLocalService.getGroup(groupId);
 
 		if (group.isLayoutSetPrototype()) {
 			long count = _getDuplicatedFriendlyURLSiteLayoutsCount(
-				layoutUuid, group.getCompanyId(), group.getGroupId(),
-				friendlyURL);
+				layoutExternalReferenceCode, group.getCompanyId(),
+				group.getGroupId(), friendlyURL);
 
 			if (count > 0) {
 				return true;
@@ -213,7 +212,7 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		}
 
 		return _hasDuplicatedFriendlyURLPrototypeLayout(
-			layoutUuid, groupId, privateLayout, friendlyURL);
+			layoutExternalReferenceCode, groupId, privateLayout, friendlyURL);
 	}
 
 	/**
@@ -227,20 +226,6 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		_checkResetPrototypePermissions(layout.getGroup(), layout);
 
 		_resetPrototype(layout);
-	}
-
-	/**
-	 * Checks the permissions necessary for resetting the layout set. If
-	 * sufficient, the layout set is reset by calling {@link
-	 * #_resetPrototype(LayoutSet)}.
-	 *
-	 * @param layoutSet the site being checked for sufficient permissions
-	 */
-	@Override
-	public void resetPrototype(LayoutSet layoutSet) throws PortalException {
-		_checkResetPrototypePermissions(layoutSet.getGroup(), null);
-
-		_resetPrototype(layoutSet);
 	}
 
 	/**
@@ -280,56 +265,11 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		}
 
 		if (updateLayoutPrototypeLayout) {
-			_layoutService.updateLayout(
+			_layoutService.updateTypeSettings(
 				layoutPrototypeLayout.getGroupId(),
 				layoutPrototypeLayout.isPrivateLayout(),
 				layoutPrototypeLayout.getLayoutId(),
 				layoutPrototypeLayout.getTypeSettings());
-		}
-	}
-
-	/**
-	 * Sets the number of failed merge attempts for the layout set prototype to
-	 * a new value.
-	 *
-	 * @param layoutSetPrototype the site template of the counter being updated
-	 * @param newMergeFailCount the new value of the counter
-	 */
-	@Override
-	public void setMergeFailCount(
-			LayoutSetPrototype layoutSetPrototype, int newMergeFailCount)
-		throws PortalException {
-
-		LayoutSet layoutSetPrototypeLayoutSet =
-			layoutSetPrototype.getLayoutSet();
-
-		boolean updateLayoutSetPrototypeLayoutSet = false;
-
-		UnicodeProperties layoutSetPrototypeSettingsUnicodeProperties =
-			layoutSetPrototypeLayoutSet.getSettingsProperties();
-
-		if (newMergeFailCount == 0) {
-			if (layoutSetPrototypeSettingsUnicodeProperties.containsKey(
-					Sites.MERGE_FAIL_COUNT)) {
-
-				layoutSetPrototypeSettingsUnicodeProperties.remove(
-					Sites.MERGE_FAIL_COUNT);
-
-				updateLayoutSetPrototypeLayoutSet = true;
-			}
-		}
-		else {
-			layoutSetPrototypeSettingsUnicodeProperties.setProperty(
-				Sites.MERGE_FAIL_COUNT, String.valueOf(newMergeFailCount));
-
-			updateLayoutSetPrototypeLayoutSet = true;
-		}
-
-		if (updateLayoutSetPrototypeLayoutSet) {
-			_layoutSetService.updateSettings(
-				layoutSetPrototypeLayoutSet.getGroupId(),
-				layoutSetPrototypeLayoutSet.isPrivateLayout(),
-				layoutSetPrototypeLayoutSet.getSettings());
 		}
 	}
 
@@ -396,11 +336,12 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		Layout foundLayout = _layoutLocalService.getLayout(
 			layoutFriendlyURL.getPlid());
 
-		String sourcePrototypeLayoutUuid =
-			layout.getSourcePrototypeLayoutUuid();
+		String layoutSetPrototypeLayoutERC =
+			layout.getLayoutSetPrototypeLayoutERC();
 
-		if (Validator.isNotNull(layout.getSourcePrototypeLayoutUuid()) &&
-			sourcePrototypeLayoutUuid.equals(foundLayout.getUuid())) {
+		if (Validator.isNotNull(layout.getLayoutSetPrototypeLayoutERC()) &&
+			layoutSetPrototypeLayoutERC.equals(
+				foundLayout.getExternalReferenceCode())) {
 
 			return null;
 		}
@@ -411,63 +352,68 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 	private List<Layout> _getDuplicatedFriendlyURLSiteLayouts(Layout layout)
 		throws PortalException {
 
-		return _layoutLocalService.dslQuery(
-			DSLQueryFactoryUtil.selectDistinct(
-				LayoutTable.INSTANCE
-			).from(
-				LayoutTable.INSTANCE
-			).innerJoinON(
-				LayoutSetTable.INSTANCE,
-				LayoutSetTable.INSTANCE.companyId.eq(
-					LayoutTable.INSTANCE.companyId
-				).and(
-					LayoutSetTable.INSTANCE.groupId.eq(
-						LayoutTable.INSTANCE.groupId)
-				).and(
-					LayoutSetTable.INSTANCE.privateLayout.eq(
-						LayoutTable.INSTANCE.privateLayout)
-				)
-			).innerJoinON(
-				LayoutSetPrototypeTable.INSTANCE,
-				LayoutSetPrototypeTable.INSTANCE.companyId.eq(
-					LayoutSetTable.INSTANCE.companyId
-				).and(
-					LayoutSetPrototypeTable.INSTANCE.uuid.eq(
-						LayoutSetTable.INSTANCE.layoutSetPrototypeUuid)
-				)
-			).innerJoinON(
-				GroupTable.INSTANCE,
-				GroupTable.INSTANCE.companyId.eq(
-					LayoutSetPrototypeTable.INSTANCE.companyId
-				).and(
-					GroupTable.INSTANCE.classPK.eq(
-						LayoutSetPrototypeTable.INSTANCE.layoutSetPrototypeId)
-				)
-			).where(
-				LayoutSetTable.INSTANCE.companyId.eq(
-					layout.getCompanyId()
-				).and(
-					LayoutTable.INSTANCE.friendlyURL.eq(layout.getFriendlyURL())
-				).and(
-					LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.isNull()
-				).and(
-					GroupTable.INSTANCE.groupId.eq(layout.getGroupId())
-				)
-			));
+		return _layoutLocalService.getLayouts(
+			_layoutLocalService.dslQuery(
+				DSLQueryFactoryUtil.selectDistinct(
+					LayoutTable.INSTANCE.plid
+				).from(
+					LayoutTable.INSTANCE
+				).innerJoinON(
+					LayoutSetTable.INSTANCE,
+					LayoutSetTable.INSTANCE.companyId.eq(
+						LayoutTable.INSTANCE.companyId
+					).and(
+						LayoutSetTable.INSTANCE.groupId.eq(
+							LayoutTable.INSTANCE.groupId)
+					).and(
+						LayoutSetTable.INSTANCE.privateLayout.eq(
+							LayoutTable.INSTANCE.privateLayout)
+					)
+				).innerJoinON(
+					LayoutSetPrototypeTable.INSTANCE,
+					LayoutSetPrototypeTable.INSTANCE.companyId.eq(
+						LayoutSetTable.INSTANCE.companyId
+					).and(
+						LayoutSetPrototypeTable.INSTANCE.uuid.eq(
+							LayoutSetTable.INSTANCE.layoutSetPrototypeUuid)
+					)
+				).innerJoinON(
+					GroupTable.INSTANCE,
+					GroupTable.INSTANCE.companyId.eq(
+						LayoutSetPrototypeTable.INSTANCE.companyId
+					).and(
+						GroupTable.INSTANCE.classPK.eq(
+							LayoutSetPrototypeTable.INSTANCE.
+								layoutSetPrototypeId)
+					)
+				).where(
+					LayoutSetTable.INSTANCE.companyId.eq(
+						layout.getCompanyId()
+					).and(
+						LayoutTable.INSTANCE.friendlyURL.eq(
+							layout.getFriendlyURL())
+					).and(
+						LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.
+							isNull()
+					).and(
+						GroupTable.INSTANCE.groupId.eq(layout.getGroupId())
+					)
+				)));
 	}
 
 	private long _getDuplicatedFriendlyURLSiteLayoutsCount(
-			String layoutUuid, long companyId, long groupId, String friendlyURL)
+			String layoutExternalReferenceCode, long companyId, long groupId,
+			String friendlyURL)
 		throws PortalException {
 
-		Predicate sourcePrototypeLayoutUuidPredicate =
-			LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.isNull();
+		Predicate layoutSetPrototypeLayoutERCPredicate =
+			LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.isNull();
 
-		if (Validator.isNotNull(layoutUuid)) {
-			sourcePrototypeLayoutUuidPredicate = Predicate.withParentheses(
-				sourcePrototypeLayoutUuidPredicate.or(
-					LayoutTable.INSTANCE.sourcePrototypeLayoutUuid.neq(
-						layoutUuid)));
+		if (Validator.isNotNull(layoutExternalReferenceCode)) {
+			layoutSetPrototypeLayoutERCPredicate = Predicate.withParentheses(
+				layoutSetPrototypeLayoutERCPredicate.or(
+					LayoutTable.INSTANCE.layoutSetPrototypeLayoutERC.neq(
+						layoutExternalReferenceCode)));
 		}
 
 		return _layoutLocalService.dslQuery(
@@ -509,13 +455,13 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 				).and(
 					LayoutTable.INSTANCE.friendlyURL.eq(friendlyURL)
 				).and(
-					sourcePrototypeLayoutUuidPredicate
+					layoutSetPrototypeLayoutERCPredicate
 				)
 			));
 	}
 
 	private boolean _hasDuplicatedFriendlyURLPrototypeLayout(
-			String sourcePrototypeLayoutUuid, long groupId,
+			String layoutSetPrototypeLayoutERC, long groupId,
 			boolean privateLayout, String friendlyURL)
 		throws PortalException {
 
@@ -546,8 +492,9 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 		Layout foundLayout = _layoutLocalService.getLayout(
 			layoutFriendlyURL.getPlid());
 
-		if (Validator.isNotNull(sourcePrototypeLayoutUuid) &&
-			sourcePrototypeLayoutUuid.equals(foundLayout.getUuid())) {
+		if (Validator.isNotNull(layoutSetPrototypeLayoutERC) &&
+			layoutSetPrototypeLayoutERC.equals(
+				foundLayout.getExternalReferenceCode())) {
 
 			return false;
 		}
@@ -556,46 +503,15 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 	}
 
 	/**
-	 * Resets the modified timestamp on the layout, and then calls {@link
-	 * #_resetPrototype(LayoutSet)} to reset the modified timestamp on the
-	 * layout's site.
-	 *
-	 * <p>
-	 * After the timestamps are reset, the modified page template and site
-	 * template are merged into their linked layout and site when they are first
-	 * accessed.
-	 * </p>
+	 * Resets the modified timestamp on the layout so the linked page template is
+	 * merged into the layout when it is first accessed.
 	 *
 	 * @param layout the page having its timestamp reset
 	 */
 	private void _resetPrototype(Layout layout) throws PortalException {
 		layout.setModifiedDate(null);
 
-		layout = _layoutLocalService.updateLayout(layout);
-
-		_resetPrototype(layout.getLayoutSet());
-	}
-
-	/**
-	 * Resets the modified timestamp on the layout set.
-	 *
-	 * <p>
-	 * After the timestamp is reset, the modified site template is merged into
-	 * its linked layout set when it is first accessed.
-	 * </p>
-	 *
-	 * @param layoutSet the site having its timestamp reset
-	 */
-	private void _resetPrototype(LayoutSet layoutSet) throws PortalException {
-		UnicodeProperties settingsUnicodeProperties =
-			layoutSet.getSettingsProperties();
-
-		settingsUnicodeProperties.remove(Sites.LAST_MERGE_TIME);
-
-		settingsUnicodeProperties.setProperty(
-			Sites.LAST_RESET_TIME, String.valueOf(System.currentTimeMillis()));
-
-		_layoutSetLocalService.updateLayoutSet(layoutSet);
+		_layoutLocalService.updateLayout(layout);
 	}
 
 	@Reference
@@ -618,8 +534,5 @@ public class LayoutSetPrototypeHelperImpl implements LayoutSetPrototypeHelper {
 
 	@Reference
 	private LayoutSetPrototypeLocalService _layoutSetPrototypeLocalService;
-
-	@Reference
-	private LayoutSetService _layoutSetService;
 
 }

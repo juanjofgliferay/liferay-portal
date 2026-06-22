@@ -1,21 +1,21 @@
 import * as data from 'test/data';
 import client from 'shared/apollo/client';
+import DataSourcesProvider from 'shared/context/dataSources';
 import EventAnalysisCreate from '../Create';
 import mockStore from 'test/mock-store';
 import React from 'react';
-import {ApolloProvider} from '@apollo/react-components';
-import {
-	cleanup,
-	fireEvent,
-	render,
-	waitForElement
-} from '@testing-library/react';
+import {ApolloProvider} from '@apollo/client';
+import {cleanup, fireEvent, render, waitFor} from '@testing-library/react';
 import {DISPLAY_NAME} from 'shared/util/pagination';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 import {MemoryRouter, Route} from 'react-router-dom';
-import {MockedProvider} from '@apollo/react-testing';
-import {mockEventDefinitionsReq, mockTimeRangeReq} from 'test/graphql-data';
+import {MockedProvider} from '@apollo/client/testing';
+import {
+	mockEventDefinitionsReq,
+	mockPreferenceReq,
+	mockTimeRangeReq
+} from 'test/graphql-data';
 import {OrderByDirections} from 'shared/util/constants';
 import {Provider} from 'react-redux';
 import {range} from 'lodash';
@@ -38,6 +38,7 @@ const WrappedComponent = () => (
 			<MockedProvider
 				mocks={[
 					mockTimeRangeReq(),
+					mockPreferenceReq(),
 					mockEventDefinitionsReq(
 						range(10).map(i =>
 							data.mockEventDefinition(i, {
@@ -63,9 +64,11 @@ const WrappedComponent = () => (
 					]}
 				>
 					<Route path={Routes.EVENT_ANALYSIS_CREATE}>
-						<DndProvider backend={HTML5Backend}>
-							<EventAnalysisCreate />
-						</DndProvider>
+						<DataSourcesProvider groupId='123'>
+							<DndProvider backend={HTML5Backend}>
+								<EventAnalysisCreate />
+							</DndProvider>
+						</DataSourcesProvider>
 					</Route>
 				</MemoryRouter>
 			</MockedProvider>
@@ -81,7 +84,12 @@ describe('Event Analysis Create', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		expect(container).toMatchSnapshot();
+		expect(
+			container.querySelector('.event-analysis-editor-root')
+		).toBeInTheDocument();
+		expect(
+			container.querySelector('input.title-input')
+		).toBeInTheDocument();
 	});
 
 	it('should render empty state', async () => {
@@ -143,13 +151,13 @@ describe('Event Analysis Create', () => {
 
 		fireEvent.click(addEventButton);
 
-		jest.runAllTimers();
+		jest.runOnlyPendingTimers();
 
 		const dropdown = document.querySelector(
 			'.base-dropdown-menu-root.show'
 		);
 
-		await waitForElement(() => dropdown);
+		await waitFor(() => expect(dropdown).toBeTruthy());
 
 		const assetClickedButton = document.querySelector(
 			'.base-dropdown-list > li button'
@@ -157,7 +165,7 @@ describe('Event Analysis Create', () => {
 
 		fireEvent.click(assetClickedButton);
 
-		jest.runAllTimers();
+		jest.runOnlyPendingTimers();
 
 		expect(getByText('Save Analysis')).toBeEnabled();
 	});

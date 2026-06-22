@@ -7,6 +7,7 @@ package com.liferay.headless.delivery.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -18,7 +19,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -26,14 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMax;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -43,6 +43,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents settings related with the site map.",
 	value = "SiteMapSettings"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents settings related with the site map."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "SiteMapSettings")
@@ -56,14 +59,25 @@ public class SiteMapSettings implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SiteMapSettings.class, json);
 	}
 
-	@Schema(description = "Indicates how often a page is updated.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Indicates how often a page is updated."
+	)
+	@JsonGetter("changeFrequency")
 	@Valid
 	public ChangeFrequency getChangeFrequency() {
+		if (_changeFrequencySupplier != null) {
+			changeFrequency = _changeFrequencySupplier.get();
+
+			_changeFrequencySupplier = null;
+		}
+
 		return changeFrequency;
 	}
 
 	@JsonIgnore
 	public String getChangeFrequencyAsString() {
+		ChangeFrequency changeFrequency = getChangeFrequency();
+
 		if (changeFrequency == null) {
 			return null;
 		}
@@ -73,6 +87,8 @@ public class SiteMapSettings implements Serializable {
 
 	public void setChangeFrequency(ChangeFrequency changeFrequency) {
 		this.changeFrequency = changeFrequency;
+
+		_changeFrequencySupplier = null;
 	}
 
 	@JsonIgnore
@@ -80,45 +96,60 @@ public class SiteMapSettings implements Serializable {
 		UnsafeSupplier<ChangeFrequency, Exception>
 			changeFrequencyUnsafeSupplier) {
 
-		try {
-			changeFrequency = changeFrequencyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_changeFrequencySupplier = () -> {
+			try {
+				return changeFrequencyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Indicates how often a page is updated.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ChangeFrequency changeFrequency;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<ChangeFrequency> _changeFrequencySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Whether search engines should crawl and index the page."
 	)
 	public Boolean getInclude() {
+		if (_includeSupplier != null) {
+			include = _includeSupplier.get();
+
+			_includeSupplier = null;
+		}
+
 		return include;
 	}
 
 	public void setInclude(Boolean include) {
 		this.include = include;
+
+		_includeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInclude(
 		UnsafeSupplier<Boolean, Exception> includeUnsafeSupplier) {
 
-		try {
-			include = includeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_includeSupplier = () -> {
+			try {
+				return includeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -127,32 +158,91 @@ public class SiteMapSettings implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean include;
 
+	@JsonIgnore
+	private Supplier<Boolean> _includeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether search engines should crawl and index the child pages."
+	)
+	public Boolean getIncludeChildSitePages() {
+		if (_includeChildSitePagesSupplier != null) {
+			includeChildSitePages = _includeChildSitePagesSupplier.get();
+
+			_includeChildSitePagesSupplier = null;
+		}
+
+		return includeChildSitePages;
+	}
+
+	public void setIncludeChildSitePages(Boolean includeChildSitePages) {
+		this.includeChildSitePages = includeChildSitePages;
+
+		_includeChildSitePagesSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setIncludeChildSitePages(
+		UnsafeSupplier<Boolean, Exception>
+			includeChildSitePagesUnsafeSupplier) {
+
+		_includeChildSitePagesSupplier = () -> {
+			try {
+				return includeChildSitePagesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "Whether search engines should crawl and index the child pages."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean includeChildSitePages;
+
+	@JsonIgnore
+	private Supplier<Boolean> _includeChildSitePagesSupplier;
+
 	@DecimalMax("1")
 	@DecimalMin("0")
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "How the page should be prioritized relative to other pages."
 	)
 	public Double getPagePriority() {
+		if (_pagePrioritySupplier != null) {
+			pagePriority = _pagePrioritySupplier.get();
+
+			_pagePrioritySupplier = null;
+		}
+
 		return pagePriority;
 	}
 
 	public void setPagePriority(Double pagePriority) {
 		this.pagePriority = pagePriority;
+
+		_pagePrioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPagePriority(
 		UnsafeSupplier<Double, Exception> pagePriorityUnsafeSupplier) {
 
-		try {
-			pagePriority = pagePriorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_pagePrioritySupplier = () -> {
+			try {
+				return pagePriorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -160,6 +250,9 @@ public class SiteMapSettings implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double pagePriority;
+
+	@JsonIgnore
+	private Supplier<Double> _pagePrioritySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -188,6 +281,8 @@ public class SiteMapSettings implements Serializable {
 
 		sb.append("{");
 
+		ChangeFrequency changeFrequency = getChangeFrequency();
+
 		if (changeFrequency != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -196,11 +291,11 @@ public class SiteMapSettings implements Serializable {
 			sb.append("\"changeFrequency\": ");
 
 			sb.append("\"");
-
 			sb.append(changeFrequency);
-
 			sb.append("\"");
 		}
+
+		Boolean include = getInclude();
 
 		if (include != null) {
 			if (sb.length() > 1) {
@@ -211,6 +306,20 @@ public class SiteMapSettings implements Serializable {
 
 			sb.append(include);
 		}
+
+		Boolean includeChildSitePages = getIncludeChildSitePages();
+
+		if (includeChildSitePages != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"includeChildSitePages\": ");
+
+			sb.append(includeChildSitePages);
+		}
+
+		Double pagePriority = getPagePriority();
 
 		if (pagePriority != null) {
 			if (sb.length() > 1) {
@@ -227,8 +336,8 @@ public class SiteMapSettings implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.SiteMapSettings",
 		name = "x-class-name"
 	)
@@ -313,7 +422,10 @@ public class SiteMapSettings implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -359,3 +471,4 @@ public class SiteMapSettings implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:200847558

@@ -6,6 +6,7 @@
 package com.liferay.commerce.product.service.impl;
 
 import com.liferay.account.model.AccountEntry;
+import com.liferay.account.model.AccountEntryTable;
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.product.constants.CommerceChannelAccountEntryRelConstants;
 import com.liferay.commerce.product.exception.DuplicateCommerceChannelAccountEntryRelException;
@@ -15,6 +16,8 @@ import com.liferay.commerce.product.service.base.CommerceChannelAccountEntryRelL
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.sql.dsl.query.GroupByStep;
+import com.liferay.petra.sql.dsl.query.JoinStep;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Address;
@@ -26,6 +29,7 @@ import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
 
@@ -92,7 +96,7 @@ public class CommerceChannelAccountEntryRelLocalServiceImpl
 			commerceChannelAccountEntryRelPersistence.update(
 				commerceChannelAccountEntryRel);
 
-		if (className.equals(Address.class.getName()) &&
+		if ((className != null) && className.equals(Address.class.getName()) &&
 			(commerceChannelAccountEntryRel.getCommerceChannelId() == 0)) {
 
 			_updateDefaultAccountEntryAddress(
@@ -251,6 +255,24 @@ public class CommerceChannelAccountEntryRelLocalServiceImpl
 	@Override
 	public List<CommerceChannelAccountEntryRel>
 		getCommerceChannelAccountEntryRels(
+			long commerceChannelId, String name, int type, int start, int end) {
+
+		return dslQuery(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.selectDistinct(
+					CommerceChannelAccountEntryRelTable.INSTANCE
+				).from(
+					CommerceChannelAccountEntryRelTable.INSTANCE
+				),
+				commerceChannelId, name, type
+			).limit(
+				start, end
+			));
+	}
+
+	@Override
+	public List<CommerceChannelAccountEntryRel>
+		getCommerceChannelAccountEntryRels(
 			String className, long classPK, long commerceChannelId, int type) {
 
 		return commerceChannelAccountEntryRelPersistence.findByC_C_C_T(
@@ -266,6 +288,20 @@ public class CommerceChannelAccountEntryRelLocalServiceImpl
 			accountEntryId, type);
 	}
 
+	@Override
+	public int getCommerceChannelAccountEntryRelsCount(
+		long commerceChannelId, String name, int type) {
+
+		return dslQueryCount(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.count(
+				).from(
+					CommerceChannelAccountEntryRelTable.INSTANCE
+				),
+				commerceChannelId, name, type));
+	}
+
+	@Override
 	public CommerceChannelAccountEntryRel updateCommerceChannelAccountEntryRel(
 			long commerceChannelAccountEntryRelId, long commerceChannelId,
 			long classPK, boolean overrideEligibility, double priority)
@@ -315,6 +351,29 @@ public class CommerceChannelAccountEntryRelLocalServiceImpl
 		}
 
 		return commerceChannelAccountEntryRel;
+	}
+
+	private GroupByStep _getGroupByStep(
+		JoinStep joinStep, long commerceChannelId, String name, int type) {
+
+		Predicate predicate =
+			CommerceChannelAccountEntryRelTable.INSTANCE.commerceChannelId.eq(
+				commerceChannelId
+			).and(
+				CommerceChannelAccountEntryRelTable.INSTANCE.type.eq(type)
+			);
+
+		if (!Validator.isBlank(name)) {
+			joinStep = joinStep.leftJoinOn(
+				AccountEntryTable.INSTANCE,
+				CommerceChannelAccountEntryRelTable.INSTANCE.accountEntryId.eq(
+					AccountEntryTable.INSTANCE.accountEntryId));
+
+			predicate = predicate.and(
+				AccountEntryTable.INSTANCE.name.like(name));
+		}
+
+		return joinStep.where(predicate);
 	}
 
 	private Predicate _getPredicate(

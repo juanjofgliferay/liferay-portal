@@ -6,6 +6,7 @@
 package com.liferay.portal.security.auth.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.events.LifecycleAction;
@@ -16,6 +17,7 @@ import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -23,11 +25,17 @@ import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.jaas.JAASHelper;
 import com.liferay.portal.servlet.filters.absoluteredirects.AbsoluteRedirectsResponse;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Date;
 
@@ -41,12 +49,6 @@ import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,10 +79,8 @@ public class JAASTest {
 
 	@BeforeClass
 	public static void setUpClass() {
-		_jaasAuthType = PropsValues.PORTAL_JAAS_AUTH_TYPE;
-		_jaasEnabled = PropsValues.PORTAL_JAAS_ENABLE;
-
-		PropsValues.PORTAL_JAAS_ENABLE = true;
+		_originalPortalJAASEnable = ReflectionTestUtil.getAndSetFieldValue(
+			PropsValues.class, "PORTAL_JAAS_ENABLE", true);
 
 		Configuration.setConfiguration(new JAASConfiguration());
 	}
@@ -89,7 +89,8 @@ public class JAASTest {
 	public static void tearDownClass() {
 		Configuration.setConfiguration(null);
 
-		PropsValues.PORTAL_JAAS_ENABLE = _jaasEnabled;
+		ReflectionTestUtil.setFieldValue(
+			PropsValues.class, "PORTAL_JAAS_ENABLE", _originalPortalJAASEnable);
 	}
 
 	@Before
@@ -97,17 +98,8 @@ public class JAASTest {
 		_user = TestPropsValues.getUser();
 	}
 
-	@After
-	public void tearDown() {
-		ReflectionTestUtil.setFieldValue(
-			PropsValues.class, "PORTAL_JAAS_AUTH_TYPE", _jaasAuthType);
-	}
-
 	@Test
 	public void testGetUser() throws Exception {
-		ReflectionTestUtil.setFieldValue(
-			PropsValues.class, "PORTAL_JAAS_AUTH_TYPE", "screenName");
-
 		final IntegerWrapper counter = new IntegerWrapper();
 
 		JAASHelper jaasHelper = JAASHelper.getInstance();
@@ -116,11 +108,11 @@ public class JAASTest {
 			new JAASHelper() {
 
 				@Override
-				protected long doGetJaasUserId(long companyId, String name)
+				protected long doGetJAASUserId(long companyId, String name)
 					throws PortalException {
 
 					try {
-						return super.doGetJaasUserId(companyId, name);
+						return super.doGetJAASUserId(companyId, name);
 					}
 					finally {
 						counter.increment();
@@ -129,27 +121,34 @@ public class JAASTest {
 
 			});
 
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest(
-				ServletContextPool.get(StringPool.BLANK), HttpMethods.GET,
-				StringPool.SLASH);
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"PORTAL_JAAS_AUTH_TYPE", "screenName")) {
 
-		mockHttpServletRequest.setRemoteUser(
-			String.valueOf(_user.getScreenName()));
+			MockHttpServletRequest mockHttpServletRequest =
+				new MockHttpServletRequest(
+					ServletContextPool.get(StringPool.BLANK), HttpMethods.GET,
+					StringPool.SLASH);
 
-		try {
-			User user = PortalUtil.getUser(mockHttpServletRequest);
+			mockHttpServletRequest.setAttribute(
+				WebKeys.COMPANY_ID, TestPropsValues.getCompanyId());
+			mockHttpServletRequest.setRemoteUser(
+				String.valueOf(_user.getScreenName()));
 
-			Assert.assertEquals(1, counter.getValue());
-			Assert.assertEquals(_user.getUserId(), user.getUserId());
+			try {
+				User user = PortalUtil.getUser(mockHttpServletRequest);
 
-			user = PortalUtil.getUser(mockHttpServletRequest);
+				Assert.assertEquals(1, counter.getValue());
+				Assert.assertEquals(_user.getUserId(), user.getUserId());
 
-			Assert.assertEquals(1, counter.getValue());
-			Assert.assertEquals(_user.getUserId(), user.getUserId());
-		}
-		finally {
-			JAASHelper.setInstance(jaasHelper);
+				user = PortalUtil.getUser(mockHttpServletRequest);
+
+				Assert.assertEquals(1, counter.getValue());
+				Assert.assertEquals(_user.getUserId(), user.getUserId());
+			}
+			finally {
+				JAASHelper.setInstance(jaasHelper);
+			}
 		}
 	}
 
@@ -210,6 +209,8 @@ public class JAASTest {
 		mockHttpServletRequest.setRemoteUser(String.valueOf(_user.getUserId()));
 		mockHttpServletRequest.setAttribute(
 			AbsoluteRedirectsResponse.class.getName(), new Object());
+		mockHttpServletRequest.setAttribute(
+			WebKeys.COMPANY_ID, TestPropsValues.getCompanyId());
 
 		Bundle bundle = FrameworkUtil.getBundle(getClass());
 
@@ -256,12 +257,12 @@ public class JAASTest {
 	}
 
 	private void _testLoginFail(String name, String authType) throws Exception {
-		ReflectionTestUtil.setFieldValue(
-			PropsValues.class, "PORTAL_JAAS_AUTH_TYPE", authType);
-
 		LoginContext loginContext = _getLoginContext(name, _user.getPassword());
 
-		try {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"PORTAL_JAAS_AUTH_TYPE", authType)) {
+
 			loginContext.login();
 
 			Assert.fail();
@@ -270,8 +271,7 @@ public class JAASTest {
 		}
 	}
 
-	private static String _jaasAuthType;
-	private static Boolean _jaasEnabled;
+	private static Boolean _originalPortalJAASEnable;
 
 	private User _user;
 

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -39,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "https://www.schema.org/ProcessMetric",
 	value = "ProcessMetric"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "https://www.schema.org/ProcessMetric"
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "ProcessMetric")
@@ -52,146 +54,211 @@ public class ProcessMetric implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ProcessMetric.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getInstanceCount() {
+		if (_instanceCountSupplier != null) {
+			instanceCount = _instanceCountSupplier.get();
+
+			_instanceCountSupplier = null;
+		}
+
 		return instanceCount;
 	}
 
 	public void setInstanceCount(Long instanceCount) {
 		this.instanceCount = instanceCount;
+
+		_instanceCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInstanceCount(
 		UnsafeSupplier<Long, Exception> instanceCountUnsafeSupplier) {
 
-		try {
-			instanceCount = instanceCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_instanceCountSupplier = () -> {
+			try {
+				return instanceCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long instanceCount;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _instanceCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getOnTimeInstanceCount() {
+		if (_onTimeInstanceCountSupplier != null) {
+			onTimeInstanceCount = _onTimeInstanceCountSupplier.get();
+
+			_onTimeInstanceCountSupplier = null;
+		}
+
 		return onTimeInstanceCount;
 	}
 
 	public void setOnTimeInstanceCount(Long onTimeInstanceCount) {
 		this.onTimeInstanceCount = onTimeInstanceCount;
+
+		_onTimeInstanceCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOnTimeInstanceCount(
 		UnsafeSupplier<Long, Exception> onTimeInstanceCountUnsafeSupplier) {
 
-		try {
-			onTimeInstanceCount = onTimeInstanceCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_onTimeInstanceCountSupplier = () -> {
+			try {
+				return onTimeInstanceCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long onTimeInstanceCount;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _onTimeInstanceCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getOverdueInstanceCount() {
+		if (_overdueInstanceCountSupplier != null) {
+			overdueInstanceCount = _overdueInstanceCountSupplier.get();
+
+			_overdueInstanceCountSupplier = null;
+		}
+
 		return overdueInstanceCount;
 	}
 
 	public void setOverdueInstanceCount(Long overdueInstanceCount) {
 		this.overdueInstanceCount = overdueInstanceCount;
+
+		_overdueInstanceCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOverdueInstanceCount(
 		UnsafeSupplier<Long, Exception> overdueInstanceCountUnsafeSupplier) {
 
-		try {
-			overdueInstanceCount = overdueInstanceCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_overdueInstanceCountSupplier = () -> {
+			try {
+				return overdueInstanceCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long overdueInstanceCount;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _overdueInstanceCountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Process getProcess() {
+		if (_processSupplier != null) {
+			process = _processSupplier.get();
+
+			_processSupplier = null;
+		}
+
 		return process;
 	}
 
 	public void setProcess(Process process) {
 		this.process = process;
+
+		_processSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProcess(
 		UnsafeSupplier<Process, Exception> processUnsafeSupplier) {
 
-		try {
-			process = processUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_processSupplier = () -> {
+			try {
+				return processUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Process process;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Process> _processSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getUntrackedInstanceCount() {
+		if (_untrackedInstanceCountSupplier != null) {
+			untrackedInstanceCount = _untrackedInstanceCountSupplier.get();
+
+			_untrackedInstanceCountSupplier = null;
+		}
+
 		return untrackedInstanceCount;
 	}
 
 	public void setUntrackedInstanceCount(Long untrackedInstanceCount) {
 		this.untrackedInstanceCount = untrackedInstanceCount;
+
+		_untrackedInstanceCountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUntrackedInstanceCount(
 		UnsafeSupplier<Long, Exception> untrackedInstanceCountUnsafeSupplier) {
 
-		try {
-			untrackedInstanceCount = untrackedInstanceCountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_untrackedInstanceCountSupplier = () -> {
+			try {
+				return untrackedInstanceCountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long untrackedInstanceCount;
+
+	@JsonIgnore
+	private Supplier<Long> _untrackedInstanceCountSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -220,6 +287,8 @@ public class ProcessMetric implements Serializable {
 
 		sb.append("{");
 
+		Long instanceCount = getInstanceCount();
+
 		if (instanceCount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -229,6 +298,8 @@ public class ProcessMetric implements Serializable {
 
 			sb.append(instanceCount);
 		}
+
+		Long onTimeInstanceCount = getOnTimeInstanceCount();
 
 		if (onTimeInstanceCount != null) {
 			if (sb.length() > 1) {
@@ -240,6 +311,8 @@ public class ProcessMetric implements Serializable {
 			sb.append(onTimeInstanceCount);
 		}
 
+		Long overdueInstanceCount = getOverdueInstanceCount();
+
 		if (overdueInstanceCount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -250,6 +323,8 @@ public class ProcessMetric implements Serializable {
 			sb.append(overdueInstanceCount);
 		}
 
+		Process process = getProcess();
+
 		if (process != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -259,6 +334,8 @@ public class ProcessMetric implements Serializable {
 
 			sb.append(String.valueOf(process));
 		}
+
+		Long untrackedInstanceCount = getUntrackedInstanceCount();
 
 		if (untrackedInstanceCount != null) {
 			if (sb.length() > 1) {
@@ -275,8 +352,8 @@ public class ProcessMetric implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.ProcessMetric",
 		name = "x-class-name"
 	)
@@ -322,7 +399,10 @@ public class ProcessMetric implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -368,3 +448,4 @@ public class ProcessMetric implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-880912133

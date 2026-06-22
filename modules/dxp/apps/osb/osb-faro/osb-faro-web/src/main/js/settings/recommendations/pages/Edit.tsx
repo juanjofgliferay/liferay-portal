@@ -1,4 +1,4 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import React from 'react';
 import RecommendationStepCard from '../components/recommendation-step-card';
 import withRecommendation from 'shared/hoc/WithRecommendation';
@@ -16,7 +16,7 @@ interface IEditProps {
 }
 
 const Edit: React.FC<IEditProps> = ({job, router}) => {
-	const {groupId, jobId} = router.params;
+	const {groupId = '', jobId} = router.params;
 
 	const name = get(job, 'name');
 
@@ -29,7 +29,6 @@ const Edit: React.FC<IEditProps> = ({job, router}) => {
 					label: name
 				}
 			]}
-			groupId={groupId}
 			pageDescription={Liferay.Language.get(
 				'item-similarity-model-uses-items-and-iteractions-for-training'
 			)}
@@ -54,4 +53,7 @@ const Edit: React.FC<IEditProps> = ({job, router}) => {
 	);
 };
 
-export default compose<any>(withAdminPermission, withRecommendation)(Edit);
+export default compose<React.ComponentType<any>>(
+	withAdminPermission,
+	withRecommendation
+)(Edit);

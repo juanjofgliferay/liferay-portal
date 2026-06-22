@@ -15,6 +15,7 @@ import com.liferay.portal.kernel.service.persistence.ClassNamePersistence;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.model.impl.ClassNameImpl;
+import com.liferay.portal.spring.hibernate.PortalTransactionManager;
 import com.liferay.portal.spring.hibernate.PortletTransactionManager;
 import com.liferay.portal.spring.transaction.TransactionExecutor;
 import com.liferay.portal.test.rule.Inject;
@@ -28,7 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -46,7 +46,7 @@ public class TransactionInterceptorTest {
 		new LiferayIntegrationTestRule();
 
 	@Test
-	public void testFailOnCommit() {
+	public void testFailOnCommit() throws Exception {
 		CacheRegistryUtil.clear();
 
 		long classNameId = _counterLocalService.increment();
@@ -55,14 +55,13 @@ public class TransactionInterceptorTest {
 			(TransactionExecutor)PortalBeanLocatorUtil.locate(
 				"transactionExecutor");
 
-		PlatformTransactionManager platformTransactionManager =
-			ReflectionTestUtil.getAndSetFieldValue(
-				transactionExecutor, "_platformTransactionManager",
-				new MockPlatformTransactionManager(
-					(HibernateTransactionManager)
-						InfrastructureUtil.getTransactionManager()));
+		try (AutoCloseable autoCloseable =
+				ReflectionTestUtil.setFieldValueWithAutoCloseable(
+					transactionExecutor, "_platformTransactionManager",
+					new MockPlatformTransactionManager(
+						(PortalTransactionManager)
+							InfrastructureUtil.getTransactionManager()))) {
 
-		try {
 			_classNameLocalService.addClassName(
 				_classNamePersistence.create(classNameId));
 
@@ -72,11 +71,6 @@ public class TransactionInterceptorTest {
 			Assert.assertEquals(
 				"MockPlatformTransactionManager",
 				runtimeException.getMessage());
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				transactionExecutor, "_platformTransactionManager",
-				platformTransactionManager);
 		}
 
 		Assert.assertNull(
@@ -99,14 +93,14 @@ public class TransactionInterceptorTest {
 		extends PortletTransactionManager {
 
 		public MockPlatformTransactionManager(
-			HibernateTransactionManager hibernateTransactionManager) {
+			PortalTransactionManager portalTransactionManager) {
 
 			super(
-				hibernateTransactionManager,
+				portalTransactionManager,
 				(SessionFactoryImplementor)
-					hibernateTransactionManager.getSessionFactory());
+					portalTransactionManager.getSessionFactory());
 
-			_platformTransactionManager = hibernateTransactionManager;
+			_platformTransactionManager = portalTransactionManager;
 		}
 
 		@Override

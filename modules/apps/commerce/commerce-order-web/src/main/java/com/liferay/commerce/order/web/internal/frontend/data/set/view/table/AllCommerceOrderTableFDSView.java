@@ -6,11 +6,14 @@
 package com.liferay.commerce.order.web.internal.frontend.data.set.view.table;
 
 import com.liferay.commerce.order.web.internal.constants.CommerceOrderFDSNames;
+import com.liferay.frontend.data.set.constants.FDSTimeZoneBehaviorConstants;
 import com.liferay.frontend.data.set.view.FDSView;
 import com.liferay.frontend.data.set.view.table.BaseTableFDSView;
+import com.liferay.frontend.data.set.view.table.DateTimeFDSTableSchemaField;
 import com.liferay.frontend.data.set.view.table.FDSTableSchema;
 import com.liferay.frontend.data.set.view.table.FDSTableSchemaBuilder;
 import com.liferay.frontend.data.set.view.table.FDSTableSchemaBuilderFactory;
+import com.liferay.portal.kernel.json.JSONUtil;
 
 import java.util.Locale;
 
@@ -44,11 +47,7 @@ public class AllCommerceOrderTableFDSView extends BaseTableFDSView {
 		).add(
 			"totalFormatted", "amount"
 		).add(
-			"orderDate", "order-date",
-			fdsTableSchemaField -> {
-				fdsTableSchemaField.setContentRenderer("dateTime");
-				fdsTableSchemaField.setSortable(true);
-			}
+			_addDateTimeFDSTableSchemaField()
 		).add(
 			"orderStatusInfo", "order-status",
 			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
@@ -58,6 +57,27 @@ public class AllCommerceOrderTableFDSView extends BaseTableFDSView {
 			fdsTableSchemaField -> fdsTableSchemaField.setContentRenderer(
 				"commerceStatusDataRenderer")
 		).build();
+	}
+
+	private DateTimeFDSTableSchemaField _addDateTimeFDSTableSchemaField() {
+		DateTimeFDSTableSchemaField dateTimeFDSTableSchemaField =
+			new DateTimeFDSTableSchemaField();
+
+		dateTimeFDSTableSchemaField.setContentRenderer(
+			"dateTime"
+		).setFieldName(
+			"orderDate"
+		).setLabel(
+			"order-date"
+		).setSortable(
+			true
+		);
+
+		dateTimeFDSTableSchemaField.setFormat(JSONUtil.put("year", "2-digit"));
+		dateTimeFDSTableSchemaField.setTimeZoneBehavior(
+			FDSTimeZoneBehaviorConstants.APPLY_THEME_DISPLAY_TIME_ZONE);
+
+		return dateTimeFDSTableSchemaField;
 	}
 
 	@Reference

@@ -112,12 +112,10 @@ public class AnnouncementsDeliveryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
+		AnnouncementsDelivery newAnnouncementsDelivery =
+			addAnnouncementsDelivery();
 
-		AnnouncementsDelivery newAnnouncementsDelivery = _persistence.create(
-			pk);
-
-		newAnnouncementsDelivery.setMvccVersion(RandomTestUtil.nextLong());
+		newAnnouncementsDelivery.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newAnnouncementsDelivery.setCompanyId(RandomTestUtil.nextLong());
 
@@ -141,6 +139,9 @@ public class AnnouncementsDeliveryPersistenceTest {
 		Assert.assertEquals(
 			existingAnnouncementsDelivery.getMvccVersion(),
 			newAnnouncementsDelivery.getMvccVersion());
+		Assert.assertEquals(
+			existingAnnouncementsDelivery.getCtCollectionId(),
+			newAnnouncementsDelivery.getCtCollectionId());
 		Assert.assertEquals(
 			existingAnnouncementsDelivery.getDeliveryId(),
 			newAnnouncementsDelivery.getDeliveryId());
@@ -215,9 +216,9 @@ public class AnnouncementsDeliveryPersistenceTest {
 
 	protected OrderByComparator<AnnouncementsDelivery> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"AnnouncementsDelivery", "mvccVersion", true, "deliveryId", true,
-			"companyId", true, "userId", true, "type", true, "email", true,
-			"sms", true, "website", true);
+			"AnnouncementsDelivery", "mvccVersion", true, "ctCollectionId",
+			true, "deliveryId", true, "companyId", true, "userId", true, "type",
+			true, "email", true, "sms", true, "website", true);
 	}
 
 	@Test
@@ -526,7 +527,7 @@ public class AnnouncementsDeliveryPersistenceTest {
 
 		AnnouncementsDelivery announcementsDelivery = _persistence.create(pk);
 
-		announcementsDelivery.setMvccVersion(RandomTestUtil.nextLong());
+		announcementsDelivery.setCtCollectionId(RandomTestUtil.nextLong());
 
 		announcementsDelivery.setCompanyId(RandomTestUtil.nextLong());
 
@@ -552,3 +553,4 @@ public class AnnouncementsDeliveryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1463241155

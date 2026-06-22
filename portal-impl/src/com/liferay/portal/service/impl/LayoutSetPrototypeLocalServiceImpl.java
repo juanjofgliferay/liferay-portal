@@ -5,6 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredLayoutSetPrototypeException;
@@ -43,8 +44,7 @@ public class LayoutSetPrototypeLocalServiceImpl
 	public LayoutSetPrototype addLayoutSetPrototype(
 			long userId, long companyId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active,
-			boolean layoutsUpdateable, boolean readyForPropagation,
-			ServiceContext serviceContext)
+			boolean layoutsUpdateable, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Layout set prototype
@@ -73,8 +73,6 @@ public class LayoutSetPrototypeLocalServiceImpl
 
 		settingsUnicodeProperties.put(
 			"layoutsUpdateable", String.valueOf(layoutsUpdateable));
-		settingsUnicodeProperties.put(
-			"readyForPropagation", String.valueOf(readyForPropagation));
 
 		layoutSetPrototype.setSettingsProperties(settingsUnicodeProperties);
 
@@ -93,27 +91,15 @@ public class LayoutSetPrototypeLocalServiceImpl
 			"/template-" + layoutSetPrototype.getLayoutSetPrototypeId();
 
 		_groupLocalService.addGroup(
-			userId, GroupConstants.DEFAULT_PARENT_GROUP_ID,
+			StringPool.BLANK, userId, GroupConstants.DEFAULT_PARENT_GROUP_ID,
 			LayoutSetPrototype.class.getName(),
 			layoutSetPrototype.getLayoutSetPrototypeId(),
 			GroupConstants.DEFAULT_LIVE_GROUP_ID,
-			layoutSetPrototype.getNameMap(), null, 0, true,
+			layoutSetPrototype.getNameMap(), null, 0, null, true,
 			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION, friendlyURL, false,
-			true, serviceContext);
+			false, true, serviceContext);
 
 		return layoutSetPrototype;
-	}
-
-	@Override
-	public LayoutSetPrototype addLayoutSetPrototype(
-			long userId, long companyId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, boolean active,
-			boolean layoutsUpdateable, ServiceContext serviceContext)
-		throws PortalException {
-
-		return addLayoutSetPrototype(
-			userId, companyId, nameMap, descriptionMap, active,
-			layoutsUpdateable, true, serviceContext);
 	}
 
 	@Override
@@ -225,8 +211,7 @@ public class LayoutSetPrototypeLocalServiceImpl
 	public LayoutSetPrototype updateLayoutSetPrototype(
 			long layoutSetPrototypeId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active,
-			boolean layoutsUpdateable, boolean readyForPropagation,
-			ServiceContext serviceContext)
+			boolean layoutsUpdateable, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Layout set prototype
@@ -246,24 +231,10 @@ public class LayoutSetPrototypeLocalServiceImpl
 
 		settingsUnicodeProperties.put(
 			"layoutsUpdateable", String.valueOf(layoutsUpdateable));
-		settingsUnicodeProperties.put(
-			"readyForPropagation", String.valueOf(readyForPropagation));
 
 		layoutSetPrototype.setSettingsProperties(settingsUnicodeProperties);
 
 		return layoutSetPrototypePersistence.update(layoutSetPrototype);
-	}
-
-	@Override
-	public LayoutSetPrototype updateLayoutSetPrototype(
-			long layoutSetPrototypeId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, boolean active,
-			boolean layoutsUpdateable, ServiceContext serviceContext)
-		throws PortalException {
-
-		return updateLayoutSetPrototype(
-			layoutSetPrototypeId, nameMap, descriptionMap, active,
-			layoutsUpdateable, true, serviceContext);
 	}
 
 	@Override

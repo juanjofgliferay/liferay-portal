@@ -53,6 +53,7 @@ public interface BatchEngineExportTask
 
 	public java.util.List<String> getFieldNamesList();
 
-	public void setFieldNamesList(java.util.List<String> fieldNamesList);
+	public void setFieldNamesList(java.util.List<String> fieldNames);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1770074508

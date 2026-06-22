@@ -50,7 +50,7 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 			%>
 
 			<c:choose>
-				<c:when test="<%= (curArticle != null) && !journalArticleItemSelectorViewDisplayContext.isRefererArticle(curArticle) %>">
+				<c:when test="<%= curArticle != null %>">
 
 					<%
 					row.setCssClass("articles " + row.getCssClass());
@@ -92,10 +92,18 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 
 								<p class="font-weight-bold h5">
 									<%= HtmlUtil.escape(curArticle.getTitle(locale, true)) %>
+									<c:if test="<%= !journalArticleItemSelectorViewDisplayContext.hasGuestViewPermission(curArticle) %>">
+										<clay:icon
+											aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+											cssClass="c-ml-1 c-mt-0 lfr-portal-tooltip text-4 text-secondary"
+											data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+											symbol="password-policies"
+										/>
+									</c:if>
 								</p>
 
 								<c:if test="<%= journalArticleItemSelectorViewDisplayContext.isSearchEverywhere() %>">
-									<h6 class="text-default">
+									<div class="h6 text-default">
 										<liferay-ui:message key="location" />:
 										<span class="text-secondary">
 											<clay:icon
@@ -104,7 +112,7 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 
 											<small><%= journalArticleItemSelectorViewDisplayContext.getGroupLabel(curArticle.getGroupId(), locale) %></small>
 										</span>
-									</h6>
+									</div>
 								</c:if>
 
 								<c:if test="<%= journalArticleItemSelectorViewDisplayContext.getStatus() == WorkflowConstants.STATUS_ANY %>">
@@ -153,8 +161,17 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200 table-title"
 								name="title"
-								value="<%= curArticle.getTitle(locale, true) %>"
-							/>
+							>
+								<%= HtmlUtil.escape(curArticle.getTitle(locale, true)) %>
+								<c:if test="<%= !journalArticleItemSelectorViewDisplayContext.hasGuestViewPermission(curArticle) %>">
+									<clay:icon
+										aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+										cssClass="c-ml-1 c-mt-0 lfr-portal-tooltip text-4 text-secondary"
+										data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+										symbol="password-policies"
+									/>
+								</c:if>
+							</liferay-ui:search-container-column-text>
 
 							<liferay-ui:search-container-column-text
 								cssClass="table-cell-expand table-cell-minw-200 text-truncate"
@@ -228,6 +245,8 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 				<c:when test="<%= curFolder != null %>">
 
 					<%
+					row.setPrimaryKey(String.valueOf(curFolder.getPrimaryKey()));
+
 					PortletURL rowURL = PortletURLBuilder.create(
 						journalArticleItemSelectorViewDisplayContext.getPortletURL()
 					).setParameter(
@@ -265,7 +284,7 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 								</p>
 
 								<c:if test="<%= journalArticleItemSelectorViewDisplayContext.isSearchEverywhere() %>">
-									<h6 class="text-default">
+									<div class="h6 text-default">
 										<liferay-ui:message key="location" />:
 										<span class="text-secondary">
 											<clay:icon
@@ -274,7 +293,7 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 
 											<small><%= journalArticleItemSelectorViewDisplayContext.getGroupLabel(curFolder.getGroupId(), locale) %></small>
 										</span>
-									</h6>
+									</div>
 								</c:if>
 							</liferay-ui:search-container-column-text>
 						</c:when>
@@ -352,6 +371,14 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 								value="<%= HtmlUtil.escape(PortalUtil.getUserName(curFolder)) %>"
 							/>
 
+							<c:if test="<%= journalArticleItemSelectorViewDisplayContext.getStatus() == WorkflowConstants.STATUS_ANY %>">
+								<liferay-ui:search-container-column-text
+									cssClass="text-nowrap"
+									name="status"
+									value="--"
+								/>
+							</c:if>
+
 							<liferay-ui:search-container-column-date
 								cssClass="table-cell-expand-smallest table-cell-ws-nowrap"
 								name="modified-date"
@@ -428,10 +455,8 @@ JournalArticleItemSelectorViewDisplayContext journalArticleItemSelectorViewDispl
 		</aui:script>
 	</c:when>
 	<c:otherwise>
-		<aui:script require="frontend-js-web/index as frontendJsWeb">
-			var {delegate} = frontendJsWeb;
-
-			var selectItemHandler = delegate(
+		<aui:script sandbox="<%= true %>">
+			var selectItemHandler = Liferay.Util.delegate(
 				document.querySelector('#<portlet:namespace />articlesContainer'),
 				'click',
 				'.entry',

@@ -1,4 +1,4 @@
-import {CHART_COLOR_NAMES} from 'shared/components/Chart';
+import {CHART_COLOR_NAMES} from 'shared/util/charts';
 import {DataPoint, Empty} from './types';
 import {getPercentage} from 'shared/util/util';
 import {IHTMLBarChartProps} from '../HTMLBarChart';
@@ -8,8 +8,16 @@ import {toRounded, toThousands} from 'shared/util/numbers';
 const {martellD4, martellL4, mormont, stark} = CHART_COLOR_NAMES;
 
 const getSegmentsData = (
-	{segments, total, totalOthers},
-	color
+	{
+		segments,
+		total,
+		totalOthers
+	}: {
+		segments: {value: number; valueKey: string}[];
+		total: number;
+		totalOthers: number;
+	},
+	color: string
 ): IHTMLBarChartProps => {
 	const MAX_BARS = 6;
 	const MAX_VALUE_EMPTY_STATE = 30;
@@ -32,7 +40,13 @@ const getSegmentsData = (
 	 * Get formatted tooltip column
 	 * @param {object} item
 	 */
-	const getTooltipColumns = ({value, valueKey}) => [
+	const getTooltipColumns = ({
+		value,
+		valueKey
+	}: {
+		value: number;
+		valueKey: string;
+	}) => [
 		{
 			label:
 				valueKey === 'others'
@@ -58,19 +72,20 @@ const getSegmentsData = (
 	 * Convert value to percentage based on total
 	 * @param {number} value
 	 */
-	const getValue = value => parseInt(toRounded(getPercentage(value, total)));
+	const getValue = (value: number) =>
+		parseInt(toRounded(getPercentage(value, total)));
 
 	/**
 	 * Sum all the keys value of the array
 	 * @param {array} arr
 	 */
-	const sumArrValues = arr =>
+	const sumArrValues = (arr: {value: number}[]) =>
 		arr.map(({value}) => value).reduce((a, b) => a + b);
 
-	let items = segments.slice(0, MAX_BARS).map(({value, valueKey}) => ({
+	let items: any[] = segments.slice(0, MAX_BARS).map(({value, valueKey}) => ({
 		columns: [
 			{
-				icon: 'ac-segment',
+				icon: 'ac_segment',
 				label: valueKey
 			}
 		],
@@ -103,10 +118,10 @@ const getSegmentsData = (
 			{
 				columns: [
 					{
-						icon: 'ac-segment',
+						icon: 'ac_segment',
 						label: sub(Liferay.Language.get('x-more-segments'), [
 							totalOthers - (MAX_BARS - 1)
-						])
+						]) as string
 					}
 				],
 				progress: [
@@ -166,7 +181,7 @@ export const formatData = ({
 		segmentedKnownUsersCount
 	},
 	segment: {metrics, total: totalOthers}
-}): FormattedData => {
+}: any): FormattedData => {
 	const knownIndividualsData = [
 		{
 			color: martellL4,
@@ -197,9 +212,10 @@ export const formatData = ({
 		{
 			segments: [
 				...metrics
-					.sort((a, b) => b.value - a.value)
-					.filter(({valueKey}) => valueKey !== 'others'),
-				...metrics.filter(({valueKey}) => valueKey === 'others')
+					.slice()
+					.sort((a: any, b: any) => b.value - a.value)
+					.filter(({valueKey}: any) => valueKey !== 'others'),
+				...metrics.filter(({valueKey}: any) => valueKey === 'others')
 			],
 			total: segmentedAnonymousUsersCount + segmentedKnownUsersCount,
 			totalOthers

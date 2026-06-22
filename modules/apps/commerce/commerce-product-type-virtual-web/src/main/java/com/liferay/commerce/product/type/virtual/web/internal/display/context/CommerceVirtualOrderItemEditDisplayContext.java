@@ -27,10 +27,10 @@ import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.Collections;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import java.util.Collections;
 
 /**
  * @author Alessio Antonio Rendina
@@ -119,30 +119,19 @@ public class CommerceVirtualOrderItemEditDisplayContext {
 		return _commerceVirtualOrderItem;
 	}
 
-	public String getDownloadFileEntryURL() throws PortalException {
+	public String getDownloadFileEntryURL(long fileEntryId)
+		throws PortalException {
+
 		if (_commerceVirtualOrderItem == null) {
 			return null;
 		}
 
-		FileEntry fileEntry = _dlAppService.getFileEntry(
-			_commerceVirtualOrderItem.getFileEntryId());
+		FileEntry fileEntry = _dlAppService.getFileEntry(fileEntryId);
 
 		return DLURLHelperUtil.getDownloadURL(
 			fileEntry, fileEntry.getLatestFileVersion(),
 			_cpDefinitionVirtualSettingRequestHelper.getThemeDisplay(),
 			StringPool.BLANK, true, true);
-	}
-
-	public FileEntry getFileEntry() throws PortalException {
-		if (_commerceVirtualOrderItem != null) {
-			long fileEntryId = _commerceVirtualOrderItem.getFileEntryId();
-
-			if (fileEntryId > 0) {
-				return _dlAppService.getFileEntry(fileEntryId);
-			}
-		}
-
-		return null;
 	}
 
 	public String getFileEntryItemSelectorURL() {

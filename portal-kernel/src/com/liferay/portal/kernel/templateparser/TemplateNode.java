@@ -23,10 +23,17 @@ import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -39,11 +46,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Alexander Chow
  * @author Raymond Augé
@@ -51,9 +53,10 @@ import javax.servlet.http.HttpServletRequest;
 public class TemplateNode extends LinkedHashMap<String, Object> {
 
 	public TemplateNode(
-		ThemeDisplay themeDisplay, String name, String data, String type,
-		Map<String, String> attributes) {
+		Locale locale, ThemeDisplay themeDisplay, String name, String data,
+		String type, Map<String, String> attributes) {
 
+		_locale = locale;
 		_themeDisplay = themeDisplay;
 
 		put("attributes", attributes);
@@ -64,11 +67,40 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 		put("optionsMap", new LinkedHashMap<String, String>());
 	}
 
+	public TemplateNode(
+		ThemeDisplay themeDisplay, String name, String data, String type,
+		Map<String, String> attributes) {
+
+		this(
+			LocaleUtil.getMostRelevantLocale(), themeDisplay, name, data, type,
+			attributes);
+	}
+
 	public void appendChild(TemplateNode templateNode) {
 		_childTemplateNodes.put(templateNode.getName(), templateNode);
 
+		if (Objects.equals(templateNode.getName(), "attributes")) {
+			put(_RANDOM_ID + "Attributes", getAttributes());
+		}
+
+		if (Objects.equals(templateNode.getName(), "data")) {
+			put(_RANDOM_ID + "Data", _getData());
+		}
+
 		if (Objects.equals(templateNode.getName(), "name")) {
 			put(_RANDOM_ID + "Name", getName());
+		}
+
+		if (Objects.equals(templateNode.getName(), "options")) {
+			put(_RANDOM_ID + "Options", getOptions());
+		}
+
+		if (Objects.equals(templateNode.getName(), "optionsMap")) {
+			put(_RANDOM_ID + "OptionsMap", getOptionsMap());
+		}
+
+		if (Objects.equals(templateNode.getName(), "type")) {
+			put(_RANDOM_ID + "Type", getType());
 		}
 
 		put(templateNode.getName(), templateNode);
@@ -111,7 +143,8 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	@Override
 	public Object clone() {
 		TemplateNode templateNode = new TemplateNode(
-			_themeDisplay, getName(), getData(), getType(), getAttributes());
+			_locale, _themeDisplay, getName(), getData(), getType(),
+			getAttributes());
 
 		for (Map.Entry<String, TemplateNode> entry :
 				_childTemplateNodes.entrySet()) {
@@ -144,6 +177,13 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	public Map<String, String> getAttributes() {
+		if (super.containsKey(_RANDOM_ID + "Attributes") ||
+			MapUtil.isNotEmpty(
+				(Map<String, String>)get(_RANDOM_ID + "Attributes"))) {
+
+			return (Map<String, String>)get(_RANDOM_ID + "Attributes");
+		}
+
 		return (Map<String, String>)get("attributes");
 	}
 
@@ -178,7 +218,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 			return _getGeolocationData();
 		}
 
-		return (String)get("data");
+		return _getData();
 	}
 
 	public String getFriendlyUrl() {
@@ -213,10 +253,23 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	public List<String> getOptions() {
+		if (super.containsKey(_RANDOM_ID + "Options") ||
+			ListUtil.isNotEmpty((List<String>)get(_RANDOM_ID + "Options"))) {
+
+			return (List<String>)get(_RANDOM_ID + "Options");
+		}
+
 		return (List<String>)get("options");
 	}
 
 	public Map<String, String> getOptionsMap() {
+		if (super.containsKey(_RANDOM_ID + "OptionsMap") ||
+			MapUtil.isNotEmpty(
+				(Map<String, String>)get(_RANDOM_ID + "OptionsMap"))) {
+
+			return (Map<String, String>)get(_RANDOM_ID + "OptionsMap");
+		}
+
 		return (Map<String, String>)get("optionsMap");
 	}
 
@@ -225,6 +278,12 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	public String getType() {
+		if (super.containsKey(_RANDOM_ID + "Type") ||
+			Validator.isNotNull((String)get(_RANDOM_ID + "Type"))) {
+
+			return (String)get(_RANDOM_ID + "Type");
+		}
+
 		Object type = get("type");
 
 		if ((type == null) || (type instanceof String)) {
@@ -239,7 +298,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 			return StringPool.BLANK;
 		}
 
-		String data = (String)get("data");
+		String data = _getData();
 
 		if (!JSONUtil.isJSONObject(data)) {
 			return StringPool.BLANK;
@@ -269,7 +328,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	private String _getColorData() {
-		String data = (String)get("data");
+		String data = _getData();
 
 		if (data.startsWith(StringPool.POUND)) {
 			return data;
@@ -278,12 +337,38 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 		return StringPool.POUND + data;
 	}
 
+	private String _getData() {
+		if (super.containsKey(_RANDOM_ID + "Data") ||
+			Validator.isNotNull((String)get(_RANDOM_ID + "Data"))) {
+
+			return (String)get(_RANDOM_ID + "Data");
+		}
+
+		return (String)get("data");
+	}
+
+	private Locale _getDataLocale() {
+		Map<String, String> attributes = getAttributes();
+
+		if (attributes == null) {
+			return _locale;
+		}
+
+		String dataLanguageId = attributes.get("language-id");
+
+		if (Validator.isNull(dataLanguageId)) {
+			return _locale;
+		}
+
+		return LocaleUtil.fromLanguageId(dataLanguageId);
+	}
+
 	private String _getDDMJournalArticleFriendlyURL() {
 		if (_themeDisplay == null) {
 			return StringPool.BLANK;
 		}
 
-		String data = (String)get("data");
+		String data = _getData();
 
 		try {
 			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(data);
@@ -310,10 +395,10 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 
 			PortletRequest portletRequest =
 				(PortletRequest)httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST);
+					JavaConstants.JAKARTA_PORTLET_REQUEST);
 			PortletResponse portletResponse =
 				(PortletResponse)httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE);
+					JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 			return assetRenderer.getURLViewInContext(
 				PortalUtil.getLiferayPortletRequest(portletRequest),
@@ -330,7 +415,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	private String _getFileEntryData() {
-		String data = (String)get("data");
+		String data = _getData();
 
 		try {
 			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(data);
@@ -348,7 +433,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 
 			return DLUtil.getPreviewURL(
 				fileEntry, fileEntry.getFileVersion(), _themeDisplay,
-				StringPool.BLANK, false, true);
+				StringPool.BLANK, false, false);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
@@ -360,7 +445,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	private String _getGeolocationData() {
-		String data = (String)get("data");
+		String data = _getData();
 
 		if (Validator.isNull(data)) {
 			return StringPool.BLANK;
@@ -395,7 +480,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 	}
 
 	private String _getLatestArticleData() {
-		String data = (String)get("data");
+		String data = _getData();
 
 		try {
 			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(data);
@@ -459,14 +544,14 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 			}
 		}
 
-		return (String)get("data");
+		return _getData();
 	}
 
 	private String _getNumericData() {
-		String data = (String)get("data");
+		String data = _getData();
 
 		DecimalFormat decimalFormat = (DecimalFormat)DecimalFormat.getInstance(
-			LocaleUtil.getMostRelevantLocale());
+			_locale);
 
 		DecimalFormatSymbols decimalFormatSymbols =
 			decimalFormat.getDecimalFormatSymbols();
@@ -479,7 +564,16 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 		decimalFormat.setMaximumFractionDigits(Integer.MAX_VALUE);
 		decimalFormat.setParseBigDecimal(true);
 
-		return decimalFormat.format(GetterUtil.getDouble(data));
+		double doubleValue;
+
+		try {
+			doubleValue = Double.parseDouble(data);
+		}
+		catch (NumberFormatException numberFormatException) {
+			doubleValue = GetterUtil.getDouble(data, _getDataLocale());
+		}
+
+		return decimalFormat.format(doubleValue);
 	}
 
 	private static final String _RANDOM_ID = StringUtil.randomId();
@@ -488,6 +582,7 @@ public class TemplateNode extends LinkedHashMap<String, Object> {
 
 	private final Map<String, TemplateNode> _childTemplateNodes =
 		new LinkedHashMap<>();
+	private final Locale _locale;
 	private final List<TemplateNode> _siblingTemplateNodes = new ArrayList<>();
 	private final ThemeDisplay _themeDisplay;
 

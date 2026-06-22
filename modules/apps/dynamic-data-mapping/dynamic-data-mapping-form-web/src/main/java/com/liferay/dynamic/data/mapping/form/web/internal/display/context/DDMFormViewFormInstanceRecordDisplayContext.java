@@ -12,14 +12,16 @@ import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingContext;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
 import com.liferay.dynamic.data.mapping.form.web.internal.constants.DDMFormWebKeys;
 import com.liferay.dynamic.data.mapping.form.web.internal.display.context.helper.DDMFormAdminRequestHelper;
+import com.liferay.dynamic.data.mapping.form.web.internal.display.context.util.DDMFormDisplayContextUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceVersion;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
-import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
+import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesMerger;
@@ -30,15 +32,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Marcellus Tavares
@@ -48,14 +50,14 @@ public class DDMFormViewFormInstanceRecordDisplayContext {
 	public DDMFormViewFormInstanceRecordDisplayContext(
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse,
-		DDMFormInstanceRecordLocalService ddmFormInstanceRecordLocalService,
+		DDMFormInstanceRecordService ddmFormInstanceRecordService,
 		DDMFormInstanceVersionLocalService ddmFormInstanceVersionLocalService,
 		DDMFormRenderer ddmFormRenderer,
 		DDMFormValuesFactory ddmFormValuesFactory,
 		DDMFormValuesMerger ddmFormValuesMerger) {
 
 		_httpServletResponse = httpServletResponse;
-		_ddmFormInstanceRecordLocalService = ddmFormInstanceRecordLocalService;
+		_ddmFormInstanceRecordService = ddmFormInstanceRecordService;
 		_ddmFormInstanceVersionLocalService =
 			ddmFormInstanceVersionLocalService;
 		_ddmFormRenderer = ddmFormRenderer;
@@ -93,8 +95,18 @@ public class DDMFormViewFormInstanceRecordDisplayContext {
 		DDMForm latestDDMForm = latestDDMStructureVersion.getDDMForm();
 
 		if (!readOnly) {
+			DDMFormDisplayContextUtil.addCaptchaDDMFormField(
+				latestDDMForm, ddmFormInstance.getSettingsModel(),
+				renderRequest);
+
+			DDMFormLayout latestDDMFormLayout =
+				latestDDMStructureVersion.getDDMFormLayout();
+
+			DDMFormDisplayContextUtil.addCaptchaDDMFormLayoutRow(
+				ddmFormInstance.getSettingsModel(), latestDDMFormLayout);
+
 			return _ddmFormRenderer.getDDMFormTemplateContext(
-				latestDDMForm, latestDDMStructureVersion.getDDMFormLayout(),
+				latestDDMForm, latestDDMFormLayout,
 				_createDDMFormRenderingContext(
 					latestDDMForm, ddmFormInstanceRecord,
 					_getDDMFormValues(
@@ -195,7 +207,7 @@ public class DDMFormViewFormInstanceRecordDisplayContext {
 			httpServletRequest, "formInstanceRecordId");
 
 		if (formInstanceRecordId > 0) {
-			return _ddmFormInstanceRecordLocalService.fetchFormInstanceRecord(
+			return _ddmFormInstanceRecordService.getFormInstanceRecord(
 				formInstanceRecordId);
 		}
 
@@ -250,8 +262,7 @@ public class DDMFormViewFormInstanceRecordDisplayContext {
 	}
 
 	private final DDMFormAdminRequestHelper _ddmFormAdminRequestHelper;
-	private final DDMFormInstanceRecordLocalService
-		_ddmFormInstanceRecordLocalService;
+	private final DDMFormInstanceRecordService _ddmFormInstanceRecordService;
 	private final DDMFormInstanceVersionLocalService
 		_ddmFormInstanceVersionLocalService;
 	private final DDMFormRenderer _ddmFormRenderer;

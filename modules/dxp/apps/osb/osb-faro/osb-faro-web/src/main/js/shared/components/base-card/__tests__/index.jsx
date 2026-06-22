@@ -1,38 +1,31 @@
-import BaseCard from '..';
-import BasePage from 'shared/components/base-page';
-import client from 'shared/apollo/client';
+import BaseCard from '../index';
+import mockStore from 'test/mock-store';
 import React from 'react';
-import {ApolloProvider} from '@apollo/react-hoc';
+import {MemoryRouter} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
+import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
 
-const MOCK_CONTEXT = {
-	router: {
-		query: {
-			rangeKey: '0'
-		}
-	}
-};
-
-const WrappedComponent = props => (
-	<ApolloProvider client={client}>
-		<BasePage.Context.Provider value={MOCK_CONTEXT}>
-			<BaseCard
-				className='my-component-classname'
-				label='My title'
-				{...props}
-			/>
-		</BasePage.Context.Provider>
-	</ApolloProvider>
-);
-
 jest.unmock('react-dom');
+
+const Wrapper = ({children}) => (
+	<Provider store={mockStore()}>
+		<MemoryRouter>
+			<MockedProvider addTypename={false} freezeResults={false}>
+				{children}
+			</MockedProvider>
+		</MemoryRouter>
+	</Provider>
+);
 
 describe('BaseCard', () => {
 	it('should render component', () => {
 		const {container} = render(
-			<WrappedComponent>
-				{() => <div>{'My body component'}</div>}
-			</WrappedComponent>
+			<Wrapper>
+				<BaseCard className='my-component-classname' label='My title'>
+					{() => <div>{'My body component'}</div>}
+				</BaseCard>
+			</Wrapper>
 		);
 
 		expect(container).toMatchSnapshot();
@@ -42,9 +35,11 @@ describe('BaseCard', () => {
 		const Header = () => <div>{'My custom header component'}</div>;
 
 		const {getByText} = render(
-			<WrappedComponent Header={Header}>
-				{() => <div>{'My body component'}</div>}
-			</WrappedComponent>
+			<Wrapper>
+				<BaseCard Header={Header} label='My title'>
+					{() => <div>{'My body component'}</div>}
+				</BaseCard>
+			</Wrapper>
 		);
 
 		expect(getByText('My body component')).toBeTruthy();
@@ -54,40 +49,36 @@ describe('BaseCard', () => {
 		let customBodyProps = {};
 
 		render(
-			<WrappedComponent>
-				{props => {
-					customBodyProps = props;
+			<Wrapper>
+				<BaseCard label='My title'>
+					{props => {
+						customBodyProps = props;
 
-					return <div>{'My custom body component'}</div>;
-				}}
-			</WrappedComponent>
+						return <div>{'My custom body component'}</div>;
+					}}
+				</BaseCard>
+			</Wrapper>
 		);
 
-		expect(customBodyProps).toMatchInlineSnapshot(`
-		Object {
-		  "filters": undefined,
-		  "interval": "D",
-		  "onChangeInterval": [Function],
-		  "onRangeSelectorsChange": [Function],
-		  "rangeSelectors": Object {
-		    "rangeEnd": "",
-		    "rangeKey": "0",
-		    "rangeStart": "",
-		  },
-		  "router": Object {
-		    "query": Object {
-		      "rangeKey": "0",
-		    },
-		  },
-		}
-	`);
+		expect(customBodyProps).toEqual(
+			expect.objectContaining({
+				experienceId: null,
+				filters: expect.any(Object),
+				interval: expect.any(String),
+				onChangeInterval: expect.any(Function),
+				rangeSelectors: expect.any(Object),
+				router: expect.any(Object)
+			})
+		);
 	});
 
 	it('should render a Card Header with an interval selector', () => {
 		const {container, getByText} = render(
-			<WrappedComponent showInterval>
-				{() => <div>{'My body component'}</div>}
-			</WrappedComponent>
+			<Wrapper>
+				<BaseCard label='My title' showInterval>
+					{() => <div>{'My body component'}</div>}
+				</BaseCard>
+			</Wrapper>
 		);
 
 		expect(container.querySelector('.interval-selector-root')).toBeTruthy();

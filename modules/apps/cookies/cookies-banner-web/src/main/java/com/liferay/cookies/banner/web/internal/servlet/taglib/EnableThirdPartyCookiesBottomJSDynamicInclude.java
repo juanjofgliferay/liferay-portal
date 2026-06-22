@@ -5,21 +5,31 @@
 
 package com.liferay.cookies.banner.web.internal.servlet.taglib;
 
+import com.liferay.cookies.configuration.CookiesConfigurationProvider;
+import com.liferay.cookies.configuration.CookiesPreferenceHandlingConfiguration;
+import com.liferay.cookies.global.privacy.control.GlobalPrivacyControlProvider;
 import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.aui.JSFragment;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Arrays;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +47,27 @@ public class EnableThirdPartyCookiesBottomJSDynamicInclude
 			HttpServletResponse httpServletResponse, String key)
 		throws IOException {
 
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-154290")) {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		CookiesPreferenceHandlingConfiguration
+			cookiesPreferenceHandlingConfiguration;
+
+		try {
+			cookiesPreferenceHandlingConfiguration =
+				_cookiesConfigurationProvider.
+					getCookiesPreferenceHandlingConfiguration(themeDisplay);
+		}
+		catch (Exception exception) {
+			_log.error(exception);
+
+			return;
+		}
+
+		if (!cookiesPreferenceHandlingConfiguration.active() ||
+			!cookiesPreferenceHandlingConfiguration.enabled()) {
+
 			return;
 		}
 
@@ -47,15 +77,58 @@ public class EnableThirdPartyCookiesBottomJSDynamicInclude
 
 		ScriptData scriptData = new ScriptData();
 
-		scriptData.append(
-			_portal.getPortletId(httpServletRequest),
-			new JSFragment(
-				"runThirdPartyCookiesInterval();",
-				Arrays.asList(
-					ESImportUtil.getESImport(
-						absolutePortalURLBuilder,
-						"{runThirdPartyCookiesInterval} from " +
-							"cookies-banner-web/index.js"))));
+		if (_globalPrivacyControlProvider.isSignalActive(httpServletRequest)) {
+			JSONObject argumentsJSONObject = JSONUtil.put(
+				"consentRenewalPeriod",
+				cookiesPreferenceHandlingConfiguration.consentRenewalPeriod()
+			).put(
+				"consentRenewalPeriodTimeUnit",
+				cookiesPreferenceHandlingConfiguration.
+					consentRenewalPeriodTimeUnit()
+			).put(
+				"dissentRenewalPeriod",
+				cookiesPreferenceHandlingConfiguration.dissentRenewalPeriod()
+			).put(
+				"dissentRenewalPeriodTimeUnit",
+				cookiesPreferenceHandlingConfiguration.
+					dissentRenewalPeriodTimeUnit()
+			).put(
+				"optionalConsentCookieTypeNames",
+				JSONUtil.putAll(
+					CookiesConstants.NAME_CONSENT_TYPE_FUNCTIONAL,
+					CookiesConstants.NAME_CONSENT_TYPE_PERFORMANCE,
+					CookiesConstants.NAME_CONSENT_TYPE_PERSONALIZATION)
+			).put(
+				"requiredConsentCookieTypeNames",
+				JSONUtil.putAll(CookiesConstants.NAME_CONSENT_TYPE_NECESSARY)
+			).put(
+				"storeConsent",
+				cookiesPreferenceHandlingConfiguration.storeConsent()
+			);
+
+			scriptData.append(
+				_portal.getPortletId(httpServletRequest),
+				new JSFragment(
+					StringBundler.concat(
+						"suppressThirdPartyCookies(", argumentsJSONObject,
+						");"),
+					Arrays.asList(
+						ESImportUtil.getESImport(
+							absolutePortalURLBuilder,
+							"{suppressThirdPartyCookies} from " +
+								"cookies-banner-web/index.js"))));
+		}
+		else {
+			scriptData.append(
+				_portal.getPortletId(httpServletRequest),
+				new JSFragment(
+					"runThirdPartyCookiesInterval();",
+					Arrays.asList(
+						ESImportUtil.getESImport(
+							absolutePortalURLBuilder,
+							"{runThirdPartyCookiesInterval} from " +
+								"cookies-banner-web/index.js"))));
+		}
 
 		scriptData.writeTo(httpServletResponse.getWriter());
 	}
@@ -67,8 +140,17 @@ public class EnableThirdPartyCookiesBottomJSDynamicInclude
 		dynamicIncludeRegistry.register("/html/common/themes/bottom.jsp#post");
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		EnableThirdPartyCookiesBottomJSDynamicInclude.class);
+
 	@Reference
 	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
+
+	@Reference
+	private CookiesConfigurationProvider _cookiesConfigurationProvider;
+
+	@Reference
+	private GlobalPrivacyControlProvider _globalPrivacyControlProvider;
 
 	@Reference
 	private Portal _portal;

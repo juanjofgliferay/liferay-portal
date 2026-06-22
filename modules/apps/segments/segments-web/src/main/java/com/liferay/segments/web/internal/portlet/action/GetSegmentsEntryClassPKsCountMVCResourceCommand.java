@@ -5,36 +5,30 @@
 
 package com.liferay.segments.web.internal.portlet.action;
 
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributorRegistry;
 import com.liferay.segments.odata.retriever.ODataRetriever;
-import com.liferay.segments.service.SegmentsEntryService;
 import com.liferay.segments.web.internal.constants.SegmentsWebKeys;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.PrintWriter;
 
 import java.util.Locale;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletSession;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -42,7 +36,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.AUDIENCES,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
 		"mvc.command.name=/segments/get_segments_entry_class_pks_count"
 	},
 	service = MVCResourceCommand.class
@@ -67,30 +62,11 @@ public class GetSegmentsEntryClassPKsCountMVCResourceCommand
 		}
 	}
 
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
-			bundleContext,
-			(Class<ODataRetriever<?>>)(Class<?>)ODataRetriever.class,
-			"model.class.name");
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		_serviceTrackerMap.close();
-	}
-
 	private int _getSegmentsEntryClassPKsCount(
-		long companyId, Criteria criteria, String type, Locale locale) {
-
-		ODataRetriever<?> oDataRetriever = _serviceTrackerMap.getService(type);
-
-		if (oDataRetriever == null) {
-			return 0;
-		}
+		long companyId, Criteria criteria, Locale locale) {
 
 		try {
-			return oDataRetriever.getResultsCount(
+			return _userODataRetriever.getResultsCount(
 				companyId, criteria.getFilterString(Criteria.Type.MODEL),
 				locale);
 		}
@@ -111,17 +87,15 @@ public class GetSegmentsEntryClassPKsCountMVCResourceCommand
 
 		long companyId = _portal.getCompanyId(httpServletRequest);
 
-		String type = ParamUtil.getString(resourceRequest, "type");
-
 		Criteria criteria = ActionUtil.getCriteria(
 			resourceRequest,
 			_segmentsCriteriaContributorRegistry.
-				getSegmentsCriteriaContributors(type));
+				getSegmentsCriteriaContributors());
 
 		_saveCriteriaInSession(resourceRequest, criteria);
 
 		int count = _getSegmentsEntryClassPKsCount(
-			companyId, criteria, type, _portal.getLocale(resourceRequest));
+			companyId, criteria, _portal.getLocale(resourceRequest));
 
 		return String.valueOf(count);
 	}
@@ -145,9 +119,9 @@ public class GetSegmentsEntryClassPKsCountMVCResourceCommand
 	private SegmentsCriteriaContributorRegistry
 		_segmentsCriteriaContributorRegistry;
 
-	@Reference
-	private SegmentsEntryService _segmentsEntryService;
-
-	private ServiceTrackerMap<String, ODataRetriever<?>> _serviceTrackerMap;
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.kernel.model.User)"
+	)
+	private ODataRetriever<User> _userODataRetriever;
 
 }

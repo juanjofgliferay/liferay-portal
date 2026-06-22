@@ -40,6 +40,7 @@ portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 	method="post"
 	name="editLayoutFm"
 	onSubmit="event.preventDefault();"
+	title='<%= LanguageUtil.get(request, "general") %>'
 	wrappedFormContent="<%= false %>"
 >
 	<aui:input name="redirect" type="hidden" value="<%= String.valueOf(layoutsAdminDisplayContext.getLayoutScreenNavigationPortletURL(selLayout.getPlid())) %>" />
@@ -51,7 +52,7 @@ portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 	<aui:input name="selPlid" type="hidden" value="<%= layoutsAdminDisplayContext.getSelPlid() %>" />
 	<aui:input name="type" type="hidden" value="<%= selLayout.getType() %>" />
 
-	<c:if test="<%= group.isLayoutPrototype() || !(selLayoutType.isURLFriendliable() && !layoutsAdminDisplayContext.isDraft() && (!selLayout.isSystem() || selLayout.isTypeAssetDisplay())) %>">
+	<c:if test="<%= group.isLayoutPrototype() || !(selLayoutType.isURLFriendliable() && !layoutsAdminDisplayContext.isDraft() && (!selLayout.isSystem() || selLayout.isTypeAssetDisplay() || selLayout.isTypeUtility())) %>">
 		<aui:input name="friendlyURL" type="hidden" value="<%= HttpComponentsUtil.decodeURL(selLayout.getFriendlyURL()) %>" />
 	</c:if>
 
@@ -65,7 +66,7 @@ portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 		<aui:input name='<%= "nameMapAsXML_" + defaultLanguageId %>' type="hidden" value="<%= selLayout.getName(defaultLocale) %>" />
 	</c:if>
 
-	<c:if test="<%= layoutsAdminDisplayContext.isLayoutPageTemplateEntry() || ((selLayout.isTypeAssetDisplay() || selLayout.isTypeContent()) && layoutsAdminDisplayContext.isDraft()) %>">
+	<c:if test="<%= layoutsAdminDisplayContext.isLayoutPageTemplateEntry() || selLayout.isTypeUtility() || ((selLayout.isTypeAssetDisplay() || selLayout.isTypeContent()) && layoutsAdminDisplayContext.isDraft()) %>">
 
 		<%
 		for (Locale availableLocale : LanguageUtil.getAvailableLocales(group.getGroupId())) {
@@ -127,7 +128,7 @@ portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 			%>
 
 			<c:if test="<%= lte.getType() == LayoutTypeException.FIRST_LAYOUT %>">
-				<liferay-ui:message arguments='<%= Validator.isNull(lte.getLayoutType()) ? type : "layout.types." + lte.getLayoutType() %>' key="the-first-page-cannot-be-of-type-x" />
+				<liferay-ui:message arguments='<%= Validator.isNull(lte.getLayoutType()) ? HtmlUtil.escape(type) : "layout.types." + HtmlUtil.escape(lte.getLayoutType()) %>' key="the-first-page-cannot-be-of-type-x" />
 			</c:if>
 
 			<c:if test="<%= lte.getType() == LayoutTypeException.FIRST_LAYOUT_PERMISSION %>">
@@ -135,11 +136,11 @@ portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 			</c:if>
 
 			<c:if test="<%= lte.getType() == LayoutTypeException.NOT_INSTANCEABLE %>">
-				<liferay-ui:message arguments="<%= type %>" key="pages-of-type-x-cannot-be-selected" />
+				<liferay-ui:message arguments="<%= HtmlUtil.escape(type) %>" key="pages-of-type-x-cannot-be-selected" />
 			</c:if>
 
 			<c:if test="<%= lte.getType() == LayoutTypeException.NOT_PARENTABLE %>">
-				<liferay-ui:message arguments="<%= type %>" key="pages-of-type-x-cannot-have-child-pages" />
+				<liferay-ui:message arguments="<%= HtmlUtil.escape(type) %>" key="pages-of-type-x-cannot-have-child-pages" />
 			</c:if>
 		</liferay-ui:error>
 
@@ -192,5 +193,5 @@ portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 <liferay-frontend:component
 	componentId='<%= liferayPortletResponse.getNamespace() + "editLayout" %>'
 	context="<%= layoutsAdminDisplayContext.getProps() %>"
-	module="js/EditLayout"
+	module="{EditLayout} from layout-admin-web"
 />

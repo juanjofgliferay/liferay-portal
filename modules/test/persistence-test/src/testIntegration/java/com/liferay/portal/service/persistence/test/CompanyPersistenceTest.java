@@ -110,11 +110,7 @@ public class CompanyPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Company newCompany = _persistence.create(pk);
-
-		newCompany.setMvccVersion(RandomTestUtil.nextLong());
+		Company newCompany = addCompany();
 
 		newCompany.setUserId(RandomTestUtil.nextLong());
 
@@ -215,15 +211,6 @@ public class CompanyPersistenceTest {
 		_persistence.countByWebId("null");
 
 		_persistence.countByWebId((String)null);
-	}
-
-	@Test
-	public void testCountByMx() throws Exception {
-		_persistence.countByMx("");
-
-		_persistence.countByMx("null");
-
-		_persistence.countByMx((String)null);
 	}
 
 	@Test
@@ -524,26 +511,12 @@ public class CompanyPersistenceTest {
 			ReflectionTestUtil.invoke(
 				company, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "webId"));
-
-		Assert.assertEquals(
-			company.getMx(),
-			ReflectionTestUtil.invoke(
-				company, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "mx"));
-
-		Assert.assertEquals(
-			Long.valueOf(company.getLogoId()),
-			ReflectionTestUtil.<Long>invoke(
-				company, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "logoId"));
 	}
 
 	protected Company addCompany() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		Company company = _persistence.create(pk);
-
-		company.setMvccVersion(RandomTestUtil.nextLong());
 
 		company.setUserId(RandomTestUtil.nextLong());
 
@@ -597,3 +570,4 @@ public class CompanyPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1665334733

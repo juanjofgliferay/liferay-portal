@@ -5,6 +5,14 @@
 
 package com.liferay.jenkins.results.parser.failure.message.generator;
 
+import com.liferay.jenkins.results.parser.Dom4JUtil;
+import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+
+import java.io.IOException;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.dom4j.Element;
 
 /**
@@ -14,26 +22,90 @@ public class GradleTaskFailureMessageGenerator
 	extends BaseFailureMessageGenerator {
 
 	@Override
-	public Element getMessageElement(String consoleText) {
-		if (!consoleText.contains(_TOKEN_WHAT_WENT_WRONG)) {
+	public String getMessage(String consoleText) {
+		Element errorMessageElement = getMessageElement(consoleText);
+
+		if (errorMessageElement == null) {
 			return null;
 		}
 
-		int start = consoleText.lastIndexOf(_TOKEN_WHAT_WENT_WRONG);
+		try {
+			return Dom4JUtil.format(errorMessageElement);
+		}
+		catch (IOException ioException) {
+			return ioException.getMessage();
+		}
+	}
 
-		int whereIndex = consoleText.lastIndexOf(_TOKEN_WHERE, start);
-
-		if (whereIndex != -1) {
-			start = whereIndex;
+	@Override
+	public Element getMessageElement(String consoleText) {
+		if (JenkinsResultsParserUtil.isNullOrEmpty(consoleText)) {
+			return null;
 		}
 
-		start = consoleText.lastIndexOf("\n", start);
+		StringBuilder sb = new StringBuilder();
 
-		return getConsoleTextSnippetElementByStart(consoleText, start);
+		int start = consoleText.length();
+
+		Matcher javaErrorMatcher = _javaErrorPattern.matcher(consoleText);
+
+		if (javaErrorMatcher.find()) {
+			String snippet = javaErrorMatcher.group();
+
+			int snippetStart = consoleText.lastIndexOf(snippet);
+
+			if (snippetStart < start) {
+				start = snippetStart;
+			}
+		}
+
+		Matcher taskFailedMatcher = _taskFailedPattern.matcher(consoleText);
+
+		if (taskFailedMatcher.find()) {
+			String snippet = taskFailedMatcher.group(1);
+
+			int snippetStart = consoleText.lastIndexOf(snippet);
+
+			if (snippetStart < start) {
+				start = snippetStart;
+			}
+		}
+
+		if (start != consoleText.length()) {
+			sb.append(getConsoleTextSnippetByStart(consoleText, start));
+
+			sb.append("\n\n");
+		}
+
+		if (consoleText.contains(_TOKEN_WHAT_WENT_WRONG)) {
+			int snippetStart = consoleText.lastIndexOf(_TOKEN_WHAT_WENT_WRONG);
+
+			int whereIndex = consoleText.lastIndexOf(
+				_TOKEN_WHERE, snippetStart);
+
+			if (whereIndex != -1) {
+				snippetStart = whereIndex;
+			}
+
+			snippetStart = consoleText.lastIndexOf("\n", snippetStart);
+
+			sb.append(getConsoleTextSnippetByStart(consoleText, snippetStart));
+		}
+
+		if (sb.length() == 0) {
+			return null;
+		}
+
+		return Dom4JUtil.toCodeSnippetElement(sb.toString());
 	}
 
 	private static final String _TOKEN_WHAT_WENT_WRONG = "* What went wrong:";
 
 	private static final String _TOKEN_WHERE = "* Where:";
+
+	private static final Pattern _javaErrorPattern = Pattern.compile(
+		"[^\\n]+\\.java:\\d+: error:[^\\n]+");
+	private static final Pattern _taskFailedPattern = Pattern.compile(
+		"\\n(\\s+\\[exec\\] > Task :[^ ]+ FAILED)");
 
 }

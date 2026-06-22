@@ -10,24 +10,32 @@ import com.liferay.commerce.payment.audit.CommercePaymentEntryAuditTypeRegistry;
 import com.liferay.commerce.payment.configuration.CommercePaymentEntryAuditConfiguration;
 import com.liferay.commerce.payment.constants.CommercePaymentEntryAuditConstants;
 import com.liferay.commerce.payment.gateway.CommercePaymentGateway;
+import com.liferay.commerce.payment.helper.CommercePaymentHelper;
 import com.liferay.commerce.payment.integration.CommercePaymentIntegration;
 import com.liferay.commerce.payment.model.CommercePaymentEntry;
 import com.liferay.commerce.payment.service.CommercePaymentEntryAuditLocalService;
 import com.liferay.commerce.payment.service.CommercePaymentEntryLocalService;
-import com.liferay.commerce.payment.util.CommercePaymentHelper;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.dao.orm.ORMException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.StringUtil;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.persistence.OptimisticLockException;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,18 +65,58 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 			commercePaymentIntegration.authorize(
 				httpServletRequest, commercePaymentEntry);
 
-		User currentUser = _portal.getUser(httpServletRequest);
+		commercePaymentEntry =
+			_commercePaymentEntryLocalService.fetchCommercePaymentEntry(
+				commercePaymentEntry.getCommercePaymentEntryId());
+
+		if (StringUtil.equals(
+				commercePaymentEntry.getErrorMessages(),
+				authorizedCommercePaymentEntry.getErrorMessages()) &&
+			StringUtil.equals(
+				commercePaymentEntry.getPayload(),
+				authorizedCommercePaymentEntry.getPayload()) &&
+			(commercePaymentEntry.getPaymentStatus() ==
+				authorizedCommercePaymentEntry.getPaymentStatus()) &&
+			StringUtil.equals(
+				commercePaymentEntry.getRedirectURL(),
+				authorizedCommercePaymentEntry.getRedirectURL()) &&
+			StringUtil.equals(
+				commercePaymentEntry.getTransactionCode(),
+				authorizedCommercePaymentEntry.getTransactionCode())) {
+
+			return commercePaymentEntry;
+		}
+
+		User currentUser = _getUser(commercePaymentEntry, httpServletRequest);
 
 		PermissionThreadLocal.setPermissionChecker(
 			_defaultPermissionCheckerFactory.create(currentUser));
 
-		commercePaymentEntry =
-			_commercePaymentEntryLocalService.updateCommercePaymentEntry(
-				commercePaymentEntry.getCommercePaymentEntryId(),
-				authorizedCommercePaymentEntry.getErrorMessages(),
-				authorizedCommercePaymentEntry.getPaymentStatus(),
-				authorizedCommercePaymentEntry.getRedirectURL(),
-				authorizedCommercePaymentEntry.getTransactionCode());
+		try {
+			commercePaymentEntry =
+				_commercePaymentEntryLocalService.updateCommercePaymentEntry(
+					commercePaymentEntry.getExternalReferenceCode(),
+					commercePaymentEntry.getCommercePaymentEntryId(),
+					commercePaymentEntry.getCommerceChannelId(),
+					commercePaymentEntry.getAmount(),
+					commercePaymentEntry.getCallbackURL(),
+					commercePaymentEntry.getCancelURL(),
+					commercePaymentEntry.getCurrencyCode(),
+					authorizedCommercePaymentEntry.getErrorMessages(),
+					commercePaymentEntry.getLanguageId(),
+					commercePaymentEntry.getNote(),
+					commercePaymentEntry.getPayload(),
+					commercePaymentEntry.getPaymentIntegrationKey(),
+					commercePaymentEntry.getPaymentIntegrationType(),
+					authorizedCommercePaymentEntry.getPaymentStatus(),
+					commercePaymentEntry.getReasonKey(),
+					authorizedCommercePaymentEntry.getRedirectURL(),
+					authorizedCommercePaymentEntry.getTransactionCode(),
+					commercePaymentEntry.getType());
+		}
+		catch (Exception exception) {
+			_logOptimisticLockException(exception);
+		}
 
 		CommercePaymentEntryAuditConfiguration
 			commercePaymentEntryAuditConfiguration =
@@ -121,18 +169,31 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 			commercePaymentIntegration.cancel(
 				httpServletRequest, commercePaymentEntry);
 
-		User currentUser = _portal.getUser(httpServletRequest);
+		User currentUser = _getUser(commercePaymentEntry, httpServletRequest);
 
 		PermissionThreadLocal.setPermissionChecker(
 			_defaultPermissionCheckerFactory.create(currentUser));
 
 		commercePaymentEntry =
 			_commercePaymentEntryLocalService.updateCommercePaymentEntry(
+				commercePaymentEntry.getExternalReferenceCode(),
 				commercePaymentEntry.getCommercePaymentEntryId(),
+				commercePaymentEntry.getCommerceChannelId(),
+				commercePaymentEntry.getAmount(),
+				commercePaymentEntry.getCallbackURL(),
+				commercePaymentEntry.getCancelURL(),
+				commercePaymentEntry.getCurrencyCode(),
 				cancelledCommercePaymentEntry.getErrorMessages(),
+				commercePaymentEntry.getLanguageId(),
+				commercePaymentEntry.getNote(),
+				commercePaymentEntry.getPayload(),
+				commercePaymentEntry.getPaymentIntegrationKey(),
+				commercePaymentEntry.getPaymentIntegrationType(),
 				cancelledCommercePaymentEntry.getPaymentStatus(),
+				commercePaymentEntry.getReasonKey(),
 				cancelledCommercePaymentEntry.getRedirectURL(),
-				cancelledCommercePaymentEntry.getTransactionCode());
+				cancelledCommercePaymentEntry.getTransactionCode(),
+				commercePaymentEntry.getType());
 
 		CommercePaymentEntryAuditConfiguration
 			commercePaymentEntryAuditConfiguration =
@@ -175,6 +236,11 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 			CommercePaymentEntry commercePaymentEntry)
 		throws PortalException {
 
+		// LPD-20381 Get transaction code before it is captured by the commerce
+		// payment integration
+
+		String transactionCode = commercePaymentEntry.getTransactionCode();
+
 		CommercePaymentIntegration commercePaymentIntegration =
 			_commercePaymentHelper.getCommercePaymentIntegration(
 				commercePaymentEntry.getCommerceChannelId(),
@@ -184,18 +250,58 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 			commercePaymentIntegration.capture(
 				httpServletRequest, commercePaymentEntry);
 
-		User currentUser = _portal.getUser(httpServletRequest);
+		commercePaymentEntry =
+			_commercePaymentEntryLocalService.fetchCommercePaymentEntry(
+				commercePaymentEntry.getCommercePaymentEntryId());
+
+		if (StringUtil.equals(
+				commercePaymentEntry.getErrorMessages(),
+				capturedCommercePaymentEntry.getErrorMessages()) &&
+			StringUtil.equals(
+				commercePaymentEntry.getPayload(),
+				capturedCommercePaymentEntry.getPayload()) &&
+			(commercePaymentEntry.getPaymentStatus() ==
+				capturedCommercePaymentEntry.getPaymentStatus()) &&
+			StringUtil.equals(
+				commercePaymentEntry.getRedirectURL(),
+				capturedCommercePaymentEntry.getRedirectURL()) &&
+			StringUtil.equals(
+				transactionCode,
+				capturedCommercePaymentEntry.getTransactionCode())) {
+
+			return commercePaymentEntry;
+		}
+
+		User currentUser = _getUser(commercePaymentEntry, httpServletRequest);
 
 		PermissionThreadLocal.setPermissionChecker(
 			_defaultPermissionCheckerFactory.create(currentUser));
 
-		commercePaymentEntry =
-			_commercePaymentEntryLocalService.updateCommercePaymentEntry(
-				commercePaymentEntry.getCommercePaymentEntryId(),
-				capturedCommercePaymentEntry.getErrorMessages(),
-				capturedCommercePaymentEntry.getPaymentStatus(),
-				capturedCommercePaymentEntry.getRedirectURL(),
-				capturedCommercePaymentEntry.getTransactionCode());
+		try {
+			commercePaymentEntry =
+				_commercePaymentEntryLocalService.updateCommercePaymentEntry(
+					commercePaymentEntry.getExternalReferenceCode(),
+					commercePaymentEntry.getCommercePaymentEntryId(),
+					commercePaymentEntry.getCommerceChannelId(),
+					commercePaymentEntry.getAmount(),
+					commercePaymentEntry.getCallbackURL(),
+					commercePaymentEntry.getCancelURL(),
+					commercePaymentEntry.getCurrencyCode(),
+					capturedCommercePaymentEntry.getErrorMessages(),
+					commercePaymentEntry.getLanguageId(),
+					commercePaymentEntry.getNote(),
+					capturedCommercePaymentEntry.getPayload(),
+					commercePaymentEntry.getPaymentIntegrationKey(),
+					commercePaymentEntry.getPaymentIntegrationType(),
+					capturedCommercePaymentEntry.getPaymentStatus(),
+					commercePaymentEntry.getReasonKey(),
+					capturedCommercePaymentEntry.getRedirectURL(),
+					capturedCommercePaymentEntry.getTransactionCode(),
+					commercePaymentEntry.getType());
+		}
+		catch (Exception exception) {
+			_logOptimisticLockException(exception);
+		}
 
 		CommercePaymentEntryAuditConfiguration
 			commercePaymentEntryAuditConfiguration =
@@ -248,18 +354,31 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 			commercePaymentIntegration.refund(
 				httpServletRequest, commercePaymentEntry);
 
-		User currentUser = _portal.getUser(httpServletRequest);
+		User currentUser = _getUser(commercePaymentEntry, httpServletRequest);
 
 		PermissionThreadLocal.setPermissionChecker(
 			_defaultPermissionCheckerFactory.create(currentUser));
 
 		commercePaymentEntry =
 			_commercePaymentEntryLocalService.updateCommercePaymentEntry(
+				commercePaymentEntry.getExternalReferenceCode(),
 				commercePaymentEntry.getCommercePaymentEntryId(),
+				commercePaymentEntry.getCommerceChannelId(),
+				commercePaymentEntry.getAmount(),
+				commercePaymentEntry.getCallbackURL(),
+				commercePaymentEntry.getCancelURL(),
+				commercePaymentEntry.getCurrencyCode(),
 				refundedCommercePaymentEntry.getErrorMessages(),
+				commercePaymentEntry.getLanguageId(),
+				commercePaymentEntry.getNote(),
+				commercePaymentEntry.getPayload(),
+				commercePaymentEntry.getPaymentIntegrationKey(),
+				commercePaymentEntry.getPaymentIntegrationType(),
 				refundedCommercePaymentEntry.getPaymentStatus(),
+				commercePaymentEntry.getReasonKey(),
 				refundedCommercePaymentEntry.getRedirectURL(),
-				refundedCommercePaymentEntry.getTransactionCode());
+				refundedCommercePaymentEntry.getTransactionCode(),
+				commercePaymentEntry.getType());
 
 		CommercePaymentEntryAuditConfiguration
 			commercePaymentEntryAuditConfiguration =
@@ -324,6 +443,46 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 			CommercePaymentEntryAuditConfiguration.class, companyId);
 	}
 
+	private User _getUser(
+			CommercePaymentEntry commercePaymentEntry,
+			HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		User user = _portal.getUser(httpServletRequest);
+
+		if ((user == null) && (commercePaymentEntry != null)) {
+			user = _userLocalService.fetchUser(
+				commercePaymentEntry.getUserId());
+		}
+
+		return user;
+	}
+
+	private void _logOptimisticLockException(Exception exception) {
+		if (!(exception.getCause() instanceof SystemException)) {
+			return;
+		}
+
+		Throwable throwable = exception.getCause();
+
+		if (!(throwable instanceof ORMException)) {
+			return;
+		}
+
+		throwable = throwable.getCause();
+
+		if (!(throwable instanceof OptimisticLockException) ||
+			!_log.isDebugEnabled()) {
+
+			return;
+		}
+
+		_log.debug("Ignore duplicate calls. See LPD-28950.", exception);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CommercePaymentGatewayImpl.class);
+
 	@Reference
 	private CommercePaymentEntryAuditLocalService
 		_commercePaymentEntryAuditLocalService;
@@ -346,5 +505,8 @@ public class CommercePaymentGatewayImpl implements CommercePaymentGateway {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

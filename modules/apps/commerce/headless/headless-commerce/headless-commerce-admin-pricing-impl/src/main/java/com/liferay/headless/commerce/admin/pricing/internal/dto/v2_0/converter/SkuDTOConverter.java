@@ -6,7 +6,7 @@
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
 
 import com.liferay.commerce.currency.model.CommerceCurrency;
-import com.liferay.commerce.currency.service.CommerceCurrencyService;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
@@ -15,7 +15,6 @@ import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Sku;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 
@@ -45,30 +44,36 @@ public class SkuDTOConverter implements DTOConverter<CPInstance, Sku> {
 		CPInstance cpInstance = _cpInstanceService.fetchCPInstance(
 			(Long)dtoConverterContext.getId());
 
+		String unitOfMeasureKey = (String)dtoConverterContext.getAttribute(
+			"unitOfMeasureKey");
+
 		CommercePriceEntry commerceBasePriceListPriceEntry =
 			_commercePriceEntryLocalService.getInstanceBaseCommercePriceEntry(
 				cpInstance.getCPInstanceUuid(),
-				CommercePriceListConstants.TYPE_PRICE_LIST, StringPool.BLANK);
+				CommercePriceListConstants.TYPE_PRICE_LIST, unitOfMeasureKey);
 
 		CommercePriceEntry commerceBasePromotionPriceEntry =
 			_commercePriceEntryLocalService.getInstanceBaseCommercePriceEntry(
 				cpInstance.getCPInstanceUuid(),
-				CommercePriceListConstants.TYPE_PROMOTION, StringPool.BLANK);
+				CommercePriceListConstants.TYPE_PROMOTION, unitOfMeasureKey);
 
 		Locale locale = dtoConverterContext.getLocale();
 
 		return new Sku() {
 			{
-				basePrice = _getPrice(commerceBasePriceListPriceEntry);
-				basePriceFormatted = _formatPrice(
-					cpInstance.getCompanyId(), commerceBasePriceListPriceEntry,
-					locale);
-				basePromoPrice = _getPrice(commerceBasePromotionPriceEntry);
-				basePromoPriceFormatted = _formatPrice(
-					cpInstance.getCompanyId(), commerceBasePromotionPriceEntry,
-					locale);
-				id = cpInstance.getCPInstanceId();
-				name = cpInstance.getSku();
+				setBasePrice(() -> _getPrice(commerceBasePriceListPriceEntry));
+				setBasePriceFormatted(
+					() -> _formatPrice(
+						cpInstance.getCompanyId(),
+						commerceBasePriceListPriceEntry, locale));
+				setBasePromoPrice(
+					() -> _getPrice(commerceBasePromotionPriceEntry));
+				setBasePromoPriceFormatted(
+					() -> _formatPrice(
+						cpInstance.getCompanyId(),
+						commerceBasePromotionPriceEntry, locale));
+				setId(cpInstance::getCPInstanceId);
+				setName(cpInstance::getSku);
 			}
 		};
 	}
@@ -79,18 +84,18 @@ public class SkuDTOConverter implements DTOConverter<CPInstance, Sku> {
 
 		if (priceEntry == null) {
 			CommerceCurrency commerceCurrency =
-				_commerceCurrencyService.fetchPrimaryCommerceCurrency(
+				_commerceCurrencyLocalService.fetchPrimaryCommerceCurrency(
 					companyId);
 
 			return _commercePriceFormatter.format(
-				commerceCurrency, BigDecimal.ZERO, locale);
+				commerceCurrency, true, locale, BigDecimal.ZERO);
 		}
 
 		CommercePriceList commercePriceList = priceEntry.getCommercePriceList();
 
 		return _commercePriceFormatter.format(
-			commercePriceList.getCommerceCurrency(), priceEntry.getPrice(),
-			locale);
+			commercePriceList.getCommerceCurrency(), true, locale,
+			priceEntry.getPrice());
 	}
 
 	private double _getPrice(CommercePriceEntry commercePriceEntry) {
@@ -104,7 +109,7 @@ public class SkuDTOConverter implements DTOConverter<CPInstance, Sku> {
 	}
 
 	@Reference
-	private CommerceCurrencyService _commerceCurrencyService;
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 	@Reference
 	private CommercePriceEntryLocalService _commercePriceEntryLocalService;

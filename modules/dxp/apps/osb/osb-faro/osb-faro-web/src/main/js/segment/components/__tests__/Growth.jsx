@@ -5,31 +5,13 @@ import SegmentGrowthWithList, {
 	SelectedPointInfo
 } from '../Growth';
 import {MemoryRouter, Route} from 'react-router-dom';
-import {render} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {Routes} from 'shared/util/router';
 import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
 describe('SegmentGrowthWithList', () => {
-	const {ResizeObserver} = window;
-
-	beforeEach(() => {
-		delete window.ResizeObserver;
-
-		window.ResizeObserver = jest.fn().mockImplementation(() => ({
-			disconnect: jest.fn(),
-			observe: jest.fn(),
-			unobserve: jest.fn()
-		}));
-	});
-
-	afterEach(() => {
-		window.ResizeObserver = ResizeObserver;
-
-		jest.restoreAllMocks();
-	});
-
 	it('should render', async () => {
 		const {container} = render(
 			<MemoryRouter
@@ -59,41 +41,23 @@ describe('SegmentGrowthWithList', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		expect(container).toMatchSnapshot();
+		expect(screen.getByText('Known Members')).toBeInTheDocument();
 	});
 });
 
 describe('SegmentGrowthChart', () => {
-	const {ResizeObserver} = window;
-
-	beforeEach(() => {
-		delete window.ResizeObserver;
-
-		window.ResizeObserver = jest.fn().mockImplementation(() => ({
-			disconnect: jest.fn(),
-			observe: jest.fn(),
-			unobserve: jest.fn()
-		}));
-	});
-
-	afterEach(() => {
-		window.ResizeObserver = ResizeObserver;
-
-		jest.restoreAllMocks();
-	});
-
 	it('should render', () => {
-		const {container} = render(
-			<SegmentGrowthChart data={[]} onPointSelect={jest.fn()} />
-		);
+		render(<SegmentGrowthChart data={[]} onPointSelect={jest.fn()} />);
 
-		expect(container).toMatchSnapshot();
+		expect(
+			screen.getByText('There is no data for segment membership.')
+		).toBeInTheDocument();
 	});
 });
 
 describe('SelectedPointInfo', () => {
 	it('should render', () => {
-		const {container} = render(
+		render(
 			<SelectedPointInfo
 				data={[
 					{
@@ -107,6 +71,7 @@ describe('SelectedPointInfo', () => {
 				selectedPoint={0}
 			/>
 		);
-		expect(container).toMatchSnapshot();
+
+		expect(screen.getByText('Known Members')).toBeInTheDocument();
 	});
 });

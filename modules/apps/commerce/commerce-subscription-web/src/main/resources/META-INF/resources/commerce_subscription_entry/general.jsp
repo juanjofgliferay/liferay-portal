@@ -377,73 +377,51 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	contextParams="<%= contextParams %>"
 	dataProviderKey="<%= CommerceSubscriptionFDSNames.SUBSCRIPTION_ORDER_ITEMS %>"
 	id="<%= CommerceSubscriptionFDSNames.SUBSCRIPTION_ORDER_ITEMS %>"
-	itemsPerPage="<%= 10 %>"
 	style="stacked"
 />
 </commerce-ui:panel>
 
-<aui:script>
-	Liferay.provide(
-		window,
-		'<portlet:namespace />selectSubscriptionType',
-		() => {
-			const subscriptionLength = document.getElementById(
-				'<portlet:namespace />subscriptionLength'
-			).value;
-			const subscriptionType = document.getElementById(
-				'<portlet:namespace />subscriptionType'
-			).value;
-			const maxSubscriptionCycles = document.getElementById(
-				'<portlet:namespace />maxSubscriptionCycles'
-			).value;
+<aui:script sandbox="<%= true %>">
+	Liferay.provide(window, '<portlet:namespace />selectSubscriptionType', () => {
+		const portletURL = Liferay.Util.PortletURL.createPortletURL(
+			'<%= currentURLObj %>',
+			{
+				subscriptionLength: document.getElementById(
+					'<portlet:namespace />subscriptionLength'
+				).value,
+				subscriptionType: document.getElementById(
+					'<portlet:namespace />subscriptionType'
+				).value,
+				maxSubscriptionCycles: document.getElementById(
+					'<portlet:namespace />maxSubscriptionCycles'
+				).value,
+			}
+		);
 
-			const portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
-			);
-
-			portletURL.setParameter('subscriptionLength', subscriptionLength);
-			portletURL.setParameter('subscriptionType', subscriptionType);
-			portletURL.setParameter('maxSubscriptionCycles', maxSubscriptionCycles);
-
-			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
-	);
+		window.location.replace(portletURL.toString());
+	});
 
 	Liferay.provide(
 		window,
 		'<portlet:namespace />selectDeliverySubscriptionType',
 		() => {
-			const deliverySubscriptionLength = document.getElementById(
-				'<portlet:namespace />deliverySubscriptionLength'
-			).value;
-			const deliverySubscriptionType = document.getElementById(
-				'<portlet:namespace />deliverySubscriptionType'
-			).value;
-			const deliveryMaxSubscriptionCycles = document.getElementById(
-				'<portlet:namespace />deliveryMaxSubscriptionCycles'
-			).value;
-
-			const portletURL = new Liferay.PortletURL.createURL(
-				'<%= currentURLObj %>'
-			);
-
-			portletURL.setParameter(
-				'deliverySubscriptionLength',
-				deliverySubscriptionLength
-			);
-			portletURL.setParameter(
-				'deliverySubscriptionType',
-				deliverySubscriptionType
-			);
-			portletURL.setParameter(
-				'deliveryMaxSubscriptionCycles',
-				deliveryMaxSubscriptionCycles
+			const portletURL = Liferay.Util.PortletURL.createPortletURL(
+				'<%= currentURLObj %>',
+				{
+					deliverySubscriptionLength: document.getElementById(
+						'<portlet:namespace />deliverySubscriptionLength'
+					).value,
+					deliverySubscriptionType: document.getElementById(
+						'<portlet:namespace />deliverySubscriptionType'
+					).value,
+					deliveryMaxSubscriptionCycles: document.getElementById(
+						'<portlet:namespace />deliveryMaxSubscriptionCycles'
+					).value,
+				}
 			);
 
 			window.location.replace(portletURL.toString());
-		},
-		['liferay-portlet-url']
+		}
 	);
 </aui:script>
 
@@ -451,8 +429,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />neverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />maxSubscriptionCycles'
@@ -462,8 +441,9 @@ if (deliveryMaxSubscriptionCycles > 0) {
 	document
 		.getElementById('<portlet:namespace />deliveryNeverEnds')
 		.addEventListener('change', (event) => {
-			const formValidator = Liferay.Form.get('<portlet:namespace />fm')
-				.formValidator;
+			const formValidator = Liferay.Form.get(
+				'<portlet:namespace />fm'
+			).formValidator;
 
 			formValidator.validateField(
 				'<portlet:namespace />deliveryMaxSubscriptionCycles'

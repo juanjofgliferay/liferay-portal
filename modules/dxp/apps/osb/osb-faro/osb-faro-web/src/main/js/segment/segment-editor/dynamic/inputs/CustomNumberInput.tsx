@@ -24,25 +24,6 @@ interface ICustomNumberInputProps extends ISegmentEditorCustomInputBase {
 }
 
 export default class CustomNumberInput extends React.Component<ICustomNumberInputProps> {
-	_completedAnalytics = false;
-
-	componentDidUpdate() {
-		const {
-			id,
-			property: {entityName, type},
-			valid
-		} = this.props;
-
-		if (!id && valid && !this._completedAnalytics) {
-			this._completedAnalytics = true;
-
-			analytics.track('Dynamic Segment Creation - Completed Attribute', {
-				entityName,
-				type
-			});
-		}
-	}
-
 	getSelectedOperatorKey() {
 		const criterionIMap = this.props.value.getIn(
 			['criterionGroup', 'items', 0],
@@ -62,7 +43,7 @@ export default class CustomNumberInput extends React.Component<ICustomNumberInpu
 			operatorKey = isKnown;
 		}
 
-		return NUMBER_OPERATORS.find(({key}) => key === operatorKey).key;
+		return NUMBER_OPERATORS.find(({key}) => key === operatorKey)?.key;
 	}
 
 	@autobind
@@ -77,17 +58,17 @@ export default class CustomNumberInput extends React.Component<ICustomNumberInpu
 	}
 
 	@autobind
-	handleOperatorChange(operator) {
+	handleOperatorChange(operator: React.Key) {
 		const {onChange, value: valueIMap} = this.props;
 
 		let newVal = null;
 
 		newVal = valueIMap.setIn(
 			['criterionGroup', 'items', 0, 'operatorName'],
-			NUMBER_OPERATORS.find(({key}) => key === operator).name
+			NUMBER_OPERATORS.find(({key}) => key === operator)?.name
 		);
 
-		if (isOfKnownType(operator)) {
+		if (isOfKnownType(String(operator))) {
 			newVal = newVal.setIn(
 				['criterionGroup', 'items', 0, 'value'],
 				null
@@ -105,7 +86,7 @@ export default class CustomNumberInput extends React.Component<ICustomNumberInpu
 	}
 
 	@autobind
-	handleValueChange(event) {
+	handleValueChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const {value} = event.target;
 
 		const {onChange, value: valueIMap} = this.props;
@@ -138,7 +119,7 @@ export default class CustomNumberInput extends React.Component<ICustomNumberInpu
 		} = this.props;
 
 		const selectedOperatorKey = this.getSelectedOperatorKey();
-		const knownType = isOfKnownType(selectedOperatorKey);
+		const knownType = isOfKnownType(selectedOperatorKey ?? '');
 
 		return (
 			<div className='criteria-statement'>

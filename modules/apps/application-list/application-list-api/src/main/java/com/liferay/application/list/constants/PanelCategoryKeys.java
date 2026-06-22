@@ -32,6 +32,12 @@ public interface PanelCategoryKeys {
 	public static final String APPLICATIONS_MENU_APPLICATIONS_CUSTOM_APPS =
 		"applications_menu.applications.custom.apps";
 
+	public static final String APPLICATIONS_MENU_APPLICATIONS_DESIGN =
+		"applications_menu.applications.design";
+
+	public static final String APPLICATIONS_MENU_APPLICATIONS_PERSONALIZATION =
+		"applications_menu.applications.personalization";
+
 	public static final String APPLICATIONS_MENU_APPLICATIONS_PUBLICATIONS =
 		"applications_menu.applications.publications";
 
@@ -69,6 +75,8 @@ public interface PanelCategoryKeys {
 		PortletCategoryKeys.CONTROL_PANEL_WORKFLOW;
 
 	public static final String HIDDEN = "hidden";
+
+	public static final String MARKETPLACE = "marketplace";
 
 	public static final String ROOT = "root";
 

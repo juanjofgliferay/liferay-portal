@@ -8,6 +8,8 @@ package com.liferay.osb.faro.admin.web.internal.model;
 import com.liferay.osb.faro.model.FaroProject;
 import com.liferay.osb.faro.model.FaroUser;
 import com.liferay.osb.faro.service.FaroUserLocalServiceUtil;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
@@ -15,8 +17,6 @@ import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-
-import java.text.DecimalFormat;
 
 import java.util.Date;
 
@@ -39,10 +39,12 @@ public class FaroProjectAdminDisplay {
 			_log.error(exception);
 		}
 
+		_dataSourceConnected = GetterUtil.getBoolean(
+			document.get("dataSourceConnected"));
 		_faroProjectId = GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK));
 		_groupId = GetterUtil.getLong(document.get(Field.GROUP_ID));
-		_individualsUsage = _decimalFormat.format(
-			GetterUtil.getDouble(document.get("individualsUsage")));
+		_individualsLimit = GetterUtil.getLong(
+			document.get("individualsLimit"));
 
 		try {
 			_lastAccessDate = document.getDate("lastAccessDate");
@@ -54,21 +56,32 @@ public class FaroProjectAdminDisplay {
 		_name = document.get(Field.NAME);
 		_offline = GetterUtil.getBoolean(document.get("offline"));
 		_owner = _getOwner();
-		_pageViewsUsage = _decimalFormat.format(
-			GetterUtil.getDouble(document.get("pageViewsUsage")));
+		_pageViewsLimit = GetterUtil.getLong(document.get("pageViewsLimit"));
 		_serverLocation = document.get("serverLocation");
 		_subscriptionName = document.get("subscriptionName");
+
+		try {
+			JSONObject subscriptionJSONObject =
+				JSONFactoryUtil.createJSONObject(document.get("subscription"));
+
+			_individualsCount = subscriptionJSONObject.getLong(
+				"individualsCountSinceLastAnniversary");
+
+			_individualsUsage = document.get("individualsUsage");
+
+			_pageViewsCount = subscriptionJSONObject.getLong(
+				"pageViewsCountSinceLastAnniversary");
+
+			_pageViewsUsage = document.get("pageViewsUsage");
+		}
+		catch (Exception exception) {
+			_log.error(exception);
+		}
 	}
 
 	public FaroProjectAdminDisplay(FaroProject faroProject, Document document) {
 		this(document);
 
-		_individualsCount = GetterUtil.getLong(
-			document.get("individualsCount"));
-		_individualsLimit = GetterUtil.getLong(
-			document.get("individualsLimit"));
-		_pageViewsCount = GetterUtil.getLong(document.get("pageViewsCount"));
-		_pageViewsLimit = GetterUtil.getLong(document.get("pageViewsLimit"));
 		_serverLocation = faroProject.getServerLocation();
 		_subscription = faroProject.getSubscription();
 		_weDeployKey = faroProject.getWeDeployKey();
@@ -154,6 +167,10 @@ public class FaroProjectAdminDisplay {
 		return _weDeployKey;
 	}
 
+	public boolean isDataSourceConnected() {
+		return _dataSourceConnected;
+	}
+
 	public boolean isOffline() {
 		return _offline;
 	}
@@ -170,6 +187,10 @@ public class FaroProjectAdminDisplay {
 		if (createDate != null) {
 			_createDate = new Date(createDate.getTime());
 		}
+	}
+
+	public void setDataSourceConnected(boolean dataSourceConnected) {
+		_dataSourceConnected = dataSourceConnected;
 	}
 
 	public void setFaroProjectId(long faroProjectId) {
@@ -258,12 +279,10 @@ public class FaroProjectAdminDisplay {
 	private static final Log _log = LogFactoryUtil.getLog(
 		FaroProjectAdminDisplay.class);
 
-	private static final DecimalFormat _decimalFormat = new DecimalFormat(
-		"#.##");
-
 	private String _corpProjectName;
 	private String _corpProjectUuid;
 	private Date _createDate;
+	private boolean _dataSourceConnected;
 	private long _faroProjectId;
 	private long _groupId;
 	private long _individualsCount;

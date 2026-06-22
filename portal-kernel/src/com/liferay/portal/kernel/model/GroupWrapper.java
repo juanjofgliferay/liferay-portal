@@ -918,6 +918,11 @@ public class GroupWrapper
 	}
 
 	@Override
+	public boolean isCMS() {
+		return model.isCMS();
+	}
+
+	@Override
 	public boolean isCompany() {
 		return model.isCompany();
 	}
@@ -980,6 +985,11 @@ public class GroupWrapper
 	@Override
 	public boolean isLimitedToParentSiteMembers() {
 		return model.isLimitedToParentSiteMembers();
+	}
+
+	@Override
+	public boolean isMaintenanceMode() {
+		return model.isMaintenanceMode();
 	}
 
 	/**
@@ -1508,3 +1518,4 @@ public class GroupWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:257356345

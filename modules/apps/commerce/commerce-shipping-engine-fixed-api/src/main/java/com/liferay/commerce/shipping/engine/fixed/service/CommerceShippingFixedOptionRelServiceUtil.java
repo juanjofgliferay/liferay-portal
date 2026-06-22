@@ -7,6 +7,7 @@ package com.liferay.commerce.shipping.engine.fixed.service;
 
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -32,40 +33,19 @@ public class CommerceShippingFixedOptionRelServiceUtil {
 	 */
 	public static CommerceShippingFixedOptionRel
 			addCommerceShippingFixedOptionRel(
-				long groupId, long commerceShippingMethodId,
+				long groupId, long commerceInventoryWarehouseId,
 				long commerceShippingFixedOptionId,
-				long commerceInventoryWarehouseId, long countryId,
-				long regionId, String zip, double weightFrom, double weightTo,
-				java.math.BigDecimal fixedPrice,
-				java.math.BigDecimal rateUnitWeightPrice, double ratePercentage)
+				long commerceShippingMethodId, long countryId, long regionId,
+				java.math.BigDecimal fixedPrice, double ratePercentage,
+				java.math.BigDecimal rateUnitWeightPrice, double weightFrom,
+				double weightTo, String zip)
 		throws PortalException {
 
 		return getService().addCommerceShippingFixedOptionRel(
-			groupId, commerceShippingMethodId, commerceShippingFixedOptionId,
-			commerceInventoryWarehouseId, countryId, regionId, zip, weightFrom,
-			weightTo, fixedPrice, rateUnitWeightPrice, ratePercentage);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static CommerceShippingFixedOptionRel
-			addCommerceShippingFixedOptionRel(
-				long commerceShippingMethodId,
-				long commerceShippingFixedOptionId,
-				long commerceInventoryWarehouseId, long countryId,
-				long regionId, String zip, double weightFrom, double weightTo,
-				java.math.BigDecimal fixedPrice,
-				java.math.BigDecimal rateUnitWeightPrice, double ratePercentage,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCommerceShippingFixedOptionRel(
-			commerceShippingMethodId, commerceShippingFixedOptionId,
-			commerceInventoryWarehouseId, countryId, regionId, zip, weightFrom,
-			weightTo, fixedPrice, rateUnitWeightPrice, ratePercentage,
-			serviceContext);
+			groupId, commerceInventoryWarehouseId,
+			commerceShippingFixedOptionId, commerceShippingMethodId, countryId,
+			regionId, fixedPrice, ratePercentage, rateUnitWeightPrice,
+			weightFrom, weightTo, zip);
 	}
 
 	public static void deleteCommerceShippingFixedOptionRel(
@@ -83,6 +63,27 @@ public class CommerceShippingFixedOptionRelServiceUtil {
 
 		return getService().fetchCommerceShippingFixedOptionRel(
 			commerceShippingFixedOptionRelId);
+	}
+
+	public static List<CommerceShippingFixedOptionRel>
+			getCommerceShippingFixedOptionRels(
+				long commerceShippingFixedOptionId,
+				long commerceShippingMethodId, int start, int end,
+				OrderByComparator<CommerceShippingFixedOptionRel>
+					orderByComparator)
+		throws PortalException {
+
+		return getService().getCommerceShippingFixedOptionRels(
+			commerceShippingFixedOptionId, commerceShippingMethodId, start, end,
+			orderByComparator);
+	}
+
+	public static int getCommerceShippingFixedOptionRelsCount(
+			long commerceShippingFixedOptionId, long commerceShippingMethodId)
+		throws PortalException {
+
+		return getService().getCommerceShippingFixedOptionRelsCount(
+			commerceShippingFixedOptionId, commerceShippingMethodId);
 	}
 
 	public static List<CommerceShippingFixedOptionRel>
@@ -117,27 +118,25 @@ public class CommerceShippingFixedOptionRelServiceUtil {
 			updateCommerceShippingFixedOptionRel(
 				long commerceShippingFixedOptionRelId,
 				long commerceInventoryWarehouseId, long countryId,
-				long regionId, String zip, double weightFrom, double weightTo,
-				java.math.BigDecimal fixedPrice,
-				java.math.BigDecimal rateUnitWeightPrice, double ratePercentage)
+				long regionId, java.math.BigDecimal fixedPrice,
+				double ratePercentage, java.math.BigDecimal rateUnitWeightPrice,
+				double weightFrom, double weightTo, String zip)
 		throws PortalException {
 
 		return getService().updateCommerceShippingFixedOptionRel(
 			commerceShippingFixedOptionRelId, commerceInventoryWarehouseId,
-			countryId, regionId, zip, weightFrom, weightTo, fixedPrice,
-			rateUnitWeightPrice, ratePercentage);
+			countryId, regionId, fixedPrice, ratePercentage,
+			rateUnitWeightPrice, weightFrom, weightTo, zip);
 	}
 
 	public static CommerceShippingFixedOptionRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(
-		CommerceShippingFixedOptionRelService service) {
-
-		_service = service;
-	}
-
-	private static volatile CommerceShippingFixedOptionRelService _service;
+	private static final Snapshot<CommerceShippingFixedOptionRelService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceShippingFixedOptionRelServiceUtil.class,
+			CommerceShippingFixedOptionRelService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-925862919

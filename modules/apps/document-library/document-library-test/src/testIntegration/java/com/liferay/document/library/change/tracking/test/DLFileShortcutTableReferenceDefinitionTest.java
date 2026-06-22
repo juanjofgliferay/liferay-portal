@@ -61,26 +61,26 @@ public class DLFileShortcutTableReferenceDefinitionTest
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			StringPool.BLANK, StringPool.BLANK,
 			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT, null,
-			null, inputStream, bytes.length, null, null,
+			null, inputStream, bytes.length, null, null, null,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 	}
 
 	@Override
 	protected CTModel<?> addCTModel() throws Exception {
 		return _dlFileShortcutLocalService.addFileShortcut(
-			group.getCreatorUserId(), group.getGroupId(),
+			null, group.getCreatorUserId(), group.getGroupId(),
 			_dlFileEntry.getRepositoryId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			_dlFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 	}
 
-	@Inject
-	private static DLFileEntryLocalService _dlFileEntryLocalService;
-
-	@Inject
-	private static DLFileShortcutLocalService _dlFileShortcutLocalService;
-
 	private DLFileEntry _dlFileEntry;
+
+	@Inject
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Inject
+	private DLFileShortcutLocalService _dlFileShortcutLocalService;
 
 }

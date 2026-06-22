@@ -6,6 +6,7 @@
 package com.liferay.depot.internal.servlet.taglib.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.portal.kernel.language.Language;
@@ -91,6 +92,9 @@ public class DepotBreadcrumbEntryContributorTest {
 			homeBreadcrumbEntry.toString(),
 			_language.get(mockHttpServletRequest, "home"),
 			homeBreadcrumbEntry.getTitle());
+
+		_assertBreadcrumbEntryNotBrowsable(
+			breadcrumbEntries.get(breadcrumbEntries.size() - 1));
 	}
 
 	@Test
@@ -155,6 +159,9 @@ public class DepotBreadcrumbEntryContributorTest {
 				breadcrumbEntry.toString(), breadcrumbEntry.getTitle(),
 				previousBreadcrumbEntry.getTitle());
 		}
+
+		_assertBreadcrumbEntryNotBrowsable(
+			breadcrumbEntries.get(breadcrumbEntries.size() - 1));
 	}
 
 	private DepotEntry _addDepotEntry(String name, String description)
@@ -167,6 +174,7 @@ public class DepotBreadcrumbEntryContributorTest {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), description
 			).build(),
+			DepotConstants.TYPE_ASSET_LIBRARY,
 			ServiceContextTestUtil.getServiceContext());
 
 		_depotEntries.add(depotEntry);
@@ -191,6 +199,15 @@ public class DepotBreadcrumbEntryContributorTest {
 		Assert.assertEquals(
 			assetLibraryBreadcrumbEntry.toString(), depotName,
 			assetLibraryBreadcrumbEntry.getTitle());
+	}
+
+	private void _assertBreadcrumbEntryNotBrowsable(
+			BreadcrumbEntry breadcrumbEntry)
+		throws Exception {
+
+		Assert.assertFalse(
+			breadcrumbEntry.toString(), breadcrumbEntry.isBrowsable());
+		Assert.assertNull(breadcrumbEntry.toString(), breadcrumbEntry.getURL());
 	}
 
 	private BreadcrumbEntry _getBreadcrumbEntry() {
@@ -221,7 +238,7 @@ public class DepotBreadcrumbEntryContributorTest {
 		mockPortletRequest.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
 
 		mockHttpServletRequest.setAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST, mockPortletRequest);
+			JavaConstants.JAKARTA_PORTLET_REQUEST, mockPortletRequest);
 
 		return mockHttpServletRequest;
 	}

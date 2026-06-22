@@ -1,7 +1,9 @@
-import {EntityTypes} from '../constants';
-import {Map, Record} from 'immutable';
+import {EntityTypes, SegmentTypes} from '../constants';
+import {fromJS, Map, Record} from 'immutable';
+import {SegmentActivationDetails} from 'segment/components/SegmentActivationCard';
 
 interface ISegment {
+	activation: SegmentActivationDetails;
 	activeIndividualCount: number;
 	activitiesCount: number;
 	anonymousIndividualCount: number;
@@ -9,6 +11,7 @@ interface ISegment {
 	criteriaString?: string; // "filter" has been renamed to criteriaString to avoid clashing with ImmutableMaps filter method.
 	dateCreated: number;
 	dateModified: number;
+	externalReferenceCode: string;
 	id: string;
 	includeAnonymousUsers: boolean;
 	individualCount: number;
@@ -17,7 +20,8 @@ interface ISegment {
 	name: string;
 	properties: Map<string, any>;
 	referencedObjects?: Map<string, any>;
-	segmentType: null;
+	segmentType: SegmentTypes | null;
+	sequential: boolean;
 	state: string;
 	status: string;
 	type: EntityTypes.IndividualsSegment;
@@ -26,6 +30,7 @@ interface ISegment {
 
 export default class Segment
 	extends Record({
+		activation: null,
 		activeIndividualCount: 0,
 		activitiesCount: 0,
 		anonymousIndividualCount: 0,
@@ -33,6 +38,7 @@ export default class Segment
 		criteriaString: '',
 		dateCreated: null,
 		dateModified: null,
+		externalReferenceCode: '',
 		id: '',
 		includeAnonymousUsers: false,
 		individualCount: 0,
@@ -47,34 +53,39 @@ export default class Segment
 			fieldMappings: Map()
 		}),
 		segmentType: null,
+		sequential: false,
 		state: '',
 		status: null,
 		type: EntityTypes.IndividualsSegment,
 		userName: null
 	})
-	implements ISegment {
-	activeIndividualCount: number;
-	activitiesCount: number;
-	anonymousIndividualCount: number;
-	channelId: string;
-	criteriaString?: string;
-	dateCreated: number;
-	dateModified: number;
-	id: string;
-	includeAnonymousUsers: boolean;
-	individualCount: number;
-	knownIndividualCount: number;
-	lastActivityDate: number;
-	name: string;
-	properties: Map<string, any>;
-	referencedObjects?: Map<string, any>;
-	segmentType: null;
-	state: string;
-	status: string;
-	type: EntityTypes.IndividualsSegment;
-	userName: string;
+	implements ISegment
+{
+	declare activation: SegmentActivationDetails;
+	declare activeIndividualCount: number;
+	declare activitiesCount: number;
+	declare anonymousIndividualCount: number;
+	declare channelId: string;
+	declare criteriaString?: string;
+	declare dateCreated: number;
+	declare dateModified: number;
+	declare externalReferenceCode: string;
+	declare id: string;
+	declare includeAnonymousUsers: boolean;
+	declare individualCount: number;
+	declare knownIndividualCount: number;
+	declare lastActivityDate: number;
+	declare name: string;
+	declare properties: Map<string, any>;
+	declare referencedObjects?: Map<string, any>;
+	declare segmentType: SegmentTypes | null;
+	declare sequential: boolean;
+	declare state: string;
+	declare status: string;
+	declare type: EntityTypes.IndividualsSegment;
+	declare userName: string;
 
 	constructor(props = {}) {
-		super(props);
+		super(fromJS(props));
 	}
 }

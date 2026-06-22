@@ -13,10 +13,12 @@ import {getOperatorLabel, maybeFormatToKnownType} from '../utils';
 import {IDisplayComponentProps} from '../types';
 import {Map} from 'immutable';
 import {parseActivityKey} from 'segment/segment-editor/dynamic/utils/utils';
+import {SegmentTypes} from 'shared/util/constants';
 
 const BehaviorDisplay: React.FC<IDisplayComponentProps> = ({
 	criterion,
-	property
+	property,
+	segmentType
 }) => {
 	const {operatorName, value} = criterion;
 
@@ -28,7 +30,7 @@ const BehaviorDisplay: React.FC<IDisplayComponentProps> = ({
 		getPropertyValue(valueIMap, 'value', 0)
 	);
 
-	const operatorKey = maybeFormatToKnownType(operatorName, name);
+	const operatorKey = maybeFormatToKnownType(operatorName ?? '', name);
 
 	const operatorLabel = getOperatorLabel(operatorKey, type);
 
@@ -51,18 +53,26 @@ const BehaviorDisplay: React.FC<IDisplayComponentProps> = ({
 
 			<ReferencedEntityDisplay
 				id={id}
-				label={ASSET_TYPE_LANG_MAP[objectType]}
+				label={
+					ASSET_TYPE_LANG_MAP[
+						objectType as keyof typeof ASSET_TYPE_LANG_MAP
+					]
+				}
 				type={EntityType.Assets}
 			/>
 
-			<OccurenceConjunctionDisplay
-				operatorName={eventOperator}
-				value={occurenceCount}
-			/>
+			{segmentType === SegmentTypes.Batch && (
+				<>
+					<OccurenceConjunctionDisplay
+						operatorName={eventOperator}
+						value={occurenceCount}
+					/>
 
-			<DateFilterConjunctionDisplay
-				conjunctionCriterion={conjunctionCriterion}
-			/>
+					<DateFilterConjunctionDisplay
+						conjunctionCriterion={conjunctionCriterion}
+					/>
+				</>
+			)}
 		</>
 	);
 };

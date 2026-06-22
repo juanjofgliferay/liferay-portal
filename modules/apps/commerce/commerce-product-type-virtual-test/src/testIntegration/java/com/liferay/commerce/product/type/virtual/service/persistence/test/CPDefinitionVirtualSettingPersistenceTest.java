@@ -116,12 +116,8 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CPDefinitionVirtualSetting newCPDefinitionVirtualSetting =
-			_persistence.create(pk);
-
-		newCPDefinitionVirtualSetting.setMvccVersion(RandomTestUtil.nextLong());
+			addCPDefinitionVirtualSetting();
 
 		newCPDefinitionVirtualSetting.setUuid(RandomTestUtil.randomString());
 
@@ -142,10 +138,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		newCPDefinitionVirtualSetting.setClassNameId(RandomTestUtil.nextLong());
 
 		newCPDefinitionVirtualSetting.setClassPK(RandomTestUtil.nextLong());
-
-		newCPDefinitionVirtualSetting.setFileEntryId(RandomTestUtil.nextLong());
-
-		newCPDefinitionVirtualSetting.setUrl(RandomTestUtil.randomString());
 
 		newCPDefinitionVirtualSetting.setActivationStatus(
 			RandomTestUtil.nextInt());
@@ -224,12 +216,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		Assert.assertEquals(
 			existingCPDefinitionVirtualSetting.getClassPK(),
 			newCPDefinitionVirtualSetting.getClassPK());
-		Assert.assertEquals(
-			existingCPDefinitionVirtualSetting.getFileEntryId(),
-			newCPDefinitionVirtualSetting.getFileEntryId());
-		Assert.assertEquals(
-			existingCPDefinitionVirtualSetting.getUrl(),
-			newCPDefinitionVirtualSetting.getUrl());
 		Assert.assertEquals(
 			existingCPDefinitionVirtualSetting.getActivationStatus(),
 			newCPDefinitionVirtualSetting.getActivationStatus());
@@ -338,10 +324,9 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 			"CPDefinitionVirtualSettingId", true, "groupId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "classNameId", true, "classPK", true,
-			"fileEntryId", true, "url", true, "activationStatus", true,
-			"duration", true, "maxUsages", true, "useSample", true,
-			"sampleFileEntryId", true, "sampleURL", true, "termsOfUseRequired",
-			true, "termsOfUseContent", true,
+			"activationStatus", true, "duration", true, "maxUsages", true,
+			"useSample", true, "sampleFileEntryId", true, "sampleURL", true,
+			"termsOfUseRequired", true, "termsOfUseContent", true,
 			"termsOfUseJournalArticleResourcePrimKey", true, "override", true,
 			"lastPublishDate", true);
 	}
@@ -680,8 +665,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		CPDefinitionVirtualSetting cpDefinitionVirtualSetting =
 			_persistence.create(pk);
 
-		cpDefinitionVirtualSetting.setMvccVersion(RandomTestUtil.nextLong());
-
 		cpDefinitionVirtualSetting.setUuid(RandomTestUtil.randomString());
 
 		cpDefinitionVirtualSetting.setGroupId(RandomTestUtil.nextLong());
@@ -699,10 +682,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		cpDefinitionVirtualSetting.setClassNameId(RandomTestUtil.nextLong());
 
 		cpDefinitionVirtualSetting.setClassPK(RandomTestUtil.nextLong());
-
-		cpDefinitionVirtualSetting.setFileEntryId(RandomTestUtil.nextLong());
-
-		cpDefinitionVirtualSetting.setUrl(RandomTestUtil.randomString());
 
 		cpDefinitionVirtualSetting.setActivationStatus(
 			RandomTestUtil.nextInt());
@@ -744,3 +723,4 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-39156261

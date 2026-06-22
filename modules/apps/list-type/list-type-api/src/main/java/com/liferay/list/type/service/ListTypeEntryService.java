@@ -46,10 +46,15 @@ public interface ListTypeEntryService extends BaseService {
 	 */
 	public ListTypeEntry addListTypeEntry(
 			String externalReferenceCode, long listTypeDefinitionId, String key,
-			Map<Locale, String> nameMap)
+			Map<Locale, String> nameMap, boolean system)
 		throws PortalException;
 
 	public ListTypeEntry deleteListTypeEntry(long listTypeEntryId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ListTypeEntry fetchListTypeEntry(
+			long listTypeDefinitionId, String key)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -71,6 +76,11 @@ public interface ListTypeEntryService extends BaseService {
 			long listTypeDefinitionId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ListTypeEntry getOrAddEmptyListTypeEntry(
+			long userId, long listTypeDefinitionId, String key)
+		throws PortalException;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -84,3 +94,4 @@ public interface ListTypeEntryService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-561792971

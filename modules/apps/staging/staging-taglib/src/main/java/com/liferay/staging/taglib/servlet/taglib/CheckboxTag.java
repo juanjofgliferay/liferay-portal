@@ -8,13 +8,20 @@ package com.liferay.staging.taglib.servlet.taglib;
 import com.liferay.petra.string.StringPool;
 import com.liferay.staging.taglib.internal.servlet.ServletContextUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * @author Péter Borkuti
  */
 public class CheckboxTag extends BaseCssTag {
+
+	public Map<String, Object> getData() {
+		return _data;
+	}
 
 	public long getDeletions() {
 		return _deletions;
@@ -48,6 +55,10 @@ public class CheckboxTag extends BaseCssTag {
 		return _suggestion;
 	}
 
+	public String getTag() {
+		return _tag;
+	}
+
 	@Override
 	public String getTagNameForCssPath() {
 		return "checkbox";
@@ -67,6 +78,10 @@ public class CheckboxTag extends BaseCssTag {
 
 	public void setChecked(boolean checked) {
 		_checked = checked;
+	}
+
+	public void setData(Map<String, Object> data) {
+		_data = data;
 	}
 
 	public void setDeletions(long deletions) {
@@ -112,6 +127,10 @@ public class CheckboxTag extends BaseCssTag {
 		_suggestion = suggestion;
 	}
 
+	public void setTag(String tag) {
+		_tag = tag;
+	}
+
 	public void setWarning(String warning) {
 		_warning = warning;
 	}
@@ -121,6 +140,7 @@ public class CheckboxTag extends BaseCssTag {
 		super.cleanUp();
 
 		_checked = false;
+		_data = Collections.emptyMap();
 		_deletions = 0;
 		_description = StringPool.BLANK;
 		_disabled = false;
@@ -130,6 +150,7 @@ public class CheckboxTag extends BaseCssTag {
 		_name = StringPool.BLANK;
 		_popover = StringPool.BLANK;
 		_suggestion = StringPool.BLANK;
+		_tag = StringPool.BLANK;
 		_warning = StringPool.BLANK;
 	}
 
@@ -142,6 +163,7 @@ public class CheckboxTag extends BaseCssTag {
 	protected void setAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.setAttribute(
 			"liferay-staging:checkbox:checked", _checked);
+		httpServletRequest.setAttribute("liferay-staging:checkbox:data", _data);
 		httpServletRequest.setAttribute(
 			"liferay-staging:checkbox:deletions", _deletions);
 		httpServletRequest.setAttribute(
@@ -158,6 +180,7 @@ public class CheckboxTag extends BaseCssTag {
 			"liferay-staging:checkbox:popover", _popover);
 		httpServletRequest.setAttribute(
 			"liferay-staging:checkbox:suggestion", _suggestion);
+		httpServletRequest.setAttribute("liferay-staging:checkbox:tag", _tag);
 		httpServletRequest.setAttribute(
 			"liferay-staging:checkbox:warning", _warning);
 	}
@@ -165,6 +188,7 @@ public class CheckboxTag extends BaseCssTag {
 	private static final String _PAGE = "/checkbox/aui/page.jsp";
 
 	private boolean _checked;
+	private Map<String, Object> _data = Collections.emptyMap();
 	private long _deletions;
 	private String _description = StringPool.BLANK;
 	private boolean _disabled;
@@ -174,6 +198,7 @@ public class CheckboxTag extends BaseCssTag {
 	private String _name = StringPool.BLANK;
 	private String _popover = StringPool.BLANK;
 	private String _suggestion = StringPool.BLANK;
+	private String _tag = StringPool.BLANK;
 	private String _warning = StringPool.BLANK;
 
 }

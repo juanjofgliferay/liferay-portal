@@ -21,7 +21,7 @@ const DateBreakdown: React.FC<IBreakdownProps> = ({
 			const {dateGrouping} = breakdown;
 
 			return {
-				dateGrouping
+				dateGrouping: dateGrouping ?? DateGroupings.Month
 			};
 		}
 
@@ -81,7 +81,7 @@ const DateBreakdown: React.FC<IBreakdownProps> = ({
 							displayType='primary'
 							type='submit'
 						>
-							{Liferay.Language.get('done')}
+							{Liferay.Language.get('apply')}
 						</ClayButton>
 					</div>
 				</Form.Form>

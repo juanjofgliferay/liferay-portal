@@ -113,6 +113,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
         >
           <div
             class="page-link"
+            data-testid="prevArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-left"
@@ -140,6 +141,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
         >
           <div
             class="page-link"
+            data-testid="nextArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-right"
@@ -180,26 +182,20 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
             <img
               alt=""
               class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
-              src="http://localhost:8080/o/admin-theme/images/states/empty_state.gif"
+              src="http://localhost:8080/o/admin-theme/images/states/empty_state.svg"
             />
             <img
               alt=""
               class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
-              src="/o/admin-theme/images/states/empty_state_reduced_motion.gif"
+              src="/o/admin-theme/images/states/empty_state_reduced_motion.svg"
             />
           </div>
         </div>
         <div
           class="c-empty-state-title"
         >
-          <span
-            class="text-truncate-inline"
-          >
-            <span
-              class="text-truncate"
-            >
-              no-preview-available
-            </span>
+          <span>
+            no-preview-available
           </span>
         </div>
         <div
@@ -258,6 +254,7 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
         >
           <div
             class="page-link"
+            data-testid="prevArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-left"
@@ -285,6 +282,7 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
         >
           <div
             class="page-link"
+            data-testid="nextArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-right"
@@ -404,6 +402,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
         >
           <div
             class="page-link"
+            data-testid="prevArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-left"
@@ -431,6 +430,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
         >
           <div
             class="page-link"
+            data-testid="nextArrow"
           >
             <svg
               class="lexicon-icon lexicon-icon-angle-right"
@@ -471,26 +471,20 @@ exports[`DocumentPreviewerWrapper renders with empty state 1`] = `
             <img
               alt=""
               class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
-              src="http://localhost:8080/o/admin-theme/images/states/empty_state.gif"
+              src="http://localhost:8080/o/admin-theme/images/states/empty_state.svg"
             />
             <img
               alt=""
               class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
-              src="/o/admin-theme/images/states/empty_state_reduced_motion.gif"
+              src="/o/admin-theme/images/states/empty_state_reduced_motion.svg"
             />
           </div>
         </div>
         <div
           class="c-empty-state-title"
         >
-          <span
-            class="text-truncate-inline"
-          >
-            <span
-              class="text-truncate"
-            >
-              no-preview-available
-            </span>
+          <span>
+            no-preview-available
           </span>
         </div>
         <div

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Represents a reference to a fragment image class primary key.",
 	value = "FragmentImageClassPKReference"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represents a reference to a fragment image class primary key."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "FragmentImageClassPKReference")
@@ -54,9 +56,17 @@ public class FragmentImageClassPKReference implements Serializable {
 			FragmentImageClassPKReference.class, json);
 	}
 
-	@Schema(description = "A map of class primary key references.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A map of class primary key references."
+	)
 	@Valid
 	public Map<String, ClassPKReference> getClassPKReferences() {
+		if (_classPKReferencesSupplier != null) {
+			classPKReferences = _classPKReferencesSupplier.get();
+
+			_classPKReferencesSupplier = null;
+		}
+
 		return classPKReferences;
 	}
 
@@ -64,6 +74,8 @@ public class FragmentImageClassPKReference implements Serializable {
 		Map<String, ClassPKReference> classPKReferences) {
 
 		this.classPKReferences = classPKReferences;
+
+		_classPKReferencesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -71,24 +83,38 @@ public class FragmentImageClassPKReference implements Serializable {
 		UnsafeSupplier<Map<String, ClassPKReference>, Exception>
 			classPKReferencesUnsafeSupplier) {
 
-		try {
-			classPKReferences = classPKReferencesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classPKReferencesSupplier = () -> {
+			try {
+				return classPKReferencesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "A map of class primary key references.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ClassPKReference> classPKReferences;
 
-	@Schema(description = "The fragment image's configuration.")
+	@JsonIgnore
+	private Supplier<Map<String, ClassPKReference>> _classPKReferencesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The fragment image's configuration."
+	)
 	@Valid
 	public FragmentImageConfiguration getFragmentImageConfiguration() {
+		if (_fragmentImageConfigurationSupplier != null) {
+			fragmentImageConfiguration =
+				_fragmentImageConfigurationSupplier.get();
+
+			_fragmentImageConfigurationSupplier = null;
+		}
+
 		return fragmentImageConfiguration;
 	}
 
@@ -96,6 +122,8 @@ public class FragmentImageClassPKReference implements Serializable {
 		FragmentImageConfiguration fragmentImageConfiguration) {
 
 		this.fragmentImageConfiguration = fragmentImageConfiguration;
+
+		_fragmentImageConfigurationSupplier = null;
 	}
 
 	@JsonIgnore
@@ -103,21 +131,26 @@ public class FragmentImageClassPKReference implements Serializable {
 		UnsafeSupplier<FragmentImageConfiguration, Exception>
 			fragmentImageConfigurationUnsafeSupplier) {
 
-		try {
-			fragmentImageConfiguration =
-				fragmentImageConfigurationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentImageConfigurationSupplier = () -> {
+			try {
+				return fragmentImageConfigurationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The fragment image's configuration.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentImageConfiguration fragmentImageConfiguration;
+
+	@JsonIgnore
+	private Supplier<FragmentImageConfiguration>
+		_fragmentImageConfigurationSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -148,6 +181,9 @@ public class FragmentImageClassPKReference implements Serializable {
 
 		sb.append("{");
 
+		Map<String, ClassPKReference> classPKReferences =
+			getClassPKReferences();
+
 		if (classPKReferences != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -157,6 +193,9 @@ public class FragmentImageClassPKReference implements Serializable {
 
 			sb.append(_toJSON(classPKReferences));
 		}
+
+		FragmentImageConfiguration fragmentImageConfiguration =
+			getFragmentImageConfiguration();
 
 		if (fragmentImageConfiguration != null) {
 			if (sb.length() > 1) {
@@ -173,8 +212,8 @@ public class FragmentImageClassPKReference implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentImageClassPKReference",
 		name = "x-class-name"
 	)
@@ -220,7 +259,10 @@ public class FragmentImageClassPKReference implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -266,3 +308,4 @@ public class FragmentImageClassPKReference implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:774802240

@@ -52,6 +52,9 @@ public interface DDMStructure extends DDMStructureModel, PersistedModel {
 	public DDMForm createFullHierarchyDDMForm()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public DDMForm createFullHierarchyDDMForm(boolean copy)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	public DDMStructureLayout fetchDDMStructureLayout();
 
 	public java.util.List<String> getChildrenFieldNames(String fieldName)
@@ -59,7 +62,12 @@ public interface DDMStructure extends DDMStructureModel, PersistedModel {
 
 	public DDMForm getDDMForm();
 
+	public DDMForm getDDMForm(boolean copy);
+
 	public DDMFormField getDDMFormField(String fieldName)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public DDMFormField getDDMFormField(String fieldName, boolean copy)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public DDMFormField getDDMFormFieldByFieldReference(String fieldReference)
@@ -108,6 +116,8 @@ public interface DDMStructure extends DDMStructureModel, PersistedModel {
 
 	public DDMForm getFullHierarchyDDMForm();
 
+	public DDMForm getFullHierarchyDDMForm(boolean copy);
+
 	public java.util.Map<String, DDMFormField> getFullHierarchyDDMFormFieldsMap(
 		boolean includeNestedDDMFormFields);
 
@@ -152,3 +162,4 @@ public interface DDMStructure extends DDMStructureModel, PersistedModel {
 	public void setDDMForm(DDMForm ddmForm);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1432027553

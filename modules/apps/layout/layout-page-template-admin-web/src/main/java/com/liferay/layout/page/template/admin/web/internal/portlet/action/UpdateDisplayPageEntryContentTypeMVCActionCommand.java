@@ -14,6 +14,7 @@ import com.liferay.layout.page.template.admin.web.internal.handler.LayoutPageTem
 import com.liferay.layout.page.template.exception.RequiredLayoutPageTemplateEntryException;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.LockedLayoutException;
 import com.liferay.portal.kernel.exception.ModelListenerException;
@@ -33,8 +34,8 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"mvc.command.name=/layout_page_template_admin/update_display_page_entry_content_type"
 	},
 	service = MVCActionCommand.class
@@ -73,10 +74,15 @@ public class UpdateDisplayPageEntryContentTypeMVCActionCommand
 
 			_layoutLockManager.getLock(draftLayout, themeDisplay.getUserId());
 
+			long classNameId = ParamUtil.getLong(actionRequest, "classNameId");
+
 			_layoutPageTemplateEntryService.updateLayoutPageTemplateEntry(
 				layoutPageTemplateEntry.getLayoutPageTemplateEntryId(),
-				ParamUtil.getLong(actionRequest, "classNameId"),
-				ParamUtil.getLong(actionRequest, "classTypeId"));
+				classNameId,
+				LayoutPageTemplateEntryUtil.getClassTypeKey(
+					classNameId,
+					ParamUtil.getLong(actionRequest, "classTypeId"),
+					themeDisplay.getScopeGroupId()));
 
 			hideDefaultSuccessMessage(actionRequest);
 
@@ -178,7 +184,8 @@ public class UpdateDisplayPageEntryContentTypeMVCActionCommand
 		).setParameter(
 			"classNameId", layoutPageTemplateEntry.getClassNameId()
 		).setParameter(
-			"classTypeId", layoutPageTemplateEntry.getClassTypeId()
+			"classTypeId",
+			LayoutPageTemplateEntryUtil.getClassTypeId(layoutPageTemplateEntry)
 		).setParameter(
 			"layoutPageTemplateEntryId",
 			layoutPageTemplateEntry.getLayoutPageTemplateEntryId()

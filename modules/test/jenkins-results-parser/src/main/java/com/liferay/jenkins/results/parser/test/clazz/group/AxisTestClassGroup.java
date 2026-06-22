@@ -5,14 +5,16 @@
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
-import com.liferay.jenkins.results.parser.BatchHistory;
+import com.liferay.jenkins.results.parser.DownstreamBuildReport;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
+import com.liferay.jenkins.results.parser.history.BatchHistory;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
 
 import java.io.File;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -114,6 +116,35 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 		return _batchTestClassGroup;
 	}
 
+	public List<DownstreamBuildReport> getCachedDownstreamBuildReports() {
+		if (!isBuildCachingEnabled() || !isResultsCached()) {
+			return null;
+		}
+
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
+
+		List<DownstreamBuildReport> cachedDownstreamBuildReports =
+			batchTestClassGroup.getCachedDownstreamBuildReports(getAxisName());
+
+		if ((cachedDownstreamBuildReports == null) ||
+			cachedDownstreamBuildReports.isEmpty()) {
+
+			return null;
+		}
+
+		for (DownstreamBuildReport cachedDownstreamBuildReport :
+				cachedDownstreamBuildReports) {
+
+			if ((cachedDownstreamBuildReport != null) &&
+				!cachedDownstreamBuildReport.isFailing()) {
+
+				return Collections.singletonList(cachedDownstreamBuildReport);
+			}
+		}
+
+		return null;
+	}
+
 	public String getDownstreamJobName() {
 		return _batchTestClassGroup.getDownstreamJobName();
 	}
@@ -130,6 +161,8 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 			"average_duration", getAverageDuration()
 		).put(
 			"axis_name", getAxisName()
+		).put(
+			"grouping_strategy", String.valueOf(getGroupingStrategy())
 		);
 
 		JSONArray testClassesJSONArray = new JSONArray();
@@ -148,12 +181,22 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 		return jsonObject;
 	}
 
+	@Override
 	public Integer getMinimumSlaveRAM() {
 		if (_segmentTestClassGroup != null) {
 			return _segmentTestClassGroup.getMinimumSlaveRAM();
 		}
 
 		return _batchTestClassGroup.getMinimumSlaveRAM();
+	}
+
+	@Override
+	public String getOSArchitecture() {
+		if (_segmentTestClassGroup != null) {
+			return _segmentTestClassGroup.getOSArchitecture();
+		}
+
+		return _batchTestClassGroup.getOSArchitecture();
 	}
 
 	public String getSegmentName() {
@@ -168,16 +211,31 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 		return _segmentTestClassGroup;
 	}
 
-	public String getSlaveLabel() {
-		if (_segmentTestClassGroup != null) {
-			return _segmentTestClassGroup.getSlaveLabel();
-		}
-
-		return _batchTestClassGroup.getSlaveLabel();
-	}
-
 	public File getTestBaseDir() {
 		return null;
+	}
+
+	public boolean isBuildCachingEnabled() {
+		return _batchTestClassGroup.isBuildCachingEnabled();
+	}
+
+	public boolean isResultsCached() {
+		if (!isBuildCachingEnabled()) {
+			return false;
+		}
+
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
+
+		List<DownstreamBuildReport> cachedDownstreamBuildReports =
+			batchTestClassGroup.getCachedDownstreamBuildReports(getAxisName());
+
+		if ((cachedDownstreamBuildReports != null) &&
+			!cachedDownstreamBuildReports.isEmpty()) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	protected AxisTestClassGroup(BatchTestClassGroup batchTestClassGroup) {
@@ -194,7 +252,7 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 
 		setSegmentTestClassGroup(segmentTestClassGroup);
 
-		JSONArray testClassesJSONArray = jsonObject.getJSONArray(
+		JSONArray testClassesJSONArray = jsonObject.optJSONArray(
 			"test_classes");
 
 		if ((testClassesJSONArray == null) || testClassesJSONArray.isEmpty()) {
@@ -209,10 +267,30 @@ public class AxisTestClassGroup extends BaseTestClassGroup {
 				continue;
 			}
 
-			testClasses.add(
+			addTestClass(
 				TestClassFactory.newTestClass(
 					batchTestClassGroup, testClassJSONObject));
 		}
+	}
+
+	@Override
+	protected void addTestClass(TestClass testClass) {
+		super.addTestClass(testClass);
+
+		testClass.setAxisTestClassGroup(this);
+	}
+
+	protected GroupingStrategy getGroupingStrategy() {
+		return _batchTestClassGroup.getGroupingStrategy();
+	}
+
+	@Override
+	protected String getParentBaseSlaveLabel() {
+		if (_segmentTestClassGroup != null) {
+			return _segmentTestClassGroup.getBaseSlaveLabel();
+		}
+
+		return _batchTestClassGroup.getBaseSlaveLabel();
 	}
 
 	protected void setBatchTestClassGroup(

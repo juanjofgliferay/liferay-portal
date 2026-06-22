@@ -5,7 +5,7 @@
 
 import '../../tests_utilities/polyfills';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 import {act} from 'react-dom/test-utils';
@@ -39,9 +39,8 @@ describe('Quantity Selector', () => {
 			<InputQuantitySelector {...defaultProps} />
 		);
 
-		formGroup = inputQuantitySelector.container.querySelector(
-			'.form-group'
-		);
+		formGroup =
+			inputQuantitySelector.container.querySelector('.form-group');
 		input = inputQuantitySelector.container.querySelector('input');
 	});
 
@@ -120,9 +119,8 @@ describe('Quantity Selector', () => {
 			<InputQuantitySelector min={4} quantity={1} />
 		);
 
-		formGroup = inputQuantitySelector.container.querySelector(
-			'.form-group'
-		);
+		formGroup =
+			inputQuantitySelector.container.querySelector('.form-group');
 
 		expect(formGroup.classList).toContain('has-error');
 	});
@@ -158,9 +156,8 @@ describe('Quantity Selector', () => {
 			<InputQuantitySelector max={4} quantity={7} />
 		);
 
-		formGroup = inputQuantitySelector.container.querySelector(
-			'.form-group'
-		);
+		formGroup =
+			inputQuantitySelector.container.querySelector('.form-group');
 
 		expect(formGroup.classList).toContain('has-error');
 	});
@@ -186,7 +183,7 @@ describe('Quantity Selector', () => {
 		});
 
 		expect(onUpdate).toHaveBeenLastCalledWith({
-			errors: ['multiple'],
+			errors: ['min', 'multiple'],
 			value: 7,
 		});
 	});
@@ -196,9 +193,8 @@ describe('Quantity Selector', () => {
 			<InputQuantitySelector quantity={7} step={4} />
 		);
 
-		formGroup = inputQuantitySelector.container.querySelector(
-			'.form-group'
-		);
+		formGroup =
+			inputQuantitySelector.container.querySelector('.form-group');
 
 		expect(formGroup.classList).toContain('has-error');
 	});

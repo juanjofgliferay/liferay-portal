@@ -127,11 +127,11 @@ public class UADAnonymousUserProviderImpl implements UADAnonymousUserProvider {
 		_userLocalService.addUser(user);
 
 		_groupLocalService.addGroup(
-			user.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,
-			User.class.getName(), user.getUserId(),
-			GroupConstants.DEFAULT_LIVE_GROUP_ID, null, null, 0, true,
-			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
-			StringPool.SLASH + screenName, false, true, null);
+			StringPool.BLANK, user.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID, User.class.getName(),
+			user.getUserId(), GroupConstants.DEFAULT_LIVE_GROUP_ID, null, null,
+			0, null, true, GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION,
+			StringPool.SLASH + screenName, false, false, true, null);
 
 		Contact contact = _contactLocalService.createContact(
 			user.getContactId());
@@ -200,7 +200,7 @@ public class UADAnonymousUserProviderImpl implements UADAnonymousUserProvider {
 
 	private User _updateStatus(User anonymousUser) throws Exception {
 		return _userLocalService.updateStatus(
-			anonymousUser.getUserId(), WorkflowConstants.STATUS_INACTIVE,
+			anonymousUser, WorkflowConstants.STATUS_INACTIVE,
 			new ServiceContext());
 	}
 

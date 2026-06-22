@@ -13,7 +13,9 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
  * @author Yurena Cabrera
  */
 @ExtendedObjectClassDefinition(
-	category = "segments", factoryInstanceLabelAttribute = "entityFieldName",
+	category = "segments", deprecated = true,
+	factoryInstanceLabelAttribute = "entityFieldName",
+	featureFlagKey = "LPD-78863",
 	scope = ExtendedObjectClassDefinition.Scope.COMPANY
 )
 @Meta.OCD(
@@ -26,13 +28,13 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface SegmentsContextVocabularyCompanyConfiguration {
 
 	@Meta.AD(
-		name = "segments-context-vocabulary-company-configuration-entity-field-name"
-	)
-	public String entityFieldName();
-
-	@Meta.AD(
 		name = "segments-context-vocabulary-company-configuration-asset-vocabulary-name"
 	)
 	public String assetVocabularyName();
+
+	@Meta.AD(
+		name = "segments-context-vocabulary-company-configuration-entity-field-name"
+	)
+	public String entityFieldName();
 
 }

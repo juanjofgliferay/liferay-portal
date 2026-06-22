@@ -86,6 +86,8 @@ public class RecentLayoutBranchModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table RecentLayoutBranch";
 
+	public static final String ENTITY_ALIAS = "recentLayoutBranch";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY recentLayoutBranch.recentLayoutBranchId ASC";
 
@@ -154,7 +156,7 @@ public class RecentLayoutBranchModelImpl
 	public static final long RECENTLAYOUTBRANCHID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.RecentLayoutBranch"));
 
 	public RecentLayoutBranchModelImpl() {
@@ -832,3 +834,4 @@ public class RecentLayoutBranchModelImpl
 	private RecentLayoutBranch _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:553437183

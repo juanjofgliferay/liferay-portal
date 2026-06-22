@@ -1,6 +1,6 @@
 import DXPUsersQuery from '../queries/DXPUsersQuery';
 import getDXPEntitiesQuery from '../queries/DXPEntitiesQuery';
-import React, {useEffect} from 'react';
+import React from 'react';
 import SelectEntityInput from './components/SelectEntityInput';
 import {createOrderIOMap, NAME} from 'shared/util/pagination';
 import {EntityType} from '../context/referencedObjects';
@@ -59,29 +59,14 @@ interface IIndividualSelectProps extends ISegmentEditorInputBase, IPagination {
 
 const IndividualSelectInput: React.FC<IIndividualSelectProps> = ({
 	channelId,
-	id,
 	onChange,
 	property,
 	valid,
 	value,
 	...otherProps
 }) => {
-	let _completedAnalytics = false;
-
-	const {entityName, type} = property;
-
-	useEffect(() => {
-		if (!id && valid && !_completedAnalytics) {
-			_completedAnalytics = true;
-
-			analytics.track('Dynamic Segment Creation - Completed Attribute', {
-				entityName,
-				type
-			});
-		}
-	});
-
-	const entityType: EntityType = ENTITY_MAP[property.name];
+	const propertyName = property.name as keyof typeof ENTITY_MAP;
+	const entityType: EntityType = ENTITY_MAP[propertyName];
 
 	const graphqlEntityType =
 		entityType === EntityType.UserGroups
@@ -113,12 +98,16 @@ const IndividualSelectInput: React.FC<IIndividualSelectProps> = ({
 		<SelectEntityInput
 			channelId={channelId}
 			className='individual-select-input-root'
-			columns={PROPERTY_COLUMNS_MAP[property.name] || [nameCol]}
-			entityLabel={LABEL_MAP[property.name]}
+			columns={
+				PROPERTY_COLUMNS_MAP[
+					propertyName as keyof typeof PROPERTY_COLUMNS_MAP
+				] || [nameCol]
+			}
+			entityLabel={LABEL_MAP[propertyName as keyof typeof LABEL_MAP]}
 			entityType={entityType}
 			graphqlProps={{
 				graphqlQuery:
-					QUERY_MAP[property.name] ||
+					QUERY_MAP[propertyName as keyof typeof QUERY_MAP] ||
 					getDXPEntitiesQuery(graphqlEntityType),
 				mapPropsToOptions,
 				mapResultToProps: getMapResultToProps(graphqlEntityType)

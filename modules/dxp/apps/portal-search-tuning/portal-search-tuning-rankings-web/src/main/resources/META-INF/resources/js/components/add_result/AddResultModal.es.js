@@ -314,7 +314,7 @@ function AddResultModal({
 					Liferay.Language.get('x-item-selected'),
 					Liferay.Language.get('x-items-selected'),
 					selectedIds.length
-			  )
+				)
 			: Liferay.Language.get('select-items');
 
 		const checked =
@@ -423,7 +423,9 @@ function AddResultModal({
 				className="add-result-modal-root"
 				data-testid="add-result-modal"
 			>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					{Liferay.Language.get('add-result')}
 
 					<span

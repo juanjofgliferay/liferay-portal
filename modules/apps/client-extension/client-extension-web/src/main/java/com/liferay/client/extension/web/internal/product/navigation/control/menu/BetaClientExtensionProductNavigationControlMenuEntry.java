@@ -6,6 +6,7 @@
 package com.liferay.client.extension.web.internal.product.navigation.control.menu;
 
 import com.liferay.client.extension.constants.ClientExtensionEntryConstants;
+import com.liferay.client.extension.type.CET;
 import com.liferay.client.extension.web.internal.constants.ClientExtensionAdminWebKeys;
 import com.liferay.client.extension.web.internal.display.context.EditClientExtensionEntryDisplayContext;
 import com.liferay.client.extension.web.internal.display.context.ViewClientExtensionEntryDisplayContext;
@@ -14,10 +15,10 @@ import com.liferay.product.navigation.control.menu.BaseJSPProductNavigationContr
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
 
-import java.util.Objects;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,13 +53,15 @@ public class BetaClientExtensionProductNavigationControlMenuEntry
 						ClientExtensionAdminWebKeys.
 							EDIT_CLIENT_EXTENSION_ENTRY_DISPLAY_CONTEXT);
 
-		if ((editClientExtensionEntryDisplayContext != null) &&
-			Objects.equals(
-				editClientExtensionEntryDisplayContext.getCET(
-				).getType(),
-				ClientExtensionEntryConstants.TYPE_FDS_CELL_RENDERER)) {
+		if (editClientExtensionEntryDisplayContext != null) {
+			CET cet = editClientExtensionEntryDisplayContext.getCET();
 
-			return true;
+			if (Objects.equals(
+					cet.getType(),
+					ClientExtensionEntryConstants.TYPE_FDS_CELL_RENDERER)) {
+
+				return true;
+			}
 		}
 
 		ViewClientExtensionEntryDisplayContext
@@ -68,13 +71,15 @@ public class BetaClientExtensionProductNavigationControlMenuEntry
 						ClientExtensionAdminWebKeys.
 							VIEW_CLIENT_EXTENSION_ENTRY_DISPLAY_CONTEXT);
 
-		if ((viewClientExtensionEntryDisplayContext != null) &&
-			Objects.equals(
-				viewClientExtensionEntryDisplayContext.getCET(
-				).getType(),
-				ClientExtensionEntryConstants.TYPE_FDS_CELL_RENDERER)) {
+		if (viewClientExtensionEntryDisplayContext != null) {
+			CET cet = viewClientExtensionEntryDisplayContext.getCET();
 
-			return true;
+			if (Objects.equals(
+					cet.getType(),
+					ClientExtensionEntryConstants.TYPE_FDS_CELL_RENDERER)) {
+
+				return true;
+			}
 		}
 
 		return false;

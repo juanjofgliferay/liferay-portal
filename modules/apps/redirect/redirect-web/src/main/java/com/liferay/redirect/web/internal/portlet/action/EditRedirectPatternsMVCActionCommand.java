@@ -8,9 +8,9 @@ package com.liferay.redirect.web.internal.portlet.action;
 import com.google.re2j.Pattern;
 import com.google.re2j.PatternSyntaxException;
 
-import com.liferay.portal.configuration.persistence.listener.ConfigurationModelListenerException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -22,12 +22,12 @@ import com.liferay.redirect.configuration.RedirectPatternConfigurationProvider;
 import com.liferay.redirect.model.RedirectPatternEntry;
 import com.liferay.redirect.web.internal.constants.RedirectPortletKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + RedirectPortletKeys.REDIRECT,
+		"jakarta.portlet.name=" + RedirectPortletKeys.REDIRECT,
 		"mvc.command.name=/redirect/edit_redirect_patterns"
 	},
 	service = MVCActionCommand.class
@@ -57,9 +57,7 @@ public class EditRedirectPatternsMVCActionCommand extends BaseMVCActionCommand {
 				themeDisplay.getScopeGroupId(),
 				_getRedirectPatternEntries(actionRequest));
 		}
-		catch (ConfigurationModelListenerException | PatternSyntaxException
-					exception) {
-
+		catch (ConfigurationException | PatternSyntaxException exception) {
 			_log.error(exception);
 
 			SessionErrors.add(actionRequest, "redirectPatternInvalid");

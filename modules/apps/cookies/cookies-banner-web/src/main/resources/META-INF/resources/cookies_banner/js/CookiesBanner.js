@@ -3,15 +3,21 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {checkConsent, getOpener, openModal} from 'frontend-js-web';
+import {openModal} from 'frontend-js-components-web';
+import {checkConsent, getOpener} from 'frontend-js-web';
 
 import {
 	acceptAllCookies,
 	declineAllCookies,
+	deleteStoredCookies,
 	getCookie,
+	hasGuestUserConfigCookie,
+	hasPreviouslyStoredConsent,
+	removeAllCookies,
 	setCookie,
 	setUserConfigCookie,
 	userConfigCookieName,
+	userConfigDateCookieName,
 } from '../../js/CookiesUtil';
 
 let openCookieConsentModal = () => {
@@ -23,9 +29,16 @@ let openCookieConsentModal = () => {
 export default function ({
 	configurationNamespace,
 	configurationURL,
+	consentRenewalPeriod = 12,
+	consentRenewalPeriodTimeUnit = 'months',
+	dissentRenewalPeriod = consentRenewalPeriod,
+	dissentRenewalPeriodTimeUnit = consentRenewalPeriodTimeUnit,
+	globalPrivacyControlSignalActive = false,
 	includeDeclineAllButton,
+	modifiedDate = 0,
 	namespace,
 	optionalConsentCookieTypeNames,
+	previewMode = false,
 	requiredConsentCookieTypeNames,
 	title,
 }) {
@@ -38,11 +51,78 @@ export default function ({
 	const declineAllButton = document.getElementById(
 		`${namespace}declineAllButton`
 	);
+	let storeConsentCheckbox = document.getElementById(
+		`${namespace}storeConsent`
+	);
 	const cookieBanner = document.querySelector('.cookies-banner');
+
+	if (!cookieBanner) {
+		return;
+	}
+
 	const editMode = document.body.classList.contains('has-edit-mode-menu');
 
 	if (!editMode) {
-		setBannerVisibility(cookieBanner);
+		if (!globalPrivacyControlSignalActive) {
+			isCookiesPreferenceHandlingConfigurationModified(modifiedDate).then(
+				(value) => {
+					if (value) {
+						removeAllCookies(
+							optionalConsentCookieTypeNames,
+							requiredConsentCookieTypeNames
+						);
+					}
+				}
+			);
+
+			if (
+				Liferay.ThemeDisplay.isSignedIn() &&
+				hasGuestUserConfigCookie()
+			) {
+				hasPreviouslyStoredConsent().then(
+					(hasPreviouslyStoredConsent) => {
+						if (hasPreviouslyStoredConsent) {
+							removeAllCookies(
+								optionalConsentCookieTypeNames,
+								requiredConsentCookieTypeNames
+							);
+						}
+					}
+				);
+			}
+		}
+
+		const consentManager = document.getElementById(
+			'_com_liferay_my_account_web_portlet_MyAccountPortlet_cookiesBannerConfigurationForm'
+		);
+		const productAnalyticsBanner = document.querySelector(
+			'.product-analytics-banner'
+		);
+
+		if (previewMode) {
+			cookieBanner.style.display = 'block';
+
+			document.documentElement.classList.add(
+				'cookies-banner-preview-mode'
+			);
+
+			cookieBanner.querySelectorAll('a').forEach((link) => {
+				link.addEventListener('click', (event) => {
+					event.preventDefault();
+				});
+			});
+		}
+		else if (
+			globalPrivacyControlSignalActive ||
+			consentManager ||
+			(productAnalyticsBanner &&
+				productAnalyticsBanner.style.display === 'block')
+		) {
+			cookieBanner.style.display = 'none';
+		}
+		else {
+			setBannerVisibility(cookieBanner, modifiedDate);
+		}
 
 		const cookiePreferences = {};
 
@@ -53,20 +133,55 @@ export default function ({
 			}
 		);
 
+		requiredConsentCookieTypeNames.forEach(
+			(requiredConsentCookieTypeName) => {
+				cookiePreferences[requiredConsentCookieTypeName] =
+					getCookie(requiredConsentCookieTypeName) || 'true';
+			}
+		);
+
 		Liferay.on('cookiePreferenceUpdate', (event) => {
 			cookiePreferences[event.key] = event.value;
 		});
 
+		Liferay.on('storeCookiesConsentPreferenceUpdate', (event) => {
+			storeConsentCheckbox.checked = event.value;
+
+			if (!storeConsentCheckbox.checked) {
+				deleteStoredCookies();
+			}
+		});
+
 		acceptAllButton.addEventListener('click', () => {
+			if (previewMode) {
+				return;
+			}
+
 			cookieBanner.style.display = 'none';
 
-			acceptAllCookies(
-				optionalConsentCookieTypeNames,
-				requiredConsentCookieTypeNames
+			storeConsentCheckbox = document.getElementById(
+				`${namespace}storeConsent`
 			);
 
-			setUserConfigCookie();
+			acceptAllCookies(
+				consentRenewalPeriod,
+				optionalConsentCookieTypeNames,
+				requiredConsentCookieTypeNames,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
+
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 		});
+
+		if (dissentRenewalPeriod === 0) {
+			dissentRenewalPeriod = consentRenewalPeriod;
+			dissentRenewalPeriodTimeUnit = consentRenewalPeriodTimeUnit;
+		}
 
 		openCookieConsentModal = ({
 			alertDisplayType,
@@ -87,25 +202,82 @@ export default function ({
 			openModal({
 				buttons: [
 					{
+						className: includeDeclineAllButton ? '' : 'd-none',
 						displayType: 'secondary',
-						label: Liferay.Language.get('confirm'),
+						label: Liferay.Language.get(
+							'use-necessary-cookies-only'
+						),
 						onClick() {
+							if (previewMode) {
+								return;
+							}
+
+							declineAllCookies(
+								consentRenewalPeriod,
+								consentRenewalPeriodTimeUnit,
+								dissentRenewalPeriod,
+								dissentRenewalPeriodTimeUnit,
+								optionalConsentCookieTypeNames,
+								requiredConsentCookieTypeNames,
+								storeConsentCheckbox?.checked
+							);
+
+							setUserConfigCookie(
+								consentRenewalPeriod,
+								storeConsentCheckbox?.checked,
+								consentRenewalPeriodTimeUnit
+							);
+
+							setBannerVisibility(cookieBanner);
+
+							getOpener().Liferay.fire('closeModal');
+						},
+					},
+					{
+						displayType: 'secondary',
+						label: Liferay.Language.get('accept-selected'),
+						onClick() {
+							if (previewMode) {
+								return;
+							}
+
 							Object.entries(cookiePreferences).forEach(
 								([key, value]) => {
-									setCookie(key, value);
+									let renewalPeriod = consentRenewalPeriod;
+									let timeUnit = consentRenewalPeriodTimeUnit;
+
+									if (value !== 'true') {
+										renewalPeriod = dissentRenewalPeriod;
+										timeUnit = dissentRenewalPeriodTimeUnit;
+									}
+
+									setCookie(
+										renewalPeriod,
+										key,
+										storeConsentCheckbox?.checked,
+										timeUnit,
+										value
+									);
 								}
 							);
 
 							requiredConsentCookieTypeNames.forEach(
 								(requiredConsentCookieTypeName) => {
 									setCookie(
+										consentRenewalPeriod,
 										requiredConsentCookieTypeName,
+										storeConsentCheckbox?.checked,
+										consentRenewalPeriodTimeUnit,
 										'true'
 									);
 								}
 							);
 
-							setUserConfigCookie();
+							setUserConfigCookie(
+								consentRenewalPeriod,
+								storeConsentCheckbox?.checked,
+								consentRenewalPeriodTimeUnit
+							);
 
 							setBannerVisibility(cookieBanner);
 
@@ -116,29 +288,23 @@ export default function ({
 						displayType: 'secondary',
 						label: Liferay.Language.get('accept-all'),
 						onClick() {
+							if (previewMode) {
+								return;
+							}
+
 							acceptAllCookies(
+								consentRenewalPeriod,
 								optionalConsentCookieTypeNames,
-								requiredConsentCookieTypeNames
+								requiredConsentCookieTypeNames,
+								storeConsentCheckbox?.checked,
+								consentRenewalPeriodTimeUnit
 							);
 
-							setUserConfigCookie();
-
-							setBannerVisibility(cookieBanner);
-
-							getOpener().Liferay.fire('closeModal');
-						},
-					},
-					{
-						className: includeDeclineAllButton ? '' : 'd-none',
-						displayType: 'secondary',
-						label: Liferay.Language.get('decline-all'),
-						onClick() {
-							declineAllCookies(
-								optionalConsentCookieTypeNames,
-								requiredConsentCookieTypeNames
+							setUserConfigCookie(
+								consentRenewalPeriod,
+								storeConsentCheckbox?.checked,
+								consentRenewalPeriodTimeUnit
 							);
-
-							setUserConfigCookie();
 
 							setBannerVisibility(cookieBanner);
 
@@ -149,6 +315,7 @@ export default function ({
 				displayType: 'primary',
 				height: '70vh',
 				id: 'cookiesBannerConfiguration',
+				iframeBodyCssClass: '',
 				onClose: onCloseFunction || undefined,
 				size: 'lg',
 				title: customTitle || title,
@@ -160,17 +327,38 @@ export default function ({
 			openCookieConsentModal({});
 		});
 
-		declineAllButton.addEventListener('click', () => {
-			cookieBanner.style.display = 'none';
+		if (declineAllButton !== null) {
+			declineAllButton.addEventListener('click', () => {
+				if (previewMode) {
+					return;
+				}
 
-			declineAllCookies(
-				optionalConsentCookieTypeNames,
-				requiredConsentCookieTypeNames
-			);
+				cookieBanner.style.display = 'none';
 
-			setUserConfigCookie();
-		});
+				storeConsentCheckbox = document.getElementById(
+					`${namespace}storeConsent`
+				);
+
+				declineAllCookies(
+					consentRenewalPeriod,
+					consentRenewalPeriodTimeUnit,
+					dissentRenewalPeriod,
+					dissentRenewalPeriodTimeUnit,
+					optionalConsentCookieTypeNames,
+					requiredConsentCookieTypeNames,
+					storeConsentCheckbox?.checked
+				);
+
+				setUserConfigCookie(
+					consentRenewalPeriod,
+					storeConsentCheckbox?.checked,
+					consentRenewalPeriodTimeUnit
+				);
+			});
+		}
 	}
+
+	checkFloatingIcon(cookieBanner, namespace);
 }
 
 function checkCookieConsentForTypes(cookieTypes, modalOptions) {
@@ -190,6 +378,52 @@ function checkCookieConsentForTypes(cookieTypes, modalOptions) {
 	});
 }
 
+function checkFloatingIcon(cookieBanner, namespace) {
+	const floatingIconButton = document.getElementById(
+		`${namespace}floatingIconButton`
+	);
+
+	if (!floatingIconButton) {
+		return;
+	}
+
+	const toggleIconVisibility = () => {
+		let isBannerVisible = false;
+
+		if (cookieBanner) {
+			isBannerVisible =
+				cookieBanner.style.display !== 'none' &&
+				!cookieBanner.classList.contains('d-none');
+		}
+
+		if (isBannerVisible) {
+			floatingIconButton.classList.remove('d-inline-flex');
+			floatingIconButton.classList.add('d-none');
+		}
+		else {
+			floatingIconButton.classList.remove('d-none');
+			floatingIconButton.classList.add('d-inline-flex');
+		}
+	};
+
+	toggleIconVisibility();
+
+	if (cookieBanner) {
+		const observer = new MutationObserver(() => {
+			toggleIconVisibility();
+		});
+
+		observer.observe(cookieBanner, {
+			attributeFilter: ['style', 'class'],
+			attributes: true,
+		});
+	}
+
+	floatingIconButton.addEventListener('click', () => {
+		openCookieConsentModal({});
+	});
+}
+
 function isCookieTypesAccepted(cookieTypes) {
 	if (!Array.isArray(cookieTypes)) {
 		cookieTypes = [cookieTypes];
@@ -198,13 +432,41 @@ function isCookieTypesAccepted(cookieTypes) {
 	return cookieTypes.every((cookieType) => checkConsent(cookieType));
 }
 
-function setBannerVisibility(cookieBanner) {
-	if (getCookie(userConfigCookieName)) {
-		cookieBanner.style.display = 'none';
+async function isCookiesPreferenceHandlingConfigurationModified(modifiedDate) {
+	if (modifiedDate === 0) {
+		return false;
 	}
-	else {
-		cookieBanner.style.display = 'block';
+
+	const userConfigDateCookie = await getCookie(userConfigDateCookieName);
+
+	if (
+		userConfigDateCookie === undefined ||
+		userConfigDateCookie < modifiedDate
+	) {
+		return true;
 	}
+
+	return false;
+}
+
+function setBannerVisibility(cookieBanner, modifiedDate) {
+	isCookiesPreferenceHandlingConfigurationModified(modifiedDate).then(
+		(value) => {
+			if (!value) {
+				getCookie(userConfigCookieName).then((cookie) => {
+					if (cookie) {
+						cookieBanner.style.display = 'none';
+					}
+					else {
+						cookieBanner.style.display = 'block';
+					}
+				});
+			}
+			else {
+				cookieBanner.style.display = 'block';
+			}
+		}
+	);
 }
 
 export {checkCookieConsentForTypes, openCookieConsentModal};

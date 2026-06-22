@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -30,20 +35,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
  * @generated
  */
 @Generated("")
-@GraphQLName("WarehouseItem")
+@GraphQLName(
+	description = "On-hand inventory record for one SKU at one warehouse, scaled to a unit-of-measure key. The triple (warehouse, sku, unitOfMeasureKey) is unique; when the SKU has exactly one unit-of-measure defined the key may be omitted and the runtime resolves it automatically.",
+	value = "WarehouseItem"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "On-hand inventory record for one SKU at one warehouse, scaled to a unit-of-measure key. The triple (warehouse, sku, unitOfMeasureKey) is unique; when the SKU has exactly one unit-of-measure defined the key may be omitted and the runtime resolves it automatically."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "WarehouseItem")
 public class WarehouseItem implements Serializable {
@@ -56,205 +61,341 @@ public class WarehouseItem implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(WarehouseItem.class, json);
 	}
 
-	@Schema(example = "AB-34098-789-N")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key for create and update; must be unique per warehouse item within the company. Optional on create.",
+		example = "AB-34098-789-N"
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key for create and update; must be unique per warehouse item within the company. Optional on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal numeric identifier of the warehouse item; read-only and assigned by the service on create.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal numeric identifier of the warehouse item; read-only and assigned by the service on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Last-modified timestamp of the warehouse-item row, in ISO 8601 date format. Maintained automatically by the persistence layer and surfaces only through the dedicated /warehouseItems/updated listing; not populated on the standard read paths.",
+		example = "2017-07-21"
+	)
 	public Date getModifiedDate() {
+		if (_modifiedDateSupplier != null) {
+			modifiedDate = _modifiedDateSupplier.get();
+
+			_modifiedDateSupplier = null;
+		}
+
 		return modifiedDate;
 	}
 
 	public void setModifiedDate(Date modifiedDate) {
 		this.modifiedDate = modifiedDate;
+
+		_modifiedDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setModifiedDate(
 		UnsafeSupplier<Date, Exception> modifiedDateUnsafeSupplier) {
 
-		try {
-			modifiedDate = modifiedDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_modifiedDateSupplier = () -> {
+			try {
+				return modifiedDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Last-modified timestamp of the warehouse-item row, in ISO 8601 date format. Maintained automatically by the persistence layer and surfaces only through the dedicated /warehouseItems/updated listing; not populated on the standard read paths."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date modifiedDate;
 
+	@JsonIgnore
+	private Supplier<Date> _modifiedDateSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1.1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Total on-hand quantity at the warehouse, scaled to the unitOfMeasureKey precision. The runtime formats the persisted decimal through the commerce quantity formatter on read. Stock available for sale is the difference between quantity and reservedQuantity; it is not surfaced as a separate property and consumers compute it from these two fields.",
+		example = "1.1"
+	)
 	@Valid
 	public BigDecimal getQuantity() {
+		if (_quantitySupplier != null) {
+			quantity = _quantitySupplier.get();
+
+			_quantitySupplier = null;
+		}
+
 		return quantity;
 	}
 
 	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
+
+		_quantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setQuantity(
 		UnsafeSupplier<BigDecimal, Exception> quantityUnsafeSupplier) {
 
-		try {
-			quantity = quantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_quantitySupplier = () -> {
+			try {
+				return quantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Total on-hand quantity at the warehouse, scaled to the unitOfMeasureKey precision. The runtime formats the persisted decimal through the commerce quantity formatter on read. Stock available for sale is the difference between quantity and reservedQuantity; it is not surfaced as a separate property and consumers compute it from these two fields."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal quantity;
 
+	@JsonIgnore
+	private Supplier<BigDecimal> _quantitySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "2.1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Quantity currently held by open orders against future fulfillment, scaled to the unitOfMeasureKey precision. The runtime formats the persisted decimal through the commerce quantity formatter on read. Subtracted from quantity to derive stock available for sale; the difference is not surfaced as a separate property.",
+		example = "2.1"
+	)
 	@Valid
 	public BigDecimal getReservedQuantity() {
+		if (_reservedQuantitySupplier != null) {
+			reservedQuantity = _reservedQuantitySupplier.get();
+
+			_reservedQuantitySupplier = null;
+		}
+
 		return reservedQuantity;
 	}
 
 	public void setReservedQuantity(BigDecimal reservedQuantity) {
 		this.reservedQuantity = reservedQuantity;
+
+		_reservedQuantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReservedQuantity(
 		UnsafeSupplier<BigDecimal, Exception> reservedQuantityUnsafeSupplier) {
 
-		try {
-			reservedQuantity = reservedQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_reservedQuantitySupplier = () -> {
+			try {
+				return reservedQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Quantity currently held by open orders against future fulfillment, scaled to the unitOfMeasureKey precision. The runtime formats the persisted decimal through the commerce quantity formatter on read. Subtracted from quantity to derive stock available for sale; the difference is not surfaced as a separate property."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal reservedQuantity;
 
-	@Schema(example = "SKU")
+	@JsonIgnore
+	private Supplier<BigDecimal> _reservedQuantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "SKU (stock keeping unit) the inventory record applies to. Required and non-blank on create.",
+		example = "SKU"
+	)
 	public String getSku() {
+		if (_skuSupplier != null) {
+			sku = _skuSupplier.get();
+
+			_skuSupplier = null;
+		}
+
 		return sku;
 	}
 
 	public void setSku(String sku) {
 		this.sku = sku;
+
+		_skuSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSku(UnsafeSupplier<String, Exception> skuUnsafeSupplier) {
-		try {
-			sku = skuUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuSupplier = () -> {
+			try {
+				return skuUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "SKU (stock keeping unit) the inventory record applies to. Required and non-blank on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sku;
 
-	@Schema(example = "lt")
+	@JsonIgnore
+	private Supplier<String> _skuSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Key of the unit-of-measure the quantities are expressed in. When omitted on create and the SKU has exactly one unit-of-measure defined, the runtime resolves the key automatically; when the SKU has more than one, an explicit key is required.",
+		example = "lt"
+	)
 	public String getUnitOfMeasureKey() {
+		if (_unitOfMeasureKeySupplier != null) {
+			unitOfMeasureKey = _unitOfMeasureKeySupplier.get();
+
+			_unitOfMeasureKeySupplier = null;
+		}
+
 		return unitOfMeasureKey;
 	}
 
 	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
 		this.unitOfMeasureKey = unitOfMeasureKey;
+
+		_unitOfMeasureKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitOfMeasureKey(
 		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
 
-		try {
-			unitOfMeasureKey = unitOfMeasureKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitOfMeasureKeySupplier = () -> {
+			try {
+				return unitOfMeasureKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Key of the unit-of-measure the quantities are expressed in. When omitted on create and the SKU has exactly one unit-of-measure defined, the runtime resolves the key automatically; when the SKU has more than one, an explicit key is required."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unitOfMeasureKey;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key of the warehouse the warehouse item belongs to. Either warehouseId or warehouseExternalReferenceCode must resolve to an existing warehouse on create.",
+		example = "AB-34098-789-N"
+	)
 	public String getWarehouseExternalReferenceCode() {
+		if (_warehouseExternalReferenceCodeSupplier != null) {
+			warehouseExternalReferenceCode =
+				_warehouseExternalReferenceCodeSupplier.get();
+
+			_warehouseExternalReferenceCodeSupplier = null;
+		}
+
 		return warehouseExternalReferenceCode;
 	}
 
@@ -262,6 +403,8 @@ public class WarehouseItem implements Serializable {
 		String warehouseExternalReferenceCode) {
 
 		this.warehouseExternalReferenceCode = warehouseExternalReferenceCode;
+
+		_warehouseExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -269,50 +412,74 @@ public class WarehouseItem implements Serializable {
 		UnsafeSupplier<String, Exception>
 			warehouseExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			warehouseExternalReferenceCode =
-				warehouseExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_warehouseExternalReferenceCodeSupplier = () -> {
+			try {
+				return warehouseExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key of the warehouse the warehouse item belongs to. Either warehouseId or warehouseExternalReferenceCode must resolve to an existing warehouse on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String warehouseExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _warehouseExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30030")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the warehouse the warehouse item belongs to (FK identifier). Either warehouseId or warehouseExternalReferenceCode must resolve to an existing warehouse on create.",
+		example = "30130"
+	)
 	public Long getWarehouseId() {
+		if (_warehouseIdSupplier != null) {
+			warehouseId = _warehouseIdSupplier.get();
+
+			_warehouseIdSupplier = null;
+		}
+
 		return warehouseId;
 	}
 
 	public void setWarehouseId(Long warehouseId) {
 		this.warehouseId = warehouseId;
+
+		_warehouseIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWarehouseId(
 		UnsafeSupplier<Long, Exception> warehouseIdUnsafeSupplier) {
 
-		try {
-			warehouseId = warehouseIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_warehouseIdSupplier = () -> {
+			try {
+				return warehouseIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the warehouse the warehouse item belongs to (FK identifier). Either warehouseId or warehouseExternalReferenceCode must resolve to an existing warehouse on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long warehouseId;
+
+	@JsonIgnore
+	private Supplier<Long> _warehouseIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -344,6 +511,8 @@ public class WarehouseItem implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		String externalReferenceCode = getExternalReferenceCode();
+
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -358,6 +527,8 @@ public class WarehouseItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -367,6 +538,8 @@ public class WarehouseItem implements Serializable {
 
 			sb.append(id);
 		}
+
+		Date modifiedDate = getModifiedDate();
 
 		if (modifiedDate != null) {
 			if (sb.length() > 1) {
@@ -382,6 +555,8 @@ public class WarehouseItem implements Serializable {
 			sb.append("\"");
 		}
 
+		BigDecimal quantity = getQuantity();
+
 		if (quantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -392,6 +567,8 @@ public class WarehouseItem implements Serializable {
 			sb.append(quantity);
 		}
 
+		BigDecimal reservedQuantity = getReservedQuantity();
+
 		if (reservedQuantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -401,6 +578,8 @@ public class WarehouseItem implements Serializable {
 
 			sb.append(reservedQuantity);
 		}
+
+		String sku = getSku();
 
 		if (sku != null) {
 			if (sb.length() > 1) {
@@ -416,6 +595,8 @@ public class WarehouseItem implements Serializable {
 			sb.append("\"");
 		}
 
+		String unitOfMeasureKey = getUnitOfMeasureKey();
+
 		if (unitOfMeasureKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -430,6 +611,9 @@ public class WarehouseItem implements Serializable {
 			sb.append("\"");
 		}
 
+		String warehouseExternalReferenceCode =
+			getWarehouseExternalReferenceCode();
+
 		if (warehouseExternalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -443,6 +627,8 @@ public class WarehouseItem implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long warehouseId = getWarehouseId();
 
 		if (warehouseId != null) {
 			if (sb.length() > 1) {
@@ -459,8 +645,8 @@ public class WarehouseItem implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.inventory.dto.v1_0.WarehouseItem",
 		name = "x-class-name"
 	)
@@ -506,7 +692,10 @@ public class WarehouseItem implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -552,3 +741,4 @@ public class WarehouseItem implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1142186297

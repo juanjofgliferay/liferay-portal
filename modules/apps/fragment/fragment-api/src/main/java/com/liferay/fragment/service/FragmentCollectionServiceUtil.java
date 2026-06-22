@@ -7,6 +7,7 @@ package com.liferay.fragment.service;
 
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -31,22 +32,25 @@ public class FragmentCollectionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.fragment.service.impl.FragmentCollectionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static FragmentCollection addFragmentCollection(
-			long groupId, String name, String description,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addFragmentCollection(
-			groupId, name, description, serviceContext);
-	}
-
-	public static FragmentCollection addFragmentCollection(
-			long groupId, String fragmentCollectionKey, String name,
+			String externalReferenceCode, long groupId, String name,
 			String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFragmentCollection(
-			groupId, fragmentCollectionKey, name, description, serviceContext);
+			externalReferenceCode, groupId, name, description, serviceContext);
+	}
+
+	public static FragmentCollection addFragmentCollection(
+			String externalReferenceCode, long groupId,
+			String fragmentCollectionKey, String name, String description,
+			boolean marketplace,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addFragmentCollection(
+			externalReferenceCode, groupId, fragmentCollectionKey, name,
+			description, marketplace, serviceContext);
 	}
 
 	public static FragmentCollection deleteFragmentCollection(
@@ -54,6 +58,14 @@ public class FragmentCollectionServiceUtil {
 		throws PortalException {
 
 		return getService().deleteFragmentCollection(fragmentCollectionId);
+	}
+
+	public static FragmentCollection deleteFragmentCollection(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteFragmentCollection(
+			externalReferenceCode, groupId);
 	}
 
 	public static void deleteFragmentCollections(long[] fragmentCollectionIds)
@@ -67,6 +79,61 @@ public class FragmentCollectionServiceUtil {
 		throws PortalException {
 
 		return getService().fetchFragmentCollection(fragmentCollectionId);
+	}
+
+	public static List<FragmentCollection> getExportableFragmentCollections(
+		long[] fragmentCollectionIds) {
+
+		return getService().getExportableFragmentCollections(
+			fragmentCollectionIds);
+	}
+
+	public static List<FragmentCollection>
+		getExportableFragmentCollectionsByGroupId(
+			long[] groupIds, int start, int end,
+			OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return getService().getExportableFragmentCollectionsByGroupId(
+			groupIds, start, end, orderByComparator);
+	}
+
+	public static List<FragmentCollection>
+		getExportableFragmentCollectionsByGroupId(
+			long[] groupIds, String name, int start, int end,
+			OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return getService().getExportableFragmentCollectionsByGroupId(
+			groupIds, name, start, end, orderByComparator);
+	}
+
+	public static int getExportableFragmentCollectionsCount(
+		long[] fragmentCollectionIds) {
+
+		return getService().getExportableFragmentCollectionsCount(
+			fragmentCollectionIds);
+	}
+
+	public static int getExportableFragmentCollectionsCountByGroupId(
+		long[] groupIds) {
+
+		return getService().getExportableFragmentCollectionsCountByGroupId(
+			groupIds);
+	}
+
+	public static int getExportableFragmentCollectionsCountByGroupId(
+		long[] groupIds, String name) {
+
+		return getService().getExportableFragmentCollectionsCountByGroupId(
+			groupIds, name);
+	}
+
+	public static FragmentCollection
+			getFragmentCollectionByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getFragmentCollectionByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	public static List<com.liferay.portal.kernel.repository.model.FileEntry>
@@ -134,11 +201,27 @@ public class FragmentCollectionServiceUtil {
 	}
 
 	public static List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return getService().getFragmentCollections(
+			groupIds, marketplace, start, end, orderByComparator);
+	}
+
+	public static List<FragmentCollection> getFragmentCollections(
 		long[] groupIds, int start, int end,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
 		return getService().getFragmentCollections(
 			groupIds, start, end, orderByComparator);
+	}
+
+	public static List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, String name, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return getService().getFragmentCollections(
+			groupIds, name, marketplace, start, end, orderByComparator);
 	}
 
 	public static List<FragmentCollection> getFragmentCollections(
@@ -175,9 +258,22 @@ public class FragmentCollectionServiceUtil {
 	}
 
 	public static int getFragmentCollectionsCount(
+		long[] groupIds, boolean marketplace) {
+
+		return getService().getFragmentCollectionsCount(groupIds, marketplace);
+	}
+
+	public static int getFragmentCollectionsCount(
 		long[] groupIds, String name) {
 
 		return getService().getFragmentCollectionsCount(groupIds, name);
+	}
+
+	public static int getFragmentCollectionsCount(
+		long[] groupIds, String name, boolean marketplace) {
+
+		return getService().getFragmentCollectionsCount(
+			groupIds, name, marketplace);
 	}
 
 	/**
@@ -204,13 +300,13 @@ public class FragmentCollectionServiceUtil {
 	}
 
 	public static FragmentCollectionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(FragmentCollectionService service) {
-		_service = service;
-	}
-
-	private static volatile FragmentCollectionService _service;
+	private static final Snapshot<FragmentCollectionService> _serviceSnapshot =
+		new Snapshot<>(
+			FragmentCollectionServiceUtil.class,
+			FragmentCollectionService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:929293634

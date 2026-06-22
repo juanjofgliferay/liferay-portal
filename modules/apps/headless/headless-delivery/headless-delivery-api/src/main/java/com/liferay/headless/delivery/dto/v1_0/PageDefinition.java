@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -38,6 +37,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName(
 	description = "Represent a definition of a Page.", value = "PageDefinition"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Represent a definition of a Page."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "PageDefinition")
@@ -51,117 +53,172 @@ public class PageDefinition implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PageDefinition.class, json);
 	}
 
-	@Schema(description = "The page's page element.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page's page element."
+	)
 	@Valid
 	public PageElement getPageElement() {
+		if (_pageElementSupplier != null) {
+			pageElement = _pageElementSupplier.get();
+
+			_pageElementSupplier = null;
+		}
+
 		return pageElement;
 	}
 
 	public void setPageElement(PageElement pageElement) {
 		this.pageElement = pageElement;
+
+		_pageElementSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPageElement(
 		UnsafeSupplier<PageElement, Exception> pageElementUnsafeSupplier) {
 
-		try {
-			pageElement = pageElementUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_pageElementSupplier = () -> {
+			try {
+				return pageElementUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page's page element.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected PageElement pageElement;
 
-	@Schema(description = "A list of the page rules this page has.")
+	@JsonIgnore
+	private Supplier<PageElement> _pageElementSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of the page rules this page has."
+	)
 	@Valid
 	public PageRule[] getPageRules() {
+		if (_pageRulesSupplier != null) {
+			pageRules = _pageRulesSupplier.get();
+
+			_pageRulesSupplier = null;
+		}
+
 		return pageRules;
 	}
 
 	public void setPageRules(PageRule[] pageRules) {
 		this.pageRules = pageRules;
+
+		_pageRulesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPageRules(
 		UnsafeSupplier<PageRule[], Exception> pageRulesUnsafeSupplier) {
 
-		try {
-			pageRules = pageRulesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_pageRulesSupplier = () -> {
+			try {
+				return pageRulesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "A list of the page rules this page has.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected PageRule[] pageRules;
 
-	@Schema(description = "The page's settings.")
+	@JsonIgnore
+	private Supplier<PageRule[]> _pageRulesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page's settings."
+	)
 	@Valid
 	public Settings getSettings() {
+		if (_settingsSupplier != null) {
+			settings = _settingsSupplier.get();
+
+			_settingsSupplier = null;
+		}
+
 		return settings;
 	}
 
 	public void setSettings(Settings settings) {
 		this.settings = settings;
+
+		_settingsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSettings(
 		UnsafeSupplier<Settings, Exception> settingsUnsafeSupplier) {
 
-		try {
-			settings = settingsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_settingsSupplier = () -> {
+			try {
+				return settingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page's settings.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Settings settings;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Settings> _settingsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The version of the JSON generated by page definition."
 	)
 	public Double getVersion() {
+		if (_versionSupplier != null) {
+			version = _versionSupplier.get();
+
+			_versionSupplier = null;
+		}
+
 		return version;
 	}
 
 	public void setVersion(Double version) {
 		this.version = version;
+
+		_versionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVersion(
 		UnsafeSupplier<Double, Exception> versionUnsafeSupplier) {
 
-		try {
-			version = versionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_versionSupplier = () -> {
+			try {
+				return versionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -169,6 +226,9 @@ public class PageDefinition implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double version;
+
+	@JsonIgnore
+	private Supplier<Double> _versionSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -197,6 +257,8 @@ public class PageDefinition implements Serializable {
 
 		sb.append("{");
 
+		PageElement pageElement = getPageElement();
+
 		if (pageElement != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -206,6 +268,8 @@ public class PageDefinition implements Serializable {
 
 			sb.append(String.valueOf(pageElement));
 		}
+
+		PageRule[] pageRules = getPageRules();
 
 		if (pageRules != null) {
 			if (sb.length() > 1) {
@@ -227,6 +291,8 @@ public class PageDefinition implements Serializable {
 			sb.append("]");
 		}
 
+		Settings settings = getSettings();
+
 		if (settings != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -236,6 +302,8 @@ public class PageDefinition implements Serializable {
 
 			sb.append(String.valueOf(settings));
 		}
+
+		Double version = getVersion();
 
 		if (version != null) {
 			if (sb.length() > 1) {
@@ -252,8 +320,8 @@ public class PageDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageDefinition",
 		name = "x-class-name"
 	)
@@ -299,7 +367,10 @@ public class PageDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -345,3 +416,4 @@ public class PageDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1423365387

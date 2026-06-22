@@ -5,14 +5,21 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.aws.AWSFleetCloud;
+
+import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
@@ -36,12 +43,19 @@ public class JenkinsCohort {
 		return _jenkinsCohorts.get(cohortName);
 	}
 
+	public Set<String> getASGPrimaryLabels() {
+		Map<String, List<AWSFleetCloud>> awsFleetCloudsMap =
+			_getAWSFleetCloudsMap();
+
+		return awsFleetCloudsMap.keySet();
+	}
+
 	public int getIdleJenkinsSlaveCount() {
+		int idleJenkinsSlaveCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int idleJenkinsSlaveCount = 0;
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			idleJenkinsSlaveCount += jenkinsMaster.getIdleJenkinsSlavesCount();
@@ -77,14 +91,13 @@ public class JenkinsCohort {
 	}
 
 	public JenkinsMaster getMostAvailableJenkinsMaster(
-		int invokedBatchSize, int minimumRAM, int maximumSlavesPerHost) {
+		int invokedBatchSize, String jobName) {
 
 		String mostAvailableMasterURL =
 			JenkinsResultsParserUtil.getMostAvailableMasterURL(
-				JenkinsResultsParserUtil.combine(
-					"http://", getName(), ".liferay.com"),
+				"http://" + getName() + ".liferay.com",
 				JenkinsResultsParserUtil.join(",", _jenkinsMastersBlacklist),
-				invokedBatchSize, minimumRAM, maximumSlavesPerHost);
+				invokedBatchSize, jobName);
 
 		return JenkinsMaster.getInstance(
 			mostAvailableMasterURL.replaceAll("http://(.+)", "$1"));
@@ -94,12 +107,22 @@ public class JenkinsCohort {
 		return _name;
 	}
 
+	public Set<String> getNetworkNames() {
+		Set<String> networkNames = new HashSet<>();
+
+		for (JenkinsMaster jenkinsMaster : getJenkinsMasters()) {
+			networkNames.add(jenkinsMaster.getNetworkName());
+		}
+
+		return networkNames;
+	}
+
 	public int getOfflineJenkinsSlaveCount() {
+		int offlineJenkinsSlaveCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int offlineJenkinsSlaveCount = 0;
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			offlineJenkinsSlaveCount +=
@@ -110,11 +133,11 @@ public class JenkinsCohort {
 	}
 
 	public int getOnlineJenkinsSlaveCount() {
+		int onlineJenkinsSlaveCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int onlineJenkinsSlaveCount = 0;
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			onlineJenkinsSlaveCount +=
@@ -125,11 +148,11 @@ public class JenkinsCohort {
 	}
 
 	public int getQueuedBuildCount() {
+		int queuedBuildCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int queuedBuildCount = 0;
 
 		for (JenkinsCohortJob jenkinsCohortJob :
 				_jenkinsCohortJobsMap.values()) {
@@ -142,11 +165,11 @@ public class JenkinsCohort {
 	}
 
 	public int getRunningBuildCount() {
+		int runningBuildCount = 0;
+
 		if (_jenkinsCohortJobsMap.isEmpty()) {
 			update();
 		}
-
-		int runningBuildCount = 0;
 
 		for (JenkinsCohortJob jenkinsCohortJob :
 				_jenkinsCohortJobsMap.values()) {
@@ -156,6 +179,42 @@ public class JenkinsCohort {
 		}
 
 		return runningBuildCount;
+	}
+
+	public int getStartedDownstreamBuildCountAfter(Date date) {
+		int buildCount = 0;
+
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
+
+		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
+			if (jenkinsMaster.isBlackListed() || !jenkinsMaster.isAvailable()) {
+				continue;
+			}
+
+			buildCount += jenkinsMaster.getStartedBuildCountAfter(date, false);
+		}
+
+		return buildCount;
+	}
+
+	public int getStartedTopLevelBuildCountAfter(Date date) {
+		int buildCount = 0;
+
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
+
+		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
+			if (jenkinsMaster.isBlackListed() || !jenkinsMaster.isAvailable()) {
+				continue;
+			}
+
+			buildCount += jenkinsMaster.getStartedBuildCountAfter(date, true);
+		}
+
+		return buildCount;
 	}
 
 	public void update() {
@@ -379,8 +438,116 @@ public class JenkinsCohort {
 		JenkinsResultsParserUtil.write(filePath, sb.toString());
 	}
 
+	public void writeNodeDataJSONFile(String filePath) throws IOException {
+		File file = new File(filePath);
+
+		JSONObject jsonObject = new JSONObject();
+
+		if (file.exists()) {
+			String fileContent = JenkinsResultsParserUtil.read(file);
+
+			jsonObject = new JSONObject(fileContent);
+		}
+
+		long currentTimestamp = System.currentTimeMillis();
+
+		JSONArray timestampsJSONArray = jsonObject.optJSONArray(
+			"timestamps", new JSONArray());
+
+		int timestampCount = timestampsJSONArray.length();
+
+		long previousTimestamp = currentTimestamp;
+
+		if (timestampCount > 0) {
+			previousTimestamp = timestampsJSONArray.getLong(
+				timestampsJSONArray.length() - 1);
+		}
+
+		Date previousDate = new Date(previousTimestamp);
+
+		_addNodeData(
+			jsonObject, timestampCount, "downstream_started_builds",
+			getStartedDownstreamBuildCountAfter(previousDate));
+
+		_addNodeData(
+			jsonObject, timestampCount, "idle_nodes",
+			getIdleJenkinsSlaveCount());
+		_addNodeData(
+			jsonObject, timestampCount, "occupied_nodes",
+			getRunningBuildCount());
+		_addNodeData(
+			jsonObject, timestampCount, "offline_nodes",
+			getOfflineJenkinsSlaveCount());
+		_addNodeData(
+			jsonObject, timestampCount, "online_nodes",
+			getOnlineJenkinsSlaveCount());
+		_addNodeData(
+			jsonObject, timestampCount, "queued_builds", getQueuedBuildCount());
+		_addNodeData(
+			jsonObject, timestampCount, "timestamps", currentTimestamp);
+		_addNodeData(
+			jsonObject, timestampCount, "top_level_started_builds",
+			getStartedTopLevelBuildCountAfter(previousDate));
+
+		if (JenkinsResultsParserUtil.isCloudCINode()) {
+			jsonObject.put("asg_primary_labels", getASGPrimaryLabels());
+
+			Map<String, List<AWSFleetCloud>> awsFleetCloudsMap =
+				_getAWSFleetCloudsMap();
+
+			for (Map.Entry<String, List<AWSFleetCloud>> awsFleetCloudsEntry :
+					awsFleetCloudsMap.entrySet()) {
+
+				String asgPrimaryLabel = awsFleetCloudsEntry.getKey();
+
+				long idleNodes = 0L;
+				long occupiedNodes = 0L;
+				long offlineNodes = 0L;
+				long queuedBuilds = 0L;
+
+				for (AWSFleetCloud awsFleetCloud :
+						awsFleetCloudsEntry.getValue()) {
+
+					idleNodes += awsFleetCloud.getIdleNodes();
+					occupiedNodes += awsFleetCloud.getOccupiedNodes();
+					offlineNodes += awsFleetCloud.getOfflineNodes();
+					queuedBuilds += awsFleetCloud.getQueuedBuilds();
+				}
+
+				_addNodeData(
+					jsonObject, timestampCount,
+					"idle_nodes__" + asgPrimaryLabel, idleNodes);
+				_addNodeData(
+					jsonObject, timestampCount,
+					"occupied_nodes__" + asgPrimaryLabel, occupiedNodes);
+				_addNodeData(
+					jsonObject, timestampCount,
+					"offline_nodes__" + asgPrimaryLabel, offlineNodes);
+				_addNodeData(
+					jsonObject, timestampCount,
+					"queued_builds__" + asgPrimaryLabel, queuedBuilds);
+			}
+		}
+
+		JenkinsResultsParserUtil.write(filePath, jsonObject.toString());
+	}
+
 	protected JenkinsCohort(String name) {
 		_name = name;
+	}
+
+	private void _addNodeData(
+		JSONObject jsonObject, int recordCount, String key, long value) {
+
+		JSONArray jsonArray = jsonObject.optJSONArray(key, new JSONArray());
+
+		while (jsonArray.length() < recordCount) {
+			jsonArray.put(0);
+		}
+
+		jsonArray.put(value);
+
+		jsonObject.put(key, jsonArray);
 	}
 
 	private JSONArray _createJSONArray(Object... items) {
@@ -448,6 +615,36 @@ public class JenkinsCohort {
 		int buildCount, String buildPercentage) {
 
 		return buildCount + " (" + buildPercentage + ")";
+	}
+
+	private synchronized Map<String, List<AWSFleetCloud>>
+		_getAWSFleetCloudsMap() {
+
+		if (!JenkinsResultsParserUtil.isCloudCINode()) {
+			_awsFleetCloudsMap = new HashMap<>();
+
+			return _awsFleetCloudsMap;
+		}
+
+		_awsFleetCloudsMap = new TreeMap<>();
+
+		for (JenkinsMaster jenkinsMaster : getJenkinsMasters()) {
+			for (AWSFleetCloud awsFleetCloud :
+					jenkinsMaster.getAWSFleetClouds()) {
+
+				String primaryLabel = awsFleetCloud.getPrimaryLabel();
+
+				List<AWSFleetCloud> awsFleetClouds =
+					_awsFleetCloudsMap.getOrDefault(
+						primaryLabel, new ArrayList<>());
+
+				awsFleetClouds.add(awsFleetCloud);
+
+				_awsFleetCloudsMap.put(primaryLabel, awsFleetClouds);
+			}
+		}
+
+		return _awsFleetCloudsMap;
 	}
 
 	private void _loadBuildURL(String buildURL) {
@@ -558,10 +755,11 @@ public class JenkinsCohort {
 		}
 	}
 
+	private Map<String, List<AWSFleetCloud>> _awsFleetCloudsMap;
 	private final Map<String, JenkinsCohortJob> _jenkinsCohortJobsMap =
 		new HashMap<>();
 	private final Map<String, JenkinsMaster> _jenkinsMastersMap =
-		new HashMap<>();
+		new TreeMap<>();
 	private final String _name;
 
 	private class JenkinsCohortJob {

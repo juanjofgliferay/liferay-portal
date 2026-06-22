@@ -6,12 +6,12 @@
 import ClayButton from '@clayui/button';
 import ClayModal from '@clayui/modal';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import {AppContextData, EPageView} from '../../../App';
+import {AppContextData, EPageView} from '../../../index';
 import Connect from '../Connect';
 
 // NOTE: to render properly in the tests, this Component is sligthly different from connect/Connect.tsx
@@ -75,7 +75,7 @@ describe('Connect', () => {
 		expect(sheetTextDiv).toBeInTheDocument();
 
 		expect(sheetTextDiv).toHaveTextContent(
-			'use-the-token-genereted-in-your-analytics-cloud-to-connect-this-workspace'
+			'use-the-token-generated-in-your-analytics-cloud-to-connect-this-workspace'
 		);
 
 		expect(formControl).toBeInTheDocument();
@@ -95,6 +95,7 @@ describe('Connect', () => {
 					liferayAnalyticsURL: '',
 					pageView: EPageView.Default,
 					token: '',
+					wizardMode: false,
 				}}
 			>
 				<Connect title="testConnect" />
@@ -134,6 +135,7 @@ describe('Connect', () => {
 					liferayAnalyticsURL: '',
 					pageView: EPageView.Default,
 					token: '',
+					wizardMode: false,
 				}}
 			>
 				<Connect title="testConnect" />

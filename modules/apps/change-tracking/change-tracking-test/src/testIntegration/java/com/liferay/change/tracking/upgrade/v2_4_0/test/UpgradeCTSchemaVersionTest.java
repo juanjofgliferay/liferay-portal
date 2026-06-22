@@ -7,6 +7,7 @@ package com.liferay.change.tracking.upgrade.v2_4_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.internal.test.util.CTCollectionTestUtil;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTPreferences;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
@@ -51,16 +52,20 @@ public class UpgradeCTSchemaVersionTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_ctCollection = _ctCollectionLocalService.addCTCollection(
+		_ctCollection1 = _ctCollectionLocalService.addCTCollection(
 			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			0, UpgradeCTSchemaVersionTest.class.getSimpleName(), null);
+			0, "P1", null);
+
+		_ctCollection2 =
+			CTCollectionTestUtil.createCTCollectionWithIncompleteStatus(
+				TestPropsValues.getUser());
 
 		_ctPreferences = _ctPreferencesLocalService.getCTPreferences(
 			TestPropsValues.getCompanyId(), TestPropsValues.getUserId());
 
-		_ctPreferences.setCtCollectionId(_ctCollection.getCtCollectionId());
+		_ctPreferences.setCtCollectionId(_ctCollection1.getCtCollectionId());
 		_ctPreferences.setPreviousCtCollectionId(
-			_ctCollection.getCtCollectionId());
+			_ctCollection2.getCtCollectionId());
 
 		_ctPreferences = _ctPreferencesLocalService.updateCTPreferences(
 			_ctPreferences);
@@ -115,11 +120,17 @@ public class UpgradeCTSchemaVersionTest {
 
 		CacheRegistryUtil.clear();
 
-		_ctCollection = _ctCollectionLocalService.getCTCollection(
-			_ctCollection.getCtCollectionId());
+		_ctCollection1 = _ctCollectionLocalService.getCTCollection(
+			_ctCollection1.getCtCollectionId());
 
 		Assert.assertEquals(
-			WorkflowConstants.STATUS_EXPIRED, _ctCollection.getStatus());
+			WorkflowConstants.STATUS_EXPIRED, _ctCollection1.getStatus());
+
+		_ctCollection2 = _ctCollectionLocalService.getCTCollection(
+			_ctCollection2.getCtCollectionId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_EXPIRED, _ctCollection2.getStatus());
 
 		_ctPreferences = _ctPreferencesLocalService.getCTPreferences(
 			TestPropsValues.getCompanyId(), TestPropsValues.getUserId());
@@ -132,22 +143,25 @@ public class UpgradeCTSchemaVersionTest {
 			_ctPreferences.getPreviousCtCollectionId());
 	}
 
-	@Inject
-	private static CTCollectionLocalService _ctCollectionLocalService;
+	@DeleteAfterTestRun
+	private CTCollection _ctCollection1;
+
+	@DeleteAfterTestRun
+	private CTCollection _ctCollection2;
 
 	@Inject
-	private static CTPreferencesLocalService _ctPreferencesLocalService;
+	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@DeleteAfterTestRun
+	private CTPreferences _ctPreferences;
+
+	@Inject
+	private CTPreferencesLocalService _ctPreferencesLocalService;
 
 	@Inject(
 		filter = "(&(component.name=com.liferay.change.tracking.internal.upgrade.registry.ChangeTrackingServiceUpgradeStepRegistrator))"
 	)
-	private static UpgradeStepRegistrator _upgradeStepRegistrator;
-
-	@DeleteAfterTestRun
-	private CTCollection _ctCollection;
-
-	@DeleteAfterTestRun
-	private CTPreferences _ctPreferences;
+	private UpgradeStepRegistrator _upgradeStepRegistrator;
 
 	private final List<UpgradeProcess> _upgradeSteps = new ArrayList<>();
 

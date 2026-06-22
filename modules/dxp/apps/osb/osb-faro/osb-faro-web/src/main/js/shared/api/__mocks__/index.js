@@ -3,8 +3,10 @@ import * as activities from './activities';
 import * as apiTokens from './api-tokens';
 import * as assets from './assets';
 import * as blockedKeywords from './blocked-keywords';
+import * as categories from './categories';
 import * as channels from './channels';
 import * as contactsCards from './contacts-cards';
+import * as csv from './csv';
 import * as dataSource from './data-source';
 import * as definitions from './definitions';
 import * as distributions from './distributions';
@@ -17,7 +19,9 @@ import * as notifications from './notifications';
 import * as pagesVisited from './pages-visited';
 import * as preferences from './preferences';
 import * as projects from './projects';
+import * as tags from './tags';
 import * as user from './user';
+import * as vocabularies from './vocabularies';
 
 export {
 	accounts,
@@ -25,19 +29,23 @@ export {
 	apiTokens,
 	assets,
 	blockedKeywords,
+	categories,
 	channels,
 	contactsCards,
+	csv,
 	dataSource,
 	definitions,
 	distributions,
 	fieldMappings,
-	individualSegment,
 	individuals,
+	individualSegment,
 	interests,
 	issue,
 	notifications,
 	pagesVisited,
 	preferences,
 	projects,
-	user
+	tags,
+	user,
+	vocabularies
 };

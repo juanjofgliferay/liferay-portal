@@ -9,11 +9,8 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Stats;
 import com.liferay.portal.kernel.search.StatsResults;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
-import com.liferay.portal.search.internal.stats.StatsRequestBuilderFactoryImpl;
-import com.liferay.portal.search.internal.stats.StatsResponseBuilderImpl;
 import com.liferay.portal.search.stats.StatsRequest;
 import com.liferay.portal.search.stats.StatsRequestBuilder;
-import com.liferay.portal.search.stats.StatsRequestBuilderFactory;
 import com.liferay.portal.search.stats.StatsResponse;
 import com.liferay.portal.search.stats.StatsResponseBuilder;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
@@ -121,8 +118,7 @@ public abstract class BaseStatisticsTestCase extends BaseIndexingTestCase {
 
 		String field = STAT_SORTABLE_FIELD;
 
-		StatsRequestBuilder statsRequestBuilder =
-			_statsRequestBuilderFactory.getStatsRequestBuilder();
+		StatsRequestBuilder statsRequestBuilder = new StatsRequestBuilder();
 
 		StatsRequest statsRequest = statsRequestBuilder.cardinality(
 			true
@@ -144,8 +140,7 @@ public abstract class BaseStatisticsTestCase extends BaseIndexingTestCase {
 			true
 		).build();
 
-		StatsResponseBuilder statsResponseBuilder =
-			new StatsResponseBuilderImpl();
+		StatsResponseBuilder statsResponseBuilder = new StatsResponseBuilder();
 
 		StatsResponse expectedStatsResponse = statsResponseBuilder.cardinality(
 			31
@@ -196,8 +191,7 @@ public abstract class BaseStatisticsTestCase extends BaseIndexingTestCase {
 
 		String field = STAT_SORTABLE_FIELD;
 
-		StatsRequestBuilder statsRequestBuilder =
-			_statsRequestBuilderFactory.getStatsRequestBuilder();
+		StatsRequestBuilder statsRequestBuilder = new StatsRequestBuilder();
 
 		StatsRequest statsRequest = statsRequestBuilder.cardinality(
 			true
@@ -205,8 +199,7 @@ public abstract class BaseStatisticsTestCase extends BaseIndexingTestCase {
 			field
 		).build();
 
-		StatsResponseBuilder statsResponseBuilder =
-			new StatsResponseBuilderImpl();
+		StatsResponseBuilder statsResponseBuilder = new StatsResponseBuilder();
 
 		StatsResponse expectedStatsResponse = statsResponseBuilder.cardinality(
 			31
@@ -300,8 +293,5 @@ public abstract class BaseStatisticsTestCase extends BaseIndexingTestCase {
 
 	protected static final String STAT_SORTABLE_FIELD =
 		STAT_FIELD + "_Number_sortable";
-
-	private final StatsRequestBuilderFactory _statsRequestBuilderFactory =
-		new StatsRequestBuilderFactoryImpl();
 
 }

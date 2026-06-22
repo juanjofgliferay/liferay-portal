@@ -82,8 +82,8 @@ public class DLFileEntryModelImpl
 		{"smallImageId", Types.BIGINT}, {"largeImageId", Types.BIGINT},
 		{"custom1ImageId", Types.BIGINT}, {"custom2ImageId", Types.BIGINT},
 		{"manualCheckInRequired", Types.BOOLEAN},
-		{"expirationDate", Types.TIMESTAMP}, {"reviewDate", Types.TIMESTAMP},
-		{"lastPublishDate", Types.TIMESTAMP}
+		{"displayDate", Types.TIMESTAMP}, {"expirationDate", Types.TIMESTAMP},
+		{"reviewDate", Types.TIMESTAMP}, {"lastPublishDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -121,21 +121,29 @@ public class DLFileEntryModelImpl
 		TABLE_COLUMNS_MAP.put("custom1ImageId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("custom2ImageId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("manualCheckInRequired", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("displayDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("expirationDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("reviewDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DLFileEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,fileEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,repositoryId LONG,folderId LONG,treePath STRING null,name VARCHAR(255) null,fileName VARCHAR(255) null,extension VARCHAR(75) null,mimeType VARCHAR(75) null,title VARCHAR(255) null,description STRING null,extraSettings TEXT null,fileEntryTypeId LONG,version VARCHAR(75) null,size_ LONG,smallImageId LONG,largeImageId LONG,custom1ImageId LONG,custom2ImageId LONG,manualCheckInRequired BOOLEAN,expirationDate DATE null,reviewDate DATE null,lastPublishDate DATE null,primary key (fileEntryId, ctCollectionId))";
+		"create table DLFileEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,fileEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,repositoryId LONG,folderId LONG,treePath STRING null,name VARCHAR(255) null,fileName VARCHAR(255) null,extension VARCHAR(75) null,mimeType VARCHAR(75) null,title VARCHAR(255) null,description STRING null,extraSettings TEXT null,fileEntryTypeId LONG,version VARCHAR(75) null,size_ LONG,smallImageId LONG,largeImageId LONG,custom1ImageId LONG,custom2ImageId LONG,manualCheckInRequired BOOLEAN,displayDate DATE null,expirationDate DATE null,reviewDate DATE null,lastPublishDate DATE null,primary key (fileEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table DLFileEntry";
+
+	public static final String ENTITY_ALIAS = "dlFileEntry";
+
+	public static final String FILTER_PK_COLUMN_NAME = "fileEntryId";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY dlFileEntry.folderId ASC, dlFileEntry.name ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DLFileEntry.folderId ASC, DLFileEntry.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY dlFileEntry.folderId ASC, dlFileEntry.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -165,100 +173,112 @@ public class DLFileEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 1L;
+	public static final long CLASSNAMEID_COLUMN_BITMASK = 1L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CUSTOM1IMAGEID_COLUMN_BITMASK = 2L;
+	public static final long CLASSPK_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CUSTOM2IMAGEID_COLUMN_BITMASK = 4L;
+	public static final long COMPANYID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 8L;
+	public static final long CUSTOM1IMAGEID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FILEENTRYTYPEID_COLUMN_BITMASK = 16L;
+	public static final long CUSTOM2IMAGEID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FILENAME_COLUMN_BITMASK = 32L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FOLDERID_COLUMN_BITMASK = 64L;
+	public static final long FILEENTRYTYPEID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 128L;
+	public static final long FILENAME_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LARGEIMAGEID_COLUMN_BITMASK = 256L;
+	public static final long FOLDERID_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MIMETYPE_COLUMN_BITMASK = 512L;
+	public static final long GROUPID_COLUMN_BITMASK = 512L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 1024L;
+	public static final long LARGEIMAGEID_COLUMN_BITMASK = 1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long REPOSITORYID_COLUMN_BITMASK = 2048L;
+	public static final long MIMETYPE_COLUMN_BITMASK = 2048L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SMALLIMAGEID_COLUMN_BITMASK = 4096L;
+	public static final long NAME_COLUMN_BITMASK = 4096L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TITLE_COLUMN_BITMASK = 8192L;
+	public static final long REPOSITORYID_COLUMN_BITMASK = 8192L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 16384L;
+	public static final long SMALLIMAGEID_COLUMN_BITMASK = 16384L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 32768L;
+	public static final long TITLE_COLUMN_BITMASK = 32768L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long USERID_COLUMN_BITMASK = 65536L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 131072L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.document.library.kernel.model.DLFileEntry"));
 
 	public DLFileEntryModelImpl() {
@@ -406,6 +426,8 @@ public class DLFileEntryModelImpl
 			attributeGetterFunctions.put(
 				"manualCheckInRequired", DLFileEntry::getManualCheckInRequired);
 			attributeGetterFunctions.put(
+				"displayDate", DLFileEntry::getDisplayDate);
+			attributeGetterFunctions.put(
 				"expirationDate", DLFileEntry::getExpirationDate);
 			attributeGetterFunctions.put(
 				"reviewDate", DLFileEntry::getReviewDate);
@@ -519,6 +541,9 @@ public class DLFileEntryModelImpl
 				"manualCheckInRequired",
 				(BiConsumer<DLFileEntry, Boolean>)
 					DLFileEntry::setManualCheckInRequired);
+			attributeSetterBiConsumers.put(
+				"displayDate",
+				(BiConsumer<DLFileEntry, Date>)DLFileEntry::setDisplayDate);
 			attributeSetterBiConsumers.put(
 				"expirationDate",
 				(BiConsumer<DLFileEntry, Date>)DLFileEntry::setExpirationDate);
@@ -818,6 +843,16 @@ public class DLFileEntryModelImpl
 		_classNameId = classNameId;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalClassNameId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("classNameId"));
+	}
+
 	@JSON
 	@Override
 	public long getClassPK() {
@@ -831,6 +866,15 @@ public class DLFileEntryModelImpl
 		}
 
 		_classPK = classPK;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalClassPK() {
+		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("classPK"));
 	}
 
 	@JSON
@@ -1262,6 +1306,21 @@ public class DLFileEntryModelImpl
 
 	@JSON
 	@Override
+	public Date getDisplayDate() {
+		return _displayDate;
+	}
+
+	@Override
+	public void setDisplayDate(Date displayDate) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_displayDate = displayDate;
+	}
+
+	@JSON
+	@Override
 	public Date getExpirationDate() {
 		return _expirationDate;
 	}
@@ -1419,6 +1478,7 @@ public class DLFileEntryModelImpl
 		dlFileEntryImpl.setCustom1ImageId(getCustom1ImageId());
 		dlFileEntryImpl.setCustom2ImageId(getCustom2ImageId());
 		dlFileEntryImpl.setManualCheckInRequired(isManualCheckInRequired());
+		dlFileEntryImpl.setDisplayDate(getDisplayDate());
 		dlFileEntryImpl.setExpirationDate(getExpirationDate());
 		dlFileEntryImpl.setReviewDate(getReviewDate());
 		dlFileEntryImpl.setLastPublishDate(getLastPublishDate());
@@ -1489,6 +1549,8 @@ public class DLFileEntryModelImpl
 			this.<Long>getColumnOriginalValue("custom2ImageId"));
 		dlFileEntryImpl.setManualCheckInRequired(
 			this.<Boolean>getColumnOriginalValue("manualCheckInRequired"));
+		dlFileEntryImpl.setDisplayDate(
+			this.<Date>getColumnOriginalValue("displayDate"));
 		dlFileEntryImpl.setExpirationDate(
 			this.<Date>getColumnOriginalValue("expirationDate"));
 		dlFileEntryImpl.setReviewDate(
@@ -1737,6 +1799,15 @@ public class DLFileEntryModelImpl
 
 		dlFileEntryCacheModel.manualCheckInRequired = isManualCheckInRequired();
 
+		Date displayDate = getDisplayDate();
+
+		if (displayDate != null) {
+			dlFileEntryCacheModel.displayDate = displayDate.getTime();
+		}
+		else {
+			dlFileEntryCacheModel.displayDate = Long.MIN_VALUE;
+		}
+
 		Date expirationDate = getExpirationDate();
 
 		if (expirationDate != null) {
@@ -1857,6 +1928,7 @@ public class DLFileEntryModelImpl
 	private long _custom1ImageId;
 	private long _custom2ImageId;
 	private boolean _manualCheckInRequired;
+	private Date _displayDate;
 	private Date _expirationDate;
 	private Date _reviewDate;
 	private Date _lastPublishDate;
@@ -1924,6 +1996,7 @@ public class DLFileEntryModelImpl
 		_columnOriginalValues.put("custom2ImageId", _custom2ImageId);
 		_columnOriginalValues.put(
 			"manualCheckInRequired", _manualCheckInRequired);
+		_columnOriginalValues.put("displayDate", _displayDate);
 		_columnOriginalValues.put("expirationDate", _expirationDate);
 		_columnOriginalValues.put("reviewDate", _reviewDate);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
@@ -2013,11 +2086,13 @@ public class DLFileEntryModelImpl
 
 		columnBitmasks.put("manualCheckInRequired", 1073741824L);
 
-		columnBitmasks.put("expirationDate", 2147483648L);
+		columnBitmasks.put("displayDate", 2147483648L);
 
-		columnBitmasks.put("reviewDate", 4294967296L);
+		columnBitmasks.put("expirationDate", 4294967296L);
 
-		columnBitmasks.put("lastPublishDate", 8589934592L);
+		columnBitmasks.put("reviewDate", 8589934592L);
+
+		columnBitmasks.put("lastPublishDate", 17179869184L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -2026,3 +2101,4 @@ public class DLFileEntryModelImpl
 	private DLFileEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-595771359

@@ -29,7 +29,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.struts.FindStrutsAction;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -188,8 +188,6 @@ public class PortletLayoutFinderTest {
 		return themeDisplay;
 	}
 
-	private static String[] _portletIds;
-
 	private Layout _assetLayout;
 	private Layout _blogLayout;
 	private long _blogsEntryGroupId;
@@ -198,6 +196,7 @@ public class PortletLayoutFinderTest {
 	private Group _group;
 
 	private PermissionChecker _originalPermissionChecker;
+	private String[] _portletIds;
 	private PortletLayoutFinder _portletLayoutFinder;
 
 }

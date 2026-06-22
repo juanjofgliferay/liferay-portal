@@ -114,8 +114,6 @@ public class LVEntryLocalizationPersistenceTest {
 
 		LVEntryLocalization newLVEntryLocalization = _persistence.create(pk);
 
-		newLVEntryLocalization.setMvccVersion(RandomTestUtil.nextLong());
-
 		newLVEntryLocalization.setHeadId(RandomTestUtil.nextLong());
 
 		newLVEntryLocalization.setCompanyId(RandomTestUtil.nextLong());
@@ -491,9 +489,7 @@ public class LVEntryLocalizationPersistenceTest {
 
 		LVEntryLocalization lvEntryLocalization = _persistence.create(pk);
 
-		lvEntryLocalization.setMvccVersion(RandomTestUtil.nextLong());
-
-		lvEntryLocalization.setHeadId(RandomTestUtil.nextLong());
+		lvEntryLocalization.setHeadId(-pk);
 
 		lvEntryLocalization.setCompanyId(RandomTestUtil.nextLong());
 
@@ -516,3 +512,4 @@ public class LVEntryLocalizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1234433673

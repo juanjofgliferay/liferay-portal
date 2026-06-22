@@ -9,34 +9,33 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Summary;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
 import java.util.Locale;
 
-import org.osgi.service.component.annotations.Component;
-
 /**
  * @author Luan Maoski
  */
-@Component(
-	property = "indexer.class.name=com.liferay.portal.kernel.model.User",
-	service = ModelSummaryContributor.class
-)
 public class UserModelSummaryContributor implements ModelSummaryContributor {
+
+	public UserModelSummaryContributor(Localization localization) {
+		_localization = localization;
+	}
 
 	@Override
 	public Summary getSummary(
 		Document document, Locale locale, String snippet) {
 
 		String prefix = Field.SNIPPET + StringPool.UNDERLINE;
+		String fullName = _localization.getLocalizedName(
+			"fullName", LocaleUtil.toLanguageId(locale));
 
-		String fullName = "fullName";
-
-		String title = document.get(prefix + fullName, fullName);
-
-		String content = document.get(prefix);
-
-		return new Summary(title, content);
+		return new Summary(
+			document.get(prefix + fullName, fullName), document.get(prefix));
 	}
+
+	private final Localization _localization;
 
 }

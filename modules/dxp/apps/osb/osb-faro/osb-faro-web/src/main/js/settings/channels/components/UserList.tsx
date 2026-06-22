@@ -3,6 +3,7 @@ import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import CrossPageSelect from 'shared/hoc/CrossPageSelect';
 import ErrorDisplay from 'shared/components/ErrorDisplay';
+import Loading from 'shared/components/Loading';
 import Nav from 'shared/components/Nav';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
@@ -22,8 +23,9 @@ import {OrderedMap} from 'immutable';
 import {RootState} from 'shared/store';
 import {SelectionProvider} from 'shared/context/selection';
 import {Sizes} from 'shared/util/constants';
-import {useQueryPagination, useRequest} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {User} from 'shared/util/records';
+import {useRequest} from 'shared/hooks/useRequest';
 import {usersListColumns} from 'shared/util/table-columns';
 import {withEmpty} from 'cerebro-shared/hocs/utils';
 
@@ -109,10 +111,10 @@ const UserList: React.FC<IUserListProps> = ({
 		dataSourceFn: API.channels.fetchUsers,
 		variables: {
 			channelId: id,
-			cur: page,
 			delta,
 			groupId,
 			orderIOMap,
+			page,
 			query
 		}
 	});
@@ -123,90 +125,90 @@ const UserList: React.FC<IUserListProps> = ({
 		return count === 1 ? users[0].emailAddress : count;
 	};
 
-	const getRemoveUserModalFn = (
-		clearAll?: (object) => void
-	) => selectedIOMap => {
-		const users = selectedIOMap.valueSeq().toArray();
+	const getRemoveUserModalFn =
+		(clearAll?: (params: {type: string}) => void) =>
+		(selectedIOMap: any) => {
+			const users = selectedIOMap.valueSeq().toArray();
 
-		const userIds = users.map(({userId}) => userId);
+			const userIds = users.map(({userId}: {userId: string}) => userId);
 
-		open(modalTypes.CONFIRMATION_MODAL, {
-			closeAfterSubmit: false,
-			message: (
-				<div className='text-secondary'>
-					{
-						getPluralMessage(
-							Liferay.Language.get(
-								'removing-x-from-this-property.-they-will-need-to-be-added-again-to-regain-access-to-this-property'
-							),
-							Liferay.Language.get(
-								'removing-x-users-from-this-property.-they-will-need-to-be-added-again-to-regain-access-to-this-property'
-							),
-							userIds.length,
-							true,
-							[getEmailOrCount(users), propertyName]
-						) as string
-					}
-				</div>
-			),
-			modalVariant: 'modal-warning',
-			onClose: close,
-			onSubmit: () => {
-				API.channels
-					.deleteUsers({
-						channelId: id,
-						groupId,
-						userIds
-					})
-					.then(() => {
-						if (clearAll) {
-							clearAll({type: ActionTypes.ClearAll});
-						}
-
-						refetch();
-
-						addAlert({
-							alertType: Alert.Types.Success,
-							message: getPluralMessage(
+			open(modalTypes.CONFIRMATION_MODAL, {
+				closeAfterSubmit: false,
+				message: (
+					<div className='text-secondary'>
+						{
+							getPluralMessage(
 								Liferay.Language.get(
-									'x-has-been-removed-from-x'
+									'removing-x-from-this-property.-they-will-need-to-be-added-again-to-regain-access-to-this-property'
 								),
 								Liferay.Language.get(
-									'x-users-have-been-removed-from-x'
+									'removing-x-users-from-this-property.-they-will-need-to-be-added-again-to-regain-access-to-this-property'
 								),
 								userIds.length,
 								true,
 								[getEmailOrCount(users), propertyName]
 							) as string
-						});
+						}
+					</div>
+				),
+				modalVariant: 'modal-warning',
+				onClose: close,
+				onSubmit: () => {
+					API.channels
+						.deleteUsers({
+							channelId: id,
+							groupId,
+							userIds
+						})
+						.then(() => {
+							if (clearAll) {
+								clearAll({type: ActionTypes.ClearAll});
+							}
 
-						close();
-					})
-					.catch(() => {
-						addAlert({
-							alertType: Alert.Types.Error,
-							message: getPluralMessage(
-								Liferay.Language.get(
-									'there-was-an-error-removing-x-from-x'
-								),
-								Liferay.Language.get(
-									'there-was-an-error-removing-x-users-from-x'
-								),
-								userIds.length,
-								true,
-								[getEmailOrCount(users), propertyName]
-							) as string,
-							timeout: false
+							refetch();
+
+							addAlert({
+								alertType: Alert.Types.Success,
+								message: getPluralMessage(
+									Liferay.Language.get(
+										'x-has-been-removed-from-x'
+									),
+									Liferay.Language.get(
+										'x-users-have-been-removed-from-x'
+									),
+									userIds.length,
+									true,
+									[getEmailOrCount(users), propertyName]
+								) as string
+							});
+
+							close();
+						})
+						.catch(() => {
+							addAlert({
+								alertType: Alert.Types.Error,
+								message: getPluralMessage(
+									Liferay.Language.get(
+										'there-was-an-error-removing-x-from-x'
+									),
+									Liferay.Language.get(
+										'there-was-an-error-removing-x-users-from-x'
+									),
+									userIds.length,
+									true,
+									[getEmailOrCount(users), propertyName]
+								) as string,
+								timeout: false
+							});
 						});
-					});
-			},
-			showFilterAndOrder: false,
-			submitButtonDisplay: 'warning',
-			submitMessage: Liferay.Language.get('remove'),
-			title: Liferay.Language.get('remove-user'),
-			titleIcon: 'warning-full'
-		});
-	};
+				},
+				showFilterAndOrder: false,
+				submitButtonDisplay: 'warning',
+				submitMessage: Liferay.Language.get('remove'),
+				title: Liferay.Language.get('remove-user'),
+				titleIcon: 'warning-full'
+			});
+		};
 
 	const handleAddUserModal = () => {
 		open(modalTypes.SEARCHABLE_TABLE_MODAL, {
@@ -214,7 +216,14 @@ const UserList: React.FC<IUserListProps> = ({
 				usersListColumns.nameEmailAddress,
 				usersListColumns.getLastLoginDate(timeZoneId)
 			],
-			dataSourceFn: ({delta, orderIOMap, page, query}) =>
+			dataSourceFn: ({
+				delta,
+				orderIOMap,
+				page,
+				query
+			}: {
+				[key: string]: any;
+			}) =>
 				API.channels.fetchUsers({
 					available: true,
 					channelId: id,
@@ -241,10 +250,12 @@ const UserList: React.FC<IUserListProps> = ({
 					handleNoUsersInPropertyModal();
 				}
 			},
-			onSubmit: selectedIOMap => {
+			onSubmit: (selectedIOMap: any) => {
 				const users = selectedIOMap.valueSeq().toArray();
 
-				const userIds = users.map(({userId}) => userId);
+				const userIds = users.map(
+					({userId}: {userId: string}) => userId
+				);
 
 				API.channels
 					.addUsers({
@@ -339,7 +350,7 @@ const UserList: React.FC<IUserListProps> = ({
 					icon={{
 						border: false,
 						size: Sizes.XXXLarge,
-						symbol: 'ac-satellite'
+						symbol: 'ac_satellite'
 					}}
 					primary
 					spacer
@@ -352,14 +363,16 @@ const UserList: React.FC<IUserListProps> = ({
 			total: get(data, 'total')
 		};
 
-		if (error) {
+		if (loading) {
+			return <Loading />;
+		} else if (error) {
 			return <ErrorDisplay onReload={refetch} spacer />;
 		} else if (authorized) {
 			return (
 				<SelectionProvider>
 					<CrossPageSelect
 						{...sharedProps}
-						renderRowActions={({data}) => {
+						renderRowActions={({data}: {data: User}) => {
 							const rowAction = {
 								'data-testid': 'delete-user',
 								label: Liferay.Language.get('delete'),
@@ -387,6 +400,10 @@ const UserList: React.FC<IUserListProps> = ({
 							selectedItems,
 							selectionDispatch,
 							...otherProps
+						}: {
+							selectedItems: any;
+							selectionDispatch: any;
+							[key: string]: any;
 						}) => (
 							<ListComponent
 								renderNav={() => (

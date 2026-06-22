@@ -18,9 +18,10 @@ renderResponse.setTitle(reschedulePublicationDisplayContext.getTitle());
 
 <clay:container-fluid
 	cssClass="container-form-lg"
+	fullWidth="<%= true %>"
 >
 	<react:component
-		module="publications/js/views/ChangeTrackingRescheduleView"
+		module="{ChangeTrackingRescheduleView} from change-tracking-web"
 		props="<%= reschedulePublicationDisplayContext.getReactData() %>"
 	/>
 </clay:container-fluid>

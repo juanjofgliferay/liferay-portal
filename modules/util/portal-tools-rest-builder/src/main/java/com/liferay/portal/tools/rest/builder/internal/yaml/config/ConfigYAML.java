@@ -5,10 +5,22 @@
 
 package com.liferay.portal.tools.rest.builder.internal.yaml.config;
 
+import java.io.File;
+
 /**
  * @author Peter Shin
  */
-public class ConfigYAML {
+public class ConfigYAML implements Cloneable {
+
+	@Override
+	public ConfigYAML clone() {
+		try {
+			return (ConfigYAML)super.clone();
+		}
+		catch (CloneNotSupportedException cloneNotSupportedException) {
+			throw new RuntimeException(cloneNotSupportedException);
+		}
+	}
 
 	public String getApiDir() {
 		return _apiDir;
@@ -26,6 +38,10 @@ public class ConfigYAML {
 		return _author;
 	}
 
+	public String getBaseDir() {
+		return _baseDir;
+	}
+
 	public String getClientDir() {
 		return _clientDir;
 	}
@@ -38,12 +54,20 @@ public class ConfigYAML {
 		return _compatibilityVersion;
 	}
 
+	public Boolean getForceObjectMethodNameSuffix() {
+		return _forceObjectMethodNameSuffix;
+	}
+
 	public String getGraphQLNamespace() {
 		return _graphQLNamespace;
 	}
 
 	public String getImplDir() {
 		return _implDir;
+	}
+
+	public String getJavaEEPackage() {
+		return _javaEEPackage;
 	}
 
 	public String getLicenseName() {
@@ -60,6 +84,10 @@ public class ConfigYAML {
 
 	public String getTestDir() {
 		return _testDir;
+	}
+
+	public boolean isChangeTrackingEnabled() {
+		return _changeTrackingEnabled;
 	}
 
 	public boolean isForceClientVersionDescription() {
@@ -86,12 +114,24 @@ public class ConfigYAML {
 		return _generateBatch;
 	}
 
+	public boolean isGenerateClientJS() {
+		return _generateClientJS;
+	}
+
+	public boolean isGenerateCRUD() {
+		return _generateCRUD;
+	}
+
 	public boolean isGenerateGraphQL() {
 		return _generateGraphQL;
 	}
 
 	public boolean isGenerateOpenAPI() {
 		return _generateOpenAPI;
+	}
+
+	public boolean isGeneratePermissions() {
+		return _generatePermissions;
 	}
 
 	public boolean isGenerateREST() {
@@ -122,6 +162,21 @@ public class ConfigYAML {
 		_author = author;
 	}
 
+	public void setBaseDir(String baseDir) {
+		_baseDir = baseDir;
+
+		File baseDirFile = new File(baseDir);
+
+		_apiDir = _resolveDir(baseDirFile, _apiDir);
+		_clientDir = _resolveDir(baseDirFile, _clientDir);
+		_implDir = _resolveDir(baseDirFile, _implDir);
+		_testDir = _resolveDir(baseDirFile, _testDir);
+	}
+
+	public void setChangeTrackingEnabled(boolean changeTrackingEnabled) {
+		_changeTrackingEnabled = changeTrackingEnabled;
+	}
+
 	public void setClientDir(String clientDir) {
 		_clientDir = clientDir;
 	}
@@ -138,6 +193,12 @@ public class ConfigYAML {
 		boolean forceClientVersionDescription) {
 
 		_forceClientVersionDescription = forceClientVersionDescription;
+	}
+
+	public void setForceObjectMethodNameSuffix(
+		Boolean forceObjectMethodNameSuffix) {
+
+		_forceObjectMethodNameSuffix = forceObjectMethodNameSuffix;
 	}
 
 	public void setForcePredictableContentApplicationXML(
@@ -168,12 +229,24 @@ public class ConfigYAML {
 		_generateBatch = generateBatch;
 	}
 
+	public void setGenerateClientJS(boolean generateClientJS) {
+		_generateClientJS = generateClientJS;
+	}
+
+	public void setGenerateCRUD(boolean generateCRUD) {
+		_generateCRUD = generateCRUD;
+	}
+
 	public void setGenerateGraphQL(boolean generateGraphQL) {
 		_generateGraphQL = generateGraphQL;
 	}
 
 	public void setGenerateOpenAPI(boolean generateOpenAPI) {
 		_generateOpenAPI = generateOpenAPI;
+	}
+
+	public void setGeneratePermissions(boolean generatePermissions) {
+		_generatePermissions = generatePermissions;
 	}
 
 	public void setGenerateREST(boolean generateREST) {
@@ -186,6 +259,10 @@ public class ConfigYAML {
 
 	public void setImplDir(String implDir) {
 		_implDir = implDir;
+	}
+
+	public void setJavaEEPackage(String javaEEPackage) {
+		_javaEEPackage = javaEEPackage;
 	}
 
 	public void setLicenseName(String licenseName) {
@@ -212,24 +289,47 @@ public class ConfigYAML {
 		_warningsEnabled = warningsEnabled;
 	}
 
+	private String _resolveDir(File baseDir, String dir) {
+		if (dir == null) {
+			return null;
+		}
+
+		File dirFile = new File(dir);
+
+		if (dirFile.isAbsolute()) {
+			return dir;
+		}
+
+		File resolvedFile = new File(baseDir, dir);
+
+		return resolvedFile.getPath();
+	}
+
 	private String _apiDir;
 	private String _apiPackagePath;
 	private Application _application;
 	private String _author;
+	private String _baseDir;
+	private boolean _changeTrackingEnabled;
 	private String _clientDir;
 	private String _clientMavenGroupId;
 	private int _compatibilityVersion = 1;
 	private boolean _forceClientVersionDescription = true;
+	private Boolean _forceObjectMethodNameSuffix;
 	private boolean _forcePredictableContentApplicationXML = true;
 	private boolean _forcePredictableOperationId;
 	private boolean _forcePredictableSchemaPropertyName = true;
 	private boolean _generateActionProviders;
 	private boolean _generateBatch = true;
+	private boolean _generateClientJS;
+	private boolean _generateCRUD = true;
 	private boolean _generateGraphQL = true;
 	private boolean _generateOpenAPI = true;
+	private boolean _generatePermissions;
 	private boolean _generateREST = true;
 	private String _graphQLNamespace;
 	private String _implDir = "src/main/java";
+	private String _javaEEPackage = "javax";
 	private String _licenseName = "Apache 2.0";
 	private String _licenseURL =
 		"http://www.apache.org/licenses/LICENSE-2.0.html";

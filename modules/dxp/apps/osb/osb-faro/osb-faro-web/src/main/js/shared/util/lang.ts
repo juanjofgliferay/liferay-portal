@@ -83,6 +83,7 @@ export const COMPOSITION_LABEL_MAP = {
 };
 
 export const DETAILS_LABEL_MAP = {
+	accountDate: Liferay.Language.get('account-date'),
 	accountNumber: Liferay.Language.get('account-number'),
 	accountType: Liferay.Language.get('account-type'),
 	annualRevenue: Liferay.Language.get('annual-revenue'),
@@ -108,7 +109,7 @@ const ENTITY_LANG_MAP = {
 	[EntityTypes.Page]: Liferay.Language.get('pages')
 };
 
-const DATA_SOURCE_LANG_MAP = {
+const DATA_SOURCE_LANG_MAP: Record<string, string> = {
 	[DataSourceTypes.Csv]: Liferay.Language.get('csv'),
 	[DataSourceTypes.Liferay]: Liferay.Language.get('liferay-dxp')
 };
@@ -116,7 +117,8 @@ const DATA_SOURCE_LANG_MAP = {
 export const getDataSourceLangKey = (type: string): string =>
 	DATA_SOURCE_LANG_MAP[type];
 
-export const getTypeLangKey = (type: string): string => ENTITY_LANG_MAP[type];
+export const getTypeLangKey = (type: string): string =>
+	(ENTITY_LANG_MAP as Record<string, string>)[type];
 
 export const getDisplayRole = (roleName: UserRoleNames): string => {
 	switch (roleName) {
@@ -131,7 +133,7 @@ export const getDisplayRole = (roleName: UserRoleNames): string => {
 	}
 };
 
-const LABELS_MAP = {
+const LABELS_MAP: Record<string, string> = {
 	desktop: Liferay.Language.get('desktop'),
 	mobile: Liferay.Language.get('other-mobile'),
 	smartphone: Liferay.Language.get('phone'),
@@ -146,3 +148,6 @@ const LABELS_MAP = {
 
 export const getDeviceLabel = (deviceType: string): string =>
 	LABELS_MAP[deviceType.toLowerCase()] || deviceType;
+
+export const isJapaneseLang = (value: string): boolean =>
+	/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(value);

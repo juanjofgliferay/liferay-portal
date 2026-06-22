@@ -1,27 +1,83 @@
 import {
 	formatPlanData,
 	getPlanAddOns,
+	getPlanLabel,
 	getPropIcon,
 	getPropLabel,
 	INDIVIDUALS,
-	PAGEVIEWS
+	isLDPPlan,
+	PAGEVIEWS,
+	SubscriptionNames
 } from '../subscriptions';
 import {fromJS} from 'immutable';
-import {mockAddOns, mockSubscription} from 'test/data';
+import {mockSubscription} from 'test/data';
 import {Plan} from '../../util/records';
+
+jest.mock('shared/hooks/useTimeZone', () => ({
+	useTimeZone: () => ({
+		timeZoneId: 'UTC'
+	})
+}));
 
 describe('subscriptions', () => {
 	describe('getPlanAddOns', () => {
 		it('should return the correct plan addons', () => {
-			const planAddOns = getPlanAddOns('enterprise');
+			const planAddOns = getPlanAddOns(
+				formatPlanData(
+					fromJS(
+						mockSubscription({
+							individualsCount: 5000,
+							name: SubscriptionNames.LiferayAnalyticsCloudEnterprise,
+							pageViewsCount: 5000000
+						})
+					)
+				)
+			);
 
-			expect(planAddOns).toEqual(mockAddOns());
+			expect(planAddOns).toEqual({
+				individuals: '10,000',
+				pageViews: '5,000,000'
+			});
 		});
 
 		it('should not have addons for LXC customers', () => {
-			const planAddOns = getPlanAddOns('lxcSubscriptionEngageSite');
+			const planAddOns = getPlanAddOns(
+				formatPlanData(
+					fromJS(
+						mockSubscription({
+							individualsCount: 5000,
+							name: SubscriptionNames.LxcSubscriptionEngageSite,
+							pageViewsCount: 5000000
+						})
+					)
+				)
+			);
 
-			expect(!!planAddOns.filter(Boolean).length).toBeFalsy();
+			expect(planAddOns).toEqual({});
+		});
+	});
+
+	describe('getPlanLabel', () => {
+		it('should return the label for the Liferay Data Platform plan', () => {
+			expect(getPlanLabel(SubscriptionNames.LiferayDataPlatform)).toEqual(
+				'Liferay Data Platform'
+			);
+		});
+
+		it('should return the label for the Liferay Data Platform Private Beta plan', () => {
+			expect(
+				getPlanLabel(SubscriptionNames.LiferayDataPlatformPrivateBeta)
+			).toEqual('Liferay Data Platform (Private Beta)');
+		});
+
+		it('should return the label for the Liferay Data Platform Enterprise plan', () => {
+			expect(
+				getPlanLabel(SubscriptionNames.LiferayDataPlatformEnterprise)
+			).toEqual('Liferay Data Platform Enterprise');
+		});
+
+		it('should return an empty string for an unknown plan', () => {
+			expect(getPlanLabel('something-unknown')).toEqual('');
 		});
 	});
 
@@ -29,7 +85,7 @@ describe('subscriptions', () => {
 		it('should return the prop icon symbol', () => {
 			const symbol = getPropIcon(INDIVIDUALS);
 
-			expect(symbol).toEqual('ac-individual');
+			expect(symbol).toEqual('ac_individual');
 		});
 	});
 
@@ -42,16 +98,73 @@ describe('subscriptions', () => {
 	});
 
 	describe('formatPlanData', () => {
-		it('should format the plan data as a Plan record', () => {
+		it('should format the plan data as a basic Plan record', () => {
+			const plan = formatPlanData(
+				fromJS(
+					mockSubscription({
+						name: SubscriptionNames.LiferayAnalyticsCloudBasic
+					})
+				)
+			);
+
+			expect(plan).toBeInstanceOf(Plan);
+
+			const metrics = plan.metrics;
+
+			const individualsMetrics = metrics.get('individuals');
+
+			expect(individualsMetrics.count).toEqual(2057);
+
+			const pageViewsMetrics = metrics.get('pageViews');
+
+			expect(pageViewsMetrics.count).toEqual(100023);
+		});
+
+		it('should format the plan data as an enterprise Plan record', () => {
 			const plan = formatPlanData(fromJS(mockSubscription()));
 
 			expect(plan).toBeInstanceOf(Plan);
+
+			const metrics = plan.metrics;
+
+			const individualsMetrics = metrics.get('individuals');
+
+			expect(individualsMetrics.count).toEqual(2057);
+
+			const pageViewsMetrics = metrics.get('pageViews');
+
+			expect(pageViewsMetrics.count).toEqual(100023);
 		});
 
 		it('should format the plan data when faroSusbcription is null', () => {
 			const plan = formatPlanData(null);
 
 			expect(plan).toMatchSnapshot();
+		});
+	});
+
+	describe('isLDPPlan', () => {
+		it.each([
+			SubscriptionNames.LiferayDataPlatform,
+			SubscriptionNames.LiferayDataPlatformEnterprise,
+			SubscriptionNames.LiferayDataPlatformPrivateBeta
+		])('returns true for %s', name => {
+			expect(isLDPPlan(name)).toBe(true);
+		});
+
+		it.each([
+			SubscriptionNames.LiferayAnalyticsCloudBasic,
+			SubscriptionNames.LiferayAnalyticsCloudBusiness,
+			SubscriptionNames.LiferayAnalyticsCloudEnterprise,
+			SubscriptionNames.LiferaySaasEnterprisePlan,
+			SubscriptionNames.LxcBusinessPlan
+		])('returns false for non-LDP plan %s', name => {
+			expect(isLDPPlan(name)).toBe(false);
+		});
+
+		it('returns false when the subscription is missing (null/undefined)', () => {
+			expect(isLDPPlan(null)).toBe(false);
+			expect(isLDPPlan(undefined)).toBe(false);
 		});
 	});
 });

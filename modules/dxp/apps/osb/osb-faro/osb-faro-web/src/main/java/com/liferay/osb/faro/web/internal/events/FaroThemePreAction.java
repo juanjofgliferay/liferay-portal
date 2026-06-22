@@ -14,11 +14,13 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.service.ThemeLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,7 +49,17 @@ public class FaroThemePreAction extends Action {
 					httpServletRequest.getRequestURI(), "/c/portal/login") &&
 				themeDisplay.isSignedIn()) {
 
-				httpServletResponse.sendRedirect("/");
+				String redirect = GetterUtil.getString(
+					httpServletRequest.getParameter("redirect"));
+
+				if (Validator.isNotNull(redirect) &&
+					redirect.contains("/workspace")) {
+
+					httpServletResponse.sendRedirect(redirect);
+				}
+				else {
+					httpServletResponse.sendRedirect("/");
+				}
 
 				return;
 			}

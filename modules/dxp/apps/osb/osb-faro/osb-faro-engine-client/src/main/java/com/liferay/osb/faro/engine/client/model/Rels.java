@@ -12,12 +12,37 @@ public interface Rels {
 
 	public static final String ACCOUNT = "account";
 
+	public static final String ACCOUNT_DETAILS = "account-details";
+
+	public static final String ACCOUNT_INDIVIDUALS = "account-individuals";
+
+	public static final String ACCOUNT_LIFECYCLE = "account-lifecycle";
+
+	public static final String ACCOUNT_LIFECYCLE_ACCOUNTS =
+		"account-lifecycle-accounts";
+
+	public static final String ACCOUNT_LIFECYCLE_OVERVIEW =
+		"account-lifecycle-overview";
+
+	public static final String ACCOUNT_LIFECYCLE_STAGE_RULES =
+		"account-lifecycle-stage-rules";
+
+	public static final String ACCOUNT_LIFECYCLE_STAGES =
+		"account-lifecycle-stages";
+
+	public static final String ACCOUNT_LIFECYCLE_STATUS =
+		"account-lifecycle-status";
+
+	public static final String ACCOUNT_LIFECYCLES = "account-lifecycles";
+
 	public static final String ACCOUNTS = "accounts";
 
 	public static final String ACCOUNTS_DISTRIBUTION = "accounts-distribution";
 
 	public static final String ACCOUNTS_INDIVIDUAL_SEGMENTS =
 		"accounts-individual-segments";
+
+	public static final String ACCOUNTS_METRICS = "accounts-metrics";
 
 	public static final String ACTIVITIES = "activities";
 
@@ -40,6 +65,21 @@ public interface Rels {
 
 	public static final String ASSET = "asset";
 
+	public static final String ASSET_SUMMARIES = "asset-summaries";
+
+	public static final String ASSET_SUMMARY_CATEGORIES =
+		"asset-summary-categories";
+
+	public static final String ASSET_SUMMARY_MIME_TYPES =
+		"asset-summary-mime-types";
+
+	public static final String ASSET_SUMMARY_TAGS = "asset-summary-tags";
+
+	public static final String ASSET_SUMMARY_TYPES = "asset-summary-types";
+
+	public static final String ASSET_SUMMARY_VOCABULARIES =
+		"asset-summary-vocabularies";
+
 	public static final String ASSETS = "assets";
 
 	public static final String BLOCKED_KEYWORD = "blocked-keyword";
@@ -52,14 +92,22 @@ public interface Rels {
 
 	public static final String CHANNEL_CLEAR = "channel-clear";
 
+	public static final String CHANNEL_DATA_SOURCES = "channel-data-sources";
+
 	public static final String CHANNELS = "channels";
 
 	public static final String CSV_INDIVIDUALS = "csv-individuals";
 
 	public static final String DATA_SOURCE = "data-source";
 
+	public static final String DATA_SOURCE_CHANNEL_CONNECTED =
+		"data-sources-connected";
+
 	public static final String DATA_SOURCE_DISCONNECT =
 		"data-source-disconnect";
+
+	public static final String DATA_SOURCE_DISCONNECT_ALL =
+		"data-source-disconnect-all";
 
 	public static final String DATA_SOURCE_DXP_GROUPS =
 		"data-source-dxp-groups";
@@ -76,7 +124,18 @@ public interface Rels {
 	public static final String DATA_SOURCE_DXP_USERS_TOTAL =
 		"data-source-dxp-users-total";
 
+	public static final String DATA_SOURCE_METRICS_ACCOUNTS_COUNT =
+		"data-source-metrics-accounts-count";
+
+	public static final String DATA_SOURCE_METRICS_EVENTS_COUNT =
+		"data-source-metrics-events-count";
+
+	public static final String DATA_SOURCE_METRICS_USERS_COUNT =
+		"data-source-metrics-users-count";
+
 	public static final String DATA_SOURCE_PROGRESS = "data-source-progress";
+
+	public static final String DATA_SOURCE_RECONNECT = "data-source-reconnect";
 
 	public static final String DATA_SOURCE_REFRESH_LIFERAY =
 		"data-source-refresh-liferay";
@@ -92,6 +151,9 @@ public interface Rels {
 	public static final String DEFINITIONS_INDIVIDUAL_ATTRIBUTES =
 		"definitions-individual-attributes";
 
+	public static final String DXP_ENTITIES_USERS_COUNT =
+		"dxp-entities-users-count";
+
 	public static final String FIELD = "field";
 
 	public static final String FIELD_MAPPING = "field-mapping";
@@ -102,6 +164,8 @@ public interface Rels {
 
 	public static final String FIELDS = "fields";
 
+	public static final String IDENTITIES_COUNT = "identities-count";
+
 	public static final String INDIVIDUAL = "individual";
 
 	public static final String INDIVIDUAL_INDIVIDUAL_SEGMENTS =
@@ -109,8 +173,8 @@ public interface Rels {
 
 	public static final String INDIVIDUAL_SEGMENT = "individual-segment";
 
-	public static final String INDIVIDUAL_SEGMENT_ACCOUNTS =
-		"individual-segment-accounts";
+	public static final String INDIVIDUAL_SEGMENT_ACTIVATION =
+		"individual-segment-activation";
 
 	public static final String INDIVIDUAL_SEGMENT_ASSIGN_CHANNEL =
 		"individual-segment-assign-channel";
@@ -127,6 +191,12 @@ public interface Rels {
 	public static final String INDIVIDUAL_SEGMENT_MEMBERSHIPS =
 		"individual-segment-memberships";
 
+	public static final String INDIVIDUAL_SEGMENT_REAL_TIME_MEMBERSHIP_METRIC =
+		"individual-segment-real-time-membership-metric";
+
+	public static final String INDIVIDUAL_SEGMENT_REAL_TIME_MEMBERSHIPS =
+		"individual-segment-real-time-memberships";
+
 	public static final String INDIVIDUAL_SEGMENTS = "individual-segments";
 
 	public static final String INDIVIDUAL_TRANSFORMATION =
@@ -138,6 +208,9 @@ public interface Rels {
 	public static final String INDIVIDUALS = "individuals";
 
 	public static final String INDIVIDUALS_COUNT = "individuals-count";
+
+	public static final String INDIVIDUALS_CREATED_BETWEEN_COUNT =
+		"individuals-created-between-count";
 
 	public static final String INDIVIDUALS_CREATED_SINCE_COUNT =
 		"individuals-created-since-count";
@@ -176,6 +249,8 @@ public interface Rels {
 
 	public static final String ORGANIZATIONS = "organizations";
 
+	public static final String PAGE_EXPERIENCES = "page-experiences";
+
 	public static final String PAGE_VISIT = "page-visited";
 
 	public static final String PAGE_VISITED = "page-visited";
@@ -184,6 +259,14 @@ public interface Rels {
 
 	public static final String PREVIEW_DISABLED_SEGMENTS =
 		"preview-disabled-segments";
+
+	public static final String PROJECT_USAGE_METRICS = "project-usage-metrics";
+
+	public static final String PROJECTS_LAST_SEEN_DATE =
+		"projects-last-seen-date";
+
+	public static final String REPORTS_EXPORT_CSV_COUNT =
+		"reports-export-csv-count";
 
 	public static final String SESSION_VALUES = "session-values";
 

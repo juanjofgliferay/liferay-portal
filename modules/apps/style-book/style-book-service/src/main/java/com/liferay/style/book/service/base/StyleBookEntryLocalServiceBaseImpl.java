@@ -15,8 +15,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -45,11 +44,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.model.StyleBookEntryVersion;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
-import com.liferay.style.book.service.StyleBookEntryLocalServiceUtil;
 import com.liferay.style.book.service.persistence.StyleBookEntryPersistence;
 import com.liferay.style.book.service.persistence.StyleBookEntryVersionPersistence;
 
 import java.io.Serializable;
+
+import java.sql.Connection;
 
 import java.util.Collections;
 import java.util.List;
@@ -80,7 +80,7 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>StyleBookEntryLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>StyleBookEntryLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>StyleBookEntryLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.style.book.service.StyleBookEntryLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -269,6 +269,40 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 	@Override
 	public StyleBookEntry fetchStyleBookEntry(long styleBookEntryId) {
 		return styleBookEntryPersistence.fetchByPrimaryKey(styleBookEntryId);
+	}
+
+	@Override
+	public StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return styleBookEntryPersistence.fetchByERC_G_Head(
+			externalReferenceCode, groupId, true);
+	}
+
+	@Override
+	public StyleBookEntry fetchStyleBookEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId, boolean head) {
+
+		return styleBookEntryPersistence.fetchByERC_G_Head(
+			externalReferenceCode, groupId, head);
+	}
+
+	@Override
+	public StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return styleBookEntryPersistence.findByERC_G_Head(
+			externalReferenceCode, groupId, true);
+	}
+
+	@Override
+	public StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId, boolean head)
+		throws PortalException {
+
+		return styleBookEntryPersistence.findByERC_G_Head(
+			externalReferenceCode, groupId, head);
 	}
 
 	/**
@@ -482,7 +516,6 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		StyleBookEntryLocalServiceUtil.setService(null);
 	}
 
 	@Override
@@ -496,8 +529,6 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		styleBookEntryLocalService = (StyleBookEntryLocalService)aopProxy;
-
-		StyleBookEntryLocalServiceUtil.setService(styleBookEntryLocalService);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -879,6 +910,8 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 		draftStyleBookEntry.setCtCollectionId(
 			publishedStyleBookEntry.getCtCollectionId());
 		draftStyleBookEntry.setUuid(publishedStyleBookEntry.getUuid());
+		draftStyleBookEntry.setExternalReferenceCode(
+			publishedStyleBookEntry.getExternalReferenceCode());
 		draftStyleBookEntry.setHeadId(publishedStyleBookEntry.getPrimaryKey());
 		draftStyleBookEntry.setGroupId(publishedStyleBookEntry.getGroupId());
 		draftStyleBookEntry.setCompanyId(
@@ -898,6 +931,7 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 			publishedStyleBookEntry.getPreviewFileEntryId());
 		draftStyleBookEntry.setStyleBookEntryKey(
 			publishedStyleBookEntry.getStyleBookEntryKey());
+		draftStyleBookEntry.setThemeId(publishedStyleBookEntry.getThemeId());
 
 		draftStyleBookEntry.resetOriginalValues();
 
@@ -951,18 +985,23 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = styleBookEntryPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = styleBookEntryPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
@@ -985,3 +1024,4 @@ public abstract class StyleBookEntryLocalServiceBaseImpl
 		StyleBookEntryLocalServiceBaseImpl.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-249882438

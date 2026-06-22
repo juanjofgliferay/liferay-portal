@@ -1,10 +1,10 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Document Management";
+	property testray.main.component.name = "Documents and Media";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -46,9 +46,9 @@ definition {
 			cancel = "true",
 			senderName = "Test Test");
 
-		Portlet.gotoPortletOptions(portletOption = "Configuration");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
-		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
 
 		InputField.viewText(
 			fieldLabel = "Name",
@@ -58,6 +58,8 @@ definition {
 	@description = "This is a test for LPS-91199. It checks that all files selected on different pages can be deleted."
 	@priority = 4
 	test CanDeleteAllDocumentsOnDifferentPagesAtOnce {
+		property custom.properties = "search.container.page.delta.values=4,8,20,40,60";
+
 		for (var entryCount : list "1,2,3,4,5") {
 			JSONDocument.addFileWithUploadedFile(
 				dmDocumentDescription = "DM Document Description",
@@ -80,7 +82,9 @@ definition {
 	@priority = 4
 	@refactordone
 	test CanMoveDocumentsWithMultiplePaginations {
-		property portal.acceptance = "true";
+		property custom.properties = "search.container.page.delta.values=4,8,20,40,60";
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -118,25 +122,29 @@ definition {
 
 		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
 
+		DMFolder.gotoEntry(dmFolderName = "DM Folder Name");
+
 		Pagination.changePagination(itemsPerPage = 20);
 
-		Pagination.viewResults(results = "Showing 1 to 11 of 11 entries.");
+		Pagination.viewResults(results = "Showing 1 to 10 of 10 entries.");
 
 		Navigator.openSitePage(
 			pageName = "Documents and Media Page",
 			siteName = "Site Name");
 
+		DMNavigator.gotoFolder(dmFolderName = "DM Folder Name");
+
 		LexiconEntry.changeDisplayStyle(displayStyle = "List");
 
 		Pagination.changePagination(itemsPerPage = 4);
 
-		Pagination.viewResults(results = "Showing 1 to 4 of 11 entries.");
+		Pagination.viewResults(results = "Showing 1 to 4 of 10 entries.");
 
 		DMDocument.checkDocumentCheckboxPG(dmDocumentTitle = "DM Document Title8");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "ManagementBar#NAVBAR_TEXT",
-			value1 = "1 of 11 Items Selected");
+			value1 = "1 of 10 Items Selected");
 
 		Click(locator1 = "Pagination#NEXT_LINK");
 
@@ -144,7 +152,7 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "ManagementBar#NAVBAR_TEXT",
-			value1 = "5 of 11 Items Selected");
+			value1 = "5 of 10 Items Selected");
 	}
 
 	@description = "This is a test for LPS-91861. It checks that the counts can be reset in management toolbar."
@@ -213,6 +221,8 @@ definition {
 	@description = "This test covers LPS-141587. It validates that if the 'Delete Application Data Before Importing' option is selected the Doc Lib will not increase in size after the LAR import."
 	@priority = 4
 	test DLSizeDoesNotIncreaseIfAppDataIsDeletedBeforeImport {
+		Staging.enableDeleteApplicationDataBeforeImport();
+
 		for (var entryCount : list "1,2") {
 			JSONDocument.addFileWithUploadedFile(
 				dmDocumentDescription = "DM Document Description",

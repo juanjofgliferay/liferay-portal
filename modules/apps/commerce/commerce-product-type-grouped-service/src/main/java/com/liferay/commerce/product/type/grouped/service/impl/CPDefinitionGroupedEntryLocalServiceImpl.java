@@ -159,6 +159,14 @@ public class CPDefinitionGroupedEntryLocalServiceImpl
 	}
 
 	@Override
+	public void deleteCPDefinitionGroupedEntriesByEntryCProductId(
+		long entryCProductId) {
+
+		cpDefinitionGroupedEntryPersistence.removeByEntryCProductId(
+			entryCProductId);
+	}
+
+	@Override
 	public CPDefinitionGroupedEntry fetchCPDefinitionGroupedEntry(
 		long cpDefinitionId, long entryCProductId) {
 
@@ -237,6 +245,7 @@ public class CPDefinitionGroupedEntryLocalServiceImpl
 			entryCProductId, start, end, orderByComparator);
 	}
 
+	@Override
 	public BaseModelSearchResult<CPDefinitionGroupedEntry>
 			searchCPDefinitionGroupedEntries(SearchContext searchContext)
 		throws PortalException {

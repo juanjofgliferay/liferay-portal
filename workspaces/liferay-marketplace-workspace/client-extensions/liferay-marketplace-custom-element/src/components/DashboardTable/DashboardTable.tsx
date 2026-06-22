@@ -5,27 +5,11 @@
 
 import ClayIcon from '@clayui/icon';
 import ClayTable from '@clayui/table';
-
-import './DashboardTable.scss';
-
 import React, {ReactNode} from 'react';
 
 import {DashboardEmptyTable} from './DashboardEmptyTable';
 
-export type AppProps = {
-	attachments: Partial<ProductAttachment>[];
-	catalogId: number;
-	externalReferenceCode: string;
-	lastUpdatedBy?: string;
-	name: string;
-	productId: number;
-	selected?: boolean;
-	status: string;
-	thumbnail: string;
-	type: string;
-	updatedDate: string;
-	version: string;
-};
+import './DashboardTable.scss';
 
 export type TableHeaders = {
 	iconSymbol?: string;
@@ -36,21 +20,22 @@ export type TableHeaders = {
 interface DashboardTableProps<T> {
 	children?: (item: T) => ReactNode;
 	emptyStateMessage: {
-		description1: string;
-		description2: string;
+		className?: string;
+		description1?: string;
+		description2?: string;
 		title: string;
 	};
 	icon: string;
-	items: T[];
-	tableHeaders: TableHeaders;
+	items?: T[];
+	tableHeaders?: TableHeaders;
 }
 
 export function DashboardTable<T>({
 	children = () => null,
 	emptyStateMessage,
-	icon,
-	items,
-	tableHeaders,
+	icon = 'grid',
+	items = [],
+	tableHeaders = [],
 }: DashboardTableProps<T>) {
 	if (items.length) {
 		return (
@@ -84,8 +69,9 @@ export function DashboardTable<T>({
 
 	return (
 		<DashboardEmptyTable
-			description1={description1}
-			description2={description2}
+			className={emptyStateMessage?.className}
+			description1={description1 ?? ''}
+			description2={description2 ?? ''}
 			icon={icon}
 			title={title}
 		/>

@@ -115,12 +115,8 @@ public class CPDefinitionOptionRelPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CPDefinitionOptionRel newCPDefinitionOptionRel = _persistence.create(
-			pk);
-
-		newCPDefinitionOptionRel.setMvccVersion(RandomTestUtil.nextLong());
+		CPDefinitionOptionRel newCPDefinitionOptionRel =
+			addCPDefinitionOptionRel();
 
 		newCPDefinitionOptionRel.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -299,6 +295,13 @@ public class CPDefinitionOptionRelPersistenceTest {
 		_persistence.countByCPDefinitionId(RandomTestUtil.nextLong());
 
 		_persistence.countByCPDefinitionId(0L);
+	}
+
+	@Test
+	public void testCountByCPOptionId() throws Exception {
+		_persistence.countByCPOptionId(RandomTestUtil.nextLong());
+
+		_persistence.countByCPOptionId(0L);
 	}
 
 	@Test
@@ -707,8 +710,6 @@ public class CPDefinitionOptionRelPersistenceTest {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel = _persistence.create(pk);
 
-		cpDefinitionOptionRel.setMvccVersion(RandomTestUtil.nextLong());
-
 		cpDefinitionOptionRel.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpDefinitionOptionRel.setUuid(RandomTestUtil.randomString());
@@ -767,3 +768,4 @@ public class CPDefinitionOptionRelPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:397983739

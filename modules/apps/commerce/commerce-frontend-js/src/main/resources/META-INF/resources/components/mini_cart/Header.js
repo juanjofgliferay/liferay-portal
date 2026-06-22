@@ -10,25 +10,32 @@ import MiniCartContext from './MiniCartContext';
 import {ORDER_IS_EMPTY, YOUR_ORDER} from './util/constants';
 
 function Header() {
-	const {cartState, closeCart, labels, toggleable} = useContext(
-		MiniCartContext
-	);
-
-	const numberOfItems = cartState?.cartItems?.length || 0;
+	const {
+		cartState: {
+			summary: {itemsCount = 0},
+		},
+		closeCart,
+		labels,
+		toggleable,
+	} = useContext(MiniCartContext);
 
 	return (
 		<div className="mini-cart-header">
 			<div className="mini-cart-header-block">
 				<div className="mini-cart-header-title">
-					<h3>
-						{!numberOfItems
+					<h2>
+						{!itemsCount
 							? labels[ORDER_IS_EMPTY]
 							: labels[YOUR_ORDER]}
-					</h3>
+					</h2>
 				</div>
 
 				{toggleable && (
-					<button className="mini-cart-close" onClick={closeCart}>
+					<button
+						aria-label={Liferay.Language.get('close-mini-cart')}
+						className="mini-cart-close"
+						onClick={closeCart}
+					>
 						<ClayIcon symbol="times" />
 					</button>
 				)}

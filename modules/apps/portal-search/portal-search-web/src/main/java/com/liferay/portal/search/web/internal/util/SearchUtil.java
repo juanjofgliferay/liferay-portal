@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.search.OpenSearchUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Tuple;
@@ -32,14 +31,14 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.XMLUtil;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.WindowState;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.WindowState;
 
 /**
  * @author Eudaldo Alonso
@@ -139,16 +138,13 @@ public class SearchUtil {
 
 	public static String getSearchResultViewURL(
 		RenderRequest renderRequest, RenderResponse renderResponse,
-		String className, long classPK, boolean viewInContext,
-		String currentURL) {
+		String className, long classPK, boolean viewInContext) {
 
 		try {
 			PortletURL viewContentURL = PortletURLBuilder.createRenderURL(
 				renderResponse
 			).setMVCPath(
 				"/view_content.jsp"
-			).setRedirect(
-				currentURL
 			).setPortletMode(
 				PortletMode.VIEW
 			).setWindowState(
@@ -156,8 +152,7 @@ public class SearchUtil {
 			).buildPortletURL();
 
 			if (Validator.isNull(className) || (classPK <= 0)) {
-				return HttpComponentsUtil.setParameter(
-					viewContentURL.toString(), "p_l_back_url", currentURL);
+				return viewContentURL.toString();
 			}
 
 			AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
@@ -168,8 +163,7 @@ public class SearchUtil {
 					getAssetRendererFactoryByClassName(className);
 
 			if (assetRendererFactory == null) {
-				return HttpComponentsUtil.setParameter(
-					viewContentURL.toString(), "p_l_back_url", currentURL);
+				return viewContentURL.toString();
 			}
 
 			viewContentURL.setParameter(
@@ -177,8 +171,7 @@ public class SearchUtil {
 			viewContentURL.setParameter("type", assetRendererFactory.getType());
 
 			if (!viewInContext) {
-				return HttpComponentsUtil.setParameter(
-					viewContentURL.toString(), "p_l_back_url", currentURL);
+				return viewContentURL.toString();
 			}
 
 			AssetRenderer<?> assetRenderer =
@@ -193,8 +186,7 @@ public class SearchUtil {
 				viewURL = viewContentURL.toString();
 			}
 
-			return HttpComponentsUtil.setParameter(
-				viewURL, "p_l_back_url", currentURL);
+			return viewURL;
 		}
 		catch (Exception exception) {
 			_log.error(

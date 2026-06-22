@@ -20,6 +20,7 @@ import com.liferay.dynamic.data.mapping.model.DDMFormInstanceSettings;
 import com.liferay.dynamic.data.mapping.model.UnlocalizedValue;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
+import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceService;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
@@ -33,7 +34,9 @@ import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONFactoryImpl;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
@@ -45,29 +48,28 @@ import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-import com.liferay.portal.util.PropsImpl;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.mockito.Mockito;
+
+import org.skyscreamer.jsonassert.JSONAssert;
 
 /**
  * @author Adam Brandizzi
@@ -79,11 +81,6 @@ public class DDMFormAdminDisplayContextTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@BeforeClass
-	public static void setUpClass() {
-		PropsUtil.setProps(new PropsImpl());
-	}
-
 	@Before
 	public void setUp() throws Exception {
 		_setUpPortalUtil();
@@ -92,6 +89,28 @@ public class DDMFormAdminDisplayContextTest {
 		_setUpResourceBundleLoaderUtil();
 
 		_setUpDDMFormDisplayContext();
+	}
+
+	@Test
+	public void testFilterJSONArray() throws Exception {
+		JSONArray expectedJSONArray = JSONUtil.putAll(
+			JSONUtil.put("scope", "document-library,forms"),
+			JSONUtil.put("scope", "forms"),
+			JSONUtil.put("scope", "forms,journal"));
+
+		JSONArray actualJSONArray = JSONUtil.putAll(
+			JSONUtil.put("scope", ""),
+			JSONUtil.put("scope", "document-library,forms"),
+			JSONUtil.put("scope", "document-library,journal"),
+			JSONUtil.put("scope", "forms"),
+			JSONUtil.put("scope", "forms,journal"),
+			JSONUtil.put("scope", "journal"));
+
+		actualJSONArray = _ddmFormAdminDisplayContext.filterJSONArray(
+			actualJSONArray);
+
+		JSONAssert.assertEquals(
+			expectedJSONArray.toString(), actualJSONArray.toString(), false);
 	}
 
 	@Test
@@ -344,6 +363,7 @@ public class DDMFormAdminDisplayContextTest {
 			Mockito.mock(DDMFormFieldTypesSerializer.class),
 			Mockito.mock(DDMFormInstanceLocalService.class),
 			Mockito.mock(DDMFormInstanceRecordLocalService.class),
+			Mockito.mock(DDMFormInstanceRecordService.class),
 			Mockito.mock(DDMFormInstanceRecordWriterRegistry.class),
 			_mockDDMFormInstanceService(),
 			Mockito.mock(DDMFormInstanceVersionLocalService.class),

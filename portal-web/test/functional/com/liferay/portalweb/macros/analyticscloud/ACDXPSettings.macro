@@ -19,6 +19,10 @@ definition {
 
 	@summary = "Default summary"
 	macro changeAssignModalPagination(itemsPerPage = null) {
+		if (IsElementPresent(locator1 = "Message#SUCCESS_DISMISSIBLE")) {
+			Click(locator1 = "Icon#CLOSE_ALERT");
+		}
+
 		Click(locator1 = "ACDXPSettings#ASSIGN_MODAL_PAGINATION");
 
 		MenuItem.click(menuItem = ${itemsPerPage});
@@ -56,7 +60,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro connectAnalyticsCloud(staticACToken = null, acToken = null, staticExistingSourceToken = null) {
+	macro connectAnalyticsCloud(acToken = null, staticExistingSourceToken = null) {
 		ACDXPSettings.disconnectDXPFromAnalyticsCloud();
 
 		Click(locator1 = "ACDXPSettings#TOKEN_INPUT_FIELD");
@@ -72,14 +76,20 @@ definition {
 				value1 = ${staticExistingSourceToken});
 		}
 		else {
-			Type(
+			Type.sendKeys(
 				locator1 = "ACDXPSettings#TOKEN_INPUT_FIELD",
-				value1 = ${staticACToken});
+				value1 = "keys=CONTROL,v");
 		}
 
 		WaitForElementNotPresent(locator1 = "ACDXPSettings#CONNECT_BUTTON_DISABLED");
 
 		Click(locator1 = "ACDXPSettings#CONNECT_BUTTON");
+
+		WaitForVisible(
+			key_text = "Next",
+			locator1 = "Button#ANY");
+
+		WaitForElementNotPresent(locator1 = "ACSettings#LOADING_ANIMATION");
 	}
 
 	@summary = "Default summary"
@@ -227,6 +237,8 @@ definition {
 			Click(
 				key_text = "Create",
 				locator1 = "Button#ANY");
+
+			WaitForElementNotPresent(locator1 = "Modal#MODAL_CONTENT");
 		}
 	}
 
@@ -270,14 +282,6 @@ definition {
 
 	@summary = "Default summary"
 	macro getAssignedPropertyName() {
-		while (IsElementPresent(key_text = "Try Again", locator1 = "Button#ANY")) {
-			Refresh();
-
-			Click(
-				key_text = "Next",
-				locator1 = "Button#ANY");
-		}
-
 		WaitForVisible(
 			key_text = "Assign",
 			locator1 = "Button#ANY");
@@ -450,6 +454,8 @@ definition {
 
 			var propertyName = ${newPropertyName};
 		}
+
+		ACUtils.waitForSendingRequest();
 
 		Check.checkToggleSwitch(
 			key_propertyName = ${propertyName},

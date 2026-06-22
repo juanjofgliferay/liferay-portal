@@ -1,3 +1,5 @@
+const {TextEncoder} = require('node:util');
+
 module.exports = {
 	collectCoverage: true,
 	collectCoverageFrom: [
@@ -17,6 +19,9 @@ module.exports = {
 			statements: 70
 		}
 	},
+	fakeTimers: {
+		enableGlobally: true
+	},
 	globals: {
 		CEREBRO_PATHS_GEOMAP_KEY: '',
 		FARO_DEV_MODE: false,
@@ -25,7 +30,7 @@ module.exports = {
 			activityActions: {
 				comments: 3,
 				downloads: 0,
-				previews: 4,
+				impressions: 4,
 				submissions: 1,
 				visits: 2
 			},
@@ -219,7 +224,6 @@ module.exports = {
 				orderDefault: 'asc',
 				orderDescending: 'desc'
 			},
-			pathThemeImages: '/images',
 			preferencesScopes: {
 				group: 'group',
 				user: 'user'
@@ -249,8 +253,7 @@ module.exports = {
 				ready: 'READY'
 			},
 			segmentTypes: {
-				dynamic: 'DYNAMIC',
-				static: 'STATIC'
+				dynamic: 'BATCH'
 			},
 			subscriptionPlans: {
 				['Liferay Analytics Cloud Basic']: {
@@ -301,6 +304,171 @@ module.exports = {
 					name: 'Liferay Analytics Cloud Enterprise Tracked Pages',
 					pageViewsLimit: 5000000,
 					price: 250
+				},
+				['Liferay Data Platform (Private Beta)']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 1000,
+					name: 'Liferay Data Platform (Private Beta)',
+					pageViewsLimit: 300000,
+					price: 0
+				},
+				['Liferay Data Platform Enterprise']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 100000,
+					name: 'Liferay Data Platform Enterprise',
+					pageViewsLimit: 60000000,
+					price: 0
+				},
+				['Liferay SaaS - Business Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 10000,
+					name: 'Liferay SaaS - Business Plan',
+					pageViewsLimit: 5000000,
+					price: 7500
+				},
+				['Liferay SaaS - CSP - Custom User Tier']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Custom User Tier',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Custom User Tier - Extra User']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Custom User Tier - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 100 Users']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 100 Users',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 100 Users - Extra User']: {
+					baseSubscriptionPlan:
+						'Liferay SaaS - CSP - Up to 100 Users',
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 100 Users - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 10K Users']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 10K Users',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 10K Users - Extra User']: {
+					baseSubscriptionPlan:
+						'Liferay SaaS - CSP - Up to 10K Users',
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 10K Users - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 1K Users']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 1K Users',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 1K Users - Extra User']: {
+					baseSubscriptionPlan: 'Liferay SaaS - CSP - Up to 1K Users',
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 1K Users - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 20K Users']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 20K Users',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 20K Users - Extra User']: {
+					baseSubscriptionPlan:
+						'Liferay SaaS - CSP - Up to 20K Users',
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 20K Users - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 500 Users']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 500 Users',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 500 Users - Extra User']: {
+					baseSubscriptionPlan:
+						'Liferay SaaS - CSP - Up to 500 Users',
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 500 Users - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 5K Users']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 5K Users',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - CSP - Up to 5K Users - Extra User']: {
+					baseSubscriptionPlan: 'Liferay SaaS - CSP - Up to 5K Users',
+					individualsLimit: 0,
+					name: 'Liferay SaaS - CSP - Up to 5K Users - Extra User',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS - Enterprise Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 100000,
+					name: 'Liferay SaaS - Enterprise Plan',
+					pageViewsLimit: 60000000,
+					price: 20000
+				},
+				['Liferay SaaS - Pro Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 1000,
+					name: 'Liferay SaaS - Pro Plan',
+					pageViewsLimit: 300000,
+					price: 0
+				},
+				['Liferay SaaS Subscription - Engage Site']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS Subscription - Engage Site',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS Subscription - Support Site']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS Subscription - Support Site',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['Liferay SaaS Subscription - Transact Site']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 0,
+					name: 'Liferay SaaS Subscription - Transact Site',
+					pageViewsLimit: 5000000,
+					price: 250
+				},
+				['LXC - Business Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 10000,
+					name: 'LXC - Business Plan',
+					pageViewsLimit: 5000000,
+					price: 7500
 				},
 				['LXC - CSP - Custom User Tier']: {
 					baseSubscriptionPlan: null,
@@ -400,6 +568,20 @@ module.exports = {
 					pageViewsLimit: 5000000,
 					price: 250
 				},
+				['LXC - Enterprise Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 100000,
+					name: 'LXC - Enterprise Plan',
+					pageViewsLimit: 60000000,
+					price: 20000
+				},
+				['LXC - Pro Plan']: {
+					baseSubscriptionPlan: null,
+					individualsLimit: 1000,
+					name: 'LXC - Pro Plan',
+					pageViewsLimit: 300000,
+					price: 0
+				},
 				['LXC Subscription - Engage Site']: {
 					baseSubscriptionPlan: null,
 					individualsLimit: 0,
@@ -427,6 +609,7 @@ module.exports = {
 				ok: 0,
 				over: 2
 			},
+			TextEncoder,
 			timeIntervals: {
 				day: 'day',
 				month: 'month',
@@ -451,22 +634,23 @@ module.exports = {
 				approved: 0,
 				pending: 1
 			}
-		},
-		'ts-jest': {
-			tsconfig: 'tsconfig.test.json'
 		}
 	},
 	moduleNameMapper: {
+		'^@liferay/frontend-data-set-web$':
+			'<rootDir>/src/main/js/test/__mocks__/@liferay/frontend-data-set-web.js',
+		'^@react-dnd/invariant$':
+			'<rootDir>/src/main/js/test/__mocks__/@react-dnd/invariant.js',
 		'^assets(.*)$': '<rootDir>/src/main/js/assets$1',
 		'^cerebro-shared(.*)$': '<rootDir>/src/main/js/cerebro-shared$1',
-		'^clay-charts-react(.*)$': '<rootDir>/src/main/js/clay-charts-react$1',
 		'^commerce(.*)$': '<rootDir>/src/main/js/commerce$1',
 		'^contacts(.*)$': '<rootDir>/src/main/js/contacts$1',
 		'^dnd-core$': 'dnd-core/dist/cjs',
 		'^event-analysis(.*)$': '<rootDir>/src/main/js/event-analysis$1',
 		'^experiments(.*)$': '<rootDir>/src/main/js/experiments$1',
-		'^home(.*)$': '<rootDir>/src/main/js/home$1',
 		'^individual(.*)$': '<rootDir>/src/main/js/individual$1',
+		'^jspdf$': '<rootDir>/src/main/js/test/__mocks__/jspdf.js',
+		'^lifecycle(.*)$': '<rootDir>/src/main/js/lifecycle$1',
 		'^react-dnd$': 'react-dnd/dist/cjs',
 		'^react-dnd-html5-backend$': 'react-dnd-html5-backend/dist/cjs',
 		'^route-middleware(.*)$': '<rootDir>/src/main/js/route-middleware$1',
@@ -478,14 +662,15 @@ module.exports = {
 		'^touchpoints(.*)': '<rootDir>/src/main/js/touchpoints$1',
 		'^ui-kit(.*)$': '<rootDir>/src/main/js/ui-kit$1'
 	},
-	setupFiles: ['<rootDir>/enzyme.config.js'],
 	setupFilesAfterEnv: ['<rootDir>/src/main/js/test/setup.js'],
-	snapshotSerializers: ['enzyme-to-json/serializer'],
-	testEnvironment: 'jest-environment-jsdom-fifteen',
-	testURL: 'http://liferay.com',
-	timers: 'fake',
+	testEnvironment: 'jsdom',
+	testEnvironmentOptions: {
+		url: 'http://liferay.com'
+	},
+	testResultsProcessor: '@liferay/jest-junit-reporter',
 	transform: {
 		'^.+\\.jsx?$': 'babel-jest',
-		'^.+\\.tsx?$': 'ts-jest'
-	}
+		'^.+\\.tsx?$': ['ts-jest', {tsconfig: 'tsconfig.test.json'}]
+	},
+	transformIgnorePatterns: ['/node_modules/']
 };

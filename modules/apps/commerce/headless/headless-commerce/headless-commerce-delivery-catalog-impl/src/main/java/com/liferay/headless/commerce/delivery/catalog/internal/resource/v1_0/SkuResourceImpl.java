@@ -8,26 +8,30 @@ package com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0;
 import com.liferay.account.exception.NoSuchEntryException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.context.CommerceContextFactory;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.product.exception.NoSuchCPInstanceException;
 import com.liferay.commerce.product.exception.NoSuchCProductException;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
+import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.permission.CommerceProductViewPermission;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
+import com.liferay.commerce.product.service.CProductLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
-import com.liferay.commerce.util.CommerceAccountHelper;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.DDMOption;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Sku;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.SkuOption;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.converter.SkuDTOConverterContext;
+import com.liferay.headless.commerce.delivery.catalog.internal.util.v1_0.AccountUtil;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.SkuResource;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTAware;
@@ -47,7 +51,6 @@ import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.math.BigDecimal;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -67,12 +70,65 @@ import org.osgi.service.component.annotations.ServiceScope;
 public class SkuResourceImpl extends BaseSkuResourceImpl {
 
 	@Override
+	public Sku
+			getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode,
+				String skuExternalReferenceCode, Long accountId,
+				String currencyCode)
+		throws Exception {
+
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.
+				getCommerceChannelByExternalReferenceCode(
+					channelExternalReferenceCode,
+					contextCompany.getCompanyId());
+
+		CProduct cProduct =
+			_cProductLocalService.getCProductByExternalReferenceCode(
+				productExternalReferenceCode, contextCompany.getCompanyId());
+
+		CPInstance cpInstance =
+			_cpInstanceLocalService.getCPInstanceByExternalReferenceCode(
+				skuExternalReferenceCode, contextCompany.getCompanyId());
+
+		return getChannelProductSku(
+			commerceChannel.getCommerceChannelId(), cProduct.getCProductId(),
+			cpInstance.getCPInstanceId(), accountId, currencyCode);
+	}
+
+	@Override
+	public Page<Sku>
+			getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkusPage(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode, Long accountId,
+				String currencyCode, Pagination pagination)
+		throws Exception {
+
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.
+				getCommerceChannelByExternalReferenceCode(
+					channelExternalReferenceCode,
+					contextCompany.getCompanyId());
+
+		CProduct cProduct =
+			_cProductLocalService.getCProductByExternalReferenceCode(
+				productExternalReferenceCode, contextCompany.getCompanyId());
+
+		return getChannelProductSkusPage(
+			commerceChannel.getCommerceChannelId(), cProduct.getCProductId(),
+			accountId, currencyCode, pagination);
+	}
+
+	@Override
 	public Sku getChannelProductSku(
-			Long channelId, Long productId, Long skuId, Long accountId)
+			Long channelId, Long productId, Long skuId, Long accountId,
+			String currencyCode)
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				productId, true);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCProductException();
@@ -82,7 +138,7 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 			_commerceChannelLocalService.getCommerceChannel(channelId);
 
 		CommerceContext commerceContext = _getCommerceContext(
-			accountId, commerceChannel);
+			accountId, commerceChannel, currencyCode);
 
 		AccountEntry accountEntry = commerceContext.getAccountEntry();
 
@@ -97,12 +153,15 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 			throw new NoSuchCPInstanceException();
 		}
 
+		String defaultUnitOfMeasureKey = _getDefaultUnitOfMeasureKey(
+			cpInstance.getCPInstanceId());
+
 		return _skuDTOConverter.toDTO(
 			new SkuDTOConverterContext(
 				commerceContext, contextCompany.getCompanyId(), cpDefinition,
-				contextAcceptLanguage.getPreferredLocale(), BigDecimal.ONE,
-				cpInstance.getCPInstanceId(),
-				_getDefaultUnitOfMeasureKey(cpInstance.getCPInstanceId()),
+				contextAcceptLanguage.getPreferredLocale(),
+				_getDefaultQuantity(cpInstance, defaultUnitOfMeasureKey),
+				cpInstance.getCPInstanceId(), null, defaultUnitOfMeasureKey,
 				contextUriInfo, contextUser));
 	}
 
@@ -110,11 +169,12 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 	@Override
 	public Page<Sku> getChannelProductSkusPage(
 			Long channelId, @NestedFieldId("productId") Long productId,
-			Long accountId, Pagination pagination)
+			Long accountId, String currencyCode, Pagination pagination)
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				productId, true);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCProductException();
@@ -123,32 +183,10 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.getCommerceChannel(channelId);
 
-		int countUserCommerceAccounts =
-			_commerceAccountHelper.countUserCommerceAccounts(
-				contextUser.getUserId(), commerceChannel.getGroupId());
-
-		if (countUserCommerceAccounts > 1) {
-			if (accountId == null) {
-				throw new NoSuchEntryException();
-			}
-		}
-		else {
-			long[] commerceAccountIds =
-				_commerceAccountHelper.getUserCommerceAccountIds(
-					contextUser.getUserId(), commerceChannel.getGroupId());
-
-			if (commerceAccountIds.length == 0) {
-				AccountEntry accountEntry =
-					_accountEntryLocalService.getGuestAccountEntry(
-						contextCompany.getCompanyId());
-
-				commerceAccountIds = new long[] {
-					accountEntry.getAccountEntryId()
-				};
-			}
-
-			accountId = commerceAccountIds[0];
-		}
+		accountId = AccountUtil.getAccountId(
+			contextCompany.getCompanyId(), commerceChannel.getGroupId(),
+			contextUser.getUserId(), _accountEntryLocalService,
+			_accountEntryService, accountId, _commerceAccountHelper, null);
 
 		_commerceProductViewPermission.check(
 			PermissionThreadLocal.getPermissionChecker(), accountId,
@@ -161,31 +199,59 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 				pagination.getStartPosition(), pagination.getEndPosition(),
 				null);
 
-		int totalItems = _cpInstanceLocalService.getCPDefinitionInstancesCount(
+		int totalCount = _cpInstanceLocalService.getCPDefinitionInstancesCount(
 			cpDefinition.getCPDefinitionId(),
 			WorkflowConstants.STATUS_APPROVED);
 
 		return Page.of(
-			_toSKUs(channelId, accountId, cpInstances, cpDefinition),
-			pagination, totalItems);
+			_toSKUs(
+				channelId, accountId, cpInstances, cpDefinition, currencyCode),
+			pagination, totalCount);
+	}
+
+	@Override
+	public Sku
+			postChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuBySkuOption(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode, Long accountId,
+				String currencyCode, BigDecimal quantity,
+				String skuUnitOfMeasureKey, SkuOption[] skuOptions)
+		throws Exception {
+
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.
+				getCommerceChannelByExternalReferenceCode(
+					channelExternalReferenceCode,
+					contextCompany.getCompanyId());
+
+		CProduct cProduct =
+			_cProductLocalService.getCProductByExternalReferenceCode(
+				productExternalReferenceCode, contextCompany.getCompanyId());
+
+		return postChannelProductSkuBySkuOption(
+			commerceChannel.getCommerceChannelId(), cProduct.getCProductId(),
+			accountId, currencyCode, quantity, skuUnitOfMeasureKey, skuOptions);
 	}
 
 	@Override
 	public Sku postChannelProductSku(
-		Long channelId, Long productId, Long accountId, BigDecimal quantity,
-		DDMOption[] ddmOptions) {
+			Long channelId, Long productId, Long accountId, BigDecimal quantity,
+			DDMOption[] ddmOptions)
+		throws Exception {
 
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public Sku postChannelProductSkuBySkuOption(
-			Long channelId, Long productId, Long accountId, BigDecimal quantity,
-			String skuUnitOfMeasureKey, SkuOption[] skuOptions)
+			Long channelId, Long productId, Long accountId, String currencyCode,
+			BigDecimal quantity, String skuUnitOfMeasureKey,
+			SkuOption[] skuOptions)
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				productId, true);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCProductException();
@@ -195,7 +261,7 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 			_commerceChannelLocalService.getCommerceChannel(channelId);
 
 		CommerceContext commerceContext = _getCommerceContext(
-			accountId, commerceChannel);
+			accountId, commerceChannel, currencyCode);
 
 		AccountEntry accountEntry = commerceContext.getAccountEntry();
 
@@ -224,14 +290,29 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 			new SkuDTOConverterContext(
 				commerceContext, contextCompany.getCompanyId(), cpDefinition,
 				contextAcceptLanguage.getPreferredLocale(),
-				BigDecimalUtil.get(quantity, BigDecimal.ONE),
-				cpInstance.getCPInstanceId(), skuUnitOfMeasureKey,
-				contextUriInfo, contextUser));
+				BigDecimalUtil.get(
+					quantity,
+					_getDefaultQuantity(cpInstance, skuUnitOfMeasureKey)),
+				cpInstance.getCPInstanceId(), skuOptionJSONArray,
+				skuUnitOfMeasureKey, contextUriInfo, contextUser));
 	}
 
 	private CommerceContext _getCommerceContext(
-			Long accountId, CommerceChannel commerceChannel)
+			Long accountId, CommerceChannel commerceChannel,
+			String currencyCode)
 		throws Exception {
+
+		if ((accountId != null) && (accountId > 0)) {
+			AccountEntry accountEntry = _accountEntryService.fetchAccountEntry(
+				accountId);
+
+			if (accountEntry != null) {
+				return _commerceContextFactory.create(
+					accountEntry.getAccountEntryId(),
+					commerceChannel.getGroupId(), currencyCode, 0,
+					contextCompany.getCompanyId());
+			}
+		}
 
 		int countUserCommerceAccounts =
 			_commerceAccountHelper.countUserCommerceAccounts(
@@ -243,8 +324,8 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 			}
 
 			return _commerceContextFactory.create(
-				contextCompany.getCompanyId(), commerceChannel.getGroupId(),
-				contextUser.getUserId(), 0, accountId);
+				accountId, commerceChannel.getGroupId(), currencyCode, 0,
+				contextCompany.getCompanyId());
 		}
 
 		long[] commerceAccountIds =
@@ -260,8 +341,25 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 		}
 
 		return _commerceContextFactory.create(
-			contextCompany.getCompanyId(), commerceChannel.getGroupId(),
-			contextUser.getUserId(), 0, commerceAccountIds[0]);
+			commerceAccountIds[0], commerceChannel.getGroupId(), currencyCode,
+			0, contextCompany.getCompanyId());
+	}
+
+	private BigDecimal _getDefaultQuantity(
+		CPInstance cpInstance, String unitOfMeasureKey) {
+
+		if ((cpInstance == null) || Validator.isNull(unitOfMeasureKey)) {
+			return BigDecimal.ONE;
+		}
+
+		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
+			cpInstance.fetchCPInstanceUnitOfMeasure(unitOfMeasureKey);
+
+		if (cpInstanceUnitOfMeasure != null) {
+			return cpInstanceUnitOfMeasure.getIncrementalOrderQuantity();
+		}
+
+		return BigDecimal.ONE;
 	}
 
 	private String _getDefaultUnitOfMeasureKey(long cpInstanceId) {
@@ -281,32 +379,36 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 
 	private List<Sku> _toSKUs(
 			Long channelId, Long accountId, List<CPInstance> cpInstances,
-			CPDefinition cpDefinition)
+			CPDefinition cpDefinition, String currencyCode)
 		throws Exception {
-
-		List<Sku> skus = new ArrayList<>();
 
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.getCommerceChannel(channelId);
 
-		for (CPInstance cpInstance : cpInstances) {
-			skus.add(
-				_skuDTOConverter.toDTO(
+		return transform(
+			cpInstances,
+			cpInstance -> {
+				String defaultUnitOfMeasureKey = _getDefaultUnitOfMeasureKey(
+					cpInstance.getCPInstanceId());
+
+				return _skuDTOConverter.toDTO(
 					new SkuDTOConverterContext(
-						_getCommerceContext(accountId, commerceChannel),
+						_getCommerceContext(
+							accountId, commerceChannel, currencyCode),
 						contextCompany.getCompanyId(), cpDefinition,
 						contextAcceptLanguage.getPreferredLocale(),
-						BigDecimal.ONE, cpInstance.getCPInstanceId(),
-						_getDefaultUnitOfMeasureKey(
-							cpInstance.getCPInstanceId()),
-						contextUriInfo, contextUser)));
-		}
-
-		return skus;
+						_getDefaultQuantity(
+							cpInstance, defaultUnitOfMeasureKey),
+						cpInstance.getCPInstanceId(), null,
+						defaultUnitOfMeasureKey, contextUriInfo, contextUser));
+			});
 	}
 
 	@Reference
 	private AccountEntryLocalService _accountEntryLocalService;
+
+	@Reference
+	private AccountEntryService _accountEntryService;
 
 	@Reference
 	private CommerceAccountHelper _commerceAccountHelper;
@@ -332,6 +434,9 @@ public class SkuResourceImpl extends BaseSkuResourceImpl {
 	@Reference
 	private CPInstanceUnitOfMeasureLocalService
 		_cpInstanceUnitOfMeasureLocalService;
+
+	@Reference
+	private CProductLocalService _cProductLocalService;
 
 	@Reference
 	private JSONFactory _jsonFactory;

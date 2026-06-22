@@ -5,9 +5,9 @@
 
 package com.liferay.portal.release.versions;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -199,6 +199,7 @@ public class ReleaseVersionsTest {
 
 	private boolean _contains(Path path, String... strings) throws IOException {
 		try (FileReader fileReader = new FileReader(path.toFile());
+
 			UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(fileReader)) {
 
@@ -297,11 +298,7 @@ public class ReleaseVersionsTest {
 		Path gitCommitPath = dirPath.resolve(
 			"git-commit-" + String.valueOf(dirPath.getFileName()));
 
-		if (Files.exists(gitCommitPath)) {
-			return true;
-		}
-
-		return false;
+		return Files.exists(gitCommitPath);
 	}
 
 	private boolean _isInGitRepoReadOnly(Path dirPath) throws IOException {

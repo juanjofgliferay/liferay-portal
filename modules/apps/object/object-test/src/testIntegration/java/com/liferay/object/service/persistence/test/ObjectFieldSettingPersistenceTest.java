@@ -112,11 +112,7 @@ public class ObjectFieldSettingPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ObjectFieldSetting newObjectFieldSetting = _persistence.create(pk);
-
-		newObjectFieldSetting.setMvccVersion(RandomTestUtil.nextLong());
+		ObjectFieldSetting newObjectFieldSetting = addObjectFieldSetting();
 
 		newObjectFieldSetting.setUuid(RandomTestUtil.randomString());
 
@@ -241,7 +237,7 @@ public class ObjectFieldSettingPersistenceTest {
 			"ObjectFieldSetting", "mvccVersion", true, "uuid", true,
 			"objectFieldSettingId", true, "companyId", true, "userId", true,
 			"userName", true, "createDate", true, "modifiedDate", true,
-			"objectFieldId", true, "name", true, "value", true);
+			"objectFieldId", true, "name", true);
 	}
 
 	@Test
@@ -537,8 +533,6 @@ public class ObjectFieldSettingPersistenceTest {
 
 		ObjectFieldSetting objectFieldSetting = _persistence.create(pk);
 
-		objectFieldSetting.setMvccVersion(RandomTestUtil.nextLong());
-
 		objectFieldSetting.setUuid(RandomTestUtil.randomString());
 
 		objectFieldSetting.setCompanyId(RandomTestUtil.nextLong());
@@ -568,3 +562,4 @@ public class ObjectFieldSettingPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1121242215

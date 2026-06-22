@@ -15,6 +15,7 @@ import com.liferay.calendar.service.CalendarLocalService;
 import com.liferay.calendar.service.CalendarNotificationTemplateLocalService;
 import com.liferay.calendar.service.CalendarResourceLocalService;
 import com.liferay.calendar.util.CalendarResourceUtil;
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -34,9 +35,9 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -47,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	property = "javax.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
+	property = "jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
 	service = PortletDataHandler.class
 )
 public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
@@ -72,6 +73,11 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 		return SCHEMA_VERSION;
 	}
 
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_CONTENT;
+	}
+
 	@Activate
 	protected void activate() {
 		setDataLocalized(true);
@@ -80,7 +86,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 			new StagedModelType(CalendarBooking.class),
 			new StagedModelType(CalendarNotificationTemplate.class),
 			new StagedModelType(CalendarResource.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "calendars", true, false, null,
 				Calendar.class.getName()),
@@ -88,7 +94,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 				NAMESPACE, "calendar-resources", true, false, null,
 				CalendarResource.class.getName()),
 			new PortletDataHandlerBoolean(
-				NAMESPACE, "calendar-bookings", true, false, null,
+				NAMESPACE, "events", true, false, null,
 				CalendarBooking.class.getName()),
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "calendar-notification-templates", true, false,
@@ -97,7 +103,8 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 						NAMESPACE, "referenced-content")
 				},
 				CalendarNotificationTemplate.class.getName()));
-		setStagingControls(getExportControls());
+		setStagingPortletDataHandlerControls(
+			getExportPortletDataHandlerControls());
 	}
 
 	@Override
@@ -141,9 +148,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 			calendarResourceActionableDynamicQuery.performActions();
 		}
 
-		if (portletDataContext.getBooleanParameter(
-				NAMESPACE, "calendar-bookings")) {
-
+		if (portletDataContext.getBooleanParameter(NAMESPACE, "events")) {
 			ActionableDynamicQuery calendarBookingActionableDynamicQuery =
 				calendarBookingLocalService.getExportActionableDynamicQuery(
 					portletDataContext);
@@ -228,9 +233,7 @@ public class CalendarAdminPortletDataHandler extends BasePortletDataHandler {
 			}
 		}
 
-		if (portletDataContext.getBooleanParameter(
-				NAMESPACE, "calendar-bookings")) {
-
+		if (portletDataContext.getBooleanParameter(NAMESPACE, "events")) {
 			Element calendarBookingsElement =
 				portletDataContext.getImportDataGroupElement(
 					CalendarBooking.class);

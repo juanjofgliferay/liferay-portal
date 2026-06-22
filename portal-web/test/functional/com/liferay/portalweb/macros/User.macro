@@ -1,6 +1,6 @@
 definition {
 
-	var password = "test";
+	var password = PropsUtil.get("default.admin.password");
 	var userEmailAddress = "test@liferay.com";
 
 	@summary = "Default summary"
@@ -175,9 +175,7 @@ definition {
 
 	@summary = "Default summary"
 	macro activateCP(userScreenName = null, userName = null) {
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Inactive");
+		ManagementBar.setFilterAndOrder(filterBy = "Inactive");
 
 		LexiconEntry.gotoEntryMenuItem(
 			menuItem = "Activate",
@@ -219,7 +217,7 @@ definition {
 
 		if (isSet(userAddressRegion)) {
 			Select(
-				locator1 = "Select#REGION",
+				locator1 = "Select#NEW_REGION",
 				value1 = ${userAddressRegion});
 		}
 
@@ -285,7 +283,7 @@ definition {
 
 			if (isSet(region)) {
 				Select(
-					locator1 = "Select#REGION",
+					locator1 = "Select#NEW_REGION",
 					value1 = ${region});
 			}
 
@@ -878,6 +876,38 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro assignAssetLibraryRoleCMS(roleTitle = null, userScreenName = null) {
+		UserNavigator.gotoUser(userScreenName = ${userScreenName});
+
+		UserNavigator.gotoRoles();
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_DEPOT_ROLE",
+			value1 = "This user is not assigned any asset library or space roles.");
+
+		AssertClick(
+			key_roleType = "DepotRole",
+			locator1 = "UsersAndOrganizationsEditUser#ROLES_SELECT_LINK",
+			value1 = "SELECT");
+
+		SelectFrame(locator1 = "IFrame#SELECT_DEPOT_ROLE");
+
+		AssertClick(
+			locator1 = "UsersAndOrganizationsEditUser#DEPOT_ROLES_SELECT_BUTTON",
+			roleTitle = ${roleTitle},
+			value1 = "Choose");
+
+		SelectFrame(value1 = "relative=top");
+
+		AssertTextEquals(
+			key_roleTitle = ${roleTitle},
+			locator1 = "UsersAndOrganizationsEditUser#DEPOT_ROLES_TITLE",
+			value1 = ${roleTitle});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
 	macro assignOrgRoleCP(roleTitle = null, userScreenName = null) {
 		UserNavigator.gotoUser(userScreenName = ${userScreenName});
 
@@ -1107,7 +1137,7 @@ definition {
 				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHECKBOX");
 		}
 
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Activate");
 
@@ -1136,12 +1166,14 @@ definition {
 		}
 
 		if (${deactivateType} == "Management Toolbar") {
-			Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+			Click(locator1 = "ManagementBar#ELLIPSIS");
 
 			MenuItem.clickNoError(menuItem = "Deactivate");
 		}
 		else {
-			ClickNoError(locator1 = "Icon#DEACTIVATE");
+			ClickNoError(
+				key_text = "hidden",
+				locator1 = "ManagementBar#ANY_ICON");
 		}
 
 		AssertConfirm(value1 = "Are you sure you want to deactivate the selected users?");
@@ -1161,12 +1193,14 @@ definition {
 		}
 
 		if (${deactivateType} == "Management Toolbar") {
-			Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+			Click(locator1 = "ManagementBar#ELLIPSIS");
 
 			MenuItem.clickNoError(menuItem = "Delete");
 		}
 		else {
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(
+				key_text = "times-circle",
+				locator1 = "ManagementBar#ANY_ICON");
 		}
 
 		AssertConfirm.waitForConfirmation(value1 = "Are you sure you want to permanently delete the selected users?");
@@ -1198,7 +1232,7 @@ definition {
 			User.logoutPG();
 
 			User.loginUserPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = ${userEmailAddress});
 
 			User.logoutPG();
@@ -1207,7 +1241,7 @@ definition {
 				authenticationMethod = ${authenticationMethod},
 				newPassword = ${newPassword},
 				nodePort = ${nodePort},
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com",
 				userScreenName = ${userScreenName});
 		}
@@ -1238,7 +1272,7 @@ definition {
 				authenticationMethod = ${authenticationMethod},
 				newPassword = ${newPassword},
 				nodePort = ${nodePort},
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com",
 				userScreenName = ${userScreenName});
 		}
@@ -1349,6 +1383,19 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro createMultipleUsers(letter = null) {
+		for (var letter : list ${letter}) {
+			User.createUser(
+				userEmailAddress = "${letter}@liferay.com",
+				userFirstName = ${letter},
+				userLastName = ${letter},
+				userScreenName = ${letter});
+
+			Navigator.gotoBack();
+		}
+	}
+
+	@summary = "Default summary"
 	macro createUser(lng = null, userEmailAddress = null, userFirstName = null, userJobTitle = null, userComment = null, userTag = null, userLastName = null, userScreenName = null, userMiddleName = null, userGender = null, lat = null, userBirthday = null,) {
 		LexiconEntry.gotoAdd();
 
@@ -1391,6 +1438,15 @@ definition {
 			User.bulkDeactivateCP(
 				deactivateType = ${deactivateType},
 				userFirstNameList = ${userFirstNameList});
+		}
+	}
+
+	@summary = "Default summary"
+	macro deactivateMultipleUsers(letter = null) {
+		for (var letter : list ${letter}) {
+			User.deactivateCP(
+				deactivateType = "Actions",
+				userFirstName = ${letter});
 		}
 	}
 
@@ -1622,7 +1678,7 @@ definition {
 		User.loginPG(
 			authenticationMethod = ${authenticationMethod},
 			nodePort = ${nodePort},
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com",
 			userScreenName = ${userScreenName});
 	}
@@ -1789,7 +1845,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro editUserInformation(password = null, userFirstNameEdit = null, userLastNameEdit = null, userCustomFieldLabel = null, userCustomField = null, userEmailAddressEdit = null, userMiddleNameEdit = null, userScreenNameEdit = null) {
+	macro editUserInformation(password = null, userFirstNameEdit = null, userLastNameEdit = null, userCustomFieldLabel = null, userCustomField = null, userCustomFieldType = null, userEmailAddressEdit = null, userMiddleNameEdit = null, userScreenNameEdit = null) {
 		AssertElementPresent.assertElementPresent(locator1 = "TextInput#FIRST_NAME");
 
 		if (isSet(userFirstNameEdit)) {
@@ -1811,10 +1867,17 @@ definition {
 		}
 
 		if (isSet(userCustomField)) {
-			Type(
-				key_fieldLabel = ${userCustomFieldLabel},
-				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = ${userCustomField});
+			if (${userCustomFieldType} == "Text Area") {
+				Type(
+					locator1 = "TextInput#CUSTOM_FIELD",
+					value1 = ${userCustomField});
+			}
+			else {
+				Type(
+					key_fieldLabel = ${userCustomFieldLabel},
+					locator1 = "TextInput#GENERIC_TEXT_INPUT",
+					value1 = ${userCustomField});
+			}
 		}
 
 		PortletEntry.save();
@@ -1914,8 +1977,6 @@ definition {
 		}
 		else {
 			for (var tagName : list ${tagNameList}) {
-				var tagName = StringUtil.lowerCase(${tagName});
-
 				AssetCategorization.addTag(tagName = ${tagName});
 			}
 		}
@@ -2260,7 +2321,7 @@ definition {
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "Message#ERROR_DISMISSIBLE",
-				value1 = "Authentication failed. Please try again.");
+				value1 = "Authentication failed");
 		}
 	}
 
@@ -2381,26 +2442,6 @@ definition {
 		AssertElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE");
 	}
 
-	@description = "Log into OpenAM as ${userScreenName} using the password ${password}."
-	@summary = "Default summary"
-	macro loginUserWithOpenSSOEnabledPG(password = null, hostsURL = null, userScreenName = null) {
-		Navigator.openSpecificURL(url = ${hostsURL});
-
-		Navigator.gotoLoginPage();
-
-		Type(
-			locator1 = "TextInput#TEXT",
-			value1 = ${userScreenName});
-
-		Type(
-			locator1 = "TextInput#PASSWORD_TYPE",
-			value1 = ${password});
-
-		Click(locator1 = "OpenAM#LOG_IN");
-
-		AssertElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE");
-	}
-
 	@summary = "Default summary"
 	macro logoutAndLoginPG(password = null, authenticationMethod = null, userScreenName = null, userLoginEmailAddress = null, nodePort = null, signOutLocalizationName = null) {
 		Navigator.openURL();
@@ -2507,7 +2548,7 @@ definition {
 				User.fillResetPasswordFields(password = ${newPassword});
 			}
 			else {
-				User.fillResetPasswordFields(password = "test");
+				User.fillResetPasswordFields(password = PropsUtil.get("default.admin.password"));
 			}
 
 			if (isSet(localizedSaveButton)) {
@@ -2563,8 +2604,6 @@ definition {
 		IFrame.selectTagFrame();
 
 		for (var tagName : list ${tagNameList}) {
-			var tagName = StringUtil.lowerCase(${tagName});
-
 			Check(
 				key_rowEntry = ${tagName},
 				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_CHECKBOX");
@@ -2577,8 +2616,6 @@ definition {
 			value1 = "Done");
 
 		for (var tagName : list ${tagNameList}) {
-			var tagName = StringUtil.lowerCase(${tagName});
-
 			AssertTextEquals(
 				key_tagName = ${tagName},
 				locator1 = "AssetCategorization#TAG",
@@ -2698,14 +2735,9 @@ definition {
 
 	@summary = "Default summary"
 	macro tearDownCP() {
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Active");
+		ManagementBar.setFilterAndOrder(filterBy = "Active");
 
 		while (IsElementPresent(key_rowNumber = 2, locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER")) {
 			Click.waitForMenuToggleJSClick(
@@ -2717,14 +2749,14 @@ definition {
 			AssertConfirm(value1 = "Are you sure you want to deactivate this?");
 		}
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Inactive");
+		ManagementBar.setFilterAndOrder(filterBy = "Inactive");
 
 		if (IsElementPresent(locator1 = "ContentRow#ENTRY_CONTENT_ROW_1")) {
 			PortletEntry.selectAll();
 
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(
+				key_text = "trash",
+				locator1 = "ManagementBar#ANY_ICON");
 
 			AssertConfirm(value1 = "Are you sure you want to permanently delete the selected users?");
 
@@ -2736,14 +2768,9 @@ definition {
 
 	@summary = "Default summary"
 	macro tearDownSpecificUser(userScreenName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Active");
+		ManagementBar.setFilterAndOrder(filterBy = "Active");
 
 		User.searchCP(searchTerm = ${userScreenName});
 
@@ -2757,9 +2784,7 @@ definition {
 			Alert.viewSuccessMessage();
 		}
 
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Inactive");
+		ManagementBar.setFilterAndOrder(filterBy = "Inactive");
 
 		if (IsElementPresent(locator1 = "ContentRow#ENTRY_CONTENT_ROW_1")) {
 			PortletEntry.selectAll();
@@ -3238,7 +3263,12 @@ definition {
 			value1 = ${customFieldName});
 
 		if (isSet(startingValue)) {
-			if (${customFieldType} == "Text Field") {
+			if (${customFieldType} == "Text Area") {
+				AssertTextEquals(
+					locator1 = "TextInput#CUSTOM_FIELD",
+					value1 = ${startingValue});
+			}
+			else if (${customFieldType} == "Text Field") {
 				AssertTextEquals(
 					key_fieldLabel = ${customFieldName},
 					locator1 = "TextInput#GENERIC_TEXT_INPUT",

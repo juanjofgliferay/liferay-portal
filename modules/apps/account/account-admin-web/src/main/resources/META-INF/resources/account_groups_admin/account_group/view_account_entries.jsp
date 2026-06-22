@@ -52,7 +52,7 @@ renderResponse.setTitle(accountGroupDisplay.getName());
 		).build()
 	%>'
 	managementToolbarDisplayContext="<%= viewAccountGroupAccountEntriesManagementToolbarDisplayContext %>"
-	propsTransformer="account_groups_admin/js/AccountGroupAccountEntriesManagementToolbarPropsTransformer"
+	propsTransformer="{AccountGroupAccountEntriesManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -71,13 +71,13 @@ renderResponse.setTitle(accountGroupDisplay.getName());
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand table-title"
 					name="name"
-					property="name"
+					value="<%= HtmlUtil.escape(accountEntryDisplay.getName()) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand"
 					name="organizations"
-					property="organizationNames"
+					value="<%= HtmlUtil.escape(accountEntryDisplay.getOrganizationNames()) %>"
 				/>
 
 				<liferay-ui:search-container-column-text

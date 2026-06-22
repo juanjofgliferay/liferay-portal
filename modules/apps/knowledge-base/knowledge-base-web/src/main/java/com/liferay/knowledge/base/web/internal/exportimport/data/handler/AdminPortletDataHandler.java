@@ -5,6 +5,7 @@
 
 package com.liferay.knowledge.base.web.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
@@ -32,9 +33,9 @@ import com.liferay.portal.kernel.dao.orm.OrderFactoryUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	property = "javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+	property = "jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
 	service = PortletDataHandler.class
 )
 public class AdminPortletDataHandler extends BasePortletDataHandler {
@@ -64,7 +65,7 @@ public class AdminPortletDataHandler extends BasePortletDataHandler {
 			new StagedModelType(KBArticle.class),
 			new StagedModelType(KBComment.class),
 			new StagedModelType(KBTemplate.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "kb-folders", true, false, null,
 				KBFolder.class.getName()),
@@ -79,7 +80,8 @@ public class AdminPortletDataHandler extends BasePortletDataHandler {
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "kb-templates", true, false, null,
 				KBTemplate.class.getName()));
-		setStagingControls(getExportControls());
+		setStagingPortletDataHandlerControls(
+			getExportPortletDataHandlerControls());
 	}
 
 	@Override
@@ -95,6 +97,11 @@ public class AdminPortletDataHandler extends BasePortletDataHandler {
 	@Override
 	public String getSchemaVersion() {
 		return SCHEMA_VERSION;
+	}
+
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_CONTENT;
 	}
 
 	@Override
@@ -295,7 +302,7 @@ public class AdminPortletDataHandler extends BasePortletDataHandler {
 				}
 
 				OrderFactoryUtil.addOrderByComparator(
-					dynamicQuery, new KBArticleVersionComparator(true));
+					dynamicQuery, KBArticleVersionComparator.getInstance(true));
 			});
 
 		return exportActionableDynamicQuery;

@@ -1,37 +1,44 @@
-import client from 'shared/apollo/client';
 import mockStore from 'test/mock-store';
 import React from 'react';
-import {ApolloProvider} from '@apollo/react-components';
 import {AttributeBreakdownSection} from '../AttributeBreakdownSection';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
+import {InMemoryCache} from '@apollo/client';
 import {MemoryRouter, Route} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
 import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
 import {Routes} from 'shared/util/router';
 
 jest.unmock('react-dom');
 
-describe('AttributeBreakdownSection', () => {
-	const WrappedComponent = props => (
+const WrappedComponent = props => (
+	<Provider store={mockStore()}>
 		<MemoryRouter initialEntries={['/workspace/23/event-analysis']}>
 			<Route path={Routes.EVENT_ANALYSIS}>
-				<ApolloProvider client={client}>
-					<Provider store={mockStore()}>
-						<DndProvider backend={HTML5Backend}>
-							<AttributeBreakdownSection
-								attributes={[]}
-								breakdownOrder={[]}
-								breakdowns={[]}
-								{...props}
-							/>
-						</DndProvider>
-					</Provider>
-				</ApolloProvider>
+				<MockedProvider
+					cache={
+						new InMemoryCache({
+							addTypename: false,
+							freezeResults: false
+						})
+					}
+				>
+					<DndProvider backend={HTML5Backend}>
+						<AttributeBreakdownSection
+							attributes={[]}
+							breakdownOrder={[]}
+							breakdowns={[]}
+							{...props}
+						/>
+					</DndProvider>
+				</MockedProvider>
 			</Route>
 		</MemoryRouter>
-	);
+	</Provider>
+);
 
+describe('AttributeBreakdownSection', () => {
 	it('renders', () => {
 		const {container} = render(<WrappedComponent />);
 
@@ -45,7 +52,7 @@ describe('AttributeBreakdownSection', () => {
 		expect(container.querySelector('.add-attribute')).toBeTruthy();
 	});
 
-	it('renders w/o add breakdown button if 3 breakdowns exists', () => {
+	it('renders w/o add breakdown button if 5 breakdowns exists', () => {
 		const {container} = render(
 			<WrappedComponent
 				attributes={{
@@ -66,9 +73,21 @@ describe('AttributeBreakdownSection', () => {
 						displayName: 'Article Title',
 						id: '321321',
 						name: 'articleTitle'
+					},
+					400: {
+						dataType: 'STRING',
+						displayName: 'Author',
+						id: '400',
+						name: 'author'
+					},
+					500: {
+						dataType: 'STRING',
+						displayName: 'Date',
+						id: '500',
+						name: 'date'
 					}
 				}}
-				breakdownOrder={['1', '321321', '123123']}
+				breakdownOrder={['1', '321321', '123123', '400', '500']}
 				breakdowns={{
 					1: {
 						attributeId: '1',
@@ -82,6 +101,16 @@ describe('AttributeBreakdownSection', () => {
 					},
 					321321: {
 						attributeId: '321321',
+						dataType: 'STRING',
+						type: 'event'
+					},
+					400: {
+						attributeId: '400',
+						dataType: 'STRING',
+						type: 'event'
+					},
+					500: {
+						attributeId: '500',
 						dataType: 'STRING',
 						type: 'event'
 					}

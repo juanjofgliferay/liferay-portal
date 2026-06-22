@@ -114,9 +114,8 @@ public class NullConvertibleEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		NullConvertibleEntry newNullConvertibleEntry = _persistence.create(pk);
+		NullConvertibleEntry newNullConvertibleEntry =
+			addNullConvertibleEntry();
 
 		newNullConvertibleEntry.setName(RandomTestUtil.randomString());
 
@@ -494,3 +493,4 @@ public class NullConvertibleEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:759023956

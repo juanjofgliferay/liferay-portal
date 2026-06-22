@@ -14,26 +14,35 @@
 		</div>
 	</c:when>
 	<c:when test="<%= !user.isGuestUser() %>">
-		<div class="account-selector-root" id="<%= accountSelectorId %>"></div>
+		<div class="<%= (cssClasses != null) ? "account-selector-root " + cssClasses : "account-selector-root" %>" id="<%= accountSelectorId %>"></div>
 
-		<aui:script require="commerce-frontend-js/components/account_selector/entry as accountSelector">
-			accountSelector.default(
-				'<%= accountSelectorId %>',
-				'<%= accountSelectorId %>',
-				{
-					accountEntryAllowedTypes:
-						'<%= jsonSerializer.serializeDeep(accountEntryAllowedTypes) %>',
-					commerceChannelId: '<%= commerceChannelId %>',
-					createNewOrderURL: '<%= createNewOrderURL %>',
-					currentCommerceAccount: <%= Validator.isNotNull(currentCommerceAccount) ? jsonSerializer.serializeDeep(currentCommerceAccount) : null %>,
-					currentCommerceOrder: <%= Validator.isNotNull(currentCommerceOrder) ? jsonSerializer.serializeDeep(currentCommerceOrder) : null %>,
-					namespace: '<%= accountSelectorId %>',
-					refreshPageOnAccountSelected: true,
-					selectOrderURL: '<%= selectOrderURL %>',
-					setCurrentAccountURL: '<%= setCurrentAccountURL %>',
-					showOrderTypeModal: <%= showOrderTypeModal %>,
-				}
-			);
-		</aui:script>
+		<liferay-frontend:component
+			context='<%=
+				HashMapBuilder.<String, Object>put(
+					"accountSelectorId", accountSelectorId
+				).put(
+					"createNewOrderURL", createNewOrderURL
+				).put(
+					"currencyCode", currencyCode
+				).put(
+					"currentCommerceAccount", currentCommerceAccount
+				).put(
+					"currentCommerceOrder", currentCommerceOrder
+				).put(
+					"hasAddCommerceOrderPermission", hasAddCommerceOrderPermission
+				).put(
+					"hasManageAccountsPermission", hasManageAccountsPermission
+				).put(
+					"orderSelectionDisabled", orderSelectionDisabled
+				).put(
+					"refreshPageOnAccountSelected", true
+				).put(
+					"selectOrderURL", selectOrderURL
+				).put(
+					"setCurrentAccountURL", setCurrentAccountURL
+				).build()
+			%>'
+			module="{accountSelectorTag} from commerce-frontend-taglib"
+		/>
 	</c:when>
 </c:choose>

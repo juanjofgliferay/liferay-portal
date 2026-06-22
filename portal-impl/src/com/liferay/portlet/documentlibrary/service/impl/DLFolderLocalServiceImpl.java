@@ -33,6 +33,7 @@ import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -43,6 +44,8 @@ import com.liferay.portal.kernel.lock.InvalidLockException;
 import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.lock.NoSuchLockException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -51,6 +54,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.WebDAVProps;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
 import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.repository.UndeployedExternalRepositoryException;
 import com.liferay.portal.kernel.repository.event.RepositoryEventTrigger;
 import com.liferay.portal.kernel.repository.event.RepositoryEventType;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -73,6 +77,7 @@ import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.trash.helper.TrashHelper;
 import com.liferay.portal.kernel.tree.TreeModelTasksAdapter;
 import com.liferay.portal.kernel.tree.TreePathUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -779,7 +784,8 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 
 					return dlFolderPersistence.findByGtF_C_P(
 						previousId, companyId, parentPrimaryKey,
-						QueryUtil.ALL_POS, size, new FolderIdComparator(true));
+						QueryUtil.ALL_POS, size,
+						FolderIdComparator.getInstance(true));
 				}
 
 				@Override
@@ -870,65 +876,9 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 
 			// Workflow definitions
 
-			List<ObjectValuePair<Long, String>> workflowDefinitionOVPs =
-				new ArrayList<>();
-
-			if (restrictionType ==
-					DLFolderConstants.
-						RESTRICTION_TYPE_FILE_ENTRY_TYPES_AND_WORKFLOW) {
-
-				workflowDefinitionOVPs.add(
-					new ObjectValuePair<Long, String>(
-						DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL,
-						StringPool.BLANK));
-
-				for (long fileEntryTypeId : fileEntryTypeIds) {
-					String workflowDefinition = ParamUtil.getString(
-						serviceContext, "workflowDefinition" + fileEntryTypeId);
-
-					workflowDefinitionOVPs.add(
-						new ObjectValuePair<Long, String>(
-							fileEntryTypeId, workflowDefinition));
-				}
-			}
-			else if (restrictionType ==
-						DLFolderConstants.RESTRICTION_TYPE_INHERIT) {
-
-				if (originalFileEntryTypeIds.isEmpty()) {
-					originalFileEntryTypeIds.add(
-						DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL);
-				}
-
-				for (long originalFileEntryTypeId : originalFileEntryTypeIds) {
-					workflowDefinitionOVPs.add(
-						new ObjectValuePair<Long, String>(
-							originalFileEntryTypeId, StringPool.BLANK));
-				}
-			}
-			else if (restrictionType ==
-						DLFolderConstants.RESTRICTION_TYPE_WORKFLOW) {
-
-				String workflowDefinition = ParamUtil.getString(
-					serviceContext,
-					"workflowDefinition" +
-						DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL);
-
-				workflowDefinitionOVPs.add(
-					new ObjectValuePair<Long, String>(
-						DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL,
-						workflowDefinition));
-
-				for (long originalFileEntryTypeId : originalFileEntryTypeIds) {
-					workflowDefinitionOVPs.add(
-						new ObjectValuePair<Long, String>(
-							originalFileEntryTypeId, StringPool.BLANK));
-				}
-			}
-
-			_workflowDefinitionLinkLocalService.updateWorkflowDefinitionLinks(
-				serviceContext.getUserId(), serviceContext.getCompanyId(),
-				serviceContext.getScopeGroupId(), DLFolder.class.getName(),
-				folderId, workflowDefinitionOVPs);
+			_updateWorkflowDefinitionLinks(
+				folderId, fileEntryTypeIds, restrictionType, serviceContext,
+				originalFileEntryTypeIds);
 
 			return dlFolder;
 		}
@@ -1017,9 +967,9 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 
 			dlFolder.setName(name);
 			dlFolder.setDescription(description);
-			dlFolder.setExpandoBridgeAttributes(serviceContext);
 			dlFolder.setDefaultFileEntryTypeId(defaultFileEntryTypeId);
 			dlFolder.setRestrictionType(restrictionType);
+			dlFolder.setExpandoBridgeAttributes(serviceContext);
 
 			dlFolder = dlFolderPersistence.update(dlFolder);
 
@@ -1067,7 +1017,9 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 		DLFolder dlFolder = dlFolderPersistence.fetchByPrimaryKey(folderId);
 
 		if ((dlFolder == null) ||
-			lastPostDate.before(dlFolder.getLastPostDate())) {
+			lastPostDate.before(dlFolder.getLastPostDate()) ||
+			(!CTCollectionThreadLocal.isProductionMode() &&
+			 dlFolder.isInHiddenFolder())) {
 
 			return;
 		}
@@ -1305,25 +1257,34 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 			DLFolder dlFolder, boolean includeTrashedEntries)
 		throws PortalException {
 
-		RepositoryEventTrigger repositoryEventTrigger =
-			RepositoryUtil.getRepositoryEventTrigger(
-				dlFolder.getRepositoryId());
+		try {
+			RepositoryEventTrigger repositoryEventTrigger =
+				RepositoryUtil.getRepositoryEventTrigger(
+					dlFolder.getRepositoryId());
 
-		List<DLFolder> dlFolders = dlFolderPersistence.findByG_P(
-			dlFolder.getGroupId(), dlFolder.getFolderId());
+			List<DLFolder> dlFolders = dlFolderPersistence.findByG_P(
+				dlFolder.getGroupId(), dlFolder.getFolderId());
 
-		for (DLFolder curDLFolder : dlFolders) {
-			TrashHelper trashHelper = _trashHelperSnapshot.get();
+			for (DLFolder curDLFolder : dlFolders) {
+				TrashHelper trashHelper = _trashHelperSnapshot.get();
 
-			if (includeTrashedEntries ||
-				!trashHelper.isInTrashExplicitly(curDLFolder)) {
+				if (includeTrashedEntries ||
+					!trashHelper.isInTrashExplicitly(curDLFolder)) {
 
-				repositoryEventTrigger.trigger(
-					RepositoryEventType.Delete.class, Folder.class,
-					new LiferayFolder(curDLFolder));
+					repositoryEventTrigger.trigger(
+						RepositoryEventType.Delete.class, Folder.class,
+						new LiferayFolder(curDLFolder));
 
-				dlFolderLocalService.deleteFolder(
-					curDLFolder, includeTrashedEntries);
+					dlFolderLocalService.deleteFolder(
+						curDLFolder, includeTrashedEntries);
+				}
+			}
+		}
+		catch (UndeployedExternalRepositoryException
+					undeployedExternalRepositoryException) {
+
+			if (_log.isWarnEnabled()) {
+				_log.warn(undeployedExternalRepositoryException);
 			}
 		}
 	}
@@ -1449,6 +1410,82 @@ public class DLFolderLocalServiceImpl extends DLFolderLocalServiceBaseImpl {
 					" is invalid because it contains a /"));
 		}
 	}
+
+	private void _updateWorkflowDefinitionLinks(
+			long folderId, List<Long> fileEntryTypeIds, int restrictionType,
+			ServiceContext serviceContext, Set<Long> originalFileEntryTypeIds)
+		throws PortalException {
+
+		if (!GetterUtil.getBoolean(
+				serviceContext.getAttribute("updateWorkflowDefinitionLinks"),
+				true)) {
+
+			return;
+		}
+
+		List<ObjectValuePair<Long, String>> workflowDefinitionOVPs =
+			new ArrayList<>();
+
+		if (restrictionType ==
+				DLFolderConstants.
+					RESTRICTION_TYPE_FILE_ENTRY_TYPES_AND_WORKFLOW) {
+
+			workflowDefinitionOVPs.add(
+				new ObjectValuePair<Long, String>(
+					DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL,
+					StringPool.BLANK));
+
+			for (long fileEntryTypeId : fileEntryTypeIds) {
+				String workflowDefinition = ParamUtil.getString(
+					serviceContext, "workflowDefinition" + fileEntryTypeId);
+
+				workflowDefinitionOVPs.add(
+					new ObjectValuePair<Long, String>(
+						fileEntryTypeId, workflowDefinition));
+			}
+		}
+		else if (restrictionType ==
+					DLFolderConstants.RESTRICTION_TYPE_INHERIT) {
+
+			if (originalFileEntryTypeIds.isEmpty()) {
+				originalFileEntryTypeIds.add(
+					DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL);
+			}
+
+			for (long originalFileEntryTypeId : originalFileEntryTypeIds) {
+				workflowDefinitionOVPs.add(
+					new ObjectValuePair<Long, String>(
+						originalFileEntryTypeId, StringPool.BLANK));
+			}
+		}
+		else if (restrictionType ==
+					DLFolderConstants.RESTRICTION_TYPE_WORKFLOW) {
+
+			String workflowDefinition = ParamUtil.getString(
+				serviceContext,
+				"workflowDefinition" +
+					DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL);
+
+			workflowDefinitionOVPs.add(
+				new ObjectValuePair<Long, String>(
+					DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_ALL,
+					workflowDefinition));
+
+			for (long originalFileEntryTypeId : originalFileEntryTypeIds) {
+				workflowDefinitionOVPs.add(
+					new ObjectValuePair<Long, String>(
+						originalFileEntryTypeId, StringPool.BLANK));
+			}
+		}
+
+		_workflowDefinitionLinkLocalService.updateWorkflowDefinitionLinks(
+			serviceContext.getUserId(), serviceContext.getCompanyId(),
+			serviceContext.getScopeGroupId(), DLFolder.class.getName(),
+			folderId, workflowDefinitionOVPs);
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DLFolderLocalServiceImpl.class);
 
 	private static final Snapshot<TrashHelper> _trashHelperSnapshot =
 		new Snapshot<>(DLFolderLocalServiceImpl.class, TrashHelper.class);

@@ -6,6 +6,8 @@
 package com.liferay.portal.remote.json.web.service.web.internal;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.exception.NoSuchModelException;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -156,6 +158,10 @@ public class FooService {
 			ids.length);
 	}
 
+	public static String locales(List<Locale> locales) {
+		return locales.toString();
+	}
+
 	public static String methodOne(long id, long nameId) {
 		return "m-2";
 	}
@@ -166,6 +172,10 @@ public class FooService {
 
 	public static String methodOne(long id, String name) {
 		return "m-1";
+	}
+
+	public static String noSuchModelException() throws NoSuchModelException {
+		throw new NoSuchModelException();
 	}
 
 	public static String nullLover(String name, int number) {
@@ -180,9 +190,17 @@ public class FooService {
 		return null;
 	}
 
+	public static String principalException() throws PrincipalException {
+		throw new PrincipalException();
+	}
+
 	public static String search(String name, String... params) {
 		return StringBundler.concat(
 			"search ", name, ">", StringUtil.merge(params));
+	}
+
+	public static String securityException() {
+		throw new SecurityException();
 	}
 
 	public static String srvcctx(ServiceContext serviceContext) {

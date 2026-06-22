@@ -12,10 +12,8 @@ import com.liferay.content.dashboard.item.ContentDashboardItemFactory;
 import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtype;
 import com.liferay.content.dashboard.item.type.ContentDashboardItemSubtypeFactory;
 import com.liferay.content.dashboard.web.internal.item.ContentDashboardItemFactoryRegistry;
-import com.liferay.content.dashboard.web.internal.item.selector.criteria.content.dashboard.type.criterion.ContentDashboardItemSubtypeItemSelectorCriterion;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemFormVariation;
 import com.liferay.info.item.InfoItemReference;
@@ -48,6 +46,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
@@ -59,12 +63,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -109,12 +107,9 @@ public class ContentDashboardItemSubtypeItemSelectorView
 
 		printWriter.write("<section class=\"h-100\">");
 
-		String moduleName = _npmResolver.resolveModuleName(
-			"@liferay/content-dashboard-web");
-
 		_reactRenderer.renderReact(
 			new ComponentDescriptor(
-				moduleName + "/js/components/SelectTypeAndSubtype"),
+				"{SelectTypeAndSubtype} from content-dashboard-web"),
 			HashMapBuilder.<String, Object>put(
 				"contentDashboardItemTypes",
 				_getContentDashboardItemTypesJSONArray(servletRequest)
@@ -197,11 +192,6 @@ public class ContentDashboardItemSubtypeItemSelectorView
 		}
 
 		return contentDashboardItemTypesJSONArray;
-	}
-
-	private long[] _getGroupIds(long companyId) {
-		return ArrayUtil.toLongArray(
-			_groupLocalService.getGroupIds(companyId, true));
 	}
 
 	private String _getIcon(String className) {
@@ -318,8 +308,8 @@ public class ContentDashboardItemSubtypeItemSelectorView
 		}
 
 		Collection<InfoItemFormVariation> infoItemFormVariations =
-			infoItemFormVariationsProvider.getInfoItemFormVariations(
-				_getGroupIds(themeDisplay.getCompanyId()));
+			infoItemFormVariationsProvider.getInfoItemFormVariationsByCompanyId(
+				themeDisplay.getCompanyId());
 
 		JSONArray itemSubtypesJSONArray = _jsonFactory.createJSONArray();
 
@@ -432,9 +422,6 @@ public class ContentDashboardItemSubtypeItemSelectorView
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private ReactRenderer _reactRenderer;

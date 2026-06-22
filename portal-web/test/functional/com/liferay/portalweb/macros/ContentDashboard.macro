@@ -77,7 +77,7 @@ definition {
 	macro clearFilters() {
 		Click(
 			key_text = "Clear",
-			locator1 = "Link#ANY");
+			locator1 = "Button#ANY");
 	}
 
 	@summary = "Default summary"
@@ -185,6 +185,9 @@ definition {
 
 			Click(locator1 = "Icon#BACK");
 		}
+		else if (isSet(isWebContent)) {
+			WebContent.publishExistingWCArticleWithPermissions();
+		}
 		else {
 			Button.clickPublish();
 		}
@@ -225,14 +228,14 @@ definition {
 
 	@summary = "Default summary"
 	macro filterByAuthorAll() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#FILTER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
 
 	@summary = "Default summary"
 	macro filterByAuthorMe() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#FILTER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
@@ -283,7 +286,7 @@ definition {
 
 	@summary = "Default summary"
 	macro filterByStatus() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#FILTER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
@@ -305,7 +308,7 @@ definition {
 
 	@summary = "Default summary"
 	macro filterByToBeReviewed() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#FILTER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
@@ -414,17 +417,8 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro openFilterAndOrder() {
-		if (IsElementPresent(locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN")) {
-			AssertClickNoError(
-				locator1 = "ContentDashboard#FILTER_AND_ORDER_DROPDOWN",
-				value1 = "Filter and Order");
-		}
-	}
-
-	@summary = "Default summary"
 	macro openFilterModal() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#FILTER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 
@@ -448,21 +442,21 @@ definition {
 
 	@summary = "Default summary"
 	macro orderByModificationDate() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#ORDER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
 
 	@summary = "Default summary"
 	macro orderByReviewDate() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#ORDER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}
 
 	@summary = "Default summary"
 	macro orderByTitle() {
-		ContentDashboard.openFilterAndOrder();
+		Click(locator1 = "ManagementBar#ORDER");
 
 		Click(locator1 = "ContentDashboard#FILTER_BY_OPTION");
 	}

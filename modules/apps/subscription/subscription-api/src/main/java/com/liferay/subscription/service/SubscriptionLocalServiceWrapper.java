@@ -217,6 +217,13 @@ public class SubscriptionLocalServiceWrapper
 		_subscriptionLocalService.deleteSubscriptions(userId, groupId);
 	}
 
+	@Override
+	public void deleteSubscriptions(long companyId, String className)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_subscriptionLocalService.deleteSubscriptions(companyId, className);
+	}
+
 	/**
 	 * Deletes all the subscriptions to the entity.
 	 *
@@ -642,3 +649,4 @@ public class SubscriptionLocalServiceWrapper
 	private SubscriptionLocalService _subscriptionLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1035496999

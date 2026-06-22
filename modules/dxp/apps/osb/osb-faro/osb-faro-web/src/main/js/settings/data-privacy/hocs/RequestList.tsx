@@ -1,5 +1,6 @@
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
+import ClayLink from '@clayui/link';
 import Constants, {OrderByDirections, Sizes} from 'shared/util/constants';
 import CrossPageSelect from 'shared/hoc/CrossPageSelect';
 import DataControlRequest from '../queries/DataControlRequestMutation';
@@ -41,9 +42,9 @@ import {
 	toRoute,
 	TYPES
 } from 'shared/util/router';
-import {useMutation, useQuery} from '@apollo/react-hooks';
+import {useMutation, useQuery} from '@apollo/client';
 import {useParams} from 'react-router-dom';
-import {useQueryPagination} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {User} from 'shared/util/records';
 import {
 	useSelectionContext,
@@ -130,13 +131,14 @@ export const FILTER_BY_OPTIONS = [
 
 export const getTodaysDate = () => moment().utc();
 
-const isDisabled = ({
-	completeDate,
-	status
-}: {
-	completeDate: string;
-	status: GDPRRequestStatuses;
-}): boolean => !completeDate || status !== GDPRRequestStatuses.Completed;
+const isDisabled = (item?: object): boolean => {
+	const {completeDate, status} = (item ?? {}) as {
+		completeDate?: string;
+		status?: GDPRRequestStatuses;
+	};
+
+	return !completeDate || status !== GDPRRequestStatuses.Completed;
+};
 
 /**
  * Function for searching and filtering requests.
@@ -221,10 +223,14 @@ const RequestList: React.FC<IRequestListProps> = ({
 
 	const {selectedItems} = useSelectionContext();
 
+	const authorized = currentUser.isAdmin();
+
 	const formattedFilterBy = filterBy
-		.filterNot(val => val.isEmpty())
+		?.filterNot(val => !!val && val.isEmpty())
 		.map((val, key) =>
-			getFilterOptionType(key) === 'radio' ? parseInt(val.first()) : val
+			getFilterOptionType(key as string) === 'radio' && val
+				? parseInt(val.first() ?? '')
+				: val
 		)
 		.toJS();
 
@@ -262,18 +268,13 @@ const RequestList: React.FC<IRequestListProps> = ({
 					variables: {
 						emailAddresses,
 						fileName,
-						ownerId: currentUser.id,
+						ownerId: String(currentUser.id),
 						types,
-						userId: currentUser.userId,
+						userId: String(currentUser.userId),
 						userName: currentUser.name
 					}
 				})
 					.then(() => {
-						analytics.track('Created User Data Request', {
-							types,
-							uploadedFile: !!fileName
-						});
-
 						addAlert({
 							alertType: Alert.Types.Success,
 							message: Liferay.Language.get(
@@ -334,7 +335,11 @@ const RequestList: React.FC<IRequestListProps> = ({
 					},
 					{
 						accessor: 'emailAddress',
-						className: 'table-cell-expand',
+						cellRenderer: ({
+							data: {emailAddresses}
+						}: {
+							data: {emailAddresses: string[]};
+						}) => <td>{emailAddresses.join(', ')}</td>,
 						label: Liferay.Language.get('email')
 					},
 					{
@@ -388,7 +393,7 @@ const RequestList: React.FC<IRequestListProps> = ({
 									'create-a-request-to-get-started'
 								)}
 
-								<a
+								<ClayLink
 									className='d-block mb-3'
 									href={URLConstants.RequestLogDocumentation}
 									key='DOCUMENTATION'
@@ -397,17 +402,18 @@ const RequestList: React.FC<IRequestListProps> = ({
 									{Liferay.Language.get(
 										'access-our-documentation-to-learn-more'
 									)}
-								</a>
+								</ClayLink>
 							</>
 						}
 						icon={{
 							border: false,
 							size: Sizes.XXXLarge,
-							symbol: 'ac-satellite'
+							symbol: 'ac_satellite'
 						}}
 						title={Liferay.Language.get('no-requests-found')}
 					/>
 				}
+				nowrap={false}
 				orderIOMap={orderIOMap}
 				page={page}
 				primary
@@ -437,55 +443,50 @@ const RequestList: React.FC<IRequestListProps> = ({
 					);
 
 					return (
+						authorized &&
+						!itemsSelected &&
 						status === GDPRRequestStatuses.Completed && (
-							<a
+							<ClayLink
 								className={classnames}
-								{...(!itemsSelected && {
-									href: `/o/proxy/download/data-control-tasks/${id}?projectGroupId=${groupId}`
-								})}
-								onClick={() =>
-									analytics.track(
-										'Downloaded User Data Request'
-									)
-								}
-								onKeyDown={() =>
-									analytics.track(
-										'Downloaded User Data Request'
-									)
-								}
+								// @ts-ignore
+								externalLink
+								href={`/o/proxy/download/data-control-tasks/${id}?projectGroupId=${groupId}`}
 								role='button'
 								tabIndex={0}
 							>
 								{Liferay.Language.get('download')}
-							</a>
+							</ClayLink>
 						)
 					);
 				}}
 				renderNav={() => (
 					<Nav>
 						<Nav.Item>
-							{selectedItems.size ? (
-								<a
-									className='btn btn-primary button-root nav-btn '
+							{authorized && selectedItems.size ? (
+								<ClayLink
+									className='btn btn-primary button-root nav-btn'
+									// @ts-ignore
+									externalLink
 									href={`/o/proxy/download/data-control-tasks?projectGroupId=${groupId}&ids=${selectedItems
 										.map(({id}) => id)
 										.join('&ids=')}`}
-									onClick={() =>
-										analytics.track(
-											'Downloaded User Data Request'
-										)
-									}
 								>
 									{Liferay.Language.get('download-all')}
-								</a>
+								</ClayLink>
 							) : (
-								<ClayButton
-									className='button-root nav-btn'
-									displayType='primary'
-									onClick={handleOpenNewRequestModal}
-								>
-									{Liferay.Language.get('create-request')}
-								</ClayButton>
+								<>
+									{authorized && (
+										<ClayButton
+											className='button-root nav-btn'
+											displayType='primary'
+											onClick={handleOpenNewRequestModal}
+										>
+											{Liferay.Language.get(
+												'create-request'
+											)}
+										</ClayButton>
+									)}
+								</>
 							)}
 						</Nav.Item>
 					</Nav>

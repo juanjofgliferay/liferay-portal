@@ -43,10 +43,9 @@ import {RECOMMENDATION_DELETE_MUTATION} from '../queries/RecommendationMutation'
 import {RootState} from 'shared/store';
 import {Routes, setUriQueryValues, toRoute} from 'shared/util/router';
 import {sub} from 'shared/util/lang';
-import {useMutation, useQuery} from '@apollo/react-hooks';
-import {useQueryPagination} from 'shared/hooks';
-import {User} from 'shared/util/records';
-import {withCurrentUser} from 'shared/hoc';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useMutation, useQuery} from '@apollo/client';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 
 const {
 	pagination: {cur: defaultPage}
@@ -68,7 +67,6 @@ const connector = connect(
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IRecommendationListProps extends PropsFromRedux {
-	currentUser: User;
 	groupId: string;
 	history: {
 		push: (value: string) => void;
@@ -79,7 +77,6 @@ interface IRecommendationListProps extends PropsFromRedux {
 const RecommendationList: React.FC<IRecommendationListProps> = ({
 	addAlert,
 	close,
-	currentUser,
 	groupId,
 	history,
 	open,
@@ -104,6 +101,8 @@ const RecommendationList: React.FC<IRecommendationListProps> = ({
 	const [deleteRecommendationJobs] = useMutation(
 		RECOMMENDATION_DELETE_MUTATION
 	);
+
+	const currentUser = useCurrentUser();
 
 	const singleSelectedItem =
 		selectedItems.size === 1 ? selectedItems.first() : null;
@@ -144,9 +143,9 @@ const RecommendationList: React.FC<IRecommendationListProps> = ({
 					message: successMessage as string
 				});
 
-				selectionDispatch({type: ACTION_TYPES.clearAll});
+				selectionDispatch?.({type: ACTION_TYPES.clearAll});
 
-				refetch();
+				refetch?.();
 
 				history.push(
 					setUriQueryValues(
@@ -191,9 +190,9 @@ const RecommendationList: React.FC<IRecommendationListProps> = ({
 									open(modalTypes.CONFIRMATION_MODAL, {
 										message: (
 											<div>
-												<h4 className='text-secondary'>
+												<div className='h4 text-secondary'>
 													{confirmationMessage}
-												</h4>
+												</div>
 
 												<p>
 													{singleSelectedItem
@@ -210,9 +209,8 @@ const RecommendationList: React.FC<IRecommendationListProps> = ({
 										onClose: close,
 										onSubmit: handleSubmit,
 										submitButtonDisplay: 'warning',
-										submitMessage: Liferay.Language.get(
-											'delete'
-										),
+										submitMessage:
+											Liferay.Language.get('delete'),
 										title: sub(
 											Liferay.Language.get('deleting-x'),
 											[
@@ -267,7 +265,7 @@ const RecommendationList: React.FC<IRecommendationListProps> = ({
 						accessor: 'name',
 						cellRenderer: NameCell,
 						cellRendererProps: {
-							routeFn: ({data: {id}}) =>
+							routeFn: ({data: {id}}: {data: {id: string}}) =>
 								toRoute(
 									Routes.SETTINGS_RECOMMENDATION_MODEL_VIEW,
 									{
@@ -351,8 +349,7 @@ const RecommendationList: React.FC<IRecommendationListProps> = ({
 	);
 };
 
-export default compose<any>(
-	withCurrentUser,
+export default compose<React.ComponentType<any>>(
 	withSelectionProvider,
 	connector
 )(RecommendationList);

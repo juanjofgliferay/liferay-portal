@@ -56,9 +56,10 @@ public class UpgradeProcessUtil {
 			}
 			else {
 				preparedStatement = connection.prepareStatement(
-					sql + " and type_ = " + UserConstants.TYPE_GUEST);
+					sql + " and type_ = ?");
 
 				preparedStatement.setLong(1, companyId);
+				preparedStatement.setInt(2, UserConstants.TYPE_GUEST);
 			}
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -132,10 +133,18 @@ public class UpgradeProcessUtil {
 		return false;
 	}
 
+	public static boolean isUpgradeClient() {
+		return _upgradeClient;
+	}
+
 	public static void setCreateIGImageDocumentType(
 		boolean createIGImageDocumentType) {
 
 		_createIGImageDocumentType = createIGImageDocumentType;
+	}
+
+	public static void setUpgradeClient(boolean upgradeClient) {
+		_upgradeClient = upgradeClient;
 	}
 
 	public static boolean upgradeProcess(
@@ -194,5 +203,6 @@ public class UpgradeProcessUtil {
 
 	private static boolean _createIGImageDocumentType;
 	private static final Map<Long, String> _languageIds = new HashMap<>();
+	private static boolean _upgradeClient;
 
 }

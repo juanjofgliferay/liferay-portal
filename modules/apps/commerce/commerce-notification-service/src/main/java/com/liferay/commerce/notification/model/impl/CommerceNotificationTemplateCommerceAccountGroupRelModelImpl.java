@@ -49,8 +49,10 @@ import java.util.function.Function;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateCommerceAccountGroupRelImpl
+ * @deprecated
  * @generated
  */
+@Deprecated
 @JSON(strict = true)
 public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 	extends BaseModelImpl<CommerceNotificationTemplateCommerceAccountGroupRel>
@@ -94,6 +96,9 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CNTemplateCAccountGroupRel";
+
+	public static final String ENTITY_ALIAS =
+		"commerceNotificationTemplateCommerceAccountGroupRel";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceNotificationTemplateCommerceAccountGroupRel.createDate DESC";
@@ -1061,3 +1066,4 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelModelImpl
 	private CommerceNotificationTemplateCommerceAccountGroupRel _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1103980139

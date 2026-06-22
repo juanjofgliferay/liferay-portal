@@ -14,6 +14,8 @@ import com.liferay.gradle.plugins.util.BndUtil;
 
 import java.io.File;
 
+import java.lang.reflect.Method;
+
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -22,13 +24,16 @@ import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.file.CopySpec;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.file.SourceDirectorySet;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.Convention;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -47,6 +52,9 @@ public class JspCDefaultsPlugin extends BaseDefaultsPlugin<JspCPlugin> {
 		"compile.jsp.include";
 
 	public static final Plugin<Project> INSTANCE = new JspCDefaultsPlugin();
+
+	public static final String JSP_PRECOMPILE_POOLING_ENABLED_PROPERTY_NAME =
+		"jsp.precompile.pooling.enabled.modules";
 
 	@Override
 	protected void applyPluginDefaults(Project project, JspCPlugin jspCPlugin) {
@@ -126,11 +134,17 @@ public class JspCDefaultsPlugin extends BaseDefaultsPlugin<JspCPlugin> {
 
 		JavaCompile compileJSPJavaCompile = compileJSPTaskProvider.get();
 
-		sb.append(
-			FileUtil.getAbsolutePath(
-				compileJSPJavaCompile.getDestinationDir()));
+		DirectoryProperty directoryProperty =
+			compileJSPJavaCompile.getDestinationDirectory();
 
-		sb.append(',');
+		Provider<File> provider = directoryProperty.getAsFile();
+
+		File file = provider.getOrNull();
+
+		if (file != null) {
+			sb.append(FileUtil.getAbsolutePath(file));
+			sb.append(',');
+		}
 
 		CompileJSPTask generateJSPJavaCompileJSPTask =
 			generateJSPJavaTaskProvider.get();
@@ -156,6 +170,35 @@ public class JspCDefaultsPlugin extends BaseDefaultsPlugin<JspCPlugin> {
 
 					generateJSPJavaCompileJSPTask.dependsOn(
 						processResourcesTaskProvider);
+
+					String methodName = "setPoolingEnabled";
+
+					try {
+						Class<CompileJSPTask> clazz = CompileJSPTask.class;
+
+						Method method = clazz.getMethod(
+							methodName, Boolean.class);
+
+						method.invoke(
+							generateJSPJavaCompileJSPTask,
+							GradleUtil.getProperty(
+								generateJSPJavaCompileJSPTask,
+								JSP_PRECOMPILE_POOLING_ENABLED_PROPERTY_NAME,
+								false));
+					}
+					catch (ReflectiveOperationException
+								reflectiveOperationException) {
+
+						Logger logger =
+							generateJSPJavaCompileJSPTask.getLogger();
+
+						if (logger.isInfoEnabled()) {
+							logger.info(
+								"Method {} is not available in this version " +
+									"of the JSP plugin. Skipping.",
+								methodName);
+						}
+					}
 
 					generateJSPJavaCompileJSPTask.setWebAppDir(
 						new Callable<File>() {

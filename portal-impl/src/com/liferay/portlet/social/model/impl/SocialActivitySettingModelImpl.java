@@ -90,6 +90,8 @@ public class SocialActivitySettingModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table SocialActivitySetting";
 
+	public static final String ENTITY_ALIAS = "socialActivitySetting";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY socialActivitySetting.activitySettingId ASC";
 
@@ -152,7 +154,7 @@ public class SocialActivitySettingModelImpl
 	public static final long ACTIVITYSETTINGID_COLUMN_BITMASK = 16L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialActivitySetting"));
 
 	public SocialActivitySettingModelImpl() {
@@ -888,3 +890,4 @@ public class SocialActivitySettingModelImpl
 	private SocialActivitySetting _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2068899531

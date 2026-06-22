@@ -34,7 +34,7 @@ public class VerifyUUID extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
-		if (!ArrayUtil.isEmpty(_verifiableUUIDModels)) {
+		if (ArrayUtil.isNotEmpty(_verifiableUUIDModels)) {
 			doVerify(_verifiableUUIDModels);
 		}
 	}
@@ -68,12 +68,15 @@ public class VerifyUUID extends VerifyProcess {
 
 		try (LoggingTimer loggingTimer = new LoggingTimer(
 				verifiableUUIDModel.getTableName());
+
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				StringBundler.concat(
 					"select ", verifiableUUIDModel.getPrimaryKeyColumnName(),
 					" from ", verifiableUUIDModel.getTableName(),
 					" where uuid_ is null or uuid_ = ''"));
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,

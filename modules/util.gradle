@@ -3,6 +3,9 @@ import com.liferay.gradle.plugins.source.formatter.FormatSourceTask
 import com.liferay.gradle.plugins.util.PortalTools
 import com.liferay.gradle.util.FileUtil
 import com.liferay.gradle.util.StringUtil
+import com.liferay.jenkins.results.parser.test.suite.BranchValidator
+
+import java.nio.file.Files
 
 import java.util.regex.Matcher
 
@@ -10,6 +13,10 @@ import org.gradle.util.GUtil
 
 buildscript {
 	apply from: file("build-buildscript.gradle"), to: buildscript
+
+	dependencies {
+		classpath group: "com.liferay", name: "com.liferay.jenkins.results.parser", version: "1.0.1847"
+	}
 }
 
 apply plugin: "com.liferay.source.formatter"
@@ -19,12 +26,15 @@ task appendHotfixQualifier
 task formatSourceCurrentBranch(type: FormatSourceTask)
 task formatSourceLatestAuthor(type: FormatSourceTask)
 task formatSourceLocalChanges(type: FormatSourceTask)
+task generateBranchValidationScript
+task postValidateBranchCommitStatus
 task printDependencyPath
 task removeHotfixQualifier
 task setUpLibs
 task setUpPortalTools
 task setUpYarnOfflineCache
 task updateYarnBinariesCache
+task validateBranch(type: Exec)
 task wrapperPortal(type: Wrapper)
 task wrapperProjectTemplates(type: Wrapper)
 task wrapperSubrepo(type: Wrapper)
@@ -36,6 +46,8 @@ Map<File, Properties> libDependenciesMap = libDependenciesFileTree.collectEntrie
 
 	[it.parentFile, properties]
 }
+
+File repoRootDir = project.rootDir.parentFile
 
 appendHotfixQualifier {
 	doLast {
@@ -78,6 +90,41 @@ formatSourceLatestAuthor {
 formatSourceLocalChanges {
 	description = "Runs Liferay Source Formatter to format the unstaged project files."
 	formatLocalChanges = true
+}
+
+generateBranchValidationScript {
+	Task task ->
+
+	File outputDir = file "${buildDir}/${task.name}"
+
+	outputs.file provider {
+		file "${outputDir}/validate_branch.sh"
+	}
+
+	outputs.upToDateWhen {
+		false
+	}
+
+	doLast {
+		BranchValidator.generateValidateBranchScript(repoRootDir.absolutePath, outputDir.absolutePath)
+
+		println ""
+		println "Script generated at: file://${outputs.files.singleFile}"
+	}
+}
+
+postValidateBranchCommitStatus {
+	logging.captureStandardOutput(LogLevel.INFO)
+
+	doLast {
+		BranchValidator.postValidateBranchCommitStatus(repoRootDir.absolutePath)
+	}
+
+	onlyIf {
+		Task validateTask = tasks.getByName("validateBranch")
+
+		validateTask.state.executed && (validateTask.state.failure == null)
+	}
 }
 
 printDependencyPath {
@@ -157,11 +204,21 @@ updateYarnBinariesCache {
 	}
 }
 
+validateBranch {
+	dependsOn generateBranchValidationScript
+
+	executable generateBranchValidationScript.outputs.files.singleFile
+	finalizedBy postValidateBranchCommitStatus
+	standardInput = System.in
+	workingDir repoRootDir
+}
+
 wrapperPortal {
 	File wrapperDir = projectDir.parentFile
 
-	distributionUrl = "../../tools/gradle-${gradle.gradleVersion}.LIFERAY-PATCHED-1-bin.zip"
 	dependsOn wrapperSubrepo
+
+	distributionUrl = "../../tools/gradle-${gradle.gradleVersion}.LIFERAY-PATCHED-1-bin.zip"
 
 	doLast {
 		File gradlewFile = new File(wrapperDir, "gradlew")
@@ -169,11 +226,11 @@ wrapperPortal {
 		ant.replace(
 			failOnNoReplacements: true,
 			file: gradlewFile,
-			token: '# Use the maximum available, or set MAX_FD != -1 to use that value.',
+			token: '# Collect all arguments for the java command:',
 			value: '''\
 DEFAULT_JVM_OPTS="$DEFAULT_JVM_OPTS \\\"-Dgradle.user.home=$APP_HOME/.gradle\\\""
 
-# Use the maximum available, or set MAX_FD != -1 to use that value.'''
+# Collect all arguments for the java command:'''
 		)
 
 		ant.replace(
@@ -209,6 +266,8 @@ set DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% "-Dgradle.user.home=%APP_HOME%\\.gradle"
 wrapperProjectTemplates {
 	File wrapperDir = new File(projectDir.parentFile, "modules/sdk/project-templates/project-templates/src/main/resources/gradle-wrapper")
 
+	// distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-${gradle.gradleVersion}-bin.zip"
+
 	jarFile = new File(wrapperDir, "gradle/wrapper/gradle-wrapper.jar")
 	scriptFile = new File(wrapperDir, "gradlew")
 
@@ -222,17 +281,19 @@ wrapperProjectTemplates {
 wrapperSubrepo {
 	File wrapperDir = new File(projectDir.parentFile, "tools/subrepo")
 
+	// distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-${gradle.gradleVersion}-bin.zip"
+
 	doLast {
 		File gradlewFile = new File(wrapperDir, "gradlew")
 
 		ant.replace(
 			failOnNoReplacements: true,
 			file: gradlewFile,
-			token: '# Use the maximum available, or set MAX_FD != -1 to use that value.',
+			token: '# Collect all arguments for the java command:',
 			value: '''\
 DEFAULT_JVM_OPTS="$DEFAULT_JVM_OPTS \\\"-Dgradle.user.home=$APP_HOME/.gradle\\\""
 
-# Use the maximum available, or set MAX_FD != -1 to use that value.'''
+# Collect all arguments for the java command:'''
 		)
 
 		File gradlewBatFile = new File(wrapperDir, "gradlew.bat")
@@ -347,7 +408,7 @@ private void _createSetUpPortalToolTasks() {
 }
 
 private void _createYarnTasks() {
-	FileTree yarnLockFileTree = fileTree(dir: rootDir, includes: ["yarn.lock", "private/yarn.lock", "apps/*/yarn.lock", "private/apps/*/yarn.lock"])
+	FileTree yarnLockFileTree = fileTree(dir: rootDir, includes: ["apps/*/yarn.lock", "dxp/apps/osb/osb-faro/yarn.lock", "private/apps/*/yarn.lock", "private/yarn.lock", "yarn.lock"])
 
 	yarnLockFileTree.each {
 		File yarnLockFile ->
@@ -371,6 +432,12 @@ private void _createYarnTasks() {
 			setUpYarnOfflineCache.finalizedBy yarnTask
 
 			yarnTask = tasks.create(name: "updateYarnBinariesCache" + _camelCase(yarnLockFile.parentFile.name), type: Copy) {
+				exclude {
+					FileTreeElement fileTreeElement ->
+
+					Files.isSymbolicLink(fileTreeElement.file.toPath())
+				}
+
 				from nodeModulesCacheDir
 				into offlineCacheDir
 

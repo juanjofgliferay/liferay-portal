@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,19 +28,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
  * @generated
  */
 @Generated("")
-@GraphQLName("AccountOrganization")
+@GraphQLName(
+	description = "Link between an account and a Liferay organization. Used to mirror an organizational hierarchy into the commerce domain so that users tied to the organization inherit the account context.",
+	value = "AccountOrganization"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Link between an account and a Liferay organization. Used to mirror an organizational hierarchy into the commerce domain so that users tied to the organization inherit the account context."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "AccountOrganization")
 public class AccountOrganization implements Serializable {
@@ -51,62 +56,108 @@ public class AccountOrganization implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the parent account that owns the link (FK identifier). Read-only on this schema.",
+		example = "30130"
+	)
 	public Long getAccountId() {
+		if (_accountIdSupplier != null) {
+			accountId = _accountIdSupplier.get();
+
+			_accountIdSupplier = null;
+		}
+
 		return accountId;
 	}
 
 	public void setAccountId(Long accountId) {
 		this.accountId = accountId;
+
+		_accountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccountId(
 		UnsafeSupplier<Long, Exception> accountIdUnsafeSupplier) {
 
-		try {
-			accountId = accountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountIdSupplier = () -> {
+			try {
+				return accountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the parent account that owns the link (FK identifier). Read-only on this schema."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long accountId;
 
-	@Schema(example = "Organization Name")
+	@JsonIgnore
+	private Supplier<Long> _accountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Display name of the linked organization. Read-only; mirrored from the organization record.",
+		example = "Organization Name"
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Display name of the linked organization. Read-only; mirrored from the organization record."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema(example = "UAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the linked organization. Alternative to `organizationId` on POST; resolved against the platform organization directory and rejected when no matching organization exists. Not returned on read.",
+		example = "AB-34098-789-N"
+	)
 	public String getOrganizationExternalReferenceCode() {
+		if (_organizationExternalReferenceCodeSupplier != null) {
+			organizationExternalReferenceCode =
+				_organizationExternalReferenceCodeSupplier.get();
+
+			_organizationExternalReferenceCodeSupplier = null;
+		}
+
 		return organizationExternalReferenceCode;
 	}
 
@@ -115,6 +166,8 @@ public class AccountOrganization implements Serializable {
 
 		this.organizationExternalReferenceCode =
 			organizationExternalReferenceCode;
+
+		_organizationExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -122,78 +175,120 @@ public class AccountOrganization implements Serializable {
 		UnsafeSupplier<String, Exception>
 			organizationExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			organizationExternalReferenceCode =
-				organizationExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_organizationExternalReferenceCodeSupplier = () -> {
+			try {
+				return organizationExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the linked organization. Alternative to `organizationId` on POST; resolved against the platform organization directory and rejected when no matching organization exists. Not returned on read."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String organizationExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _organizationExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30002")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the linked organization (FK identifier). Alternative to `organizationExternalReferenceCode` on POST.",
+		example = "30002"
+	)
 	public Long getOrganizationId() {
+		if (_organizationIdSupplier != null) {
+			organizationId = _organizationIdSupplier.get();
+
+			_organizationIdSupplier = null;
+		}
+
 		return organizationId;
 	}
 
 	public void setOrganizationId(Long organizationId) {
 		this.organizationId = organizationId;
+
+		_organizationIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrganizationId(
 		UnsafeSupplier<Long, Exception> organizationIdUnsafeSupplier) {
 
-		try {
-			organizationId = organizationIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_organizationIdSupplier = () -> {
+			try {
+				return organizationIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the linked organization (FK identifier). Alternative to `organizationExternalReferenceCode` on POST."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long organizationId;
 
-	@Schema(example = "/Parent Organization/Organization Name")
+	@JsonIgnore
+	private Supplier<Long> _organizationIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Slash-delimited path from the root of the organization tree to the linked organization. Read-only; mirrored from the organization record.",
+		example = "/Parent Organization/Organization Name"
+	)
 	public String getTreePath() {
+		if (_treePathSupplier != null) {
+			treePath = _treePathSupplier.get();
+
+			_treePathSupplier = null;
+		}
+
 		return treePath;
 	}
 
 	public void setTreePath(String treePath) {
 		this.treePath = treePath;
+
+		_treePathSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTreePath(
 		UnsafeSupplier<String, Exception> treePathUnsafeSupplier) {
 
-		try {
-			treePath = treePathUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_treePathSupplier = () -> {
+			try {
+				return treePathUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Slash-delimited path from the root of the organization tree to the linked organization. Read-only; mirrored from the organization record."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String treePath;
+
+	@JsonIgnore
+	private Supplier<String> _treePathSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -222,6 +317,8 @@ public class AccountOrganization implements Serializable {
 
 		sb.append("{");
 
+		Long accountId = getAccountId();
+
 		if (accountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -231,6 +328,8 @@ public class AccountOrganization implements Serializable {
 
 			sb.append(accountId);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -246,6 +345,9 @@ public class AccountOrganization implements Serializable {
 			sb.append("\"");
 		}
 
+		String organizationExternalReferenceCode =
+			getOrganizationExternalReferenceCode();
+
 		if (organizationExternalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -260,6 +362,8 @@ public class AccountOrganization implements Serializable {
 			sb.append("\"");
 		}
 
+		Long organizationId = getOrganizationId();
+
 		if (organizationId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -269,6 +373,8 @@ public class AccountOrganization implements Serializable {
 
 			sb.append(organizationId);
 		}
+
+		String treePath = getTreePath();
 
 		if (treePath != null) {
 			if (sb.length() > 1) {
@@ -289,8 +395,8 @@ public class AccountOrganization implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.account.dto.v1_0.AccountOrganization",
 		name = "x-class-name"
 	)
@@ -336,7 +442,10 @@ public class AccountOrganization implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -382,3 +491,4 @@ public class AccountOrganization implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-149884098

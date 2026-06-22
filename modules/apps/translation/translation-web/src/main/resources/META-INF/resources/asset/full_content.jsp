@@ -12,7 +12,7 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 %>
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>" rel="stylesheet" />
+	<aui:link hashedFile="<%= true %>" href="translation-web/css/main.css" rel="stylesheet" />
 </liferay-util:html-top>
 
 <clay:container-fluid
@@ -119,7 +119,7 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 									</label>
 
 									<div class="translation-editor-preview" dir="<%= sourceContentDir %>">
-										<%= sourceContent %>
+										<%= viewTranslationDisplayContext.getSanitizedHTML(sourceContent) %>
 									</div>
 								</c:when>
 								<c:otherwise>
@@ -138,7 +138,7 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 									</label>
 
 									<div class="translation-editor-preview" dir="<%= LanguageUtil.get(viewTranslationDisplayContext.getTargetLocale(), "lang.dir") %>">
-										<%= targetContent %>
+										<%= viewTranslationDisplayContext.getSanitizedHTML(targetContent) %>
 									</div>
 								</c:when>
 								<c:otherwise>

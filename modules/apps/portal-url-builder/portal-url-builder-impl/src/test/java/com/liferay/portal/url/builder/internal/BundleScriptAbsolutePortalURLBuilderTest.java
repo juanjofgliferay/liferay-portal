@@ -5,6 +5,7 @@
 
 package com.liferay.portal.url.builder.internal;
 
+import com.liferay.portal.kernel.frontend.hashed.files.CachingStrategy;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.BundleScriptAbsolutePortalURLBuilder;
@@ -33,7 +34,7 @@ public class BundleScriptAbsolutePortalURLBuilderTest
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Parameterized.Parameters(name = "{0}: context={1}, proxy={2}, cdnHost={3}")
+	@Parameterized.Parameters(name = "{0}: cdnHost={1}, context={2}, proxy={3}")
 	public static Collection<Object[]> data() {
 		return Arrays.asList(
 			new Object[][] {
@@ -49,8 +50,9 @@ public class BundleScriptAbsolutePortalURLBuilderTest
 		super.setUp();
 
 		_absolutePortalURLBuilder = new AbsolutePortalURLBuilderImpl(
-			mockCacheHelper(), mockPortal(context, proxy, cdnHost),
-			mockHttpServletRequest());
+			mockCacheHelper(),
+			mockHashedFilesRegistry(CachingStrategy.DO_NOT_USE_HASHES),
+			mockPortal(context, proxy, cdnHost), mockHttpServletRequest());
 
 		_bundleScriptAbsolutePortalURLBuilder =
 			_absolutePortalURLBuilder.forBundleScript(mockBundle(), "index.js");
@@ -95,43 +97,43 @@ public class BundleScriptAbsolutePortalURLBuilderTest
 			_bundleScriptAbsolutePortalURLBuilder.build());
 	}
 
-	@Parameterized.Parameter(3)
+	@Parameterized.Parameter(1)
 	public boolean cdnHost;
 
-	@Parameterized.Parameter(1)
+	@Parameterized.Parameter(2)
 	public boolean context;
 
 	@Parameterized.Parameter
 	public int index;
 
-	@Parameterized.Parameter(2)
+	@Parameterized.Parameter(3)
 	public boolean proxy;
 
 	private static final String[] _RESULTS = {
 		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"http://cdn-host/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
-			"languageId=es",
 		"/proxy/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"http://cdn-host/proxy/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
-			"languageId=es",
 		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"http://cdn-host/context/o/wcp/index.js?mac=aG9saQ==&" +
-			"browserId=firefox&languageId=es",
 		"/proxy/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
 			"languageId=es",
+		"http://cdn-host/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
+			"languageId=es",
+		"http://cdn-host/proxy/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
+			"languageId=es",
+		"http://cdn-host/context/o/wcp/index.js?mac=aG9saQ==&" +
+			"browserId=firefox&languageId=es",
 		"http://cdn-host/proxy/context/o/wcp/index.js?mac=aG9saQ==&" +
 			"browserId=firefox&languageId=es"
 	};
 
 	private static final String[] _RESULTS_IGNORE_CDN = {
 		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/proxy/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"/proxy/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/proxy/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
 			"languageId=es",
+		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"/proxy/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/proxy/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
 			"languageId=es"
 	};
@@ -139,25 +141,25 @@ public class BundleScriptAbsolutePortalURLBuilderTest
 	private static final String[] _RESULTS_IGNORE_CDN_AND_PROXY = {
 		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es"
 	};
 
 	private static final String[] _RESULTS_IGNORE_PROXY = {
 		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
-		"http://cdn-host/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
-			"languageId=es",
 		"/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"http://cdn-host/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
 			"languageId=es",
-		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
+		"http://cdn-host/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&" +
+			"languageId=es",
 		"http://cdn-host/context/o/wcp/index.js?mac=aG9saQ==&" +
 			"browserId=firefox&languageId=es",
-		"/context/o/wcp/index.js?mac=aG9saQ==&browserId=firefox&languageId=es",
 		"http://cdn-host/context/o/wcp/index.js?mac=aG9saQ==&" +
 			"browserId=firefox&languageId=es"
 	};

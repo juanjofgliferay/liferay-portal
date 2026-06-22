@@ -7,6 +7,7 @@ package com.liferay.search.experiences.internal.upgrade.v3_0_0;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -121,13 +122,17 @@ public class SXPBlueprintUpgradeProcess extends UpgradeProcess {
 					"'%com_liferay_portal_search_web_low_level_search_options_",
 					"portlet_LowLevelSearchOptionsPortlet_INSTANCE%' and ",
 					"PortletPreferenceValue.name = 'attributes'"));
+
 			ResultSet resultSet1 = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
 				"select externalReferenceCode from SXPBlueprint where " +
 					"sxpBlueprintId = ?");
-			PreparedStatement preparedStatement3 = connection.prepareStatement(
-				"update PortletPreferenceValue set smallValue = ? where " +
-					"portletPreferencesId = ? and name = 'attributes'")) {
+			PreparedStatement preparedStatement3 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update PortletPreferenceValue set smallValue = ? where " +
+						"portletPreferencesId = ? and name = 'attributes'")) {
 
 			while (resultSet1.next()) {
 				String smallValue = resultSet1.getString("smallValue");
@@ -138,7 +143,7 @@ public class SXPBlueprintUpgradeProcess extends UpgradeProcess {
 				ResultSet resultSet2 = preparedStatement2.executeQuery();
 
 				if (!resultSet2.next()) {
-					return;
+					continue;
 				}
 
 				String newSmallValue = _updateSmallValueJSON(
@@ -169,14 +174,18 @@ public class SXPBlueprintUpgradeProcess extends UpgradeProcess {
 					"SearchBarPortlet_INSTANCE_%' and ",
 					"PortletPreferenceValue.name = ",
 					"'suggestionsContributorConfigurations'"));
+
 			ResultSet resultSet1 = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
 				"select externalReferenceCode from SXPBlueprint where " +
 					"sxpBlueprintId = ?");
-			PreparedStatement preparedStatement3 = connection.prepareStatement(
-				"update PortletPreferenceValue set largeValue = ? where " +
-					"portletPreferencesId = ? and name = " +
-						"'suggestionsContributorConfigurations'")) {
+			PreparedStatement preparedStatement3 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update PortletPreferenceValue set largeValue = ? where " +
+						"portletPreferencesId = ? and name = " +
+							"'suggestionsContributorConfigurations'")) {
 
 			while (resultSet1.next()) {
 				String largeValue = resultSet1.getString("largeValue");
@@ -187,7 +196,7 @@ public class SXPBlueprintUpgradeProcess extends UpgradeProcess {
 				ResultSet resultSet2 = preparedStatement2.executeQuery();
 
 				if (!resultSet2.next()) {
-					return;
+					continue;
 				}
 
 				String newLargeValue = StringUtil.replace(
@@ -227,23 +236,26 @@ public class SXPBlueprintUpgradeProcess extends UpgradeProcess {
 					"'%com_liferay_search_experiences_web_internal_blueprint_",
 					"options_portlet_SXPBlueprintOptionsPortlet_INSTANCE_%' ",
 					"and PortletPreferenceValue.name = 'sxpBlueprintId'"));
+
 			ResultSet resultSet1 = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
 				"select externalReferenceCode from SXPBlueprint where " +
 					"sxpBlueprintId = ?");
-			PreparedStatement preparedStatement3 = connection.prepareStatement(
-				"update PortletPreferenceValue set name = ?, smallValue = ? " +
-					"where portletPreferencesId = ? and name = " +
-						"'sxpBlueprintId'")) {
+			PreparedStatement preparedStatement3 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update PortletPreferenceValue set name = ?, smallValue " +
+						"= ? where portletPreferencesId = ? and name = " +
+							"'sxpBlueprintId'")) {
 
 			while (resultSet1.next()) {
-				preparedStatement2.setString(
-					1, resultSet1.getString("smallValue"));
+				preparedStatement2.setLong(1, resultSet1.getLong("smallValue"));
 
 				ResultSet resultSet2 = preparedStatement2.executeQuery();
 
 				if (!resultSet2.next()) {
-					return;
+					continue;
 				}
 
 				preparedStatement3.setString(

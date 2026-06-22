@@ -51,16 +51,20 @@ public class ExperimentUtilTest {
 
 		SegmentsEntry segmentsEntry = _createSegmentsEntry(locale);
 
-		long segmentsEntryId = RandomTestUtil.randomLong();
+		String segmentsEntryERC = RandomTestUtil.randomString();
+		long segmentsEntryGroupId = RandomTestUtil.randomLong();
 
 		Mockito.when(
-			_segmentsEntryLocalService.fetchSegmentsEntry(segmentsEntryId)
+			_segmentsEntryLocalService.
+				fetchSegmentsEntryByExternalReferenceCode(
+					segmentsEntryERC, segmentsEntryGroupId)
 		).thenReturn(
 			segmentsEntry
 		);
 
 		SegmentsExperience segmentsExperience = _createSegmentsExperience(
-			locale, segmentsEntryId);
+			locale, RandomTestUtil.randomLong(), segmentsEntryERC,
+			segmentsEntryGroupId);
 
 		long segmentsExperienceId = RandomTestUtil.randomLong();
 
@@ -139,16 +143,20 @@ public class ExperimentUtilTest {
 
 		SegmentsEntry segmentsEntry = _createSegmentsEntry(locale);
 
-		long segmentsEntryId = RandomTestUtil.randomLong();
+		String segmentsEntryERC = RandomTestUtil.randomString();
+		long segmentsEntryGroupId = RandomTestUtil.randomLong();
 
 		Mockito.when(
-			_segmentsEntryLocalService.fetchSegmentsEntry(segmentsEntryId)
+			_segmentsEntryLocalService.
+				fetchSegmentsEntryByExternalReferenceCode(
+					segmentsEntryERC, segmentsEntryGroupId)
 		).thenReturn(
 			segmentsEntry
 		);
 
 		SegmentsExperience segmentsExperience = _createSegmentsExperience(
-			locale, segmentsEntryId);
+			locale, RandomTestUtil.randomLong(), segmentsEntryERC,
+			segmentsEntryGroupId);
 
 		long segmentsExperienceId = RandomTestUtil.randomLong();
 
@@ -229,16 +237,20 @@ public class ExperimentUtilTest {
 
 		SegmentsEntry segmentsEntry = _createSegmentsEntry(locale);
 
-		long segmentsEntryId = RandomTestUtil.randomLong();
+		String segmentsEntryERC = RandomTestUtil.randomString();
+		long segmentsEntryGroupId = RandomTestUtil.randomLong();
 
 		Mockito.when(
-			_segmentsEntryLocalService.fetchSegmentsEntry(segmentsEntryId)
+			_segmentsEntryLocalService.
+				fetchSegmentsEntryByExternalReferenceCode(
+					segmentsEntryERC, segmentsEntryGroupId)
 		).thenReturn(
 			segmentsEntry
 		);
 
 		SegmentsExperience segmentsExperience = _createSegmentsExperience(
-			locale, segmentsEntryId);
+			locale, RandomTestUtil.randomLong(), segmentsEntryERC,
+			segmentsEntryGroupId);
 
 		long segmentsExperienceId = RandomTestUtil.randomLong();
 
@@ -362,7 +374,8 @@ public class ExperimentUtilTest {
 	}
 
 	private SegmentsExperience _createSegmentsExperience(
-		Locale locale, long segmentsEntryId) {
+		Locale locale, long segmentsEntryId, String segmentsEntryERC,
+		long segmentsEntryGroupId) {
 
 		SegmentsExperience segmentsExperience = Mockito.mock(
 			SegmentsExperience.class);
@@ -372,6 +385,30 @@ public class ExperimentUtilTest {
 		).when(
 			segmentsExperience
 		).getSegmentsEntryId();
+
+		Mockito.doReturn(
+			segmentsEntryERC
+		).when(
+			segmentsExperience
+		).getSegmentsEntryERC();
+
+		Mockito.doReturn(
+			RandomTestUtil.randomLong()
+		).when(
+			segmentsExperience
+		).getCompanyId();
+
+		Mockito.doReturn(
+			segmentsEntryGroupId
+		).when(
+			segmentsExperience
+		).getGroupId();
+
+		Mockito.doReturn(
+			StringPool.BLANK
+		).when(
+			segmentsExperience
+		).getSegmentsEntryScopeERC();
 
 		Mockito.doReturn(
 			RandomTestUtil.randomString()
@@ -474,6 +511,12 @@ public class ExperimentUtilTest {
 		).when(
 			segmentsExperiment
 		).getStatus();
+
+		Mockito.doReturn(
+			"AB"
+		).when(
+			segmentsExperiment
+		).getType();
 
 		return segmentsExperiment;
 	}

@@ -5,21 +5,28 @@
 
 package com.liferay.layout.admin.web.internal.info.item.helper;
 
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.renderer.FragmentRendererController;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.layout.admin.web.internal.info.item.LayoutInfoItemFields;
-import com.liferay.layout.admin.web.internal.util.InfoFieldUtil;
+import com.liferay.layout.util.InfoFieldUtil;
+import com.liferay.layout.util.LayoutServiceContextHelperUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalServiceUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,12 +48,34 @@ public class LayoutInfoItemFieldValuesProviderHelper {
 	public InfoItemFieldValues getInfoItemFieldValues(
 		Layout layout, long segmentsExperienceId) {
 
-		long defaultSegmentsExperienceId =
-			SegmentsExperienceLocalServiceUtil.fetchDefaultSegmentsExperienceId(
-				layout.getPlid());
+		try (AutoCloseable autoCloseable = _getServiceContextAutoCloseable(
+				layout)) {
 
-		if (segmentsExperienceId != defaultSegmentsExperienceId) {
+			long defaultSegmentsExperienceId =
+				SegmentsExperienceLocalServiceUtil.
+					fetchDefaultSegmentsExperienceId(layout.getPlid());
+
+			if (segmentsExperienceId != defaultSegmentsExperienceId) {
+				return InfoItemFieldValues.builder(
+				).infoFieldValues(
+					_getLayoutInfoFieldValues(layout, segmentsExperienceId)
+				).infoItemReference(
+					_getInfoItemReference(
+						defaultSegmentsExperienceId, layout,
+						segmentsExperienceId)
+				).build();
+			}
+
 			return InfoItemFieldValues.builder(
+			).infoFieldValue(
+				new InfoFieldValue<>(
+					LayoutInfoItemFields.nameInfoField,
+					InfoLocalizedValue.<String>builder(
+					).defaultLocale(
+						LocaleUtil.fromLanguageId(layout.getDefaultLanguageId())
+					).values(
+						layout.getNameMap()
+					).build())
 			).infoFieldValues(
 				_getLayoutInfoFieldValues(layout, segmentsExperienceId)
 			).infoItemReference(
@@ -54,23 +83,9 @@ public class LayoutInfoItemFieldValuesProviderHelper {
 					defaultSegmentsExperienceId, layout, segmentsExperienceId)
 			).build();
 		}
-
-		return InfoItemFieldValues.builder(
-		).infoFieldValue(
-			new InfoFieldValue<>(
-				LayoutInfoItemFields.nameInfoField,
-				InfoLocalizedValue.<String>builder(
-				).defaultLocale(
-					LocaleUtil.fromLanguageId(layout.getDefaultLanguageId())
-				).values(
-					layout.getNameMap()
-				).build())
-		).infoFieldValues(
-			_getLayoutInfoFieldValues(layout, segmentsExperienceId)
-		).infoItemReference(
-			_getInfoItemReference(
-				defaultSegmentsExperienceId, layout, segmentsExperienceId)
-		).build();
+		catch (Exception exception) {
+			return ReflectionUtil.throwException(exception);
+		}
 	}
 
 	private InfoItemReference _getInfoItemReference(
@@ -93,7 +108,11 @@ public class LayoutInfoItemFieldValuesProviderHelper {
 			JSONObject processorJSONObject = jsonObject.getJSONObject(
 				processorKey);
 
-			if (!processorJSONObject.has(name)) {
+			if (!processorJSONObject.has(name) ||
+				processorKey.equals(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR)) {
+
 				continue;
 			}
 
@@ -137,18 +156,46 @@ public class LayoutInfoItemFieldValuesProviderHelper {
 
 			InfoFieldUtil.forEachInfoField(
 				_fragmentRendererController, layout, segmentsExperienceId,
-				(name, infoField, unsafeSupplier) -> infoFieldValues.add(
-					new InfoFieldValue<>(
-						infoField,
-						_getInfoLocalizedValue(
-							unsafeSupplier.get(), name,
-							layout.getDefaultLanguageId()))));
+				(infoField, type, unsafeSupplier) -> {
+					InfoLocalizedValue<String> infoLocalizedValue =
+						infoField.getLabelInfoLocalizedValue();
+
+					infoFieldValues.add(
+						new InfoFieldValue<>(
+							infoField,
+							_getInfoLocalizedValue(
+								unsafeSupplier.get(),
+								infoLocalizedValue.getValue(),
+								layout.getDefaultLanguageId())));
+				});
 
 			return infoFieldValues;
 		}
 		catch (JSONException jsonException) {
 			return ReflectionUtil.throwException(jsonException);
 		}
+	}
+
+	private AutoCloseable _getServiceContextAutoCloseable(Layout layout)
+		throws Exception {
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return null;
+		}
+
+		HttpServletRequest httpServletRequest = serviceContext.getRequest();
+
+		if ((httpServletRequest == null) ||
+			(httpServletRequest.getAttribute(WebKeys.THEME_DISPLAY) != null)) {
+
+			return null;
+		}
+
+		return LayoutServiceContextHelperUtil.getServiceContextAutoCloseable(
+			layout);
 	}
 
 	private final FragmentRendererController _fragmentRendererController;

@@ -111,11 +111,7 @@ public class SubscriptionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		Subscription newSubscription = _persistence.create(pk);
-
-		newSubscription.setMvccVersion(RandomTestUtil.nextLong());
+		Subscription newSubscription = addSubscription();
 
 		newSubscription.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -196,6 +192,14 @@ public class SubscriptionPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByG_U(0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_C() throws Exception {
+		_persistence.countByC_C(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_C(0L, 0L);
 	}
 
 	@Test
@@ -555,8 +559,6 @@ public class SubscriptionPersistenceTest {
 
 		Subscription subscription = _persistence.create(pk);
 
-		subscription.setMvccVersion(RandomTestUtil.nextLong());
-
 		subscription.setCtCollectionId(RandomTestUtil.nextLong());
 
 		subscription.setGroupId(RandomTestUtil.nextLong());
@@ -587,3 +589,4 @@ public class SubscriptionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-261312952

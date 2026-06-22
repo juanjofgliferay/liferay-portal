@@ -5,13 +5,12 @@
 
 package com.liferay.layout.type.controller.portlet.internal.display.context;
 
-import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
-import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.Validator;
 
 /**
@@ -20,12 +19,11 @@ import com.liferay.portal.kernel.util.Validator;
 public class PortletLayoutDisplayContext {
 
 	public PortletLayoutDisplayContext(
-		LayoutPageTemplateEntryLocalService layoutPageTemplateEntryLocalService,
+		LayoutLocalService layoutLocalService,
 		LayoutPageTemplateStructureLocalService
 			layoutPageTemplateStructureLocalService) {
 
-		_layoutPageTemplateEntryLocalService =
-			layoutPageTemplateEntryLocalService;
+		_layoutLocalService = layoutLocalService;
 		_layoutPageTemplateStructureLocalService =
 			layoutPageTemplateStructureLocalService;
 	}
@@ -35,12 +33,15 @@ public class PortletLayoutDisplayContext {
 			return _layoutStructure;
 		}
 
-		LayoutPageTemplateEntry masterLayoutPageTemplateEntry =
-			_layoutPageTemplateEntryLocalService.
-				fetchLayoutPageTemplateEntryByPlid(
-					layout.getMasterLayoutPlid());
+		Layout masterLayout = null;
 
-		if (masterLayoutPageTemplateEntry == null) {
+		long masterLayoutPlid = layout.getMasterLayoutPlid();
+
+		if (masterLayoutPlid > 0) {
+			masterLayout = _layoutLocalService.fetchLayout(masterLayoutPlid);
+		}
+
+		if (masterLayout == null) {
 			_layoutStructure = _getDefaultMasterLayoutStructure();
 
 			return _layoutStructure;
@@ -49,8 +50,7 @@ public class PortletLayoutDisplayContext {
 		LayoutPageTemplateStructure masterLayoutPageTemplateStructure =
 			_layoutPageTemplateStructureLocalService.
 				fetchLayoutPageTemplateStructure(
-					masterLayoutPageTemplateEntry.getGroupId(),
-					masterLayoutPageTemplateEntry.getPlid());
+					masterLayout.getGroupId(), masterLayout.getPlid());
 
 		String data =
 			masterLayoutPageTemplateStructure.
@@ -79,8 +79,7 @@ public class PortletLayoutDisplayContext {
 		return layoutStructure;
 	}
 
-	private final LayoutPageTemplateEntryLocalService
-		_layoutPageTemplateEntryLocalService;
+	private final LayoutLocalService _layoutLocalService;
 	private final LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
 	private LayoutStructure _layoutStructure;

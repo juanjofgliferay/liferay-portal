@@ -11,17 +11,19 @@ import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+
+import jakarta.ws.rs.core.Response;
 
 import java.net.URI;
 
 import java.util.Collections;
 import java.util.Map;
-
-import javax.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -61,7 +63,8 @@ public class SecurityTest extends BaseClientTestCase {
 			"SAMEORIGIN",
 			parseXFrameOptionsHeader(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", "oauthTestApplicationCode"
@@ -80,7 +83,8 @@ public class SecurityTest extends BaseClientTestCase {
 			"invalid_request",
 			parseErrorParameter(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", "oauthTestApplicationCode"
@@ -96,7 +100,8 @@ public class SecurityTest extends BaseClientTestCase {
 	public void testPreventCSRFUsingPKCE() {
 		String authorizationCode = parseAuthorizationCodeString(
 			getCodeResponse(
-				"test@liferay.com", "test", null,
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null,
 				getCodeFunction(
 					webTarget -> webTarget.queryParam(
 						"client_id", "oauthTestApplicationCodePKCE"
@@ -126,7 +131,8 @@ public class SecurityTest extends BaseClientTestCase {
 
 		String responseState = parseStateString(
 			getCodeResponse(
-				"test@liferay.com", "test", null,
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null,
 				getCodeFunction(
 					webTarget -> webTarget.queryParam(
 						"client_id", "oauthTestApplicationCode"
@@ -145,12 +151,13 @@ public class SecurityTest extends BaseClientTestCase {
 	@Test
 	public void testPreventOpenRedirect() {
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", "oauthTestApplicationCode"
 				).queryParam(
-					"redirect_uri", "http://invalid:8080"
+					"redirect_uri",
+					"http://invalid:" + PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				)));
@@ -166,12 +173,15 @@ public class SecurityTest extends BaseClientTestCase {
 	public void testRedirectUriMustMatch() {
 		String authorizationCode = parseAuthorizationCodeString(
 			getCodeResponse(
-				"test@liferay.com", "test", null,
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null,
 				getCodeFunction(
 					webTarget -> webTarget.queryParam(
 						"client_id", "oauthTestApplicationCode"
 					).queryParam(
-						"redirect_uri", "http://redirecturi:8080"
+						"redirect_uri",
+						"http://redirecturi:" +
+							PortalUtil.getPortalServerPort(false)
 					).queryParam(
 						"response_type", "code"
 					))));
@@ -183,38 +193,9 @@ public class SecurityTest extends BaseClientTestCase {
 			getToken(
 				"oauthTestApplicationCode", null,
 				getExchangeAuthorizationCodeBiFunction(
-					authorizationCode, "http://invalid:8080"),
+					authorizationCode,
+					"http://invalid:" + PortalUtil.getPortalServerPort(false)),
 				this::parseError));
-	}
-
-	public static class SecurityTestPreparatorBundleActivator
-		extends BaseTestPreparatorBundleActivator {
-
-		@Override
-		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
-
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
-
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCode",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
-				Collections.singletonList("everything"));
-
-			createOAuth2ApplicationWithNone(
-				defaultCompanyId, user, "oauthTestApplicationCodePKCE",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"), false,
-				Collections.singletonList("everything"), false);
-
-			Company company = CompanyLocalServiceUtil.getCompany(
-				defaultCompanyId);
-
-			createOAuth2Application(
-				defaultCompanyId, company.getGuestUser(),
-				"oauthTestApplicationDefaultUser");
-		}
-
 	}
 
 	protected String getBodyAsString(Response response) {
@@ -251,6 +232,39 @@ public class SecurityTest extends BaseClientTestCase {
 
 	protected String parseXFrameOptionsHeader(Response response) {
 		return response.getHeaderString("x-frame-options");
+	}
+
+	private User _user;
+
+	private class SecurityTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
+
+		@Override
+		protected void prepareTest() throws Exception {
+			long companyId = TestPropsValues.getCompanyId();
+
+			_user = UserTestUtil.getAdminUser(companyId);
+
+			createOAuth2Application(
+				companyId, _user, "oauthTestApplicationCode",
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
+				Collections.singletonList("everything"));
+
+			createOAuth2ApplicationWithNone(
+				companyId, _user, "oauthTestApplicationCodePKCE",
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
+				Collections.singletonList(
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)),
+				false, Collections.singletonList("everything"), false);
+
+			Company company = CompanyLocalServiceUtil.getCompany(companyId);
+
+			createOAuth2Application(
+				companyId, company.getGuestUser(),
+				"oauthTestApplicationDefaultUser");
+		}
+
 	}
 
 }

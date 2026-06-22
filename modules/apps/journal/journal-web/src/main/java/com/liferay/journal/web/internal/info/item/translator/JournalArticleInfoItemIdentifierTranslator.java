@@ -40,6 +40,8 @@ public class JournalArticleInfoItemIdentifierTranslator
 			return (S)infoItemIdentifier;
 		}
 
+		infoItemIdentifier.setVersion(InfoItemIdentifier.VERSION_LATEST);
+
 		return (S)_getTargetInfoItemIdentifier(
 			_infoItemObjectProvider.getInfoItem(infoItemIdentifier),
 			targetInfoItemIdentifierClass);
@@ -69,7 +71,7 @@ public class JournalArticleInfoItemIdentifierTranslator
 		}
 
 		throw new NoSuchInfoItemException(
-			"Unsupported info item identifier type " +
+			"Unsupported info item identifier " +
 				targetInfoItemIdentifierClass.getName());
 	}
 

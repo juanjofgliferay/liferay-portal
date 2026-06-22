@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -42,11 +41,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 	description = "Represents a collection viewport.",
 	value = "CollectionViewport"
 )
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@io.swagger.v3.oas.annotations.media.Schema(
 	description = "Represents a collection viewport.",
 	requiredProperties = {"id", "collectionViewportDefinition"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "CollectionViewport")
 public class CollectionViewport implements Serializable {
 
@@ -58,9 +57,18 @@ public class CollectionViewport implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(CollectionViewport.class, json);
 	}
 
-	@Schema(description = "The definition of the collection viewport.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The definition of the collection viewport."
+	)
 	@Valid
 	public CollectionViewportDefinition getCollectionViewportDefinition() {
+		if (_collectionViewportDefinitionSupplier != null) {
+			collectionViewportDefinition =
+				_collectionViewportDefinitionSupplier.get();
+
+			_collectionViewportDefinitionSupplier = null;
+		}
+
 		return collectionViewportDefinition;
 	}
 
@@ -68,6 +76,8 @@ public class CollectionViewport implements Serializable {
 		CollectionViewportDefinition collectionViewportDefinition) {
 
 		this.collectionViewportDefinition = collectionViewportDefinition;
+
+		_collectionViewportDefinitionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -75,16 +85,17 @@ public class CollectionViewport implements Serializable {
 		UnsafeSupplier<CollectionViewportDefinition, Exception>
 			collectionViewportDefinitionUnsafeSupplier) {
 
-		try {
-			collectionViewportDefinition =
-				collectionViewportDefinitionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_collectionViewportDefinitionSupplier = () -> {
+			try {
+				return collectionViewportDefinitionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The definition of the collection viewport.")
@@ -92,32 +103,51 @@ public class CollectionViewport implements Serializable {
 	@NotNull
 	protected CollectionViewportDefinition collectionViewportDefinition;
 
-	@Schema(description = "The collection viewport's ID.")
+	@JsonIgnore
+	private Supplier<CollectionViewportDefinition>
+		_collectionViewportDefinitionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The collection viewport's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The collection viewport's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String id;
+
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -146,6 +176,9 @@ public class CollectionViewport implements Serializable {
 
 		sb.append("{");
 
+		CollectionViewportDefinition collectionViewportDefinition =
+			getCollectionViewportDefinition();
+
 		if (collectionViewportDefinition != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -155,6 +188,8 @@ public class CollectionViewport implements Serializable {
 
 			sb.append(String.valueOf(collectionViewportDefinition));
 		}
+
+		String id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -175,8 +210,8 @@ public class CollectionViewport implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.CollectionViewport",
 		name = "x-class-name"
 	)
@@ -222,7 +257,10 @@ public class CollectionViewport implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -268,3 +306,4 @@ public class CollectionViewport implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:702449422

@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.order.client.dto.v1_0.OrderRuleAccount;
 import com.liferay.headless.commerce.admin.order.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.order.client.pagination.Page;
@@ -27,26 +30,32 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,12 +67,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -87,7 +90,7 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -101,11 +104,27 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 		_orderRuleAccountResource.setContextCompany(testCompany);
 
-		OrderRuleAccountResource.Builder builder =
-			OrderRuleAccountResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		orderRuleAccountResource = builder.authentication(
-			"test@liferay.com", "test"
+		orderRuleAccountResource = OrderRuleAccountResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -119,7 +138,32 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		OrderRuleAccount orderRuleAccount1 = randomOrderRuleAccount();
+
+		String json = objectMapper.writeValueAsString(orderRuleAccount1);
+
+		OrderRuleAccount orderRuleAccount2 = OrderRuleAccountSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(orderRuleAccount1, orderRuleAccount2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		OrderRuleAccount orderRuleAccount = randomOrderRuleAccount();
+
+		String json1 = objectMapper.writeValueAsString(orderRuleAccount);
+		String json2 = OrderRuleAccountSerDes.toJSON(orderRuleAccount);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -134,40 +178,6 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		OrderRuleAccount orderRuleAccount1 = randomOrderRuleAccount();
-
-		String json = objectMapper.writeValueAsString(orderRuleAccount1);
-
-		OrderRuleAccount orderRuleAccount2 = OrderRuleAccountSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(orderRuleAccount1, orderRuleAccount2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		OrderRuleAccount orderRuleAccount = randomOrderRuleAccount();
-
-		String json1 = objectMapper.writeValueAsString(orderRuleAccount);
-		String json2 = OrderRuleAccountSerDes.toJSON(orderRuleAccount);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -193,12 +203,113 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 	@Test
 	public void testDeleteOrderRuleAccount() throws Exception {
-		Assert.assertTrue(false);
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRuleAccount orderRuleAccount =
+			testDeleteOrderRuleAccount_addOrderRuleAccount();
+
+		assertHttpResponseStatusCode(
+			204,
+			orderRuleAccountResource.deleteOrderRuleAccountHttpResponse(
+				orderRuleAccount.getOrderRuleAccountId()));
+	}
+
+	protected OrderRuleAccount testDeleteOrderRuleAccount_addOrderRuleAccount()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLDeleteOrderRuleAccount() throws Exception {
-		Assert.assertTrue(false);
+
+		// No namespace
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRuleAccount orderRuleAccount1 =
+			testGraphQLDeleteOrderRuleAccount_addOrderRuleAccount();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteOrderRuleAccount",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"orderRuleAccountId",
+									orderRuleAccount1.getOrderRuleAccountId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteOrderRuleAccount"));
+
+		// Using the namespace headlessCommerceAdminOrder_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		OrderRuleAccount orderRuleAccount2 =
+			testGraphQLDeleteOrderRuleAccount_addOrderRuleAccount();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminOrder_v1_0",
+						new GraphQLField(
+							"deleteOrderRuleAccount",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"orderRuleAccountId",
+										orderRuleAccount2.
+											getOrderRuleAccountId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessCommerceAdminOrder_v1_0",
+				"Object/deleteOrderRuleAccount"));
+	}
+
+	protected OrderRuleAccount
+			testGraphQLDeleteOrderRuleAccount_addOrderRuleAccount()
+		throws Exception {
+
+		return testGraphQLOrderRuleAccount_addOrderRuleAccount();
+	}
+
+	@Test
+	public void testDeleteOrderRuleAccountBatch() throws Exception {
+		OrderRuleAccount orderRuleAccount1 =
+			testDeleteOrderRuleAccountBatch_addOrderRuleAccount();
+
+		testDeleteOrderRuleAccountBatch_deleteOrderRuleAccount(
+			202, null, orderRuleAccount1.getOrderRuleAccountId());
+	}
+
+	protected OrderRuleAccount
+			testDeleteOrderRuleAccountBatch_addOrderRuleAccount()
+		throws Exception {
+
+		return testDeleteOrderRuleAccount_addOrderRuleAccount();
+	}
+
+	protected void testDeleteOrderRuleAccountBatch_deleteOrderRuleAccount(
+			int expectedStatusCode, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			orderRuleAccountResource.deleteOrderRuleAccountBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"orderRuleAccountId", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		waitForFinish(
+			"COMPLETED",
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
 	}
 
 	@Test
@@ -263,6 +374,12 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			page,
 			testGetOrderRuleByExternalReferenceCodeOrderRuleAccountsPage_getExpectedActions(
 				externalReferenceCode));
+
+		orderRuleAccountResource.deleteOrderRuleAccount(
+			orderRuleAccount1.getOrderRuleAccountId());
+
+		orderRuleAccountResource.deleteOrderRuleAccount(
+			orderRuleAccount2.getOrderRuleAccountId());
 	}
 
 	protected Map<String, Map<String, String>>
@@ -282,13 +399,13 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 		String externalReferenceCode =
 			testGetOrderRuleByExternalReferenceCodeOrderRuleAccountsPage_getExternalReferenceCode();
 
-		Page<OrderRuleAccount> orderRuleAccountPage =
+		Page<OrderRuleAccount> orderRuleAccountsPage =
 			orderRuleAccountResource.
 				getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			orderRuleAccountPage.getTotalCount());
+			orderRuleAccountsPage.getTotalCount());
 
 		OrderRuleAccount orderRuleAccount1 =
 			testGetOrderRuleByExternalReferenceCodeOrderRuleAccountsPage_addOrderRuleAccount(
@@ -302,43 +419,87 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			testGetOrderRuleByExternalReferenceCodeOrderRuleAccountsPage_addOrderRuleAccount(
 				externalReferenceCode, randomOrderRuleAccount());
 
-		Page<OrderRuleAccount> page1 =
-			orderRuleAccountResource.
-				getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderRuleAccount> orderRuleAccounts1 =
-			(List<OrderRuleAccount>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderRuleAccounts1.toString(), totalCount + 2,
-			orderRuleAccounts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderRuleAccount> page1 =
+				orderRuleAccountResource.
+					getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<OrderRuleAccount> page2 =
-			orderRuleAccountResource.
-				getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				orderRuleAccount1, (List<OrderRuleAccount>)page1.getItems());
 
-		List<OrderRuleAccount> orderRuleAccounts2 =
-			(List<OrderRuleAccount>)page2.getItems();
+			Page<OrderRuleAccount> page2 =
+				orderRuleAccountResource.
+					getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			orderRuleAccounts2.toString(), 1, orderRuleAccounts2.size());
+			assertContains(
+				orderRuleAccount2, (List<OrderRuleAccount>)page2.getItems());
 
-		Page<OrderRuleAccount> page3 =
-			orderRuleAccountResource.
-				getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<OrderRuleAccount> page3 =
+				orderRuleAccountResource.
+					getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			orderRuleAccount1, (List<OrderRuleAccount>)page3.getItems());
-		assertContains(
-			orderRuleAccount2, (List<OrderRuleAccount>)page3.getItems());
-		assertContains(
-			orderRuleAccount3, (List<OrderRuleAccount>)page3.getItems());
+			assertContains(
+				orderRuleAccount3, (List<OrderRuleAccount>)page3.getItems());
+		}
+		else {
+			Page<OrderRuleAccount> page1 =
+				orderRuleAccountResource.
+					getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<OrderRuleAccount> orderRuleAccounts1 =
+				(List<OrderRuleAccount>)page1.getItems();
+
+			Assert.assertEquals(
+				orderRuleAccounts1.toString(), totalCount + 2,
+				orderRuleAccounts1.size());
+
+			Page<OrderRuleAccount> page2 =
+				orderRuleAccountResource.
+					getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderRuleAccount> orderRuleAccounts2 =
+				(List<OrderRuleAccount>)page2.getItems();
+
+			Assert.assertEquals(
+				orderRuleAccounts2.toString(), 1, orderRuleAccounts2.size());
+
+			Page<OrderRuleAccount> page3 =
+				orderRuleAccountResource.
+					getOrderRuleByExternalReferenceCodeOrderRuleAccountsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				orderRuleAccount1, (List<OrderRuleAccount>)page3.getItems());
+			assertContains(
+				orderRuleAccount2, (List<OrderRuleAccount>)page3.getItems());
+			assertContains(
+				orderRuleAccount3, (List<OrderRuleAccount>)page3.getItems());
+		}
 	}
 
 	protected OrderRuleAccount
@@ -363,29 +524,6 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostOrderRuleByExternalReferenceCodeOrderRuleAccount()
-		throws Exception {
-
-		OrderRuleAccount randomOrderRuleAccount = randomOrderRuleAccount();
-
-		OrderRuleAccount postOrderRuleAccount =
-			testPostOrderRuleByExternalReferenceCodeOrderRuleAccount_addOrderRuleAccount(
-				randomOrderRuleAccount);
-
-		assertEquals(randomOrderRuleAccount, postOrderRuleAccount);
-		assertValid(postOrderRuleAccount);
-	}
-
-	protected OrderRuleAccount
-			testPostOrderRuleByExternalReferenceCodeOrderRuleAccount_addOrderRuleAccount(
-				OrderRuleAccount orderRuleAccount)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -440,6 +578,12 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 		assertValid(
 			page,
 			testGetOrderRuleIdOrderRuleAccountsPage_getExpectedActions(id));
+
+		orderRuleAccountResource.deleteOrderRuleAccount(
+			orderRuleAccount1.getOrderRuleAccountId());
+
+		orderRuleAccountResource.deleteOrderRuleAccount(
+			orderRuleAccount2.getOrderRuleAccountId());
 	}
 
 	protected Map<String, Map<String, String>>
@@ -555,12 +699,12 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 		Long id = testGetOrderRuleIdOrderRuleAccountsPage_getId();
 
-		Page<OrderRuleAccount> orderRuleAccountPage =
+		Page<OrderRuleAccount> orderRuleAccountsPage =
 			orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
 				id, null, null, null, null);
 
 		int totalCount = GetterUtil.getInteger(
-			orderRuleAccountPage.getTotalCount());
+			orderRuleAccountsPage.getTotalCount());
 
 		OrderRuleAccount orderRuleAccount1 =
 			testGetOrderRuleIdOrderRuleAccountsPage_addOrderRuleAccount(
@@ -574,39 +718,82 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			testGetOrderRuleIdOrderRuleAccountsPage_addOrderRuleAccount(
 				id, randomOrderRuleAccount());
 
-		Page<OrderRuleAccount> page1 =
-			orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
-				id, null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<OrderRuleAccount> orderRuleAccounts1 =
-			(List<OrderRuleAccount>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			orderRuleAccounts1.toString(), totalCount + 2,
-			orderRuleAccounts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<OrderRuleAccount> page1 =
+				orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<OrderRuleAccount> page2 =
-			orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
-				id, null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				orderRuleAccount1, (List<OrderRuleAccount>)page1.getItems());
 
-		List<OrderRuleAccount> orderRuleAccounts2 =
-			(List<OrderRuleAccount>)page2.getItems();
+			Page<OrderRuleAccount> page2 =
+				orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			orderRuleAccounts2.toString(), 1, orderRuleAccounts2.size());
+			assertContains(
+				orderRuleAccount2, (List<OrderRuleAccount>)page2.getItems());
 
-		Page<OrderRuleAccount> page3 =
-			orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
-				id, null, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<OrderRuleAccount> page3 =
+				orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(
-			orderRuleAccount1, (List<OrderRuleAccount>)page3.getItems());
-		assertContains(
-			orderRuleAccount2, (List<OrderRuleAccount>)page3.getItems());
-		assertContains(
-			orderRuleAccount3, (List<OrderRuleAccount>)page3.getItems());
+			assertContains(
+				orderRuleAccount3, (List<OrderRuleAccount>)page3.getItems());
+		}
+		else {
+			Page<OrderRuleAccount> page1 =
+				orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<OrderRuleAccount> orderRuleAccounts1 =
+				(List<OrderRuleAccount>)page1.getItems();
+
+			Assert.assertEquals(
+				orderRuleAccounts1.toString(), totalCount + 2,
+				orderRuleAccounts1.size());
+
+			Page<OrderRuleAccount> page2 =
+				orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<OrderRuleAccount> orderRuleAccounts2 =
+				(List<OrderRuleAccount>)page2.getItems();
+
+			Assert.assertEquals(
+				orderRuleAccounts2.toString(), 1, orderRuleAccounts2.size());
+
+			Page<OrderRuleAccount> page3 =
+				orderRuleAccountResource.getOrderRuleIdOrderRuleAccountsPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(
+				orderRuleAccount1, (List<OrderRuleAccount>)page3.getItems());
+			assertContains(
+				orderRuleAccount2, (List<OrderRuleAccount>)page3.getItems());
+			assertContains(
+				orderRuleAccount3, (List<OrderRuleAccount>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -618,7 +805,7 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			(entityField, orderRuleAccount1, orderRuleAccount2) -> {
 				BeanTestUtil.setProperty(
 					orderRuleAccount1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -786,6 +973,29 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 	}
 
 	@Test
+	public void testPostOrderRuleByExternalReferenceCodeOrderRuleAccount()
+		throws Exception {
+
+		OrderRuleAccount randomOrderRuleAccount = randomOrderRuleAccount();
+
+		OrderRuleAccount postOrderRuleAccount =
+			testPostOrderRuleByExternalReferenceCodeOrderRuleAccount_addOrderRuleAccount(
+				randomOrderRuleAccount);
+
+		assertEquals(randomOrderRuleAccount, postOrderRuleAccount);
+		assertValid(postOrderRuleAccount);
+	}
+
+	protected OrderRuleAccount
+			testPostOrderRuleByExternalReferenceCodeOrderRuleAccount_addOrderRuleAccount(
+				OrderRuleAccount orderRuleAccount)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
 	public void testPostOrderRuleIdOrderRuleAccount() throws Exception {
 		OrderRuleAccount randomOrderRuleAccount = randomOrderRuleAccount();
 
@@ -806,8 +1016,67 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			"This method needs to be implemented");
 	}
 
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		OrderRuleAccount orderRuleAccount1 =
+			testBatchEngineDeleteImportTask_addOrderRuleAccount();
+
+		testBatchEngineDeleteImportTask_deleteOrderRuleAccount(
+			200, null, orderRuleAccount1.getOrderRuleAccountId());
+	}
+
+	protected OrderRuleAccount
+			testBatchEngineDeleteImportTask_addOrderRuleAccount()
+		throws Exception {
+
+		return testDeleteOrderRuleAccount_addOrderRuleAccount();
+	}
+
+	protected void testBatchEngineDeleteImportTask_deleteOrderRuleAccount(
+			int expectedStatusCode, String externalReferenceCode, Long id,
+			String... parameters)
+		throws Exception {
+
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).parameters(
+			parameters
+		).build();
+
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleAccount",
+				null, null, null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"orderRuleAccountId", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+		}
+	}
+
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
+
+	protected OrderRuleAccount testGraphQLOrderRuleAccount_addOrderRuleAccount()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
 
 	protected void assertContains(
 		OrderRuleAccount orderRuleAccount,
@@ -888,6 +1157,10 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 		throws Exception {
 
 		boolean valid = true;
+
+		if (orderRuleAccount.getOrderRuleAccountId() == null) {
+			valid = false;
+		}
 
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
@@ -1018,6 +1291,8 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
+
+		graphQLFields.add(new GraphQLField("orderRuleAccountId"));
 
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
@@ -1203,6 +1478,10 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -1402,8 +1681,11 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1457,22 +1739,45 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 		return randomOrderRuleAccount();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected OrderRuleAccountResource orderRuleAccountResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1481,11 +1786,16 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1517,6 +1827,24 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1538,16 +1866,6 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1645,10 +1963,13 @@ public abstract class BaseOrderRuleAccountResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseOrderRuleAccountResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.order.resource.v1_0.
 		OrderRuleAccountResource _orderRuleAccountResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1145780177

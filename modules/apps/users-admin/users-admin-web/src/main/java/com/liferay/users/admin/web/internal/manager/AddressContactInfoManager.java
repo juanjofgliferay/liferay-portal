@@ -12,9 +12,9 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.List;
+import jakarta.portlet.ActionRequest;
 
-import javax.portlet.ActionRequest;
+import java.util.List;
 
 /**
  * @author Samuel Trong Tran
@@ -22,13 +22,13 @@ import javax.portlet.ActionRequest;
 public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 
 	public AddressContactInfoManager(
-		String className, long classPK, AddressLocalService addressLocalService,
-		AddressService addressService) {
+		AddressLocalService addressLocalService, AddressService addressService,
+		String className, long classPK) {
 
-		_className = className;
-		_classPK = classPK;
 		_addressLocalService = addressLocalService;
 		_addressService = addressService;
+		_className = className;
+		_classPK = classPK;
 	}
 
 	@Override
@@ -72,11 +72,12 @@ public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 	@Override
 	protected Address doAdd(Address address) throws Exception {
 		return _addressService.addAddress(
-			_className, _classPK, address.getStreet1(), address.getStreet2(),
-			address.getStreet3(), address.getCity(), address.getZip(),
-			address.getRegionId(), address.getCountryId(),
-			address.getListTypeId(), address.isMailing(), address.isPrimary(),
-			new ServiceContext());
+			address.getExternalReferenceCode(), _className, _classPK,
+			address.getCountryId(), address.getListTypeId(),
+			address.getRegionId(), address.getCity(), null, address.isMailing(),
+			null, address.isPrimary(), address.getStreet1(),
+			address.getStreet2(), address.getStreet3(), address.getSubtype(),
+			address.getZip(), null, new ServiceContext());
 	}
 
 	@Override
@@ -87,10 +88,12 @@ public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 	@Override
 	protected void doUpdate(Address address) throws Exception {
 		_addressService.updateAddress(
-			address.getAddressId(), address.getStreet1(), address.getStreet2(),
-			address.getStreet3(), address.getCity(), address.getZip(),
-			address.getRegionId(), address.getCountryId(),
-			address.getListTypeId(), address.isMailing(), address.isPrimary());
+			address.getExternalReferenceCode(), address.getAddressId(),
+			address.getCountryId(), address.getListTypeId(),
+			address.getRegionId(), address.getCity(), address.getDescription(),
+			address.isMailing(), address.getName(), address.isPrimary(),
+			address.getStreet1(), address.getStreet2(), address.getStreet3(),
+			address.getSubtype(), address.getZip(), address.getPhoneNumber());
 	}
 
 	@Override

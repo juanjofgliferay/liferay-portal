@@ -58,7 +58,7 @@ public class DepotAppCustomizationModelImpl
 	public static final String TABLE_NAME = "DepotAppCustomization";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT},
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"depotAppCustomizationId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"depotEntryId", Types.BIGINT}, {"enabled", Types.BOOLEAN},
 		{"portletId", Types.VARCHAR}
@@ -69,6 +69,7 @@ public class DepotAppCustomizationModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("depotAppCustomizationId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("depotEntryId", Types.BIGINT);
@@ -77,10 +78,12 @@ public class DepotAppCustomizationModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DepotAppCustomization (mvccVersion LONG default 0 not null,depotAppCustomizationId LONG not null primary key,companyId LONG,depotEntryId LONG,enabled BOOLEAN,portletId VARCHAR(75) null)";
+		"create table DepotAppCustomization (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,depotAppCustomizationId LONG not null,companyId LONG,depotEntryId LONG,enabled BOOLEAN,portletId VARCHAR(75) null,primary key (depotAppCustomizationId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table DepotAppCustomization";
+
+	public static final String ENTITY_ALIAS = "depotAppCustomization";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY depotAppCustomization.depotAppCustomizationId ASC";
@@ -234,6 +237,8 @@ public class DepotAppCustomizationModelImpl
 			attributeGetterFunctions.put(
 				"mvccVersion", DepotAppCustomization::getMvccVersion);
 			attributeGetterFunctions.put(
+				"ctCollectionId", DepotAppCustomization::getCtCollectionId);
+			attributeGetterFunctions.put(
 				"depotAppCustomizationId",
 				DepotAppCustomization::getDepotAppCustomizationId);
 			attributeGetterFunctions.put(
@@ -267,6 +272,10 @@ public class DepotAppCustomizationModelImpl
 				"mvccVersion",
 				(BiConsumer<DepotAppCustomization, Long>)
 					DepotAppCustomization::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DepotAppCustomization, Long>)
+					DepotAppCustomization::setCtCollectionId);
 			attributeSetterBiConsumers.put(
 				"depotAppCustomizationId",
 				(BiConsumer<DepotAppCustomization, Long>)
@@ -306,6 +315,20 @@ public class DepotAppCustomizationModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@Override
@@ -476,6 +499,7 @@ public class DepotAppCustomizationModelImpl
 			new DepotAppCustomizationImpl();
 
 		depotAppCustomizationImpl.setMvccVersion(getMvccVersion());
+		depotAppCustomizationImpl.setCtCollectionId(getCtCollectionId());
 		depotAppCustomizationImpl.setDepotAppCustomizationId(
 			getDepotAppCustomizationId());
 		depotAppCustomizationImpl.setCompanyId(getCompanyId());
@@ -495,6 +519,8 @@ public class DepotAppCustomizationModelImpl
 
 		depotAppCustomizationImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		depotAppCustomizationImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		depotAppCustomizationImpl.setDepotAppCustomizationId(
 			this.<Long>getColumnOriginalValue("depotAppCustomizationId"));
 		depotAppCustomizationImpl.setCompanyId(
@@ -584,6 +610,8 @@ public class DepotAppCustomizationModelImpl
 
 		depotAppCustomizationCacheModel.mvccVersion = getMvccVersion();
 
+		depotAppCustomizationCacheModel.ctCollectionId = getCtCollectionId();
+
 		depotAppCustomizationCacheModel.depotAppCustomizationId =
 			getDepotAppCustomizationId();
 
@@ -664,6 +692,7 @@ public class DepotAppCustomizationModelImpl
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private long _depotAppCustomizationId;
 	private long _companyId;
 	private long _depotEntryId;
@@ -699,6 +728,7 @@ public class DepotAppCustomizationModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put(
 			"depotAppCustomizationId", _depotAppCustomizationId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -720,15 +750,17 @@ public class DepotAppCustomizationModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("depotAppCustomizationId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("depotAppCustomizationId", 4L);
 
-		columnBitmasks.put("depotEntryId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("enabled", 16L);
+		columnBitmasks.put("depotEntryId", 16L);
 
-		columnBitmasks.put("portletId", 32L);
+		columnBitmasks.put("enabled", 32L);
+
+		columnBitmasks.put("portletId", 64L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -737,3 +769,4 @@ public class DepotAppCustomizationModelImpl
 	private DepotAppCustomization _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2129503407

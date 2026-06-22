@@ -6,7 +6,8 @@
 import ClayButton from '@clayui/button';
 import ClayForm, {ClayInput, ClaySelectWithOption} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
-import {openSelectionModal, sub} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useRef, useState} from 'react';
 
 const SMALL_IMAGE_SOURCES = {
@@ -107,7 +108,7 @@ export default function SmallImage({
 					<ClayInput.Group small>
 						<ClayInput.GroupItem>
 							<input
-								className="sr-only"
+								hidden
 								id={`${portletNamespace}smallFile`}
 								name={`${portletNamespace}smallFile`}
 								onChange={(event) =>
@@ -120,9 +121,9 @@ export default function SmallImage({
 							/>
 
 							<ClayInput
-								onClick={() => fileInputRef.current?.click()}
-								placeholder={Liferay.Language.get(
-									'select-image'
+								placeholder={sub(
+									Liferay.Language.get('no-x-selected'),
+									Liferay.Language.get('image')
 								)}
 								readOnly
 								sizing="sm"
@@ -195,9 +196,9 @@ export default function SmallImage({
 
 							<ClayInput
 								id={`${portletNamespace}smallImageId`}
-								onClick={() => openItemSelector()}
-								placeholder={Liferay.Language.get(
-									'select-image'
+								placeholder={sub(
+									Liferay.Language.get('no-x-selected'),
+									Liferay.Language.get('image')
 								)}
 								readOnly
 								sizing="sm"

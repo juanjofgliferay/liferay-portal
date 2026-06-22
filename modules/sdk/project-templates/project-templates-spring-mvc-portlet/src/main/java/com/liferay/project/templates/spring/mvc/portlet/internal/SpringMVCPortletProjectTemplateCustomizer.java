@@ -14,6 +14,7 @@ import java.io.File;
 
 import java.nio.file.Path;
 
+import java.util.Objects;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -74,9 +75,14 @@ public class SpringMVCPortletProjectTemplateCustomizer
 			FileUtil.deleteDir(spring4JavaPkgDir.toPath());
 		}
 
+		String liferayVersion = projectTemplatesArgs.getLiferayVersion();
+
 		String minorVersionString = String.valueOf(
-			VersionUtil.getMinorVersion(
-				projectTemplatesArgs.getLiferayVersion()));
+			VersionUtil.getMinorVersion(liferayVersion));
+
+		if (VersionUtil.isLiferayQuarterlyVersion(liferayVersion)) {
+			minorVersionString = "4";
+		}
 
 		File liferayPortletXML = new File(
 			webappDir, "WEB-INF/liferay-display.xml");
@@ -117,6 +123,22 @@ public class SpringMVCPortletProjectTemplateCustomizer
 		setProperty(
 			properties, "viewType",
 			springMVCPortletProjectTemplatesArgsExt.getViewType());
+
+		boolean jakartaCompatible = VersionUtil.isJakartaCompatibleVersion(
+			projectTemplatesArgs.getLiferayVersion());
+
+		setProperty(
+			properties, "jakartaCompatible", String.valueOf(jakartaCompatible));
+
+		if (jakartaCompatible &&
+			Objects.equals(
+				springMVCPortletProjectTemplatesArgsExt.getFramework(),
+				"springportletmvc")) {
+
+			throw new IllegalArgumentException(
+				"Framework springportletmvc is not compatible with Jakarta, " +
+					"use portletmvc4spring instead");
+		}
 	}
 
 	private static final Pattern _jspPattern = Pattern.compile(".*.html");

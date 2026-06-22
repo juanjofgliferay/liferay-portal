@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Stian Sigvartsen
@@ -37,6 +36,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Configuration of the SAML provider's SP capability.",
 	value = "Sp"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Configuration of the SAML provider's SP capability."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Sp")
@@ -50,8 +52,15 @@ public class Sp implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Sp.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getAllowShowingTheLoginPortlet() {
+		if (_allowShowingTheLoginPortletSupplier != null) {
+			allowShowingTheLoginPortlet =
+				_allowShowingTheLoginPortletSupplier.get();
+
+			_allowShowingTheLoginPortletSupplier = null;
+		}
+
 		return allowShowingTheLoginPortlet;
 	}
 
@@ -59,6 +68,8 @@ public class Sp implements Serializable {
 		Boolean allowShowingTheLoginPortlet) {
 
 		this.allowShowingTheLoginPortlet = allowShowingTheLoginPortlet;
+
+		_allowShowingTheLoginPortletSupplier = null;
 	}
 
 	@JsonIgnore
@@ -66,24 +77,35 @@ public class Sp implements Serializable {
 		UnsafeSupplier<Boolean, Exception>
 			allowShowingTheLoginPortletUnsafeSupplier) {
 
-		try {
-			allowShowingTheLoginPortlet =
-				allowShowingTheLoginPortletUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_allowShowingTheLoginPortletSupplier = () -> {
+			try {
+				return allowShowingTheLoginPortletUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean allowShowingTheLoginPortlet;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _allowShowingTheLoginPortletSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getAssertionSignatureRequired() {
+		if (_assertionSignatureRequiredSupplier != null) {
+			assertionSignatureRequired =
+				_assertionSignatureRequiredSupplier.get();
+
+			_assertionSignatureRequiredSupplier = null;
+		}
+
 		return assertionSignatureRequired;
 	}
 
@@ -91,6 +113,8 @@ public class Sp implements Serializable {
 		Boolean assertionSignatureRequired) {
 
 		this.assertionSignatureRequired = assertionSignatureRequired;
+
+		_assertionSignatureRequiredSupplier = null;
 	}
 
 	@JsonIgnore
@@ -98,52 +122,76 @@ public class Sp implements Serializable {
 		UnsafeSupplier<Boolean, Exception>
 			assertionSignatureRequiredUnsafeSupplier) {
 
-		try {
-			assertionSignatureRequired =
-				assertionSignatureRequiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assertionSignatureRequiredSupplier = () -> {
+			try {
+				return assertionSignatureRequiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean assertionSignatureRequired;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _assertionSignatureRequiredSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getClockSkew() {
+		if (_clockSkewSupplier != null) {
+			clockSkew = _clockSkewSupplier.get();
+
+			_clockSkewSupplier = null;
+		}
+
 		return clockSkew;
 	}
 
 	public void setClockSkew(Long clockSkew) {
 		this.clockSkew = clockSkew;
+
+		_clockSkewSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClockSkew(
 		UnsafeSupplier<Long, Exception> clockSkewUnsafeSupplier) {
 
-		try {
-			clockSkew = clockSkewUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_clockSkewSupplier = () -> {
+			try {
+				return clockSkewUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long clockSkew;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _clockSkewSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getKeyStoreEncryptionCredentialPassword() {
+		if (_keyStoreEncryptionCredentialPasswordSupplier != null) {
+			keyStoreEncryptionCredentialPassword =
+				_keyStoreEncryptionCredentialPasswordSupplier.get();
+
+			_keyStoreEncryptionCredentialPasswordSupplier = null;
+		}
+
 		return keyStoreEncryptionCredentialPassword;
 	}
 
@@ -152,6 +200,8 @@ public class Sp implements Serializable {
 
 		this.keyStoreEncryptionCredentialPassword =
 			keyStoreEncryptionCredentialPassword;
+
+		_keyStoreEncryptionCredentialPasswordSupplier = null;
 	}
 
 	@JsonIgnore
@@ -159,77 +209,107 @@ public class Sp implements Serializable {
 		UnsafeSupplier<String, Exception>
 			keyStoreEncryptionCredentialPasswordUnsafeSupplier) {
 
-		try {
-			keyStoreEncryptionCredentialPassword =
-				keyStoreEncryptionCredentialPasswordUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keyStoreEncryptionCredentialPasswordSupplier = () -> {
+			try {
+				return keyStoreEncryptionCredentialPasswordUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	protected String keyStoreEncryptionCredentialPassword;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _keyStoreEncryptionCredentialPasswordSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getLdapImportEnabled() {
+		if (_ldapImportEnabledSupplier != null) {
+			ldapImportEnabled = _ldapImportEnabledSupplier.get();
+
+			_ldapImportEnabledSupplier = null;
+		}
+
 		return ldapImportEnabled;
 	}
 
 	public void setLdapImportEnabled(Boolean ldapImportEnabled) {
 		this.ldapImportEnabled = ldapImportEnabled;
+
+		_ldapImportEnabledSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLdapImportEnabled(
 		UnsafeSupplier<Boolean, Exception> ldapImportEnabledUnsafeSupplier) {
 
-		try {
-			ldapImportEnabled = ldapImportEnabledUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_ldapImportEnabledSupplier = () -> {
+			try {
+				return ldapImportEnabledUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean ldapImportEnabled;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _ldapImportEnabledSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getSignAuthnRequest() {
+		if (_signAuthnRequestSupplier != null) {
+			signAuthnRequest = _signAuthnRequestSupplier.get();
+
+			_signAuthnRequestSupplier = null;
+		}
+
 		return signAuthnRequest;
 	}
 
 	public void setSignAuthnRequest(Boolean signAuthnRequest) {
 		this.signAuthnRequest = signAuthnRequest;
+
+		_signAuthnRequestSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSignAuthnRequest(
 		UnsafeSupplier<Boolean, Exception> signAuthnRequestUnsafeSupplier) {
 
-		try {
-			signAuthnRequest = signAuthnRequestUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_signAuthnRequestSupplier = () -> {
+			try {
+				return signAuthnRequestUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean signAuthnRequest;
+
+	@JsonIgnore
+	private Supplier<Boolean> _signAuthnRequestSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -258,6 +338,8 @@ public class Sp implements Serializable {
 
 		sb.append("{");
 
+		Boolean allowShowingTheLoginPortlet = getAllowShowingTheLoginPortlet();
+
 		if (allowShowingTheLoginPortlet != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -267,6 +349,8 @@ public class Sp implements Serializable {
 
 			sb.append(allowShowingTheLoginPortlet);
 		}
+
+		Boolean assertionSignatureRequired = getAssertionSignatureRequired();
 
 		if (assertionSignatureRequired != null) {
 			if (sb.length() > 1) {
@@ -278,6 +362,8 @@ public class Sp implements Serializable {
 			sb.append(assertionSignatureRequired);
 		}
 
+		Long clockSkew = getClockSkew();
+
 		if (clockSkew != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -287,6 +373,9 @@ public class Sp implements Serializable {
 
 			sb.append(clockSkew);
 		}
+
+		String keyStoreEncryptionCredentialPassword =
+			getKeyStoreEncryptionCredentialPassword();
 
 		if (keyStoreEncryptionCredentialPassword != null) {
 			if (sb.length() > 1) {
@@ -302,6 +391,8 @@ public class Sp implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean ldapImportEnabled = getLdapImportEnabled();
+
 		if (ldapImportEnabled != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -311,6 +402,8 @@ public class Sp implements Serializable {
 
 			sb.append(ldapImportEnabled);
 		}
+
+		Boolean signAuthnRequest = getSignAuthnRequest();
 
 		if (signAuthnRequest != null) {
 			if (sb.length() > 1) {
@@ -327,8 +420,8 @@ public class Sp implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.saml.admin.rest.dto.v1_0.Sp",
 		name = "x-class-name"
 	)
@@ -374,7 +467,10 @@ public class Sp implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -420,3 +516,4 @@ public class Sp implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-590685048

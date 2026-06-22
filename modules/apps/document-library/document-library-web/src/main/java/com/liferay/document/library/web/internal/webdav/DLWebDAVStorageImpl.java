@@ -38,6 +38,7 @@ import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.dynamic.data.mapping.util.DDMBeanTranslator;
 import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -74,14 +75,14 @@ import com.liferay.portal.webdav.LockException;
 import com.liferay.portlet.documentlibrary.webdav.DLFileEntryResourceImpl;
 import com.liferay.portlet.documentlibrary.webdav.DLWebDAVUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.File;
 import java.io.InputStream;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -92,9 +93,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"webdav.storage.token=document_library"
 	},
 	service = WebDAVStorage.class
@@ -218,7 +219,7 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 				null, groupId, parentFolderId, fileName,
 				fileEntry.getMimeType(), FileUtil.stripExtension(fileName),
 				StringPool.BLANK, fileEntry.getDescription(), StringPool.BLANK,
-				file, null, null, serviceContext);
+				file, null, null, null, serviceContext);
 
 			return status;
 		}
@@ -455,7 +456,7 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 				FileEntry fileEntry = _dlAppService.addFileEntry(
 					null, webDAVRequest.getGroupId(), parentFolderId, fileName,
 					contentType, title, StringPool.BLANK, StringPool.BLANK,
-					StringPool.BLANK, file, null, null, serviceContext);
+					StringPool.BLANK, file, null, null, null, serviceContext);
 
 				resource = _toResource(webDAVRequest, fileEntry, false);
 			}
@@ -693,6 +694,7 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 						destFileEntry.getTitle(),
 						destFileEntry.getDescription(), StringPool.BLANK,
 						DLVersionNumberIncrease.MINOR, file,
+						destFileEntry.getDisplayDate(),
 						destFileEntry.getExpirationDate(),
 						destFileEntry.getReviewDate(), serviceContext);
 
@@ -713,7 +715,7 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 				fileEntry.getFileEntryId(), fileName, fileEntry.getMimeType(),
 				fileEntry.getTitle(), fileEntry.getTitle(),
 				fileEntry.getDescription(), StringPool.BLANK,
-				DLVersionNumberIncrease.MINOR, file,
+				DLVersionNumberIncrease.MINOR, file, fileEntry.getDisplayDate(),
 				fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
 				serviceContext);
 
@@ -799,8 +801,8 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 					fileEntry.getTitle(), fileEntry.getTitle(),
 					fileEntry.getDescription(), StringPool.BLANK,
 					DLVersionNumberIncrease.MINOR, file,
-					fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
-					serviceContext);
+					fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+					fileEntry.getReviewDate(), serviceContext);
 			}
 			catch (NoSuchFileEntryException noSuchFileEntryException) {
 				if (_log.isDebugEnabled()) {
@@ -814,7 +816,7 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 				_dlAppService.addFileEntry(
 					null, webDAVRequest.getGroupId(), parentFolderId, fileName,
 					contentType, title, StringPool.BLANK, StringPool.BLANK,
-					StringPool.BLANK, file, null, null, serviceContext);
+					StringPool.BLANK, file, null, null, null, serviceContext);
 			}
 
 			if (_log.isInfoEnabled()) {
@@ -1001,24 +1003,22 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 			WebDAVRequest webDAVRequest, long parentFolderId)
 		throws Exception {
 
-		List<Resource> resources = new ArrayList<>();
+		return TransformUtil.transform(
+			_dlAppService.getFileEntries(
+				webDAVRequest.getGroupId(), parentFolderId),
+			fileEntry -> {
+				if (DLWebDAVUtil.isRepresentableTitle(
+						fileEntry.getFileName())) {
 
-		List<FileEntry> fileEntries = _dlAppService.getFileEntries(
-			webDAVRequest.getGroupId(), parentFolderId);
+					return _toResource(webDAVRequest, fileEntry, true);
+				}
 
-		for (FileEntry fileEntry : fileEntries) {
-			if (!DLWebDAVUtil.isRepresentableTitle(fileEntry.getFileName())) {
 				_log.error(
 					"Unrepresentable WebDAV title for file name " +
 						fileEntry.getFileName());
 
-				continue;
-			}
-
-			resources.add(_toResource(webDAVRequest, fileEntry, true));
-		}
-
-		return resources;
+				return null;
+			});
 	}
 
 	private FileEntry _getFileEntryByFileName(
@@ -1085,16 +1085,10 @@ public class DLWebDAVStorageImpl extends BaseWebDAVStorageImpl {
 			WebDAVRequest webDAVRequest, long parentFolderId)
 		throws Exception {
 
-		List<Resource> resources = new ArrayList<>();
-
-		List<Folder> folders = _dlAppService.getFolders(
-			webDAVRequest.getGroupId(), parentFolderId, false);
-
-		for (Folder folder : folders) {
-			resources.add(_toResource(webDAVRequest, folder, true));
-		}
-
-		return resources;
+		return TransformUtil.transform(
+			_dlAppService.getFolders(
+				webDAVRequest.getGroupId(), parentFolderId, false),
+			folder -> _toResource(webDAVRequest, folder, true));
 	}
 
 	private long _getParentFolderId(long companyId, String[] pathArray)

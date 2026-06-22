@@ -22,8 +22,10 @@ import java.util.Date;
  * The cache model class for representing CommerceNotificationAttachment in entity cache.
  *
  * @author Alessio Antonio Rendina
+ * @deprecated
  * @generated
  */
+@Deprecated
 public class CommerceNotificationAttachmentCacheModel
 	implements CacheModel<CommerceNotificationAttachment>, Externalizable,
 			   MVCCModel {
@@ -230,3 +232,4 @@ public class CommerceNotificationAttachmentCacheModel
 	public boolean deleteOnSend;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:910678709

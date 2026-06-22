@@ -6,7 +6,7 @@ import {createOrderIOMap, NAME} from 'shared/util/pagination';
 import {noop} from 'lodash';
 import {OrderedMap} from 'immutable';
 import {OrderParams} from 'shared/util/records';
-import {useStatefulPagination} from 'shared/hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 interface ISearchableEntitiesTableModalProps {
 	className: string;
@@ -18,7 +18,9 @@ interface ISearchableEntitiesTableModalProps {
 	title: string;
 }
 
-const SearchableEntitiesTableModal: React.FC<ISearchableEntitiesTableModalProps> = ({
+const SearchableEntitiesTableModal: React.FC<
+	ISearchableEntitiesTableModalProps
+> = ({
 	className,
 	initialDelta = 10,
 	initialOrderIOMap = createOrderIOMap(NAME),
@@ -36,7 +38,7 @@ const SearchableEntitiesTableModal: React.FC<ISearchableEntitiesTableModalProps>
 		orderIOMap,
 		page,
 		query
-	} = useStatefulPagination(null, {
+	} = useStatefulPagination(undefined, {
 		initialDelta,
 		initialOrderIOMap
 	});
@@ -45,18 +47,20 @@ const SearchableEntitiesTableModal: React.FC<ISearchableEntitiesTableModalProps>
 		<Modal className={className} size={size}>
 			<Modal.Header onClose={onClose} title={title} />
 
-			<SearchableEntityTable
-				{...otherProps}
-				autoFocusSearch
-				delta={delta}
-				onDeltaChange={onDeltaChange}
-				onOrderIOMapChange={onOrderIOMapChange}
-				onPageChange={onPageChange}
-				onQueryChange={onQueryChange}
-				orderIOMap={orderIOMap}
-				page={page}
-				query={query}
-			/>
+			<Modal.Body className='p-0'>
+				<SearchableEntityTable
+					{...otherProps}
+					autoFocusSearch
+					delta={delta}
+					onDeltaChange={onDeltaChange}
+					onOrderIOMapChange={onOrderIOMapChange}
+					onPageChange={onPageChange}
+					onQueryChange={onQueryChange}
+					orderIOMap={orderIOMap}
+					page={page}
+					query={query}
+				/>
+			</Modal.Body>
 
 			<Modal.Footer>
 				<ClayButton

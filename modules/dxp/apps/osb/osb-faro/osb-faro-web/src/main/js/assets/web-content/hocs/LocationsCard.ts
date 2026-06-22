@@ -2,11 +2,17 @@ import getLocationsMapper, {
 	getLocationsMapperCountries
 } from 'cerebro-shared/hocs/mappers/locations';
 import URLConstants from 'shared/util/url-constants';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {GEOLOCATION_FRAGMENT} from 'shared/queries/fragments';
-import {gql} from 'apollo-boost';
-import {graphql} from '@apollo/react-hoc';
+import {gql} from '@apollo/client';
+import {graphql, OperationOption} from '@apollo/client/react/hoc';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {withLocationsCard} from 'cerebro-shared/hocs/LocationsCard';
+
+type JournalMetricResult = {
+	journal: {
+		viewsMetric: unknown;
+	};
+};
 
 const GEOLOCATION_QUERY = gql`
 	query WebContentMetrics(
@@ -50,7 +56,9 @@ const GEOLOCATION_QUERY = gql`
 const withWebContentLocations = () =>
 	graphql(
 		GEOLOCATION_QUERY,
-		getLocationsMapper(result => result.journal.viewsMetric)
+		getLocationsMapper(
+			(result: JournalMetricResult) => result.journal.viewsMetric
+		) as OperationOption<object, object>
 	);
 
 /**
@@ -60,7 +68,9 @@ const withWebContentLocations = () =>
 const withWebContentLocationsCountries = () =>
 	graphql(
 		GEOLOCATION_QUERY,
-		getLocationsMapperCountries(result => result.journal.viewsMetric)
+		getLocationsMapperCountries(
+			(result: JournalMetricResult) => result.journal.viewsMetric
+		) as OperationOption<object, object>
 	);
 
 export default withLocationsCard(
@@ -71,7 +81,7 @@ export default withLocationsCard(
 			'learn-more-about-views-by-location'
 		),
 		documentationUrl: URLConstants.SitesDashboardWebContentViewsByLocation,
-		id: Containers.ViewsByLocationCard,
+		reportContainer: ReportContainer.ViewsByLocationCard,
 		title: Liferay.Language.get('there-are-no-views-on-the-selected-period')
 	}
 );

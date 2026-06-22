@@ -13,8 +13,10 @@ import com.liferay.portal.kernel.service.persistence.BasePersistence;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryLocalService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationQueueEntryLocalServiceWrapper
 	implements CommerceNotificationQueueEntryLocalService,
 			   ServiceWrapper<CommerceNotificationQueueEntryLocalService> {
@@ -548,3 +550,4 @@ public class CommerceNotificationQueueEntryLocalServiceWrapper
 		_commerceNotificationQueueEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1347826454

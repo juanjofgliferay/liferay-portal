@@ -7,6 +7,7 @@ package com.liferay.search.experiences.rest.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
@@ -16,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -38,6 +38,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Generated("")
 @GraphQLName("FieldMapping")
 @JsonFilter("Liferay.Vulcan")
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement(name = "FieldMapping")
 public class FieldMapping implements Serializable {
 
@@ -49,88 +50,127 @@ public class FieldMapping implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FieldMapping.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Float getBoost() {
+		if (_boostSupplier != null) {
+			boost = _boostSupplier.get();
+
+			_boostSupplier = null;
+		}
+
 		return boost;
 	}
 
 	public void setBoost(Float boost) {
 		this.boost = boost;
+
+		_boostSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBoost(UnsafeSupplier<Float, Exception> boostUnsafeSupplier) {
-		try {
-			boost = boostUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_boostSupplier = () -> {
+			try {
+				return boostUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float boost;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _boostSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getField() {
+		if (_fieldSupplier != null) {
+			field = _fieldSupplier.get();
+
+			_fieldSupplier = null;
+		}
+
 		return field;
 	}
 
 	public void setField(String field) {
 		this.field = field;
+
+		_fieldSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setField(
 		UnsafeSupplier<String, Exception> fieldUnsafeSupplier) {
 
-		try {
-			field = fieldUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldSupplier = () -> {
+			try {
+				return fieldUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String field;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _fieldSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getLocale() {
+		if (_localeSupplier != null) {
+			locale = _localeSupplier.get();
+
+			_localeSupplier = null;
+		}
+
 		return locale;
 	}
 
 	public void setLocale(String locale) {
 		this.locale = locale;
+
+		_localeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLocale(
 		UnsafeSupplier<String, Exception> localeUnsafeSupplier) {
 
-		try {
-			locale = localeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_localeSupplier = () -> {
+			try {
+				return localeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String locale;
+
+	@JsonIgnore
+	private Supplier<String> _localeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -159,6 +199,8 @@ public class FieldMapping implements Serializable {
 
 		sb.append("{");
 
+		Float boost = getBoost();
+
 		if (boost != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -168,6 +210,8 @@ public class FieldMapping implements Serializable {
 
 			sb.append(boost);
 		}
+
+		String field = getField();
 
 		if (field != null) {
 			if (sb.length() > 1) {
@@ -182,6 +226,8 @@ public class FieldMapping implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String locale = getLocale();
 
 		if (locale != null) {
 			if (sb.length() > 1) {
@@ -202,8 +248,8 @@ public class FieldMapping implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.FieldMapping",
 		name = "x-class-name"
 	)
@@ -249,7 +295,10 @@ public class FieldMapping implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -295,3 +344,4 @@ public class FieldMapping implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-837841743

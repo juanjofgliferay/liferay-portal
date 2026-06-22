@@ -11,7 +11,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
 /**
  * @author Gavin Wan
@@ -66,17 +66,6 @@ public class ScriptPostProcess {
 
 	public void setInitalPage(StringBundler sb) {
 		_sb = sb;
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #setInitalPage(StringBundler)}
-	 */
-	@Deprecated
-	public void setInitalPage(com.liferay.portal.kernel.util.StringBundler sb) {
-		for (int i = 0; i < sb.index(); i++) {
-			_sb.append(sb.stringAt(0));
-		}
 	}
 
 	protected void doProcessPage(

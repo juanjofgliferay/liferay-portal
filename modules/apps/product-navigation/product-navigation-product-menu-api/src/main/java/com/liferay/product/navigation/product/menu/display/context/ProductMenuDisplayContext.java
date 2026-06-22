@@ -7,19 +7,15 @@ package com.liferay.product.navigation.product.menu.display.context;
 
 import com.liferay.application.list.PanelAppRegistry;
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.ControlPanelEntry;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -27,14 +23,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.product.navigation.applications.menu.configuration.ApplicationsMenuInstanceConfiguration;
 
-import java.util.Collections;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -47,9 +41,6 @@ public class ProductMenuDisplayContext {
 			ApplicationListWebKeys.PANEL_APP_REGISTRY);
 		_panelCategoryHelper = (PanelCategoryHelper)portletRequest.getAttribute(
 			ApplicationListWebKeys.PANEL_CATEGORY_HELPER);
-		_panelCategoryRegistry =
-			(PanelCategoryRegistry)portletRequest.getAttribute(
-				ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY);
 		_themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
@@ -59,23 +50,8 @@ public class ProductMenuDisplayContext {
 			return _childPanelCategories;
 		}
 
-		_childPanelCategories = _panelCategoryRegistry.getChildPanelCategories(
-			PanelCategoryKeys.ROOT, _themeDisplay.getPermissionChecker(),
-			_themeDisplay.getScopeGroup());
-
-		if (_isEnableApplicationsMenu()) {
-			return _childPanelCategories;
-		}
-
-		List<PanelCategory> applicationsMenuChildPanelCategories =
-			_panelCategoryRegistry.getChildPanelCategories(
-				PanelCategoryKeys.APPLICATIONS_MENU,
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroup());
-
-		Collections.reverse(applicationsMenuChildPanelCategories);
-
-		_childPanelCategories.addAll(0, applicationsMenuChildPanelCategories);
+		_childPanelCategories = _panelCategoryHelper.getChildPanelCategories(
+			PanelCategoryKeys.ROOT, _themeDisplay);
 
 		return _childPanelCategories;
 	}
@@ -103,31 +79,11 @@ public class ProductMenuDisplayContext {
 
 			if (Validator.isNotNull(_themeDisplay.getPpid())) {
 				PanelCategoryHelper panelCategoryHelper =
-					new PanelCategoryHelper(
-						_panelAppRegistry, _panelCategoryRegistry);
+					new PanelCategoryHelper(_panelAppRegistry);
 
 				for (PanelCategory panelCategory :
-						_panelCategoryRegistry.getChildPanelCategories(
+						PanelCategoryRegistryUtil.getChildPanelCategories(
 							PanelCategoryKeys.ROOT)) {
-
-					if (panelCategoryHelper.containsPortlet(
-							_themeDisplay.getPpid(), panelCategory.getKey(),
-							_themeDisplay.getPermissionChecker(),
-							_themeDisplay.getScopeGroup())) {
-
-						_rootPanelCategoryKey = panelCategory.getKey();
-
-						return _rootPanelCategoryKey;
-					}
-				}
-
-				if (_isEnableApplicationsMenu()) {
-					return _rootPanelCategoryKey;
-				}
-
-				for (PanelCategory panelCategory :
-						_panelCategoryRegistry.getChildPanelCategories(
-							PanelCategoryKeys.APPLICATIONS_MENU)) {
 
 					if (panelCategoryHelper.containsPortlet(
 							_themeDisplay.getPpid(), panelCategory.getKey(),
@@ -192,11 +148,7 @@ public class ProductMenuDisplayContext {
 
 		List<PanelCategory> childPanelCategories = getChildPanelCategories();
 
-		if (childPanelCategories.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return !childPanelCategories.isEmpty();
 	}
 
 	private boolean _hasAdministrationPortletPermission() throws Exception {
@@ -210,55 +162,15 @@ public class ProductMenuDisplayContext {
 		ControlPanelEntry controlPanelEntry =
 			portlet.getControlPanelEntryInstance();
 
-		if (!controlPanelEntry.hasAccessPermission(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getScopeGroup(), portlet)) {
-
-			return false;
-		}
-
-		return true;
+		return controlPanelEntry.hasAccessPermission(
+			_themeDisplay.getPermissionChecker(), _themeDisplay.getScopeGroup(),
+			portlet);
 	}
-
-	private boolean _isEnableApplicationsMenu() {
-		if (_enableApplicationsMenu != null) {
-			return _enableApplicationsMenu;
-		}
-
-		_enableApplicationsMenu = false;
-
-		try {
-			ApplicationsMenuInstanceConfiguration
-				applicationsMenuInstanceConfiguration =
-					ConfigurationProviderUtil.getCompanyConfiguration(
-						ApplicationsMenuInstanceConfiguration.class,
-						_themeDisplay.getCompanyId());
-
-			_enableApplicationsMenu =
-				applicationsMenuInstanceConfiguration.enableApplicationsMenu();
-
-			return _enableApplicationsMenu;
-		}
-		catch (ConfigurationException configurationException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Unable to get applications menu instance configuration",
-					configurationException);
-			}
-		}
-
-		return _enableApplicationsMenu;
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		ProductMenuDisplayContext.class);
 
 	private List<PanelCategory> _childPanelCategories;
-	private Boolean _enableApplicationsMenu;
 	private final HttpServletRequest _httpServletRequest;
 	private final PanelAppRegistry _panelAppRegistry;
 	private final PanelCategoryHelper _panelCategoryHelper;
-	private final PanelCategoryRegistry _panelCategoryRegistry;
 	private String _rootPanelCategoryKey;
 	private final ThemeDisplay _themeDisplay;
 

@@ -14,7 +14,7 @@ import {partition} from 'lodash';
 import {Segment} from 'shared/util/records';
 import {sequence} from 'shared/util/promise';
 import {useChannelContext} from 'shared/context/channel';
-import {useStatefulPagination} from 'shared/hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 const DELETE_OPTION = {
 	label: Liferay.Language.get('delete'),
@@ -50,16 +50,14 @@ interface IAssignSegmentsProps {
 }
 
 const AssignSegments: React.FC<IAssignSegmentsProps> = ({groupId, onClose}) => {
-	const {onOrderIOMapChange, orderIOMap} = useStatefulPagination(null, {
+	const {onOrderIOMapChange, orderIOMap} = useStatefulPagination(undefined, {
 		initialOrderIOMap: createOrderIOMap(NAME)
 	});
 
 	const {channels} = useChannelContext();
 
-	const {
-		unassignedSegments,
-		unassignedSegmentsDispatch
-	} = useUnassignedSegmentsContext();
+	const {unassignedSegments, unassignedSegmentsDispatch} =
+		useUnassignedSegmentsContext();
 
 	const [channelMappings, setChannelMappings] = useState(
 		unassignedSegments.reduce(
@@ -86,13 +84,19 @@ const AssignSegments: React.FC<IAssignSegmentsProps> = ({groupId, onClose}) => {
 		setChannelMappings({...channelMappings, [segmentId]: value});
 	};
 
-	const ChannelSelect = ({data: {id}, options}) => (
+	const ChannelSelect = ({
+		data: {id},
+		options
+	}: {
+		data: {id: string};
+		options: {label: string; value: string}[];
+	}) => (
 		<td>
 			<Picker
 				data-testid={`select-${id}`}
-				items={options as {label: string; value: string}[]}
+				items={options}
 				onSelectionChange={selectedValue =>
-					updateSegment(id, selectedValue)
+					updateSegment(id, selectedValue as string)
 				}
 				required
 				selectedKey={channelMappings[id]}
@@ -114,7 +118,7 @@ const AssignSegments: React.FC<IAssignSegmentsProps> = ({groupId, onClose}) => {
 
 		const segmentsFn = toUpdate.map(({channelId, id}) => {
 			if (channelId === DELETE_OPTION.value) {
-				return () => API.individualSegment.delete({groupId, id});
+				return () => API.individualSegment.delete({groupId, ids: [id]});
 			}
 
 			return () =>
@@ -130,8 +134,8 @@ const AssignSegments: React.FC<IAssignSegmentsProps> = ({groupId, onClose}) => {
 		} finally {
 			const segmentIdsToKeep = toKeep.map(({id}) => id);
 
-			unassignedSegmentsDispatch({
-				payload: unassignedSegments.filter(({id}) =>
+			unassignedSegmentsDispatch?.({
+				payload: unassignedSegments.filter(({id}: Segment) =>
 					segmentIdsToKeep.includes(id)
 				),
 				type: ActionType.setSegments
@@ -180,7 +184,9 @@ const AssignSegments: React.FC<IAssignSegmentsProps> = ({groupId, onClose}) => {
 							},
 							{
 								accessor: 'selectChannel',
-								cellRenderer: ChannelSelect,
+								cellRenderer: ChannelSelect as (params: {
+									[key: string]: any;
+								}) => React.ReactNode,
 								cellRendererProps: {
 									options: selectOptions
 								},

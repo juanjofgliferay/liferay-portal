@@ -10,15 +10,15 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.redirect.model.RedirectEntry;
-import com.liferay.redirect.service.RedirectEntryLocalService;
+import com.liferay.redirect.service.RedirectEntryService;
 import com.liferay.redirect.web.internal.constants.RedirectPortletKeys;
 import com.liferay.redirect.web.internal.display.context.RedirectEntryInfoPanelDisplayContext;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + RedirectPortletKeys.REDIRECT,
+		"jakarta.portlet.name=" + RedirectPortletKeys.REDIRECT,
 		"mvc.command.name=/redirect/info_panel"
 	},
 	service = MVCResourceCommand.class
@@ -46,7 +46,7 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 				ParamUtil.getLongValues(resourceRequest, "rowIds")) {
 
 			redirectEntries.add(
-				_redirectEntryLocalService.fetchRedirectEntry(redirectEntryId));
+				_redirectEntryService.fetchRedirectEntry(redirectEntryId));
 		}
 
 		resourceRequest.setAttribute(
@@ -62,6 +62,6 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 	private Portal _portal;
 
 	@Reference
-	private RedirectEntryLocalService _redirectEntryLocalService;
+	private RedirectEntryService _redirectEntryService;
 
 }

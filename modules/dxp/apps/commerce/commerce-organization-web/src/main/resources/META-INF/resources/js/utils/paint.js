@@ -140,7 +140,7 @@ export function printDescription(d, element, spritemap) {
 					MODEL_TYPE_MAP.organization,
 					MODEL_TYPE_MAP.account,
 					MODEL_TYPE_MAP.user,
-			  ]
+				]
 			: [MODEL_TYPE_MAP.user];
 
 	entities.reduce((x, nodeType) => {
@@ -225,15 +225,26 @@ export function fillEntityNode(nodeEnter, spritemap, openMenu) {
 
 	const nodesWithMenu = nodeEnter.filter((chartItem) => {
 		if (!chartItem.parent || chartItem.parent.data.type === 'fakeRoot') {
-			return false;
+			chartItem.data.isRootNode = true;
+
+			return hasPermissions(chartItem.data, [
+				ACTION_KEYS[chartItem.data.type].UPDATE,
+				ACTION_KEYS[chartItem.data.type].VIEW,
+			]);
 		}
 
-		return hasPermissions(chartItem.data, [
-			ACTION_KEYS[chartItem.data.type].DELETE,
-			ACTION_KEYS[chartItem.data.type].REMOVE,
-			ACTION_KEYS[chartItem.data.type].UPDATE,
-			ACTION_KEYS[chartItem.data.type].VIEW,
-		]);
+		chartItem.data.isRootNode = false;
+
+		return (
+			hasPermissions(chartItem.data, [
+				ACTION_KEYS[chartItem.data.type].DELETE,
+				ACTION_KEYS[chartItem.data.type].REMOVE,
+			]) ||
+			hasPermissions(chartItem.data, [
+				ACTION_KEYS[chartItem.data.type].UPDATE,
+				ACTION_KEYS[chartItem.data.type].VIEW,
+			])
+		);
 	});
 
 	const menuWrapper = nodesWithMenu

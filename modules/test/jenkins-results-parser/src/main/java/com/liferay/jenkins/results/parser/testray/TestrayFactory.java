@@ -7,37 +7,181 @@ package com.liferay.jenkins.results.parser.testray;
 
 import com.liferay.jenkins.results.parser.Build;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
-import com.liferay.jenkins.results.parser.SourceFormatBuild;
-import com.liferay.jenkins.results.parser.TopLevelBuild;
+import com.liferay.jenkins.results.parser.Retryable;
+import com.liferay.jenkins.results.parser.TopLevelBuildReport;
+import com.liferay.jenkins.results.parser.test.clazz.BaseAntTargetTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassMethod;
 import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.FunctionalAxisTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.JSUnitAxisTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.JUnitAxisTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.ModulesAxisTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.PlaywrightAxisTestClassGroup;
+
+import java.io.IOException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
  */
 public class TestrayFactory {
 
-	public static PortalLogTestrayCaseResult newPortalLogTestrayCaseResult(
-		TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
-		AxisTestClassGroup axisTestClassGroup) {
+	public static TestrayCaseResult newBuildTestrayCaseResult(
+		AxisTestClassGroup axisTestClassGroup, TestClass testClass,
+		TestClassMethod testClassMethod, TestrayBuild testrayBuild,
+		TopLevelBuildReport topLevelBuildReport) {
 
-		return new PortalLogTestrayCaseResult(
-			testrayBuild, topLevelBuild, axisTestClassGroup);
+		if (testrayBuild == null) {
+			throw new RuntimeException("Testray build is null");
+		}
+
+		if (topLevelBuildReport == null) {
+			throw new RuntimeException("Top level build report is null");
+		}
+
+		if (axisTestClassGroup == null) {
+			throw new RuntimeException("Axis test class group is null");
+		}
+
+		if (testClass != null) {
+			if (axisTestClassGroup instanceof FunctionalAxisTestClassGroup) {
+				return new FunctionalBatchBuildTestrayCaseResult(
+					axisTestClassGroup, testClass, testrayBuild,
+					topLevelBuildReport);
+			}
+			else if (axisTestClassGroup instanceof JSUnitAxisTestClassGroup) {
+				return new JSUnitBatchBuildTestrayCaseResult(
+					axisTestClassGroup, testClass, testrayBuild,
+					topLevelBuildReport);
+			}
+			else if (axisTestClassGroup instanceof JUnitAxisTestClassGroup) {
+				return new JUnitBatchBuildTestrayCaseResult(
+					axisTestClassGroup, testClass, testrayBuild,
+					topLevelBuildReport);
+			}
+			else if (axisTestClassGroup instanceof ModulesAxisTestClassGroup) {
+				if (testClass instanceof BaseAntTargetTestClass) {
+					return new AntTargetBatchBuildTestrayCaseResult(
+						axisTestClassGroup, testClass, testrayBuild,
+						topLevelBuildReport);
+				}
+
+				return new ModulesBatchBuildTestrayCaseResult(
+					axisTestClassGroup, testClass, testrayBuild,
+					topLevelBuildReport);
+			}
+			else if (axisTestClassGroup instanceof
+						PlaywrightAxisTestClassGroup) {
+
+				return new PlaywrightBatchBuildTestrayCaseResult(
+					axisTestClassGroup, testClass, testClassMethod,
+					testrayBuild, topLevelBuildReport);
+			}
+		}
+
+		if (Objects.equals(
+				topLevelBuildReport.getJobName(),
+				"test-portal-source-format")) {
+
+			return new SFBatchBuildTestrayCaseResult(
+				axisTestClassGroup, testrayBuild, topLevelBuildReport);
+		}
+
+		return new BatchBuildTestrayCaseResult<>(
+			axisTestClassGroup, testrayBuild, topLevelBuildReport);
+	}
+
+	public static TestrayCaseResult newBuildTestrayCaseResult(
+		AxisTestClassGroup axisTestClassGroup, TestClass testClass,
+		TestrayBuild testrayBuild, TopLevelBuildReport topLevelBuildReport) {
+
+		return newBuildTestrayCaseResult(
+			axisTestClassGroup, testClass, null, testrayBuild,
+			topLevelBuildReport);
+	}
+
+	public static TestrayCaseResult newBuildTestrayCaseResult(
+		AxisTestClassGroup axisTestClassGroup, TestrayBuild testrayBuild,
+		TopLevelBuildReport topLevelBuildReport) {
+
+		return newBuildTestrayCaseResult(
+			axisTestClassGroup, null, null, testrayBuild, topLevelBuildReport);
+	}
+
+	public static TestrayCaseResult newJSONObjectTestrayCaseResult(
+		TestrayBuild testrayBuild, JSONObject jsonObject) {
+
+		return new JSONObjectTestrayCaseResult(testrayBuild, jsonObject);
+	}
+
+	public static TestrayCaseResult newJSONObjectTestrayCaseResult(
+		TestrayServer testrayServer, JSONObject jsonObject) {
+
+		return new JSONObjectTestrayCaseResult(testrayServer, jsonObject);
+	}
+
+	public static PortalLogBatchBuildTestrayCaseResult
+		newPortalLogTestrayCaseResult(
+			AxisTestClassGroup axisTestClassGroup, TestrayBuild testrayBuild,
+			TopLevelBuildReport topLevelBuildReport) {
+
+		return new PortalLogBatchBuildTestrayCaseResult(
+			axisTestClassGroup, testrayBuild, topLevelBuildReport);
+	}
+
+	public static TestrayFactor newRunTestrayFactor(
+		TestrayFactor.Option testrayFactorOption, TestrayRun testrayRun) {
+
+		synchronized (_runTestrayFactors) {
+			TestrayBuild testrayBuild = testrayRun.getTestrayBuild();
+
+			TestrayFactor.Category testrayFactorCategory =
+				testrayFactorOption.getCategory();
+
+			String key = JenkinsResultsParserUtil.combine(
+				String.valueOf(testrayBuild.getID()), "__",
+				testrayRun.getRunIDString(), "__",
+				testrayFactorCategory.getName(), "__",
+				testrayFactorOption.getName());
+
+			RunTestrayFactor runTestrayFactor = _runTestrayFactors.get(key);
+
+			if (runTestrayFactor != null) {
+				return runTestrayFactor;
+			}
+
+			runTestrayFactor = new RunTestrayFactor(
+				testrayFactorOption, testrayRun);
+
+			_runTestrayFactors.put(key, runTestrayFactor);
+
+			return runTestrayFactor;
+		}
 	}
 
 	public static TestrayAttachment newTestrayAttachment(
 		TestrayCaseResult testrayCaseResult, String name, String key) {
 
-		return new DefaultTestrayAttachment(testrayCaseResult, name, key);
+		return newTestrayAttachment(testrayCaseResult, name, key, null);
+	}
+
+	public static TestrayAttachment newTestrayAttachment(
+		TestrayCaseResult testrayCaseResult, String name, String key, URL url) {
+
+		return new DefaultTestrayAttachment(testrayCaseResult, name, key, url);
 	}
 
 	public static TestrayAttachmentRecorder newTestrayAttachmentRecorder(
@@ -58,8 +202,7 @@ public class TestrayFactory {
 	}
 
 	public static TestrayAttachmentUploader newTestrayAttachmentUploader(
-		Build build, URL testrayServerURL,
-		TestrayAttachmentUploader.Type type) {
+		Build build, URL testrayServerURL) {
 
 		String testrayServerURLString = "";
 
@@ -68,8 +211,7 @@ public class TestrayFactory {
 		}
 
 		String key = JenkinsResultsParserUtil.combine(
-			build.getBuildURL(), "_", testrayServerURLString, "_",
-			type.toString());
+			build.getBuildURL(), "_", testrayServerURLString);
 
 		TestrayAttachmentUploader testrayAttachmentUploader =
 			_testrayAttachmentUploaders.get(key);
@@ -78,78 +220,418 @@ public class TestrayFactory {
 			return testrayAttachmentUploader;
 		}
 
-		if (type == TestrayAttachmentUploader.Type.RSYNC) {
-			testrayAttachmentUploader = new RsyncTestrayAttachmentUploader(
-				build, testrayServerURL);
-		}
-		else {
-			testrayAttachmentUploader = new S3TestrayAttachmentUploader(
-				build, testrayServerURL);
-		}
+		testrayAttachmentUploader = new CloudObjectTestrayAttachmentUploader(
+			build, testrayServerURL);
 
 		_testrayAttachmentUploaders.put(key, testrayAttachmentUploader);
 
 		return testrayAttachmentUploader;
 	}
 
-	public static TestrayBuild newTestrayBuild(String testrayBuildURL) {
-		TestrayBuild testrayBuild = _testrayBuilds.get(testrayBuildURL);
+	public static TestrayBuild newTestrayBuild(
+		TestrayRoutine testrayRoutine, JSONObject jsonObject) {
 
-		if (testrayBuild != null) {
+		synchronized (_testrayBuilds) {
+			long id = jsonObject.getLong("id");
+
+			TestrayBuild testrayBuild = _testrayBuilds.get(id);
+
+			if (testrayBuild != null) {
+				return testrayBuild;
+			}
+
+			testrayBuild = new TestrayBuild(testrayRoutine, jsonObject);
+
+			_testrayBuilds.put(id, testrayBuild);
+
 			return testrayBuild;
-		}
-
-		try {
-			testrayBuild = new TestrayBuild(new URL(testrayBuildURL));
-
-			_testrayBuilds.put(testrayBuildURL, testrayBuild);
-
-			return testrayBuild;
-		}
-		catch (MalformedURLException malformedURLException) {
-			throw new RuntimeException(malformedURLException);
 		}
 	}
 
-	public static TestrayCaseResult newTestrayCaseResult(
-		TestrayBuild testrayBuild, TopLevelBuild topLevelBuild,
-		AxisTestClassGroup axisTestClassGroup, TestClass testClass) {
+	public static TestrayBuild newTestrayBuild(
+		TestrayRoutine testrayRoutine, long id) {
 
-		if (testrayBuild == null) {
-			throw new RuntimeException("Testray build is null");
-		}
+		synchronized (_testrayBuilds) {
+			TestrayBuild testrayBuild = _testrayBuilds.get(id);
 
-		if (topLevelBuild == null) {
-			throw new RuntimeException("Top level build is null");
-		}
-
-		if (axisTestClassGroup == null) {
-			throw new RuntimeException("Axis test class group is null");
-		}
-
-		if (testClass != null) {
-			if (axisTestClassGroup instanceof FunctionalAxisTestClassGroup) {
-				return new FunctionalBatchBuildTestrayCaseResult(
-					testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
+			if (testrayBuild != null) {
+				return testrayBuild;
 			}
-			else if (axisTestClassGroup instanceof JUnitAxisTestClassGroup) {
-				return new JUnitBatchBuildTestrayCaseResult(
-					testrayBuild, topLevelBuild, axisTestClassGroup, testClass);
+
+			String filterString = JenkinsResultsParserUtil.combine(
+				"id eq '", String.valueOf(id),
+				"' and r_routineToBuilds_c_routineId eq '",
+				String.valueOf(testrayRoutine.getID()), "'");
+
+			TestrayServer testrayServer = testrayRoutine.getTestrayServer();
+
+			try {
+				Set<JSONObject> entityJSONObjects =
+					testrayServer.requestGraphQL(
+						"builds", TestrayBuild.FIELD_NAMES, filterString, null,
+						1, 1);
+
+				for (JSONObject entityJSONObject : entityJSONObjects) {
+					testrayBuild = new TestrayBuild(
+						testrayRoutine, entityJSONObject);
+
+					_testrayBuilds.put(id, testrayBuild);
+
+					return testrayBuild;
+				}
+
+				return null;
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
 			}
 		}
+	}
 
-		if (axisTestClassGroup instanceof PlaywrightAxisTestClassGroup) {
-			return new PlaywrightBatchBuildTestrayCaseResult(
-				testrayBuild, topLevelBuild, axisTestClassGroup);
+	public static TestrayBuild newTestrayBuild(
+		TestrayServer testrayServer, long id) {
+
+		synchronized (_testrayBuilds) {
+			TestrayBuild testrayBuild = _testrayBuilds.get(id);
+
+			if (testrayBuild != null) {
+				return testrayBuild;
+			}
+
+			try {
+				Set<JSONObject> entityJSONObjects =
+					testrayServer.requestGraphQL(
+						"builds", TestrayBuild.FIELD_NAMES,
+						JenkinsResultsParserUtil.combine(
+							"id eq '", String.valueOf(id), "'"),
+						null, 1, 1);
+
+				for (JSONObject entityJSONObject : entityJSONObjects) {
+					testrayBuild = new TestrayBuild(
+						testrayServer, entityJSONObject);
+
+					_testrayBuilds.put(id, testrayBuild);
+
+					return testrayBuild;
+				}
+
+				return null;
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
+		}
+	}
+
+	public static TestrayBuild newTestrayBuild(URL url) {
+		synchronized (_testrayBuilds) {
+			long id = TestrayBuild.getID(url);
+
+			if (id <= 0) {
+				return new TestrayBuild(url);
+			}
+
+			TestrayBuild testrayBuild = _testrayBuilds.get(id);
+
+			if (testrayBuild != null) {
+				return testrayBuild;
+			}
+
+			testrayBuild = new TestrayBuild(url);
+
+			_testrayBuilds.put(id, testrayBuild);
+
+			return testrayBuild;
+		}
+	}
+
+	public static TestrayCase newTestrayCase(
+		TestrayProject testrayProject, JSONObject jsonObject) {
+
+		return new TestrayCase(testrayProject, jsonObject);
+	}
+
+	public static TestrayCase newTestrayCase(
+		final TestrayProject testrayProject, String name,
+		TestrayCaseType testrayCaseType) {
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(name)) {
+			return null;
 		}
 
-		if (topLevelBuild instanceof SourceFormatBuild) {
-			return new SFBatchBuildTestrayCaseResult(
-				testrayBuild, topLevelBuild, axisTestClassGroup);
+		synchronized (_testrayCases) {
+			String key = JenkinsResultsParserUtil.combine(
+				String.valueOf(testrayProject.getID()), "__",
+				String.valueOf(testrayCaseType.getID()), "__", name);
+
+			TestrayCase testrayCase = _testrayCases.get(key);
+
+			if (testrayCase != null) {
+				return testrayCase;
+			}
+
+			final String filterString = JenkinsResultsParserUtil.combine(
+				"name eq '", name, "' and ",
+				"r_caseTypeToCases_c_caseTypeId eq '",
+				String.valueOf(testrayCaseType.getID()), "' and ",
+				"r_projectToCases_c_projectId eq '",
+				String.valueOf(testrayProject.getID()), "'");
+
+			final JSONObject requestJSONObject = new JSONObject();
+
+			requestJSONObject.put(
+				"name", name
+			).put(
+				"r_caseTypeToCases_c_caseTypeId", testrayCaseType.getID()
+			).put(
+				"r_projectToCases_c_projectId", testrayProject.getID()
+			);
+
+			Retryable<TestrayCase> retryable = new Retryable<TestrayCase>(
+				true, 3, 5, true) {
+
+				@Override
+				public TestrayCase execute() {
+					try {
+						TestrayServer testrayServer =
+							testrayProject.getTestrayServer();
+
+						Set<JSONObject> entityJSONObjects =
+							testrayServer.requestGraphQL(
+								"cases", TestrayCase.FIELD_NAMES, filterString,
+								null, 1, 1);
+
+						for (JSONObject entityJSONObject : entityJSONObjects) {
+							return new TestrayCase(
+								testrayProject, entityJSONObject);
+						}
+
+						long start =
+							JenkinsResultsParserUtil.getCurrentTimeMillis();
+
+						JSONObject responseJSONObject = new JSONObject(
+							testrayServer.requestPost(
+								"/o/c/cases", requestJSONObject.toString()));
+
+						long end =
+							JenkinsResultsParserUtil.getCurrentTimeMillis();
+
+						System.out.println(
+							JenkinsResultsParserUtil.combine(
+								"Testray Case '",
+								requestJSONObject.getString("name"),
+								"' created in ",
+								JenkinsResultsParserUtil.toDurationString(
+									end - start)));
+
+						return new TestrayCase(
+							testrayProject, responseJSONObject);
+					}
+					catch (IOException ioException) {
+						throw new RuntimeException(ioException);
+					}
+				}
+
+			};
+
+			testrayCase = retryable.executeWithRetries();
+
+			if (testrayCase != null) {
+				_testrayCases.put(key, testrayCase);
+			}
+
+			return testrayCase;
+		}
+	}
+
+	public static TestrayCaseType newTestrayCaseType(
+		TestrayServer testrayServer, JSONObject jsonObject) {
+
+		return new TestrayCaseType(testrayServer, jsonObject);
+	}
+
+	public static TestrayComponent newTestrayComponent(
+		TestrayProject testrayProject, JSONObject jsonObject) {
+
+		return new TestrayComponent(testrayProject, jsonObject);
+	}
+
+	public static TestrayFactor.Category newTestrayFactorCategory(
+		JSONObject jsonObject, TestrayServer testrayServer) {
+
+		if (jsonObject == null) {
+			return null;
 		}
 
-		return new BatchBuildTestrayCaseResult(
-			testrayBuild, topLevelBuild, axisTestClassGroup);
+		synchronized (_testrayFactorCategoriesNames) {
+			long id = jsonObject.getLong("id");
+
+			TestrayFactor.Category testrayFactorCategory =
+				_testrayFactorCategoriesIDs.get(id);
+
+			if (testrayFactorCategory != null) {
+				return testrayFactorCategory;
+			}
+
+			testrayFactorCategory = new TestrayFactor.Category(
+				jsonObject, testrayServer);
+
+			_testrayFactorCategoriesIDs.put(id, testrayFactorCategory);
+
+			_testrayFactorCategoriesNames.put(
+				testrayFactorCategory.getName(), testrayFactorCategory);
+
+			return testrayFactorCategory;
+		}
+	}
+
+	public static TestrayFactor.Category newTestrayFactorCategory(
+		long id, TestrayServer testrayServer) {
+
+		if (id <= 0) {
+			return null;
+		}
+
+		synchronized (_testrayFactorCategoriesNames) {
+			TestrayFactor.Category testrayFactorCategory =
+				_testrayFactorCategoriesIDs.get(id);
+
+			if (testrayFactorCategory != null) {
+				return testrayFactorCategory;
+			}
+
+			testrayFactorCategory = new TestrayFactor.Category(
+				id, testrayServer);
+
+			_testrayFactorCategoriesIDs.put(id, testrayFactorCategory);
+
+			String name = testrayFactorCategory.getName();
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(name)) {
+				_testrayFactorCategoriesNames.put(name, testrayFactorCategory);
+			}
+
+			return testrayFactorCategory;
+		}
+	}
+
+	public static TestrayFactor.Category newTestrayFactorCategory(
+		String name, TestrayServer testrayServer) {
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(name)) {
+			return null;
+		}
+
+		synchronized (_testrayFactorCategoriesNames) {
+			TestrayFactor.Category testrayFactorCategory =
+				_testrayFactorCategoriesNames.get(name);
+
+			if (testrayFactorCategory != null) {
+				return testrayFactorCategory;
+			}
+
+			testrayFactorCategory = new TestrayFactor.Category(
+				name, testrayServer);
+
+			_testrayFactorCategoriesNames.put(name, testrayFactorCategory);
+
+			_testrayFactorCategoriesIDs.put(
+				testrayFactorCategory.getID(), testrayFactorCategory);
+
+			return testrayFactorCategory;
+		}
+	}
+
+	public static TestrayFactor.Option newTestrayFactorOption(
+		JSONObject jsonObject, TestrayServer testrayServer) {
+
+		if (jsonObject == null) {
+			return null;
+		}
+
+		synchronized (_testrayFactorOptionsNames) {
+			long id = jsonObject.getLong("id");
+
+			TestrayFactor.Option testrayFactorOption =
+				_testrayFactorOptionsIDs.get(id);
+
+			if (testrayFactorOption != null) {
+				return testrayFactorOption;
+			}
+
+			testrayFactorOption = new TestrayFactor.Option(
+				jsonObject, testrayServer);
+
+			_testrayFactorOptionsIDs.put(id, testrayFactorOption);
+
+			_testrayFactorOptionsNames.put(
+				testrayFactorOption.getName(), testrayFactorOption);
+
+			return testrayFactorOption;
+		}
+	}
+
+	public static TestrayFactor.Option newTestrayFactorOption(
+		Long id, TestrayServer testrayServer) {
+
+		if ((id == null) || (id <= 0)) {
+			return null;
+		}
+
+		synchronized (_testrayFactorOptionsNames) {
+			TestrayFactor.Option testrayFactorOption =
+				_testrayFactorOptionsIDs.get(id);
+
+			if (testrayFactorOption != null) {
+				return testrayFactorOption;
+			}
+
+			testrayFactorOption = new TestrayFactor.Option(id, testrayServer);
+
+			_testrayFactorOptionsIDs.put(id, testrayFactorOption);
+
+			String name = testrayFactorOption.getName();
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(name)) {
+				_testrayFactorOptionsNames.put(name, testrayFactorOption);
+			}
+
+			return testrayFactorOption;
+		}
+	}
+
+	public static TestrayFactor.Option newTestrayFactorOption(
+		String name, TestrayServer testrayServer) {
+
+		synchronized (_testrayFactorOptionsNames) {
+			TestrayFactor.Option testrayFactorOption =
+				_testrayFactorOptionsNames.get(name);
+
+			if (testrayFactorOption != null) {
+				return testrayFactorOption;
+			}
+
+			testrayFactorOption = new TestrayFactor.Option(name, testrayServer);
+
+			_testrayFactorOptionsNames.put(name, testrayFactorOption);
+
+			_testrayFactorOptionsIDs.put(
+				testrayFactorOption.getID(), testrayFactorOption);
+
+			return testrayFactorOption;
+		}
+	}
+
+	public static TestrayProductVersion newTestrayProductVersion(
+		TestrayProject testrayProject, JSONObject jsonObject) {
+
+		return new TestrayProductVersion(testrayProject, jsonObject);
+	}
+
+	public static TestrayProject newTestrayProject(
+		TestrayServer testrayServer, JSONObject jsonObject) {
+
+		return new TestrayProject(testrayServer, jsonObject);
 	}
 
 	public static TestrayRoutine newTestrayRoutine(String testrayRoutineURL) {
@@ -160,6 +642,14 @@ public class TestrayFactory {
 		}
 
 		try {
+			Matcher testrayURLMatcher = _testrayURLPattern.matcher(
+				testrayRoutineURL);
+
+			if (!testrayURLMatcher.find()) {
+				throw new RuntimeException(
+					"Invalid Testray URL " + testrayRoutineURL);
+			}
+
 			testrayRoutine = new TestrayRoutine(new URL(testrayRoutineURL));
 
 			_testrayRoutines.put(testrayRoutineURL, testrayRoutine);
@@ -171,6 +661,74 @@ public class TestrayFactory {
 		}
 	}
 
+	public static TestrayRoutine newTestrayRoutine(
+		TestrayProject testrayProject, JSONObject jsonObject) {
+
+		return new TestrayRoutine(testrayProject, jsonObject);
+	}
+
+	public static TestrayRoutine newTestrayRoutine(
+		TestrayServer testrayServer, JSONObject jsonObject) {
+
+		return new TestrayRoutine(testrayServer, jsonObject);
+	}
+
+	public static TestrayRun newTestrayRun(
+		TestrayBuild testrayBuild, JSONObject jsonObject) {
+
+		synchronized (_testrayRuns) {
+			String key =
+				testrayBuild.getID() + "__" + jsonObject.getString("name");
+
+			TestrayRun testrayRun = _testrayRuns.get(key);
+
+			if (testrayRun != null) {
+				return testrayRun;
+			}
+
+			testrayRun = new TestrayRun(testrayBuild, jsonObject);
+
+			_testrayRuns.put(key, testrayRun);
+
+			return testrayRun;
+		}
+	}
+
+	public static TestrayRun newTestrayRun(
+		TestrayBuild testrayBuild, String batchName, String testSuiteName,
+		Properties properties) {
+
+		synchronized (_testrayRuns) {
+			String name = TestrayRun.getRunIDString(
+				batchName, testSuiteName, properties);
+
+			if (name == null) {
+				throw new RuntimeException(
+					"Please set testray.environment.default[master]");
+			}
+
+			String key = testrayBuild.getID() + "__" + name;
+
+			TestrayRun testrayRun = _testrayRuns.get(key);
+
+			if (testrayRun != null) {
+				return testrayRun;
+			}
+
+			testrayRun = new TestrayRun(testrayBuild, name);
+
+			_testrayRuns.put(key, testrayRun);
+
+			return testrayRun;
+		}
+	}
+
+	public static TestrayRunComparison newTestrayRunComparison(
+		TestrayRun testrayRunA, TestrayRun testrayRunB) {
+
+		return new TestrayRunComparison(testrayRunA, testrayRunB);
+	}
+
 	public static TestrayServer newTestrayServer(String testrayServerURL) {
 		TestrayServer testrayServer = _testrayServers.get(testrayServerURL);
 
@@ -178,16 +736,31 @@ public class TestrayFactory {
 			return testrayServer;
 		}
 
-		testrayServer = new DefaultTestrayServer(testrayServerURL);
+		Matcher testrayURLMatcher = _testrayURLPattern.matcher(
+			testrayServerURL);
+
+		if (!testrayURLMatcher.find()) {
+			throw new RuntimeException(
+				"Invalid Testray URL " + testrayServerURL);
+		}
+
+		testrayServer = new TestrayServer(testrayServerURL);
 
 		_testrayServers.put(testrayServerURL, testrayServer);
 
 		return testrayServer;
 	}
 
-	public static TopLevelBuildTestrayCaseResult
-		newTopLevelBuildTestrayCaseResult(
-			TestrayBuild testrayBuild, TopLevelBuild topLevelBuild) {
+	public static TestrayTeam newTestrayTeam(
+		TestrayProject testrayProject, JSONObject jsonObject) {
+
+		return new TestrayTeam(testrayProject, jsonObject);
+	}
+
+	public static TopLevelStandaloneBuildTestrayCaseResult
+		newTopLevelStandaloneBuildTestrayCaseResult(
+			TestrayBuild testrayBuild,
+			TopLevelBuildReport topLevelBuildReport) {
 
 		Long testrayBuildID = testrayBuild.getID();
 
@@ -199,28 +772,46 @@ public class TestrayFactory {
 			throw new RuntimeException("Please set a Testray build");
 		}
 
-		if (topLevelBuild == null) {
-			throw new RuntimeException("Please set a top level build");
+		if (topLevelBuildReport == null) {
+			throw new RuntimeException("Please set a top level build report");
 		}
 
 		_topLevelBuildTestrayCaseResults.put(
 			testrayBuildID,
-			new TopLevelBuildTestrayCaseResult(testrayBuild, topLevelBuild));
+			new TopLevelStandaloneBuildTestrayCaseResult(
+				testrayBuild, topLevelBuildReport));
 
 		return _topLevelBuildTestrayCaseResults.get(testrayBuildID);
 	}
 
+	private static final Map<String, RunTestrayFactor> _runTestrayFactors =
+		new ConcurrentHashMap<>();
 	private static final Map<Build, TestrayAttachmentRecorder>
-		_testrayAttachmentRecorders = new HashMap<>();
+		_testrayAttachmentRecorders = new ConcurrentHashMap<>();
 	private static final Map<String, TestrayAttachmentUploader>
-		_testrayAttachmentUploaders = new HashMap<>();
-	private static final Map<String, TestrayBuild> _testrayBuilds =
-		new HashMap<>();
+		_testrayAttachmentUploaders = new ConcurrentHashMap<>();
+	private static final Map<Long, TestrayBuild> _testrayBuilds =
+		new ConcurrentHashMap<>();
+	private static final Map<String, TestrayCase> _testrayCases =
+		new ConcurrentHashMap<>();
+	private static final Map<Long, TestrayFactor.Category>
+		_testrayFactorCategoriesIDs = new ConcurrentHashMap<>();
+	private static final Map<String, TestrayFactor.Category>
+		_testrayFactorCategoriesNames = new ConcurrentHashMap<>();
+	private static final Map<Long, TestrayFactor.Option>
+		_testrayFactorOptionsIDs = new ConcurrentHashMap<>();
+	private static final Map<String, TestrayFactor.Option>
+		_testrayFactorOptionsNames = new ConcurrentHashMap<>();
 	private static final Map<String, TestrayRoutine> _testrayRoutines =
-		new HashMap<>();
+		new ConcurrentHashMap<>();
+	private static final Map<String, TestrayRun> _testrayRuns =
+		new ConcurrentHashMap<>();
 	private static final Map<String, TestrayServer> _testrayServers =
-		new HashMap<>();
-	private static final Map<Long, TopLevelBuildTestrayCaseResult>
-		_topLevelBuildTestrayCaseResults = new HashMap<>();
+		new ConcurrentHashMap<>();
+	private static final Pattern _testrayURLPattern = Pattern.compile(
+		"https://(testray\\.liferay\\.com|webserver-testray2" +
+			"(-prd\\d*|-uat\\d*)?.lfr.cloud)");
+	private static final Map<Long, TopLevelStandaloneBuildTestrayCaseResult>
+		_topLevelBuildTestrayCaseResults = new ConcurrentHashMap<>();
 
 }

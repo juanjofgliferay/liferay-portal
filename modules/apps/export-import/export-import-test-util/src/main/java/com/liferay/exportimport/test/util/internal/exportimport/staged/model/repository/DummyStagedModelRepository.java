@@ -36,7 +36,6 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -81,8 +80,9 @@ public class DummyStagedModelRepository
 	public void deleteStagedModel(Dummy dummy) throws PortalException {
 		if (_dummies.remove(dummy)) {
 			systemEventLocalService.addSystemEvent(
-				0, dummy.getGroupId(), dummy.getModelClassName(),
-				dummy.getPrimaryKey(), dummy.getUuid(), StringPool.BLANK,
+				0, dummy.getGroupId(), StringPool.BLANK,
+				dummy.getModelClassName(), dummy.getPrimaryKey(),
+				dummy.getUuid(), StringPool.BLANK,
 				SystemEventConstants.TYPE_DELETE, StringPool.BLANK);
 		}
 	}
@@ -322,25 +322,23 @@ public class DummyStagedModelRepository
 
 		public List<Dummy> dynamicQuery(DynamicQuery dynamicQuery) {
 			try {
-				Object detachedCriteria = ReflectionTestUtil.getFieldValue(
-					dynamicQuery, "_detachedCriteria");
+				List<Criterion> criterions = ReflectionTestUtil.getFieldValue(
+					dynamicQuery, "_criterions");
 
-				Object criteriaImpl = ReflectionTestUtil.invoke(
-					detachedCriteria, "getCriteriaImpl", new Class<?>[0]);
-
-				Iterator<?> iterator = ReflectionTestUtil.invoke(
-					criteriaImpl, "iterateExpressionEntries", new Class<?>[0]);
-
-				if (!iterator.hasNext()) {
+				if (criterions.isEmpty()) {
 					return _dummies;
 				}
 
-				Predicate<Dummy> predicate = getPredicate(
-					String.valueOf(iterator.next()));
+				Predicate<Dummy> predicate = null;
 
-				while (iterator.hasNext()) {
-					predicate = predicate.and(
-						getPredicate(String.valueOf(iterator.next())));
+				for (Criterion criterion : criterions) {
+					if (predicate == null) {
+						predicate = getPredicate(String.valueOf(criterion));
+					}
+					else {
+						predicate = predicate.and(
+							getPredicate(String.valueOf(criterion)));
+					}
 				}
 
 				return ListUtil.filter(_dummies, predicate);

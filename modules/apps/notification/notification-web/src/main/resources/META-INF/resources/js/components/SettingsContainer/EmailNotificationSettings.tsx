@@ -3,180 +3,126 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayForm, {ClayCheckbox} from '@clayui/form';
-import ClayIcon from '@clayui/icon';
-import {ClayTooltipProvider} from '@clayui/tooltip';
-import {FormError, Input} from '@liferay/object-js-components-web';
-import {InputLocalized} from 'frontend-js-components-web';
-import React from 'react';
+import ClayPanel from '@clayui/panel';
+import {FormError, MultiSelectItem} from '@liferay/object-js-components-web';
+import {ILearnResourceContext} from 'frontend-js-components-web';
+import React, {useEffect, useState} from 'react';
 
 import {NotificationTemplateError} from '../EditNotificationTemplate';
+import {PrimaryRecipient} from './PrimaryRecipients';
+import {SecondaryRecipient} from './SecondaryRecipients';
+import {Sender} from './Sender';
+import {getEmailNotificationRoles} from './rolesUtil';
+import {getUserGroups} from './userGroupsUtil';
+
+import './EmailNotificationSettings.scss';
 
 interface EmailNotificationSettingsProps {
+	baseResourceURL: string;
 	errors: FormError<NotificationTemplate & NotificationTemplateError>;
-	selectedLocale: Locale;
+	learnResources: ILearnResourceContext;
+	selectedLocale: Liferay.Language.Locale;
 	setValues: (values: Partial<NotificationTemplate>) => void;
 	values: NotificationTemplate;
 }
 
+const RECIPIENT_OPTIONS = [
+	{
+		label: Liferay.Language.get('user-email-address'),
+		value: 'email',
+	},
+	{
+		label: Liferay.Language.get('roles'),
+		value: 'role',
+	},
+	Liferay.FeatureFlags['LPD-17564'] && {
+		label: Liferay.Language.get('subscribers'),
+		value: 'subscribers',
+	},
+	{
+		label: Liferay.Language.get('definition-of-terms'),
+		value: 'term',
+	},
+	{
+		label: Liferay.Language.get('user-groups'),
+		value: 'user-group',
+	},
+] as LabelValueObject[];
+
 export function EmailNotificationSettings({
+	baseResourceURL,
 	errors,
+	learnResources,
 	selectedLocale,
 	setValues,
 	values,
 }: EmailNotificationSettingsProps) {
+	const [roles, setRoles] = useState<MultiSelectItem[]>([]);
+	const [userGroups, setUserGroups] = useState<MultiSelectItem[]>([]);
+
+	useEffect(() => {
+		const fetchInitialData = async () => {
+			const emailNotificationRoles =
+				await getEmailNotificationRoles(baseResourceURL);
+			const emailNotificationUserGroups = await getUserGroups();
+
+			setRoles(emailNotificationRoles);
+			setUserGroups(emailNotificationUserGroups);
+		};
+
+		fetchInitialData();
+	}, [baseResourceURL]);
+
 	return (
-		<>
-			<InputLocalized
-				disabled={values.system}
-				error={errors.to}
-				label={Liferay.Language.get('to')}
-				name="to"
-				onChange={(translation) => {
-					setValues({
-						...values,
-						recipients: [
-							{
-								...values.recipients[0],
-								to: translation,
-							},
-						],
-					});
-				}}
-				placeholder=""
-				required
-				selectedLocale={selectedLocale}
-				translations={(values.recipients[0] as EmailRecipients).to}
-			/>
-
-			<ClayForm.Group className="ml-1 row">
-				<div className="mr-2">
-					<ClayCheckbox
-						checked={
-							(values.recipients[0] as EmailRecipients)
-								.singleRecipient
-						}
-						disabled={values.system}
-						label={Liferay.Language.get('send-emails-separately')}
-						onChange={({target: {checked}}) => {
-							setValues({
-								...values,
-								recipients: [
-									{
-										...values.recipients[0],
-										singleRecipient: checked,
-									},
-								],
-							});
-						}}
-					/>
-				</div>
-
-				<ClayTooltipProvider>
-					<span
-						title={Liferay.Language.get(
-							'each-to-recipient-will-receive-separate-emails'
-						)}
-					>
-						<ClayIcon
-							className="lfr__notification-template-email-notification-settings-tooltip-icon"
-							symbol="question-circle-full"
-						/>
-					</span>
-				</ClayTooltipProvider>
-			</ClayForm.Group>
-
-			<div className="row">
-				<div className="col-lg-6">
-					<Input
-						disabled={values.system}
-						label={Liferay.Language.get('cc')}
-						name="cc"
-						onChange={({target}) =>
-							setValues({
-								...values,
-								recipients: [
-									{
-										...values.recipients[0],
-										cc: target.value,
-									},
-								],
-							})
-						}
-						value={(values.recipients[0] as EmailRecipients).cc}
-					/>
-				</div>
-
-				<div className="col-lg-6">
-					<Input
-						disabled={values.system}
-						label={Liferay.Language.get('bcc')}
-						name="bcc"
-						onChange={({target}) =>
-							setValues({
-								...values,
-								recipients: [
-									{
-										...values.recipients[0],
-										bcc: target.value,
-									},
-								],
-							})
-						}
-						value={(values.recipients[0] as EmailRecipients).bcc}
-					/>
-				</div>
-			</div>
-
-			<div className="row">
-				<div className="col-lg-6">
-					<Input
-						disabled={values.system}
-						error={errors.from}
-						label={Liferay.Language.get('from-address')}
-						name="fromAddress"
-						onChange={({target}) =>
-							setValues({
-								...values,
-								recipients: [
-									{
-										...values.recipients[0],
-										from: target.value,
-									},
-								],
-							})
-						}
-						required
-						value={(values.recipients[0] as EmailRecipients).from}
-					/>
-				</div>
-
-				<div className="col-lg-6">
-					<InputLocalized
-						disabled={values.system}
-						error={errors.fromName}
-						label={Liferay.Language.get('from-name')}
-						name="fromName"
-						onChange={(translation) => {
-							setValues({
-								...values,
-								recipients: [
-									{
-										...values.recipients[0],
-										fromName: translation,
-									},
-								],
-							});
-						}}
-						placeholder=""
-						required
+		<div className="lfr__notification-template-email-notification-settings">
+			<ClayPanel
+				displayTitle={Liferay.Language.get('sender')}
+				displayType="unstyled"
+			>
+				<ClayPanel.Body>
+					<Sender
+						errors={errors}
 						selectedLocale={selectedLocale}
-						translations={
-							(values.recipients[0] as EmailRecipients).fromName
-						}
+						setValues={setValues}
+						values={values}
 					/>
-				</div>
-			</div>
-		</>
+				</ClayPanel.Body>
+			</ClayPanel>
+
+			<ClayPanel
+				displayTitle={Liferay.Language.get('primary-recipients')}
+				displayType="unstyled"
+			>
+				<ClayPanel.Body>
+					<PrimaryRecipient
+						errors={errors}
+						learnResources={learnResources}
+						recipientOptions={RECIPIENT_OPTIONS}
+						roles={roles}
+						selectedLocale={selectedLocale}
+						setValues={setValues}
+						userGroups={userGroups}
+						values={values}
+					/>
+				</ClayPanel.Body>
+			</ClayPanel>
+
+			<ClayPanel
+				displayTitle={Liferay.Language.get('secondary-recipients')}
+				displayType="unstyled"
+			>
+				<ClayPanel.Body>
+					<SecondaryRecipient
+						learnResources={learnResources}
+						recipientOptions={RECIPIENT_OPTIONS}
+						roles={roles}
+						selectedLocale={selectedLocale}
+						setValues={setValues}
+						userGroups={userGroups}
+						values={values}
+					/>
+				</ClayPanel.Body>
+			</ClayPanel>
+		</div>
 	);
 }

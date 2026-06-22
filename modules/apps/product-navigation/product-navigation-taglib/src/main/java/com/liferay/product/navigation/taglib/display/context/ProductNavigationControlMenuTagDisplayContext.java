@@ -16,16 +16,16 @@ import com.liferay.product.navigation.taglib.internal.servlet.ServletContextUtil
 import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.ui.IconTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.Writer;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Víctor Galán
@@ -91,34 +91,6 @@ public class ProductNavigationControlMenuTagDisplayContext {
 		return _productNavigationControlMenuEntriesMap;
 	}
 
-	public boolean hasControlMenuEntries() {
-		Map<String, List<ProductNavigationControlMenuEntry>>
-			productNavigationControlMenuEntriesMap =
-				getProductNavigationControlMenuEntriesMap();
-
-		for (Map.Entry<String, List<ProductNavigationControlMenuEntry>> entry :
-				productNavigationControlMenuEntriesMap.entrySet()) {
-
-			List<ProductNavigationControlMenuEntry>
-				productNavigationControlMenuEntries = entry.getValue();
-
-			if (!productNavigationControlMenuEntries.isEmpty()) {
-				for (ProductNavigationControlMenuEntry
-						productNavigationControlMenuEntry :
-							productNavigationControlMenuEntries) {
-
-					if (productNavigationControlMenuEntry.isRelevant(
-							_httpServletRequest)) {
-
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
-	}
-
 	public void writeProductNavigationControlMenuEntries(Writer writer)
 		throws Exception {
 
@@ -172,8 +144,18 @@ public class ProductNavigationControlMenuTagDisplayContext {
 		writer.append(key);
 		writer.append("-control-group\">");
 
+		boolean singleItem = false;
+
+		if (productNavigationControlMenuEntries.size() == 1) {
+			singleItem = true;
+		}
+
 		if (useList) {
 			writer.append("<ul ");
+
+			if (singleItem) {
+				writer.append("role=\"presentation\" ");
+			}
 		}
 		else {
 			writer.append("<div ");
@@ -186,7 +168,7 @@ public class ProductNavigationControlMenuTagDisplayContext {
 					productNavigationControlMenuEntries) {
 
 			_writeProductNavigationControlMenuEntry(
-				productNavigationControlMenuEntry, useList, writer);
+				productNavigationControlMenuEntry, singleItem, useList, writer);
 		}
 
 		if (useList) {
@@ -201,7 +183,7 @@ public class ProductNavigationControlMenuTagDisplayContext {
 
 	private void _writeProductNavigationControlMenuEntry(
 			ProductNavigationControlMenuEntry productNavigationControlMenuEntry,
-			boolean useList, Writer writer)
+			boolean singleItem, boolean useList, Writer writer)
 		throws Exception {
 
 		if (productNavigationControlMenuEntry.includeIcon(
@@ -212,6 +194,10 @@ public class ProductNavigationControlMenuTagDisplayContext {
 
 		if (useList) {
 			writer.append("<li ");
+
+			if (singleItem) {
+				writer.append("role=\"presentation\" ");
+			}
 		}
 		else {
 			writer.append("<div ");
@@ -233,7 +219,8 @@ public class ProductNavigationControlMenuTagDisplayContext {
 		String linkCssClass = productNavigationControlMenuEntry.getLinkCssClass(
 			_httpServletRequest);
 
-		iconTag.setLinkCssClass("btn btn-monospaced btn-sm " + linkCssClass);
+		iconTag.setLinkCssClass(
+			"btn btn-monospaced btn-sm control-menu-nav-link " + linkCssClass);
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)_httpServletRequest.getAttribute(

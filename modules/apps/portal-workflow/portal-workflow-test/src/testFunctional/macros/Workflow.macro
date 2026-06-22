@@ -2,9 +2,7 @@ definition {
 
 	@summary = "Default summary"
 	macro _gotoPendingFilter() {
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Pending");
+		ManagementBar.setFilterAndOrder(filterBy = "Pending");
 	}
 
 	@summary = "Default summary"
@@ -44,7 +42,7 @@ definition {
 			Button.clickSave();
 		}
 
-		for (var workflowResourceValue : list "Blogs Entry,Calendar Event,Comment,Content Page,Knowledge Base Article,Message Boards Message,Page Revision,Web Content Article,Wiki Page") {
+		for (var workflowResourceValue : list "Blogs Entry,Calendar Event,Comment,Content Page,Knowledge Base Article,Message Boards Message,Page Revision,Web Content Article") {
 			if (IsElementNotPresent(assetType = ${workflowResourceValue}, locator1 = "WorkflowConfiguration#ASSET_TYPE_WORKFLOW_ASSIGNED", workflowAssigned = "No Workflow")) {
 				AssertClick.pauseAssertTextClickAt(
 					key_rowEntry = ${workflowResourceValue},
@@ -164,7 +162,7 @@ definition {
 			workflowAssignedTo = ${workflowAssignedTo},
 			workflowTask = ${workflowTask});
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Approve");
 
 		Workflow.confirmWorkflowAction();
 
@@ -252,7 +250,7 @@ definition {
 
 	@summary = "Default summary"
 	macro assignByDetails(comment = null, user = null) {
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to...");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to...");
 
 		AssertTextEquals(
 			locator1 = "WCPreview#PREVIEW_TITLE",
@@ -273,8 +271,6 @@ definition {
 		Button.clickDone();
 
 		Alert.viewSuccessMessage();
-
-		WaitForLiferayEvent.initializeLiferayEventLog();
 	}
 
 	@summary = "Default summary"
@@ -318,6 +314,10 @@ definition {
 
 		Workflow.confirmWorkflowAction();
 
+		if (IsElementNotPresent(key_tab = "Assigned to Me", locator1 = "NavTab#TAB_LINK")) {
+			Refresh();
+		}
+
 		Workflow.viewTaskAssignedToMe(
 			ddlDataDefinitionName = ${ddlDataDefinitionName},
 			multipleTasks = ${multipleTasks},
@@ -345,7 +345,7 @@ definition {
 			workflowAssetTitle = ${workflowAssetTitle},
 			workflowTask = ${workflowTask});
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		Workflow.confirmWorkflowAction();
 
@@ -562,10 +562,7 @@ definition {
 
 	@summary = "Default summary"
 	macro duplicateNotPublishedWorkflow(workflowName = null, workflowCopyName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Click(
 			key_workflowDefinitionTitle = ${workflowName},
@@ -580,10 +577,7 @@ definition {
 
 	@summary = "Default summary"
 	macro duplicateSingleApproverWorkflow(workflowName = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Click(
 			key_workflowDefinitionTitle = "Single Approver",
@@ -613,9 +607,7 @@ definition {
 
 	@summary = "Default summary"
 	macro gotoCompletedFilter() {
-		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
-
-		MenuItem.click(menuItem = "Completed");
+		ManagementBar.setFilterAndOrder(filterBy = "Completed");
 	}
 
 	@summary = "Default summary"
@@ -625,6 +617,8 @@ definition {
 		AssertClick(
 			locator1 = "MyWorkflowTasks#TABLE_GENERIC_ASSET_TITLE",
 			value1 = ${workflowAssetTitle});
+
+		WaitForElementPresent(locator1 = "WorkflowSubmissionsTask#PREVIEW_VIEW");
 
 		Workflow.gotoPreviewView();
 	}
@@ -712,6 +706,8 @@ definition {
 
 		Click(locator1 = "MyWorkflowTasks#TABLE_GENERIC_ASSET_TITLE");
 
+		WaitForElementPresent(locator1 = "WorkflowSubmissionsTask#PREVIEW_VIEW");
+
 		Workflow.gotoPreviewView();
 	}
 
@@ -726,8 +722,10 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro openWorkflowListView() {
-		Navigator.openSpecificURL(url = "/group/control_panel/manage?p_p_id=com_liferay_portal_workflow_web_portlet_ControlPanelWorkflowPortlet&p_p_lifecycle=0&p_p_state=maximized&p_p_mode=view&_com_liferay_portal_workflow_web_portlet_ControlPanelWorkflowPortlet_tab=workflows");
+	macro openWorkflowListView(baseURL = null) {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/control_panel/manage?p_p_id=com_liferay_portal_workflow_web_portlet_ControlPanelWorkflowPortlet&p_p_lifecycle=0&p_p_state=maximized&p_p_mode=view&_com_liferay_portal_workflow_web_portlet_ControlPanelWorkflowPortlet_tab=workflows");
 	}
 
 	@summary = "Default summary"
@@ -832,7 +830,7 @@ definition {
 			workflowAssignedTo = ${workflowAssignedTo},
 			workflowTask = ${workflowTask});
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Reject");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Reject");
 
 		Workflow.confirmWorkflowAction();
 
@@ -884,7 +882,7 @@ definition {
 			workflowAssignedTo = ${workflowAssignedTo},
 			workflowTask = ${workflowTask});
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Resubmit");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Resubmit");
 
 		Button.clickDone();
 
@@ -936,10 +934,7 @@ definition {
 
 	@summary = "Default summary"
 	macro tearDownPortalWorkflow() {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -966,25 +961,19 @@ definition {
 			panel = "Site Administration",
 			portlet = "Web Content");
 
-		Workflow.configureWCWorkflowViaFolderInfo(workflowDefinition = "No Workflow");
+		DMDocument.expandInfo();
 	}
 
 	@summary = "Default summary"
 	macro tearDownSpecificWorkflowDefinition(workflowDefinitionTitle = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		var key_workflowDefinitionTitle = ${workflowDefinitionTitle};
 
 		while (IsElementPresent(locator1 = "WorkflowDefinition#DEFINITION_TABLE_SPECIFIC_DEFINITION_ELLIPSIS")) {
 			Workflow.unpublishWorkflowDefinition(workflowDefinitionTitle = ${workflowDefinitionTitle});
 
-			ApplicationsMenu.gotoPortlet(
-				category = "Workflow",
-				panel = "Applications",
-				portlet = "Process Builder");
+			Workflow.openWorkflowListView();
 
 			Workflow.deleteWorkflowDefinition(workflowDefinitionTitle = ${workflowDefinitionTitle});
 		}
@@ -992,10 +981,7 @@ definition {
 
 	@summary = "Default summary"
 	macro tearDownWorkflowDefinitions() {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		while (IsElementPresent(locator1 = "WorkflowDefinition#DEFINITION_TABLE_EXTRA")) {
 			if (IsElementPresent(locator1 = "WorkflowDefinition#DEFINITION_TABLE_DEFINITION_EXTRA_ELLIPSIS")) {
@@ -1240,7 +1226,7 @@ definition {
 
 		AssertElementPresent(locator1 = "MyWorkflowTasks#ASSIGNED_TO_ME_TABLE_END_DATE");
 
-		AssertElementNotPresent(locator1 = "//div[@id='_158_workflowInstancesSearchContainer']//tr[contains(.,'${key_workflowAssetTitle}')]/td[7]/span/a[contains(@id,'menu_withdraw-submission')]/span");
+		AssertElementNotPresent(locator1 = "//div[@id='_158_workflowInstancesSearchContainer']//tr[contains(.,'${key_workflowAssetTitle}')]/td[7]/a[contains(@id,'menu_withdraw-submission')]/span");
 
 		AssertTextNotPresent(value1 = "Withdraw Submission");
 	}
@@ -1489,11 +1475,18 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro viewPendingTasks(workflowAssetType = null, workflowTask = null, workflowAssetTitle = null) {
+	macro viewPendingTasks(workflowAssetType = null, workflowTask = null, workflowAssetTitle = null, workflowNavTab = null) {
 		Workflow._gotoPendingFilter();
 
 		var key_workflowAssetTitle = ${workflowAssetTitle};
 		var key_workflowTask = ${workflowTask};
+
+		if (isSet(workflowNavTab)) {
+			Navigator.gotoNavTab(navTab = ${workflowNavTab});
+		}
+		else {
+			Navigator.gotoNavTab(navTab = "Assigned to My Roles");
+		}
 
 		AssertTextEquals(
 			locator1 = "MyWorkflowTasks#ASSIGNED_TO_MY_ROLES_TABLE_TASK",

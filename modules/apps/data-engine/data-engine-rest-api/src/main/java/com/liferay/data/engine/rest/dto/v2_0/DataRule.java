@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Jeyvison Nascimento
@@ -49,120 +48,172 @@ public class DataRule implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DataRule.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map[] getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map[] actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActions(
 		UnsafeSupplier<Map[], Exception> actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map[] actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map[]> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map[] getConditions() {
+		if (_conditionsSupplier != null) {
+			conditions = _conditionsSupplier.get();
+
+			_conditionsSupplier = null;
+		}
+
 		return conditions;
 	}
 
 	public void setConditions(Map[] conditions) {
 		this.conditions = conditions;
+
+		_conditionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setConditions(
 		UnsafeSupplier<Map[], Exception> conditionsUnsafeSupplier) {
 
-		try {
-			conditions = conditionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_conditionsSupplier = () -> {
+			try {
+				return conditionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map[] conditions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map[]> _conditionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getLogicalOperator() {
+		if (_logicalOperatorSupplier != null) {
+			logicalOperator = _logicalOperatorSupplier.get();
+
+			_logicalOperatorSupplier = null;
+		}
+
 		return logicalOperator;
 	}
 
 	public void setLogicalOperator(String logicalOperator) {
 		this.logicalOperator = logicalOperator;
+
+		_logicalOperatorSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLogicalOperator(
 		UnsafeSupplier<String, Exception> logicalOperatorUnsafeSupplier) {
 
-		try {
-			logicalOperator = logicalOperatorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_logicalOperatorSupplier = () -> {
+			try {
+				return logicalOperatorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String logicalOperator;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _logicalOperatorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, Object> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, Object>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> name;
+
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _nameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -191,6 +242,8 @@ public class DataRule implements Serializable {
 
 		sb.append("{");
 
+		Map[] actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -210,6 +263,8 @@ public class DataRule implements Serializable {
 
 			sb.append("]");
 		}
+
+		Map[] conditions = getConditions();
 
 		if (conditions != null) {
 			if (sb.length() > 1) {
@@ -231,6 +286,8 @@ public class DataRule implements Serializable {
 			sb.append("]");
 		}
 
+		String logicalOperator = getLogicalOperator();
+
 		if (logicalOperator != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -244,6 +301,8 @@ public class DataRule implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Map<String, Object> name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -260,8 +319,8 @@ public class DataRule implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.data.engine.rest.dto.v2_0.DataRule",
 		name = "x-class-name"
 	)
@@ -307,7 +366,10 @@ public class DataRule implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -353,3 +415,4 @@ public class DataRule implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-644373829

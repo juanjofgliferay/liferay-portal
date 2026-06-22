@@ -24,6 +24,7 @@ import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.portal.workflow.kaleo.exception.DuplicateKaleoDefinitionExternalReferenceCodeException;
 import com.liferay.portal.workflow.kaleo.exception.NoSuchDefinitionException;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionLocalServiceUtil;
@@ -112,13 +113,14 @@ public class KaleoDefinitionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		KaleoDefinition newKaleoDefinition = _persistence.create(pk);
-
-		newKaleoDefinition.setMvccVersion(RandomTestUtil.nextLong());
+		KaleoDefinition newKaleoDefinition = addKaleoDefinition();
 
 		newKaleoDefinition.setCtCollectionId(RandomTestUtil.nextLong());
+
+		newKaleoDefinition.setUuid(RandomTestUtil.randomString());
+
+		newKaleoDefinition.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newKaleoDefinition.setGroupId(RandomTestUtil.nextLong());
 
@@ -146,6 +148,8 @@ public class KaleoDefinitionPersistenceTest {
 
 		newKaleoDefinition.setActive(RandomTestUtil.randomBoolean());
 
+		newKaleoDefinition.setStatus(RandomTestUtil.nextInt());
+
 		_kaleoDefinitions.add(_persistence.update(newKaleoDefinition));
 
 		KaleoDefinition existingKaleoDefinition = _persistence.findByPrimaryKey(
@@ -157,6 +161,11 @@ public class KaleoDefinitionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoDefinition.getCtCollectionId(),
 			newKaleoDefinition.getCtCollectionId());
+		Assert.assertEquals(
+			existingKaleoDefinition.getUuid(), newKaleoDefinition.getUuid());
+		Assert.assertEquals(
+			existingKaleoDefinition.getExternalReferenceCode(),
+			newKaleoDefinition.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingKaleoDefinition.getKaleoDefinitionId(),
 			newKaleoDefinition.getKaleoDefinitionId());
@@ -195,6 +204,58 @@ public class KaleoDefinitionPersistenceTest {
 			newKaleoDefinition.getVersion());
 		Assert.assertEquals(
 			existingKaleoDefinition.isActive(), newKaleoDefinition.isActive());
+		Assert.assertEquals(
+			existingKaleoDefinition.getStatus(),
+			newKaleoDefinition.getStatus());
+	}
+
+	@Test(
+		expected = DuplicateKaleoDefinitionExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		KaleoDefinition kaleoDefinition = addKaleoDefinition();
+
+		KaleoDefinition newKaleoDefinition = addKaleoDefinition();
+
+		newKaleoDefinition.setCompanyId(kaleoDefinition.getCompanyId());
+
+		newKaleoDefinition = _persistence.update(newKaleoDefinition);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newKaleoDefinition);
+
+		newKaleoDefinition.setExternalReferenceCode(
+			kaleoDefinition.getExternalReferenceCode());
+
+		_persistence.update(newKaleoDefinition);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUUID_G() throws Exception {
+		_persistence.countByUUID_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByUUID_G("null", 0L);
+
+		_persistence.countByUUID_G((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
 	}
 
 	@Test
@@ -202,6 +263,13 @@ public class KaleoDefinitionPersistenceTest {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
 
 		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
+	public void testCountByActive() throws Exception {
+		_persistence.countByActive(RandomTestUtil.randomBoolean());
+
+		_persistence.countByActive(RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -214,20 +282,21 @@ public class KaleoDefinitionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_S() throws Exception {
-		_persistence.countByC_S(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByC_S(0L, "null");
-
-		_persistence.countByC_S(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByC_A() throws Exception {
 		_persistence.countByC_A(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByC_A(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByG_C_S() throws Exception {
+		_persistence.countByG_C_S(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "");
+
+		_persistence.countByG_C_S(0L, 0L, "null");
+
+		_persistence.countByG_C_S(0L, 0L, (String)null);
 	}
 
 	@Test
@@ -252,14 +321,25 @@ public class KaleoDefinitionPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_S_A() throws Exception {
-		_persistence.countByC_S_A(
-			RandomTestUtil.nextLong(), "", RandomTestUtil.randomBoolean());
+	public void testCountByG_C_S_A() throws Exception {
+		_persistence.countByG_C_S_A(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "",
+			RandomTestUtil.randomBoolean());
 
-		_persistence.countByC_S_A(0L, "null", RandomTestUtil.randomBoolean());
+		_persistence.countByG_C_S_A(
+			0L, 0L, "null", RandomTestUtil.randomBoolean());
 
-		_persistence.countByC_S_A(
-			0L, (String)null, RandomTestUtil.randomBoolean());
+		_persistence.countByG_C_S_A(
+			0L, 0L, (String)null, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -288,10 +368,11 @@ public class KaleoDefinitionPersistenceTest {
 	protected OrderByComparator<KaleoDefinition> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"KaleoDefinition", "mvccVersion", true, "ctCollectionId", true,
-			"kaleoDefinitionId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "name", true, "title", true, "description",
-			true, "scope", true, "version", true, "active", true);
+			"uuid", true, "externalReferenceCode", true, "kaleoDefinitionId",
+			true, "groupId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true, "name",
+			true, "title", true, "description", true, "scope", true, "version",
+			true, "active", true, "status", true);
 	}
 
 	@Test
@@ -562,6 +643,17 @@ public class KaleoDefinitionPersistenceTest {
 
 	private void _assertOriginalValues(KaleoDefinition kaleoDefinition) {
 		Assert.assertEquals(
+			kaleoDefinition.getUuid(),
+			ReflectionTestUtil.invoke(
+				kaleoDefinition, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "uuid_"));
+		Assert.assertEquals(
+			Long.valueOf(kaleoDefinition.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				kaleoDefinition, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
+
+		Assert.assertEquals(
 			Long.valueOf(kaleoDefinition.getCompanyId()),
 			ReflectionTestUtil.<Long>invoke(
 				kaleoDefinition, "getColumnOriginalValue",
@@ -603,6 +695,17 @@ public class KaleoDefinitionPersistenceTest {
 			ReflectionTestUtil.<Boolean>invoke(
 				kaleoDefinition, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "active_"));
+
+		Assert.assertEquals(
+			kaleoDefinition.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				kaleoDefinition, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(kaleoDefinition.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				kaleoDefinition, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected KaleoDefinition addKaleoDefinition() throws Exception {
@@ -610,9 +713,11 @@ public class KaleoDefinitionPersistenceTest {
 
 		KaleoDefinition kaleoDefinition = _persistence.create(pk);
 
-		kaleoDefinition.setMvccVersion(RandomTestUtil.nextLong());
-
 		kaleoDefinition.setCtCollectionId(RandomTestUtil.nextLong());
+
+		kaleoDefinition.setUuid(RandomTestUtil.randomString());
+
+		kaleoDefinition.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		kaleoDefinition.setGroupId(RandomTestUtil.nextLong());
 
@@ -640,6 +745,8 @@ public class KaleoDefinitionPersistenceTest {
 
 		kaleoDefinition.setActive(RandomTestUtil.randomBoolean());
 
+		kaleoDefinition.setStatus(RandomTestUtil.nextInt());
+
 		_kaleoDefinitions.add(_persistence.update(kaleoDefinition));
 
 		return kaleoDefinition;
@@ -651,3 +758,4 @@ public class KaleoDefinitionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1227469039

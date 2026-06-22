@@ -5,12 +5,12 @@
 
 package com.liferay.portal.image;
 
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.ImageResolutionException;
 import com.liferay.portal.kernel.image.CMYKImageTool;
 import com.liferay.portal.kernel.image.ImageBag;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Image;
@@ -20,12 +20,12 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.model.impl.ImageImpl;
 import com.liferay.portal.module.framework.ModuleFrameworkUtil;
 import com.liferay.portal.util.FileImpl;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.awt.AlphaComposite;
 import java.awt.Graphics;
@@ -252,7 +252,7 @@ public class ImageToolUtil {
 
 		String[] keys = renderedImage.getPropertyNames();
 
-		if (!ArrayUtil.isEmpty(keys)) {
+		if (ArrayUtil.isNotEmpty(keys)) {
 			for (String key : keys) {
 				properties.put(key, renderedImage.getProperty(key));
 			}
@@ -286,6 +286,32 @@ public class ImageToolUtil {
 		write(renderedImage, contentType, unsyncByteArrayOutputStream);
 
 		return unsyncByteArrayOutputStream.toByteArray();
+	}
+
+	public static Image getDefaultCompanyGroupLogo() {
+		if (_defaultCompanyGroupLogo != null) {
+			return _defaultCompanyGroupLogo;
+		}
+
+		ClassLoader classLoader = ImageToolUtil.class.getClassLoader();
+
+		try {
+			InputStream inputStream = classLoader.getResourceAsStream(
+				PropsUtil.get(PropsKeys.IMAGE_DEFAULT_COMPANY_GROUP_LOGO));
+
+			if (inputStream == null) {
+				_log.error("Default company group logo is not available");
+			}
+
+			_defaultCompanyGroupLogo = getImage(inputStream);
+		}
+		catch (Exception exception) {
+			_log.error(
+				"Unable to configure the default company group logo: " +
+					exception.getMessage());
+		}
+
+		return _defaultCompanyGroupLogo;
 	}
 
 	public static Image getDefaultCompanyLogo() {
@@ -352,6 +378,32 @@ public class ImageToolUtil {
 		}
 
 		return _defaultCompanyLogo;
+	}
+
+	public static Image getDefaultLiferayLogo() {
+		if (_defaultLiferayLogo != null) {
+			return _defaultLiferayLogo;
+		}
+
+		ClassLoader classLoader = ImageToolUtil.class.getClassLoader();
+
+		try {
+			InputStream inputStream = classLoader.getResourceAsStream(
+				"com/liferay/portal/dependencies/liferay_logo.png");
+
+			if (inputStream == null) {
+				_log.error("Default liferay logo is not available");
+			}
+
+			_defaultLiferayLogo = getImage(inputStream);
+		}
+		catch (Exception exception) {
+			_log.error(
+				"Unable to configure the default liferay logo: " +
+					exception.getMessage());
+		}
+
+		return _defaultLiferayLogo;
 	}
 
 	public static Image getDefaultOrganizationLogo() {
@@ -504,11 +556,11 @@ public class ImageToolUtil {
 		Image image = new ImageImpl();
 
 		image.setCompanyId(CompanyThreadLocal.getCompanyId());
-		image.setTextObj(bytes);
 		image.setType(imageBag.getType());
 		image.setHeight(renderedImage.getHeight());
 		image.setWidth(renderedImage.getWidth());
 		image.setSize(size);
+		image.setTextObj(bytes);
 
 		return image;
 	}
@@ -964,7 +1016,9 @@ public class ImageToolUtil {
 
 	private static final Snapshot<CMYKImageTool> _cmykImageToolSnapshot =
 		new Snapshot<>(ImageToolUtil.class, CMYKImageTool.class);
+	private static Image _defaultCompanyGroupLogo;
 	private static Image _defaultCompanyLogo;
+	private static Image _defaultLiferayLogo;
 	private static Image _defaultOrganizationLogo;
 	private static Image _defaultSpacer;
 	private static Image _defaultUserFemalePortrait;

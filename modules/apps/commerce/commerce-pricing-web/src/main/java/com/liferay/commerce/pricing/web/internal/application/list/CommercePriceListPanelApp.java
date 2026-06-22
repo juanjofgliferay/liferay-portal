@@ -37,6 +37,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CommercePriceListPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "price-list";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -75,7 +80,7 @@ public class CommercePriceListPanelApp extends BasePanelApp {
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference(
-		target = "(javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST + ")"
+		target = "(jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST + ")"
 	)
 	private Portlet _portlet;
 

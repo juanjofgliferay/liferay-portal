@@ -22,9 +22,6 @@ public class CookiesConstants {
 
 	public static final int MAX_AGE = (int)(Time.YEAR / 1000);
 
-	public static final String NAME_COMMERCE_CONTINUE_AS_GUEST =
-		"COMMERCE_CONTINUE_AS_GUEST";
-
 	public static final String NAME_COMPANY_ID = "COMPANY_ID";
 
 	public static final String NAME_CONSENT_TYPE_FUNCTIONAL =
@@ -53,8 +50,11 @@ public class CookiesConstants {
 
 	public static final String NAME_REMEMBER_ME = "REMEMBER_ME";
 
-	public static final String NAME_REMOTE_PREFERENCE_PREFIX =
-		"REMOTE_PREFERENCE_";
+	public static final String NAME_REMEMBER_ME_TOKEN_ID =
+		"REMEMBER_ME_TOKEN_ID";
+
+	public static final String NAME_REMEMBER_ME_TOKEN_VALUE =
+		"REMEMBER_ME_TOKEN_VALUE";
 
 	public static final String NAME_USER_CONSENT_CONFIGURED =
 		"USER_CONSENT_CONFIGURED";

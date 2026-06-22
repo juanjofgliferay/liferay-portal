@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -74,7 +74,7 @@ SearchContainer<Document> searchContainer = searchResultsPortletDisplayContext.g
 		<c:if test="<%= searchResultsPortletDisplayContext.isShowPagination() %>">
 			<aui:form action="#" useNamespace="<%= false %>">
 				<liferay-ui:search-paginator
-					id='<%= liferayPortletResponse.getNamespace() + "searchContainerTag" %>'
+					id="<%= liferayPortletResponse.getNamespace() %>"
 					markupView="lexicon"
 					searchContainer="<%= searchContainer %>"
 				/>

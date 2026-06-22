@@ -3,21 +3,35 @@
 <model-hints>
 	<model name="com.liferay.oauth.client.persistence.model.OAuthClientASLocalMetadata">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="oAuthClientASLocalMetadataId" type="long" />
 		<field name="companyId" type="long" />
 		<field name="userId" type="long" />
 		<field name="userName" type="String" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
+		<field name="issuer" type="String">
+			<hint name="max-length">256</hint>
+		</field>
+		<field name="localWellKnownEnabled" type="boolean" />
 		<field name="localWellKnownURI" type="String">
 			<hint name="max-length">256</hint>
 		</field>
 		<field name="metadataJSON" type="String">
 			<hint-collection name="CLOB" />
 		</field>
+		<field name="oAuthASLocalWellKnownURI" type="String">
+			<hint name="max-length">256</hint>
+		</field>
+		<field name="oAuthASMetadataJSON" type="String">
+			<hint-collection name="CLOB" />
+		</field>
 	</model>
 	<model name="com.liferay.oauth.client.persistence.model.OAuthClientEntry">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="oAuthClientEntryId" type="long" />
 		<field name="companyId" type="long" />
 		<field name="userId" type="long" />
@@ -33,14 +47,40 @@
 		<field name="clientId" type="String">
 			<hint name="max-length">256</hint>
 		</field>
+		<field name="customClaimsJSON" type="String">
+			<hint-collection name="CLOB" />
+		</field>
 		<field name="infoJSON" type="String">
 			<hint-collection name="CLOB" />
 		</field>
+		<field name="matcherField" type="String" />
+		<field name="metadataCacheTime" type="long" />
 		<field name="OIDCUserInfoMapperJSON" type="String">
 			<hint name="max-length">3999</hint>
 		</field>
 		<field name="tokenRequestParametersJSON" type="String">
 			<hint name="max-length">3999</hint>
+		</field>
+	</model>
+	<model name="com.liferay.oauth.client.persistence.model.OAuthClientPRLocalMetadata">
+		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
+		<field name="oAuthClientPRLocalMetadataId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="localWellKnownEnabled" type="boolean" />
+		<field name="localWellKnownURI" type="String">
+			<hint name="max-length">256</hint>
+		</field>
+		<field name="metadataJSON" type="String">
+			<hint-collection name="CLOB" />
+		</field>
+		<field name="protectedResourceURI" type="String">
+			<hint name="max-length">256</hint>
 		</field>
 	</model>
 </model-hints>

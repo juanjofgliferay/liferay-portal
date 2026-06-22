@@ -12,12 +12,12 @@ import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
+import jakarta.portlet.RenderRequest;
+
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.RenderRequest;
 
 /**
  * @author Crescenzo Rega
@@ -53,6 +53,10 @@ public class CPSpecificationOptionsSearchFacetDisplayContext
 
 	public String getParameterValue() {
 		return _parameterValue;
+	}
+
+	public Double getPriority() {
+		return _priority;
 	}
 
 	public List<CPSpecificationOptionsSearchFacetTermDisplayContext>
@@ -95,6 +99,10 @@ public class CPSpecificationOptionsSearchFacetDisplayContext
 		_parameterValue = paramValue;
 	}
 
+	public void setPriority(Double priority) {
+		_priority = priority;
+	}
+
 	public void setRenderRequest(RenderRequest renderRequest) {
 		_renderRequest = renderRequest;
 	}
@@ -116,6 +124,7 @@ public class CPSpecificationOptionsSearchFacetDisplayContext
 	private String _paginationStartParameterName;
 	private String _parameterName;
 	private String _parameterValue;
+	private Double _priority;
 	private RenderRequest _renderRequest;
 
 }

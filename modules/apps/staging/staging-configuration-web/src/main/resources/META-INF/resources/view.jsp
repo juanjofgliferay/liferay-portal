@@ -15,9 +15,6 @@ liveGroupId = groupDisplayContextHelper.getLiveGroupId();
 
 UnicodeProperties liveGroupTypeSettingsUnicodeProperties = liveGroup.getTypeSettingsProperties();
 
-LayoutSet privateLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(liveGroup.getGroupId(), true);
-LayoutSet publicLayoutSet = LayoutSetLocalServiceUtil.getLayoutSet(liveGroup.getGroupId(), false);
-
 boolean liveGroupRemoteStaging = liveGroup.hasRemoteStagingGroup() && PropsValues.STAGING_LIVE_GROUP_REMOTE_STAGING_ENABLED;
 
 boolean stagedLocally = liveGroup.isStaged() && !liveGroup.isStagedRemotely();
@@ -30,7 +27,7 @@ if (stagedLocally) {
 	stagingGroupId = stagingGroup.getGroupId();
 }
 
-BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskManagerUtil.fetchFirstBackgroundTask(liveGroupId, BackgroundTaskExecutorNames.LAYOUT_STAGING_BACKGROUND_TASK_EXECUTOR, true, new BackgroundTaskCreateDateComparator(false));
+BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskManagerUtil.fetchFirstBackgroundTask(liveGroupId, BackgroundTaskExecutorNames.LAYOUT_STAGING_BACKGROUND_TASK_EXECUTOR, true, BackgroundTaskCreateDateComparator.getInstance(false));
 %>
 
 <c:choose>
@@ -68,85 +65,81 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 					<aui:input name="stagingGroupId" type="hidden" value="<%= stagingGroupId %>" />
 					<aui:input name="forceDisable" type="hidden" value="<%= false %>" />
 
-					<c:if test="<%= !privateLayoutSet.isLayoutSetPrototypeLinkActive() && !publicLayoutSet.isLayoutSetPrototypeLinkActive() %>">
-						<clay:sheet-header>
-							<div class="sheet-title">
-								<liferay-ui:message key="javax.portlet.title.com_liferay_staging_configuration_web_portlet_StagingConfigurationPortlet" />
-							</div>
-						</clay:sheet-header>
+					<clay:sheet-header>
+						<div class="sheet-title">
+							<liferay-ui:message key="jakarta.portlet.title.com_liferay_staging_configuration_web_portlet_StagingConfigurationPortlet" />
+						</div>
+					</clay:sheet-header>
 
-						<%@ include file="/staging_configuration_select_staging_type.jspf" %>
+					<%@ include file="/staging_configuration_select_staging_type.jspf" %>
 
-						<%@ include file="/staging_configuration_remote_options.jspf" %>
+					<%@ include file="/staging_configuration_remote_options.jspf" %>
 
-						<%@ include file="/staging_configuration_staged_portlets.jspf" %>
+					<%@ include file="/staging_configuration_staged_portlets.jspf" %>
 
-						<clay:sheet-footer>
+					<clay:sheet-footer>
+						<div class="btn-group-item">
 							<div class="btn-group-item">
-								<div class="btn-group-item">
-									<button class="btn btn-primary">
-										<span class="lfr-btn-label">
-											<liferay-ui:message key="save" />
-										</span>
-									</button>
-								</div>
+								<button class="btn btn-primary">
+									<span class="lfr-btn-label">
+										<liferay-ui:message key="save" />
+									</span>
+								</button>
 							</div>
-						</clay:sheet-footer>
+						</div>
+					</clay:sheet-footer>
 
-						<aui:script require="frontend-js-web/index as frontendJsWeb">
-							var {delegate} = frontendJsWeb;
+					<aui:script sandbox="<%= true %>">
+						var pwcWarning = document.getElementById('<portlet:namespace />pwcWarning');
+						var remoteStagingOptions = document.getElementById(
+							'<portlet:namespace />remoteStagingOptions'
+						);
+						var stagedPortlets = document.getElementById(
+							'<portlet:namespace />stagedPortlets'
+						);
+						var trashWarning = document.getElementById('<portlet:namespace />trashWarning');
+						var stagingTypes = document.getElementById('<portlet:namespace />stagingTypes');
 
-							var pwcWarning = document.getElementById('<portlet:namespace />pwcWarning');
-							var remoteStagingOptions = document.getElementById(
-								'<portlet:namespace />remoteStagingOptions'
-							);
-							var stagedPortlets = document.getElementById(
-								'<portlet:namespace />stagedPortlets'
-							);
-							var trashWarning = document.getElementById('<portlet:namespace />trashWarning');
-							var stagingTypes = document.getElementById('<portlet:namespace />stagingTypes');
+						if (
+							stagingTypes &&
+							pwcWarning &&
+							stagedPortlets &&
+							remoteStagingOptions &&
+							trashWarning
+						) {
+							Liferay.Util.delegate(stagingTypes, 'click', 'input', (event) => {
+								var value = event.target.closest('input').value;
 
-							if (
-								stagingTypes &&
-								pwcWarning &&
-								stagedPortlets &&
-								remoteStagingOptions &&
-								trashWarning
-							) {
-								delegate(stagingTypes, 'click', 'input', (event) => {
-									var value = event.target.closest('input').value;
+								if (value != '<%= StagingConstants.TYPE_LOCAL_STAGING %>') {
+									pwcWarning.classList.add('hide');
+								}
+								else {
+									pwcWarning.classList.remove('hide');
+								}
 
-									if (value != '<%= StagingConstants.TYPE_LOCAL_STAGING %>') {
-										pwcWarning.classList.add('hide');
-									}
-									else {
-										pwcWarning.classList.remove('hide');
-									}
+								if (value == '<%= StagingConstants.TYPE_NOT_STAGED %>') {
+									stagedPortlets.classList.add('hide');
+								}
+								else {
+									stagedPortlets.classList.remove('hide');
+								}
 
-									if (value == '<%= StagingConstants.TYPE_NOT_STAGED %>') {
-										stagedPortlets.classList.add('hide');
-									}
-									else {
-										stagedPortlets.classList.remove('hide');
-									}
+								if (value != '<%= StagingConstants.TYPE_REMOTE_STAGING %>') {
+									remoteStagingOptions.classList.add('hide');
+								}
+								else {
+									remoteStagingOptions.classList.remove('hide');
+								}
 
-									if (value != '<%= StagingConstants.TYPE_REMOTE_STAGING %>') {
-										remoteStagingOptions.classList.add('hide');
-									}
-									else {
-										remoteStagingOptions.classList.remove('hide');
-									}
-
-									if (value != '<%= StagingConstants.TYPE_LOCAL_STAGING %>') {
-										trashWarning.classList.add('hide');
-									}
-									else {
-										trashWarning.classList.remove('hide');
-									}
-								});
-							}
-						</aui:script>
-					</c:if>
+								if (value != '<%= StagingConstants.TYPE_LOCAL_STAGING %>') {
+									trashWarning.classList.add('hide');
+								}
+								else {
+									trashWarning.classList.remove('hide');
+								}
+							});
+						}
+					</aui:script>
 				</aui:form>
 			</clay:sheet>
 		</clay:container-fluid>
@@ -160,7 +153,7 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 	</c:otherwise>
 </c:choose>
 
-<script>
+<aui:script>
 	function <portlet:namespace />saveGroup(forceDisable) {
 		var form = document.<portlet:namespace />fm;
 		var ok = true;
@@ -168,9 +161,8 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 		function doSubmit() {
 			if (forceDisable) {
 				form.elements['<portlet:namespace />forceDisable'].value = true;
-				form.elements[
-					'<portlet:namespace />stagingType'
-				].value = <%= StagingConstants.TYPE_NOT_STAGED %>;
+				form.elements['<portlet:namespace />stagingType'].value =
+					<%= StagingConstants.TYPE_NOT_STAGED %>;
 			}
 
 			submitForm(form);
@@ -261,4 +253,4 @@ BackgroundTask lastCompletedInitialPublicationBackgroundTask = BackgroundTaskMan
 			});
 		}
 	})();
-</script>
+</aui:script>

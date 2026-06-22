@@ -8,60 +8,29 @@ package com.liferay.calendar.internal.search.spi.model.index.contributor;
 import com.liferay.calendar.internal.search.CalendarBookingBatchReindexer;
 import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.service.CalendarLocalService;
-import com.liferay.portal.search.batch.BatchIndexingActionable;
-import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
-import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
  */
-@Component(
-	property = "indexer.class.name=com.liferay.calendar.model.Calendar",
-	service = ModelIndexerWriterContributor.class
-)
 public class CalendarModelIndexerWriterContributor
-	implements ModelIndexerWriterContributor<Calendar> {
+	extends ModelIndexerWriterContributor<Calendar> {
 
-	@Override
-	public void customize(
-		BatchIndexingActionable batchIndexingActionable,
-		ModelIndexerWriterDocumentHelper modelIndexerWriterDocumentHelper) {
+	public CalendarModelIndexerWriterContributor(
+		CalendarBookingBatchReindexer calendarBookingBatchReindexer,
+		CalendarLocalService calendarLocalService) {
 
-		batchIndexingActionable.setPerformActionMethod(
-			(Calendar calendar) -> batchIndexingActionable.addDocuments(
-				modelIndexerWriterDocumentHelper.getDocument(calendar)));
-	}
+		super(calendarLocalService::getIndexableActionableDynamicQuery);
 
-	@Override
-	public BatchIndexingActionable getBatchIndexingActionable() {
-		return dynamicQueryBatchIndexingActionableFactory.
-			getBatchIndexingActionable(
-				calendarLocalService.getIndexableActionableDynamicQuery());
-	}
-
-	@Override
-	public long getCompanyId(Calendar calendar) {
-		return calendar.getCompanyId();
+		_calendarBookingBatchReindexer = calendarBookingBatchReindexer;
 	}
 
 	@Override
 	public void modelIndexed(Calendar calendar) {
-		calendarBookingBatchReindexer.reindex(
+		_calendarBookingBatchReindexer.reindex(
 			calendar.getCalendarId(), calendar.getCompanyId());
 	}
 
-	@Reference
-	protected CalendarBookingBatchReindexer calendarBookingBatchReindexer;
-
-	@Reference
-	protected CalendarLocalService calendarLocalService;
-
-	@Reference
-	protected DynamicQueryBatchIndexingActionableFactory
-		dynamicQueryBatchIndexingActionableFactory;
+	private final CalendarBookingBatchReindexer _calendarBookingBatchReindexer;
 
 }

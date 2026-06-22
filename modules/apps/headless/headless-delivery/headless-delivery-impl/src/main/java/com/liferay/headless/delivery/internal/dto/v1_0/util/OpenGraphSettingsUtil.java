@@ -12,6 +12,7 @@ import com.liferay.headless.delivery.dto.v1_0.util.ContentDocumentUtil;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
@@ -37,38 +38,45 @@ public class OpenGraphSettingsUtil {
 
 		return new OpenGraphSettings() {
 			{
-				description = layoutSEOEntry.getOpenGraphDescription(
-					dtoConverterContext.getLocale());
-				description_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					layoutSEOEntry.getOpenGraphDescriptionMap());
-				imageAlt = layoutSEOEntry.getOpenGraphImageAlt(
-					dtoConverterContext.getLocale());
-				imageAlt_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					layoutSEOEntry.getOpenGraphImageAltMap());
-				title = layoutSEOEntry.getOpenGraphTitle(
-					dtoConverterContext.getLocale());
-				title_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					layoutSEOEntry.getOpenGraphTitleMap());
-
+				setDescription(
+					() -> layoutSEOEntry.getOpenGraphDescription(
+						dtoConverterContext.getLocale()));
+				setDescription_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						layoutSEOEntry.getOpenGraphDescriptionMap()));
 				setImage(
 					() -> {
-						long openGraphImageFileEntryId =
-							layoutSEOEntry.getOpenGraphImageFileEntryId();
+						if (Validator.isNull(
+								layoutSEOEntry.
+									getOpenGraphImageFileEntryERC())) {
 
-						if (openGraphImageFileEntryId == 0) {
 							return null;
 						}
 
 						return ContentDocumentUtil.toContentDocument(
 							dlURLHelper,
 							"openGraphSettings.contentFieldValue.image",
-							dlAppService.getFileEntry(
-								openGraphImageFileEntryId),
+							dlAppService.getFileEntryByExternalReferenceCode(
+								layoutSEOEntry.getOpenGraphImageFileEntryERC(),
+								layoutSEOEntry.
+									getOpenGraphImageFileEntryGroupId()),
 							dtoConverterContext.getUriInfo());
 					});
+				setImageAlt(
+					() -> layoutSEOEntry.getOpenGraphImageAlt(
+						dtoConverterContext.getLocale()));
+				setImageAlt_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						layoutSEOEntry.getOpenGraphImageAltMap()));
+				setTitle(
+					() -> layoutSEOEntry.getOpenGraphTitle(
+						dtoConverterContext.getLocale()));
+				setTitle_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						layoutSEOEntry.getOpenGraphTitleMap()));
 			}
 		};
 	}

@@ -1,0 +1,253 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import {Locator, Page, expect} from '@playwright/test';
+
+import {clickAndExpectToBeVisible} from '../../utils/clickAndExpectToBeVisible';
+import {PORTLET_URLS} from '../../utils/portletUrls';
+import {waitForAlert} from '../../utils/waitForAlert';
+import {zipFolder} from '../../utils/zip';
+import {PagesAdminPage} from '../layout-admin-web/PagesAdminPage';
+import {PageEditorPage} from '../layout-content-page-editor-web/PageEditorPage';
+
+export class MasterPagesPage {
+	readonly page: Page;
+
+	readonly newButton: Locator;
+	readonly pageEditorPage: PageEditorPage;
+	readonly pageAdminPage: PagesAdminPage;
+
+	constructor(page: Page) {
+		this.page = page;
+
+		this.newButton = page.getByText('New', {exact: true});
+		this.pageAdminPage = new PagesAdminPage(this.page);
+		this.pageEditorPage = new PageEditorPage(this.page);
+	}
+
+	async selectClientExtension({
+		clientExtensionName,
+		layoutTitle,
+		siteUrl,
+		type,
+	}: {
+		clientExtensionName: string;
+		layoutTitle: string;
+		openConfiguration?: boolean;
+		siteUrl?: Site['friendlyUrlPath'];
+		type?: 'globalCSS' | 'globalJS' | 'themeFavicon';
+	}) {
+		await this.goto(siteUrl);
+
+		await this.gotoConfiguration(layoutTitle);
+
+		await this.pageAdminPage.selectClientExtension({
+			clientExtensionName,
+			layoutTitle,
+			openConfiguration: false,
+			siteUrl,
+			type,
+		});
+	}
+
+	async goto(siteUrl?: Site['friendlyUrlPath']) {
+		await this.page.goto(
+			`/group${siteUrl || '/guest'}${PORTLET_URLS.masterPages}`
+		);
+	}
+
+	async gotoConfiguration(name: string) {
+		await this.page.getByRole('link', {exact: true, name}).click();
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: this.page.getByRole('menuitem', {
+				name: 'Configure',
+			}),
+			trigger: this.page
+				.locator('.control-menu-nav-item')
+				.getByLabel('Options', {exact: true}),
+		});
+	}
+
+	async clickAction(action: string, title: string) {
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: this.page.getByRole('menuitem', {name: action}),
+			trigger: this.page
+				.locator('.card-type-asset')
+				.filter({hasText: title})
+				.getByLabel('More actions'),
+		});
+	}
+
+	async createNewMaster(name: string) {
+		await clickAndExpectToBeVisible({
+			target: this.page.getByLabel('Name'),
+			trigger: this.newButton,
+		});
+
+		await this.page.getByLabel('Name').fill(name);
+		await this.page.getByRole('button', {name: 'Save'}).click();
+
+		await this.pageEditorPage.publishPage();
+
+		const templateCard = this.getMasterCard(name);
+
+		await templateCard.getByLabel('More actions').waitFor();
+
+		await templateCard.locator('.custom-control.custom-checkbox').waitFor();
+	}
+
+	async clickMoreActions(name: string, actionName: string) {
+		await this.page
+			.locator('.card-page-item')
+			.filter({hasText: name})
+			.getByLabel('More actions')
+			.click();
+
+		await this.page
+			.getByRole('menuitem', {
+				exact: true,
+				name: actionName,
+			})
+			.click();
+	}
+
+	async deleteMaster(name: string) {
+		await this.clickMoreActions(name, 'Delete');
+
+		await this.page.getByRole('button', {name: 'Delete'}).click();
+
+		await waitForAlert(this.page, 'Success:');
+	}
+
+	async editMaster(name: string) {
+		await this.getMasterCard(name).getByRole('link', {name}).click();
+
+		await this.page.getByText('Configure Allowed Fragments').waitFor();
+	}
+
+	async configureAllowedFragments({
+		fragmentNames,
+		mode = 'unselect',
+		prefilter,
+		selectNewFragmentsAutomatically = true,
+	}: {
+		fragmentNames: string[];
+		mode: 'select' | 'unselect';
+		prefilter?: string;
+		selectNewFragmentsAutomatically?: boolean;
+	}) {
+		await this.page
+			.getByRole('button', {name: 'Configure Allowed Fragments'})
+			.click();
+
+		const allowedFragmentsModal = this.page.getByRole('dialog', {
+			name: 'Allowed Fragments',
+		});
+
+		if (mode === 'select') {
+			await allowedFragmentsModal
+				.getByRole('treeitem', {exact: true, name: 'All Fragments'})
+				.click();
+		}
+
+		if (prefilter) {
+			await allowedFragmentsModal
+				.getByPlaceholder('Search')
+				.fill(prefilter);
+		}
+
+		for (const fragmentName of fragmentNames) {
+			await this.page
+				.getByRole('treeitem', {exact: true, name: fragmentName})
+				.click();
+		}
+
+		const checkbox = allowedFragmentsModal.getByLabel(
+			'Select New Fragments Automatically'
+		);
+
+		if ((await checkbox.isChecked()) !== selectNewFragmentsAutomatically) {
+			if (selectNewFragmentsAutomatically) {
+				await checkbox.check();
+			}
+			else {
+				await checkbox.uncheck();
+			}
+		}
+
+		await allowedFragmentsModal.getByRole('button', {name: 'Save'}).click();
+	}
+
+	async importFile(fileName: string, folderPath: string) {
+		const fileChooserPromise = this.page.waitForEvent('filechooser');
+
+		await this.page
+			.getByRole('button', {exact: true, name: 'Select File'})
+			.click();
+
+		const fileChooser = await fileChooserPromise;
+
+		await fileChooser.setFiles(await zipFolder(folderPath));
+
+		await this.page.getByText(fileName).waitFor();
+
+		await expect(
+			this.page.getByRole('button', {name: 'Replace File'})
+		).toBeVisible();
+
+		await this.page.getByRole('button', {name: 'Import'}).click();
+	}
+
+	async makeCopy(
+		name: string,
+		type: 'master-page' | 'master-page-with-permissions' = 'master-page'
+	) {
+		const label =
+			type === 'master-page-with-permissions'
+				? 'Master Page With Permissions'
+				: 'Master Page';
+
+		// Open the actions menu
+
+		await clickAndExpectToBeVisible({
+			autoClick: false,
+			target: this.page.getByRole('menuitem', {name: 'Make a Copy'}),
+			trigger: this.getMasterCard(name).getByLabel('More actions'),
+		});
+
+		// Click desired option
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: this.page
+				.getByText(label, {exact: true})
+				.filter({visible: true}),
+			timeout: 5000,
+			trigger: this.page.getByRole('menuitem', {name: 'Make a Copy'}),
+		});
+
+		await waitForAlert(this.page);
+	}
+
+	async openMasterActionsMenu(name: string) {
+		await this.getMasterCard(name).getByLabel('More actions').click();
+	}
+
+	async publishMaster(name: string) {
+		await this.page.getByLabel(name, {exact: true}).click();
+		await this.page.getByLabel('Publish').click();
+
+		await this.page
+			.getByRole('heading', {name: 'Page Templates'})
+			.waitFor();
+	}
+
+	getMasterCard(name: string) {
+		return this.page.locator('.card-page-item').filter({hasText: name});
+	}
+}

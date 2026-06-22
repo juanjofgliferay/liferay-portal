@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Stian Sigvartsen
@@ -37,6 +36,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "Configuration of the SAML provider's IDP capability.",
 	value = "Idp"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Configuration of the SAML provider's IDP capability."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Idp")
@@ -50,8 +52,15 @@ public class Idp implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Idp.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getAuthnRequestSignatureRequired() {
+		if (_authnRequestSignatureRequiredSupplier != null) {
+			authnRequestSignatureRequired =
+				_authnRequestSignatureRequiredSupplier.get();
+
+			_authnRequestSignatureRequiredSupplier = null;
+		}
+
 		return authnRequestSignatureRequired;
 	}
 
@@ -59,6 +68,8 @@ public class Idp implements Serializable {
 		Boolean authnRequestSignatureRequired) {
 
 		this.authnRequestSignatureRequired = authnRequestSignatureRequired;
+
+		_authnRequestSignatureRequiredSupplier = null;
 	}
 
 	@JsonIgnore
@@ -66,29 +77,41 @@ public class Idp implements Serializable {
 		UnsafeSupplier<Boolean, Exception>
 			authnRequestSignatureRequiredUnsafeSupplier) {
 
-		try {
-			authnRequestSignatureRequired =
-				authnRequestSignatureRequiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_authnRequestSignatureRequiredSupplier = () -> {
+			try {
+				return authnRequestSignatureRequiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean authnRequestSignatureRequired;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _authnRequestSignatureRequiredSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getDefaultAssertionLifetime() {
+		if (_defaultAssertionLifetimeSupplier != null) {
+			defaultAssertionLifetime = _defaultAssertionLifetimeSupplier.get();
+
+			_defaultAssertionLifetimeSupplier = null;
+		}
+
 		return defaultAssertionLifetime;
 	}
 
 	public void setDefaultAssertionLifetime(Integer defaultAssertionLifetime) {
 		this.defaultAssertionLifetime = defaultAssertionLifetime;
+
+		_defaultAssertionLifetimeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -96,77 +119,107 @@ public class Idp implements Serializable {
 		UnsafeSupplier<Integer, Exception>
 			defaultAssertionLifetimeUnsafeSupplier) {
 
-		try {
-			defaultAssertionLifetime =
-				defaultAssertionLifetimeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultAssertionLifetimeSupplier = () -> {
+			try {
+				return defaultAssertionLifetimeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer defaultAssertionLifetime;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _defaultAssertionLifetimeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSessionMaximumAge() {
+		if (_sessionMaximumAgeSupplier != null) {
+			sessionMaximumAge = _sessionMaximumAgeSupplier.get();
+
+			_sessionMaximumAgeSupplier = null;
+		}
+
 		return sessionMaximumAge;
 	}
 
 	public void setSessionMaximumAge(Long sessionMaximumAge) {
 		this.sessionMaximumAge = sessionMaximumAge;
+
+		_sessionMaximumAgeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSessionMaximumAge(
 		UnsafeSupplier<Long, Exception> sessionMaximumAgeUnsafeSupplier) {
 
-		try {
-			sessionMaximumAge = sessionMaximumAgeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sessionMaximumAgeSupplier = () -> {
+			try {
+				return sessionMaximumAgeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long sessionMaximumAge;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _sessionMaximumAgeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSessionTimeout() {
+		if (_sessionTimeoutSupplier != null) {
+			sessionTimeout = _sessionTimeoutSupplier.get();
+
+			_sessionTimeoutSupplier = null;
+		}
+
 		return sessionTimeout;
 	}
 
 	public void setSessionTimeout(Long sessionTimeout) {
 		this.sessionTimeout = sessionTimeout;
+
+		_sessionTimeoutSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSessionTimeout(
 		UnsafeSupplier<Long, Exception> sessionTimeoutUnsafeSupplier) {
 
-		try {
-			sessionTimeout = sessionTimeoutUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sessionTimeoutSupplier = () -> {
+			try {
+				return sessionTimeoutUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long sessionTimeout;
+
+	@JsonIgnore
+	private Supplier<Long> _sessionTimeoutSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -195,6 +248,9 @@ public class Idp implements Serializable {
 
 		sb.append("{");
 
+		Boolean authnRequestSignatureRequired =
+			getAuthnRequestSignatureRequired();
+
 		if (authnRequestSignatureRequired != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -204,6 +260,8 @@ public class Idp implements Serializable {
 
 			sb.append(authnRequestSignatureRequired);
 		}
+
+		Integer defaultAssertionLifetime = getDefaultAssertionLifetime();
 
 		if (defaultAssertionLifetime != null) {
 			if (sb.length() > 1) {
@@ -215,6 +273,8 @@ public class Idp implements Serializable {
 			sb.append(defaultAssertionLifetime);
 		}
 
+		Long sessionMaximumAge = getSessionMaximumAge();
+
 		if (sessionMaximumAge != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -224,6 +284,8 @@ public class Idp implements Serializable {
 
 			sb.append(sessionMaximumAge);
 		}
+
+		Long sessionTimeout = getSessionTimeout();
 
 		if (sessionTimeout != null) {
 			if (sb.length() > 1) {
@@ -240,8 +302,8 @@ public class Idp implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.saml.admin.rest.dto.v1_0.Idp",
 		name = "x-class-name"
 	)
@@ -287,7 +349,10 @@ public class Idp implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -333,3 +398,4 @@ public class Idp implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1704049798

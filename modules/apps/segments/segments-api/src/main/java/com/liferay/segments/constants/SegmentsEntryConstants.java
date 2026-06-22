@@ -18,9 +18,13 @@ public class SegmentsEntryConstants {
 
 	public static final long ID_DEFAULT = 0;
 
+	public static final long ID_MISSING = -1;
+
 	public static final String KEY_DEFAULT = "DEFAULT";
 
 	public static final String SOURCE_ASAH_FARO_BACKEND = "ASAH_FARO_BACKEND";
+
+	public static final String SOURCE_AUDIENCE = "AUDIENCE";
 
 	public static final String SOURCE_DEFAULT = "DEFAULT";
 
@@ -30,7 +34,7 @@ public class SegmentsEntryConstants {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, SegmentsEntryConstants.class);
 
-		return LanguageUtil.get(resourceBundle, "default-segment-name");
+		return LanguageUtil.get(resourceBundle, "anyone");
 	}
 
 }

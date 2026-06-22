@@ -284,9 +284,7 @@ public class CompanyWrapper
 	}
 
 	@Override
-	public long getGroupId()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
+	public long getGroupId() {
 		return model.getGroupId();
 	}
 
@@ -652,6 +650,11 @@ public class CompanyWrapper
 		model.setCreateDate(createDate);
 	}
 
+	@Override
+	public void setGroupId(long groupId) {
+		model.setGroupId(groupId);
+	}
+
 	/**
 	 * Sets the home url of this company.
 	 *
@@ -898,3 +901,4 @@ public class CompanyWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1514070203

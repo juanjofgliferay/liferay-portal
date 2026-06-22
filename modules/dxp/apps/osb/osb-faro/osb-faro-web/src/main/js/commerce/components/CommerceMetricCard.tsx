@@ -4,21 +4,18 @@ import ErrorDisplay from 'shared/components/ErrorDisplay';
 import React, {useState} from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
 import TrendComponent from 'shared/components/Trend';
-import withCurrentUser from 'shared/hoc/WithCurrentUser';
-import {ApolloError} from 'apollo-client';
-import {DocumentNode} from 'graphql';
+import {ApolloError, DocumentNode, useQuery} from '@apollo/client';
+
 import {getIcon, getStatsColor} from 'shared/util/metrics';
-import {
-	getRangeSelectorsFromQuery,
-	getSafeRangeSelectors
-} from 'shared/util/util';
-import {RangeSelectors, RawRangeSelectors} from 'shared/types';
+import {getSafeRangeSelectors} from 'shared/util/util';
+import {RangeSelectors, SafeRangeSelectors} from 'shared/types';
 import {sub} from 'shared/util/lang';
 import {toRounded} from 'shared/util/numbers';
 import {Trend} from 'commerce/utils/types';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
 import {useParams} from 'react-router-dom';
-import {useQuery} from '@apollo/react-hooks';
-import {User} from 'shared/util/records';
+
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 
 type Currency = {
 	currencyCode: string;
@@ -33,7 +30,6 @@ interface ICommerceMetricCardProps<TGraphQlData>
 	label: string;
 	mapper: (result: TGraphQlData) => Currency[];
 	Query: DocumentNode;
-	currentUser: User;
 }
 
 interface ICommerceMetricCardWithStatesRendererProps
@@ -44,17 +40,13 @@ interface ICommerceMetricCardWithStatesRendererProps
 	loading?: boolean;
 }
 
-interface TGraphQlVariables extends RawRangeSelectors {
+interface TGraphQlVariables extends SafeRangeSelectors {
 	channelId: string;
 }
 
-const CommerceCardWithStatesRenderer: React.FC<ICommerceMetricCardWithStatesRendererProps> = ({
-	children,
-	empty = false,
-	emptyTitle,
-	error,
-	loading = false
-}) => (
+const CommerceCardWithStatesRenderer: React.FC<
+	ICommerceMetricCardWithStatesRendererProps
+> = ({children, empty = false, emptyTitle, error, loading = false}) => (
 	<StatesRenderer empty={empty} error={!!error} loading={loading}>
 		<StatesRenderer.Loading />
 		<StatesRenderer.Empty
@@ -71,17 +63,17 @@ const CommerceCardWithStatesRenderer: React.FC<ICommerceMetricCardWithStatesRend
 	</StatesRenderer>
 );
 
-export function CommerceMetricCard<TGraphQlData>({
-	currentUser,
+function CommerceMetricCard<TGraphQlData>({
+	Query,
 	description,
 	emptyTitle,
 	label,
-	mapper,
-	Query
+	mapper
 }: ICommerceMetricCardProps<TGraphQlData>): React.ReactElement {
-	const {channelId, query} = useParams();
+	const {channelId} = useParams<{channelId: string}>();
+	const initialRangeSelectors = useQueryRangeSelectors();
 	const [rangeSelectors, setRangeSelectors] = useState<RangeSelectors>(
-		getRangeSelectorsFromQuery(query)
+		initialRangeSelectors
 	);
 	const {data, error, loading} = useQuery<TGraphQlData, TGraphQlVariables>(
 		Query,
@@ -93,8 +85,9 @@ export function CommerceMetricCard<TGraphQlData>({
 			}
 		}
 	);
+	const currentUser = useCurrentUser();
 
-	const result = mapper(data);
+	const result = data ? mapper(data) : [];
 
 	const {currencyCode, trend, value} = getCurrency(result);
 
@@ -189,4 +182,4 @@ function formatCurrency(
 	}).format(parseFloat(value));
 }
 
-export default withCurrentUser(CommerceMetricCard);
+export default CommerceMetricCard;

@@ -1,11 +1,29 @@
-import {parse} from 'query-string';
+import {getSafeDecodedURIComponent} from 'shared/util/util';
 import {useLocation} from 'react-router-dom';
 
+function decodeQueryParam(param: string) {
+	return getSafeDecodedURIComponent(param.replace(/\+/g, ' '));
+}
+
+function queryStringToObject(initialQueryString: string): any {
+	if (!initialQueryString) return {};
+
+	const queryString = initialQueryString.replace('?', '');
+
+	const params = queryString.split('&');
+	const query: {[key: string]: string} = {};
+
+	params.forEach(param => {
+		const [key, value] = param.split('=');
+		query[key] = decodeQueryParam(value);
+	});
+
+	return query;
+}
+
 // TODO: Remove this once we upgrade to react-router-dom v6
-const useQueryParams = () => {
+export function useQueryParams() {
 	const {search} = useLocation();
 
-	return parse(search);
-};
-
-export default useQueryParams;
+	return queryStringToObject(search);
+}

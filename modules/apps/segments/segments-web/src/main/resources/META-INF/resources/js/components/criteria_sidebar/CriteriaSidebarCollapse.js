@@ -5,12 +5,12 @@
 
 import ClayBadge from '@clayui/badge';
 import ClayPanel from '@clayui/panel';
-import {parse} from 'date-fns';
 import PropTypes from 'prop-types';
 import React, {useEffect} from 'react';
 
 import useKeyboardNavigation from '../../hooks/useKeyboardNavigation';
 import {PROPERTY_TYPES} from '../../utils/constants';
+import {getUtcDate} from '../../utils/date';
 import {LIST_ITEM_TYPES} from '../../utils/listItemTypes';
 import {propertyGroupShape} from '../../utils/types.es';
 import {jsDatetoYYYYMMDD} from '../../utils/utils';
@@ -33,13 +33,9 @@ function getDefaultValue(property) {
 		defaultValue = jsDatetoYYYYMMDD(new Date());
 	}
 	else if (type === PROPERTY_TYPES.DATE_TIME) {
-		const simpleDate = jsDatetoYYYYMMDD(new Date());
+		const utcDate = getUtcDate();
 
-		defaultValue = parse(
-			simpleDate,
-			'yyyy-MM-dd',
-			new Date()
-		).toISOString();
+		defaultValue = utcDate.toISOString();
 	}
 	else if (type === PROPERTY_TYPES.BOOLEAN) {
 		defaultValue = 'true';
@@ -113,18 +109,16 @@ const PanelWrapper = ({
 		<ClayPanel
 			collapsable={true}
 			displayTitle={
-				<div className="c-inner" tabIndex="-1">
-					<ClayPanel.Title className="d-flex justify-content-between text-uppercase">
-						{propertyGroup.name}
+				<ClayPanel.Title className="d-flex justify-content-between text-uppercase">
+					{propertyGroup.name}
 
-						{searchValue && (
-							<ClayBadge
-								displayType="secondary"
-								label={filteredProperties.length}
-							/>
-						)}
-					</ClayPanel.Title>
-				</div>
+					{searchValue && (
+						<ClayBadge
+							displayType="secondary"
+							label={filteredProperties.length}
+						/>
+					)}
+				</ClayPanel.Title>
 			}
 			displayType="unstyled"
 			expanded={active}
@@ -134,7 +128,7 @@ const PanelWrapper = ({
 			<ClayPanel.Body className="c-px-0">
 				<p className="c-pt-1 text-secondary">
 					{Liferay.Language.get(
-						'inherited-attributes-are-not-taken-into-account-to-include-members-in-segments'
+						'inherited-attributes-are-not-taken-into-account-to-include-members'
 					)}
 				</p>
 

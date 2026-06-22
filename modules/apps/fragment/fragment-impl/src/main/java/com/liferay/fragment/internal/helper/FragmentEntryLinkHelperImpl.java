@@ -11,7 +11,6 @@ import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.renderer.FragmentRenderer;
 import com.liferay.fragment.renderer.FragmentRendererRegistry;
-import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -31,9 +30,7 @@ public class FragmentEntryLinkHelperImpl implements FragmentEntryLinkHelper {
 	public String getFragmentEntryName(
 		FragmentEntryLink fragmentEntryLink, Locale locale) {
 
-		FragmentEntry fragmentEntry =
-			_fragmentEntryLocalService.fetchFragmentEntry(
-				fragmentEntryLink.getFragmentEntryId());
+		FragmentEntry fragmentEntry = fragmentEntryLink.fetchFragmentEntry();
 
 		if (fragmentEntry != null) {
 			return fragmentEntry.getName();
@@ -69,9 +66,6 @@ public class FragmentEntryLinkHelperImpl implements FragmentEntryLinkHelper {
 	@Reference
 	private FragmentCollectionContributorRegistry
 		_fragmentCollectionContributorRegistry;
-
-	@Reference
-	private FragmentEntryLocalService _fragmentEntryLocalService;
 
 	@Reference
 	private FragmentRendererRegistry _fragmentRendererRegistry;

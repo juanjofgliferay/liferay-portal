@@ -1,5 +1,6 @@
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
+import ClayLink from '@clayui/link';
 import CrossPageSelect from 'shared/hoc/CrossPageSelect';
 import EventDefinitionsQuery, {
 	EventDefinitionsData,
@@ -42,21 +43,19 @@ import {OrderedMap} from 'immutable';
 import {Routes, setUriQueryValues, toRoute} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
-import {useMutation, useQuery} from '@apollo/react-hooks';
-import {useQueryPagination} from 'shared/hooks';
-import {User} from 'shared/util/records';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useMutation, useQuery} from '@apollo/client';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {
 	useSelectionContext,
 	withSelectionProvider
 } from 'shared/context/selection';
-import {withCurrentUser} from 'shared/hoc';
 
 const connector = connect(null, {addAlert, close, open, removeAlert});
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface ICustomEventListProps extends PropsFromRedux {
-	currentUser: User;
 	groupId: string;
 	history: {push: (url: string) => void};
 }
@@ -64,7 +63,6 @@ interface ICustomEventListProps extends PropsFromRedux {
 const CustomEventList: React.FC<ICustomEventListProps> = ({
 	addAlert,
 	close,
-	currentUser,
 	groupId,
 	history,
 	open,
@@ -82,11 +80,14 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 	>(EventDefinitionsQuery, {
 		fetchPolicy: 'network-only',
 		variables: {
+			blocked: false,
 			eventType: EventTypes.Custom,
 			keyword: query,
 			page: page - 1,
 			size: delta,
-			sort: getSortFromOrderIOMap(orderIOMap)
+			sort: getSortFromOrderIOMap(
+				orderIOMap
+			) as EventDefinitionsVariables['sort']
 		}
 	});
 
@@ -105,7 +106,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 			hideEventDefinitions: Event[];
 		}) => {
 			if (!selectedItems.isEmpty()) {
-				selectionDispatch({
+				selectionDispatch?.({
 					payload: {
 						items: hideEventDefinitions
 					},
@@ -125,7 +126,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 			unhideEventDefinitions: Event[];
 		}) => {
 			if (!selectedItems.isEmpty()) {
-				selectionDispatch({
+				selectionDispatch?.({
 					payload: {
 						items: unhideEventDefinitions
 					},
@@ -136,6 +137,8 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 	});
 
 	const notificationResponse = useNotificationsAPI(groupId);
+
+	const currentUser = useCurrentUser();
 
 	const handleBlockEvents = (events: Event[] = []) => {
 		const eventsCount = events.length;
@@ -164,7 +167,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 					}
 				})
 					.then(() => {
-						selectionDispatch({
+						selectionDispatch?.({
 							type: 'clear-all'
 						});
 
@@ -345,14 +348,14 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 			<RowActions
 				quickActions={[
 					{
-						iconSymbol: 'ac-block',
+						iconSymbol: 'ac_block',
 						label: Liferay.Language.get('block-event'),
 						onClick: () => {
 							handleBlockEvents([data]);
 						}
 					},
 					{
-						iconSymbol: hidden ? 'view' : 'ac-hidden',
+						iconSymbol: hidden ? 'view' : 'ac_hidden',
 						label: hidden
 							? Liferay.Language.get('set-to-show')
 							: Liferay.Language.get('set-to-hide'),
@@ -372,7 +375,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 	const authorized = currentUser.isAdmin();
 
 	const hasUnhiddenEvent = (events: OrderedMap<string, Event>) =>
-		events.some(({hidden}) => !hidden);
+		events.some(event => !event?.hidden);
 
 	return (
 		<>
@@ -407,7 +410,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 									'create-some-custom-events-to-get-started'
 								)}
 
-								<a
+								<ClayLink
 									className='d-block mb-3'
 									href={
 										URLConstants.CustomEventsDocumentation
@@ -418,13 +421,13 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 									{Liferay.Language.get(
 										'learn-how-to-add-custom-events-on-your-site'
 									)}
-								</a>
+								</ClayLink>
 							</>
 						}
 						icon={{
 							border: false,
 							size: Sizes.XXXLarge,
-							symbol: 'ac-satellite'
+							symbol: 'ac_satellite'
 						}}
 						title={Liferay.Language.get('no-custom-events-found')}
 					/>
@@ -450,7 +453,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 										>
 											<ClayIcon
 												className='icon-root mr-2'
-												symbol='ac-block'
+												symbol='ac_block'
 											/>
 
 											{Liferay.Language.get(
@@ -463,11 +466,12 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 											className='button-root nav-btn'
 											displayType='secondary'
 											onClick={() => {
-												const hideEventFn = hasUnhiddenEvent(
-													selectedItems
-												)
-													? handleHideEvents
-													: handleUnhideEvents;
+												const hideEventFn =
+													hasUnhiddenEvent(
+														selectedItems
+													)
+														? handleHideEvents
+														: handleUnhideEvents;
 
 												hideEventFn(
 													selectedItems.toArray()
@@ -480,7 +484,7 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 													hasUnhiddenEvent(
 														selectedItems
 													)
-														? 'ac-hidden'
+														? 'ac_hidden'
 														: 'view'
 												}
 											/>
@@ -505,8 +509,4 @@ const CustomEventList: React.FC<ICustomEventListProps> = ({
 	);
 };
 
-export default compose<any>(
-	withSelectionProvider,
-	withCurrentUser,
-	connector
-)(CustomEventList);
+export default compose<any>(withSelectionProvider, connector)(CustomEventList);

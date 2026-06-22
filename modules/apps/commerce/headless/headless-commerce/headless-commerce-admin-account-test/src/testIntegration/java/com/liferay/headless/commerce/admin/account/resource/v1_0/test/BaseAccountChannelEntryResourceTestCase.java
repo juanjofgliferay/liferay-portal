@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
 import com.liferay.headless.commerce.admin.account.client.dto.v1_0.AccountChannelEntry;
+import com.liferay.headless.commerce.admin.account.client.dto.v1_0.User;
 import com.liferay.headless.commerce.admin.account.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.account.client.pagination.Page;
 import com.liferay.headless.commerce.admin.account.client.pagination.Pagination;
@@ -22,19 +23,21 @@ import com.liferay.headless.commerce.admin.account.client.serdes.v1_0.AccountCha
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
@@ -42,9 +45,13 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,10 +63,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -83,7 +86,7 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -97,11 +100,16 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		_accountChannelEntryResource.setContextCompany(testCompany);
 
-		AccountChannelEntryResource.Builder builder =
-			AccountChannelEntryResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		accountChannelEntryResource = builder.authentication(
-			"test@liferay.com", "test"
+		accountChannelEntryResource = AccountChannelEntryResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -115,7 +123,33 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		AccountChannelEntry accountChannelEntry1 = randomAccountChannelEntry();
+
+		String json = objectMapper.writeValueAsString(accountChannelEntry1);
+
+		AccountChannelEntry accountChannelEntry2 =
+			AccountChannelEntrySerDes.toDTO(json);
+
+		Assert.assertTrue(equals(accountChannelEntry1, accountChannelEntry2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		AccountChannelEntry accountChannelEntry = randomAccountChannelEntry();
+
+		String json1 = objectMapper.writeValueAsString(accountChannelEntry);
+		String json2 = AccountChannelEntrySerDes.toJSON(accountChannelEntry);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -130,41 +164,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		AccountChannelEntry accountChannelEntry1 = randomAccountChannelEntry();
-
-		String json = objectMapper.writeValueAsString(accountChannelEntry1);
-
-		AccountChannelEntry accountChannelEntry2 =
-			AccountChannelEntrySerDes.toDTO(json);
-
-		Assert.assertTrue(equals(accountChannelEntry1, accountChannelEntry2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		AccountChannelEntry accountChannelEntry = randomAccountChannelEntry();
-
-		String json1 = objectMapper.writeValueAsString(accountChannelEntry);
-		String json2 = AccountChannelEntrySerDes.toJSON(accountChannelEntry);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -208,12 +207,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			accountChannelEntryResource.
 				getAccountChannelBillingAddressIdHttpResponse(
 					accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.
-				getAccountChannelBillingAddressIdHttpResponse(
-					accountChannelEntry.getId()));
+				getAccountChannelBillingAddressIdHttpResponse(0L));
 	}
 
 	protected AccountChannelEntry
@@ -225,114 +222,86 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelBillingAddressId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelBillingAddressId_addAccountChannelEntry();
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelBillingAddressId(
-				postAccountChannelEntry.getId());
-
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelBillingAddressId_addAccountChannelEntry()
+	public void testGraphQLDeleteAccountChannelBillingAddressId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		// No namespace
 
-	@Test
-	public void testGraphQLGetAccountChannelBillingAddressId()
-		throws Exception {
-
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelBillingAddressId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelBillingAddressId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelBillingAddressId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelBillingAddressId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelBillingAddressId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteAccountChannelBillingAddressId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelBillingAddressIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelBillingAddressId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelBillingAddressId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelBillingAddressId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelBillingAddressId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelBillingAddressId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelBillingAddressId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelBillingAddressId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelBillingAddressId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelBillingAddressId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelBillingAddressId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelBillingAddressId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelBillingAddressId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -351,11 +320,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			404,
 			accountChannelEntryResource.getAccountChannelCurrencyIdHttpResponse(
 				accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.getAccountChannelCurrencyIdHttpResponse(
-				accountChannelEntry.getId()));
+				0L));
 	}
 
 	protected AccountChannelEntry
@@ -367,112 +335,84 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelCurrencyId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelCurrencyId_addAccountChannelEntry();
+	public void testGraphQLDeleteAccountChannelCurrencyId() throws Exception {
 
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelCurrencyId(
-				postAccountChannelEntry.getId());
+		// No namespace
 
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelCurrencyId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetAccountChannelCurrencyId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelCurrencyId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelCurrencyId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelCurrencyId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelCurrencyId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelCurrencyId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteAccountChannelCurrencyId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelCurrencyIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelCurrencyId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelCurrencyId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelCurrencyId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelCurrencyId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelCurrencyId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelCurrencyId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelCurrencyId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelCurrencyId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelCurrencyId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelCurrencyId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelCurrencyId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelCurrencyId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -492,12 +432,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			accountChannelEntryResource.
 				getAccountChannelDeliveryTermIdHttpResponse(
 					accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.
-				getAccountChannelDeliveryTermIdHttpResponse(
-					accountChannelEntry.getId()));
+				getAccountChannelDeliveryTermIdHttpResponse(0L));
 	}
 
 	protected AccountChannelEntry
@@ -509,112 +447,86 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelDeliveryTermId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelDeliveryTermId_addAccountChannelEntry();
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelDeliveryTermId(
-				postAccountChannelEntry.getId());
-
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelDeliveryTermId_addAccountChannelEntry()
+	public void testGraphQLDeleteAccountChannelDeliveryTermId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		// No namespace
 
-	@Test
-	public void testGraphQLGetAccountChannelDeliveryTermId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelDeliveryTermId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelDeliveryTermId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelDeliveryTermId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelDeliveryTermId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelDeliveryTermId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteAccountChannelDeliveryTermId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelDeliveryTermIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelDeliveryTermId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelDeliveryTermId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelDeliveryTermId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelDeliveryTermId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelDeliveryTermId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelDeliveryTermId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelDeliveryTermId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelDeliveryTermId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelDeliveryTermId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelDeliveryTermId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelDeliveryTermId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelDeliveryTermId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -633,11 +545,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			404,
 			accountChannelEntryResource.getAccountChannelDiscountIdHttpResponse(
 				accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.getAccountChannelDiscountIdHttpResponse(
-				accountChannelEntry.getId()));
+				0L));
 	}
 
 	protected AccountChannelEntry
@@ -649,112 +560,84 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelDiscountId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelDiscountId_addAccountChannelEntry();
+	public void testGraphQLDeleteAccountChannelDiscountId() throws Exception {
 
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelDiscountId(
-				postAccountChannelEntry.getId());
+		// No namespace
 
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelDiscountId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetAccountChannelDiscountId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelDiscountId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelDiscountId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelDiscountId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelDiscountId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelDiscountId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteAccountChannelDiscountId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelDiscountIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelDiscountId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelDiscountId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelDiscountId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelDiscountId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelDiscountId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelDiscountId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelDiscountId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelDiscountId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelDiscountId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelDiscountId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelDiscountId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelDiscountId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -774,12 +657,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			accountChannelEntryResource.
 				getAccountChannelPaymentMethodIdHttpResponse(
 					accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.
-				getAccountChannelPaymentMethodIdHttpResponse(
-					accountChannelEntry.getId()));
+				getAccountChannelPaymentMethodIdHttpResponse(0L));
 	}
 
 	protected AccountChannelEntry
@@ -791,112 +672,86 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelPaymentMethodId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelPaymentMethodId_addAccountChannelEntry();
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelPaymentMethodId(
-				postAccountChannelEntry.getId());
-
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelPaymentMethodId_addAccountChannelEntry()
+	public void testGraphQLDeleteAccountChannelPaymentMethodId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		// No namespace
 
-	@Test
-	public void testGraphQLGetAccountChannelPaymentMethodId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelPaymentMethodId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelPaymentMethodId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelPaymentMethodId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelPaymentMethodId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelPaymentMethodId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteAccountChannelPaymentMethodId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelPaymentMethodIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelPaymentMethodId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelPaymentMethodId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelPaymentMethodId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelPaymentMethodId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelPaymentMethodId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelPaymentMethodId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelPaymentMethodId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelPaymentMethodId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelPaymentMethodId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelPaymentMethodId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelPaymentMethodId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelPaymentMethodId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -916,12 +771,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			accountChannelEntryResource.
 				getAccountChannelPaymentTermIdHttpResponse(
 					accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.
-				getAccountChannelPaymentTermIdHttpResponse(
-					accountChannelEntry.getId()));
+				getAccountChannelPaymentTermIdHttpResponse(0L));
 	}
 
 	protected AccountChannelEntry
@@ -933,112 +786,85 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelPaymentTermId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelPaymentTermId_addAccountChannelEntry();
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelPaymentTermId(
-				postAccountChannelEntry.getId());
-
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelPaymentTermId_addAccountChannelEntry()
+	public void testGraphQLDeleteAccountChannelPaymentTermId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		// No namespace
 
-	@Test
-	public void testGraphQLGetAccountChannelPaymentTermId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelPaymentTermId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelPaymentTermId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelPaymentTermId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelPaymentTermId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelPaymentTermId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteAccountChannelPaymentTermId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelPaymentTermIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelPaymentTermId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelPaymentTermId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelPaymentTermId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelPaymentTermId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelPaymentTermId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelPaymentTermId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelPaymentTermId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelPaymentTermId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelPaymentTermId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelPaymentTermId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelPaymentTermId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelPaymentTermId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -1058,12 +884,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			accountChannelEntryResource.
 				getAccountChannelPriceListIdHttpResponse(
 					accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.
-				getAccountChannelPriceListIdHttpResponse(
-					accountChannelEntry.getId()));
+				getAccountChannelPriceListIdHttpResponse(0L));
 	}
 
 	protected AccountChannelEntry
@@ -1075,112 +899,84 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelPriceListId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelPriceListId_addAccountChannelEntry();
+	public void testGraphQLDeleteAccountChannelPriceListId() throws Exception {
 
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelPriceListId(
-				postAccountChannelEntry.getId());
+		// No namespace
 
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelPriceListId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetAccountChannelPriceListId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelPriceListId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelPriceListId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelPriceListId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelPriceListId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelPriceListId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteAccountChannelPriceListId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelPriceListIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelPriceListId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelPriceListId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelPriceListId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelPriceListId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelPriceListId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelPriceListId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelPriceListId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelPriceListId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelPriceListId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelPriceListId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelPriceListId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelPriceListId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -1200,12 +996,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			accountChannelEntryResource.
 				getAccountChannelShippingAddressIdHttpResponse(
 					accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.
-				getAccountChannelShippingAddressIdHttpResponse(
-					accountChannelEntry.getId()));
+				getAccountChannelShippingAddressIdHttpResponse(0L));
 	}
 
 	protected AccountChannelEntry
@@ -1217,114 +1011,86 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelShippingAddressId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelShippingAddressId_addAccountChannelEntry();
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelShippingAddressId(
-				postAccountChannelEntry.getId());
-
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelShippingAddressId_addAccountChannelEntry()
+	public void testGraphQLDeleteAccountChannelShippingAddressId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
+		// No namespace
 
-	@Test
-	public void testGraphQLGetAccountChannelShippingAddressId()
-		throws Exception {
-
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelShippingAddressId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelShippingAddressId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelShippingAddressId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/accountChannelShippingAddressId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelShippingAddressId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data",
+				"Object/deleteAccountChannelShippingAddressId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelShippingAddressIdNotFound()
-		throws Exception {
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelShippingAddressId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Long irrelevantId = RandomTestUtil.randomLong();
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelShippingAddressId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelShippingAddressId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelShippingAddressId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelShippingAddressId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelShippingAddressId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelShippingAddressId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelShippingAddressId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelShippingAddressId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelShippingAddressId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelShippingAddressId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelShippingAddressId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -1342,11 +1108,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			404,
 			accountChannelEntryResource.getAccountChannelUserIdHttpResponse(
 				accountChannelEntry.getId()));
-
 		assertHttpResponseStatusCode(
 			404,
 			accountChannelEntryResource.getAccountChannelUserIdHttpResponse(
-				accountChannelEntry.getId()));
+				0L));
 	}
 
 	protected AccountChannelEntry
@@ -1358,109 +1123,84 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testGetAccountChannelUserId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testGetAccountChannelUserId_addAccountChannelEntry();
+	public void testGraphQLDeleteAccountChannelUserId() throws Exception {
 
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelUserId(
-				postAccountChannelEntry.getId());
+		// No namespace
 
-		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testGetAccountChannelUserId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetAccountChannelUserId() throws Exception {
-		AccountChannelEntry accountChannelEntry =
-			testGraphQLGetAccountChannelUserId_addAccountChannelEntry();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry1 =
+			testGraphQLDeleteAccountChannelUserId_addAccountChannelEntry();
 
 		Assert.assertTrue(
-			equals(
-				accountChannelEntry,
-				AccountChannelEntrySerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"accountChannelUserId",
-								new HashMap<String, Object>() {
-									{
-										put("id", accountChannelEntry.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/accountChannelUserId"))));
-	}
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteAccountChannelUserId",
+						new HashMap<String, Object>() {
+							{
+								put("id", accountChannelEntry1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteAccountChannelUserId"));
 
-	@Test
-	public void testGraphQLGetAccountChannelUserIdNotFound() throws Exception {
-		Long irrelevantId = RandomTestUtil.randomLong();
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"accountChannelUserId",
+					new HashMap<String, Object>() {
+						{
+							put("id", accountChannelEntry1.getId());
+						}
+					},
+					getGraphQLFields())),
+			"JSONArray/errors");
 
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry accountChannelEntry2 =
+			testGraphQLDeleteAccountChannelUserId_addAccountChannelEntry();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"deleteAccountChannelUserId",
+							new HashMap<String, Object>() {
+								{
+									put("id", accountChannelEntry2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminAccount_v1_0",
+				"Object/deleteAccountChannelUserId"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminAccount_v1_0",
 					new GraphQLField(
 						"accountChannelUserId",
 						new HashMap<String, Object>() {
 							{
-								put("id", irrelevantId);
+								put("id", accountChannelEntry2.getId());
 							}
 						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+						getGraphQLFields()))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
 	}
 
 	protected AccountChannelEntry
-			testGraphQLGetAccountChannelUserId_addAccountChannelEntry()
+			testGraphQLDeleteAccountChannelUserId_addAccountChannelEntry()
 		throws Exception {
 
 		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
-	}
-
-	@Test
-	public void testPatchAccountChannelUserId() throws Exception {
-		AccountChannelEntry postAccountChannelEntry =
-			testPatchAccountChannelUserId_addAccountChannelEntry();
-
-		AccountChannelEntry randomPatchAccountChannelEntry =
-			randomPatchAccountChannelEntry();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		AccountChannelEntry patchAccountChannelEntry =
-			accountChannelEntryResource.patchAccountChannelUserId(
-				postAccountChannelEntry.getId(),
-				randomPatchAccountChannelEntry);
-
-		AccountChannelEntry expectedPatchAccountChannelEntry =
-			postAccountChannelEntry.clone();
-
-		BeanTestUtil.copyProperties(
-			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
-
-		AccountChannelEntry getAccountChannelEntry =
-			accountChannelEntryResource.getAccountChannelUserId(
-				patchAccountChannelEntry.getId());
-
-		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
-		assertValid(getAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPatchAccountChannelUserId_addAccountChannelEntry()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -1544,13 +1284,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelBillingAddressesPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelBillingAddressesPage_addAccountChannelEntry(
@@ -1564,44 +1304,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelBillingAddressesPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -1627,30 +1417,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelBillingAddress()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelBillingAddress_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelBillingAddress_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -1734,13 +1500,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelCurrenciesPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelCurrenciesPage_addAccountChannelEntry(
@@ -1754,44 +1520,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelCurrenciesPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -1817,30 +1633,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelCurrency()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelCurrency_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelCurrency_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -1924,13 +1716,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage_addAccountChannelEntry(
@@ -1944,44 +1736,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -2007,30 +1849,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelDeliveryTerm()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelDeliveryTerm_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelDeliveryTerm_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -2114,13 +1932,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelDiscountsPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelDiscountsPage_addAccountChannelEntry(
@@ -2134,44 +1952,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelDiscountsPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -2197,30 +2065,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelDiscount()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelDiscount_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelDiscount_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -2304,13 +2148,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage_addAccountChannelEntry(
@@ -2324,44 +2168,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -2387,30 +2281,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelPaymentMethod()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelPaymentMethod_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelPaymentMethod_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -2494,13 +2364,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelPaymentTermsPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelPaymentTermsPage_addAccountChannelEntry(
@@ -2514,44 +2384,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelPaymentTermsPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -2577,30 +2497,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelPaymentTerm()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelPaymentTerm_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelPaymentTerm_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -2684,13 +2580,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelPriceListsPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelPriceListsPage_addAccountChannelEntry(
@@ -2704,44 +2600,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelPriceListsPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -2767,30 +2713,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelPriceList()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelPriceList_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelPriceList_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -2874,13 +2796,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelShippingAddressesPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelShippingAddressesPage_addAccountChannelEntry(
@@ -2894,44 +2816,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelShippingAddressesPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -2957,30 +2929,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelShippingAddress()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelShippingAddress_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelShippingAddress_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -3064,13 +3012,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		String externalReferenceCode =
 			testGetAccountByExternalReferenceCodeAccountChannelUsersPage_getExternalReferenceCode();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountByExternalReferenceCodeAccountChannelUsersPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountByExternalReferenceCodeAccountChannelUsersPage_addAccountChannelEntry(
@@ -3084,44 +3032,94 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountByExternalReferenceCodeAccountChannelUsersPage_addAccountChannelEntry(
 				externalReferenceCode, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelUsersPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelUsersPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountByExternalReferenceCodeAccountChannelUsersPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -3150,27 +3148,1084 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
-	public void testPostAccountByExternalReferenceCodeAccountChannelUser()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
+	public void testGetAccountChannelBillingAddressId() throws Exception {
 		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountByExternalReferenceCodeAccountChannelUser_addAccountChannelEntry(
-				randomAccountChannelEntry);
+			testGetAccountChannelBillingAddressId_addAccountChannelEntry();
 
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelBillingAddressId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
 	}
 
 	protected AccountChannelEntry
-			testPostAccountByExternalReferenceCodeAccountChannelUser_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
+			testGetAccountChannelBillingAddressId_addAccountChannelEntry()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelBillingAddressId()
+		throws Exception {
+
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelBillingAddressId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelBillingAddressId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelBillingAddressId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelBillingAddressId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelBillingAddressId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelBillingAddressIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelBillingAddressId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelBillingAddressId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelBillingAddressId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelCurrencyId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelCurrencyId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelCurrencyId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelCurrencyId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelCurrencyId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelCurrencyId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelCurrencyId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelCurrencyId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelCurrencyId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelCurrencyId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelCurrencyIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelCurrencyId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelCurrencyId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelCurrencyId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelDeliveryTermId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelDeliveryTermId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelDeliveryTermId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelDeliveryTermId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelDeliveryTermId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelDeliveryTermId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelDeliveryTermId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelDeliveryTermId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelDeliveryTermId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelDeliveryTermId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelDeliveryTermIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelDeliveryTermId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelDeliveryTermId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelDeliveryTermId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelDiscountId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelDiscountId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelDiscountId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelDiscountId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelDiscountId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelDiscountId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelDiscountId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelDiscountId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelDiscountId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelDiscountId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelDiscountIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelDiscountId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelDiscountId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelDiscountId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelPaymentMethodId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelPaymentMethodId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelPaymentMethodId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelPaymentMethodId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelPaymentMethodId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelPaymentMethodId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelPaymentMethodId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelPaymentMethodId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelPaymentMethodId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelPaymentMethodId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelPaymentMethodIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelPaymentMethodId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelPaymentMethodId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelPaymentMethodId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelPaymentTermId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelPaymentTermId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelPaymentTermId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelPaymentTermId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelPaymentTermId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelPaymentTermId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelPaymentTermId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelPaymentTermId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelPaymentTermId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelPaymentTermId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelPaymentTermIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelPaymentTermId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelPaymentTermId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelPaymentTermId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelPriceListId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelPriceListId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelPriceListId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelPriceListId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelPriceListId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelPriceListId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelPriceListId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelPriceListId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelPriceListId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelPriceListId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelPriceListIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelPriceListId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelPriceListId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelPriceListId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelShippingAddressId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelShippingAddressId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelShippingAddressId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelShippingAddressId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelShippingAddressId()
+		throws Exception {
+
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelShippingAddressId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelShippingAddressId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/accountChannelShippingAddressId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelShippingAddressId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelShippingAddressId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelShippingAddressIdNotFound()
+		throws Exception {
+
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelShippingAddressId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelShippingAddressId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelShippingAddressId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
+	}
+
+	@Test
+	public void testGetAccountChannelUserId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testGetAccountChannelUserId_addAccountChannelEntry();
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelUserId(
+				postAccountChannelEntry.getId());
+
+		assertEquals(postAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testGetAccountChannelUserId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelUserId() throws Exception {
+		AccountChannelEntry accountChannelEntry =
+			testGraphQLGetAccountChannelUserId_addAccountChannelEntry();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"accountChannelUserId",
+								new HashMap<String, Object>() {
+									{
+										put("id", accountChannelEntry.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/accountChannelUserId"))));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertTrue(
+			equals(
+				accountChannelEntry,
+				AccountChannelEntrySerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminAccount_v1_0",
+								new GraphQLField(
+									"accountChannelUserId",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"id",
+												accountChannelEntry.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminAccount_v1_0",
+						"Object/accountChannelUserId"))));
+	}
+
+	@Test
+	public void testGraphQLGetAccountChannelUserIdNotFound() throws Exception {
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"accountChannelUserId",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminAccount_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminAccount_v1_0",
+						new GraphQLField(
+							"accountChannelUserId",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected AccountChannelEntry
+			testGraphQLGetAccountChannelUserId_addAccountChannelEntry()
+		throws Exception {
+
+		return testGraphQLAccountChannelEntry_addAccountChannelEntry();
 	}
 
 	@Test
@@ -3250,12 +4305,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelBillingAddressesPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelBillingAddressesPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelBillingAddressesPage_addAccountChannelEntry(
@@ -3269,43 +4324,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelBillingAddressesPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelBillingAddressesPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelBillingAddressesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelBillingAddressesPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelBillingAddressesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelBillingAddressesPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelBillingAddressesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelBillingAddressesPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelBillingAddressesPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelBillingAddressesPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -3329,30 +4432,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelBillingAddress()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelBillingAddress_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelBillingAddress_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -3432,12 +4511,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelCurrenciesPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelCurrenciesPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelCurrenciesPage_addAccountChannelEntry(
@@ -3451,43 +4530,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelCurrenciesPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelCurrenciesPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelCurrenciesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelCurrenciesPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelCurrenciesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelCurrenciesPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelCurrenciesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelCurrenciesPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelCurrenciesPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelCurrenciesPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -3511,28 +4638,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelCurrency() throws Exception {
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelCurrency_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelCurrency_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -3612,12 +4717,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelDeliveryTermsPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelDeliveryTermsPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelDeliveryTermsPage_addAccountChannelEntry(
@@ -3631,43 +4736,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelDeliveryTermsPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelDeliveryTermsPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDeliveryTermsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelDeliveryTermsPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDeliveryTermsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelDeliveryTermsPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDeliveryTermsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDeliveryTermsPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDeliveryTermsPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDeliveryTermsPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -3691,28 +4844,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelDeliveryTerm() throws Exception {
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelDeliveryTerm_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelDeliveryTerm_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -3787,12 +4918,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelDiscountsPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.getAccountIdAccountChannelDiscountsPage(
 				id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelDiscountsPage_addAccountChannelEntry(
@@ -3806,40 +4937,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelDiscountsPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.getAccountIdAccountChannelDiscountsPage(
-				id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDiscountsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.getAccountIdAccountChannelDiscountsPage(
-				id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDiscountsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.getAccountIdAccountChannelDiscountsPage(
-				id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDiscountsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDiscountsPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDiscountsPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelDiscountsPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -3862,28 +5044,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelDiscount() throws Exception {
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelDiscount_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelDiscount_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -3963,12 +5123,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelPaymentMethodsPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelPaymentMethodsPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelPaymentMethodsPage_addAccountChannelEntry(
@@ -3982,43 +5142,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelPaymentMethodsPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPaymentMethodsPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentMethodsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPaymentMethodsPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentMethodsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPaymentMethodsPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentMethodsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentMethodsPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentMethodsPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentMethodsPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -4042,30 +5250,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelPaymentMethod()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelPaymentMethod_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelPaymentMethod_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -4145,12 +5329,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelPaymentTermsPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelPaymentTermsPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelPaymentTermsPage_addAccountChannelEntry(
@@ -4164,43 +5348,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelPaymentTermsPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPaymentTermsPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentTermsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPaymentTermsPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentTermsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPaymentTermsPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentTermsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentTermsPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentTermsPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPaymentTermsPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -4224,28 +5456,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelPaymentTerm() throws Exception {
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelPaymentTerm_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelPaymentTerm_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -4325,12 +5535,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelPriceListsPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelPriceListsPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelPriceListsPage_addAccountChannelEntry(
@@ -4344,43 +5554,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelPriceListsPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPriceListsPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPriceListsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPriceListsPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPriceListsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelPriceListsPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPriceListsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPriceListsPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPriceListsPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelPriceListsPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -4404,28 +5662,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelPriceList() throws Exception {
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelPriceList_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelPriceList_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -4505,12 +5741,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelShippingAddressesPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.
 				getAccountIdAccountChannelShippingAddressesPage(id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelShippingAddressesPage_addAccountChannelEntry(
@@ -4524,43 +5760,91 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelShippingAddressesPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelShippingAddressesPage(
-					id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelShippingAddressesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelShippingAddressesPage(
-					id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelShippingAddressesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.
-				getAccountIdAccountChannelShippingAddressesPage(
-					id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelShippingAddressesPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelShippingAddressesPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelShippingAddressesPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.
+					getAccountIdAccountChannelShippingAddressesPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -4584,30 +5868,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostAccountIdAccountChannelShippingAddress()
-		throws Exception {
-
-		AccountChannelEntry randomAccountChannelEntry =
-			randomAccountChannelEntry();
-
-		AccountChannelEntry postAccountChannelEntry =
-			testPostAccountIdAccountChannelShippingAddress_addAccountChannelEntry(
-				randomAccountChannelEntry);
-
-		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
-		assertValid(postAccountChannelEntry);
-	}
-
-	protected AccountChannelEntry
-			testPostAccountIdAccountChannelShippingAddress_addAccountChannelEntry(
-				AccountChannelEntry accountChannelEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -4679,12 +5939,12 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		Long id = testGetAccountIdAccountChannelUsersPage_getId();
 
-		Page<AccountChannelEntry> accountChannelEntryPage =
+		Page<AccountChannelEntry> accountChannelEntriesPage =
 			accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
 				id, null);
 
 		int totalCount = GetterUtil.getInteger(
-			accountChannelEntryPage.getTotalCount());
+			accountChannelEntriesPage.getTotalCount());
 
 		AccountChannelEntry accountChannelEntry1 =
 			testGetAccountIdAccountChannelUsersPage_addAccountChannelEntry(
@@ -4698,40 +5958,85 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			testGetAccountIdAccountChannelUsersPage_addAccountChannelEntry(
 				id, randomAccountChannelEntry());
 
-		Page<AccountChannelEntry> page1 =
-			accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
-				id, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<AccountChannelEntry> accountChannelEntries1 =
-			(List<AccountChannelEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			accountChannelEntries1.toString(), totalCount + 2,
-			accountChannelEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<AccountChannelEntry> page2 =
-			accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
-				id, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page1.getItems());
 
-		List<AccountChannelEntry> accountChannelEntries2 =
-			(List<AccountChannelEntry>)page2.getItems();
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(
-			accountChannelEntries2.toString(), 1,
-			accountChannelEntries2.size());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page2.getItems());
 
-		Page<AccountChannelEntry> page3 =
-			accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
-				id, Pagination.of(1, (int)totalCount + 3));
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
+					id,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertContains(
-			accountChannelEntry1, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry2, (List<AccountChannelEntry>)page3.getItems());
-		assertContains(
-			accountChannelEntry3, (List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
+		else {
+			Page<AccountChannelEntry> page1 =
+				accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
+					id, Pagination.of(1, totalCount + 2));
+
+			List<AccountChannelEntry> accountChannelEntries1 =
+				(List<AccountChannelEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries1.toString(), totalCount + 2,
+				accountChannelEntries1.size());
+
+			Page<AccountChannelEntry> page2 =
+				accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
+					id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<AccountChannelEntry> accountChannelEntries2 =
+				(List<AccountChannelEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				accountChannelEntries2.toString(), 1,
+				accountChannelEntries2.size());
+
+			Page<AccountChannelEntry> page3 =
+				accountChannelEntryResource.getAccountIdAccountChannelUsersPage(
+					id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				accountChannelEntry1,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry2,
+				(List<AccountChannelEntry>)page3.getItems());
+			assertContains(
+				accountChannelEntry3,
+				(List<AccountChannelEntry>)page3.getItems());
+		}
 	}
 
 	protected AccountChannelEntry
@@ -4757,6 +6062,728 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	@Test
+	public void testPatchAccountChannelBillingAddressId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelBillingAddressId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelBillingAddressId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelBillingAddressId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelBillingAddressId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelCurrencyId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelCurrencyId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelCurrencyId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelCurrencyId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelCurrencyId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelDeliveryTermId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelDeliveryTermId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelDeliveryTermId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelDeliveryTermId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelDeliveryTermId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelDiscountId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelDiscountId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelDiscountId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelDiscountId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelDiscountId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelPaymentMethodId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelPaymentMethodId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelPaymentMethodId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelPaymentMethodId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelPaymentMethodId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelPaymentTermId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelPaymentTermId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelPaymentTermId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelPaymentTermId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelPaymentTermId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelPriceListId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelPriceListId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelPriceListId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelPriceListId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelPriceListId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelShippingAddressId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelShippingAddressId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelShippingAddressId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelShippingAddressId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelShippingAddressId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPatchAccountChannelUserId() throws Exception {
+		AccountChannelEntry postAccountChannelEntry =
+			testPatchAccountChannelUserId_addAccountChannelEntry();
+
+		AccountChannelEntry randomPatchAccountChannelEntry =
+			randomPatchAccountChannelEntry();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		AccountChannelEntry patchAccountChannelEntry =
+			accountChannelEntryResource.patchAccountChannelUserId(
+				postAccountChannelEntry.getId(),
+				randomPatchAccountChannelEntry);
+
+		AccountChannelEntry expectedPatchAccountChannelEntry =
+			postAccountChannelEntry.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchAccountChannelEntry, expectedPatchAccountChannelEntry);
+
+		AccountChannelEntry getAccountChannelEntry =
+			accountChannelEntryResource.getAccountChannelUserId(
+				patchAccountChannelEntry.getId());
+
+		assertEquals(expectedPatchAccountChannelEntry, getAccountChannelEntry);
+		assertValid(getAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPatchAccountChannelUserId_addAccountChannelEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelBillingAddress()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelBillingAddress_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelBillingAddress_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelCurrency()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelCurrency_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelCurrency_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelDeliveryTerm()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelDeliveryTerm_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelDeliveryTerm_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelDiscount()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelDiscount_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelDiscount_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelPaymentMethod()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelPaymentMethod_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelPaymentMethod_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelPaymentTerm()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelPaymentTerm_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelPaymentTerm_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelPriceList()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelPriceList_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelPriceList_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelShippingAddress()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelShippingAddress_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelShippingAddress_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountByExternalReferenceCodeAccountChannelUser()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountByExternalReferenceCodeAccountChannelUser_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountByExternalReferenceCodeAccountChannelUser_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelBillingAddress()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelBillingAddress_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelBillingAddress_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelCurrency() throws Exception {
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelCurrency_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelCurrency_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelDeliveryTerm() throws Exception {
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelDeliveryTerm_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelDeliveryTerm_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelDiscount() throws Exception {
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelDiscount_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelDiscount_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelPaymentMethod()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelPaymentMethod_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelPaymentMethod_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelPaymentTerm() throws Exception {
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelPaymentTerm_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelPaymentTerm_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelPriceList() throws Exception {
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelPriceList_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelPriceList_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostAccountIdAccountChannelShippingAddress()
+		throws Exception {
+
+		AccountChannelEntry randomAccountChannelEntry =
+			randomAccountChannelEntry();
+
+		AccountChannelEntry postAccountChannelEntry =
+			testPostAccountIdAccountChannelShippingAddress_addAccountChannelEntry(
+				randomAccountChannelEntry);
+
+		assertEquals(randomAccountChannelEntry, postAccountChannelEntry);
+		assertValid(postAccountChannelEntry);
+	}
+
+	protected AccountChannelEntry
+			testPostAccountIdAccountChannelShippingAddress_addAccountChannelEntry(
+				AccountChannelEntry accountChannelEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
 	public void testPostAccountIdAccountChannelUser() throws Exception {
 		AccountChannelEntry randomAccountChannelEntry =
 			randomAccountChannelEntry();
@@ -4776,6 +6803,11 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		Assert.assertTrue(true);
 	}
 
 	protected AccountChannelEntry
@@ -5027,6 +7059,8 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
 
+		graphQLFields.add(new GraphQLField("id"));
+
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
 					com.liferay.headless.commerce.admin.account.dto.v1_0.
@@ -5247,6 +7281,10 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -5504,8 +7542,11 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -5567,21 +7608,21 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	}
 
 	protected AccountChannelEntryResource accountChannelEntryResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -5590,11 +7631,16 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -5626,6 +7672,24 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -5647,16 +7711,6 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -5754,10 +7808,13 @@ public abstract class BaseAccountChannelEntryResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseAccountChannelEntryResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.account.resource.v1_0.
 		AccountChannelEntryResource _accountChannelEntryResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1808801039

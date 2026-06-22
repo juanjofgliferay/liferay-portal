@@ -7,9 +7,9 @@ package com.liferay.headless.delivery.internal.resource.v1_0;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
-import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureService;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.friendly.url.constants.FriendlyURLEntryConstants;
 import com.liferay.friendly.url.model.FriendlyURLEntryLocalization;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
@@ -28,39 +28,28 @@ import com.liferay.headless.delivery.dto.v1_0.SitePage;
 import com.liferay.headless.delivery.dto.v1_0.SitePageNavigationMenuSettings;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryReference;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.odata.entity.v1_0.SitePageEntityModel;
 import com.liferay.headless.delivery.resource.v1_0.SitePageResource;
 import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
 import com.liferay.layout.constants.LayoutTypeSettingsConstants;
-import com.liferay.layout.helper.LayoutCopyHelper;
 import com.liferay.layout.importer.LayoutsImporter;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
-import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTagProperty;
 import com.liferay.layout.seo.service.LayoutSEOEntryService;
+import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.events.ServicePreAction;
-import com.liferay.portal.events.ThemeServicePreAction;
-import com.liferay.portal.kernel.change.tracking.CTAware;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
-import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Team;
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
@@ -69,7 +58,6 @@ import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutService;
@@ -79,7 +67,6 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.TeamLocalService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.permission.ModelPermissionsFactory;
-import com.liferay.portal.kernel.servlet.DummyHttpServletResponse;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -90,6 +77,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
@@ -97,6 +85,8 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
@@ -114,18 +104,16 @@ import com.liferay.segments.processor.SegmentsExperienceRequestProcessorRegistry
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.segments.service.SegmentsExperienceService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -140,10 +128,15 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v1_0/site-page.properties",
+	property = {
+		"crud.entity.class.name=com.liferay.headless.delivery.dto.v1_0.SitePage",
+		"crud.item.delegate=true"
+	},
 	scope = ServiceScope.PROTOTYPE, service = SitePageResource.class
 )
-@CTAware
-public class SitePageResourceImpl extends BaseSitePageResourceImpl {
+public class SitePageResourceImpl
+	extends BaseSitePageResourceImpl
+	implements VulcanCRUDItemDelegate<SitePage> {
 
 	@Override
 	public EntityModel getEntityModel(MultivaluedMap multivaluedMap) {
@@ -151,10 +144,17 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 	}
 
 	@Override
+	public SitePage getItem(Long id) throws Exception {
+		Layout layout = _layoutService.getLayout(id);
+
+		return getSiteSitePage(layout.getGroupId(), layout.getFriendlyURL());
+	}
+
+	@Override
 	public SitePage getSiteSitePage(Long siteId, String friendlyUrlPath)
 		throws Exception {
 
-		return _toSitePage(true, _getLayout(siteId, friendlyUrlPath), null);
+		return _toSitePage(true, _getLayout(siteId, friendlyUrlPath));
 	}
 
 	@Override
@@ -162,8 +162,12 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			Long siteId, String friendlyUrlPath, String experienceKey)
 		throws Exception {
 
+		Layout layout = _getLayout(siteId, friendlyUrlPath);
+
 		return _toSitePage(
-			true, _getLayout(siteId, friendlyUrlPath), experienceKey);
+			true, layout,
+			_segmentsExperienceService.fetchSegmentsExperience(
+				layout.getGroupId(), experienceKey, layout.getPlid()));
 	}
 
 	@Override
@@ -193,8 +197,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			transform(
 				_getSegmentsExperiences(layout),
 				segmentsExperience -> _toSitePage(
-					_isEmbeddedPageDefinition(), layout,
-					segmentsExperience.getSegmentsExperienceKey())));
+					_isEmbeddedPageDefinition(), layout, segmentsExperience)));
 	}
 
 	@Override
@@ -232,13 +235,14 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 				searchContext.setAttribute(
 					Field.TYPE,
 					new String[] {
-						LayoutConstants.TYPE_COLLECTION,
 						LayoutConstants.TYPE_CONTENT,
 						LayoutConstants.TYPE_EMBEDDED,
 						LayoutConstants.TYPE_LINK_TO_LAYOUT,
+						LayoutConstants.TYPE_NODE,
 						LayoutConstants.TYPE_FULL_PAGE_APPLICATION,
 						LayoutConstants.TYPE_PANEL,
-						LayoutConstants.TYPE_PORTLET, LayoutConstants.TYPE_URL
+						LayoutConstants.TYPE_PORTLET, LayoutConstants.TYPE_URL,
+						LayoutConstants.TYPE_UTILITY
 					});
 				searchContext.setAttribute(
 					"privateLayout", Boolean.FALSE.toString());
@@ -253,7 +257,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 				return _toSitePage(
 					_isEmbeddedPageDefinition(),
-					_layoutLocalService.getLayout(plid), null);
+					_layoutService.getLayout(plid));
 			});
 	}
 
@@ -306,7 +310,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 			if (layout == null) {
 				if (_log.isWarnEnabled()) {
-					_log.warn("Could not find parent site page");
+					_log.warn("Unable to get parent layout");
 				}
 			}
 			else {
@@ -360,15 +364,30 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 					Boolean include = siteMapSettings.getInclude();
 
 					if (include != null) {
-						String siteMapInclude = "0";
+						String sitemapInclude = "0";
 
 						if (include) {
-							siteMapInclude = "1";
+							sitemapInclude = "1";
 						}
 
 						typeSettingsUnicodeProperties.setProperty(
 							LayoutTypePortletConstants.SITEMAP_INCLUDE,
-							siteMapInclude);
+							sitemapInclude);
+					}
+
+					Boolean includeChildSitePages =
+						siteMapSettings.getIncludeChildSitePages();
+
+					if (includeChildSitePages != null) {
+						String sitemapIncludeChildLayouts = "false";
+
+						if (includeChildSitePages) {
+							sitemapIncludeChildLayouts = "true";
+						}
+
+						typeSettingsUnicodeProperties.setProperty(
+							"sitemap-include-child-layouts",
+							sitemapIncludeChildLayouts);
 					}
 
 					Double pagePriority = siteMapSettings.getPagePriority();
@@ -418,42 +437,51 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 		ServiceContext serviceContext = _createServiceContext(siteId, sitePage);
 
 		Layout layout = _layoutService.addLayout(
-			siteId, false, parentLayoutId, nameMap, titleMap, descriptionMap,
-			keywordsMap, robotsMap, LayoutConstants.TYPE_CONTENT,
-			typeSettingsUnicodeProperties.toString(), hidden, friendlyUrlMap, 0,
-			serviceContext);
+			null, siteId, false, parentLayoutId, nameMap, titleMap,
+			descriptionMap, keywordsMap, robotsMap,
+			LayoutConstants.TYPE_CONTENT,
+			typeSettingsUnicodeProperties.toString(), hidden, friendlyUrlMap,
+			null, serviceContext);
 
-		_importPageDefinition(
-			layout, sitePage.getPageDefinition(), serviceContext);
+		ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
-		layout = _layoutLocalService.getLayout(layout.getPlid());
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout, contextUser)) {
 
-		PageDefinition pageDefinition = sitePage.getPageDefinition();
+			_importPageDefinition(layout, sitePage.getPageDefinition());
 
-		if (pageDefinition != null) {
-			Settings settings = pageDefinition.getSettings();
+			layout = _layoutService.getLayout(layout.getPlid());
 
-			if (settings != null) {
-				layout = _layoutsImporter.importLayoutSettings(
-					contextUser.getUserId(), layout, settings.toString());
+			PageDefinition pageDefinition = sitePage.getPageDefinition();
+
+			if (pageDefinition != null) {
+				Settings settings = pageDefinition.getSettings();
+
+				if (settings != null) {
+					layout = _layoutsImporter.importLayoutSettings(
+						contextUser.getUserId(), layout, settings.toString());
+				}
 			}
+
+			Layout draftLayout = _updateDraftLayout(layout);
+
+			layout.setModifiedDate(draftLayout.getModifiedDate());
+
+			layout.setStatus(WorkflowConstants.STATUS_APPROVED);
+
+			layout = _layoutLocalService.updateLayout(layout);
+
+			_updateModelResourcePermissions(
+				layout.getCompanyId(), siteId, layout.getPlid(), sitePage);
+
+			_updateSEOEntry(siteId, layout.getLayoutId(), sitePage);
+
+			return layout;
 		}
-
-		Layout draftLayout = _updateDraftLayout(layout);
-
-		layout.setModifiedDate(draftLayout.getModifiedDate());
-
-		layout.setStatus(WorkflowConstants.STATUS_APPROVED);
-
-		layout = _layoutLocalService.updateLayout(layout);
-
-		_updateModelResourcePermissions(
-			layout.getCompanyId(), siteId, layout.getPlid(), sitePage);
-
-		_updateSEOEntry(
-			layout.getCompanyId(), siteId, layout.getLayoutId(), sitePage);
-
-		return layout;
+		finally {
+			ServiceContextThreadLocal.popServiceContext();
+		}
 	}
 
 	private ServiceContext _createServiceContext(
@@ -475,7 +503,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			assetTagNames = sitePage.getKeywords();
 		}
 
-		return ServiceContextBuilder.create(
+		ServiceContext serviceContext = ServiceContextBuilder.create(
 			groupId, contextHttpServletRequest, null
 		).assetCategoryIds(
 			assetCategoryIds
@@ -487,6 +515,10 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 				sitePage.getCustomFields(),
 				contextAcceptLanguage.getPreferredLocale())
 		).build();
+
+		serviceContext.setUserId(contextUser.getUserId());
+
+		return serviceContext;
 	}
 
 	private Map<String, Map<String, String>> _getBasicActions(Layout layout) {
@@ -515,87 +547,6 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 		).build();
 	}
 
-	private String _getDDMFormValues(PageSettings pageSettings) {
-		CustomMetaTag[] customMetaTags = pageSettings.getCustomMetaTags();
-
-		if (ArrayUtil.isEmpty(customMetaTags)) {
-			return null;
-		}
-
-		JSONObject ddmFormValuesJSONObject = JSONUtil.put(
-			"defaultLanguageId",
-			contextAcceptLanguage.getPreferredLanguageId());
-
-		JSONArray fieldValuesJSONArray = _jsonFactory.createJSONArray();
-
-		Set<String> availableLanguageIds = new HashSet<>();
-
-		for (CustomMetaTag customMetaTag : customMetaTags) {
-			JSONObject fieldValueJSONObject = JSONUtil.put(
-				"instanceId", StringUtil.randomString(8)
-			).put(
-				"name", "property"
-			).put(
-				"value", customMetaTag.getKey()
-			);
-
-			JSONObject nestedFieldValueJSONObject = JSONUtil.put(
-				"instanceId", StringUtil.randomString(8)
-			).put(
-				"name", "content"
-			);
-
-			Map<Locale, String> valuesMap = LocalizedMapUtil.getLocalizedMap(
-				contextAcceptLanguage.getPreferredLocale(),
-				customMetaTag.getValue(), customMetaTag.getValue_i18n());
-
-			JSONObject valueJSONObject = _jsonFactory.createJSONObject();
-
-			for (Map.Entry<Locale, String> entry : valuesMap.entrySet()) {
-				String key = LocaleUtil.toLanguageId(entry.getKey());
-
-				valueJSONObject.put(key, entry.getValue());
-
-				availableLanguageIds.add(key);
-			}
-
-			nestedFieldValueJSONObject.put("value", valueJSONObject);
-
-			JSONArray nestedFieldValuesJSONArray = JSONUtil.put(
-				nestedFieldValueJSONObject);
-
-			fieldValueJSONObject.put(
-				"nestedFieldValues", nestedFieldValuesJSONArray);
-
-			fieldValuesJSONArray.put(fieldValueJSONObject);
-		}
-
-		ddmFormValuesJSONObject.put("fieldValues", fieldValuesJSONArray);
-
-		JSONArray availableLanguageIdsJSONArray =
-			_jsonFactory.createJSONArray();
-
-		for (String availableLanguage : availableLanguageIds) {
-			availableLanguageIdsJSONArray.put(availableLanguage);
-		}
-
-		ddmFormValuesJSONObject.put(
-			"availableLanguageIds", availableLanguageIdsJSONArray);
-
-		return ddmFormValuesJSONObject.toString();
-	}
-
-	private long _getDDMStructurePrimaryKey(long companyId) throws Exception {
-		Company company = _companyLocalService.getCompany(companyId);
-
-		DDMStructure ddmStructure = _ddmStructureService.getStructure(
-			company.getGroupId(),
-			_portal.getClassNameId(LayoutSEOEntry.class.getName()),
-			"custom-meta-tags");
-
-		return ddmStructure.getPrimaryKey();
-	}
-
 	private Map<String, Map<String, String>> _getExperienceActions(
 		Layout layout) {
 
@@ -613,45 +564,46 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 		).build();
 	}
 
-	private long _getFileEntryId(long contentDocumentId) {
-		try {
-			FileEntry fileEntry = _dlAppService.getFileEntry(contentDocumentId);
-
-			return fileEntry.getFileEntryId();
-		}
-		catch (PortalException portalException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(portalException);
-			}
-		}
-
-		return 0;
-	}
-
 	private Layout _getLayout(long groupId, String friendlyUrlPath)
 		throws Exception {
 
 		String resourceName = ResourceActionsUtil.getCompositeModelName(
 			Layout.class.getName(), "false");
 
+		long classNameId = _portal.getClassNameId(resourceName);
+
 		if (!StringUtil.startsWith(friendlyUrlPath, StringPool.FORWARD_SLASH)) {
 			friendlyUrlPath = StringPool.FORWARD_SLASH + friendlyUrlPath;
 		}
 
 		FriendlyURLEntryLocalization friendlyURLEntryLocalization =
-			_friendlyURLEntryLocalService.getFriendlyURLEntryLocalization(
-				groupId, _portal.getClassNameId(resourceName), friendlyUrlPath);
+			_friendlyURLEntryLocalService.fetchFriendlyURLEntryLocalization(
+				groupId, classNameId,
+				FriendlyURLEntryConstants.
+					FRIENDLY_URL_ENTRY_PARENT_CLASS_PK_DEFAULT,
+				contextAcceptLanguage.getPreferredLanguageId(),
+				friendlyUrlPath);
 
-		return _layoutLocalService.getLayout(
+		if (friendlyURLEntryLocalization == null) {
+			friendlyURLEntryLocalization =
+				_friendlyURLEntryLocalService.getFriendlyURLEntryLocalization(
+					groupId, classNameId,
+					LocaleUtil.toLanguageId(
+						_portal.getSiteDefaultLocale(groupId)),
+					friendlyUrlPath);
+		}
+
+		return _layoutService.getLayout(
 			friendlyURLEntryLocalization.getClassPK());
 	}
 
 	private SegmentsExperience _getSegmentsExperience(
-			Layout layout, String segmentsExperienceKey)
+			HttpServletRequest httpServletRequest, Layout layout,
+			String segmentsExperienceKey)
 		throws Exception {
 
 		if (Validator.isNull(segmentsExperienceKey)) {
-			return _getUserSegmentsExperience(layout);
+			return _getUserSegmentsExperience(httpServletRequest, layout);
 		}
 
 		return _segmentsExperienceService.fetchSegmentsExperience(
@@ -669,48 +621,18 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			layout.getGroupId(), layout.getPlid(), true);
 	}
 
-	private ThemeDisplay _getThemeDisplay(Layout layout) throws Exception {
-		ServicePreAction servicePreAction = new ServicePreAction();
-
-		HttpServletResponse httpServletResponse =
-			new DummyHttpServletResponse();
-
-		servicePreAction.servicePre(
-			contextHttpServletRequest, httpServletResponse, false);
-
-		ThemeServicePreAction themeServicePreAction =
-			new ThemeServicePreAction();
-
-		themeServicePreAction.run(
-			contextHttpServletRequest, httpServletResponse);
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)contextHttpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		themeDisplay.setLayout(layout);
-		themeDisplay.setResponse(httpServletResponse);
-		themeDisplay.setScopeGroupId(layout.getGroupId());
-		themeDisplay.setSiteGroupId(layout.getGroupId());
-
-		return themeDisplay;
-	}
-
-	private SegmentsExperience _getUserSegmentsExperience(Layout layout)
+	private SegmentsExperience _getUserSegmentsExperience(
+			HttpServletRequest httpServletRequest, Layout layout)
 		throws Exception {
-
-		contextHttpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
-
-		long[] segmentsEntryIds = _segmentsEntryRetriever.getSegmentsEntryIds(
-			layout.getGroupId(), contextUser.getUserId(),
-			_requestContextMapper.map(contextHttpServletRequest));
 
 		long[] segmentsExperienceIds =
 			_segmentsExperienceRequestProcessorRegistry.
 				getSegmentsExperienceIds(
-					contextHttpServletRequest, null, layout.getGroupId(),
-					layout.getPlid(), segmentsEntryIds);
+					httpServletRequest, null, layout.getGroupId(),
+					layout.getPlid(),
+					_segmentsEntryRetriever.getSegmentsEntryIds(
+						layout.getGroupId(), contextUser.getUserId(),
+						_requestContextMapper.map(httpServletRequest)));
 
 		if (ArrayUtil.isEmpty(segmentsExperienceIds)) {
 			return _segmentsExperienceLocalService.fetchSegmentsExperience(
@@ -723,8 +645,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 	}
 
 	private void _importPageDefinition(
-			Layout layout, PageDefinition pageDefinition,
-			ServiceContext serviceContext)
+			Layout layout, PageDefinition pageDefinition)
 		throws Exception {
 
 		if (pageDefinition == null) {
@@ -745,21 +666,9 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			return;
 		}
 
-		contextHttpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
-
-		serviceContext.setRequest(contextHttpServletRequest);
-
-		ServiceContextThreadLocal.pushServiceContext(serviceContext);
-
-		try {
-			_layoutsImporter.importPageElement(
-				layout, layoutStructure, layoutStructure.getMainItemId(),
-				pageElement.toString(), 0, true);
-		}
-		finally {
-			ServiceContextThreadLocal.popServiceContext();
-		}
+		_layoutsImporter.importPageElement(
+			layout, layoutStructure, layoutStructure.getMainItemId(),
+			pageElement.toString(), 0, true);
 	}
 
 	private boolean _isEmbeddedPageDefinition() {
@@ -836,78 +745,115 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 		Layout layout = _getLayout(groupId, friendlyUrlPath);
 
-		contextHttpServletRequest = DynamicServletRequest.addQueryString(
-			contextHttpServletRequest, "p_l_id=" + layout.getPlid(), false);
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout, contextUser)) {
 
-		SegmentsExperience segmentsExperience = _getSegmentsExperience(
-			layout, segmentsExperienceKey);
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
 
-		if (segmentsExperience != null) {
-			contextHttpServletRequest.setAttribute(
-				SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS,
-				new long[] {segmentsExperience.getSegmentsExperienceId()});
-		}
+			HttpServletRequest httpServletRequest =
+				_portal.getOriginalServletRequest(contextHttpServletRequest);
 
-		contextHttpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, _getThemeDisplay(layout));
+			httpServletRequest = DynamicServletRequest.addQueryString(
+				httpServletRequest, "p_l_id=" + layout.getPlid(), false);
 
-		layout.includeLayoutContent(
-			contextHttpServletRequest, contextHttpServletResponse);
+			serviceContext.setRequest(httpServletRequest);
 
-		StringBundler sb =
-			(StringBundler)contextHttpServletRequest.getAttribute(
+			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+			themeDisplay.setLanguageId(
+				LocaleUtil.toLanguageId(
+					contextAcceptLanguage.getPreferredLocale()));
+			themeDisplay.setLocale(contextAcceptLanguage.getPreferredLocale());
+			themeDisplay.setRequest(httpServletRequest);
+
+			httpServletRequest.setAttribute(
+				WebKeys.LOCALE, contextAcceptLanguage.getPreferredLocale());
+
+			SegmentsExperience segmentsExperience = _getSegmentsExperience(
+				httpServletRequest, layout, segmentsExperienceKey);
+
+			if (segmentsExperience != null) {
+				httpServletRequest.setAttribute(
+					SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS,
+					new long[] {segmentsExperience.getSegmentsExperienceId()});
+			}
+
+			layout.includeLayoutContent(
+				httpServletRequest, contextHttpServletResponse);
+
+			StringBundler sb = (StringBundler)httpServletRequest.getAttribute(
 				WebKeys.LAYOUT_CONTENT);
 
-		LayoutSet layoutSet = layout.getLayoutSet();
+			LayoutSet layoutSet = layout.getLayoutSet();
 
-		Document document = Jsoup.parse(
-			ThemeUtil.include(
-				ServletContextPool.get(StringPool.BLANK),
-				contextHttpServletRequest, contextHttpServletResponse,
-				"portal_normal.ftl", layoutSet.getTheme(), false));
+			Document document = Jsoup.parse(
+				ThemeUtil.include(
+					ServletContextPool.get(StringPool.BLANK),
+					httpServletRequest, contextHttpServletResponse,
+					"portal_normal.ftl", layoutSet.getTheme(), false));
 
-		Element bodyElement = document.body();
+			Element bodyElement = document.body();
 
-		bodyElement.html(sb.toString());
+			bodyElement.html(sb.toString());
 
-		return document.html();
+			return document.html();
+		}
+	}
+
+	private SitePage _toSitePage(boolean embeddedPageDefinition, Layout layout)
+		throws Exception {
+
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					layout, contextUser)) {
+
+			DefaultDTOConverterContext dtoConverterContext =
+				new DefaultDTOConverterContext(
+					contextAcceptLanguage.isAcceptAllLanguages(),
+					_getBasicActions(layout), _dtoConverterRegistry,
+					contextHttpServletRequest, layout.getPlid(),
+					contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
+					contextUser);
+
+			dtoConverterContext.setAttribute(
+				"embeddedPageDefinition", embeddedPageDefinition);
+			dtoConverterContext.setAttribute("groupId", layout.getGroupId());
+
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+			dtoConverterContext.setAttribute(
+				"segmentsExperience",
+				_getUserSegmentsExperience(themeDisplay.getRequest(), layout));
+
+			return _sitePageDTOConverter.toDTO(dtoConverterContext, layout);
+		}
 	}
 
 	private SitePage _toSitePage(
 			boolean embeddedPageDefinition, Layout layout,
-			String segmentsExperienceKey)
+			SegmentsExperience segmentsExperience)
 		throws Exception {
-
-		Map<String, Map<String, String>> actions = null;
-
-		if (Validator.isNotNull(segmentsExperienceKey)) {
-			actions = _getExperienceActions(layout);
-		}
-		else {
-			actions = _getBasicActions(layout);
-		}
 
 		DefaultDTOConverterContext dtoConverterContext =
 			new DefaultDTOConverterContext(
-				contextAcceptLanguage.isAcceptAllLanguages(), actions,
-				_dtoConverterRegistry, contextHttpServletRequest,
-				layout.getPlid(), contextAcceptLanguage.getPreferredLocale(),
-				contextUriInfo, contextUser);
+				contextAcceptLanguage.isAcceptAllLanguages(),
+				_getExperienceActions(layout), _dtoConverterRegistry,
+				contextHttpServletRequest, layout.getPlid(),
+				contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
+				contextUser);
 
 		dtoConverterContext.setAttribute(
 			"embeddedPageDefinition", embeddedPageDefinition);
 		dtoConverterContext.setAttribute("groupId", layout.getGroupId());
 
-		if (Validator.isNotNull(segmentsExperienceKey)) {
-			dtoConverterContext.setAttribute(
-				"segmentsExperience",
-				_getSegmentsExperience(layout, segmentsExperienceKey));
-			dtoConverterContext.setAttribute("showExperience", Boolean.TRUE);
-		}
-		else {
-			dtoConverterContext.setAttribute(
-				"segmentsExperience", _getUserSegmentsExperience(layout));
-		}
+		dtoConverterContext.setAttribute(
+			"segmentsExperience", segmentsExperience);
+		dtoConverterContext.setAttribute("showExperience", Boolean.TRUE);
 
 		return _sitePageDTOConverter.toDTO(dtoConverterContext, layout);
 	}
@@ -915,7 +861,8 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 	private Layout _updateDraftLayout(Layout layout) throws Exception {
 		Layout draftLayout = layout.fetchDraftLayout();
 
-		draftLayout = _layoutCopyHelper.copyLayoutContent(layout, draftLayout);
+		draftLayout = _layoutLocalService.copyLayoutContent(
+			layout, draftLayout);
 
 		draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
 
@@ -968,8 +915,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			String.valueOf(plid), modelPermissions);
 	}
 
-	private void _updateSEOEntry(
-			long companyId, long groupId, long layoutId, SitePage sitePage)
+	private void _updateSEOEntry(long groupId, long layoutId, SitePage sitePage)
 		throws Exception {
 
 		PageSettings pageSettings = sitePage.getPageSettings();
@@ -997,7 +943,8 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 		boolean openGraphDescriptionEnabled = false;
 		Map<Locale, String> openGraphDescriptionMap = new HashMap<>();
 		Map<Locale, String> openGraphImageAltMap = new HashMap<>();
-		long openGraphImageFileEntryId = 0;
+		String openGraphImageFileEntryERC = null;
+		String openGraphImageFileEntryScopeERC = null;
 		boolean openGraphTitleEnabled = false;
 		Map<Locale, String> openGraphTitleMap = new HashMap<>();
 
@@ -1022,8 +969,40 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			ContentDocument contentDocument = openGraphSettings.getImage();
 
 			if (contentDocument != null) {
-				openGraphImageFileEntryId = _getFileEntryId(
-					contentDocument.getId());
+				openGraphImageFileEntryERC =
+					contentDocument.getExternalReferenceCode();
+
+				openGraphImageFileEntryScopeERC =
+					contentDocument.getScopeExternalReferenceCode();
+
+				Long targetGroupId = ScopeUtil.getItemGroupId(
+					contextCompany.getCompanyId(),
+					openGraphImageFileEntryScopeERC, groupId);
+
+				if (targetGroupId == null) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"Unable to resolve scope group for open graph " +
+								"image with scope external reference code " +
+									openGraphImageFileEntryScopeERC);
+					}
+				}
+				else {
+					DLFileEntry dlFileEntry =
+						_dlFileEntryLocalService.
+							fetchFileEntryByExternalReferenceCode(
+								targetGroupId, openGraphImageFileEntryERC);
+
+					if ((dlFileEntry == null) && _log.isWarnEnabled()) {
+						_log.warn(
+							StringBundler.concat(
+								"Unable to resolve open graph image file ",
+								"entry with external reference code ",
+								openGraphImageFileEntryERC,
+								" and scope external reference code ",
+								openGraphImageFileEntryScopeERC));
+					}
+				}
 			}
 
 			openGraphTitleMap = LocalizedMapUtil.getLocalizedMap(
@@ -1040,20 +1019,30 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 			groupId, contextHttpServletRequest, null
 		).build();
 
-		String ddmFormValues = _getDDMFormValues(pageSettings);
-
-		if (Validator.isNotNull(ddmFormValues)) {
-			long ddmStructurePrimaryKey = _getDDMStructurePrimaryKey(companyId);
-
-			serviceContext.setAttribute(
-				ddmStructurePrimaryKey + "ddmFormValues", ddmFormValues);
-		}
-
 		_layoutSEOEntryService.updateLayoutSEOEntry(
 			groupId, false, layoutId, canonicalURLEnabled, canonicalURLMap,
 			openGraphDescriptionEnabled, openGraphDescriptionMap,
-			openGraphImageAltMap, openGraphImageFileEntryId,
-			openGraphTitleEnabled, openGraphTitleMap, serviceContext);
+			openGraphImageAltMap, openGraphImageFileEntryERC,
+			openGraphImageFileEntryScopeERC, openGraphTitleEnabled,
+			openGraphTitleMap, serviceContext);
+
+		CustomMetaTag[] customMetaTags = pageSettings.getCustomMetaTags();
+
+		if (ArrayUtil.isEmpty(customMetaTags)) {
+			return;
+		}
+
+		_layoutSEOEntryService.updateCustomMetaTags(
+			groupId, false, layoutId,
+			transformToList(
+				customMetaTags,
+				customMetaTag -> new LayoutSEOEntryCustomMetaTagProperty(
+					LocalizedMapUtil.getLocalizedMap(
+						contextAcceptLanguage.getPreferredLocale(),
+						customMetaTag.getValue(),
+						customMetaTag.getValue_i18n()),
+					customMetaTag.getKey())),
+			serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -1065,13 +1054,7 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 	private AssetCategoryLocalService _assetCategoryLocalService;
 
 	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	@Reference
-	private DDMStructureService _ddmStructureService;
-
-	@Reference
-	private DLAppService _dlAppService;
+	private DLFileEntryLocalService _dlFileEntryLocalService;
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
@@ -1081,12 +1064,6 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -1100,6 +1077,9 @@ public class SitePageResourceImpl extends BaseSitePageResourceImpl {
 
 	@Reference
 	private LayoutService _layoutService;
+
+	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
 
 	@Reference
 	private LayoutsImporter _layoutsImporter;

@@ -1,0 +1,26 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import React from 'react';
+
+import Avatar from './Avatar';
+
+export default function Option({
+	name,
+	portrait,
+}: {
+	name: string;
+	portrait?: string;
+}) {
+	return (
+		<div className="object-field__assignee-option">
+			<Avatar name={name} portrait={portrait} />
+
+			<div className="object-field__assignee-option-name">
+				<span>{name}</span>
+			</div>
+		</div>
+	);
+}

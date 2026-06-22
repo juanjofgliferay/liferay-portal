@@ -8,13 +8,13 @@ package com.liferay.notification.rest.client.dto.v1_0;
 import com.liferay.notification.rest.client.function.UnsafeSupplier;
 import com.liferay.notification.rest.client.serdes.v1_0.NotificationTemplateSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Gabriel Albuquerque
@@ -529,3 +529,4 @@ public class NotificationTemplate implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:1095900192

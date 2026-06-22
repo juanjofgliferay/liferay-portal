@@ -12,6 +12,7 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.User;
@@ -49,6 +50,7 @@ import java.util.function.Function;
  * @see EntryImpl
  * @generated
  */
+@JSON(strict = true)
 public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 
 	/*
@@ -86,6 +88,8 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		"create table Contacts_Entry (entryId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,fullName VARCHAR(75) null,emailAddress VARCHAR(254) null,comments STRING null)";
 
 	public static final String TABLE_SQL_DROP = "drop table Contacts_Entry";
+
+	public static final String ENTITY_ALIAS = "entry";
 
 	public static final String ORDER_BY_JPQL = " ORDER BY entry.fullName ASC";
 
@@ -277,6 +281,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 
 	}
 
+	@JSON
 	@Override
 	public long getEntryId() {
 		return _entryId;
@@ -291,6 +296,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_entryId = entryId;
 	}
 
+	@JSON
 	@Override
 	public long getGroupId() {
 		return _groupId;
@@ -305,6 +311,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_groupId = groupId;
 	}
 
+	@JSON
 	@Override
 	public long getCompanyId() {
 		return _companyId;
@@ -319,6 +326,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_companyId = companyId;
 	}
 
+	@JSON
 	@Override
 	public long getUserId() {
 		return _userId;
@@ -358,6 +366,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
+	@JSON
 	@Override
 	public String getUserName() {
 		if (_userName == null) {
@@ -377,6 +386,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_userName = userName;
 	}
 
+	@JSON
 	@Override
 	public Date getCreateDate() {
 		return _createDate;
@@ -391,6 +401,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_createDate = createDate;
 	}
 
+	@JSON
 	@Override
 	public Date getModifiedDate() {
 		return _modifiedDate;
@@ -411,6 +422,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_modifiedDate = modifiedDate;
 	}
 
+	@JSON
 	@Override
 	public String getFullName() {
 		if (_fullName == null) {
@@ -430,6 +442,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		_fullName = fullName;
 	}
 
+	@JSON
 	@Override
 	public String getEmailAddress() {
 		if (_emailAddress == null) {
@@ -458,6 +471,7 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		return getColumnOriginalValue("emailAddress");
 	}
 
+	@JSON
 	@Override
 	public String getComments() {
 		if (_comments == null) {
@@ -849,3 +863,4 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 	private Entry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1518423728

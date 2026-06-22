@@ -1,3 +1,4 @@
+import ClayLink from '@clayui/link';
 import Distribution from 'contacts/components/Distribution';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
@@ -21,7 +22,7 @@ const SegmentDistribution = ({segment, ...otherProps}) => (
 										'try-choosing-a-different-breakdown'
 									)}
 
-									<a
+									<ClayLink
 										className='d-block'
 										href={
 											URLConstants.SegmentsDistributionDocumentationLink
@@ -32,13 +33,13 @@ const SegmentDistribution = ({segment, ...otherProps}) => (
 										{Liferay.Language.get(
 											'learn-more-about-distribution'
 										)}
-									</a>
+									</ClayLink>
 								</>
 							}
 							icon={{
 								border: false,
 								size: Sizes.XXXLarge,
-								symbol: 'ac-satellite'
+								symbol: 'ac_satellite'
 							}}
 							title={Liferay.Language.get(
 								'there-are-no-results-found'

@@ -87,6 +87,8 @@ public class RecentLayoutRevisionModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table RecentLayoutRevision";
 
+	public static final String ENTITY_ALIAS = "recentLayoutRevision";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY recentLayoutRevision.recentLayoutRevisionId ASC";
 
@@ -155,7 +157,7 @@ public class RecentLayoutRevisionModelImpl
 	public static final long RECENTLAYOUTREVISIONID_COLUMN_BITMASK = 32L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.RecentLayoutRevision"));
 
 	public RecentLayoutRevisionModelImpl() {
@@ -837,3 +839,4 @@ public class RecentLayoutRevisionModelImpl
 	private RecentLayoutRevision _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-684598282

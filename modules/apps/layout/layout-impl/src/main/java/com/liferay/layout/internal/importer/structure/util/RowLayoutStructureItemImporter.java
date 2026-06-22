@@ -20,12 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.osgi.service.component.annotations.Component;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemImporter.class)
 public class RowLayoutStructureItemImporter
 	extends BaseLayoutStructureItemImporter
 	implements LayoutStructureItemImporter {
@@ -174,34 +171,36 @@ public class RowLayoutStructureItemImporter
 			JSONUtil.put(
 				"modulesPerRow",
 				() -> {
-					if (rowViewportDefinitionMap.containsKey("modulesPerRow")) {
-						return GetterUtil.getInteger(
-							rowViewportDefinitionMap.get("modulesPerRow"));
+					if (!rowViewportDefinitionMap.containsKey(
+							"modulesPerRow")) {
+
+						return null;
 					}
 
-					return null;
+					return GetterUtil.getInteger(
+						rowViewportDefinitionMap.get("modulesPerRow"));
 				}
 			).put(
 				"reverseOrder",
 				() -> {
-					if (rowViewportDefinitionMap.containsKey("reverseOrder")) {
-						return GetterUtil.getBoolean(
-							rowViewportDefinitionMap.get("reverseOrder"));
+					if (!rowViewportDefinitionMap.containsKey("reverseOrder")) {
+						return null;
 					}
 
-					return null;
+					return GetterUtil.getBoolean(
+						rowViewportDefinitionMap.get("reverseOrder"));
 				}
 			).put(
 				"verticalAlignment",
 				() -> {
-					if (rowViewportDefinitionMap.containsKey(
+					if (!rowViewportDefinitionMap.containsKey(
 							"verticalAlignment")) {
 
-						return GetterUtil.getString(
-							rowViewportDefinitionMap.get("verticalAlignment"));
+						return null;
 					}
 
-					return null;
+					return GetterUtil.getString(
+						rowViewportDefinitionMap.get("verticalAlignment"));
 				}
 			));
 	}

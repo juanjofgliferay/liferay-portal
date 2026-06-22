@@ -9,11 +9,11 @@ exports[`AssociatedSegmentsCard should render 1`] = `
     <div
       class="card-header"
     >
-      <h5
+      <div
         class="card-title"
       >
         Associated Segments
-      </h5>
+      </div>
     </div>
     <div
       class="card-body"
@@ -66,11 +66,11 @@ exports[`AssociatedSegmentsCard should render 1`] = `
                 class="sticker sticker-root sticker-static sticker-rounded sticker-primary"
               >
                 <svg
-                  class="lexicon-icon lexicon-icon-individual-dynamic-segment icon-root"
+                  class="lexicon-icon lexicon-icon-individual_dynamic_segment icon-root"
                   role="presentation"
                 >
                   <use
-                    href="#individual-dynamic-segment"
+                    href="#individual_dynamic_segment"
                   />
                 </svg>
               </div>
@@ -107,11 +107,11 @@ exports[`AssociatedSegmentsCard should render 1`] = `
                 class="sticker sticker-root sticker-static sticker-rounded sticker-primary"
               >
                 <svg
-                  class="lexicon-icon lexicon-icon-individual-dynamic-segment icon-root"
+                  class="lexicon-icon lexicon-icon-individual_dynamic_segment icon-root"
                   role="presentation"
                 >
                   <use
-                    href="#individual-dynamic-segment"
+                    href="#individual_dynamic_segment"
                   />
                 </svg>
               </div>
@@ -172,11 +172,11 @@ exports[`AssociatedSegmentsCard should render with an no results display 1`] = `
     <div
       class="card-header"
     >
-      <h5
+      <div
         class="card-title"
       >
         Associated Segments
-      </h5>
+      </div>
     </div>
     <div
       class="card-body"
@@ -219,11 +219,11 @@ exports[`AssociatedSegmentsCard should render with an no results display 1`] = `
         <div
           class="no-results-content"
         >
-          <h4
-            class="no-results-title"
+          <div
+            class="h4 no-results-title"
           >
             There are no items found.
-          </h4>
+          </div>
         </div>
       </div>
     </div>

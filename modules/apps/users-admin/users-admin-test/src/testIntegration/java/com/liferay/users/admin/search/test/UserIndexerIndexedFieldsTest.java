@@ -6,6 +6,13 @@
 package com.liferay.users.admin.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoColumnConstants;
+import com.liferay.expando.kernel.model.ExpandoTable;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
+import com.liferay.expando.kernel.service.ExpandoTableLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Address;
@@ -18,7 +25,9 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.ReindexCacheThreadLocal;
 import com.liferay.portal.kernel.search.SearchEngineHelper;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -30,13 +39,15 @@ import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
+import com.liferay.portal.search.test.rule.SearchTestRule;
+import com.liferay.portal.search.test.util.ExpandoTableSearchFixture;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -55,6 +66,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -78,47 +90,77 @@ public class UserIndexerIndexedFieldsTest {
 
 	@Before
 	public void setUp() throws Exception {
-		setUpIndexedFieldsFixture();
-
-		setUpIndexerFixture();
-
-		setUpUserSearchFixture();
+		_setUpExpandoTableSearchFixture();
+		_setUpIndexedFieldsFixture();
+		_setUpIndexerFixture();
+		_setUpUserSearchFixture();
 	}
 
 	@Test
 	public void testAddress() throws Exception {
-		User user1 = addUser();
+		User user1 = _addUser();
 
-		userSearchFixture.addAddress(user1);
+		_userSearchFixture.addAddress(user1);
 
-		User user2 = userLocalService.updateUser(user1);
+		User user2 = _userLocalService.updateUser(user1);
 
 		String searchTerm = user2.getFirstName();
 
-		Document document = indexerFixture.searchOnlyOne(searchTerm);
+		Document document = _indexerFixture.searchOnlyOne(searchTerm);
 
-		indexedFieldsFixture.postProcessDocument(document);
+		_indexedFieldsFixture.postProcessDocument(document);
 
 		Map<String, String> map = _getExpectedFieldValues(user2);
 
 		_populateAddressFieldValues(user2, map);
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
+	}
+
+	@Test
+	public void testCustomField() throws Exception {
+		_expandoTableSearchFixture.addExpandoColumn(
+			User.class, ExpandoColumnConstants.INDEX_TYPE_KEYWORD,
+			"customField");
+
+		User user = _addUser();
+
+		ExpandoBridge expandoBridge = user.getExpandoBridge();
+
+		String customFieldValue = RandomTestUtil.randomString();
+
+		expandoBridge.setAttribute("customField", customFieldValue);
+
+		try (SafeCloseable safeCloseable =
+				ReindexCacheThreadLocal.openReindexMode()) {
+
+			_indexerFixture.reindexCompany(user.getCompanyId());
+		}
+
+		Document document = _indexerFixture.searchOnlyOne(user.getFirstName());
+
+		Assert.assertEquals(
+			customFieldValue,
+			document.get("expando__keyword__custom_fields__customField"));
 	}
 
 	@Test
 	public void testJobTitle() throws Exception {
-		User user1 = addUser();
+		User user1 = _addUser();
 
 		user1.setJobTitle(RandomTestUtil.randomString());
 
-		User user2 = userLocalService.updateUser(user1);
+		User user2 = _userLocalService.updateUser(user1);
 
 		String searchTerm = user2.getFirstName();
 
-		Document document = indexerFixture.searchOnlyOne(searchTerm);
+		Document document = _indexerFixture.searchOnlyOne(searchTerm);
 
-		indexedFieldsFixture.postProcessDocument(document);
+		_indexedFieldsFixture.postProcessDocument(document);
 
 		Map<String, String> map = _getExpectedFieldValues(user2);
 
@@ -126,162 +168,83 @@ public class UserIndexerIndexedFieldsTest {
 		map.put(
 			"jobTitle_sortable", StringUtil.toLowerCase(user2.getJobTitle()));
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
-	}
-
-	@Test
-	public void testLastLoginDate() throws Exception {
-		User user1 = addUser();
-
-		User user2 = userLocalService.updateLastLogin(user1.getUserId(), null);
-
-		String searchTerm = user2.getFirstName();
-
-		Document document = indexerFixture.searchOnlyOne(searchTerm);
-
-		indexedFieldsFixture.postProcessDocument(document);
-
-		Map<String, String> map = _getExpectedFieldValues(user2);
-
-		indexedFieldsFixture.populateDate(
-			"lastLoginDate", user2.getLastLoginDate(), map);
-
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
 	public void testOrganizationIds() throws Exception {
-		Organization organization = addOrganization();
+		Organization organization = _addOrganization();
 
-		User user = addUser();
+		User user = _addUser();
 
-		userLocalService.addOrganizationUser(
+		_userLocalService.addOrganizationUser(
 			organization.getOrganizationId(), user.getUserId());
 
 		String searchTerm = user.getFirstName();
 
-		Document document = indexerFixture.searchOnlyOne(searchTerm);
+		Document document = _indexerFixture.searchOnlyOne(searchTerm);
 
-		indexedFieldsFixture.postProcessDocument(document);
+		_indexedFieldsFixture.postProcessDocument(document);
 
 		Map<String, String> map = _getExpectedFieldValues(user);
 
 		map.put("organizationIds", _getStringValue(user.getOrganizationIds()));
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
 	public void testUserGroupIds() throws Exception {
-		User user = addUser();
+		User user = _addUser();
 
-		UserGroup userGroup = userGroupSearchFixture.addUserGroup(
+		UserGroup userGroup = _userGroupSearchFixture.addUserGroup(
 			UserGroupSearchFixture.getTestUserGroupBlueprintBuilder());
 
-		userGroupLocalService.addUserUserGroup(user.getUserId(), userGroup);
+		_userGroupLocalService.addUserUserGroup(user.getUserId(), userGroup);
 
-		userGroupLocalService.addGroupUserGroup(group.getGroupId(), userGroup);
+		_userGroupLocalService.addGroupUserGroup(
+			_group.getGroupId(), userGroup);
 
 		String searchTerm = user.getFirstName();
 
-		Document document = indexerFixture.searchOnlyOne(searchTerm);
+		Document document = _indexerFixture.searchOnlyOne(searchTerm);
 
-		indexedFieldsFixture.postProcessDocument(document);
+		_indexedFieldsFixture.postProcessDocument(document);
 
 		Map<String, String> map = _getExpectedFieldValues(user);
 
 		map.put("userGroupIds", _getStringValue(user.getUserGroupIds()));
 
-		FieldValuesAssert.assertFieldValues(map, document, searchTerm);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
-	protected Organization addOrganization() {
+	private Organization _addOrganization() {
 		OrganizationBlueprintBuilder organizationBlueprintBuilder =
 			OrganizationSearchFixture.getTestOrganizationBlueprintBuilder();
 
-		return organizationSearchFixture.addOrganization(
+		return _organizationSearchFixture.addOrganization(
 			organizationBlueprintBuilder.build());
 	}
 
-	protected User addUser() throws Exception {
-		return userSearchFixture.addUser(
-			RandomTestUtil.randomString(), group, new String[0]);
+	private User _addUser() throws Exception {
+		return _userSearchFixture.addUser(
+			RandomTestUtil.randomString(), _group, new String[0]);
 	}
-
-	protected void setUpIndexedFieldsFixture() {
-		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, searchEngineHelper, uidFactory,
-			documentBuilderFactory);
-	}
-
-	protected void setUpIndexerFixture() {
-		indexerFixture = new IndexerFixture<>(User.class);
-	}
-
-	protected void setUpUserSearchFixture() throws Exception {
-		GroupSearchFixture groupSearchFixture = new GroupSearchFixture();
-
-		organizationSearchFixture = new OrganizationSearchFixture(
-			organizationLocalService);
-
-		userGroupSearchFixture = new UserGroupSearchFixture(
-			userGroupLocalService);
-
-		userSearchFixture = new UserSearchFixture(
-			userLocalService, groupSearchFixture, organizationSearchFixture,
-			userGroupSearchFixture);
-
-		userSearchFixture.setUp();
-
-		_addresses = userSearchFixture.getAddresses();
-
-		_groups = groupSearchFixture.getGroups();
-
-		_organizations = organizationSearchFixture.getOrganizations();
-
-		_users = userSearchFixture.getUsers();
-
-		_userGroups = userGroupSearchFixture.getUserGroups();
-
-		group = groupSearchFixture.addGroup(new GroupBlueprint());
-	}
-
-	@Inject
-	protected DocumentBuilderFactory documentBuilderFactory;
-
-	protected Group group;
-	protected IndexedFieldsFixture indexedFieldsFixture;
-	protected IndexerFixture<User> indexerFixture;
-
-	@Inject
-	protected OrganizationLocalService organizationLocalService;
-
-	protected OrganizationSearchFixture organizationSearchFixture;
-
-	@Inject
-	protected ResourcePermissionLocalService resourcePermissionLocalService;
-
-	@Inject
-	protected RoleLocalService roleLocalService;
-
-	@Inject
-	protected SearchEngineHelper searchEngineHelper;
-
-	@Inject
-	protected UIDFactory uidFactory;
-
-	@Inject
-	protected UserGroupLocalService userGroupLocalService;
-
-	protected UserGroupSearchFixture userGroupSearchFixture;
-
-	@Inject
-	protected UserLocalService userLocalService;
-
-	protected UserSearchFixture userSearchFixture;
 
 	private String _getEmailAddressDomain(String emailAddress) {
 		return emailAddress.substring(emailAddress.indexOf(StringPool.AT) + 1);
@@ -311,11 +274,16 @@ public class UserIndexerIndexedFieldsTest {
 		).put(
 			Field.USER_NAME, StringUtil.toLowerCase(user.getFullName())
 		).put(
+			Field.getSortableFieldName(Field.USER_NAME),
+			StringUtil.toLowerCase(user.getFullName())
+		).put(
 			"defaultUser", String.valueOf(user.isDefaultUser())
 		).put(
 			"emailAddress", user.getEmailAddress()
 		).put(
 			"emailAddressDomain", _getEmailAddressDomain(user.getEmailAddress())
+		).put(
+			"externalReferenceCode", user.getExternalReferenceCode()
 		).put(
 			"firstName", user.getFirstName()
 		).put(
@@ -324,6 +292,17 @@ public class UserIndexerIndexedFieldsTest {
 			"fullName", user.getFullName()
 		).put(
 			"groupIds", groupId
+		).put(
+			"hasLoginDate",
+			() -> {
+				boolean hasLoginDate = false;
+
+				if (user.getLastLoginDate() != null) {
+					hasLoginDate = true;
+				}
+
+				return String.valueOf(hasLoginDate);
+			}
 		).put(
 			"lastName", user.getLastName()
 		).put(
@@ -342,7 +321,9 @@ public class UserIndexerIndexedFieldsTest {
 			() -> {
 				List<String> roleNames = new ArrayList<>();
 
-				for (Role role : roleLocalService.getRoles(user.getRoleIds())) {
+				for (Role role :
+						_roleLocalService.getRoles(user.getRoleIds())) {
+
 					roleNames.add(StringUtil.toLowerCase(role.getName()));
 				}
 
@@ -354,16 +335,19 @@ public class UserIndexerIndexedFieldsTest {
 			"screenName_sortable", StringUtil.toLowerCase(user.getScreenName())
 		).build();
 
-		indexedFieldsFixture.populateUID(user, map);
+		_populateLocalizedNameFieldValues(map, user);
 
-		indexedFieldsFixture.populateDate(
+		_indexedFieldsFixture.populateUID(user, map);
+
+		_indexedFieldsFixture.populateDate(
 			Field.CREATE_DATE, user.getCreateDate(), map);
-		indexedFieldsFixture.populateDate(
+		_indexedFieldsFixture.populateDate(
 			Field.MODIFIED_DATE, user.getModifiedDate(), map);
 
-		indexedFieldsFixture.populateDate("birthDate", user.getBirthday(), map);
+		_indexedFieldsFixture.populateDate(
+			"birthDate", user.getBirthday(), map);
 
-		indexedFieldsFixture.populateRoleIdFields(
+		_indexedFieldsFixture.populateRoleIdFields(
 			user.getCompanyId(), User.class.getName(), user.getUserId(),
 			user.getGroupId(), null, map);
 
@@ -442,19 +426,126 @@ public class UserIndexerIndexedFieldsTest {
 		map.put("zip", _getStringValue(zips));
 	}
 
+	private void _populateLocalizedNameFieldValues(
+		Map<String, String> map, User user) {
+
+		for (Locale locale : LanguageUtil.getAvailableLocales()) {
+			String languageId = LocaleUtil.toLanguageId(locale);
+
+			map.put(
+				LocalizationUtil.getLocalizedName("firstName", languageId),
+				user.getFirstName());
+			map.put(
+				LocalizationUtil.getLocalizedName("fullName", languageId),
+				user.getFullName());
+			map.put(
+				LocalizationUtil.getLocalizedName("lastName", languageId),
+				user.getLastName());
+		}
+	}
+
+	private void _setUpExpandoTableSearchFixture() {
+		_expandoTableSearchFixture = new ExpandoTableSearchFixture(
+			_classNameLocalService, _expandoColumnLocalService,
+			_expandoTableLocalService);
+
+		_expandoColumns = _expandoTableSearchFixture.getExpandoColumns();
+		_expandoTables = _expandoTableSearchFixture.getExpandoTables();
+	}
+
+	private void _setUpIndexedFieldsFixture() {
+		_indexedFieldsFixture = new IndexedFieldsFixture(
+			_resourcePermissionLocalService, _searchEngineHelper, _uidFactory);
+	}
+
+	private void _setUpIndexerFixture() {
+		_indexerFixture = new IndexerFixture<>(User.class);
+	}
+
+	private void _setUpUserSearchFixture() throws Exception {
+		GroupSearchFixture groupSearchFixture = new GroupSearchFixture();
+
+		_organizationSearchFixture = new OrganizationSearchFixture(
+			_organizationLocalService);
+		_userGroupSearchFixture = new UserGroupSearchFixture(
+			_userGroupLocalService);
+
+		_userSearchFixture = new UserSearchFixture(
+			_userLocalService, groupSearchFixture, _organizationSearchFixture,
+			_userGroupSearchFixture);
+
+		_userSearchFixture.setUp();
+
+		_addresses = _userSearchFixture.getAddresses();
+
+		_groups = groupSearchFixture.getGroups();
+		_organizations = _organizationSearchFixture.getOrganizations();
+		_users = _userSearchFixture.getUsers();
+		_userGroups = _userGroupSearchFixture.getUserGroups();
+		_group = groupSearchFixture.addGroup(new GroupBlueprint());
+	}
+
 	@DeleteAfterTestRun
 	private List<Address> _addresses = new ArrayList<>();
+
+	@Inject
+	private ClassNameLocalService _classNameLocalService;
+
+	@Inject
+	private ExpandoColumnLocalService _expandoColumnLocalService;
+
+	@DeleteAfterTestRun
+	private List<ExpandoColumn> _expandoColumns;
+
+	@Inject
+	private ExpandoTableLocalService _expandoTableLocalService;
+
+	@DeleteAfterTestRun
+	private List<ExpandoTable> _expandoTables;
+
+	private ExpandoTableSearchFixture _expandoTableSearchFixture;
+	private Group _group;
 
 	@DeleteAfterTestRun
 	private List<Group> _groups;
 
+	private IndexedFieldsFixture _indexedFieldsFixture;
+	private IndexerFixture<User> _indexerFixture;
+
+	@Inject
+	private OrganizationLocalService _organizationLocalService;
+
 	@DeleteAfterTestRun
 	private List<Organization> _organizations;
+
+	private OrganizationSearchFixture _organizationSearchFixture;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private SearchEngineHelper _searchEngineHelper;
+
+	@Inject
+	private UIDFactory _uidFactory;
+
+	@Inject
+	private UserGroupLocalService _userGroupLocalService;
 
 	@DeleteAfterTestRun
 	private List<UserGroup> _userGroups = new ArrayList<>();
 
+	private UserGroupSearchFixture _userGroupSearchFixture;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
 	@DeleteAfterTestRun
 	private List<User> _users;
+
+	private UserSearchFixture _userSearchFixture;
 
 }

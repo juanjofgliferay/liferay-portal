@@ -7,16 +7,13 @@ package com.liferay.portal.spring.context;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.spring.bean.LiferayBeanFactory;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.FileNotFoundException;
 
-import javax.servlet.ServletContext;
-
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.web.context.support.XmlWebApplicationContext;
 
@@ -32,26 +29,6 @@ import org.springframework.web.context.support.XmlWebApplicationContext;
  * @author Tomas Polesovsky
  */
 public class PortalApplicationContext extends XmlWebApplicationContext {
-
-	public static final String PARENT_APPLICATION_CONTEXT =
-		PortalApplicationContext.class.getName() +
-			"#PARENT_APPLICATION_CONTEXT";
-
-	@Override
-	public ApplicationContext getParent() {
-		return _parentApplicationContext;
-	}
-
-	@Override
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-
-		_parentApplicationContext =
-			(ApplicationContext)servletContext.getAttribute(
-				PARENT_APPLICATION_CONTEXT);
-
-		setParent(_parentApplicationContext);
-	}
 
 	@Override
 	protected DefaultListableBeanFactory createBeanFactory() {
@@ -99,7 +76,5 @@ public class PortalApplicationContext extends XmlWebApplicationContext {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortalApplicationContext.class);
-
-	private ApplicationContext _parentApplicationContext;
 
 }

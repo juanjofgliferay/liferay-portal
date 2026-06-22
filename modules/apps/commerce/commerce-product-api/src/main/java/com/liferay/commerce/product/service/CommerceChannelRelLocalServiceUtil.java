@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -59,6 +60,14 @@ public class CommerceChannelRelLocalServiceUtil {
 
 		return getService().addCommerceChannelRel(
 			className, classPK, commerceChannelId, serviceContext);
+	}
+
+	public static List<CommerceChannelRel> addCommerceChannelRels(
+		String className, long[] classPKs, long commerceChannelId,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
+
+		return getService().addCommerceChannelRels(
+			className, classPKs, commerceChannelId, serviceContext);
 	}
 
 	/**
@@ -321,6 +330,35 @@ public class CommerceChannelRelLocalServiceUtil {
 			className, classPK, name);
 	}
 
+	public static List<CommerceChannelRel>
+		getCommerceCurrencyCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end) {
+
+		return getService().getCommerceCurrencyCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	public static int getCommerceCurrencyCommerceChannelRelsCount(
+		long commerceChannelId, String name) {
+
+		return getService().getCommerceCurrencyCommerceChannelRelsCount(
+			commerceChannelId, name);
+	}
+
+	public static List<CommerceChannelRel> getCountryCommerceChannelRels(
+		long commerceChannelId, String name, int start, int end) {
+
+		return getService().getCountryCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	public static int getCountryCommerceChannelRelsCount(
+		long commerceChannelId, String name) {
+
+		return getService().getCountryCommerceChannelRelsCount(
+			commerceChannelId, name);
+	}
+
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -363,13 +401,13 @@ public class CommerceChannelRelLocalServiceUtil {
 	}
 
 	public static CommerceChannelRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CommerceChannelRelLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CommerceChannelRelLocalService _service;
+	private static final Snapshot<CommerceChannelRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceChannelRelLocalServiceUtil.class,
+			CommerceChannelRelLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-596977391

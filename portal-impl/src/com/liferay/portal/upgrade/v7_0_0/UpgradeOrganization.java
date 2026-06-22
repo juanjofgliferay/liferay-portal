@@ -46,9 +46,11 @@ public class UpgradeOrganization extends UpgradeProcess {
 					"privateLayout = ?");
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
 				"select classPK from Group_ where groupId = ?");
-			PreparedStatement preparedStatement3 = connection.prepareStatement(
-				"update Organization_ set logoId = ? where organizationId = " +
-					"?")) {
+			PreparedStatement preparedStatement3 =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection,
+					"update Organization_ set logoId = ? where " +
+						"organizationId = ?")) {
 
 			preparedStatement1.setBoolean(1, false);
 
@@ -68,8 +70,10 @@ public class UpgradeOrganization extends UpgradeProcess {
 					preparedStatement3.setLong(1, logoId);
 					preparedStatement3.setLong(2, classPK);
 
-					preparedStatement3.executeUpdate();
+					preparedStatement3.addBatch();
 				}
+
+				preparedStatement3.executeBatch();
 			}
 		}
 	}
@@ -80,9 +84,8 @@ public class UpgradeOrganization extends UpgradeProcess {
 				StringBundler.concat(
 					"select groupId, organizationId, parentOrganizationId, ",
 					"site, Organization_.treePath as treePath from Group_, ",
-					"Organization_ where classNameId = ",
-					PortalUtil.getClassNameId(Organization.class.getName()),
-					" and Group_.classPK = Organization_.organizationId"));
+					"Organization_ where classNameId = ? and Group_.classPK = ",
+					"Organization_.organizationId"));
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
@@ -90,6 +93,9 @@ public class UpgradeOrganization extends UpgradeProcess {
 						"groupId = ?")) {
 
 			List<OrganizationGroup> organizationGroups = new ArrayList<>();
+
+			preparedStatement1.setLong(
+				1, PortalUtil.getClassNameId(Organization.class.getName()));
 
 			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
 				while (resultSet.next()) {

@@ -4,6 +4,7 @@
  */
 
 /* eslint-disable @liferay/aui/no-node */
+
 /* eslint-disable @liferay/aui/no-one */
 
 (function (A) {
@@ -14,6 +15,22 @@
 	const STR_HEAD = 'head';
 
 	const TPL_NOT_AJAXABLE = '<div class="alert alert-info">{0}</div>';
+
+	const buildFragment = (htmlString) => {
+		const div = document.createElement('div');
+
+		div.innerHTML = `<br>${htmlString}`;
+
+		div.removeChild(div.firstChild);
+
+		const fragment = document.createDocumentFragment();
+
+		while (div.firstChild) {
+			fragment.appendChild(div.firstChild);
+		}
+
+		return fragment;
+	};
 
 	const Portlet = {
 		...Liferay.Portlet,
@@ -80,14 +97,16 @@
 									return;
 								}
 
-								script.onload = script.onreadystatechange = null;
+								script.onload = script.onreadystatechange =
+									null;
 								script.onerror = null;
 
 								resolve();
 							};
 
 							script.onerror = () => {
-								script.onload = script.onreadystatechange = null;
+								script.onload = script.onreadystatechange =
+									null;
 								script.onerror = null;
 
 								console.error('Unable to load', path);
@@ -272,9 +291,8 @@
 				let nestedPortletOffset = 0;
 
 				nestedPortlets.some((nestedPortlet) => {
-					const nestedPortletIndex = columnPortlets.indexOf(
-						nestedPortlet
-					);
+					const nestedPortletIndex =
+						columnPortlets.indexOf(nestedPortlet);
 
 					if (
 						nestedPortletIndex !== -1 &&
@@ -291,7 +309,9 @@
 
 				portletPosition -= nestedPortletOffset;
 
-				currentColumnId = Util.getColumnId(column.attr('id'));
+				currentColumnId = column
+					.attr('id')
+					.replace(/layout-column_/, '');
 			}
 
 			const url = themeDisplay.getPathMain() + '/portal/update_layout';
@@ -452,7 +472,7 @@
 							? error
 							: Liferay.Language.get(
 									'there-was-an-unexpected-error.-please-refresh-the-current-page'
-							  );
+								);
 
 					Liferay.Util.openToast({
 						message,
@@ -542,6 +562,7 @@
 
 			const canEditTitle = options.canEditTitle;
 			const columnPos = options.columnPos;
+			const isAjaxable = options.isAjaxable;
 			const isStatic =
 				options.isStatic === 'no' ? null : options.isStatic;
 			const namespacedId = options.namespacedId;
@@ -559,6 +580,7 @@
 				portlet.portletProcessed = true;
 				portlet.portletId = portletId;
 				portlet.columnPos = columnPos;
+				portlet.isAjaxable = isAjaxable;
 				portlet.isStatic = isStatic;
 				portlet.refreshURL = refreshURL;
 				portlet.refreshURLData = refreshURLData;
@@ -576,13 +598,159 @@
 					}
 
 					const handle = portlet.on(events, () => {
-						Util.portletTitleEdit({
-							doAsUserId: themeDisplay.getDoAsUserIdEncoded(),
-							// eslint-disable-next-line @liferay/no-abbreviations
-							obj: portlet,
-							plid: themeDisplay.getPlid(),
-							portletId,
-						});
+						A.Event.defineOutside('mouseup');
+
+						if (portlet) {
+							const title = portlet.one('.portlet-title-text');
+
+							if (title && !title.hasClass('not-editable')) {
+								title.addClass('portlet-title-editable');
+								title.setAttribute(
+									'contenteditable',
+									'plaintext-only'
+								);
+
+								const buttonGroupFragment = buildFragment(`
+									<div class="btn-group hide" id="${portletId}_button-group-title-edit">
+									<button aria-label="${Liferay.Language.get('cancel')}" class="btn-toolbar-button btn btn-default lfr-portal-tooltip" id="${portletId}_cancel-edit-title" title="${Liferay.Language.get('cancel')}">
+									<svg aria-hidden="true" class="lexicon-icon lexicon-icon-times" focusable="false" role="presentation"><use href="${Liferay.Icons.spritemap}#times"></use></svg>
+									</button>
+									<button aria-label="${Liferay.Language.get('confirm')}" class="btn-toolbar-button btn btn-default lfr-portal-tooltip" id="${portletId}_confirm-edit-title" title="${Liferay.Language.get('confirm')}">
+									<svg aria-hidden="true" class="lexicon-icon lexicon-icon-check" focusable="false" role="presentation"><use href="${Liferay.Icons.spritemap}#check"></use></svg>
+									</button>
+									</div>
+								`);
+
+								const titleNode = portlet._node.querySelector(
+									'.portlet-title-text'
+								);
+
+								let originalValue = '' + titleNode.innerText;
+
+								titleNode.parentNode.appendChild(
+									buttonGroupFragment
+								);
+
+								const buttonGroupNode = document.getElementById(
+									`${portletId}_button-group-title-edit`
+								);
+
+								const updateTitle = (titleNode) => {
+									const data = {
+										doAsUserId:
+											themeDisplay.getDoAsUserIdEncoded(),
+										p_auth: Liferay.authToken,
+										p_l_id: themeDisplay.getPlid(),
+										portletId: portlet.portletId || 0,
+										title: titleNode.innerText || '',
+									};
+
+									originalValue = '' + titleNode.innerText;
+
+									Liferay.Util.fetch(
+										themeDisplay.getPathMain() +
+											'/portal/update_portlet_title',
+										{
+											body: Liferay.Util.objectToFormData(
+												data
+											),
+											method: 'POST',
+										}
+									);
+
+									buttonGroupNode.classList.add('hide');
+									titleNode.style.textTransform = '';
+								};
+
+								const cancelEditTitleButton =
+									document.getElementById(
+										`${portletId}_cancel-edit-title`
+									);
+
+								const confirmEditTitleButton =
+									document.getElementById(
+										`${portletId}_confirm-edit-title`
+									);
+
+								const cancelEditFn = () => {
+									titleNode.innerText = originalValue;
+
+									buttonGroupNode.classList.add('hide');
+									titleNode.style.textTransform = '';
+								};
+
+								const confirmEditFn = () =>
+									updateTitle(titleNode);
+
+								const keyUpFn = (event) => {
+									if (event.key === 'Enter') {
+										updateTitle(titleNode);
+									}
+									else if (event.key === 'Escape') {
+										cancelEditFn();
+									}
+								};
+
+								titleNode.addEventListener('click', () => {
+									buttonGroupNode.classList.remove('hide');
+									titleNode.style.textTransform = 'initial';
+
+									titleNode.addEventListener(
+										'keyup',
+										keyUpFn
+									);
+									confirmEditTitleButton.addEventListener(
+										'click',
+										confirmEditFn
+									);
+									cancelEditTitleButton.addEventListener(
+										'click',
+										cancelEditFn
+									);
+
+									const onClickOutside = (event) => {
+										if (
+											!titleNode.parentNode.contains(
+												event.target
+											)
+										) {
+											confirmEditFn();
+
+											document.removeEventListener(
+												'click',
+												onClickOutside
+											);
+										}
+									};
+
+									document.addEventListener(
+										'click',
+										onClickOutside
+									);
+
+									let timeoutId;
+
+									clearTimeout(timeoutId);
+
+									titleNode.addEventListener('blur', () => {
+										timeoutId = setTimeout(() => {
+											titleNode.removeEventListener(
+												'keyup',
+												keyUpFn
+											);
+											confirmEditTitleButton.removeEventListener(
+												'click',
+												confirmEditFn
+											);
+											cancelEditTitleButton.removeEventListener(
+												'click',
+												cancelEditFn
+											);
+										}, 100);
+									});
+								});
+							}
+						}
 
 						handle.detach();
 					});
@@ -602,7 +770,7 @@
 				});
 			}
 		},
-		['aui-base', 'aui-timer', 'event-move']
+		['aui-base', 'aui-timer', 'event-move', 'event-outside']
 	);
 
 	Liferay.provide(
@@ -624,15 +792,6 @@
 					data = data || portlet.refreshURLData || {};
 				}
 
-				if (
-					!Object.prototype.hasOwnProperty.call(
-						data,
-						'portletAjaxable'
-					)
-				) {
-					data.portletAjaxable = true;
-				}
-
 				const id = portlet.attr('portlet');
 
 				let url = portlet.refreshURL;
@@ -641,7 +800,7 @@
 					'<div class="loading-animation" id="p_p_id' + id + '" />'
 				);
 
-				if (data.portletAjaxable && url) {
+				if (portlet.isAjaxable && url) {
 					portlet.placeBefore(placeHolder);
 
 					portlet.remove(true);
@@ -699,6 +858,8 @@
 
 					portletBody.hide();
 				}
+
+				Liferay.fire('refreshPortlet', {portletId: portlet.portletId});
 			}
 		},
 		['aui-base', 'querystring-parse']

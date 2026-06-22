@@ -8,11 +8,18 @@
 <%@ include file="/input/init.jsp" %>
 
 <%
+Set<Locale> availableLocales = (Set<Locale>)request.getAttribute("liferay-friendly-url:input:availableLocales");
+String defaultLanguageId = (String)request.getAttribute("liferay-friendly-url:input:defaultLanguageId");
 boolean disabled = (boolean)request.getAttribute("liferay-friendly-url:input:disabled");
 int friendlyURLMaxLength = (int)request.getAttribute("liferay-friendly-url:input:friendlyURLMaxLength");
+boolean languagesDropdownVisible = (boolean)request.getAttribute("liferay-friendly-url:input:languagesDropdownVisible");
 boolean localizable = (boolean)request.getAttribute("liferay-friendly-url:input:localizable");
 String name = (String)request.getAttribute("liferay-friendly-url:input:name");
 String value = (String)request.getAttribute("liferay-friendly-url:input:value");
+
+if (defaultLanguageId == null) {
+	defaultLanguageId = LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale());
+}
 %>
 
 <c:if test='<%= (boolean)request.getAttribute("liferay-friendly-url:input:showHistory") %>'>
@@ -37,11 +44,13 @@ String value = (String)request.getAttribute("liferay-friendly-url:input:value");
 	<c:choose>
 		<c:when test="<%= localizable %>">
 			<liferay-ui:input-localized
-				defaultLanguageId="<%= LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale()) %>"
+				availableLocales="<%= availableLocales %>"
+				defaultLanguageId="<%= defaultLanguageId %>"
 				disabled="<%= disabled %>"
 				helpMessage='<%= (String)request.getAttribute("liferay-friendly-url:input:helpMessage") %>'
 				ignoreRequestValue="<%= SessionErrors.isEmpty(request) %>"
 				inputAddon='<%= (String)request.getAttribute("liferay-friendly-url:input:inputAddon") %>'
+				languagesDropdownVisible="<%= languagesDropdownVisible %>"
 				name="<%= name %>"
 				xml="<%= HttpComponentsUtil.decodeURL(value) %>"
 			/>

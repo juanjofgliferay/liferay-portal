@@ -83,11 +83,13 @@ public class ObjectActionResourceTest extends BaseObjectActionResourceTestCase {
 					"en_US", RandomTestUtil.randomString());
 				name = RandomTestUtil.randomString();
 				objectActionExecutorKey =
-					ObjectActionExecutorConstants.KEY_GROOVY;
+					ObjectActionExecutorConstants.KEY_WEBHOOK;
 				objectActionTriggerKey =
 					ObjectActionTriggerConstants.KEY_STANDALONE;
 				parameters = UnicodePropertiesBuilder.put(
-					"script", "println \"Hello World\""
+					"secret", "standalone"
+				).put(
+					"url", "https://standalone.com"
 				).build();
 			}
 		};
@@ -102,13 +104,6 @@ public class ObjectActionResourceTest extends BaseObjectActionResourceTestCase {
 
 	@Override
 	protected ObjectAction testGetObjectAction_addObjectAction()
-		throws Exception {
-
-		return _addObjectAction();
-	}
-
-	protected ObjectAction
-			testGetObjectActionByExternalReferenceCode_addObjectAction()
 		throws Exception {
 
 		return _addObjectAction();
@@ -142,10 +137,37 @@ public class ObjectActionResourceTest extends BaseObjectActionResourceTestCase {
 	}
 
 	@Override
+	protected ObjectAction
+			testGraphQLGetObjectDefinitionByExternalReferenceCodeObjectActionsPageObjectDefinitionObjectAction_addObjectAction(
+				String externalReferenceCode, ObjectAction objectAction)
+		throws Exception {
+
+		return objectActionResource.
+			postObjectDefinitionByExternalReferenceCodeObjectAction(
+				externalReferenceCode, objectAction);
+	}
+
+	@Override
 	protected ObjectAction testGraphQLObjectAction_addObjectAction()
 		throws Exception {
 
 		return _addObjectAction();
+	}
+
+	@Override
+	protected Long
+			testGraphQLPostObjectDefinitionByExternalReferenceCodeObjectAction_getObjectDefinitionId()
+		throws Exception {
+
+		return _objectDefinition.getObjectDefinitionId();
+	}
+
+	@Override
+	protected Long
+			testGraphQLPostObjectDefinitionObjectAction_getObjectDefinitionId()
+		throws Exception {
+
+		return _objectDefinition.getObjectDefinitionId();
 	}
 
 	@Override

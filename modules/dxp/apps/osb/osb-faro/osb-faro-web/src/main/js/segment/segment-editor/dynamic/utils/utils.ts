@@ -1,24 +1,30 @@
 import dateFns from 'date-fns';
 import {
-	Conjunctions,
-	CustomFunctionOperators,
-	isKnown,
-	isUnknown,
-	NotOperators,
-	PropertyTypes,
-	SUPPORTED_OPERATORS_MAP
-} from './constants';
-import {Criteria, Criterion, CriterionGroup, Operator} from './types';
-import {Event} from 'event-analysis/utils/types';
-import {every, isBoolean, isString, isUndefined} from 'lodash';
-import {FieldContexts, FieldOwnerTypes} from 'shared/util/constants';
-import {fromJS, Map} from 'immutable';
-import {
+	ACCOUNT_PROPERTIES,
 	INDIVIDUAL_PROPERTIES,
 	ORGANIZATION_PROPERTIES,
 	SESSION_PROPERTIES,
 	WEB_BEHAVIORS
 } from '../utils/properties';
+import {
+	Conjunctions,
+	CustomFunctionOperators,
+	isKnown,
+	isUnknown,
+	MAX_NESTED_OR_CRITERIA,
+	MAX_SEQUENTIAL_CRITERIA,
+	NestedOrLimitState,
+	NotOperators,
+	PropertyTypes,
+	SequentialLimitState,
+	SUPPORTED_OPERATORS_MAP
+} from './constants';
+import {Criteria, Criterion, CriterionGroup, Operator} from './types';
+import {EntityType, ReferencedEntities} from '../context/referencedObjects';
+import {Event} from 'event-analysis/utils/types';
+import {every, isBoolean, isString, isUndefined} from 'lodash';
+import {FieldContexts, FieldOwnerTypes} from 'shared/util/constants';
+import {fromJS, Map} from 'immutable';
 import {Property} from 'shared/util/records';
 import {v4 as uuidv4} from 'uuid';
 
@@ -34,11 +40,45 @@ export const createInterestProperty = (name: string): Property =>
 		type: PropertyTypes.Interest
 	});
 
+export const createVocabularyProperty = ({
+	id,
+	name
+}: {
+	id: string;
+	name: string;
+}): Property =>
+	new Property({
+		entityName: Liferay.Language.get('vocabularies-and-categories'),
+		label: name,
+		name: id,
+		propertyKey: 'vocabulary',
+		type: PropertyTypes.Vocabulary
+	});
+
+export function createTagProperty({
+	id,
+	name
+}: {
+	id: string;
+	name: string;
+}): Property {
+	return new Property({
+		entityName: Liferay.Language.get('tags'),
+		label: name,
+		name: id,
+		propertyKey: 'tag',
+		type: PropertyTypes.Tag
+	});
+}
+
 /**
  * Creates a new group object with items.
  */
-export const createNewGroup = (items: Criteria[]): CriterionGroup => ({
-	conjunctionName: Conjunctions.And,
+export const createNewGroup = (
+	items: Criteria[],
+	conjunctionName: Conjunctions = Conjunctions.And
+): CriterionGroup => ({
+	conjunctionName,
 	criteriaGroupId: generateGroupId(),
 	items
 });
@@ -59,11 +99,11 @@ export const generateRowId = (): string => `${ROW_ID_NAMESPACE}${uuidv4()}`;
  * Example of returned value: ['group_02', 'group_03']
  */
 export const getChildGroupIds = (criteria: Criteria): string[] => {
-	let childGroupIds = [];
+	let childGroupIds: string[] = [];
 
 	if (isCriterionGroup(criteria) && criteria.items.length) {
 		childGroupIds = criteria.items.reduce(
-			(groupIdList, item) =>
+			(groupIdList: string[], item) =>
 				isCriterionGroup(item)
 					? [
 							...groupIdList,
@@ -71,7 +111,7 @@ export const getChildGroupIds = (criteria: Criteria): string[] => {
 							...getChildGroupIds(item)
 					  ]
 					: groupIdList,
-			[]
+			[] as string[]
 		);
 	}
 
@@ -89,18 +129,81 @@ export const getPropertyNameFromRaw = (propertyLabel: string = ''): string => {
 
 export const getPropertyContextFromRaw = (
 	propertyLabel: string = ''
-): string => {
+): string | null => {
 	const properties = propertyLabel.split('/');
 
 	return properties.length > 1 ? properties[0] : null;
 };
+
+const _getLimitState = (
+	length: number,
+	max: number
+): 'exceedsLimit' | 'reachedLimit' | null => {
+	if (length > max) {
+		return 'exceedsLimit';
+	}
+
+	if (length === max) {
+		return 'reachedLimit';
+	}
+
+	return null;
+};
+
+/**
+ * Returns the current state of the nested OR limit for the given group, or
+ * null when the limit does not apply. Callers must skip the root group; this
+ * helper assumes the input is nested.
+ */
+export const getNestedOrLimitState = (
+	criteria: CriterionGroup | null | undefined
+): NestedOrLimitState | null => {
+	if (!criteria || criteria.conjunctionName !== Conjunctions.Or) {
+		return null;
+	}
+
+	return _getLimitState(criteria.items?.length ?? 0, MAX_NESTED_OR_CRITERIA);
+};
+
+/**
+ * Returns the current state of the sequential criteria limit for the root
+ * AND group, or null when the limit does not apply. Callers must check that
+ * sequential mode is enabled and that the group is the root.
+ */
+export const getSequentialLimitState = (
+	criteria: CriterionGroup | null | undefined
+): SequentialLimitState | null => {
+	if (!criteria || criteria.conjunctionName !== Conjunctions.And) {
+		return null;
+	}
+
+	return _getLimitState(criteria.items?.length ?? 0, MAX_SEQUENTIAL_CRITERIA);
+};
+
+export const hasRootAndExceeded = (
+	criteria: CriterionGroup | null | undefined
+): boolean => getSequentialLimitState(criteria) === 'exceedsLimit';
+
+export const hasNestedOrExceeded = (
+	criteria: CriterionGroup | Criterion | null | undefined
+): boolean =>
+	!!criteria &&
+	isCriterionGroup(criteria) &&
+	criteria.items.some(
+		item =>
+			isCriterionGroup(item) &&
+			(getNestedOrLimitState(item) === 'exceedsLimit' ||
+				hasNestedOrExceeded(item))
+	);
 
 /**
  * Gets the list of operators for a supported type.
  * Used for displaying the operators available for each criteria row.
  */
 export const getSupportedOperatorsFromType = (type: string = ''): Operator[] =>
-	SUPPORTED_OPERATORS_MAP[type.toLowerCase()] || [];
+	(SUPPORTED_OPERATORS_MAP as Record<string, Operator[]>)[
+		type.toLowerCase()
+	] || [];
 
 /**
  * Checks if value is a CriterionGroup.
@@ -127,7 +230,9 @@ export const isOfKnownType = (key: string): boolean =>
  * Converts an object of key value pairs to a form data object for passing
  * into a fetch body.
  */
-export const objectToFormData = (dataObject: object): FormData => {
+export const objectToFormData = (
+	dataObject: Record<string, string | Blob>
+): FormData => {
 	const formData = new FormData();
 
 	Object.keys(dataObject).forEach(key => {
@@ -165,14 +270,16 @@ export const jsDatetoYYYYMMDD = (dateJsObject: Date): string => {
 export const findPropertyByCriterion = (
 	criterion: Criterion,
 	referencedPropertiesIMap: Map<string, Map<string, Property>>
-): Property => {
+): Property | undefined => {
 	const {operatorName, propertyName, type, value} = criterion;
 
 	if (
 		[
 			CustomFunctionOperators.ActivitiesFilterByCount,
 			NotOperators.NotActivitiesFilterByCount
-		].includes(operatorName)
+		].includes(
+			operatorName as unknown as CustomFunctionOperators | NotOperators
+		)
 	) {
 		const {eventId = propertyName} = parseActivityKey(
 			(value as Map<string, any>).getIn(
@@ -181,12 +288,16 @@ export const findPropertyByCriterion = (
 			)
 		);
 
-		return WEB_BEHAVIORS.find(({name}) => name === eventId);
+		return WEB_BEHAVIORS.find(
+			(property: Property | undefined) => property?.name === eventId
+		);
 	} else if (
 		[
 			CustomFunctionOperators.EventsFilterByCount,
 			NotOperators.NotEventsFilterByCount
-		].includes(operatorName)
+		].includes(
+			operatorName as unknown as CustomFunctionOperators | NotOperators
+		)
 	) {
 		const eventId = value.getIn(
 			['criterionGroup', 'items', 0, 'value'],
@@ -198,12 +309,21 @@ export const findPropertyByCriterion = (
 		[
 			CustomFunctionOperators.AccountsFilter,
 			NotOperators.NotAccountsFilter
-		].includes(operatorName)
+		].includes(
+			operatorName as unknown as CustomFunctionOperators | NotOperators
+		)
 	) {
+		if (getPropertyContextFromRaw(propertyName) !== FieldContexts.Custom) {
+			return ACCOUNT_PROPERTIES.find(
+				(property: Property | undefined) =>
+					property?.name === propertyName
+			);
+		}
+
 		return referencedPropertiesIMap.getIn(
 			[
 				'account',
-				getPropertyContextFromRaw(propertyName),
+				getPropertyContextFromRaw(propertyName) ?? '',
 				getPropertyNameFromRaw(propertyName)
 			],
 			''
@@ -212,18 +332,21 @@ export const findPropertyByCriterion = (
 		[
 			NotOperators.NotOrganizationsFilter,
 			CustomFunctionOperators.OrganizationsFilter
-		].includes(operatorName)
+		].includes(
+			operatorName as unknown as CustomFunctionOperators & NotOperators
+		)
 	) {
 		if (getPropertyContextFromRaw(propertyName) !== FieldContexts.Custom) {
 			return ORGANIZATION_PROPERTIES.find(
-				({name}) => name === propertyName
+				(property: Property | undefined) =>
+					property?.name === propertyName
 			);
 		}
 
 		return referencedPropertiesIMap.getIn(
 			[
 				'organization',
-				getPropertyContextFromRaw(propertyName),
+				getPropertyContextFromRaw(propertyName) ?? '',
 				getPropertyNameFromRaw(propertyName)
 			],
 			''
@@ -232,19 +355,76 @@ export const findPropertyByCriterion = (
 		[
 			CustomFunctionOperators.SessionsFilter,
 			NotOperators.NotSessionsFilter
-		].includes(operatorName) ||
+		].includes(
+			operatorName as unknown as CustomFunctionOperators | NotOperators
+		) ||
 		type === PropertyTypes.SessionDateTime
 	) {
-		return SESSION_PROPERTIES.find(({name}) => name === propertyName);
+		return SESSION_PROPERTIES.find(
+			(property: Property | undefined) => property?.name === propertyName
+		);
+	} else if (
+		[
+			CustomFunctionOperators.VocabulariesFilter,
+			NotOperators.NotVocabulariesFilter
+		].includes(
+			operatorName as unknown as CustomFunctionOperators | NotOperators
+		)
+	) {
+		return (
+			(referencedPropertiesIMap.getIn(['vocabulary', propertyName]) as
+				| Property
+				| undefined) ??
+			createVocabularyProperty({
+				id: propertyName ?? '',
+				name:
+					((value as Map<string, any>)
+						?.getIn(['criterionGroup', 'items'])
+						?.find(
+							(item: Map<string, any>) =>
+								item?.get('propertyName') ===
+								'vocabularies/name'
+						)
+						?.get('value') as string | undefined) ??
+					propertyName ??
+					''
+			})
+		);
+	} else if (
+		[
+			CustomFunctionOperators.TagsFilter,
+			NotOperators.NotTagsFilter
+		].includes(
+			operatorName as unknown as CustomFunctionOperators | NotOperators
+		)
+	) {
+		return (
+			(referencedPropertiesIMap.getIn(['tag', propertyName]) as
+				| Property
+				| undefined) ??
+			createTagProperty({
+				id: propertyName ?? '',
+				name:
+					((value as Map<string, any>)
+						?.getIn(['criterionGroup', 'items'])
+						?.find(
+							(item: Map<string, any>) =>
+								item?.get('propertyName') === 'tags/name'
+						)
+						?.get('value') as string | undefined) ??
+					propertyName ??
+					''
+			})
+		);
 	} else if (operatorName === CustomFunctionOperators.InterestsFilter) {
-		return createInterestProperty(propertyName);
+		return createInterestProperty(propertyName ?? '');
 	} else if (INDIVIDUAL_PROPERTIES.find(({name}) => name === propertyName)) {
 		return INDIVIDUAL_PROPERTIES.find(({name}) => name === propertyName);
 	} else {
 		return referencedPropertiesIMap.getIn(
 			[
 				'individual',
-				getPropertyContextFromRaw(propertyName),
+				getPropertyContextFromRaw(propertyName) ?? '',
 				getPropertyNameFromRaw(propertyName)
 			],
 			''
@@ -260,12 +440,11 @@ export const convertFieldMappingToAccountProperty = (
 				displayName: string;
 				id: string;
 				name: string;
+				ownerType: string;
 				rawType: string;
+				type: string;
 		  }
 ): Property => {
-	const context = isMap(fieldMapping)
-		? fieldMapping.get('context')
-		: fieldMapping.context;
 	const displayName = isMap(fieldMapping)
 		? fieldMapping.get('displayName')
 		: fieldMapping.displayName;
@@ -277,17 +456,13 @@ export const convertFieldMappingToAccountProperty = (
 		? fieldMapping.get('rawType')
 		: fieldMapping.rawType;
 
-	const CUSTOM_REGEX = /custom-/;
-
 	return new Property({
 		entityName: Liferay.Language.get('account'),
 		id,
 		label: displayName || name,
-		name: context ? `${context}/${id}/value` : id,
+		name: id,
 		propertyKey: FieldOwnerTypes.Account,
-		type: CUSTOM_REGEX.test(type)
-			? type.toLowerCase()
-			: `account-${type.toLowerCase()}`
+		type: `account-${type.toLowerCase()}` as PropertyTypes
 	});
 };
 
@@ -371,18 +546,20 @@ export const convertEventToProperty = (
 	const displayName = isMap(eventDefinition)
 		? eventDefinition.get('displayName')
 		: eventDefinition.displayName;
-	const id = isMap(eventDefinition)
-		? eventDefinition.get('id')
-		: eventDefinition.id;
 	const name = isMap(eventDefinition)
 		? eventDefinition.get('name')
 		: eventDefinition.name;
 
+	const hidden = isMap(eventDefinition)
+		? eventDefinition.get('hidden')
+		: eventDefinition.hidden;
+
 	return new Property({
 		entityName: Liferay.Language.get('event'),
-		id,
+		id: name,
 		label: displayName || name,
-		name: id,
+		name,
+		options: [{label: 'hidden', value: hidden}],
 		propertyKey: 'event',
 		type: PropertyTypes.Event
 	});
@@ -395,7 +572,7 @@ export const convertFieldMappingsToProperties = (
 	> = Map()
 ): Map<string, Map<string, Map<string, Property>>> =>
 	fieldMappingsIMap.map((ownerTypeGroup, key) => {
-		let conversionFn;
+		let conversionFn: ((fieldMappingIMap: any) => Property) | undefined;
 
 		if (key === FieldOwnerTypes.Account) {
 			conversionFn = convertFieldMappingToAccountProperty;
@@ -406,11 +583,15 @@ export const convertFieldMappingsToProperties = (
 		}
 
 		if (conversionFn) {
-			return ownerTypeGroup.map(contextGroup =>
-				contextGroup.reduce(
-					(acc, fieldMappingIMap, key) =>
-						acc.set(key, conversionFn(fieldMappingIMap)),
-					Map()
+			const fn = conversionFn;
+			return ownerTypeGroup!.map(contextGroup =>
+				contextGroup!.reduce(
+					(
+						acc?: Map<string, Property>,
+						fieldMappingIMap?: Map<string, any>,
+						k?: string
+					) => (acc ?? Map()).set(k ?? '', fn(fieldMappingIMap)),
+					Map() as Map<string, Property>
 				)
 			);
 		}
@@ -428,6 +609,7 @@ export const convertReferencedObjectsToProperties = (
 
 	const eventProperties = referencedObjectsIMap
 		.get('event', Map())
+		.merge(referencedObjectsIMap.get('custom-events'))
 		.map(convertEventToProperty);
 
 	return fieldMappingProperties.merge(fromJS({event: eventProperties}));
@@ -448,7 +630,7 @@ export const isValid = (value: any): boolean =>
 export const invalidateCriterionWithMissingProperty = (
 	criteria: Criteria,
 	referencedPropertiesIMap: Map<string, Property>
-) => {
+): Criteria => {
 	if (isCriterionGroup(criteria)) {
 		const {items} = criteria;
 
@@ -472,12 +654,36 @@ export const invalidateCriterionWithMissingProperty = (
 			...criteria,
 			valid: isBoolean(criteria.valid)
 				? false
-				: Object.keys(criteria.valid).reduce(
+				: Object.keys(criteria.valid as object).reduce(
 						(acc, key) => ({...acc, [key]: false}),
 						{}
 				  )
 		};
 	}
+
+	return criteria;
+};
+
+export const parseReferencedEntityId = (
+	id: string,
+	referencedEntities: ReferencedEntities,
+	type: EntityType
+) => {
+	let parsedId: string | undefined = id;
+
+	if (
+		type === EntityType.Assets &&
+		parsedId &&
+		parsedId.indexOf('_') === -1
+	) {
+		const keys = Object.keys(
+			referencedEntities.getIn([EntityType.Assets]).toObject()
+		);
+
+		parsedId = keys.find(key => key.includes(id));
+	}
+
+	return parsedId;
 };
 
 /**
@@ -497,4 +703,6 @@ export const validateSegmentInputs = (criteria: Criteria): boolean => {
 
 		return every(criteria.valid, Boolean);
 	}
+
+	return false;
 };

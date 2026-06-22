@@ -1,12 +1,11 @@
 import React from 'react';
-import {useQueryRangeSelectors} from 'shared/hooks';
+import {useQueryRangeSelectors} from 'shared/hooks/useQueryRangeSelectors';
 
-const withQueryRangeSelectors = initialParams => WrappedComponent => (
-	props: any
-) => {
-	const rangeSelectors = useQueryRangeSelectors(initialParams);
+const withQueryRangeSelectors =
+	() => (WrappedComponent: React.ComponentType<any>) => (props: any) => {
+		const rangeSelectors = useQueryRangeSelectors();
 
-	return <WrappedComponent {...props} rangeSelectors={rangeSelectors} />;
-};
+		return <WrappedComponent {...props} rangeSelectors={rangeSelectors} />;
+	};
 
 export default withQueryRangeSelectors;

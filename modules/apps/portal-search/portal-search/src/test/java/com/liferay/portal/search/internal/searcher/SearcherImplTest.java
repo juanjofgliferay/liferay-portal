@@ -86,6 +86,48 @@ public class SearcherImplTest {
 	}
 
 	@Test
+	public void testExecuteSearchAttribute() throws Exception {
+		SearchContext searchContext = new SearchContext();
+
+		searchContext.setKeywords("keyword");
+
+		SearchResponse searchResponse = _searcherImpl.doSearch(
+			_createSearchRequestImpl(searchContext));
+
+		_assertDocumentReturned(searchResponse, 1);
+
+		searchContext.setAttribute(
+			SearchContextAttributes.ATTRIBUTE_KEY_EXECUTE_SEARCH,
+			Boolean.FALSE);
+
+		searchResponse = _searcherImpl.doSearch(
+			_createSearchRequestImpl(searchContext));
+
+		_assertDocumentReturned(searchResponse, 0);
+	}
+
+	@Test
+	public void testSearchExcludeContributorsAndIncludeContributors()
+		throws Exception {
+
+		SearchContext searchContext = new SearchContext();
+
+		searchContext.setKeywords("keyword");
+
+		SearchRequestImpl searchRequestImpl = _createSearchRequestImpl(
+			searchContext);
+
+		searchRequestImpl.addExcludeContributors(
+			"com.liferay.search.experiences.blueprint");
+		searchRequestImpl.addIncludeContributors(
+			"com.liferay.search.experiences.blueprint");
+
+		SearchResponse searchResponse = _searcherImpl.search(searchRequestImpl);
+
+		_assertDocumentReturned(searchResponse, 1);
+	}
+
+	@Test
 	public void testSearchWithoutAttribute() throws Exception {
 		SearchContext searchContext = new SearchContext();
 

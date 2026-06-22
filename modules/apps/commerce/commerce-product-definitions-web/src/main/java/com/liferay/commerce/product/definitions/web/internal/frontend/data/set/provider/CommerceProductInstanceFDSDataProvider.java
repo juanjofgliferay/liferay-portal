@@ -12,16 +12,19 @@ import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
 import com.liferay.commerce.price.CommerceProductPriceCalculation;
 import com.liferay.commerce.product.definitions.web.internal.constants.CommerceProductFDSNames;
 import com.liferay.commerce.product.definitions.web.internal.model.Sku;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.util.CPJSONUtil;
+import com.liferay.commerce.util.CommerceQuantityFormatter;
 import com.liferay.frontend.data.set.provider.FDSDataProvider;
 import com.liferay.frontend.data.set.provider.search.FDSKeywords;
 import com.liferay.frontend.data.set.provider.search.FDSPagination;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -35,15 +38,12 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.math.BigDecimal;
+import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,8 +67,6 @@ public class CommerceProductInstanceFDSDataProvider
 			HttpServletRequest httpServletRequest, Sort sort)
 		throws PortalException {
 
-		List<Sku> skus = new ArrayList<>();
-
 		long cpDefinitionId = ParamUtil.getLong(
 			httpServletRequest, "cpDefinitionId");
 
@@ -76,61 +74,65 @@ public class CommerceProductInstanceFDSDataProvider
 
 		String languageId = _language.getLanguageId(locale);
 
-		List<CPInstance> cpInstances = _getCPInstances(
-			_portal.getCompanyId(httpServletRequest), cpDefinitionId,
-			fdsKeywords.getKeywords(), fdsPagination.getStartPosition(),
-			fdsPagination.getEndPosition(), sort);
+		return TransformUtil.transform(
+			_getCPInstances(
+				_portal.getCompanyId(httpServletRequest), cpDefinitionId,
+				fdsKeywords.getKeywords(), fdsPagination.getStartPosition(),
+				fdsPagination.getEndPosition(), sort),
+			cpInstance -> {
+				Map<String, List<String>>
+					cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys =
+						_cpDefinitionOptionRelLocalService.
+							getCPDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys(
+								cpInstance.getCPInstanceId());
 
-		for (CPInstance cpInstance : cpInstances) {
-			Map<String, List<String>>
-				cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys =
-					_cpDefinitionOptionRelLocalService.
-						getCPDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys(
-							cpInstance.getCPInstanceId());
+				CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
-			CPDefinition cpDefinition = cpInstance.getCPDefinition();
+				String cpDefinitionName = cpDefinition.getName(languageId);
 
-			String cpDefinitionName = cpDefinition.getName(languageId);
+				JSONArray jsonArray = CPJSONUtil.toJSONArray(
+					cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys);
 
-			JSONArray jsonArray = CPJSONUtil.toJSONArray(
-				cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys);
+				String availableQuantity = String.valueOf(
+					_commerceQuantityFormatter.format(
+						_cpInstanceUnitOfMeasureLocalService.
+							fetchPrimaryCPInstanceUnitOfMeasure(
+								cpInstance.getCPInstanceId()),
+						_commerceInventoryEngine.getStockQuantity(
+							cpInstance.getCompanyId(),
+							cpDefinition.getGroupId(), cpInstance.getSku(),
+							StringPool.BLANK)));
 
-			BigDecimal stockQuantity =
-				_commerceInventoryEngine.getStockQuantity(
-					cpInstance.getCompanyId(), cpDefinition.getGroupId(),
-					cpInstance.getSku(), StringPool.BLANK);
+				String statusDisplayStyle = StringPool.BLANK;
 
-			String statusDisplayStyle = StringPool.BLANK;
+				if (cpInstance.getStatus() ==
+						WorkflowConstants.STATUS_APPROVED) {
 
-			if (cpInstance.getStatus() == WorkflowConstants.STATUS_APPROVED) {
-				statusDisplayStyle = "success";
-			}
+					statusDisplayStyle = "success";
+				}
 
-			String discontinued = "no";
+				String discontinued = "no";
 
-			if (cpInstance.isDiscontinued()) {
-				discontinued = "yes";
-			}
+				if (cpInstance.isDiscontinued()) {
+					discontinued = "yes";
+				}
 
-			skus.add(
-				new Sku(
+				return new Sku(
 					cpInstance.getCPInstanceId(), cpInstance.getSku(),
 					HtmlUtil.escape(
 						_getOptions(
 							cpInstance.getCPDefinitionId(),
 							jsonArray.toString(), locale)),
 					HtmlUtil.escape(_formatPrice(cpInstance, locale)),
-					cpDefinitionName, stockQuantity.intValue(),
+					cpDefinitionName, availableQuantity,
 					new LabelField(
 						statusDisplayStyle,
 						_language.get(
 							httpServletRequest,
 							WorkflowConstants.getStatusLabel(
 								cpInstance.getStatus()))),
-					_language.get(httpServletRequest, discontinued)));
-		}
-
-		return skus;
+					_language.get(httpServletRequest, discontinued));
+			});
 	}
 
 	@Override
@@ -234,6 +236,9 @@ public class CommerceProductInstanceFDSDataProvider
 	private CommerceProductPriceCalculation _commerceProductPriceCalculation;
 
 	@Reference
+	private CommerceQuantityFormatter _commerceQuantityFormatter;
+
+	@Reference
 	private CPDefinitionOptionRelLocalService
 		_cpDefinitionOptionRelLocalService;
 
@@ -242,6 +247,10 @@ public class CommerceProductInstanceFDSDataProvider
 
 	@Reference
 	private CPInstanceService _cpInstanceService;
+
+	@Reference
+	private CPInstanceUnitOfMeasureLocalService
+		_cpInstanceUnitOfMeasureLocalService;
 
 	@Reference
 	private Language _language;

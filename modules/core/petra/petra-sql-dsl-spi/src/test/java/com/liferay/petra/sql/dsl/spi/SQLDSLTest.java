@@ -532,6 +532,18 @@ public class SQLDSLTest {
 					MainExampleTable.INSTANCE.mainExampleIdColumn,
 					ReferenceExampleTable.INSTANCE.referenceExampleIdColumn)));
 		Assert.assertEquals(
+			"CAST_DECIMAL(MainExample.mainExampleId) / ?",
+			String.valueOf(
+				DSLFunctionFactoryUtil.floatDivide(
+					MainExampleTable.INSTANCE.mainExampleIdColumn, 2L)));
+		Assert.assertEquals(
+			"CAST_DECIMAL(MainExample.mainExampleId) / ReferenceExample." +
+				"referenceExampleId",
+			String.valueOf(
+				DSLFunctionFactoryUtil.floatDivide(
+					MainExampleTable.INSTANCE.mainExampleIdColumn,
+					ReferenceExampleTable.INSTANCE.referenceExampleIdColumn)));
+		Assert.assertEquals(
 			"max(MainExample.mainExampleId)",
 			String.valueOf(
 				DSLFunctionFactoryUtil.max(
@@ -552,6 +564,20 @@ public class SQLDSLTest {
 				DSLFunctionFactoryUtil.multiply(
 					MainExampleTable.INSTANCE.mainExampleIdColumn,
 					ReferenceExampleTable.INSTANCE.referenceExampleIdColumn)));
+		Assert.assertEquals(
+			"REPLACE(MainExample.name, ?, ?)",
+			String.valueOf(
+				DSLFunctionFactoryUtil.replace(
+					MainExampleTable.INSTANCE.nameColumn, " LFR_ORGANIZATION",
+					"")));
+		Assert.assertEquals(
+			"REPLACE(MainExample.name, ReferenceExample.name, " +
+				"ReferenceExample.name)",
+			String.valueOf(
+				DSLFunctionFactoryUtil.replace(
+					MainExampleTable.INSTANCE.nameColumn,
+					ReferenceExampleTable.INSTANCE.nameColumn,
+					ReferenceExampleTable.INSTANCE.nameColumn)));
 		Assert.assertEquals(
 			"MainExample.mainExampleId - ?",
 			String.valueOf(
@@ -678,13 +704,13 @@ public class SQLDSLTest {
 		).from(
 			MainExampleTable.INSTANCE
 		).leftJoinOn(
-			MainExampleTable.INSTANCE, null
+			MainExampleTable.INSTANCE, (Predicate)null
 		).innerJoinON(
 			ReferenceExampleTable.INSTANCE,
 			ReferenceExampleTable.INSTANCE.mainExampleIdColumn.eq(
 				MainExampleTable.INSTANCE.mainExampleIdColumn)
 		).innerJoinON(
-			ReferenceExampleTable.INSTANCE, null
+			ReferenceExampleTable.INSTANCE, (Predicate)null
 		).where(
 			MainExampleTable.INSTANCE.nameColumn.neq("")
 		);
@@ -1178,6 +1204,14 @@ public class SQLDSLTest {
 
 		Assert.assertTrue(select.isDistinct());
 		Assert.assertSame(expressions, select.getExpressions());
+		Assert.assertNull(select.getHints());
+
+		FromStep fromStep = select.hints("INDEX (MainExample IX_00000000)");
+
+		Assert.assertEquals(
+			"select /*+ INDEX (MainExample IX_00000000) */ distinct " +
+				"MainExample.mainExampleId, MainExample.flag",
+			fromStep.toString());
 	}
 
 	@Test

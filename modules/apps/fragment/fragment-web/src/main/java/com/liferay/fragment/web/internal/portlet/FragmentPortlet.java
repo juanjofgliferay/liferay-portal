@@ -11,8 +11,7 @@ import com.liferay.fragment.helper.DefaultInputFragmentEntryConfigurationProvide
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.processor.FragmentEntryProcessorRegistry;
 import com.liferay.fragment.renderer.FragmentRendererController;
-import com.liferay.fragment.service.FragmentCollectionService;
-import com.liferay.fragment.validator.FragmentEntryValidator;
+import com.liferay.fragment.service.FragmentCollectionLocalService;
 import com.liferay.fragment.web.internal.configuration.FragmentPortletConfiguration;
 import com.liferay.fragment.web.internal.constants.FragmentWebKeys;
 import com.liferay.item.selector.ItemSelector;
@@ -27,16 +26,16 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.staging.StagingGroupHelper;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,13 +56,13 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Fragments",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Fragments",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -107,8 +106,6 @@ public class FragmentPortlet extends MVCPortlet {
 			FragmentEntryProcessorRegistry.class.getName(),
 			_fragmentEntryProcessorRegistry);
 		renderRequest.setAttribute(
-			FragmentEntryValidator.class.getName(), _fragmentEntryValidator);
-		renderRequest.setAttribute(
 			FragmentPortletConfiguration.class.getName(),
 			fragmentPortletConfiguration);
 		renderRequest.setAttribute(
@@ -116,14 +113,14 @@ public class FragmentPortlet extends MVCPortlet {
 			_fragmentRendererController);
 		renderRequest.setAttribute(
 			FragmentWebKeys.FRAGMENT_COLLECTIONS,
-			_fragmentCollectionService.getFragmentCollections(
+			_fragmentCollectionLocalService.getFragmentCollections(
 				themeDisplay.getScopeGroupId()));
 		renderRequest.setAttribute(
 			FragmentWebKeys.INHERITED_FRAGMENT_COLLECTIONS,
 			_getInheritedFragmentCollections(themeDisplay));
 		renderRequest.setAttribute(
 			FragmentWebKeys.SYSTEM_FRAGMENT_COLLECTIONS,
-			_fragmentCollectionService.getFragmentCollections(
+			_fragmentCollectionLocalService.getFragmentCollections(
 				CompanyConstants.SYSTEM));
 		renderRequest.setAttribute(ItemSelector.class.getName(), _itemSelector);
 
@@ -143,7 +140,7 @@ public class FragmentPortlet extends MVCPortlet {
 			new TreeMap<>();
 
 		List<FragmentCollection> fragmentCollections =
-			_fragmentCollectionService.getFragmentCollections(
+			_fragmentCollectionLocalService.getFragmentCollections(
 				themeDisplay.getCompanyGroupId());
 
 		if (ListUtil.isNotEmpty(fragmentCollections)) {
@@ -167,13 +164,10 @@ public class FragmentPortlet extends MVCPortlet {
 		_fragmentCollectionContributorRegistry;
 
 	@Reference
-	private FragmentCollectionService _fragmentCollectionService;
+	private FragmentCollectionLocalService _fragmentCollectionLocalService;
 
 	@Reference
 	private FragmentEntryProcessorRegistry _fragmentEntryProcessorRegistry;
-
-	@Reference
-	private FragmentEntryValidator _fragmentEntryValidator;
 
 	@Reference
 	private FragmentRendererController _fragmentRendererController;

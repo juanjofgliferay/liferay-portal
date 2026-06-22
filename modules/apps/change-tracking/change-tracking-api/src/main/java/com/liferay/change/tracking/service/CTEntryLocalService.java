@@ -69,7 +69,6 @@ public interface CTEntryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public CTEntry addCTEntry(CTEntry ctEntry);
 
-	@Indexable(type = IndexableType.REINDEX)
 	public CTEntry addCTEntry(
 			String externalReferenceCode, long ctCollectionId,
 			long modelClassNameId, CTModel<?> ctModel, long userId,
@@ -104,6 +103,9 @@ public interface CTEntryLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public CTEntry deleteCTEntry(CTEntry ctEntry) throws PortalException;
+
+	public CTEntry deleteCTEntry(CTEntry ctEntry, boolean force)
+		throws PortalException;
 
 	/**
 	 * Deletes the ct entry with the primary key from the database. Also notifies the appropriate model listeners.
@@ -251,6 +253,9 @@ public interface CTEntryLocalService
 	public List<CTEntry> getCTEntries(
 		long ctCollectionId, long modelClassNameId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CTEntry> getCTEntries(long[] ctEntryIds);
+
 	/**
 	 * Returns the number of ct entries.
 	 *
@@ -322,6 +327,13 @@ public interface CTEntryLocalService
 	public boolean hasCTEntry(
 		long ctCollectionId, long modelClassNameId, long modelClassPK);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public boolean hasUnpublishedCTEntries(
+		long modelClassNameId, long modelClassPK, int changeType);
+
+	public CTEntry updateChangeType(long ctEntryId, int changeType)
+		throws PortalException;
+
 	/**
 	 * Updates the ct entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -335,7 +347,11 @@ public interface CTEntryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public CTEntry updateCTEntry(CTEntry ctEntry);
 
-	public CTEntry updateModelMvccVersion(
-		long ctEntryId, long modelMvccVersion);
+	public CTEntry updateModelMvccVersion(long ctEntryId, long modelMvccVersion)
+		throws PortalException;
+
+	public CTEntry updateUserId(long ctEntryId, long userId)
+		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:908398977

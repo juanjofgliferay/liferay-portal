@@ -2,12 +2,19 @@ import client from 'shared/apollo/client';
 import CreateItemSimilarity from '../CreateItemSimilarity';
 import mockStore from 'test/mock-store';
 import React from 'react';
-import {ApolloProvider} from '@apollo/react-components';
+import {ApolloProvider} from '@apollo/client';
 import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
 import {StaticRouter} from 'react-router-dom';
 
 jest.unmock('react-dom');
+
+jest.mock('react-router-dom', () => ({
+	...jest.requireActual('react-router-dom'),
+	useParams: () => ({
+		groupId: '23'
+	})
+}));
 
 const defaultProps = {
 	router: {params: {groupId: '23'}, query: {delta: '10', page: '1'}}

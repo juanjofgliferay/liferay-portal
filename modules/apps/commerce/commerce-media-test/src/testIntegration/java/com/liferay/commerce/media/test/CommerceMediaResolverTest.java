@@ -30,6 +30,7 @@ import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeConstants;
 import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
 import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
+import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItemFileEntry;
 import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemLocalService;
 import com.liferay.commerce.product.type.virtual.order.util.CommerceVirtualOrderItemChecker;
 import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingLocalService;
@@ -102,8 +103,8 @@ public class CommerceMediaResolverTest {
 			_group.getCompanyId(), _group.getGroupId(), _user.getUserId());
 
 		_accountEntry = _accountEntryLocalService.addAccountEntry(
-			_user.getUserId(), 0, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), null,
+			StringPool.BLANK, _user.getUserId(), 0,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
 			RandomTestUtil.randomString() + "@liferay.com", null, null,
 			"business", 1, _serviceContext);
 
@@ -113,7 +114,7 @@ public class CommerceMediaResolverTest {
 			_accountEntry.getAccountEntryId(), _serviceContext);
 
 		_commerceCurrency = _commerceCurrencyLocalService.addCommerceCurrency(
-			_user.getUserId(), RandomTestUtil.randomString(),
+			null, _user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomString(), BigDecimal.ONE,
 			RandomTestUtil.randomLocaleStringMap(), 2, 2, "HALF_EVEN", false,
@@ -153,7 +154,7 @@ public class CommerceMediaResolverTest {
 			RandomTestUtil.randomString() + ".jpg", ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(
 				CommerceMediaResolverTest.class, "dependencies/image.jpg"),
-			null, null, _serviceContext);
+			null, null, null, _serviceContext);
 
 		CPDefinition cpDefinition = CPTestUtil.addCPDefinitionFromCatalog(
 			_commerceCatalog.getGroupId(), VirtualCPTypeConstants.NAME, true,
@@ -175,7 +176,7 @@ public class CommerceMediaResolverTest {
 					fileEntry.getFileEntryId(), null,
 					CommerceOrderConstants.ORDER_STATUS_PENDING, 0,
 					RandomTestUtil.randomInt(), true, 0, "https://liferay.com",
-					false, null, 0, _serviceContext);
+					false, null, 0, false, _serviceContext);
 
 		CommerceTestUtil.updateBackOrderCPDefinitionInventory(cpDefinition);
 
@@ -202,9 +203,18 @@ public class CommerceMediaResolverTest {
 				fetchCommerceVirtualOrderItemByCommerceOrderItemId(
 					commerceOrderItem.getCommerceOrderItemId());
 
+		List<CommerceVirtualOrderItemFileEntry>
+			commerceVirtualOrderItemFileEntries =
+				commerceVirtualOrderItem.
+					getCommerceVirtualOrderItemFileEntries();
+
+		CommerceVirtualOrderItemFileEntry commerceVirtualOrderItemFileEntry =
+			commerceVirtualOrderItemFileEntries.get(0);
+
 		String downloadVirtualOrderItemURL =
 			_commerceMediaResolver.getDownloadVirtualOrderItemURL(
-				commerceVirtualOrderItem.getCommerceVirtualOrderItemId());
+				commerceVirtualOrderItem.getCommerceVirtualOrderItemId(),
+				commerceVirtualOrderItemFileEntry.getFileEntryId());
 
 		String expectedVirtualOrderItemURL = StringBundler.concat(
 			_portal.getPathModule(), StringPool.SLASH,

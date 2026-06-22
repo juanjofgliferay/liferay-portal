@@ -7,8 +7,10 @@ package com.liferay.portal.kernel.dao.db;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -17,12 +19,12 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
@@ -32,25 +34,6 @@ import java.util.regex.Pattern;
  * @author Adolfo Pérez
  */
 public class DBInspector {
-
-	public static boolean isObjectTable(
-		List<Long> companyIds, String tableName) {
-
-		for (long companyId : companyIds) {
-
-			// See ObjectDefinitionImpl#getExtensionDBTableName and
-			// ObjectDefinitionLocalServiceImpl#_getDBTableName
-
-			if (tableName.endsWith("_x_" + companyId) ||
-				tableName.startsWith("L_" + companyId + "_") ||
-				tableName.startsWith("O_" + companyId + "_")) {
-
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	public DBInspector(Connection connection) {
 		_connection = connection;
@@ -80,33 +63,26 @@ public class DBInspector {
 	public List<String> getTableNames(String tableNamePattern)
 		throws SQLException {
 
-		List<String> tableNames = new ArrayList<>();
+		return _getNames(tableNamePattern, "TABLE");
+	}
 
-		DatabaseMetaData databaseMetaData = _connection.getMetaData();
+	public List<String> getViewNames(String viewNamePattern)
+		throws SQLException {
 
-		try (ResultSet resultSet = databaseMetaData.getTables(
-				_connection.getCatalog(), _connection.getSchema(),
-				tableNamePattern, new String[] {"TABLE"})) {
-
-			while (resultSet.next()) {
-				tableNames.add(resultSet.getString("TABLE_NAME"));
-			}
-		}
-
-		return tableNames;
+		return _getNames(viewNamePattern, "VIEW");
 	}
 
 	public boolean hasColumn(String tableName, String columnName)
 		throws Exception {
 
+		if ((columnName == null) || (tableName == null)) {
+			return false;
+		}
+
 		try (ResultSet resultSet = _getColumnsResultSet(
 				tableName, columnName)) {
 
-			if (!resultSet.next()) {
-				return false;
-			}
-
-			return true;
+			return resultSet.next();
 		}
 		catch (Exception exception) {
 			_log.error(exception);
@@ -118,6 +94,12 @@ public class DBInspector {
 	public boolean hasColumnType(
 			String tableName, String columnName, String columnType)
 		throws Exception {
+
+		if ((columnName == null) || (columnType == null) ||
+			(tableName == null)) {
+
+			return false;
+		}
 
 		try (ResultSet resultSet = _getColumnsResultSet(
 				tableName, columnName)) {
@@ -197,16 +179,20 @@ public class DBInspector {
 	public boolean hasIndex(String tableName, String indexName)
 		throws Exception {
 
+		if ((indexName == null) || (tableName == null)) {
+			return false;
+		}
+
 		DB db = DBManagerUtil.getDB();
 		DatabaseMetaData databaseMetaData = _connection.getMetaData();
 
 		try (ResultSet resultSet = db.getIndexResultSet(
-				_connection, normalizeName(tableName, databaseMetaData))) {
+				_connection, normalizeName(tableName, databaseMetaData),
+				false)) {
 
 			while (resultSet.next()) {
-				if (Objects.equals(
-						normalizeName(indexName, databaseMetaData),
-						resultSet.getString("index_name"))) {
+				if (StringUtil.equalsIgnoreCase(
+						indexName, resultSet.getString("index_name"))) {
 
 					return true;
 				}
@@ -220,14 +206,17 @@ public class DBInspector {
 	}
 
 	public boolean hasRows(String tableName) {
+		if (tableName == null) {
+			return false;
+		}
+
 		try (PreparedStatement preparedStatement = _connection.prepareStatement(
-				"select count(*) from " + tableName);
+				"select count(*) as count from " + tableName);
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
-				int count = resultSet.getInt(1);
-
-				if (count > 0) {
+				if (resultSet.getLong("count") > 0) {
 					return true;
 				}
 			}
@@ -240,36 +229,20 @@ public class DBInspector {
 	}
 
 	public boolean hasTable(String tableName) throws Exception {
-		return hasTable(tableName, false);
+		return _hasElement(tableName, "TABLE");
 	}
 
-	public boolean hasTable(String tableName, boolean caseSensitive)
-		throws Exception {
-
-		DatabaseMetaData databaseMetaData = _connection.getMetaData();
-
-		if (!caseSensitive) {
-			tableName = normalizeName(tableName, databaseMetaData);
-		}
-
-		try (ResultSet resultSet = databaseMetaData.getTables(
-				getCatalog(), getSchema(), tableName, new String[] {"TABLE"})) {
-
-			while (resultSet.next()) {
-				return true;
-			}
-		}
-
-		return false;
+	public boolean hasView(String viewName) throws Exception {
+		return _hasElement(viewName, "VIEW");
 	}
 
-	public boolean isControlTable(List<Long> companyIds, String tableName)
-		throws Exception {
-
-		if (!isPartitionedControlTable(tableName) &&
-			!isObjectTable(companyIds, tableName) &&
-			(_controlTableNames.contains(StringUtil.toLowerCase(tableName)) ||
-			 !hasColumn(tableName, "companyId"))) {
+	public boolean isControlTable(String tableName) {
+		if (_controlTableNames.contains(StringUtil.toLowerCase(tableName)) ||
+			StringUtil.toLowerCase(
+				tableName
+			).startsWith(
+				"quartz"
+			)) {
 
 			return true;
 		}
@@ -279,6 +252,10 @@ public class DBInspector {
 
 	public boolean isNullable(String tableName, String columnName)
 		throws SQLException {
+
+		if ((columnName == null) || (tableName == null)) {
+			return false;
+		}
 
 		try (ResultSet resultSet = _getColumnsResultSet(
 				tableName, columnName)) {
@@ -300,14 +277,68 @@ public class DBInspector {
 		}
 	}
 
-	public boolean isPartitionedControlTable(String tableName) {
-		if (_partitionedControlTableNames.contains(
-				StringUtil.toLowerCase(tableName))) {
+	public boolean isNumeric(String tableName, String columnName)
+		throws Exception {
 
-			return true;
+		if ((columnName == null) || (tableName == null)) {
+			return false;
+		}
+
+		try (ResultSet resultSet = _getColumnsResultSet(
+				tableName, columnName)) {
+
+			if (!resultSet.next()) {
+				return false;
+			}
+
+			int columnType = resultSet.getInt("DATA_TYPE");
+
+			if ((columnType == Types.BIGINT) || (columnType == Types.DECIMAL) ||
+				(columnType == Types.DOUBLE) || (columnType == Types.FLOAT) ||
+				(columnType == Types.INTEGER) ||
+				(columnType == Types.NUMERIC) || (columnType == Types.REAL) ||
+				(columnType == Types.SMALLINT) ||
+				(columnType == Types.TINYINT)) {
+
+				return true;
+			}
+
+			return false;
+		}
+	}
+
+	public boolean isObjectTable(List<Long> companyIds, String tableName) {
+		if (tableName == null) {
+			return false;
+		}
+
+		String lowerCaseTableName = StringUtil.toLowerCase(tableName);
+
+		for (long companyId : companyIds) {
+
+			// See ObjectDefinitionImpl#getExtensionDBTableName and
+			// ObjectDefinitionLocalServiceImpl#_getDBTableName
+
+			if (lowerCaseTableName.endsWith("_x_" + companyId) ||
+				lowerCaseTableName.startsWith("l_" + companyId + "_") ||
+				lowerCaseTableName.startsWith("o_" + companyId + "_") ||
+				lowerCaseTableName.startsWith("r_")) {
+
+				return true;
+			}
 		}
 
 		return false;
+	}
+
+	public boolean isObjectTable(String tableName) {
+		return isObjectTable(
+			ListUtil.fromArray(PortalInstancePool.getCompanyIds()), tableName);
+	}
+
+	public boolean isPartitionedControlTable(String tableName) {
+		return _partitionedControlTableNames.contains(
+			StringUtil.toLowerCase(tableName));
 	}
 
 	public String normalizeName(String name) throws SQLException {
@@ -405,16 +436,54 @@ public class DBInspector {
 			normalizeName(tableName, databaseMetaData), columnName);
 	}
 
+	private List<String> _getNames(String namePattern, String elementType)
+		throws SQLException {
+
+		List<String> names = new ArrayList<>();
+
+		DatabaseMetaData databaseMetaData = _connection.getMetaData();
+
+		try (ResultSet resultSet = databaseMetaData.getTables(
+				_connection.getCatalog(), _connection.getSchema(), namePattern,
+				new String[] {elementType})) {
+
+			while (resultSet.next()) {
+				names.add(resultSet.getString("TABLE_NAME"));
+			}
+		}
+
+		return names;
+	}
+
+	private boolean _hasElement(String elementName, String elementType)
+		throws Exception {
+
+		if (elementName == null) {
+			return false;
+		}
+
+		DatabaseMetaData databaseMetaData = _connection.getMetaData();
+
+		elementName = normalizeName(elementName, databaseMetaData);
+
+		try (ResultSet resultSet = databaseMetaData.getTables(
+				getCatalog(), getSchema(), elementName,
+				new String[] {elementType})) {
+
+			if (resultSet.next()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private boolean _isColumnNullable(String typeName) {
 		typeName = typeName.trim();
 
 		typeName = StringUtil.toLowerCase(typeName);
 
-		if (typeName.endsWith("not null")) {
-			return false;
-		}
-
-		return true;
+		return !typeName.endsWith("not null");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(DBInspector.class);
@@ -426,9 +495,10 @@ public class DBInspector {
 	private static final Pattern _columnTypePattern = Pattern.compile(
 		"(^\\w+)", Pattern.CASE_INSENSITIVE);
 	private static final Set<String> _controlTableNames = new HashSet<>(
-		Arrays.asList("company", "virtualhost"));
+		Arrays.asList(
+			"company", "release_", "servicecomponent", "virtualhost"));
 	private static final Set<String> _partitionedControlTableNames =
-		new HashSet<>(Arrays.asList("classname_", "resourceaction"));
+		new HashSet<>(Arrays.asList("classname_", "counter", "resourceaction"));
 
 	private final Connection _connection;
 

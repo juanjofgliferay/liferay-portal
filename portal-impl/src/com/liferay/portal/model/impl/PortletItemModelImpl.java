@@ -92,6 +92,8 @@ public class PortletItemModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table PortletItem";
 
+	public static final String ENTITY_ALIAS = "portletItem";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY portletItem.portletItemId ASC";
 
@@ -154,7 +156,7 @@ public class PortletItemModelImpl
 	public static final long PORTLETITEMID_COLUMN_BITMASK = 16L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PortletItem"));
 
 	public PortletItemModelImpl() {
@@ -957,3 +959,4 @@ public class PortletItemModelImpl
 	private PortletItem _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1057157863

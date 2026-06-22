@@ -34,15 +34,18 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.legacy.document.DocumentBuilderFactory;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.internal.display.context.SimilarResultsDocumentDisplayContext;
 import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferences;
 import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferencesImpl;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.DestinationHelper;
 import com.liferay.portal.search.summary.Summary;
 import com.liferay.portal.search.summary.SummaryBuilder;
 import com.liferay.portal.search.summary.SummaryBuilderFactory;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.text.DateFormat;
 import java.text.Format;
@@ -52,9 +55,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Wade Cao
@@ -69,11 +69,9 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 
 	public SimilarResultsDocumentDisplayContext build() {
 		try {
-			if (_documentBuilderFactory != null) {
-				_document = _documentBuilderFactory.builder(
-					_legacyDocument
-				).build();
-			}
+			_document = DocumentBuilderFactory.builder(
+				_legacyDocument
+			).build();
 
 			String className = _getFieldValueString(Field.ENTRY_CLASS_NAME);
 
@@ -114,15 +112,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		Document document) {
 
 		_document = document;
-
-		return this;
-	}
-
-	public SimilarResultsDocumentDisplayContextBuilder
-		setDocumentBuilderFactory(
-			DocumentBuilderFactory documentBuilderFactory) {
-
-		_documentBuilderFactory = documentBuilderFactory;
 
 		return this;
 	}
@@ -698,7 +687,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 
 	private AssetEntryLocalService _assetEntryLocalService;
 	private Document _document;
-	private DocumentBuilderFactory _documentBuilderFactory;
 	private FastDateFormatFactory _fastDateFormatFactory;
 	private boolean _highlightEnabled;
 	private IndexerRegistry _indexerRegistry;

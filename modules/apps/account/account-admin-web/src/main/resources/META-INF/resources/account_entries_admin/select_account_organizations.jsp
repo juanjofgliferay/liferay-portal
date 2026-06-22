@@ -37,6 +37,16 @@ SearchContainer<Organization> organizationSearchContainer = AssignableAccountOrg
 				name="parent-organization"
 				value="<%= HtmlUtil.escape(organization.getParentOrganizationName()) %>"
 			/>
+
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand-smallest table-cell-ws-nowrap table-column-text-center"
+				name="status"
+			>
+				<clay:label
+					displayType="<%= WorkflowConstants.getStatusStyle(organization.getStatus()) %>"
+					label="<%= WorkflowConstants.getStatusLabel(organization.getStatus()) %>"
+				/>
+			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>
 
 		<liferay-ui:search-iterator

@@ -44,12 +44,13 @@ public class CPDefinitionLocalizationWrapper
 		attributes.put("companyId", getCompanyId());
 		attributes.put("CPDefinitionId", getCPDefinitionId());
 		attributes.put("languageId", getLanguageId());
-		attributes.put("name", getName());
-		attributes.put("shortDescription", getShortDescription());
+		attributes.put("CProductId", getCProductId());
 		attributes.put("description", getDescription());
-		attributes.put("metaTitle", getMetaTitle());
 		attributes.put("metaDescription", getMetaDescription());
 		attributes.put("metaKeywords", getMetaKeywords());
+		attributes.put("metaTitle", getMetaTitle());
+		attributes.put("name", getName());
+		attributes.put("shortDescription", getShortDescription());
 
 		return attributes;
 	}
@@ -93,28 +94,16 @@ public class CPDefinitionLocalizationWrapper
 			setLanguageId(languageId);
 		}
 
-		String name = (String)attributes.get("name");
+		Long CProductId = (Long)attributes.get("CProductId");
 
-		if (name != null) {
-			setName(name);
-		}
-
-		String shortDescription = (String)attributes.get("shortDescription");
-
-		if (shortDescription != null) {
-			setShortDescription(shortDescription);
+		if (CProductId != null) {
+			setCProductId(CProductId);
 		}
 
 		String description = (String)attributes.get("description");
 
 		if (description != null) {
 			setDescription(description);
-		}
-
-		String metaTitle = (String)attributes.get("metaTitle");
-
-		if (metaTitle != null) {
-			setMetaTitle(metaTitle);
 		}
 
 		String metaDescription = (String)attributes.get("metaDescription");
@@ -127,6 +116,24 @@ public class CPDefinitionLocalizationWrapper
 
 		if (metaKeywords != null) {
 			setMetaKeywords(metaKeywords);
+		}
+
+		String metaTitle = (String)attributes.get("metaTitle");
+
+		if (metaTitle != null) {
+			setMetaTitle(metaTitle);
+		}
+
+		String name = (String)attributes.get("name");
+
+		if (name != null) {
+			setName(name);
+		}
+
+		String shortDescription = (String)attributes.get("shortDescription");
+
+		if (shortDescription != null) {
+			setShortDescription(shortDescription);
 		}
 	}
 
@@ -163,6 +170,16 @@ public class CPDefinitionLocalizationWrapper
 	@Override
 	public long getCpDefinitionLocalizationId() {
 		return model.getCpDefinitionLocalizationId();
+	}
+
+	/**
+	 * Returns the c product ID of this cp definition localization.
+	 *
+	 * @return the c product ID of this cp definition localization
+	 */
+	@Override
+	public long getCProductId() {
+		return model.getCProductId();
 	}
 
 	/**
@@ -296,6 +313,16 @@ public class CPDefinitionLocalizationWrapper
 	}
 
 	/**
+	 * Sets the c product ID of this cp definition localization.
+	 *
+	 * @param CProductId the c product ID of this cp definition localization
+	 */
+	@Override
+	public void setCProductId(long CProductId) {
+		model.setCProductId(CProductId);
+	}
+
+	/**
 	 * Sets the ct collection ID of this cp definition localization.
 	 *
 	 * @param ctCollectionId the ct collection ID of this cp definition localization
@@ -422,3 +449,4 @@ public class CPDefinitionLocalizationWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:898017590

@@ -112,9 +112,7 @@ public class ERCCompanyEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ERCCompanyEntry newERCCompanyEntry = _persistence.create(pk);
+		ERCCompanyEntry newERCCompanyEntry = addERCCompanyEntry();
 
 		newERCCompanyEntry.setUuid(RandomTestUtil.randomString());
 
@@ -122,6 +120,12 @@ public class ERCCompanyEntryPersistenceTest {
 			RandomTestUtil.randomString());
 
 		newERCCompanyEntry.setCompanyId(RandomTestUtil.nextLong());
+
+		newERCCompanyEntry.setUserId(RandomTestUtil.nextLong());
+
+		newERCCompanyEntry.setUserName(RandomTestUtil.randomString());
+
+		newERCCompanyEntry.setColumn1(RandomTestUtil.nextInt());
 
 		_ercCompanyEntries.add(_persistence.update(newERCCompanyEntry));
 
@@ -139,6 +143,15 @@ public class ERCCompanyEntryPersistenceTest {
 		Assert.assertEquals(
 			existingERCCompanyEntry.getCompanyId(),
 			newERCCompanyEntry.getCompanyId());
+		Assert.assertEquals(
+			existingERCCompanyEntry.getUserId(),
+			newERCCompanyEntry.getUserId());
+		Assert.assertEquals(
+			existingERCCompanyEntry.getUserName(),
+			newERCCompanyEntry.getUserName());
+		Assert.assertEquals(
+			existingERCCompanyEntry.getColumn1(),
+			newERCCompanyEntry.getColumn1());
 	}
 
 	@Test(
@@ -216,7 +229,8 @@ public class ERCCompanyEntryPersistenceTest {
 	protected OrderByComparator<ERCCompanyEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"ERCCompanyEntry", "uuid", true, "externalReferenceCode", true,
-			"ercCompanyEntryId", true, "companyId", true);
+			"ercCompanyEntryId", true, "companyId", true, "userId", true,
+			"userName", true, "column1", true);
 	}
 
 	@Test
@@ -509,6 +523,12 @@ public class ERCCompanyEntryPersistenceTest {
 
 		ercCompanyEntry.setCompanyId(RandomTestUtil.nextLong());
 
+		ercCompanyEntry.setUserId(RandomTestUtil.nextLong());
+
+		ercCompanyEntry.setUserName(RandomTestUtil.randomString());
+
+		ercCompanyEntry.setColumn1(RandomTestUtil.nextInt());
+
 		_ercCompanyEntries.add(_persistence.update(ercCompanyEntry));
 
 		return ercCompanyEntry;
@@ -520,3 +540,4 @@ public class ERCCompanyEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1306570582

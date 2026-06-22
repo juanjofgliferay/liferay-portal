@@ -5,6 +5,8 @@
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v4_1_0;
 
+import com.liferay.dynamic.data.mapping.internal.upgrade.v4_1_0.util.DDMFieldAttributeTable;
+import com.liferay.dynamic.data.mapping.internal.upgrade.v4_1_0.util.DDMFieldTable;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializerDeserializeRequest;
@@ -17,6 +19,7 @@ import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.util.DDMFormDeserializeUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -32,6 +35,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.LRUMap;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -68,26 +72,6 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		runSQL(
-			StringBundler.concat(
-				"create table DDMField (mvccVersion LONG default 0 not null, ",
-				"ctCollectionId LONG default 0 not null, fieldId LONG not ",
-				"null, companyId LONG, parentFieldId LONG, storageId LONG, ",
-				"structureVersionId LONG, fieldName TEXT null, fieldType ",
-				"VARCHAR(255) null, instanceId VARCHAR(75) null, localizable ",
-				"BOOLEAN, priority INTEGER, primary key (fieldId, ",
-				"ctCollectionId))"));
-
-		runSQL(
-			StringBundler.concat(
-				"create table DDMFieldAttribute (mvccVersion LONG default 0 ",
-				"not null, ctCollectionId LONG default 0 not null, ",
-				"fieldAttributeId LONG not null, companyId LONG, fieldId ",
-				"LONG, storageId LONG, attributeName VARCHAR(255) null, ",
-				"languageId VARCHAR(75) null, largeAttributeValue TEXT null, ",
-				"smallAttributeValue VARCHAR(255) null, primary key ",
-				"(fieldAttributeId, ctCollectionId))"));
-
 		try (PreparedStatement selectPreparedStatement =
 				connection.prepareStatement(
 					StringBundler.concat(
@@ -167,7 +151,9 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 				connection.prepareStatement(
 					"select formInstanceId, settings_ from DDMFormInstance " +
 						"where ctCollectionId = 0");
+
 			ResultSet resultSet = selectPreparedStatement.executeQuery();
+
 			PreparedStatement updatePreparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
@@ -177,57 +163,64 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 			while (resultSet.next()) {
 				String settings = resultSet.getString("settings_");
 
-				if (Validator.isNotNull(settings)) {
-					JSONObject settingsJSONObject =
-						_jsonFactory.createJSONObject(settings);
+				if (Validator.isNull(settings)) {
+					continue;
+				}
 
-					JSONArray fieldValuesJSONArray =
-						settingsJSONObject.getJSONArray("fieldValues");
+				JSONObject settingsJSONObject = _jsonFactory.createJSONObject(
+					settings);
 
-					for (int i = 0; i < fieldValuesJSONArray.length(); i++) {
-						JSONObject jsonObject =
-							fieldValuesJSONArray.getJSONObject(i);
+				JSONArray fieldValuesJSONArray =
+					settingsJSONObject.getJSONArray("fieldValues");
 
-						if (Objects.equals(
-								jsonObject.getString("name"), "storageType")) {
+				for (int i = 0; i < fieldValuesJSONArray.length(); i++) {
+					JSONObject jsonObject = fieldValuesJSONArray.getJSONObject(
+						i);
 
-							JSONArray oldJSONArray =
-								_jsonFactory.createJSONArray(
-									jsonObject.getString("value"));
+					if (Objects.equals(
+							jsonObject.getString("name"), "storageType")) {
 
-							JSONArray newJSONArray =
-								_jsonFactory.createJSONArray();
+						JSONArray oldJSONArray = _jsonFactory.createJSONArray(
+							jsonObject.getString("value"));
 
-							for (Object value : oldJSONArray) {
-								if (Objects.equals(value, "json")) {
-									value = "default";
-								}
+						JSONArray newJSONArray = _jsonFactory.createJSONArray();
 
-								newJSONArray.put(value);
+						for (Object value : oldJSONArray) {
+							if (Objects.equals(value, "json")) {
+								value = "default";
 							}
 
-							jsonObject.put("value", newJSONArray);
-
-							break;
+							newJSONArray.put(value);
 						}
+
+						jsonObject.put("value", newJSONArray);
+
+						break;
 					}
-
-					updatePreparedStatement.setString(
-						1, settingsJSONObject.toString());
-					updatePreparedStatement.setLong(
-						2, resultSet.getLong("formInstanceId"));
-
-					updatePreparedStatement.addBatch();
 				}
+
+				updatePreparedStatement.setString(
+					1, settingsJSONObject.toString());
+				updatePreparedStatement.setLong(
+					2, resultSet.getLong("formInstanceId"));
+
+				updatePreparedStatement.addBatch();
 			}
 
 			updatePreparedStatement.executeBatch();
 		}
 	}
 
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			DDMFieldTable.create(), DDMFieldAttributeTable.create()
+		};
+	}
+
 	private void _addDDMFieldAndDDMFieldAttribute(
 			long companyId, long contentId,
-			Map<String, DDMFieldInfo> ddmFieldInfoMap,
+			Map<String, DDMFieldInfo> ddmFieldInfosMap,
 			Map<String, DDMFormField> ddmFormFieldsMap,
 			List<DDMFormFieldValue> ddmFormValues,
 			PreparedStatement insertDDMFieldAttributePreparedStatement,
@@ -242,7 +235,7 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 
 			String instanceId = ddmFormFieldValue.getInstanceId();
 
-			if (ddmFieldInfoMap.containsKey(instanceId)) {
+			if (ddmFieldInfosMap.containsKey(instanceId)) {
 				instanceId =
 					com.liferay.portal.kernel.util.StringUtil.randomString(8);
 			}
@@ -250,7 +243,7 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 			DDMFieldInfo ddmFieldInfo = new DDMFieldInfo(
 				ddmFormFieldValue.getName(), instanceId, parentInstanceId);
 
-			ddmFieldInfoMap.put(ddmFieldInfo._instanceId, ddmFieldInfo);
+			ddmFieldInfosMap.put(ddmFieldInfo._instanceId, ddmFieldInfo);
 
 			Value value = ddmFormFieldValue.getValue();
 
@@ -307,7 +300,7 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 			instanceToFieldIdMap.put(ddmFieldInfo._instanceId, fieldId);
 
 			_addDDMFieldAndDDMFieldAttribute(
-				companyId, contentId, ddmFieldInfoMap, ddmFormFieldsMap,
+				companyId, contentId, ddmFieldInfosMap, ddmFormFieldsMap,
 				ddmFormFieldValue.getNestedDDMFormFieldValues(),
 				insertDDMFieldAttributePreparedStatement,
 				insertDDMFieldPreparedStatement, instanceToFieldIdMap,
@@ -375,24 +368,23 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 				Set<String> keySet = jsonObject.keySet();
 
 				if (!keySet.isEmpty()) {
-					List<DDMFieldAttributeInfo> ddmFieldAttributeInfos =
-						new ArrayList<>(keySet.size());
+					return TransformUtil.transform(
+						jsonObject.keySet(),
+						key -> {
+							DDMFieldAttributeInfo ddmFieldAttributeInfo =
+								new DDMFieldAttributeInfo(
+									key,
+									jsonSerializer.serialize(
+										jsonObject.get(key)),
+									languageId);
 
-					for (String key : jsonObject.keySet()) {
-						DDMFieldAttributeInfo ddmFieldAttributeInfo =
-							new DDMFieldAttributeInfo(
-								key,
-								jsonSerializer.serialize(jsonObject.get(key)),
-								languageId);
+							_insertDDMFieldAttribute(
+								companyId, contentId, ddmFieldAttributeInfo,
+								fieldId,
+								insertDDMFieldAttributePreparedStatement);
 
-						_insertDDMFieldAttribute(
-							companyId, contentId, ddmFieldAttributeInfo,
-							fieldId, insertDDMFieldAttributePreparedStatement);
-
-						ddmFieldAttributeInfos.add(ddmFieldAttributeInfo);
-					}
-
-					return ddmFieldAttributeInfos;
+							return ddmFieldAttributeInfo;
+						});
 				}
 			}
 			catch (JSONException jsonException) {
@@ -458,34 +450,49 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 			return fullHierarchyDDMForm;
 		}
 
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
+		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select parentStructureId from DDMStructureVersion where " +
 					"structureId = ? and structureVersionId = ? and " +
-						"ctCollectionId = 0")) {
+						"ctCollectionId = 0");
+			PreparedStatement preparedStatement2 = connection.prepareStatement(
+				"select max(structureVersionId) as maxStructureVersionId " +
+					"from DDMStructureVersion where structureId = ?")) {
 
-			preparedStatement.setLong(1, structureId);
-			preparedStatement.setLong(2, structureVersionId);
+			preparedStatement1.setLong(1, structureId);
+			preparedStatement1.setLong(2, structureVersionId);
 
-			try (ResultSet resultSet = preparedStatement.executeQuery()) {
-				if (resultSet.next()) {
-					long parentStructureId = resultSet.getLong(
+			try (ResultSet resultSet1 = preparedStatement1.executeQuery()) {
+				if (resultSet1.next()) {
+					long parentStructureId = resultSet1.getLong(
 						"parentStructureId");
 
 					fullHierarchyDDMForm = _getDDMForm(
 						structureId, structureVersionId);
 
-					if (parentStructureId > 0) {
-						DDMForm parentDDMForm = _getFullHierarchyDDMForm(
-							parentStructureId, structureVersionId);
-
-						List<DDMFormField> ddmFormFields =
-							fullHierarchyDDMForm.getDDMFormFields();
-
-						ddmFormFields.addAll(parentDDMForm.getDDMFormFields());
-					}
-
 					_fullHierarchyDDMForms.put(
 						structureVersionId, fullHierarchyDDMForm);
+
+					if (parentStructureId <= 0) {
+						return fullHierarchyDDMForm;
+					}
+
+					preparedStatement2.setLong(1, parentStructureId);
+
+					try (ResultSet resultSet2 =
+							preparedStatement2.executeQuery()) {
+
+						if (resultSet2.next()) {
+							DDMForm parentDDMForm = _getFullHierarchyDDMForm(
+								parentStructureId,
+								resultSet2.getLong("maxStructureVersionId"));
+
+							List<DDMFormField> ddmFormFields =
+								fullHierarchyDDMForm.getDDMFormFields();
+
+							ddmFormFields.addAll(
+								parentDDMForm.getDDMFormFields());
+						}
+					}
 
 					return fullHierarchyDDMForm;
 				}
@@ -574,7 +581,7 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 		DDMFieldInfo rootDDMFieldInfo = new DDMFieldInfo(
 			StringPool.BLANK, StringPool.BLANK, null);
 
-		Map<String, DDMFieldInfo> ddmFieldInfoMap = LinkedHashMapBuilder.put(
+		Map<String, DDMFieldInfo> ddmFieldInfosMap = LinkedHashMapBuilder.put(
 			StringPool.BLANK, rootDDMFieldInfo
 		).build();
 
@@ -599,7 +606,7 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 			rootDDMFieldInfo, structureVersionId);
 
 		_addDDMFieldAndDDMFieldAttribute(
-			companyId, contentId, ddmFieldInfoMap, ddmFormFieldsMap,
+			companyId, contentId, ddmFieldInfosMap, ddmFormFieldsMap,
 			ddmFormValues.getDDMFormFieldValues(),
 			insertDDMFieldAttributePreparedStatement,
 			insertDDMFieldPreparedStatement, instanceToFieldIdMap, null, 1,
@@ -613,59 +620,42 @@ public class DDMFieldUpgradeProcess extends UpgradeProcess {
 	private List<DDMFormFieldValue> _upgradeDDMFormValuesHierarchy(
 		List<DDMFormFieldValue> ddmFormFieldValues, long contentId) {
 
-		List<DDMFormFieldValue> newDDMFormFieldValues = new ArrayList<>();
+		return TransformUtil.transform(
+			ddmFormFieldValues,
+			ddmFormFieldValue -> {
+				String type = ddmFormFieldValue.getType();
 
-		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
-			String type = null;
+				if (ListUtil.isNotEmpty(
+						ddmFormFieldValue.getNestedDDMFormFieldValues()) &&
+					(type != null) &&
+					!com.liferay.portal.kernel.util.StringUtil.equals(
+						type, "fieldset")) {
 
-			try {
-				type = ddmFormFieldValue.getType();
-			}
-			catch (Exception exception) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Unable to get dynamic data mapping form field value " +
-							"type for content ID " + contentId,
-						exception);
+					DDMFormFieldValue newDDMFormFieldValue =
+						new DDMFormFieldValue() {
+							{
+								setName(
+									ddmFormFieldValue.getName() + "FieldSet");
+							}
+						};
+
+					List<DDMFormFieldValue> nestedDDMFormFieldValues =
+						new ArrayList<>(
+							ddmFormFieldValue.getNestedDDMFormFieldValues());
+
+					ddmFormFieldValue.setNestedDDMFormFields(new ArrayList<>());
+
+					newDDMFormFieldValue.setNestedDDMFormFields(
+						ListUtil.concat(
+							Collections.singletonList(ddmFormFieldValue),
+							_upgradeDDMFormValuesHierarchy(
+								nestedDDMFormFieldValues, contentId)));
+
+					return newDDMFormFieldValue;
 				}
-			}
 
-			if (ListUtil.isNotEmpty(
-					ddmFormFieldValue.getNestedDDMFormFieldValues()) &&
-				(type != null) &&
-				!com.liferay.portal.kernel.util.StringUtil.equals(
-					type, "fieldset")) {
-
-				DDMFormFieldValue newDDMFormFieldValue =
-					new DDMFormFieldValue() {
-						{
-							setInstanceId(
-								com.liferay.portal.kernel.util.StringUtil.
-									randomString());
-							setName(ddmFormFieldValue.getName() + "FieldSet");
-						}
-					};
-
-				List<DDMFormFieldValue> nestedDDMFormFieldValues =
-					new ArrayList<>(
-						ddmFormFieldValue.getNestedDDMFormFieldValues());
-
-				ddmFormFieldValue.setNestedDDMFormFields(new ArrayList<>());
-
-				newDDMFormFieldValue.setNestedDDMFormFields(
-					ListUtil.concat(
-						Collections.singletonList(ddmFormFieldValue),
-						_upgradeDDMFormValuesHierarchy(
-							nestedDDMFormFieldValues, contentId)));
-
-				newDDMFormFieldValues.add(newDDMFormFieldValue);
-			}
-			else {
-				newDDMFormFieldValues.add(ddmFormFieldValue);
-			}
-		}
-
-		return newDDMFormFieldValues;
+				return ddmFormFieldValue;
+			});
 	}
 
 	private static final String _CLASS_NAME_DDL_RECORD_SET =

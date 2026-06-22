@@ -2,6 +2,7 @@ import * as API from 'shared/api';
 import ActivitiesChart from './ActivitiesChartDeprecated';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
+import ClayLink from '@clayui/link';
 import getCN from 'classnames';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
@@ -22,8 +23,20 @@ import {
 } from 'shared/util/date';
 import {Interval, RangeSelectors} from 'shared/types';
 import {sub} from 'shared/util/lang';
-import {useStatefulPagination} from 'shared/hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 import {withSelectedPoint} from 'shared/hoc';
+
+interface IGetActivitiesArgs {
+	channelId: string;
+	contactsEntityId: string;
+	contactsEntityType: EntityTypes;
+	delta: number;
+	endDate: number;
+	groupId: string;
+	page: number;
+	query: string;
+	startDate: number;
+}
 
 const getActivities = ({
 	channelId,
@@ -35,7 +48,7 @@ const getActivities = ({
 	page,
 	query,
 	startDate
-}) =>
+}: IGetActivitiesArgs) =>
 	API.activities
 		.fetchGroup({
 			channelId,
@@ -68,7 +81,7 @@ interface IActivitiesChartTimelineProps {
 	}[];
 	id: string;
 	interval: Interval;
-	onPointSelect: ({index}) => void;
+	onPointSelect: ({index}: {index: number | null}) => void;
 	rangeSelectors: RangeSelectors;
 	selectedPoint?: number;
 	timeZoneId: string;
@@ -98,13 +111,13 @@ const ActivitiesChartTimeline: React.FC<IActivitiesChartTimelineProps> = ({
 		page,
 		query,
 		resetPage
-	} = useStatefulPagination(null);
+	} = useStatefulPagination();
 
 	const getDateRange = (): {
 		endDate: number;
 		startDate: number;
 	} => {
-		if (!hasSelectedPoint) {
+		if (!hasSelectedPoint || selectedPoint === undefined) {
 			return {
 				endDate: getLastDate(history, interval, 'intervalInitDate'),
 				startDate: getFirstDate(history, 'intervalInitDate')
@@ -119,7 +132,7 @@ const ActivitiesChartTimeline: React.FC<IActivitiesChartTimelineProps> = ({
 		};
 	};
 
-	const handleChartSelect = ({index}: {index: number}): void => {
+	const handleChartSelect = ({index}: {index: number | null}): void => {
 		resetPage();
 
 		onPointSelect({index});
@@ -127,7 +140,8 @@ const ActivitiesChartTimeline: React.FC<IActivitiesChartTimelineProps> = ({
 
 	const handleClearSelection = (): void => handleChartSelect({index: null});
 
-	const {intervalInitDate, totalElements = 0} = history[selectedPoint] || {};
+	const {intervalInitDate, totalElements = 0} =
+		(selectedPoint !== undefined && history[selectedPoint]) || {};
 
 	const date = hasSelectedPoint
 		? getDateRangeLabelFromDate(intervalInitDate, interval)
@@ -153,7 +167,7 @@ const ActivitiesChartTimeline: React.FC<IActivitiesChartTimelineProps> = ({
 			{!!history.length && (
 				<div className='selected-info'>
 					<div className='d-flex align-items-baseline'>
-						<h4>{sub(activitiesLabel, [date])}</h4>
+						<div className='h4'>{sub(activitiesLabel, [date])}</div>
 
 						{hasSelectedPoint && (
 							<ClayButton
@@ -201,7 +215,7 @@ const ActivitiesChartTimeline: React.FC<IActivitiesChartTimelineProps> = ({
 										'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources'
 									)}
 
-									<a
+									<ClayLink
 										className='d-block'
 										href={
 											URLConstants.AccountActivitiesDocumentationLink
@@ -212,7 +226,7 @@ const ActivitiesChartTimeline: React.FC<IActivitiesChartTimelineProps> = ({
 										{Liferay.Language.get(
 											'learn-more-about-account-activities'
 										)}
-									</a>
+									</ClayLink>
 								</>
 							}
 							spacer

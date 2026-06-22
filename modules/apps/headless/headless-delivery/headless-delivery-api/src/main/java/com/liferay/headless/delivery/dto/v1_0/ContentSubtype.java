@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,6 +36,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "The display page template's content subtype.",
 	value = "ContentSubtype"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "The display page template's content subtype."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "ContentSubtype")
@@ -50,61 +52,91 @@ public class ContentSubtype implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ContentSubtype.class, json);
 	}
 
-	@Schema(description = "The content subtype's ID.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The content subtype's ID."
+	)
 	public Long getSubtypeId() {
+		if (_subtypeIdSupplier != null) {
+			subtypeId = _subtypeIdSupplier.get();
+
+			_subtypeIdSupplier = null;
+		}
+
 		return subtypeId;
 	}
 
 	public void setSubtypeId(Long subtypeId) {
 		this.subtypeId = subtypeId;
+
+		_subtypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSubtypeId(
 		UnsafeSupplier<Long, Exception> subtypeIdUnsafeSupplier) {
 
-		try {
-			subtypeId = subtypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_subtypeIdSupplier = () -> {
+			try {
+				return subtypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The content subtype's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long subtypeId;
 
-	@Schema(description = "The content subtype's Key.")
+	@JsonIgnore
+	private Supplier<Long> _subtypeIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The content subtype's Key."
+	)
 	public String getSubtypeKey() {
+		if (_subtypeKeySupplier != null) {
+			subtypeKey = _subtypeKeySupplier.get();
+
+			_subtypeKeySupplier = null;
+		}
+
 		return subtypeKey;
 	}
 
 	public void setSubtypeKey(String subtypeKey) {
 		this.subtypeKey = subtypeKey;
+
+		_subtypeKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSubtypeKey(
 		UnsafeSupplier<String, Exception> subtypeKeyUnsafeSupplier) {
 
-		try {
-			subtypeKey = subtypeKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_subtypeKeySupplier = () -> {
+			try {
+				return subtypeKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The content subtype's Key.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String subtypeKey;
+
+	@JsonIgnore
+	private Supplier<String> _subtypeKeySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -133,6 +165,8 @@ public class ContentSubtype implements Serializable {
 
 		sb.append("{");
 
+		Long subtypeId = getSubtypeId();
+
 		if (subtypeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -142,6 +176,8 @@ public class ContentSubtype implements Serializable {
 
 			sb.append(subtypeId);
 		}
+
+		String subtypeKey = getSubtypeKey();
 
 		if (subtypeKey != null) {
 			if (sb.length() > 1) {
@@ -162,8 +198,8 @@ public class ContentSubtype implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ContentSubtype",
 		name = "x-class-name"
 	)
@@ -209,7 +245,10 @@ public class ContentSubtype implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -255,3 +294,4 @@ public class ContentSubtype implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-756418679

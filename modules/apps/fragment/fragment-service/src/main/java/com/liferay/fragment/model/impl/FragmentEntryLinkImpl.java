@@ -10,9 +10,13 @@ import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.cache.CacheField;
 import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.DateUtil;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Date;
@@ -24,10 +28,66 @@ import java.util.Map;
 public class FragmentEntryLinkImpl extends FragmentEntryLinkBaseImpl {
 
 	@Override
+	public FragmentEntry fetchFragmentEntry() {
+		if ((_fragmentEntry == null) &&
+			Validator.isNotNull(getFragmentEntryERC())) {
+
+			Long groupId = ScopeUtil.getItemGroupId(
+				getCompanyId(), getFragmentEntryScopeERC(), getGroupId());
+
+			if (groupId != null) {
+				_fragmentEntry =
+					FragmentEntryLocalServiceUtil.
+						fetchFragmentEntryByExternalReferenceCode(
+							getFragmentEntryERC(), groupId);
+
+				fragmentEntryUpdateEntityCacheBiConsumer.accept(
+					this, _fragmentEntry);
+			}
+		}
+
+		return _fragmentEntry;
+	}
+
+	@Override
+	public JSONObject getConfigurationJSONObject() {
+		return getConfigurationJSONObject(false);
+	}
+
+	@Override
+	public JSONObject getConfigurationJSONObject(boolean strict) {
+		if (_configurationJSONObject == null) {
+			_configurationJSONObject = JSONFactoryUtil.safeCreateJSONObject(
+				getConfiguration(), strict);
+
+			configurationJSONObjectUpdateEntityCacheBiConsumer.accept(
+				this, _configurationJSONObject);
+		}
+
+		return _configurationJSONObject;
+	}
+
+	@Override
+	public JSONObject getEditableValuesJSONObject() {
+		return getEditableValuesJSONObject(false);
+	}
+
+	@Override
+	public JSONObject getEditableValuesJSONObject(boolean strict) {
+		if (_editableValuesJSONObject == null) {
+			_editableValuesJSONObject = JSONFactoryUtil.safeCreateJSONObject(
+				getEditableValues(), strict);
+
+			editableValuesJSONObjectUpdateEntityCacheBiConsumer.accept(
+				this, _editableValuesJSONObject);
+		}
+
+		return _editableValuesJSONObject;
+	}
+
+	@Override
 	public boolean isCacheable() {
-		FragmentEntry fragmentEntry =
-			FragmentEntryLocalServiceUtil.fetchFragmentEntry(
-				getFragmentEntryId());
+		FragmentEntry fragmentEntry = fetchFragmentEntry();
 
 		if (fragmentEntry != null) {
 			return fragmentEntry.isCacheable();
@@ -56,9 +116,11 @@ public class FragmentEntryLinkImpl extends FragmentEntryLinkBaseImpl {
 
 	@Override
 	public boolean isLatestVersion() throws PortalException {
-		FragmentEntry fragmentEntry =
-			FragmentEntryLocalServiceUtil.getFragmentEntry(
-				getFragmentEntryId());
+		FragmentEntry fragmentEntry = fetchFragmentEntry();
+
+		if (fragmentEntry == null) {
+			return false;
+		}
 
 		Date fragmentEntryModifiedDate = fragmentEntry.getModifiedDate();
 
@@ -73,14 +135,8 @@ public class FragmentEntryLinkImpl extends FragmentEntryLinkBaseImpl {
 	}
 
 	@Override
-	public boolean isSystem() throws PortalException {
-		if (getFragmentEntryId() == 0) {
-			return false;
-		}
-
-		FragmentEntry fragmentEntry =
-			FragmentEntryLocalServiceUtil.fetchFragmentEntry(
-				getFragmentEntryId());
+	public boolean isSystem() {
+		FragmentEntry fragmentEntry = fetchFragmentEntry();
 
 		if (fragmentEntry == null) {
 			return false;
@@ -140,9 +196,32 @@ public class FragmentEntryLinkImpl extends FragmentEntryLinkBaseImpl {
 		return false;
 	}
 
+	@Override
+	public void setConfiguration(String configuration) {
+		super.setConfiguration(configuration);
+
+		_configurationJSONObject = null;
+	}
+
+	@Override
+	public void setEditableValues(String editableValues) {
+		super.setEditableValues(editableValues);
+
+		_editableValuesJSONObject = null;
+	}
+
 	private static final Snapshot<FragmentCollectionContributorRegistry>
 		_fragmentCollectionContributorRegistrySnapshot = new Snapshot<>(
 			FragmentEntryLinkImpl.class,
 			FragmentCollectionContributorRegistry.class);
+
+	@CacheField(permanent = true, propagateToInterface = true)
+	private transient JSONObject _configurationJSONObject;
+
+	@CacheField(permanent = true, propagateToInterface = true)
+	private transient JSONObject _editableValuesJSONObject;
+
+	@CacheField(permanent = true, propagateToInterface = true)
+	private transient FragmentEntry _fragmentEntry;
 
 }

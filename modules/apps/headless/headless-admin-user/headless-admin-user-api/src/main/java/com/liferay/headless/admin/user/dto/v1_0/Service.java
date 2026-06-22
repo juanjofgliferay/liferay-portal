@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,6 +38,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @GraphQLName(
 	description = "A list of services the organization provides. This follows the [`Service`](https://www.schema.org/Service) specification.",
 	value = "Service"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "A list of services the organization provides. This follows the [`Service`](https://www.schema.org/Service) specification."
 )
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Service")
@@ -52,16 +54,24 @@ public class Service implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Service.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A list of hours when the organization is open. This follows the [`OpeningHoursSpecification`](https://www.schema.org/OpeningHoursSpecification) specification."
 	)
 	@Valid
 	public HoursAvailable[] getHoursAvailable() {
+		if (_hoursAvailableSupplier != null) {
+			hoursAvailable = _hoursAvailableSupplier.get();
+
+			_hoursAvailableSupplier = null;
+		}
+
 		return hoursAvailable;
 	}
 
 	public void setHoursAvailable(HoursAvailable[] hoursAvailable) {
 		this.hoursAvailable = hoursAvailable;
+
+		_hoursAvailableSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,15 +79,17 @@ public class Service implements Serializable {
 		UnsafeSupplier<HoursAvailable[], Exception>
 			hoursAvailableUnsafeSupplier) {
 
-		try {
-			hoursAvailable = hoursAvailableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_hoursAvailableSupplier = () -> {
+			try {
+				return hoursAvailableUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -86,28 +98,43 @@ public class Service implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected HoursAvailable[] hoursAvailable;
 
-	@Schema(description = "The type of service the organization provides.")
+	@JsonIgnore
+	private Supplier<HoursAvailable[]> _hoursAvailableSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The type of service the organization provides."
+	)
 	public String getServiceType() {
+		if (_serviceTypeSupplier != null) {
+			serviceType = _serviceTypeSupplier.get();
+
+			_serviceTypeSupplier = null;
+		}
+
 		return serviceType;
 	}
 
 	public void setServiceType(String serviceType) {
 		this.serviceType = serviceType;
+
+		_serviceTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setServiceType(
 		UnsafeSupplier<String, Exception> serviceTypeUnsafeSupplier) {
 
-		try {
-			serviceType = serviceTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_serviceTypeSupplier = () -> {
+			try {
+				return serviceTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -115,6 +142,9 @@ public class Service implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String serviceType;
+
+	@JsonIgnore
+	private Supplier<String> _serviceTypeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -143,6 +173,8 @@ public class Service implements Serializable {
 
 		sb.append("{");
 
+		HoursAvailable[] hoursAvailable = getHoursAvailable();
+
 		if (hoursAvailable != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -163,6 +195,8 @@ public class Service implements Serializable {
 			sb.append("]");
 		}
 
+		String serviceType = getServiceType();
+
 		if (serviceType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -182,8 +216,8 @@ public class Service implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.Service",
 		name = "x-class-name"
 	)
@@ -229,7 +263,10 @@ public class Service implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -275,3 +312,4 @@ public class Service implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-692175484

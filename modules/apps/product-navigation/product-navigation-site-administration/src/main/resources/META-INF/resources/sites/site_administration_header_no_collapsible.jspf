@@ -12,7 +12,13 @@
 		<clay:content-col>
 			<c:choose>
 				<c:when test="<%= Validator.isNotNull(siteAdministrationPanelCategoryDisplayContext.getLogoURL()) %>">
-					<div class="aspect-ratio-bg-cover sticker" style="background-image: url(<%= siteAdministrationPanelCategoryDisplayContext.getLogoURL() %>);"></div>
+					<aui:style type="text/css">
+						.site-administration--header-no-collapsible {
+							background-image: url(<%= siteAdministrationPanelCategoryDisplayContext.getLogoURL() %>) !important;
+						}
+					</aui:style>
+
+					<div class="aspect-ratio-bg-cover site-administration--header-no-collapsible sticker"></div>
 				</c:when>
 				<c:otherwise>
 					<clay:sticker
@@ -58,13 +64,30 @@
 			</clay:content-col>
 		</c:if>
 
+		<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-57922") %>'>
+			<clay:content-col
+				cssClass="autofit-col-end"
+			>
+				<react:component
+					module="{SideNavigationColorSchemeButton} from application-list-taglib"
+					props='<%=
+						HashMapBuilder.<String, Object>put(
+							"colorScheme", SessionClicks.get(request, "com_liferay_application_list_taglib_SideNavigationColorScheme", "light")
+						).put(
+							"colorSchemeSessionKey", "com_liferay_application_list_taglib_SideNavigationColorScheme"
+						).build()
+					%>'
+				/>
+			</clay:content-col>
+		</c:if>
+
 		<clay:content-col
 			cssClass="autofit-col-end"
 		>
 			<clay:button
 				aria-label='<%= LanguageUtil.get(request, "close") %>'
 				borderless="<%= true %>"
-				cssClass="lfr-portal-tooltip sidenav-close text-white"
+				cssClass="lfr-portal-tooltip sidenav-close"
 				displayType="secondary"
 				icon="times"
 				monospaced="<%= true %>"

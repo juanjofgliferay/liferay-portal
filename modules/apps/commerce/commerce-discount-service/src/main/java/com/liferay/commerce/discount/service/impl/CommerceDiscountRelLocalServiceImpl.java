@@ -46,6 +46,7 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -146,33 +147,44 @@ public class CommerceDiscountRelLocalServiceImpl
 
 	@Override
 	public CommerceDiscountRel fetchCommerceDiscountRel(
+		long commerceDiscountId, String className, long classPK) {
+
+		return commerceDiscountRelPersistence.fetchByCD_CN_CPK_First(
+			commerceDiscountId,
+			_classNameLocalService.getClassNameId(className), classPK,
+			CommerceDiscountRelCreateDateComparator.getInstance(false));
+	}
+
+	@Override
+	public CommerceDiscountRel fetchCommerceDiscountRel(
 		String className, long classPK) {
 
 		return commerceDiscountRelPersistence.fetchByCN_CPK_First(
 			_classNameLocalService.getClassNameId(className), classPK,
-			new CommerceDiscountRelCreateDateComparator());
+			CommerceDiscountRelCreateDateComparator.getInstance(false));
 	}
 
 	@Override
 	public List<CommerceDiscountRel> getCategoriesByCommerceDiscountId(
 		long commerceDiscountId, String name, int start, int end) {
 
-		return dslQuery(
-			_getGroupByStep(
-				DSLQueryFactoryUtil.selectDistinct(
-					CommerceDiscountRelTable.INSTANCE
-				).from(
-					CommerceDiscountRelTable.INSTANCE
-				).innerJoinON(
-					AssetCategoryTable.INSTANCE,
-					AssetCategoryTable.INSTANCE.categoryId.eq(
-						CommerceDiscountRelTable.INSTANCE.classPK)
-				),
-				AssetCategory.class.getName(), commerceDiscountId, name,
-				AssetCategoryTable.INSTANCE.name
-			).limit(
-				start, end
-			));
+		return _getCommerceDiscountRels(
+			dslQuery(
+				_getGroupByStep(
+					DSLQueryFactoryUtil.selectDistinct(
+						CommerceDiscountRelTable.INSTANCE.commerceDiscountRelId
+					).from(
+						CommerceDiscountRelTable.INSTANCE
+					).innerJoinON(
+						AssetCategoryTable.INSTANCE,
+						AssetCategoryTable.INSTANCE.categoryId.eq(
+							CommerceDiscountRelTable.INSTANCE.classPK)
+					),
+					AssetCategory.class.getName(), commerceDiscountId, name,
+					AssetCategoryTable.INSTANCE.name
+				).limit(
+					start, end
+				)));
 	}
 
 	@Override
@@ -263,22 +275,24 @@ public class CommerceDiscountRelLocalServiceImpl
 		getCommercePricingClassesByCommerceDiscountId(
 			long commerceDiscountId, String title, int start, int end) {
 
-		return dslQuery(
-			_getGroupByStep(
-				DSLQueryFactoryUtil.selectDistinct(
-					CommerceDiscountRelTable.INSTANCE
-				).from(
-					CommerceDiscountRelTable.INSTANCE
-				).innerJoinON(
-					CommercePricingClassTable.INSTANCE,
-					CommercePricingClassTable.INSTANCE.commercePricingClassId.
-						eq(CommerceDiscountRelTable.INSTANCE.classPK)
-				),
-				CommercePricingClass.class.getName(), commerceDiscountId, title,
-				CommercePricingClassTable.INSTANCE.title
-			).limit(
-				start, end
-			));
+		return _getCommerceDiscountRels(
+			dslQuery(
+				_getGroupByStep(
+					DSLQueryFactoryUtil.selectDistinct(
+						CommerceDiscountRelTable.INSTANCE.commerceDiscountRelId
+					).from(
+						CommerceDiscountRelTable.INSTANCE
+					).innerJoinON(
+						CommercePricingClassTable.INSTANCE,
+						CommercePricingClassTable.INSTANCE.
+							commercePricingClassId.eq(
+								CommerceDiscountRelTable.INSTANCE.classPK)
+					),
+					CommercePricingClass.class.getName(), commerceDiscountId,
+					title, CommercePricingClassTable.INSTANCE.title
+				).limit(
+					start, end
+				)));
 	}
 
 	@Override
@@ -305,30 +319,32 @@ public class CommerceDiscountRelLocalServiceImpl
 		long commerceDiscountId, String name, String languageId, int start,
 		int end) {
 
-		return dslQuery(
-			_getGroupByStep(
-				DSLQueryFactoryUtil.selectDistinct(
-					CommerceDiscountRelTable.INSTANCE
-				).from(
-					CommerceDiscountRelTable.INSTANCE
-				).innerJoinON(
-					CPDefinitionTable.INSTANCE,
-					CPDefinitionTable.INSTANCE.CPDefinitionId.eq(
-						CommerceDiscountRelTable.INSTANCE.classPK)
-				).leftJoinOn(
-					CPDefinitionLocalizationTable.INSTANCE,
-					CPDefinitionTable.INSTANCE.CPDefinitionId.eq(
-						CPDefinitionLocalizationTable.INSTANCE.CPDefinitionId
-					).and(
-						CPDefinitionLocalizationTable.INSTANCE.languageId.eq(
-							languageId)
-					)
-				),
-				CPDefinition.class.getName(), commerceDiscountId, name,
-				CPDefinitionLocalizationTable.INSTANCE.name
-			).limit(
-				start, end
-			));
+		return _getCommerceDiscountRels(
+			dslQuery(
+				_getGroupByStep(
+					DSLQueryFactoryUtil.selectDistinct(
+						CommerceDiscountRelTable.INSTANCE.commerceDiscountRelId
+					).from(
+						CommerceDiscountRelTable.INSTANCE
+					).innerJoinON(
+						CPDefinitionTable.INSTANCE,
+						CPDefinitionTable.INSTANCE.CPDefinitionId.eq(
+							CommerceDiscountRelTable.INSTANCE.classPK)
+					).leftJoinOn(
+						CPDefinitionLocalizationTable.INSTANCE,
+						CPDefinitionTable.INSTANCE.CPDefinitionId.eq(
+							CPDefinitionLocalizationTable.INSTANCE.
+								CPDefinitionId
+						).and(
+							CPDefinitionLocalizationTable.INSTANCE.languageId.
+								eq(languageId)
+						)
+					),
+					CPDefinition.class.getName(), commerceDiscountId, name,
+					CPDefinitionLocalizationTable.INSTANCE.name
+				).limit(
+					start, end
+				)));
 	}
 
 	@Override
@@ -362,22 +378,23 @@ public class CommerceDiscountRelLocalServiceImpl
 	public List<CommerceDiscountRel> getCPInstancesByCommerceDiscountId(
 		long commerceDiscountId, String sku, int start, int end) {
 
-		return dslQuery(
-			_getGroupByStep(
-				DSLQueryFactoryUtil.selectDistinct(
-					CommerceDiscountRelTable.INSTANCE
-				).from(
-					CommerceDiscountRelTable.INSTANCE
-				).innerJoinON(
-					CPInstanceTable.INSTANCE,
-					CPInstanceTable.INSTANCE.CPInstanceId.eq(
-						CommerceDiscountRelTable.INSTANCE.classPK)
-				),
-				CPInstance.class.getName(), commerceDiscountId, sku,
-				CPInstanceTable.INSTANCE.sku
-			).limit(
-				start, end
-			));
+		return _getCommerceDiscountRels(
+			dslQuery(
+				_getGroupByStep(
+					DSLQueryFactoryUtil.selectDistinct(
+						CommerceDiscountRelTable.INSTANCE.commerceDiscountRelId
+					).from(
+						CommerceDiscountRelTable.INSTANCE
+					).innerJoinON(
+						CPInstanceTable.INSTANCE,
+						CPInstanceTable.INSTANCE.CPInstanceId.eq(
+							CommerceDiscountRelTable.INSTANCE.classPK)
+					),
+					CPInstance.class.getName(), commerceDiscountId, sku,
+					CPInstanceTable.INSTANCE.sku
+				).limit(
+					start, end
+				)));
 	}
 
 	@Override
@@ -397,6 +414,24 @@ public class CommerceDiscountRelLocalServiceImpl
 				),
 				CPInstance.class.getName(), commerceDiscountId, sku,
 				CPInstanceTable.INSTANCE.sku));
+	}
+
+	private List<CommerceDiscountRel> _getCommerceDiscountRels(
+		List<Long> commerceDiscountRelIds) {
+
+		if (commerceDiscountRelIds.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		return dslQuery(
+			DSLQueryFactoryUtil.select(
+				CommerceDiscountRelTable.INSTANCE
+			).from(
+				CommerceDiscountRelTable.INSTANCE
+			).where(
+				CommerceDiscountRelTable.INSTANCE.commerceDiscountRelId.in(
+					commerceDiscountRelIds.toArray(new Long[0]))
+			));
 	}
 
 	private GroupByStep _getGroupByStep(

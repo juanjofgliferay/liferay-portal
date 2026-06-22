@@ -14,8 +14,8 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,9 +54,9 @@ public class LogoutPostAction extends Action {
 		}
 
 		AuditMessage auditMessage = new AuditMessage(
-			EventTypes.LOGOUT, user.getCompanyId(), user.getUserId(),
-			user.getFullName(), User.class.getName(),
-			String.valueOf(user.getUserId()));
+			user.getCompanyId(), user.getUserId(), user.getFullName(),
+			User.class.getName(), String.valueOf(user.getUserId()),
+			EventTypes.LOGOUT);
 
 		_auditRouter.route(auditMessage);
 	}

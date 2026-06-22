@@ -230,12 +230,30 @@ public class OrganizationServiceWrapper
 	}
 
 	@Override
+	public Organization fetchOrganizationByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _organizationService.fetchOrganizationByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
 	public java.util.List<Organization> getGtOrganizations(
 		long gtOrganizationId, long companyId, long parentOrganizationId,
 		int size) {
 
 		return _organizationService.getGtOrganizations(
 			gtOrganizationId, companyId, parentOrganizationId, size);
+	}
+
+	@Override
+	public Organization getOrAddEmptyOrganization(
+			String externalReferenceCode, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _organizationService.getOrAddEmptyOrganization(
+			externalReferenceCode, name);
 	}
 
 	/**
@@ -253,11 +271,11 @@ public class OrganizationServiceWrapper
 
 	@Override
 	public Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _organizationService.getOrganizationByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -552,3 +570,4 @@ public class OrganizationServiceWrapper
 	private OrganizationService _organizationService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1102244177

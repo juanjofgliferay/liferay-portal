@@ -149,6 +149,8 @@ public interface TrashEntryLocalService
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException;
 
+	public void deleteTrashEntries(long companyId, String className);
+
 	/**
 	 * Deletes the trash entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -432,3 +434,4 @@ public interface TrashEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1404665847

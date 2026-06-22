@@ -90,6 +90,9 @@ public interface NotificationQueueEntryLocalService
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	public void deleteCompanyNotificationQueueEntries(long companyId)
+		throws PortalException;
+
 	public void deleteNotificationQueueEntries(Date sentDate)
 		throws PortalException;
 
@@ -293,3 +296,4 @@ public interface NotificationQueueEntryLocalService
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1498452532

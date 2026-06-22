@@ -15,6 +15,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -23,6 +24,23 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.openapi.OpenAPIContext;
 import com.liferay.portal.vulcan.resource.OpenAPIResource;
 import com.liferay.portal.vulcan.util.UriInfoUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -36,23 +54,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.PathSegment;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -243,7 +244,10 @@ public class HeadlessDiscoveryOpenAPIResourceImpl {
 			_portal.getPortalURL(_httpServletRequest) +
 				_portal.getPathContext() + Portal.PATH_MODULE;
 
-		RuntimeDTO runtimeDTO = _jaxrsServiceRuntime.getRuntimeDTO();
+		JaxrsServiceRuntime jaxrsServiceRuntime =
+			_jaxrsServiceRuntimeSnapshot.get();
+
+		RuntimeDTO runtimeDTO = jaxrsServiceRuntime.getRuntimeDTO();
 
 		for (ApplicationDTO applicationDTO :
 				_getApplicationDTOs(runtimeDTO.applicationDTOs)) {
@@ -431,12 +435,14 @@ public class HeadlessDiscoveryOpenAPIResourceImpl {
 
 		String version = StringUtil.extractFirst(subpath, StringPool.SLASH);
 
-		if (version != null) {
-			Matcher versionMatcher = _versionPattern.matcher(version);
+		if (version == null) {
+			return null;
+		}
 
-			if (versionMatcher.matches()) {
-				return version;
-			}
+		Matcher versionMatcher = _versionPattern.matcher(version);
+
+		if (versionMatcher.matches()) {
+			return version;
 		}
 
 		return null;
@@ -460,6 +466,12 @@ public class HeadlessDiscoveryOpenAPIResourceImpl {
 	private static final Log _log = LogFactoryUtil.getLog(
 		HeadlessDiscoveryOpenAPIResourceImpl.class);
 
+	private static final Map<String, List<String>> _companyIds =
+		new HashMap<>();
+	private static final Snapshot<JaxrsServiceRuntime>
+		_jaxrsServiceRuntimeSnapshot = new Snapshot<>(
+			HeadlessDiscoveryOpenAPIResourceImpl.class,
+			JaxrsServiceRuntime.class);
 	private static final Pattern _versionPattern = Pattern.compile(
 		"v[0-9]+\\.[0-9]+");
 
@@ -468,13 +480,8 @@ public class HeadlessDiscoveryOpenAPIResourceImpl {
 	@Context
 	private Company _company;
 
-	private final Map<String, List<String>> _companyIds = new HashMap<>();
-
 	@Context
 	private HttpServletRequest _httpServletRequest;
-
-	@Reference
-	private JaxrsServiceRuntime _jaxrsServiceRuntime;
 
 	@Reference
 	private OpenAPIResource _openAPIResource;

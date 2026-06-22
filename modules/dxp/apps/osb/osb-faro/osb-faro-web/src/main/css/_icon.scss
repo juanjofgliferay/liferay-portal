@@ -2,7 +2,7 @@
 	font-size: 1rem;
 
 	@each $name, $color in $colors {
-		&.#{$name}-color {
+		&.#{'' + $name}-color {
 			fill: $color;
 		}
 	}
@@ -48,4 +48,60 @@
 		fill: $success;
 		stroke: $successLighten63;
 	}
+}
+
+.custom-structure {
+	color: $cadmin-blue-l1;
+}
+
+.basic-content {
+	color: $cadmin-secondary;
+}
+
+.blog {
+	color: $cadmin-green;
+}
+
+.knowledge-base {
+	color: $cadmin-pink;
+}
+
+.document-default {
+	color: $cadmin-secondary;
+}
+
+.document-compressed {
+	color: $cadmin-secondary;
+}
+
+.document-multimedia {
+	color: $cadmin-red;
+}
+
+.document-table {
+	color: $cadmin-teal-l1;
+}
+
+.document-image {
+	color: $cadmin-red-l1;
+}
+
+.document-presentation {
+	color: $cadmin-orange-l1;
+}
+
+.document-vector {
+	color: $cadmin-purple-l1;
+}
+
+.document-text {
+	color: $cadmin-cyan-l1;
+}
+
+.document-code {
+	color: $cadmin-pink-l1;
+}
+
+.folder {
+	color: $cadmin-gray-600;
 }

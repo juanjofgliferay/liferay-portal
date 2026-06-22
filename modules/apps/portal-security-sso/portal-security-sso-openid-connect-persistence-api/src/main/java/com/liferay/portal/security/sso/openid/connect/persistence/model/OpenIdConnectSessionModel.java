@@ -212,6 +212,21 @@ public interface OpenIdConnectSessionModel
 	public void setIdToken(String idToken);
 
 	/**
+	 * Returns the issuer of this open ID connect session.
+	 *
+	 * @return the issuer of this open ID connect session
+	 */
+	@AutoEscape
+	public String getIssuer();
+
+	/**
+	 * Sets the issuer of this open ID connect session.
+	 *
+	 * @param issuer the issuer of this open ID connect session
+	 */
+	public void setIssuer(String issuer);
+
+	/**
 	 * Returns the refresh token of this open ID connect session.
 	 *
 	 * @return the refresh token of this open ID connect session
@@ -226,6 +241,21 @@ public interface OpenIdConnectSessionModel
 	 */
 	public void setRefreshToken(String refreshToken);
 
+	/**
+	 * Returns the session ID of this open ID connect session.
+	 *
+	 * @return the session ID of this open ID connect session
+	 */
+	@AutoEscape
+	public String getSessionId();
+
+	/**
+	 * Sets the session ID of this open ID connect session.
+	 *
+	 * @param sessionId the session ID of this open ID connect session
+	 */
+	public void setSessionId(String sessionId);
+
 	@Override
 	public OpenIdConnectSession cloneWithOriginalValues();
 
@@ -234,3 +264,4 @@ public interface OpenIdConnectSessionModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1046837874

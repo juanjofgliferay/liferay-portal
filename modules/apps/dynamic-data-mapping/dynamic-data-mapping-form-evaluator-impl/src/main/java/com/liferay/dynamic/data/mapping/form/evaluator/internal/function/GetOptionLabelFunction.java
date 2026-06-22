@@ -15,19 +15,27 @@ import com.liferay.dynamic.data.mapping.expression.GetFieldPropertyResponse;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.LocaleUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * @author Marcos Martins
  */
 public class GetOptionLabelFunction
 	implements DDMExpressionFieldAccessorAware,
-			   DDMExpressionFunction.Function2<String, String, Object>,
+			   DDMExpressionFunction.Function2<String, Object, Object>,
 			   DDMExpressionParameterAccessorAware {
 
 	public static final String NAME = "getOptionLabel";
 
 	@Override
-	public Object apply(String fieldName, String optionName) {
+	public Object apply(String fieldName, Object optionName) {
 		if (_ddmExpressionFieldAccessor == null) {
 			return StringPool.BLANK;
 		}
@@ -38,18 +46,42 @@ public class GetOptionLabelFunction
 		GetFieldPropertyResponse getFieldPropertyResponse =
 			_ddmExpressionFieldAccessor.getFieldProperty(builder.build());
 
-		DDMFormFieldOptions ddmFormFieldOptions =
-			(DDMFormFieldOptions)getFieldPropertyResponse.getValue();
+		DDMFormFieldOptions ddmFormFieldOptions = new DDMFormFieldOptions();
 
-		LocalizedValue localizedValue = ddmFormFieldOptions.getOptionLabels(
-			optionName);
+		if (getFieldPropertyResponse.getValue() instanceof List) {
+			for (KeyValuePair keyValuePair :
+					(List<KeyValuePair>)getFieldPropertyResponse.getValue()) {
 
-		if (_ddmExpressionParameterAccessor.getLocale() != null) {
-			return localizedValue.getString(
-				_ddmExpressionParameterAccessor.getLocale());
+				Locale locale = LocaleUtil.getDefault();
+
+				if (_ddmExpressionParameterAccessor.getLocale() != null) {
+					locale = _ddmExpressionParameterAccessor.getLocale();
+				}
+
+				ddmFormFieldOptions.addOptionLabel(
+					keyValuePair.getKey(), locale, keyValuePair.getValue());
+			}
+		}
+		else {
+			ddmFormFieldOptions =
+				(DDMFormFieldOptions)getFieldPropertyResponse.getValue();
 		}
 
-		return localizedValue.getString(localizedValue.getDefaultLocale());
+		if (!(optionName instanceof JSONArray)) {
+			return _getOptionLabel(
+				ddmFormFieldOptions, String.valueOf(optionName));
+		}
+
+		List<String> optionLabels = new ArrayList<>();
+
+		JSONArray jsonArray = (JSONArray)optionName;
+
+		for (int i = 0; i < jsonArray.length(); i++) {
+			optionLabels.add(
+				_getOptionLabel(ddmFormFieldOptions, jsonArray.getString(i)));
+		}
+
+		return StringUtil.merge(optionLabels, StringPool.COMMA_AND_SPACE);
 	}
 
 	@Override
@@ -69,6 +101,24 @@ public class GetOptionLabelFunction
 		DDMExpressionParameterAccessor ddmExpressionParameterAccessor) {
 
 		_ddmExpressionParameterAccessor = ddmExpressionParameterAccessor;
+	}
+
+	private String _getOptionLabel(
+		DDMFormFieldOptions ddmFormFieldOptions, String optionName) {
+
+		LocalizedValue localizedValue = ddmFormFieldOptions.getOptionLabels(
+			optionName);
+
+		if (localizedValue == null) {
+			return optionName;
+		}
+
+		if (_ddmExpressionParameterAccessor.getLocale() != null) {
+			return localizedValue.getString(
+				_ddmExpressionParameterAccessor.getLocale());
+		}
+
+		return localizedValue.getString(localizedValue.getDefaultLocale());
 	}
 
 	private DDMExpressionFieldAccessor _ddmExpressionFieldAccessor;

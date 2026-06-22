@@ -10,6 +10,7 @@ import com.liferay.document.library.configuration.DLSizeLimitConfigurationProvid
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.configuration.persistence.listener.ConfigurationModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -17,11 +18,11 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,9 +32,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/instance_settings/edit_size_limits"
 	},
 	service = MVCActionCommand.class
@@ -58,17 +59,20 @@ public class EditSizeLimitsMVCActionCommand extends BaseMVCActionCommand {
 				ExtendedObjectClassDefinition.Scope.SYSTEM.getValue())) {
 
 			throw new PortalException(
-				"Invalid scope primary key 0 for " + scope + " scope");
+				"Invalid scope primary key 0 for scope " + scope);
 		}
 
 		try {
 			_updateSizeLimit(actionRequest, scope, scopePK);
 		}
-		catch (ConfigurationModelListenerException
-					configurationModelListenerException) {
+		catch (ConfigurationException configurationException) {
+			Throwable throwable = configurationException.getCause();
 
-			SessionErrors.add(
-				actionRequest, configurationModelListenerException.getClass());
+			if (throwable instanceof ConfigurationModelListenerException) {
+				SessionErrors.add(
+					actionRequest, ConfigurationModelListenerException.class,
+					configurationException);
+			}
 
 			actionResponse.sendRedirect(
 				ParamUtil.getString(actionRequest, "redirect"));

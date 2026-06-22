@@ -17,6 +17,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataHandlerControl;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.kernel.lar.UserIdStrategy;
+import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -26,11 +27,11 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,6 +69,17 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 		Map<String, String[]> parameterMap = new LinkedHashMap<>(
 			portletRequest.getParameterMap());
 
+		// Add before parameter replacement
+
+		if (ArrayUtil.isNotEmpty(
+				GetterUtil.getLongValues(parameterMap.get("layoutIds")))) {
+
+			parameterMap.put(
+				PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE +
+					LayoutAdminPortletKeys.LAYOUT_SET_LAYOUTS,
+				new String[] {"true"});
+		}
+
 		if (ExportImportDateUtil.isRangeFromLastPublishDate(parameterMap)) {
 			_replaceParameterMap(parameterMap);
 		}
@@ -100,6 +112,12 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 			parameterMap.put(
 				PortletDataHandlerKeys.DELETE_PORTLET_DATA,
 				new String[] {Boolean.FALSE.toString()});
+		}
+
+		if (!parameterMap.containsKey(PortletDataHandlerKeys.FAVICON)) {
+			parameterMap.put(
+				PortletDataHandlerKeys.FAVICON,
+				new String[] {Boolean.TRUE.toString()});
 		}
 
 		if (!parameterMap.containsKey(
@@ -242,6 +260,10 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 		parameterMap.put(
 			PortletDataHandlerKeys.DELETIONS,
 			new String[] {String.valueOf(deletionsParameter)});
+
+		parameterMap.put(
+			PortletDataHandlerKeys.FAVICON,
+			new String[] {Boolean.TRUE.toString()});
 
 		boolean ignoreLastPublishDateParameter = true;
 
@@ -465,26 +487,28 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 		PortletDataHandler portletDataHandlerInstance =
 			dataSiteLevelPortlet.getPortletDataHandlerInstance();
 
-		PortletDataHandlerControl[] exportControls =
-			portletDataHandlerInstance.getExportControls();
+		for (PortletDataHandlerControl portletDataHandlerControl :
+				portletDataHandlerInstance.
+					getExportPortletDataHandlerControls()) {
 
-		for (PortletDataHandlerControl exportControl : exportControls) {
-			if (!(exportControl instanceof PortletDataHandlerBoolean)) {
+			if (!(portletDataHandlerControl instanceof
+					PortletDataHandlerBoolean)) {
+
 				continue;
 			}
 
 			PortletDataHandlerBoolean portletDataHandlerBoolean =
-				(PortletDataHandlerBoolean)exportControl;
+				(PortletDataHandlerBoolean)portletDataHandlerControl;
 
-			boolean controlValue = portletDataHandlerBoolean.getDefaultState();
+			boolean defaultState = portletDataHandlerBoolean.getDefaultState();
 
 			if (!portletDataHandlerBoolean.isDisabled()) {
-				controlValue = MapUtil.getBoolean(
-					parameterMap,
-					portletDataHandlerBoolean.getNamespacedControlName(), true);
+				defaultState = MapUtil.getBoolean(
+					parameterMap, portletDataHandlerBoolean.getNamespacedName(),
+					true);
 			}
 
-			if ((portletDataAll || controlValue) &&
+			if ((defaultState || portletDataAll) &&
 				(portletDataHandlerBoolean.getClassName() != null)) {
 
 				String referrerClassName =
@@ -547,25 +571,22 @@ public class ExportImportConfigurationParameterMapFactoryImpl
 			return;
 		}
 
-		String[] parameterStagedModelTypes = parameterMap.get(
-			"stagedModelTypes");
-
-		List<String> parameterStagedModelTypesList = ListUtil.fromArray(
-			parameterStagedModelTypes);
+		List<String> parameterStagedModelTypes = ListUtil.fromArray(
+			parameterMap.get("stagedModelTypes"));
 
 		for (StagedModelType stagedModelType : stagedModelTypes) {
 			String stagedModelTypeString = stagedModelType.toString();
 
-			if (!parameterStagedModelTypesList.contains(
-					stagedModelTypeString)) {
-
-				parameterStagedModelTypesList.add(stagedModelTypeString);
+			if (parameterStagedModelTypes.contains(stagedModelTypeString)) {
+				continue;
 			}
+
+			parameterStagedModelTypes.add(stagedModelTypeString);
 		}
 
 		parameterMap.put(
 			"stagedModelTypes",
-			parameterStagedModelTypesList.toArray(new String[0]));
+			parameterStagedModelTypes.toArray(new String[0]));
 	}
 
 	/**

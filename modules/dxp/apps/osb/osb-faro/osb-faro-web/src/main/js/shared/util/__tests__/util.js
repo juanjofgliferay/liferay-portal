@@ -1,11 +1,13 @@
-import dom from 'metal-dom';
 import {
 	formatStringToLowercase,
 	getAlignPosition,
+	getInitials,
 	getPercentage,
 	getRangeSelectorsFromQuery,
+	getSafeDecodedURIComponent,
 	getSafeDisplayValue,
 	getSafeRangeSelectors,
+	getSafeTouchpoint,
 	isBlank,
 	isEllipisActive,
 	normalizeRangeSelectors,
@@ -13,6 +15,30 @@ import {
 } from '../util';
 
 describe('util', () => {
+	describe('getSafeDecodedURIComponent', () => {
+		it('should decode a URI component', () => {
+			expect(getSafeDecodedURIComponent('test%20test')).toEqual(
+				'test test'
+			);
+		});
+
+		it('should return the original string if decoding fails', () => {
+			expect(getSafeDecodedURIComponent('%E0%A4%A')).toEqual('%E0%A4%A');
+		});
+
+		it('should return an empty string if value is undefined', () => {
+			expect(getSafeDecodedURIComponent(undefined)).toEqual('');
+		});
+
+		it('should return an empty string if value is null', () => {
+			expect(getSafeDecodedURIComponent(null)).toEqual('');
+		});
+
+		it('should return an empty string if value is not a string', () => {
+			expect(getSafeDecodedURIComponent(123)).toEqual('');
+		});
+	});
+
 	describe('formatStringToLowercase', () => {
 		it('should format a string to lowercase', () => {
 			const text = '   THIS IS A NOT LOWERCASE TEXT   ';
@@ -23,42 +49,42 @@ describe('util', () => {
 	});
 
 	describe('getAlignPosition', () => {
-		let source;
-		let target;
-
-		afterEach(function () {
-			dom.exitDocument(source);
-			dom.exitDocument(target);
-		});
-
-		beforeEach(function () {
-			dom.enterDocument(
-				`<div id="source" class="popover clay-popover-top hide analytics-popover no-content">
-				<div class="arrow"></div>
-				<div class="popover-header">popover header</div>
-			</div>`
-			);
-
-			dom.enterDocument(
-				`<a id="target" data-title="https://www.liferay.com/products/" data-touchpoint="https://www.liferay.com/products/" href="/project/35317/pages/overview/https%3A%2F%2Fwww.liferay.com%2Fproducts" class="table-title">
-				<h5 class="mb-1 text-truncate" ref="title">
-					https://www.liferay.com/products/
-				</h5>
-			</a>`
-			);
-
-			source = dom.toElement('#source');
-			target = dom.toElement('#target');
-		});
-
 		it('should return an align position top when it dont have a suggested position', () => {
+			const source = document.createElement('div');
+			const target = document.createElement('div');
+
 			expect(getAlignPosition(source, target)).toEqual('top');
 		});
 
 		it('should return an align position bottom when it have a suggested position', () => {
+			const source = document.createElement('div');
+			const target = document.createElement('div');
+
 			expect(getAlignPosition(source, target, 'bottom')).toEqual(
 				'bottom'
 			);
+		});
+	});
+
+	describe('getInitials', () => {
+		it('should return uppercased initials for a full name', () => {
+			expect(getInitials('Adriano Interaminense')).toEqual('AI');
+		});
+
+		it('should cap the result at three initials', () => {
+			expect(getInitials('Foo Bar Baz Qux')).toEqual('FBB');
+		});
+
+		it('should return an empty string when name is undefined', () => {
+			expect(getInitials(undefined)).toEqual('');
+		});
+
+		it('should return an empty string when name is null', () => {
+			expect(getInitials(null)).toEqual('');
+		});
+
+		it('should return an empty string when no argument is provided', () => {
+			expect(getInitials()).toEqual('');
 		});
 	});
 
@@ -93,6 +119,31 @@ describe('util', () => {
 			'should return $expected if the value is $value',
 			({expected, value}) => {
 				expect(getSafeDisplayValue(value, '-')).toBe(expected);
+			}
+		);
+	});
+
+	describe('getSafeTouchpoint', () => {
+		it.each`
+			value                                                        | expected
+			${'http://localhost:7400/日本語ページ'}                      | ${'http://localhost:7400/%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%83%9A%E3%83%BC%E3%82%B8'}
+			${'http://liferay.com/موقعي العربي الرائع'}                  | ${'http://liferay.com/%D9%85%D9%88%D9%82%D8%B9%D9%8A%20%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%20%D8%A7%D9%84%D8%B1%D8%A7%D8%A6%D8%B9'}
+			${'http://liferay.com/home'}                                 | ${'http://liferay.com/home'}
+			${'http://liferay.com/?js_fast_load=0'}                      | ${'http://liferay.com/?js_fast_load=0'}
+			${'http://liferay.com/home?js_fast_load=0'}                  | ${'http://liferay.com/home?js_fast_load=0'}
+			${'http://liferay.com/my home page?js_fast_load=0'}          | ${'http://liferay.com/my%20home%20page?js_fast_load=0'}
+			${'http://liferay.com/home?js_fast_load=0#section'}          | ${'http://liferay.com/home?js_fast_load=0#section'}
+			${'http://liferay.com/home?日本語ページ=0#section'}          | ${'http://liferay.com/home?%E6%97%A5%E6%9C%AC%E8%AA%9E%E3%83%9A%E3%83%BC%E3%82%B8=0#section'}
+			${'http://liferay.com/home?js_fast_load=0&test=123#section'} | ${'http://liferay.com/home?js_fast_load=0&test=123#section'}
+			${'http://liferay.com'}                                      | ${'http://liferay.com'}
+			${'it-is-a-custom-touchpoint'}                               | ${'it-is-a-custom-touchpoint'}
+			${'Any'}                                                     | ${null}
+			${''}                                                        | ${null}
+			${undefined}                                                 | ${null}
+		`(
+			'should return $expected if the value is $value',
+			({expected, value}) => {
+				expect(getSafeTouchpoint(value)).toBe(expected);
 			}
 		);
 	});

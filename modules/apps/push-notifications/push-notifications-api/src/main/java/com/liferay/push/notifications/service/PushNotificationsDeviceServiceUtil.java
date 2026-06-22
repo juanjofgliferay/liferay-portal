@@ -6,6 +6,7 @@
 package com.liferay.push.notifications.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.push.notifications.model.PushNotificationsDevice;
 
 import java.util.List;
@@ -74,13 +75,13 @@ public class PushNotificationsDeviceServiceUtil {
 	}
 
 	public static PushNotificationsDeviceService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(PushNotificationsDeviceService service) {
-		_service = service;
-	}
-
-	private static volatile PushNotificationsDeviceService _service;
+	private static final Snapshot<PushNotificationsDeviceService>
+		_serviceSnapshot = new Snapshot<>(
+			PushNotificationsDeviceServiceUtil.class,
+			PushNotificationsDeviceService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1246022018

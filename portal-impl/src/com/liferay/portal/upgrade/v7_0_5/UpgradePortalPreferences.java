@@ -6,6 +6,8 @@
 package com.liferay.portal.upgrade.v7_0_5;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -17,7 +19,6 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.Node;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.XPath;
-import com.liferay.portal.util.PortalInstances;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,7 +35,7 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			upgradePortalPreferences(PortletKeys.PREFS_OWNER_ID_DEFAULT);
 
-			for (long companyId : PortalInstances.getCompanyIdsBySQL()) {
+			for (long companyId : PortalInstancePool.getCompanyIds()) {
 				upgradePortalPreferences(companyId);
 			}
 		}
@@ -48,6 +49,11 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				sql);
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection,
+					"update PortalPreferences set preferences = ? where " +
+						"portalPreferencesId = ?");
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			while (resultSet.next()) {
@@ -96,30 +102,26 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 				}
 
 				if (updatedDocument) {
-					try (PreparedStatement preparedStatement2 =
-							connection.prepareStatement(
-								"update PortalPreferences set preferences = " +
-									"? where portalPreferencesId = ?")) {
+					preparedStatement2.setString(1, document.asXML());
+					preparedStatement2.setLong(
+						2, resultSet.getLong("portalPreferencesId"));
 
-						preparedStatement2.setString(1, document.asXML());
-						preparedStatement2.setLong(
-							2, resultSet.getLong("portalPreferencesId"));
-
-						preparedStatement2.executeUpdate();
-					}
+					preparedStatement2.addBatch();
 				}
 			}
+
+			preparedStatement2.executeBatch();
 		}
 	}
 
 	private static final String[] _OBSOLETE_PORTAL_PREFERENCES = {
-		PropsKeys.AUTO_DEPLOY_CUSTOM_PORTLET_XML,
-		PropsKeys.AUTO_DEPLOY_DEPLOY_DIR, "auto.deploy.dest.dir",
-		PropsKeys.AUTO_DEPLOY_ENABLED, PropsKeys.AUTO_DEPLOY_INTERVAL,
-		"auto.deploy.jboss.prefix", PropsKeys.AUTO_DEPLOY_TOMCAT_CONF_DIR,
-		"auto.deploy.tomcat.lib.dir", "auto.deploy.unpack.war",
-		"plugin.notifications.enabled", "plugin.notifications.packages.ignored",
-		"plugin.repositories.trusted", "plugin.repositories.untrusted"
+		"auto.deploy.custom.portlet.xml", PropsKeys.AUTO_DEPLOY_DEPLOY_DIR,
+		"auto.deploy.dest.dir", PropsKeys.AUTO_DEPLOY_ENABLED,
+		PropsKeys.AUTO_DEPLOY_INTERVAL, "auto.deploy.jboss.prefix",
+		PropsKeys.AUTO_DEPLOY_TOMCAT_CONF_DIR, "auto.deploy.tomcat.lib.dir",
+		"auto.deploy.unpack.war", "plugin.notifications.enabled",
+		"plugin.notifications.packages.ignored", "plugin.repositories.trusted",
+		"plugin.repositories.untrusted"
 	};
 
 	private static final Log _log = LogFactoryUtil.getLog(

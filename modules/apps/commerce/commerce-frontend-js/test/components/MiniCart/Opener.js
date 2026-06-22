@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render, wait} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
 import MiniCartContext from '../../../src/main/resources/META-INF/resources/components/mini_cart/MiniCartContext';
@@ -25,8 +25,6 @@ describe('MiniCart Opener', () => {
 
 	afterEach(() => {
 		jest.resetAllMocks();
-
-		cleanup();
 	});
 
 	describe('by default', () => {
@@ -50,7 +48,7 @@ describe('MiniCart Opener', () => {
 				fireEvent.click(ComponentElement);
 			});
 
-			await wait(() => {
+			await waitFor(() => {
 				expect(BASE_CONTEXT_MOCK.openCart).toHaveBeenCalled();
 			});
 		});
@@ -71,7 +69,6 @@ describe('MiniCart Opener', () => {
 						value={{
 							...BASE_CONTEXT_MOCK,
 							cartState: {
-								...BASE_CONTEXT_MOCK.cartState,
 								cartItems: [
 									{
 										id: 1,
@@ -82,6 +79,7 @@ describe('MiniCart Opener', () => {
 										quantity: 5,
 									},
 								],
+								summary: {itemsCount: 2, itemsQuantity: 8},
 							},
 						}}
 					>
@@ -89,9 +87,8 @@ describe('MiniCart Opener', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ComponentElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const ComponentElement =
+					container.querySelector(COMPONENT_SELECTOR);
 
 				expect(ComponentElement.classList.contains('has-badge')).toBe(
 					true
@@ -128,9 +125,8 @@ describe('MiniCart Opener', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ComponentElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const ComponentElement =
+					container.querySelector(COMPONENT_SELECTOR);
 
 				expect(ComponentElement.classList.contains('has-badge')).toBe(
 					true
@@ -140,7 +136,7 @@ describe('MiniCart Opener', () => {
 				expect(asFragment()).toMatchSnapshot();
 			});
 
-			it('if "displayTotalItemsQuantity" is set to true, but there is no summary, renders a badge with the total items count by item type', () => {
+			it('if "displayTotalItemsQuantity" is set to true but no summary is provided, renders no badge', () => {
 				const {container} = render(
 					<MiniCartContext.Provider
 						value={{
@@ -164,14 +160,13 @@ describe('MiniCart Opener', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ComponentElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const ComponentElement =
+					container.querySelector(COMPONENT_SELECTOR);
 
 				expect(ComponentElement.classList.contains('has-badge')).toBe(
-					true
+					false
 				);
-				expect(ComponentElement.dataset.badgeCount).toEqual('2');
+				expect(ComponentElement.dataset.badgeCount).toEqual('0');
 			});
 		});
 	});

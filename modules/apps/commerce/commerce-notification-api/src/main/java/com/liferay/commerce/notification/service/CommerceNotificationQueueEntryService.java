@@ -27,9 +27,11 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
 @AccessControlled
+@Deprecated
 @JSONWebService
 @ProviderType
 @Transactional(
@@ -71,3 +73,4 @@ public interface CommerceNotificationQueueEntryService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1190284375

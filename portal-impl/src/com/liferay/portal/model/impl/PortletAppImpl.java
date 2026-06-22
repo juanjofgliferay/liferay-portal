@@ -15,6 +15,8 @@ import com.liferay.portal.kernel.model.PublicRenderParameter;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.QName;
 
+import jakarta.servlet.ServletContext;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -22,8 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.ServletContext;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.xml.XMLConstants;
 
@@ -217,7 +218,7 @@ public class PortletAppImpl implements PortletApp {
 		new LinkedHashMap<>();
 	private String _defaultNamespace = XMLConstants.NULL_NS_URI;
 	private final Set<EventDefinition> _eventDefinitions =
-		new LinkedHashSet<>();
+		new CopyOnWriteArraySet<>();
 	private final Set<PortletFilter> _portletFilters = new LinkedHashSet<>();
 	private final Map<String, PortletFilter> _portletFiltersMap =
 		new HashMap<>();

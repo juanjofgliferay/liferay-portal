@@ -44,14 +44,15 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 
 	@Override
 	public AssetTag addTag(
-			long groupId, String name, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String name,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		AssetTagsPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.MANAGE_TAG);
 
 		return assetTagLocalService.addTag(
-			getUserId(), groupId, name, serviceContext);
+			externalReferenceCode, getUserId(), groupId, name, serviceContext);
 	}
 
 	@Override
@@ -70,6 +71,30 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 
 			assetTagLocalService.deleteTag(tagId);
 		}
+	}
+
+	@Override
+	public AssetTag fetchAssetTagByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return sanitize(
+			assetTagLocalService.fetchAssetTagByExternalReferenceCode(
+				externalReferenceCode, groupId));
+	}
+
+	@Override
+	public AssetTag fetchTag(long groupId, String name) throws PortalException {
+		return sanitize(assetTagLocalService.fetchTag(groupId, name));
+	}
+
+	@Override
+	public AssetTag getAssetTagByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return sanitize(
+			assetTagLocalService.getAssetTagByExternalReferenceCode(
+				externalReferenceCode, groupId));
 	}
 
 	@Override
@@ -124,6 +149,11 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 	@Override
 	public AssetTag getTag(long tagId) throws PortalException {
 		return sanitize(assetTagLocalService.getTag(tagId));
+	}
+
+	@Override
+	public AssetTag getTag(long groupId, String name) throws PortalException {
+		return sanitize(assetTagLocalService.getTag(groupId, name));
 	}
 
 	@Override
@@ -270,7 +300,8 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 
 	@Override
 	public AssetTag updateTag(
-			long tagId, String name, ServiceContext serviceContext)
+			String externalReferenceCode, long tagId, String name,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		AssetTag tag = assetTagLocalService.getTag(tagId);
@@ -279,7 +310,7 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 			getPermissionChecker(), tag.getGroupId(), ActionKeys.MANAGE_TAG);
 
 		return assetTagLocalService.updateTag(
-			getUserId(), tagId, name, serviceContext);
+			externalReferenceCode, getUserId(), tagId, name, serviceContext);
 	}
 
 	protected AssetTag sanitize(AssetTag tag) {

@@ -7,12 +7,12 @@ package com.liferay.commerce.internal.search.spi.model.permission;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceAccountActionKeys;
-import com.liferay.commerce.context.CommerceContextThreadLocal;
-import com.liferay.commerce.context.CommerceGroupThreadLocal;
 import com.liferay.commerce.internal.util.AccountEntryUtil;
 import com.liferay.commerce.product.constants.CommerceChannelAccountEntryRelConstants;
 import com.liferay.commerce.product.model.CommerceChannelAccountEntryRel;
 import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelService;
+import com.liferay.commerce.util.CommerceContextThreadLocal;
+import com.liferay.commerce.util.CommerceGroupThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -23,7 +23,8 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,8 @@ public class AccountEntrySearchPermissionFilterContributor
 		}
 
 		try {
+			_addCommerceChannelIdsFilter(booleanFilter, userId);
+
 			if (_accountEntryModelResourcePermission.contains(
 					permissionChecker, 0,
 					CommerceAccountActionKeys.
@@ -96,6 +99,37 @@ public class AccountEntrySearchPermissionFilterContributor
 		}
 		catch (PortalException portalException) {
 			_log.error(portalException);
+		}
+	}
+
+	private void _addCommerceChannelIdsFilter(
+			BooleanFilter booleanFilter, long userId)
+		throws PortalException {
+
+		long commerceChannelId = AccountEntryUtil.getCommerceChannelId(
+			CommerceContextThreadLocal.get(), CommerceGroupThreadLocal.get());
+
+		int count =
+			_commerceChannelAccountEntryRelService.
+				getCommerceChannelAccountEntryRelsCount(
+					commerceChannelId, null,
+					CommerceChannelAccountEntryRelConstants.TYPE_ELIGIBILITY);
+
+		if ((commerceChannelId > 0) && (count > 0)) {
+			TermsFilter accountUserIdsTermsFilter = new TermsFilter(
+				"accountUserIds");
+
+			accountUserIdsTermsFilter.addValue(String.valueOf(userId));
+
+			booleanFilter.add(
+				accountUserIdsTermsFilter, BooleanClauseOccur.MUST);
+
+			TermsFilter termsFilter = new TermsFilter("commerceChannelIds");
+
+			termsFilter.addValues(
+				ArrayUtil.toStringArray(new long[] {commerceChannelId}));
+
+			booleanFilter.add(termsFilter, BooleanClauseOccur.MUST);
 		}
 	}
 

@@ -111,6 +111,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>BLUEPRINTS_ADDED_ELEMENT_INPUT_FIELD_SELECT_BUTTON</td>
+	<td>//div[contains(@id,'querySXPElement')][./ul[contains(.,'${key_elementName}')]]//li[contains(@class,'list-group-item')][.//label[contains(.,'${key_fieldLabel}')]]//button[contains(.,"Select")]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>BLUEPRINTS_ADDED_ELEMENT_NTH_ELEMENT</td>
 	<td>xpath=(//div[contains(@id,'querySXPElement')])[${key_index}]</td>
 	<td></td>
@@ -122,22 +127,22 @@
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADDED_ELEMENTS_EMPTY</td>
-	<td>//div[contains(@class,'selected-sxp-elements-empty-text')]</td>
+	<td>//span[@data-testid='selected-sxp-elements-empty-text']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADMIN_ENTRY_CELL</td>
-	<td>//div[contains(@class,'dnd-tr')][.//*[normalize-space(text())='${key_entryTitle}']]//div[contains(@class,'dnd-td')][${key_cellPosition}]</td>
+	<td>//tr[.//*[normalize-space(text())='${key_entryTitle}']]//td[${key_cellPosition}]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADMIN_ENTRY_CHECKBOX</td>
-	<td>//div[contains(@class,'dnd-tr')][.//*[normalize-space(text())='${key_entryTitle}']]//input[@type='checkbox']</td>
+	<td>//tr[.//*[normalize-space(text())='${key_entryTitle}']]//input[@type='checkbox']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADMIN_ENTRY_DESCRIPTION</td>
-	<td>//div[contains(@class,'dnd-tr')][.//*[normalize-space(text())='${key_entryTitle}']]//div[contains(@class,'dnd-td')][3]</td>
+	<td>//tr[.//*[normalize-space(text())='${key_entryTitle}']]//td[3]</td>
 	<td></td>
 </tr>
 <tr>
@@ -147,7 +152,7 @@
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADMIN_ENTRY_ROW_NUMBER</td>
-	<td>//div[contains(@class,'dnd-tbody')]//div[contains(@class,'dnd-tr')][${key_rowNumber}]</td>
+	<td>//tbody//tr[${key_rowNumber}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -157,12 +162,12 @@
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADMIN_ENTRY_VERTICAL_ELLIPSIS</td>
-	<td>//*[contains(@class,'dnd-tr') and contains(.,'${key_entryTitle}')]//*[*[name()='svg'][contains(@class,'icon-ellipsis')]]</td>
+	<td>//tr[contains(.,'${key_entryTitle}')]//*[*[name()='svg'][contains(@class,'icon-ellipsis')]]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>BLUEPRINTS_ADMIN_FIELD</td>
-	<td>//div[contains(@class,'dnd-tr')]//div[contains(@class,'dnd-th') and contains(.,'${key_fieldName}')]</td>
+	<td>//tr//th[contains(.,'${key_fieldName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -382,7 +387,7 @@
 </tr>
 <tr>
 	<td>BLUEPRINTS_SEARCHABLE_ASSET_TYPE_REMOVE_SELECTED</td>
-	<td>//div[contains(@class,'searchable-types')]//tr[.//p[contains(@class,'table-list-title') and contains(.,'${key_assetType}')]]//button[@aria-label='Delete']</td>
+	<td>//div[contains(@class,'searchable-types')]//li[contains(@class,'list-group-item') and contains(.,'${key_assetType}')]//button[@aria-label='Delete']</td>
 	<td></td>
 </tr>
 <tr>
@@ -397,7 +402,7 @@
 </tr>
 <tr>
 	<td>BLUEPRINTS_SEARCHABLE_ASSET_TYPE_SELECTED</td>
-	<td>//div[contains(@class,'searchable-types')]//p[contains(@class,'table-list-title') and contains(.,'${key_assetType}')]</td>
+	<td>//div[contains(@class,'searchable-types')]//li[contains(@class,'list-group-item') and contains(.,'${key_assetType}')]</td>
 	<td></td>
 </tr>
 <tr>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import React, {useMemo} from 'react';
+import React, {useEffect, useMemo} from 'react';
 
 import Filter from '../../shared/components/filter/Filter.es';
 import {useFilterName} from '../../shared/components/filter/hooks/useFilterName.es';
@@ -26,9 +26,10 @@ export default function VelocityUnitFilter({
 		withoutRouteParams: false,
 		...options,
 	};
-	const velocityUnits = useMemo(() => getVelocityUnits(timeRange), [
-		timeRange,
-	]);
+	const velocityUnits = useMemo(
+		() => getVelocityUnits(timeRange),
+		[timeRange]
+	);
 
 	const {items, selectedItems} = useFilterStatic({
 		filterKey,
@@ -42,9 +43,15 @@ export default function VelocityUnitFilter({
 		[items]
 	);
 
-	if (defaultItem && options.withSelectionTitle && !selectedItems.length) {
-		selectedItems[0] = defaultItem;
-	}
+	useEffect(() => {
+		if (
+			defaultItem &&
+			options.withSelectionTitle &&
+			!selectedItems.length
+		) {
+			selectedItems[0] = defaultItem;
+		}
+	}, [defaultItem, options.withSelectionTitle, selectedItems]);
 
 	const filterName = useFilterName(
 		options.multiple,

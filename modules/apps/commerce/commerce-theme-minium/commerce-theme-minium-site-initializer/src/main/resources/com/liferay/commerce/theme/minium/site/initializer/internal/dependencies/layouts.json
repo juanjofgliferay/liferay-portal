@@ -127,7 +127,6 @@
 							"cpContentListRendererKey": "list-default",
 							"dataSource": "assetCategoriesAndTagsDataSource",
 							"grouped--cpTypeListEntryRendererKey": "list-entry-default",
-							"paginationDelta": 5,
 							"renderSelection": "custom",
 							"selectionStyle": "dataSource",
 							"simple--cpTypeListEntryRendererKey": "list-entry-default",
@@ -142,7 +141,6 @@
 							"cpContentListRendererKey": "list-default",
 							"dataSource": "csDiagramEntryDataSource",
 							"grouped--cpTypeListEntryRendererKey": "list-entry-default",
-							"paginationDelta": 5,
 							"renderSelection": "custom",
 							"selectionStyle": "dataSource",
 							"simple--cpTypeListEntryRendererKey": "list-entry-default",
@@ -245,6 +243,19 @@
 				"layoutColumnId": "column-1",
 				"layoutColumnPos": 0,
 				"portletName": "com_liferay_commerce_order_content_web_internal_portlet_CommerceOrderContentPortlet"
+			}
+		],
+		"privateLayout": false
+	},
+	{
+		"icon": "icon_orders.png",
+		"layoutTemplateId": "1_column",
+		"name": "Returns",
+		"portlets": [
+			{
+				"layoutColumnId": "column-1",
+				"layoutColumnPos": 0,
+				"portletName": "com_liferay_commerce_order_content_web_internal_portlet_CommerceReturnContentPortlet"
 			}
 		],
 		"privateLayout": false

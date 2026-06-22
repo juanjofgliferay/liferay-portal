@@ -5,11 +5,9 @@
 
 package com.liferay.portal.workflow.metrics.internal.sla.processor;
 
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
-import com.liferay.portal.search.internal.document.DocumentBuilderImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.workflow.metrics.internal.sla.calendar.DefaultWorkflowMetricsSLACalendar;
 import com.liferay.portal.workflow.metrics.model.WorkflowMetricsSLADefinitionVersion;
@@ -575,7 +573,7 @@ public class WorkflowMetricsSLAProcessorTest {
 	}
 
 	private Document _createDocument(Map<String, Object> values) {
-		DocumentBuilder documentBuilder = new DocumentBuilderImpl();
+		DocumentBuilder documentBuilder = new DocumentBuilder();
 
 		for (Map.Entry<String, Object> entry : values.entrySet()) {
 			documentBuilder.setValue(entry.getKey(), entry.getValue());
@@ -662,14 +660,11 @@ public class WorkflowMetricsSLAProcessorTest {
 		WorkflowMetricsSLAProcessor workflowMetricsSLAProcessor =
 			new WorkflowMetricsSLAProcessor();
 
-		ReflectionTestUtil.setFieldValue(
-			workflowMetricsSLAProcessor, "_workflowMetricsSLACalendarRegistry",
-			_mockWorkflowMetricsSLACalendarRegistry());
-
 		WorkflowMetricsSLAInstanceResult workflowMetricsSLAInstanceResult =
 			workflowMetricsSLAProcessor.process(
 				completionLocalDateTime, createLocalDateTime, documents, 0,
 				nowLocalDateTime, startNodeId,
+				_mockWorkflowMetricsSLACalendarRegistry(),
 				workflowMetricsSLADefinitionVersion,
 				lastWorkflowMetricsSLAInstanceResult);
 

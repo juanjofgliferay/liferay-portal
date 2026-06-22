@@ -113,12 +113,8 @@ public class NotificationQueueEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		NotificationQueueEntry newNotificationQueueEntry = _persistence.create(
-			pk);
-
-		newNotificationQueueEntry.setMvccVersion(RandomTestUtil.nextLong());
+		NotificationQueueEntry newNotificationQueueEntry =
+			addNotificationQueueEntry();
 
 		newNotificationQueueEntry.setCompanyId(RandomTestUtil.nextLong());
 
@@ -208,6 +204,13 @@ public class NotificationQueueEntryPersistenceTest {
 		Assert.assertEquals(
 			existingNotificationQueueEntry.getStatus(),
 			newNotificationQueueEntry.getStatus());
+	}
+
+	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
 	}
 
 	@Test
@@ -512,8 +515,6 @@ public class NotificationQueueEntryPersistenceTest {
 
 		NotificationQueueEntry notificationQueueEntry = _persistence.create(pk);
 
-		notificationQueueEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		notificationQueueEntry.setCompanyId(RandomTestUtil.nextLong());
 
 		notificationQueueEntry.setUserId(RandomTestUtil.nextLong());
@@ -555,3 +556,4 @@ public class NotificationQueueEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2139472783

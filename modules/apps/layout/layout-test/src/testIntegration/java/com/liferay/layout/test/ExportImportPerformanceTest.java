@@ -31,13 +31,13 @@ import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
-import com.liferay.layout.helper.LayoutCopyHelper;
+import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.io.StreamUtil;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
@@ -51,6 +51,7 @@ import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.test.performance.PerformanceTimer;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -73,7 +74,6 @@ import com.liferay.sites.kernel.util.Sites;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.io.Serializable;
 
 import java.nio.file.Files;
@@ -180,7 +180,7 @@ public class ExportImportPerformanceTest {
 
 	@Test
 	public void testExportGroupToLAR() throws Exception {
-		try (Closeable closeable = _startTimer()) {
+		try (Closeable closeable = new PerformanceTimer(_logFilePath, 1000)) {
 			Map<String, Serializable> exportLayoutSettingsMap =
 				_exportImportConfigurationSettingsMapFactory.
 					buildExportLayoutSettingsMap(
@@ -217,7 +217,7 @@ public class ExportImportPerformanceTest {
 		File file = _exportImportLocalService.exportLayoutsAsFile(
 			_exportImportConfiguration);
 
-		try (Closeable closeable = _startTimer()) {
+		try (Closeable closeable = new PerformanceTimer(_logFilePath, 1000)) {
 			Map<String, Serializable> importLayoutSettingsMap =
 				_exportImportConfigurationSettingsMapFactory.
 					buildImportLayoutSettingsMap(
@@ -238,7 +238,7 @@ public class ExportImportPerformanceTest {
 
 	@Test
 	public void testInitialStagingPublication() throws Exception {
-		try (Closeable closeable = _startTimer()) {
+		try (Closeable closeable = new PerformanceTimer(_logFilePath, 10000)) {
 			_stagingLocalService.enableLocalStaging(
 				TestPropsValues.getUserId(), _group, false, false,
 				_serviceContext);
@@ -256,6 +256,17 @@ public class ExportImportPerformanceTest {
 			LayoutPrototype layoutPrototype = LayoutTestUtil.addLayoutPrototype(
 				RandomTestUtil.randomString());
 
+			LayoutPageTemplateEntry layoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					getFirstLayoutPageTemplateEntry(
+						layoutPrototype.getLayoutPrototypeId());
+
+			layoutPageTemplateEntry.setGroupId(_group.getGroupId());
+
+			layoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					updateLayoutPageTemplateEntry(layoutPageTemplateEntry);
+
 			Layout layoutPrototypeLayout = layoutPrototype.getLayout();
 
 			layoutPrototypeLayout.setType(layout.getType());
@@ -263,10 +274,13 @@ public class ExportImportPerformanceTest {
 			layoutPrototypeLayout = _layoutLocalService.updateLayout(
 				layoutPrototypeLayout);
 
-			_layoutCopyHelper.copyLayoutContent(layout, layoutPrototypeLayout);
+			_layoutLocalService.copyLayoutContent(
+				layout, layoutPrototypeLayout);
 
-			layout.setLayoutPrototypeUuid(layoutPrototype.getUuid());
-			layout.setLayoutPrototypeLinkEnabled(true);
+			layout.setPortletLayoutPageTemplateEntryERC(
+				layoutPageTemplateEntry.getExternalReferenceCode());
+
+			layout.setPortletLayoutPageTemplateEntryLinkEnabled(true);
 
 			_layoutLocalService.updateLayout(layout);
 		}
@@ -275,7 +289,7 @@ public class ExportImportPerformanceTest {
 			_group, _layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
 			true);
 
-		try (Closeable closeable = _startTimer()) {
+		try (Closeable closeable = new PerformanceTimer(_logFilePath, 1000)) {
 			MergeLayoutPrototypesThreadLocal.clearMergeComplete();
 
 			_sites.mergeLayoutSetPrototypeLayouts(
@@ -288,7 +302,7 @@ public class ExportImportPerformanceTest {
 		_stagingLocalService.enableLocalStaging(
 			TestPropsValues.getUserId(), _group, false, false, _serviceContext);
 
-		try (Closeable closeable = _startTimer()) {
+		try (Closeable closeable = new PerformanceTimer(_logFilePath, 1000)) {
 			Group stagingGroup = _group.getStagingGroup();
 
 			Map<String, Serializable> stagingSettingsMap =
@@ -316,7 +330,7 @@ public class ExportImportPerformanceTest {
 		}
 	}
 
-	private static void _writeToLogFile(String... contents) throws IOException {
+	private static void _writeToLogFile(String... contents) throws Exception {
 		Files.write(
 			_logFilePath, Arrays.asList(contents), StandardOpenOption.APPEND,
 			StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -339,11 +353,11 @@ public class ExportImportPerformanceTest {
 					"FEATURED_CONTENT-highlights-circle");
 
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				fragmentEntry.getFragmentEntryId(), defaultSegmentsExperienceId,
-				draftLayout.getPlid(), fragmentEntry.getCss(),
-				fragmentEntry.getHtml(), fragmentEntry.getJs(),
-				fragmentEntry.getConfiguration(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), null,
+				fragmentEntry.getExternalReferenceCode(), null,
+				defaultSegmentsExperienceId, draftLayout.getPlid(),
+				fragmentEntry.getCss(), fragmentEntry.getHtml(),
+				fragmentEntry.getJs(), fragmentEntry.getConfiguration(),
 				StringUtil.replace(
 					_TMPL_FRAGMENT_EDITABLE_VALUES, "${", "}",
 					HashMapBuilder.put(
@@ -390,8 +404,8 @@ public class ExportImportPerformanceTest {
 				PortletIdCodec.encode(JournalPortletKeys.JOURNAL, instanceId));
 
 			_fragmentEntryLinkLocalService.addFragmentEntryLink(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0, 0,
-				defaultSegmentsExperienceId, draftLayout.getPlid(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(), null,
+				null, null, defaultSegmentsExperienceId, draftLayout.getPlid(),
 				StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
 				StringPool.BLANK,
 				StringUtil.replace(
@@ -407,11 +421,11 @@ public class ExportImportPerformanceTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), draftLayout.getPlid(),
-				defaultSegmentsExperienceId,
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				draftLayout.getPlid(), defaultSegmentsExperienceId,
 				_generateContentLayoutStructureJSONObject(draftLayout));
 
-		_layoutCopyHelper.copyLayoutContent(draftLayout, layout);
+		_layoutLocalService.copyLayoutContent(draftLayout, layout);
 	}
 
 	private JournalArticle _addJournalArticle() throws Exception {
@@ -438,14 +452,14 @@ public class ExportImportPerformanceTest {
 	private void _addLayouts() throws Exception {
 		for (int i = 0; i < _layoutsCount; i++) {
 			Layout layout = _layoutLocalService.addLayout(
-				TestPropsValues.getUserId(), _group.getGroupId(), false, 0, 0,
-				0,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				0, 0, 0,
 				HashMapBuilder.put(
 					LocaleUtil.US, "Layout_" + i
 				).build(),
 				new HashMap<>(), new HashMap<>(), new HashMap<>(),
 				new HashMap<>(), _layoutType, StringPool.BLANK, false, false,
-				new HashMap<>(), 0, _serviceContext);
+				new HashMap<>(), null, _serviceContext);
 
 			if (Objects.equals(_layoutType, LayoutConstants.TYPE_CONTENT)) {
 				_addFragmentEntryLinks(layout);
@@ -506,23 +520,6 @@ public class ExportImportPerformanceTest {
 		}
 
 		return layoutStructure.toString();
-	}
-
-	private Closeable _startTimer() {
-		Thread thread = Thread.currentThread();
-
-		StackTraceElement stackTraceElement = thread.getStackTrace()[2];
-
-		String invokerName = StringBundler.concat(
-			stackTraceElement.getClassName(), StringPool.POUND,
-			stackTraceElement.getMethodName());
-
-		long startTime = System.currentTimeMillis();
-
-		return () -> _writeToLogFile(
-			StringBundler.concat(
-				invokerName, " used ", System.currentTimeMillis() - startTime,
-				"ms"));
 	}
 
 	private void _updateLayoutPortletSetup(Layout layout, String portletId)
@@ -601,13 +598,14 @@ public class ExportImportPerformanceTest {
 	@Inject
 	private JournalArticleLocalService _journalArticleLocalService;
 
-	@Inject
-	private LayoutCopyHelper _layoutCopyHelper;
-
 	private long[] _layoutIds;
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
+
+	@Inject
+	private LayoutPageTemplateEntryLocalService
+		_layoutPageTemplateEntryLocalService;
 
 	@Inject
 	private LayoutPageTemplateStructureLocalService

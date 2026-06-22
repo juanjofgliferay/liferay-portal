@@ -5,7 +5,6 @@
 
 package com.liferay.portal.upgrade.v7_1_x;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -24,54 +23,60 @@ public class UpgradeAnnouncementsPortletPreferences extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
-				StringBundler.concat(
-					"select companyId, preferences from PortletPreferences ",
-					"where portletId = '", _PORTLET_ID, "' AND ownerType = ",
-					PortletKeys.PREFS_OWNER_TYPE_COMPANY));
+				"select companyId, preferences from PortletPreferences where " +
+					"portletId = ? and ownerType = ?");
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
-				StringBundler.concat(
-					"select portletPreferencesId, preferences from ",
-					"PortletPreferences where companyId = ? AND portletId = ? ",
-					"AND ownerType = ?"));
+				"select portletPreferencesId, preferences from " +
+					"PortletPreferences where companyId = ? and portletId = " +
+						"? and ownerType = ?");
 			PreparedStatement preparedStatement3 =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,
 					"update PortletPreferences set preferences = ? where " +
-						"portletPreferencesId = ?");
-			ResultSet resultSet1 = preparedStatement1.executeQuery()) {
+						"portletPreferencesId = ?")) {
 
-			while (resultSet1.next()) {
-				String preferences = resultSet1.getString("preferences");
+			preparedStatement1.setString(1, _PORTLET_ID);
+			preparedStatement1.setInt(2, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
 
-				if (preferences.equals(PortletConstants.DEFAULT_PREFERENCES)) {
-					continue;
-				}
+			try (ResultSet resultSet1 = preparedStatement1.executeQuery()) {
+				while (resultSet1.next()) {
+					String preferences = resultSet1.getString("preferences");
 
-				long companyId = resultSet1.getLong("companyId");
+					if (preferences.equals(
+							PortletConstants.DEFAULT_PREFERENCES)) {
 
-				preparedStatement2.setLong(1, companyId);
-
-				preparedStatement2.setString(2, _PORTLET_ID);
-				preparedStatement2.setInt(
-					3, PortletKeys.PREFS_OWNER_TYPE_LAYOUT);
-
-				try (ResultSet resultSet2 = preparedStatement2.executeQuery()) {
-					while (resultSet2.next()) {
-						String preferences2 = resultSet2.getString(
-							"preferences");
-
-						if (preferences2.equals(
-								PortletConstants.DEFAULT_PREFERENCES)) {
-
-							preparedStatement3.setString(1, preferences);
-							preparedStatement3.setLong(
-								2, resultSet2.getLong("portletPreferencesId"));
-
-							preparedStatement3.addBatch();
-						}
+						continue;
 					}
 
-					preparedStatement3.executeBatch();
+					long companyId = resultSet1.getLong("companyId");
+
+					preparedStatement2.setLong(1, companyId);
+
+					preparedStatement2.setString(2, _PORTLET_ID);
+					preparedStatement2.setInt(
+						3, PortletKeys.PREFS_OWNER_TYPE_LAYOUT);
+
+					try (ResultSet resultSet2 =
+							preparedStatement2.executeQuery()) {
+
+						while (resultSet2.next()) {
+							String preferences2 = resultSet2.getString(
+								"preferences");
+
+							if (preferences2.equals(
+									PortletConstants.DEFAULT_PREFERENCES)) {
+
+								preparedStatement3.setString(1, preferences);
+								preparedStatement3.setLong(
+									2,
+									resultSet2.getLong("portletPreferencesId"));
+
+								preparedStatement3.addBatch();
+							}
+						}
+
+						preparedStatement3.executeBatch();
+					}
 				}
 			}
 		}

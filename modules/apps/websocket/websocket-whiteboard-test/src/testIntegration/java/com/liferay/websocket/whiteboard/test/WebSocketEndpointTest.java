@@ -7,6 +7,7 @@ package com.liferay.websocket.whiteboard.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.websocket.whiteboard.test.encode.client.EncodeWebSocketClient;
 import com.liferay.websocket.whiteboard.test.encode.data.Example;
@@ -16,6 +17,12 @@ import com.liferay.websocket.whiteboard.test.encode.endpoint.EncodeWebSocketEndp
 import com.liferay.websocket.whiteboard.test.simple.client.BinaryWebSocketClient;
 import com.liferay.websocket.whiteboard.test.simple.client.TextWebSocketClient;
 import com.liferay.websocket.whiteboard.test.simple.endpoint.SimpleWebSocketEndpoint;
+
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.Encoder;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.WebSocketContainer;
 
 import java.net.URI;
 
@@ -28,12 +35,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-
-import javax.websocket.ContainerProvider;
-import javax.websocket.Decoder;
-import javax.websocket.Encoder;
-import javax.websocket.Endpoint;
-import javax.websocket.WebSocketContainer;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -112,7 +113,9 @@ public class WebSocketEndpointTest {
 		BinaryWebSocketClient binaryWebSocketClient = new BinaryWebSocketClient(
 			synchronousQueue);
 
-		URI uri = new URI("ws://localhost:8080/o/websocket/test");
+		URI uri = new URI(
+			"ws://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/websocket/test");
 
 		webSocketContainer.connectToServer(binaryWebSocketClient, uri);
 
@@ -134,7 +137,9 @@ public class WebSocketEndpointTest {
 		TextWebSocketClient textWebSocketClient = new TextWebSocketClient(
 			synchronousQueue);
 
-		URI uri = new URI("ws://localhost:8080/o/websocket/test");
+		URI uri = new URI(
+			"ws://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/websocket/test");
 
 		webSocketContainer.connectToServer(textWebSocketClient, uri);
 
@@ -153,7 +158,9 @@ public class WebSocketEndpointTest {
 		EncodeWebSocketClient encodeWebSocketClient = new EncodeWebSocketClient(
 			synchronousQueue);
 
-		URI uri = new URI("ws://localhost:8080/o/websocket/decoder");
+		URI uri = new URI(
+			"ws://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/websocket/decoder");
 
 		webSocketContainer.connectToServer(encodeWebSocketClient, uri);
 

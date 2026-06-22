@@ -1,6 +1,7 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
@@ -166,7 +167,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Notifications.viewBadgeCount(notificationCount = 1);
@@ -182,6 +183,8 @@ definition {
 	@description = "This is a test for LPS-136789. It checks that a blog with a layout reference can be published."
 	@priority = 3
 	test CanPublishBlogWithLayoutReference {
+		property portal.acceptance = "false";
+
 		var portalURL = PropsUtil.get("portal.url");
 
 		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
@@ -323,7 +326,7 @@ definition {
 			site = "false",
 			siteURLKey = "site-name-staging");
 
-		Panel.expandPanel(panel = "Configuration");
+		Blogs.expandPanel(panel = "Friendly URL");
 
 		BlogsEntry.editCustomURL(customURL = "");
 
@@ -594,7 +597,7 @@ definition {
 		BlogsEntry.viewNoEntryAsGuestPG(entryTitle = "Blogs Entry Title");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Navigator.gotoStagedSitePage(
@@ -631,6 +634,7 @@ definition {
 	@refactordone
 	test CanPublishScheduledEntry {
 		property custom.properties = "company.default.time.zone=America/Los_Angeles";
+		property portal.acceptance = "false";
 
 		JSONBlog.addEntry(
 			displayDate = "true",
@@ -1128,6 +1132,8 @@ definition {
 			videoShortcutTitle = "Test YouTube Video",
 			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
 
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name-staging");
+
 		DMNavigator.openToEditEntryInSite(
 			dmDocumentTitle = "Test YouTube Video",
 			groupName = "Site Name (Staging)",
@@ -1257,6 +1263,8 @@ definition {
 	@description = "This test covers LPS-154411. It ensures that a small image with a custom friendlyURL added in the Blog content field can be rendered properly on a site after its friendlyURL is edited."
 	@priority = 3
 	test CanViewSmallImageAfterFriendlyURLIsUpdated {
+		property portal.acceptance = "false";
+
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Image Description",
 			dmDocumentTitle = "Document_1.jpg",
@@ -1323,6 +1331,12 @@ definition {
 	@description = "This is a use case for LPS-160639. Verify the blog entry can be published via portlet to Live when adding an entry after selecting blog page as the scope."
 	@priority = 3
 	test PublishBlogWithScopeViaPortlet {
+		property portal.acceptance = "false";
+
+		task ("Enable Scope Configuration") {
+			Portlet.enableScopeConfiguration();
+		}
+
 		task ("Given: Select page as the Blog portlet scope and add a blog entry") {
 			Navigator.gotoStagedSitePage(
 				pageName = "Staging Blogs Page",

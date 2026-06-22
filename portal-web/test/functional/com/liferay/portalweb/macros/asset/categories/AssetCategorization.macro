@@ -48,6 +48,8 @@ definition {
 
 		LexiconEntry.gotoAdd();
 
+		IFrame.selectCategoryFrame();
+
 		PortletEntry.inputName(name = ${categoryName});
 
 		IFrame.selectTopFrame();
@@ -87,9 +89,7 @@ definition {
 
 	@summary = "Default summary"
 	macro gotoSelectCategory() {
-		IFrame.selectCategoryFrame();
-
-		Portlet.expandTree();
+		AssertVisible(locator1 = "Modal#BODY");
 	}
 
 	@summary = "Default summary"
@@ -161,6 +161,11 @@ definition {
 				key_text = "Done",
 				locator1 = "Modal#MODAL_FOOTER_BUTTON");
 		}
+		else if (IsElementPresent(key_text = "Select", locator1 = "Modal#MODAL_FOOTER_BUTTON")) {
+			Click(
+				key_text = "Select",
+				locator1 = "Modal#MODAL_FOOTER_BUTTON");
+		}
 	}
 
 	@summary = "Default summary"
@@ -227,6 +232,30 @@ definition {
 			value1 = ${tagName});
 	}
 
+	@summary = "Select tags"
+	macro selectTags(tagNameList = null) {
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		for (var tagName : list ${tagNameList}) {
+			LexiconTable.checkTableCheckbox(tableEntry = ${tagName});
+		}
+
+		SelectFrame(value1 = "relative=top");
+
+		Click(
+			key_text = "Select",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro viewBlogsNoVocabularyField(vocabularyName = null) {
+		Blogs.expandPanel(panel = "Categorization");
+
+		AssertElementNotPresent(
+			key_vocabularyName = ${vocabularyName},
+			locator1 = "AssetCategorization#CATEGORIES_FIELD");
+	}
+
 	@summary = "Default summary"
 	macro viewCategory(categoryName = null) {
 		AssertTextEquals(
@@ -249,9 +278,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro viewNoTag() {
-		var tagName = StringUtil.lowerCase(${tagName});
-
+	macro viewNoTag(tagName = null) {
 		AssertElementNotPresent(
 			key_tagName = ${tagName},
 			locator1 = "AssetCategorization#TAG",
@@ -268,9 +295,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro viewTag() {
-		var tagName = StringUtil.lowerCase(${tagName});
-
+	macro viewTag(tagName = null) {
 		AssertTextEquals(
 			key_tagName = ${tagName},
 			locator1 = "AssetCategorization#TAG",

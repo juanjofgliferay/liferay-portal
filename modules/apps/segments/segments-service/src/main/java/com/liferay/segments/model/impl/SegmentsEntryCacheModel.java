@@ -76,6 +76,8 @@ public class SegmentsEntryCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", segmentsEntryId=");
 		sb.append(segmentsEntryId);
 		sb.append(", groupId=");
@@ -102,8 +104,6 @@ public class SegmentsEntryCacheModel
 		sb.append(criteria);
 		sb.append(", source=");
 		sb.append(source);
-		sb.append(", type=");
-		sb.append(type);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append("}");
@@ -123,6 +123,13 @@ public class SegmentsEntryCacheModel
 		}
 		else {
 			segmentsEntryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			segmentsEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			segmentsEntryImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		segmentsEntryImpl.setSegmentsEntryId(segmentsEntryId);
@@ -188,13 +195,6 @@ public class SegmentsEntryCacheModel
 			segmentsEntryImpl.setSource(source);
 		}
 
-		if (type == null) {
-			segmentsEntryImpl.setType("");
-		}
-		else {
-			segmentsEntryImpl.setType(type);
-		}
-
 		if (lastPublishDate == Long.MIN_VALUE) {
 			segmentsEntryImpl.setLastPublishDate(null);
 		}
@@ -215,6 +215,7 @@ public class SegmentsEntryCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		segmentsEntryId = objectInput.readLong();
 
@@ -233,7 +234,6 @@ public class SegmentsEntryCacheModel
 		active = objectInput.readBoolean();
 		criteria = (String)objectInput.readObject();
 		source = objectInput.readUTF();
-		type = objectInput.readUTF();
 		lastPublishDate = objectInput.readLong();
 	}
 
@@ -248,6 +248,13 @@ public class SegmentsEntryCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(segmentsEntryId);
@@ -305,19 +312,13 @@ public class SegmentsEntryCacheModel
 			objectOutput.writeUTF(source);
 		}
 
-		if (type == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(type);
-		}
-
 		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long segmentsEntryId;
 	public long groupId;
 	public long companyId;
@@ -331,7 +332,7 @@ public class SegmentsEntryCacheModel
 	public boolean active;
 	public String criteria;
 	public String source;
-	public String type;
 	public long lastPublishDate;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:395340247

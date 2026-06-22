@@ -133,6 +133,14 @@ public class DLAppHelperLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List
+		<com.liferay.document.library.kernel.model.DLFileShortcut>
+			getGroupFileShortcuts(long groupId) {
+
+		return _dlAppHelperLocalService.getGroupFileShortcuts(groupId);
+	}
+
+	@Override
 	public java.util.List<com.liferay.portal.kernel.repository.model.FileEntry>
 		getNoAssetFileEntries() {
 
@@ -412,3 +420,4 @@ public class DLAppHelperLocalServiceWrapper
 	private DLAppHelperLocalService _dlAppHelperLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-822462814

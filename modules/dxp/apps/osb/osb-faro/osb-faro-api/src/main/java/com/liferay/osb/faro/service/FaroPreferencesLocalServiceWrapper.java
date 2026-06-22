@@ -342,6 +342,14 @@ public class FaroPreferencesLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.osb.faro.model.FaroPreferences saveGlobalPreferences(
+			String preferences)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _faroPreferencesLocalService.saveGlobalPreferences(preferences);
+	}
+
+	@Override
 	public com.liferay.osb.faro.model.FaroPreferences savePreferences(
 			long userId, long groupId, long ownerId, String preferences)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -388,3 +396,4 @@ public class FaroPreferencesLocalServiceWrapper
 	private FaroPreferencesLocalService _faroPreferencesLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1714061713

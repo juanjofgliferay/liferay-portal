@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,65 +48,98 @@ public class Collapse implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Collapse.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getField() {
+		if (_fieldSupplier != null) {
+			field = _fieldSupplier.get();
+
+			_fieldSupplier = null;
+		}
+
 		return field;
 	}
 
 	public void setField(String field) {
 		this.field = field;
+
+		_fieldSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setField(
 		UnsafeSupplier<String, Exception> fieldUnsafeSupplier) {
 
-		try {
-			field = fieldUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldSupplier = () -> {
+			try {
+				return fieldUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String field;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _fieldSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public InnerHit[] getInnerHits() {
+		if (_innerHitsSupplier != null) {
+			innerHits = _innerHitsSupplier.get();
+
+			_innerHitsSupplier = null;
+		}
+
 		return innerHits;
 	}
 
 	public void setInnerHits(InnerHit[] innerHits) {
 		this.innerHits = innerHits;
+
+		_innerHitsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInnerHits(
 		UnsafeSupplier<InnerHit[], Exception> innerHitsUnsafeSupplier) {
 
-		try {
-			innerHits = innerHitsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_innerHitsSupplier = () -> {
+			try {
+				return innerHitsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected InnerHit[] innerHits;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<InnerHit[]> _innerHitsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getMaxConcurrentGroupRequests() {
+		if (_maxConcurrentGroupRequestsSupplier != null) {
+			maxConcurrentGroupRequests =
+				_maxConcurrentGroupRequestsSupplier.get();
+
+			_maxConcurrentGroupRequestsSupplier = null;
+		}
+
 		return maxConcurrentGroupRequests;
 	}
 
@@ -115,6 +147,8 @@ public class Collapse implements Serializable {
 		Integer maxConcurrentGroupRequests) {
 
 		this.maxConcurrentGroupRequests = maxConcurrentGroupRequests;
+
+		_maxConcurrentGroupRequestsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -122,21 +156,25 @@ public class Collapse implements Serializable {
 		UnsafeSupplier<Integer, Exception>
 			maxConcurrentGroupRequestsUnsafeSupplier) {
 
-		try {
-			maxConcurrentGroupRequests =
-				maxConcurrentGroupRequestsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_maxConcurrentGroupRequestsSupplier = () -> {
+			try {
+				return maxConcurrentGroupRequestsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer maxConcurrentGroupRequests;
+
+	@JsonIgnore
+	private Supplier<Integer> _maxConcurrentGroupRequestsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -165,6 +203,8 @@ public class Collapse implements Serializable {
 
 		sb.append("{");
 
+		String field = getField();
+
 		if (field != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -178,6 +218,8 @@ public class Collapse implements Serializable {
 
 			sb.append("\"");
 		}
+
+		InnerHit[] innerHits = getInnerHits();
 
 		if (innerHits != null) {
 			if (sb.length() > 1) {
@@ -199,6 +241,8 @@ public class Collapse implements Serializable {
 			sb.append("]");
 		}
 
+		Integer maxConcurrentGroupRequests = getMaxConcurrentGroupRequests();
+
 		if (maxConcurrentGroupRequests != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -214,8 +258,8 @@ public class Collapse implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.Collapse",
 		name = "x-class-name"
 	)
@@ -261,7 +305,10 @@ public class Collapse implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -307,3 +354,4 @@ public class Collapse implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:123548453

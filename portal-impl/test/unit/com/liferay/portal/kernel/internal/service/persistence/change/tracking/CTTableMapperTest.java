@@ -350,7 +350,7 @@ public class CTTableMapperTest {
 	}
 
 	@Test
-	public void testBooleanParamSetter() throws SQLException {
+	public void testBooleanParamSetter() throws Exception {
 		ParamSetter booleanParamSetter = ReflectionTestUtil.getFieldValue(
 			_ctTableMapper, "_booleanParamSetter");
 
@@ -2568,7 +2568,7 @@ public class CTTableMapperTest {
 	}
 
 	private class MockBasePersistence<T extends BaseModel<T>>
-		extends BasePersistenceImpl<T> {
+		extends BasePersistenceImpl<T, NoSuchModelException> {
 
 		@Override
 		public T findByPrimaryKey(Serializable primaryKey)

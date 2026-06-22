@@ -1,0 +1,26 @@
+@import 'atlas-variables';
+
+.lfr-cmp__state-selector {
+	&--small {
+		.label:not(.label-item) {
+			height: 16px;
+			margin: 0;
+			min-height: unset;
+			padding: 4px;
+		}
+	}
+
+	&.disabled {
+		border-color: $light;
+		cursor: not-allowed;
+		opacity: 0.4;
+	}
+
+	.label:not(.label-item) {
+		margin: 0;
+	}
+
+	&:hover {
+		opacity: 0.8;
+	}
+}

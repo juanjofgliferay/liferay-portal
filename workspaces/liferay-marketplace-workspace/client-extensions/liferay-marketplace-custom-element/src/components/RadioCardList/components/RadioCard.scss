@@ -1,5 +1,6 @@
 .radio-card {
 	border-radius: 10px !important;
+	cursor: pointer;
 
 	.radio-card-label {
 		background-color: #e6ebf5;
@@ -20,5 +21,13 @@
 		background-color: #e6edfb !important;
 		border: solid #6a8fea 2px !important;
 		box-shadow: 0 6.25px 20px rgba(11, 95, 255, 0.1);
+	}
+
+	h5 {
+		color: var(--neutral-08, #54555f);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		width: 380px;
 	}
 }

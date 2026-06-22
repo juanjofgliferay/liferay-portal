@@ -18,11 +18,14 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +36,8 @@ public class ObjectFieldSettingUtil {
 
 	public static List<com.liferay.object.model.ObjectFieldSetting>
 		toObjectFieldSettings(
-			long listTypeDefinitionId, ObjectField objectField,
+			GroupLocalService groupLocalService, long listTypeDefinitionId,
+			ObjectField objectField,
 			ObjectFieldSettingLocalService objectFieldSettingLocalService,
 			ObjectFilterLocalService objectFilterLocalService) {
 
@@ -41,7 +45,7 @@ public class ObjectFieldSettingUtil {
 			TransformUtil.transformToList(
 				objectField.getObjectFieldSettings(),
 				objectFieldSetting -> _toObjectFieldSetting(
-					listTypeDefinitionId, objectFieldSetting,
+					groupLocalService, listTypeDefinitionId, objectFieldSetting,
 					objectFieldSettingLocalService, objectFilterLocalService));
 
 		List<String> objectFieldSettingNames = ListUtil.toList(
@@ -74,7 +78,7 @@ public class ObjectFieldSettingUtil {
 
 	private static com.liferay.object.model.ObjectFieldSetting
 			_toObjectFieldSetting(
-				long listTypeDefinitionId,
+				GroupLocalService groupLocalService, long listTypeDefinitionId,
 				ObjectFieldSetting objectFieldSetting,
 				ObjectFieldSettingLocalService objectFieldSettingLocalService,
 				ObjectFilterLocalService objectFilterLocalService)
@@ -89,15 +93,37 @@ public class ObjectFieldSettingUtil {
 		if (serviceBuilderObjectFieldSetting.compareName(
 				ObjectFieldSettingConstants.NAME_STATE_FLOW)) {
 
+			ObjectStateFlow objectStateFlow = null;
+
+			if (objectFieldSetting.getValue() instanceof ObjectStateFlow) {
+				objectStateFlow =
+					(ObjectStateFlow)objectFieldSetting.getValue();
+			}
+			else {
+				objectStateFlow = ObjectMapperUtil.readValue(
+					ObjectStateFlow.class, objectFieldSetting.getValue());
+			}
+
 			serviceBuilderObjectFieldSetting.setObjectStateFlow(
 				ObjectStateFlowUtil.toObjectStateFlow(
-					listTypeDefinitionId,
-					ObjectMapperUtil.readValue(
-						ObjectStateFlow.class, objectFieldSetting.getValue())));
+					listTypeDefinitionId, objectStateFlow));
 		}
 
 		serviceBuilderObjectFieldSetting.setValue(
 			String.valueOf(objectFieldSetting.getValue()));
+
+		if (serviceBuilderObjectFieldSetting.compareName(
+				ObjectFieldSettingConstants.NAME_STORAGE_DEPOT_GROUP)) {
+
+			Group group = groupLocalService.fetchGroupByExternalReferenceCode(
+				String.valueOf(objectFieldSetting.getValue()),
+				serviceBuilderObjectFieldSetting.getCompanyId());
+
+			if (group != null) {
+				serviceBuilderObjectFieldSetting.setValue(
+					String.valueOf(group.getGroupId()));
+			}
+		}
 
 		if (serviceBuilderObjectFieldSetting.compareName(
 				ObjectFieldSettingConstants.NAME_FILTERS)) {
@@ -111,12 +137,15 @@ public class ObjectFieldSettingUtil {
 					(JSONArray)objectFieldSetting.getValue(),
 					jsonObject -> jsonObject.toMap());
 			}
+			else if (objectFieldSetting.getValue() instanceof List<?>) {
+				values = (List<Object>)objectFieldSetting.getValue();
+			}
 			else if (objectFieldSetting.getValue() instanceof Object[]) {
 				values = ListUtil.fromArray(
 					(Object[])objectFieldSetting.getValue());
 			}
 			else {
-				values = (List<Object>)objectFieldSetting.getValue();
+				values = Collections.emptyList();
 			}
 
 			for (Object value : values) {

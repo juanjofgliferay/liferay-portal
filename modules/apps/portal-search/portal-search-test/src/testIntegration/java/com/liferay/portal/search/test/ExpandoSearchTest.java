@@ -16,6 +16,7 @@ import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
 import com.liferay.expando.test.util.ExpandoTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserConstants;
@@ -40,7 +41,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -424,13 +425,8 @@ public class ExpandoSearchTest {
 	protected List<String> getExpandoColumnValues(Hits hits) {
 		List<Document> documents = hits.toList();
 
-		List<String> values = new ArrayList<>(documents.size());
-
-		for (Document document : documents) {
-			values.add(getExpandoColumnValue(document));
-		}
-
-		return values;
+		return TransformUtil.transform(
+			documents, document -> getExpandoColumnValue(document));
 	}
 
 	protected ServiceContext getServiceContext(
@@ -457,22 +453,16 @@ public class ExpandoSearchTest {
 	}
 
 	@Inject
-	private static ClassNameLocalService _classNameLocalService;
+	private ClassNameLocalService _classNameLocalService;
 
 	@Inject
-	private static ExpandoColumnLocalService _expandoColumnLocalService;
-
-	@Inject
-	private static ExpandoTableLocalService _expandoTableLocalService;
-
-	@Inject
-	private static IndexerRegistry _indexerRegistry;
-
-	@Inject
-	private static UserLocalService _userLocalService;
+	private ExpandoColumnLocalService _expandoColumnLocalService;
 
 	@DeleteAfterTestRun
 	private final List<ExpandoColumn> _expandoColumns = new ArrayList<>();
+
+	@Inject
+	private ExpandoTableLocalService _expandoTableLocalService;
 
 	@DeleteAfterTestRun
 	private final List<ExpandoTable> _expandoTables = new ArrayList<>();
@@ -481,6 +471,12 @@ public class ExpandoSearchTest {
 	private final List<FileEntry> _fileEntries = new ArrayList<>();
 
 	private Indexer<User> _indexer;
+
+	@Inject
+	private IndexerRegistry _indexerRegistry;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 	@DeleteAfterTestRun
 	private final List<User> _users = new ArrayList<>();

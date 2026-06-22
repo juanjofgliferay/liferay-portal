@@ -115,13 +115,14 @@ public class FragmentEntryVersionPersistenceTest {
 
 		FragmentEntryVersion newFragmentEntryVersion = _persistence.create(pk);
 
-		newFragmentEntryVersion.setMvccVersion(RandomTestUtil.nextLong());
-
 		newFragmentEntryVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
 		newFragmentEntryVersion.setVersion(RandomTestUtil.nextInt());
 
 		newFragmentEntryVersion.setUuid(RandomTestUtil.randomString());
+
+		newFragmentEntryVersion.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newFragmentEntryVersion.setFragmentEntryId(RandomTestUtil.nextLong());
 
@@ -159,6 +160,8 @@ public class FragmentEntryVersionPersistenceTest {
 
 		newFragmentEntryVersion.setPreviewFileEntryId(
 			RandomTestUtil.nextLong());
+
+		newFragmentEntryVersion.setMarketplace(RandomTestUtil.randomBoolean());
 
 		newFragmentEntryVersion.setReadOnly(RandomTestUtil.randomBoolean());
 
@@ -199,6 +202,9 @@ public class FragmentEntryVersionPersistenceTest {
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getUuid(),
 			newFragmentEntryVersion.getUuid());
+		Assert.assertEquals(
+			existingFragmentEntryVersion.getExternalReferenceCode(),
+			newFragmentEntryVersion.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getFragmentEntryId(),
 			newFragmentEntryVersion.getFragmentEntryId());
@@ -252,6 +258,9 @@ public class FragmentEntryVersionPersistenceTest {
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getPreviewFileEntryId(),
 			newFragmentEntryVersion.getPreviewFileEntryId());
+		Assert.assertEquals(
+			existingFragmentEntryVersion.isMarketplace(),
+			newFragmentEntryVersion.isMarketplace());
 		Assert.assertEquals(
 			existingFragmentEntryVersion.isReadOnly(),
 			newFragmentEntryVersion.isReadOnly());
@@ -561,13 +570,14 @@ public class FragmentEntryVersionPersistenceTest {
 		return OrderByComparatorFactoryUtil.create(
 			"FragmentEntryVersion", "mvccVersion", true, "ctCollectionId", true,
 			"fragmentEntryVersionId", true, "version", true, "uuid", true,
-			"fragmentEntryId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "fragmentCollectionId", true,
-			"fragmentEntryKey", true, "name", true, "cacheable", true, "icon",
-			true, "previewFileEntryId", true, "readOnly", true, "type", true,
-			"lastPublishDate", true, "status", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true);
+			"externalReferenceCode", true, "fragmentEntryId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "fragmentCollectionId",
+			true, "fragmentEntryKey", true, "name", true, "cacheable", true,
+			"icon", true, "previewFileEntryId", true, "marketplace", true,
+			"readOnly", true, "type", true, "lastPublishDate", true, "status",
+			true, "statusByUserId", true, "statusByUserName", true,
+			"statusDate", true);
 	}
 
 	@Test
@@ -883,13 +893,14 @@ public class FragmentEntryVersionPersistenceTest {
 
 		FragmentEntryVersion fragmentEntryVersion = _persistence.create(pk);
 
-		fragmentEntryVersion.setMvccVersion(RandomTestUtil.nextLong());
-
 		fragmentEntryVersion.setCtCollectionId(RandomTestUtil.nextLong());
 
 		fragmentEntryVersion.setVersion(RandomTestUtil.nextInt());
 
 		fragmentEntryVersion.setUuid(RandomTestUtil.randomString());
+
+		fragmentEntryVersion.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		fragmentEntryVersion.setFragmentEntryId(RandomTestUtil.nextLong());
 
@@ -925,6 +936,8 @@ public class FragmentEntryVersionPersistenceTest {
 
 		fragmentEntryVersion.setPreviewFileEntryId(RandomTestUtil.nextLong());
 
+		fragmentEntryVersion.setMarketplace(RandomTestUtil.randomBoolean());
+
 		fragmentEntryVersion.setReadOnly(RandomTestUtil.randomBoolean());
 
 		fragmentEntryVersion.setType(RandomTestUtil.nextInt());
@@ -952,3 +965,4 @@ public class FragmentEntryVersionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-121370568

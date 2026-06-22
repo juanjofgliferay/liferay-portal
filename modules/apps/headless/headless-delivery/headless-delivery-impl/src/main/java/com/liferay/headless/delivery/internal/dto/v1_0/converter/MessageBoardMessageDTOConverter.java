@@ -11,7 +11,6 @@ import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.link.service.AssetLinkLocalService;
 import com.liferay.headless.delivery.dto.v1_0.MessageBoardMessage;
 import com.liferay.headless.delivery.dto.v1_0.util.CreatorUtil;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.AggregateRatingUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.CreatorStatisticsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.RelatedContentUtil;
@@ -27,6 +26,7 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
@@ -63,50 +63,14 @@ public class MessageBoardMessageDTOConverter
 
 		return new MessageBoardMessage() {
 			{
-				actions = dtoConverterContext.getActions();
-				aggregateRating = AggregateRatingUtil.toAggregateRating(
-					_ratingsStatsLocalService.fetchStats(
-						MBMessage.class.getName(), mbMessage.getMessageId()));
-				anonymous = mbMessage.isAnonymous();
-				articleBody = mbMessage.getBody();
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					MBMessage.class.getName(), mbMessage.getMessageId(),
-					mbMessage.getCompanyId(), dtoConverterContext.getLocale());
-				dateCreated = mbMessage.getCreateDate();
-				dateModified = mbMessage.getModifiedDate();
-				encodingFormat = mbMessage.getFormat();
-				externalReferenceCode = mbMessage.getExternalReferenceCode();
-				friendlyUrlPath = mbMessage.getUrlSubject();
-				hasCompanyMx = company.hasCompanyMx(user.getEmailAddress());
-				headline = mbMessage.getSubject();
-				id = mbMessage.getMessageId();
-				keywords = ListUtil.toArray(
-					_assetTagLocalService.getTags(
-						MBMessage.class.getName(), mbMessage.getMessageId()),
-					AssetTag.NAME_ACCESSOR);
-				messageBoardSectionId = mbMessage.getCategoryId();
-				messageBoardThreadId = mbMessage.getThreadId();
-				modified = mbMessage.getMvccVersion() > 1;
-				numberOfMessageBoardAttachments =
-					mbMessage.getAttachmentsFileEntriesCount();
-				numberOfMessageBoardMessages =
-					_mbMessageLocalService.getChildMessagesCount(
-						mbMessage.getMessageId(),
-						WorkflowConstants.STATUS_APPROVED);
-				relatedContents = RelatedContentUtil.toRelatedContents(
-					_assetEntryLocalService, _assetLinkLocalService,
-					dtoConverterContext.getDTOConverterRegistry(),
-					mbMessage.getModelClassName(), mbMessage.getMessageId(),
-					dtoConverterContext.getLocale());
-				showAsAnswer = mbMessage.isAnswer();
-				siteId = mbMessage.getGroupId();
-				status = WorkflowConstants.getStatusLabel(
-					mbMessage.getStatus());
-				subscribed = _subscriptionLocalService.isSubscribed(
-					mbMessage.getCompanyId(), dtoConverterContext.getUserId(),
-					MBThread.class.getName(), mbMessage.getThreadId());
-
+				setActions(dtoConverterContext::getActions);
+				setAggregateRating(
+					() -> AggregateRatingUtil.toAggregateRating(
+						_ratingsStatsLocalService.fetchStats(
+							MBMessage.class.getName(),
+							mbMessage.getMessageId())));
+				setAnonymous(mbMessage::isAnonymous);
+				setArticleBody(mbMessage::getBody);
 				setCreator(
 					() -> {
 						if (mbMessage.isAnonymous()) {
@@ -130,6 +94,36 @@ public class MessageBoardMessageDTOConverter
 							_mbStatsUserLocalService,
 							dtoConverterContext.getUriInfo(), user);
 					});
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
+						MBMessage.class.getName(), mbMessage.getMessageId(),
+						mbMessage.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setDateCreated(mbMessage::getCreateDate);
+				setDateModified(mbMessage::getModifiedDate);
+				setEncodingFormat(mbMessage::getFormat);
+				setExternalReferenceCode(mbMessage::getExternalReferenceCode);
+				setFriendlyUrlPath(mbMessage::getUrlSubject);
+				setHasCompanyMx(
+					() -> company.hasCompanyMx(user.getEmailAddress()));
+				setHeadline(mbMessage::getSubject);
+				setId(mbMessage::getMessageId);
+				setKeywords(
+					() -> ListUtil.toArray(
+						_assetTagLocalService.getTags(
+							MBMessage.class.getName(),
+							mbMessage.getMessageId()),
+						AssetTag.NAME_ACCESSOR));
+				setMessageBoardSectionId(mbMessage::getCategoryId);
+				setMessageBoardThreadId(mbMessage::getThreadId);
+				setModified(() -> mbMessage.getMvccVersion() > 1);
+				setNumberOfMessageBoardAttachments(
+					mbMessage::getAttachmentsFileEntriesCount);
+				setNumberOfMessageBoardMessages(
+					() -> _mbMessageLocalService.getChildMessagesCount(
+						mbMessage.getMessageId(),
+						WorkflowConstants.STATUS_APPROVED));
 				setParentMessageBoardMessageId(
 					() -> {
 						if (mbMessage.getParentMessageId() == 0L) {
@@ -138,6 +132,22 @@ public class MessageBoardMessageDTOConverter
 
 						return mbMessage.getParentMessageId();
 					});
+				setRelatedContents(
+					() -> RelatedContentUtil.toRelatedContents(
+						_assetEntryLocalService, _assetLinkLocalService,
+						dtoConverterContext.getDTOConverterRegistry(),
+						mbMessage.getModelClassName(), mbMessage.getMessageId(),
+						dtoConverterContext.getLocale()));
+				setShowAsAnswer(mbMessage::isAnswer);
+				setSiteId(mbMessage::getGroupId);
+				setStatus(
+					() -> WorkflowConstants.getStatusLabel(
+						mbMessage.getStatus()));
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						mbMessage.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						MBThread.class.getName(), mbMessage.getThreadId()));
 			}
 		};
 	}

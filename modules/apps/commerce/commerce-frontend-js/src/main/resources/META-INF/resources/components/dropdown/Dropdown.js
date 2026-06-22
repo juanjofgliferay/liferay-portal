@@ -6,7 +6,7 @@
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
-import {openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
 import React, {useState} from 'react';
 
@@ -41,6 +41,7 @@ function Dropdown(props) {
 				closeOnSubmit: true,
 				id: dropdownSupportModalId,
 				size: resolveModalSize(target),
+				title: label,
 				url,
 			});
 		}
@@ -58,6 +59,7 @@ function Dropdown(props) {
 			onActiveChange={setActive}
 			trigger={
 				<ClayButton
+					aria-label={Liferay.Language.get('actions')}
 					className="component-action dropdown-toggle"
 					displayType="unstyled"
 				>
@@ -85,11 +87,11 @@ function Dropdown(props) {
 												url: item.href,
 											});
 										},
-								  }
+									}
 								: {
 										'data-senna-off': true,
 										'href': item.href,
-								  };
+									};
 
 						return (
 							<ClayDropDown.Item key={i} {...dropdownProps}>

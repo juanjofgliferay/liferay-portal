@@ -137,9 +137,14 @@ public interface CommerceShippingMethodService extends BaseService {
 		throws PortalException;
 
 	public CommerceShippingMethod updateCommerceShippingMethod(
+			CommerceShippingMethod commerceShippingMethod)
+		throws PortalException;
+
+	public CommerceShippingMethod updateCommerceShippingMethod(
 			long commerceShippingMethodId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, boolean active, File imageFile,
 			double priority, String trackingURL)
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1574203662

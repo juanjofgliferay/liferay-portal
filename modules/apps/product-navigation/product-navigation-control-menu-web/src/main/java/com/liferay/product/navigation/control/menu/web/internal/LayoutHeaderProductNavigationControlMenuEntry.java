@@ -6,6 +6,7 @@
 package com.liferay.product.navigation.control.menu.web.internal;
 
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.frontend.taglib.clay.servlet.taglib.IconTag;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.layout.security.permission.resource.LayoutContentModelResourcePermission;
@@ -15,30 +16,35 @@ import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.product.navigation.control.menu.BaseProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
 
 import java.io.IOException;
 import java.io.Writer;
 
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -74,13 +80,11 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 
 		Writer writer = httpServletResponse.getWriter();
 
-		StringBundler sb = new StringBundler(22);
+		StringBundler sb = new StringBundler(34);
 
-		sb.append("<div class=\"");
-		sb.append(_getCssClass(httpServletRequest));
-		sb.append("\"><span class=\"align-items-center ");
-		sb.append("control-menu-level-1-heading d-flex mr-1\" ");
-		sb.append("data-qa-id=\"headerTitle\"><h1 class=\"");
+		sb.append("<div class=\"control-menu-nav-item\"><span ");
+		sb.append("class=\"align-items-center control-menu-level-1-heading ");
+		sb.append("d-flex mr-1\" data-qa-id=\"headerTitle\"><h1 class=\"");
 		sb.append("lfr-portal-tooltip h4 mb-0\" title=\"");
 
 		String headerTitle = _getHeaderTitle(httpServletRequest);
@@ -98,6 +102,25 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 			sb.append("</span>");
 		}
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Layout layout = themeDisplay.getLayout();
+
+		try {
+			if (!_hasGuestViewPermission(layout) && !layout.isPrivateLayout()) {
+				sb.append("<span class=\"sr-only\">");
+				sb.append(_language.get(httpServletRequest, "restricted-page"));
+				sb.append("</span>");
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
 		sb.append("</h1>");
 
 		if (_hasDraftLayout(httpServletRequest) &&
@@ -109,11 +132,55 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 
 		sb.append("</span>");
 
+		try {
+			if (layout.isDraftLayout()) {
+				layout = _layoutLocalService.fetchLayout(layout.getClassPK());
+			}
+
+			if (!_hasGuestViewPermission(layout) && !layout.isPrivateLayout()) {
+				sb.append("<span class=\"align-items-center c-ml-3 d-flex ");
+				sb.append("lfr-portal-tooltip text-white\" title=\"");
+				sb.append(_language.get(httpServletRequest, "restricted-page"));
+				sb.append("\">");
+
+				IconTag iconTag = new IconTag();
+
+				iconTag.setCssClass("c-mt-0");
+				iconTag.setSymbol("password-policies");
+
+				try {
+					sb.append(
+						iconTag.doTagAsString(
+							httpServletRequest, httpServletResponse));
+				}
+				catch (JspException jspException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(jspException);
+					}
+				}
+
+				sb.append("</span>");
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
 		if (_isDraftLayout(httpServletRequest)) {
 			sb.append("<span class=\"bg-transparent flex-shrink-0 label ");
-			sb.append("label-inverse-secondary ml-2 mr-0\">");
+			sb.append("label-inverse-secondary ml-3 mr-0\">");
 			sb.append("<span class=\"label-item label-item-expand\">");
 			sb.append(_language.get(httpServletRequest, "draft"));
+			sb.append("</span></span>");
+		}
+
+		if (layout.isTypeEmpty()) {
+			sb.append("<span class=\"bg-transparent flex-shrink-0 label ");
+			sb.append("label-warning ml-3 mr-0\">");
+			sb.append("<span class=\"label-item label-item-expand\">");
+			sb.append(_language.get(httpServletRequest, "empty"));
 			sb.append("</span></span>");
 		}
 
@@ -129,11 +196,7 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 		String layoutMode = ParamUtil.getString(
 			httpServletRequest, "p_l_mode", Constants.VIEW);
 
-		if (layoutMode.equals(Constants.EDIT)) {
-			return true;
-		}
-
-		return false;
+		return layoutMode.equals(Constants.EDIT);
 	}
 
 	@Override
@@ -151,22 +214,6 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 		}
 
 		return super.isShow(httpServletRequest);
-	}
-
-	private String _getCssClass(HttpServletRequest httpServletRequest) {
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		Layout layout = themeDisplay.getLayout();
-
-		if (!Objects.equals(
-				layout.getType(), LayoutConstants.TYPE_COLLECTION)) {
-
-			return "control-menu-nav-item control-menu-nav-item-content";
-		}
-
-		return "control-menu-nav-item";
 	}
 
 	private String _getHeaderTitle(HttpServletRequest httpServletRequest) {
@@ -265,6 +312,19 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 		return false;
 	}
 
+	private boolean _hasGuestViewPermission(Layout layout)
+		throws PortalException {
+
+		Role role = _roleLocalService.getRole(
+			layout.getCompanyId(), RoleConstants.GUEST);
+
+		return _resourcePermissionLocalService.hasResourcePermission(
+			layout.getCompanyId(), Layout.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(layout.getPlid()), role.getRoleId(),
+			ActionKeys.VIEW);
+	}
+
 	private boolean _isDraftLayout(HttpServletRequest httpServletRequest) {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
@@ -303,5 +363,11 @@ public class LayoutHeaderProductNavigationControlMenuEntry
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Reference
+	private RoleLocalService _roleLocalService;
 
 }

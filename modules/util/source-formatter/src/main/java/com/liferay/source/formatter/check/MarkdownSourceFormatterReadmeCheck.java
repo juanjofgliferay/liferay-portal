@@ -28,7 +28,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,7 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 			String fileName, String absolutePath, String content)
 		throws IOException {
 
-		if (!absolutePath.endsWith("/source-formatter/README.markdown")) {
+		if (!absolutePath.endsWith("/source-formatter/README.md")) {
 			return content;
 		}
 
@@ -255,14 +254,14 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 		for (CheckInfo checkInfo : checkInfos) {
 			String checkName = checkInfo.getName();
 
-			String documentationlink = _getDocumentationLink(
+			String documentationLink = _getDocumentationLink(
 				rootFolderLocation, documentationChecksDir, checkInfo);
 
-			if (documentationlink != null) {
+			if (documentationLink != null) {
 				sb.append("[");
 				sb.append(checkName);
 				sb.append("](");
-				sb.append(documentationlink);
+				sb.append(documentationLink);
 				sb.append(") | ");
 			}
 			else {
@@ -291,8 +290,17 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 			}
 
 			if (displayFileExtensions) {
-				String fileExtensionsString = _getFileExtensionsString(
-					checkInfo.getSourceProcessorNames());
+				String fileExtensionsString;
+
+				if (StringUtil.equals(
+						checkInfo.getCategory(), "JakartaTransform")) {
+
+					fileExtensionsString = _getFileExtensionsString(checkName);
+				}
+				else {
+					fileExtensionsString = _getFileExtensionsString(
+						checkInfo.getSourceProcessorNames());
+				}
 
 				if (Validator.isNotNull(fileExtensionsString)) {
 					sb.append(fileExtensionsString);
@@ -485,9 +493,8 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 	}
 
 	private String _getDocumentationLink(
-			String rootFolderLocation, File documentationChecksDir,
-			CheckInfo checkInfo)
-		throws IOException {
+		String rootFolderLocation, File documentationChecksDir,
+		CheckInfo checkInfo) {
 
 		String documentationLocation = checkInfo.getDocumentationLocation();
 
@@ -565,7 +572,29 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 			documentationChecksDir, extendedClassName.substring(4));
 	}
 
-	private List<String> _getFileExtensions(String sourceProcessorName) {
+	private List<String> _getFileExtensionsByCheckName(String checkName) {
+		try {
+			Class<?> clazz = Class.forName(
+				"com.liferay.source.formatter.check." + checkName);
+
+			Field field = clazz.getDeclaredField("_VALID_EXTENSIONS");
+
+			field.setAccessible(true);
+
+			return ListUtil.fromArray((String[])field.get(null));
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return Collections.emptyList();
+	}
+
+	private List<String> _getFileExtensionsBySourceProcessName(
+		String sourceProcessorName) {
+
 		List<String> fileExtensions = _sourceProcessorFileExtensionsMap.get(
 			sourceProcessorName);
 
@@ -614,25 +643,19 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 		List<String> fileExtensions = new ArrayList<>();
 
 		for (String sourceProcessorName : sourceProcessorNames) {
-			fileExtensions.addAll(_getFileExtensions(sourceProcessorName));
+			fileExtensions.addAll(
+				_getFileExtensionsBySourceProcessName(sourceProcessorName));
 		}
 
-		Collections.sort(fileExtensions);
+		ListUtil.distinct(fileExtensions);
 
-		StringBundler sb = new StringBundler();
+		return _mergeFileExtensions(fileExtensions);
+	}
 
-		for (int i = 0; i < fileExtensions.size(); i++) {
-			sb.append(fileExtensions.get(i));
+	private String _getFileExtensionsString(String checkName) {
+		List<String> fileExtensions = _getFileExtensionsByCheckName(checkName);
 
-			if (i == (fileExtensions.size() - 2)) {
-				sb.append(" or ");
-			}
-			else if (i < (fileExtensions.size() - 1)) {
-				sb.append(", ");
-			}
-		}
-
-		return sb.toString();
+		return _mergeFileExtensions(fileExtensions);
 	}
 
 	private String _getLink(
@@ -695,21 +718,13 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 		Map<String, CheckInfo> checkInfoMap) {
 
 		Set<String> sourceProcessorNames = new TreeSet<>(
-			new Comparator<String>() {
+			(sourceProcessorName1, sourceProcessorName2) -> {
+				String fileExtensionsString1 = _getFileExtensionsString(
+					ListUtil.fromArray(sourceProcessorName1));
+				String fileExtensionsString2 = _getFileExtensionsString(
+					ListUtil.fromArray(sourceProcessorName2));
 
-				@Override
-				public int compare(
-					String sourceProcessorName1, String sourceProcessorName2) {
-
-					String fileExtensionsString1 = _getFileExtensionsString(
-						ListUtil.fromArray(sourceProcessorName1));
-					String fileExtensionsString2 = _getFileExtensionsString(
-						ListUtil.fromArray(sourceProcessorName2));
-
-					return fileExtensionsString1.compareTo(
-						fileExtensionsString2);
-				}
-
+				return fileExtensionsString1.compareTo(fileExtensionsString2);
 			});
 
 		for (CheckInfo checkInfo : checkInfoMap.values()) {
@@ -723,6 +738,35 @@ public class MarkdownSourceFormatterReadmeCheck extends BaseFileCheck {
 		}
 
 		return sourceProcessorNames;
+	}
+
+	private String _mergeFileExtensions(List<String> fileExtensions) {
+		if (fileExtensions.size() == 1) {
+			return fileExtensions.get(0);
+		}
+
+		Collections.sort(fileExtensions);
+
+		if (fileExtensions.size() == 2) {
+			return fileExtensions.get(0) + " or " + fileExtensions.get(1);
+		}
+
+		StringBundler sb = new StringBundler();
+
+		for (int i = 0; i < fileExtensions.size(); i++) {
+			sb.append(fileExtensions.get(i));
+			sb.append(", ");
+
+			if (i == (fileExtensions.size() - 2)) {
+				sb.append("or ");
+			}
+		}
+
+		if (sb.length() > 0) {
+			sb.setIndex(sb.index() - 1);
+		}
+
+		return sb.toString();
 	}
 
 	private static final String _CHECKSTYLE_SOURCE_LOCATION =

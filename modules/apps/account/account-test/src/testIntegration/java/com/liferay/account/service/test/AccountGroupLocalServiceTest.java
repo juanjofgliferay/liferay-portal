@@ -7,8 +7,8 @@ package com.liferay.account.service.test;
 
 import com.liferay.account.exception.AccountGroupNameException;
 import com.liferay.account.exception.DefaultAccountGroupException;
+import com.liferay.account.exception.NoSuchGroupException;
 import com.liferay.account.model.AccountGroup;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.account.service.AccountGroupRelLocalService;
 import com.liferay.account.service.test.util.AccountEntryArgs;
@@ -16,18 +16,23 @@ import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.account.service.test.util.AccountGroupTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.ModelListenerException;
-import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
+import com.liferay.portal.kernel.model.SystemEvent;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.SystemEventLocalService;
 import com.liferay.portal.kernel.test.rule.DataGuard;
-import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -37,7 +42,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,16 +59,12 @@ public class AccountGroupLocalServiceTest {
 	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
 		new LiferayIntegrationTestRule();
 
-	@BeforeClass
-	public static void setUpClass() throws Exception {
-		_company = CompanyTestUtil.addCompany();
-	}
-
 	@Test
 	public void testAccountGroupName() throws Exception {
 		try {
 			_accountGroupLocalService.addAccountGroup(
-				TestPropsValues.getUserId(), null, "", new ServiceContext());
+				StringPool.BLANK, TestPropsValues.getUserId(), null, "",
+				new ServiceContext());
 
 			Assert.fail();
 		}
@@ -78,7 +78,8 @@ public class AccountGroupLocalServiceTest {
 
 		try {
 			_accountGroupLocalService.updateAccountGroup(
-				accountGroup.getUserId(), null, "", new ServiceContext());
+				StringPool.BLANK, accountGroup.getUserId(), null, "",
+				new ServiceContext());
 
 			Assert.fail();
 		}
@@ -148,19 +149,49 @@ public class AccountGroupLocalServiceTest {
 	}
 
 	@Test
+	public void testGetOrAddEmptyAccountGroup() throws Exception {
+
+		// Lazy referencing disabled
+
+		try {
+			_accountGroupLocalService.getOrAddEmptyAccountGroup(
+				RandomTestUtil.randomString(), TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString());
+		}
+		catch (NoSuchGroupException noSuchGroupException) {
+			Assert.assertNotNull(noSuchGroupException);
+		}
+
+		// Lazy referencing enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountGroup accountGroup =
+				_accountGroupLocalService.getOrAddEmptyAccountGroup(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY, accountGroup.getStatus());
+		}
+	}
+
+	@Test
 	public void testHasDefaultAccountGroupWhenCompanyIsCreated()
 		throws Exception {
 
 		Assert.assertTrue(
 			_accountGroupLocalService.hasDefaultAccountGroup(
-				_company.getCompanyId()));
+				TestPropsValues.getCompanyId()));
 
 		AccountGroup defaultAccountGroup =
 			_accountGroupLocalService.getDefaultAccountGroup(
-				_company.getCompanyId());
+				TestPropsValues.getCompanyId());
 
 		Assert.assertEquals(
-			_company.getCompanyId(), defaultAccountGroup.getCompanyId());
+			TestPropsValues.getCompanyId(), defaultAccountGroup.getCompanyId());
 	}
 
 	@Test
@@ -239,6 +270,32 @@ public class AccountGroupLocalServiceTest {
 	}
 
 	@Test
+	public void testUpdateAccountGroupWithLazyReferencingEnabled()
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountGroup accountGroup =
+				_accountGroupLocalService.getOrAddEmptyAccountGroup(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_EMPTY, accountGroup.getStatus());
+
+			accountGroup = _accountGroupLocalService.updateAccountGroup(
+				accountGroup.getExternalReferenceCode(),
+				accountGroup.getAccountGroupId(), accountGroup.getDescription(),
+				accountGroup.getName(), null);
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_APPROVED, accountGroup.getStatus());
+		}
+	}
+
+	@Test
 	public void testUpdateDefaultAccountGroup() throws Exception {
 		try {
 			AccountGroup accountGroup =
@@ -246,8 +303,9 @@ public class AccountGroupLocalServiceTest {
 					TestPropsValues.getCompanyId());
 
 			_accountGroupLocalService.updateAccountGroup(
-				accountGroup.getAccountGroupId(), RandomTestUtil.randomString(),
-				RandomTestUtil.randomString(), new ServiceContext());
+				StringPool.BLANK, accountGroup.getAccountGroupId(),
+				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+				new ServiceContext());
 		}
 		catch (ModelListenerException modelListenerException) {
 			Assert.assertTrue(
@@ -280,6 +338,19 @@ public class AccountGroupLocalServiceTest {
 		Assert.assertNull(
 			_accountGroupLocalService.fetchAccountGroup(
 				accountGroup.getAccountGroupId()));
+
+		List<SystemEvent> systemEvents =
+			_systemEventLocalService.getSystemEvents(
+				0, _portal.getClassNameId(accountGroup.getModelClassName()),
+				accountGroup.getPrimaryKey());
+
+		SystemEvent systemEvent = systemEvents.get(0);
+
+		Assert.assertEquals(
+			accountGroup.getExternalReferenceCode(),
+			systemEvent.getClassExternalReferenceCode());
+		Assert.assertEquals(
+			SystemEventConstants.TYPE_DELETE, systemEvent.getType());
 	}
 
 	private void _testSearchAccountGroupsWithPagination(
@@ -318,11 +389,6 @@ public class AccountGroupLocalServiceTest {
 			actualAccountGroups);
 	}
 
-	private static Company _company;
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
-
 	@Inject
 	private AccountGroupLocalService _accountGroupLocalService;
 
@@ -330,6 +396,9 @@ public class AccountGroupLocalServiceTest {
 	private AccountGroupRelLocalService _accountGroupRelLocalService;
 
 	@Inject
-	private UserLocalService _userLocalService;
+	private Portal _portal;
+
+	@Inject
+	private SystemEventLocalService _systemEventLocalService;
 
 }

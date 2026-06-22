@@ -8,14 +8,18 @@
 <%@ include file="/init.jsp" %>
 
 <%
-String backURL = ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL()));
+String backURL = PortalUtil.escapeRedirect(ParamUtil.getString(request, "backURL"));
+
+if (backURL == null) {
+	backURL = String.valueOf(renderResponse.createRenderURL());
+}
 
 BatchPlannerPlanDisplay batchPlannerPlanDisplay = (BatchPlannerPlanDisplay)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 %>
 
 <div class="container pt-4">
 	<div class="card">
-		<h4 class="card-header"><liferay-ui:message key="batch-engine-task-details" /></h4>
+		<div class="card-header h4"><liferay-ui:message key="batch-engine-task-details" /></div>
 
 		<div class="card-body">
 			<clay:content-row>

@@ -6,9 +6,9 @@
 package com.liferay.portal.upgrade.v7_4_x;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.upgrade.BaseCompanyIdUpgradeProcess;
 import com.liferay.portal.kernel.util.PortletKeys;
-import com.liferay.portal.util.PortalInstances;
 
 import java.io.IOException;
 
@@ -27,11 +27,7 @@ public class UpgradeCompanyId extends BaseCompanyIdUpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		for (TableUpdater tableUpdater : getTableUpdaters()) {
-			if (!hasColumn(tableUpdater.getTableName(), "companyId")) {
-				tableUpdater.setCreateCompanyIdColumn(true);
-			}
-		}
+		disableProcessConcurrently();
 
 		super.doUpgrade();
 	}
@@ -56,7 +52,7 @@ public class UpgradeCompanyId extends BaseCompanyIdUpgradeProcess {
 		public void update(Connection connection)
 			throws IOException, SQLException {
 
-			long[] companyIds = PortalInstances.getCompanyIdsBySQL();
+			long[] companyIds = PortalInstancePool.getCompanyIds();
 
 			if (companyIds.length == 1) {
 				runSQL(connection, getUpdateSQL(String.valueOf(companyIds[0])));
@@ -137,12 +133,11 @@ public class UpgradeCompanyId extends BaseCompanyIdUpgradeProcess {
 			try (PreparedStatement preparedStatement =
 					connection.prepareStatement(
 						"select distinct companyId from " + foreignTableName);
+
 				ResultSet resultSet = preparedStatement.executeQuery()) {
 
 				while (resultSet.next()) {
-					long companyId = resultSet.getLong(1);
-
-					companyIds.add(companyId);
+					companyIds.add(resultSet.getLong("companyId"));
 				}
 			}
 

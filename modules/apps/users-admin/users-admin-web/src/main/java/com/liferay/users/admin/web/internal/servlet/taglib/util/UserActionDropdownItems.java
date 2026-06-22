@@ -26,19 +26,20 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.taglib.security.DoAsURLTag;
 import com.liferay.taglib.security.PermissionsURLTag;
 import com.liferay.users.admin.user.action.contributor.UserActionContributor;
 import com.liferay.users.admin.web.internal.display.context.UserActionDisplayContext;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Eudaldo Alonso
@@ -105,6 +106,8 @@ public class UserActionDropdownItems {
 					() ->
 						!PropsValues.PORTAL_JAAS_ENABLE &&
 						PropsValues.PORTAL_IMPERSONATION_ENABLE &&
+						!Objects.equals(
+							_user.getScreenName(), "default-service-account") &&
 						(_user.getUserId() != _themeDisplay.getUserId()) &&
 						_user.isActive() && !_themeDisplay.isImpersonated() &&
 						UserPermissionUtil.contains(

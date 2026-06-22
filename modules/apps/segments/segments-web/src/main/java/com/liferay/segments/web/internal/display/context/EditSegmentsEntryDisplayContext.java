@@ -6,6 +6,7 @@
 package com.liferay.segments.web.internal.display.context;
 
 import com.liferay.item.selector.ItemSelector;
+import com.liferay.learn.LearnMessageUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -42,18 +43,18 @@ import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
 import com.liferay.segments.service.SegmentsEntryService;
 import com.liferay.segments.web.internal.security.permission.resource.SegmentsEntryPermission;
+import com.liferay.segments.web.internal.util.AudiencesPortletUtil;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eduardo García
@@ -107,19 +108,46 @@ public class EditSegmentsEntryDisplayContext {
 			return backURLTitle;
 		}
 
+		if (AudiencesPortletUtil.isAudiencesPortlet(_renderRequest)) {
+			return LanguageUtil.get(_httpServletRequest, "audiences");
+		}
+
 		return LanguageUtil.get(_httpServletRequest, "segments");
 	}
 
-	public Map<String, Object> getData() throws Exception {
+	public Map<String, Object> getData() {
 		if (_data != null) {
 			return _data;
 		}
 
-		_data = HashMapBuilder.<String, Object>put(
-			"context", _getContext()
-		).put(
-			"props", _getProps()
-		).build();
+		HashMapBuilder.HashMapWrapper<String, Object> hashMapWrapper =
+			HashMapBuilder.<String, Object>put("context", _getContext());
+
+		try {
+			hashMapWrapper.put("props", _getProps());
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			if (AudiencesPortletUtil.isAudiencesPortlet(_renderRequest)) {
+				hashMapWrapper.put(
+					"error",
+					LanguageUtil.get(
+						_httpServletRequest,
+						"the-audience-is-no-longer-available"));
+			}
+			else {
+				hashMapWrapper.put(
+					"error",
+					LanguageUtil.get(
+						_httpServletRequest,
+						"the-segment-is-no-longer-available"));
+			}
+		}
+
+		_data = hashMapWrapper.build();
 
 		return _data;
 	}
@@ -188,9 +216,12 @@ public class EditSegmentsEntryDisplayContext {
 		if (segmentsEntry != null) {
 			_title = segmentsEntry.getName(locale);
 		}
+		else if (AudiencesPortletUtil.isAudiencesPortlet(_renderRequest)) {
+			_title = LanguageUtil.get(_httpServletRequest, "new-audience");
+		}
 		else {
 			String type = ResourceActionsUtil.getModelResource(
-				locale, getType());
+				locale, User.class.getName());
 
 			_title = LanguageUtil.format(
 				_httpServletRequest, "new-x-segment", type, false);
@@ -199,15 +230,31 @@ public class EditSegmentsEntryDisplayContext {
 		return _title;
 	}
 
-	public String getType() throws PortalException {
+	private JSONObject _getAudienceCriteriaJSONObject(
+			SegmentsCriteriaContributor segmentsCriteriaContributor)
+		throws Exception {
+
 		SegmentsEntry segmentsEntry = _getSegmentsEntry();
 
-		if (segmentsEntry != null) {
-			return segmentsEntry.getType();
+		if ((segmentsEntry == null) ||
+			(segmentsCriteriaContributor.getType() != Criteria.Type.CONTEXT) ||
+			Validator.isNull(segmentsEntry.getCriteria())) {
+
+			return JSONUtil.put(
+				"conjunctionName", StringPool.BLANK
+			).put(
+				"query", (JSONObject)null
+			);
 		}
 
-		return ParamUtil.getString(
-			_httpServletRequest, "type", User.class.getName());
+		JSONObject queryJSONObject = JSONFactoryUtil.createJSONObject(
+			segmentsEntry.getCriteria());
+
+		return JSONUtil.put(
+			"conjunctionName", queryJSONObject.getString("conjunctionName")
+		).put(
+			"query", queryJSONObject
+		);
 	}
 
 	private Map<String, String> _getAvailableLocales() throws Exception {
@@ -237,17 +284,25 @@ public class EditSegmentsEntryDisplayContext {
 	}
 
 	private JSONArray _getContributorsJSONArray() throws Exception {
-		List<SegmentsCriteriaContributor> segmentsCriteriaContributors =
-			_getSegmentsCriteriaContributors();
-
 		JSONArray contributorsJSONArray = JSONFactoryUtil.createJSONArray();
 
-		for (SegmentsCriteriaContributor segmentsCriteriaContributor :
-				segmentsCriteriaContributors) {
+		boolean audiencesPortlet = AudiencesPortletUtil.isAudiencesPortlet(
+			_renderRequest);
 
-			JSONObject jsonObject =
-				segmentsCriteriaContributor.getCriteriaJSONObject(
+		for (SegmentsCriteriaContributor segmentsCriteriaContributor :
+				_segmentsCriteriaContributorRegistry.
+					getSegmentsCriteriaContributors()) {
+
+			JSONObject jsonObject = null;
+
+			if (audiencesPortlet) {
+				jsonObject = _getAudienceCriteriaJSONObject(
+					segmentsCriteriaContributor);
+			}
+			else {
+				jsonObject = segmentsCriteriaContributor.getCriteriaJSONObject(
 					_getCriteria());
+			}
 
 			contributorsJSONArray.put(
 				JSONUtil.put(
@@ -342,13 +397,15 @@ public class EditSegmentsEntryDisplayContext {
 	}
 
 	private JSONArray _getPropertyGroupsJSONArray() throws Exception {
-		List<SegmentsCriteriaContributor> segmentsCriteriaContributors =
-			_getSegmentsCriteriaContributors();
-
 		JSONArray jsonContributorsJSONArray = JSONFactoryUtil.createJSONArray();
 
 		for (SegmentsCriteriaContributor segmentsCriteriaContributor :
-				segmentsCriteriaContributors) {
+				_segmentsCriteriaContributorRegistry.
+					getSegmentsCriteriaContributors()) {
+
+			if (segmentsCriteriaContributor.isDisabled(_renderRequest)) {
+				continue;
+			}
 
 			jsonContributorsJSONArray.put(
 				JSONUtil.put(
@@ -371,6 +428,8 @@ public class EditSegmentsEntryDisplayContext {
 
 	private Map<String, Object> _getProps() throws Exception {
 		return HashMapBuilder.<String, Object>put(
+			"audiences", AudiencesPortletUtil.isAudiencesPortlet(_renderRequest)
+		).put(
 			"availableLocales", _getAvailableLocales()
 		).put(
 			"contributors", _getContributorsJSONArray()
@@ -391,6 +450,16 @@ public class EditSegmentsEntryDisplayContext {
 		).put(
 			"isSegmentationEnabled",
 			_isSegmentationEnabled(_themeDisplay.getCompanyId())
+		).put(
+			"learnResources",
+			HashMapBuilder.put(
+				"frontend-js-components-web",
+				LearnMessageUtil.getReactDataJSONObject(
+					"frontend-js-components-web")
+			).put(
+				"segments-web",
+				LearnMessageUtil.getReactDataJSONObject("segments-web")
+			).build()
 		).put(
 			"locale", _locale.toString()
 		).put(
@@ -422,13 +491,6 @@ public class EditSegmentsEntryDisplayContext {
 		}
 
 		return StringPool.BLANK;
-	}
-
-	private List<SegmentsCriteriaContributor> _getSegmentsCriteriaContributors()
-		throws Exception {
-
-		return _segmentsCriteriaContributorRegistry.
-			getSegmentsCriteriaContributors(getType());
 	}
 
 	private SegmentsEntry _getSegmentsEntry() throws PortalException {

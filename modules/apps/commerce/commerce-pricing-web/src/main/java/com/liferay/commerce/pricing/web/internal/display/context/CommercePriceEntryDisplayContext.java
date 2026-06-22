@@ -5,7 +5,9 @@
 
 package com.liferay.commerce.pricing.web.internal.display.context;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
@@ -30,14 +32,15 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -49,6 +52,7 @@ public class CommercePriceEntryDisplayContext
 		CommerceCatalogService commerceCatalogService,
 		CommercePriceEntryLocalService commercePriceEntryLocalService,
 		CommercePriceEntryService commercePriceEntryService,
+		CommercePriceFormatter commercePriceFormatter,
 		ModelResourcePermission<CommercePriceList>
 			commercePriceListModelResourcePermission,
 		CommercePriceListService commercePriceListService,
@@ -62,6 +66,7 @@ public class CommercePriceEntryDisplayContext
 
 		_commercePriceEntryLocalService = commercePriceEntryLocalService;
 		_commercePriceEntryService = commercePriceEntryService;
+		_commercePriceFormatter = commercePriceFormatter;
 		_cpInstanceLocalService = cpInstanceLocalService;
 		_cpInstanceUnitOfMeasureLocalService =
 			cpInstanceUnitOfMeasureLocalService;
@@ -96,9 +101,12 @@ public class CommercePriceEntryDisplayContext
 			return StringPool.DASH;
 		}
 
+		CommerceCurrency commerceCurrency =
+			commercePriceList.getCommerceCurrency();
+
 		CommerceMoney priceCommerceMoney =
 			instanceBaseCommercePriceEntry.getPriceCommerceMoney(
-				commercePriceList.getCommerceCurrencyId());
+				commerceCurrency.getCommerceCurrencyId());
 
 		return priceCommerceMoney.format(
 			commercePricingRequestHelper.getLocale());
@@ -138,11 +146,9 @@ public class CommercePriceEntryDisplayContext
 
 		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
 
-		_cpInstance = _cpInstanceLocalService.getCProductInstance(
+		return _cpInstanceLocalService.fetchCPInstance(
 			commercePriceEntry.getCProductId(),
 			commercePriceEntry.getCPInstanceUuid());
-
-		return _cpInstance;
 	}
 
 	public List<CPInstanceUnitOfMeasure> getCPInstanceUnitOfMeasures()
@@ -150,9 +156,13 @@ public class CommercePriceEntryDisplayContext
 
 		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
 
-		CPInstance cpInstance = _cpInstanceLocalService.getCProductInstance(
+		CPInstance cpInstance = _cpInstanceLocalService.fetchCPInstance(
 			commercePriceEntry.getCProductId(),
 			commercePriceEntry.getCPInstanceUuid());
+
+		if (cpInstance == null) {
+			return Collections.emptyList();
+		}
 
 		return ListUtil.sort(
 			_cpInstanceUnitOfMeasureLocalService.
@@ -177,6 +187,80 @@ public class CommercePriceEntryDisplayContext
 		}
 
 		return creationMenu;
+	}
+
+	public String getDiscountLevel1(CommerceCurrency commerceCurrency)
+		throws PortalException {
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		if ((commercePriceEntry == null) ||
+			(commercePriceEntry.getDiscountLevel1() == null)) {
+
+			return StringPool.BLANK;
+		}
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(),
+			commercePriceEntry.getDiscountLevel1());
+	}
+
+	public String getDiscountLevel2(CommerceCurrency commerceCurrency)
+		throws PortalException {
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		if ((commercePriceEntry == null) ||
+			(commercePriceEntry.getDiscountLevel2() == null)) {
+
+			return StringPool.BLANK;
+		}
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(),
+			commercePriceEntry.getDiscountLevel2());
+	}
+
+	public String getDiscountLevel3(CommerceCurrency commerceCurrency)
+		throws PortalException {
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		if ((commercePriceEntry == null) ||
+			(commercePriceEntry.getDiscountLevel3() == null)) {
+
+			return StringPool.BLANK;
+		}
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(),
+			commercePriceEntry.getDiscountLevel3());
+	}
+
+	public String getDiscountLevel4(CommerceCurrency commerceCurrency)
+		throws PortalException {
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		if ((commercePriceEntry == null) ||
+			(commercePriceEntry.getDiscountLevel4() == null)) {
+
+			return StringPool.BLANK;
+		}
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(),
+			commercePriceEntry.getDiscountLevel4());
+	}
+
+	public String getPrice(CommerceCurrency commerceCurrency)
+		throws PortalException {
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _commercePriceFormatter.format(
+			commerceCurrency, false, cpRequestHelper.getLocale(),
+			commercePriceEntry.getPrice());
 	}
 
 	public List<FDSActionDropdownItem> getPriceEntriesFDSActionDropdownItems()
@@ -231,6 +315,7 @@ public class CommercePriceEntryDisplayContext
 	private final CommercePriceEntryLocalService
 		_commercePriceEntryLocalService;
 	private final CommercePriceEntryService _commercePriceEntryService;
+	private final CommercePriceFormatter _commercePriceFormatter;
 	private CPInstance _cpInstance;
 	private final CPInstanceLocalService _cpInstanceLocalService;
 	private final CPInstanceUnitOfMeasureLocalService

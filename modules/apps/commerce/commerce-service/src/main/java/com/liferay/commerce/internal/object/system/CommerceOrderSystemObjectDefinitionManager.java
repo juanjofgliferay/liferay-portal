@@ -11,6 +11,7 @@ import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.Order;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.OrderResource;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.field.builder.DateObjectFieldBuilder;
 import com.liferay.object.field.builder.IntegerObjectFieldBuilder;
 import com.liferay.object.field.builder.LongIntegerObjectFieldBuilder;
 import com.liferay.object.field.builder.PrecisionDecimalObjectFieldBuilder;
@@ -25,14 +26,21 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.vulcan.pagination.Page;
+import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.math.BigDecimal;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -47,10 +55,12 @@ public class CommerceOrderSystemObjectDefinitionManager
 	extends BaseSystemObjectDefinitionManager {
 
 	@Override
-	public long addBaseModel(User user, Map<String, Object> values)
+	public long addBaseModel(
+			boolean checkPermissions, User user, Map<String, Object> values)
 		throws Exception {
 
-		OrderResource orderResource = _buildOrderResource(user);
+		OrderResource orderResource = _buildOrderResource(
+			checkPermissions, user);
 
 		Order order = orderResource.postOrder(_toOrder(values));
 
@@ -67,6 +77,7 @@ public class CommerceOrderSystemObjectDefinitionManager
 			(CommerceOrder)baseModel);
 	}
 
+	@Override
 	public BaseModel<?> fetchBaseModelByExternalReferenceCode(
 		String externalReferenceCode, long companyId) {
 
@@ -108,8 +119,12 @@ public class CommerceOrderSystemObjectDefinitionManager
 	}
 
 	@Override
-	public Map<Locale, String> getLabelMap() {
-		return createLabelMap("commerce-order");
+	public Map<String, String> getLabelKeys() {
+		return HashMapBuilder.put(
+			"label", "commerce-order"
+		).put(
+			"pluralLabel", "commerce-orders"
+		).build();
 	}
 
 	@Override
@@ -150,6 +165,14 @@ public class CommerceOrderSystemObjectDefinitionManager
 			).system(
 				true
 			).build(),
+			new DateObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("order-date")
+			).name(
+				"orderDate"
+			).system(
+				true
+			).build(),
 			new IntegerObjectFieldBuilder(
 			).labelMap(
 				createLabelMap("order-status")
@@ -164,7 +187,7 @@ public class CommerceOrderSystemObjectDefinitionManager
 			).dbColumnName(
 				"orderTypeExternalReferenceCode"
 			).labelMap(
-				createLabelMap("orderTypeExternalReferenceCode")
+				createLabelMap("order-type-external-reference-code")
 			).name(
 				"orderTypeExternalReferenceCode"
 			).system(
@@ -180,6 +203,24 @@ public class CommerceOrderSystemObjectDefinitionManager
 			).system(
 				true
 			).build(),
+			new IntegerObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("payment-status")
+			).name(
+				"paymentStatus"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("payment-method-key")
+			).name(
+				"paymentMethodKey"
+			).system(
+				true
+			).build(),
 			new PrecisionDecimalObjectFieldBuilder(
 			).labelMap(
 				createLabelMap("shipping-amount")
@@ -189,12 +230,62 @@ public class CommerceOrderSystemObjectDefinitionManager
 				true
 			).system(
 				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("formatted-shipping-amount")
+			).name(
+				"shippingAmountFormatted"
+			).readOnly(
+				"true"
+			).build(),
+			new PrecisionDecimalObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("tax-amount")
+			).name(
+				"taxAmount"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("formatted-tax-amount")
+			).name(
+				"taxAmountFormatted"
+			).readOnly(
+				"true"
+			).build(),
+			new PrecisionDecimalObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("total")
+			).name(
+				"total"
+			).required(
+				true
+			).system(
+				true
+			).build(),
+			new TextObjectFieldBuilder(
+			).labelMap(
+				createLabelMap("formatted-total-amount")
+			).name(
+				"totalFormatted"
+			).readOnly(
+				"true"
 			).build());
 	}
 
 	@Override
-	public Map<Locale, String> getPluralLabelMap() {
-		return createLabelMap("commerce-orders");
+	public Page<?> getPage(
+			User user, String search, Filter filter, Pagination pagination,
+			Sort[] sorts)
+		throws Exception {
+
+		OrderResource orderResource = _buildOrderResource(true, user);
+
+		return orderResource.getOrdersPage(search, filter, pagination, sorts);
 	}
 
 	@Override
@@ -214,7 +305,17 @@ public class CommerceOrderSystemObjectDefinitionManager
 
 	@Override
 	public int getVersion() {
-		return 3;
+		return 6;
+	}
+
+	@Override
+	public boolean hasModelResourcePermission(
+			long objectDefinitionId, PermissionChecker permissionChecker,
+			long primaryKey, String actionId)
+		throws PortalException {
+
+		return _commerceOrderModelResourcePermission.contains(
+			permissionChecker, primaryKey, actionId);
 	}
 
 	@Override
@@ -222,7 +323,7 @@ public class CommerceOrderSystemObjectDefinitionManager
 			long primaryKey, User user, Map<String, Object> values)
 		throws Exception {
 
-		OrderResource orderResource = _buildOrderResource(user);
+		OrderResource orderResource = _buildOrderResource(false, user);
 
 		orderResource.patchOrder(primaryKey, _toOrder(values));
 
@@ -231,11 +332,13 @@ public class CommerceOrderSystemObjectDefinitionManager
 			values);
 	}
 
-	private OrderResource _buildOrderResource(User user) {
+	private OrderResource _buildOrderResource(
+		boolean checkPermissions, User user) {
+
 		OrderResource.Builder builder = _orderResourceFactory.create();
 
 		return builder.checkPermissions(
-			false
+			checkPermissions
 		).preferredLocale(
 			user.getLocale()
 		).user(
@@ -246,16 +349,29 @@ public class CommerceOrderSystemObjectDefinitionManager
 	private Order _toOrder(Map<String, Object> values) {
 		return new Order() {
 			{
-				accountId = GetterUtil.getLong(values.get("accountId"));
-				channelId = GetterUtil.getLong(values.get("channelId"));
-				currencyCode = GetterUtil.getString(values.get("currencyCode"));
-				externalReferenceCode = GetterUtil.getString(
-					values.get("externalReferenceCode"));
-				orderStatus = GetterUtil.getInteger(values.get("orderStatus"));
-				orderTypeExternalReferenceCode = GetterUtil.getString(
-					values.get("orderTypeExternalReferenceCode"));
-				orderTypeId = GetterUtil.getLong(values.get("orderTypeId"));
-
+				setAccountId(() -> GetterUtil.getLong(values.get("accountId")));
+				setChannelId(() -> GetterUtil.getLong(values.get("channelId")));
+				setCurrencyCode(
+					() -> GetterUtil.getString(values.get("currencyCode")));
+				setExternalReferenceCode(
+					() -> GetterUtil.getString(
+						values.get("externalReferenceCode")));
+				setOrderDate(
+					() -> GetterUtil.getDate(
+						values.get("orderDate"),
+						DateFormatFactoryUtil.getSimpleDateFormat(
+							"yyyy-MM-dd'T'HH:mm:ss'Z'")));
+				setOrderStatus(
+					() -> GetterUtil.getInteger(values.get("orderStatus")));
+				setOrderTypeExternalReferenceCode(
+					() -> GetterUtil.getString(
+						values.get("orderTypeExternalReferenceCode")));
+				setOrderTypeId(
+					() -> GetterUtil.getLong(values.get("orderTypeId")));
+				setPaymentMethod(
+					() -> GetterUtil.getString(values.get("paymentMethodKey")));
+				setPaymentStatus(
+					() -> GetterUtil.getInteger(values.get("paymentStatus")));
 				setShippingAmount(
 					() -> {
 						String shippingAmountString = GetterUtil.getString(
@@ -267,12 +383,48 @@ public class CommerceOrderSystemObjectDefinitionManager
 
 						return new BigDecimal(shippingAmountString);
 					});
+				setShippingAmountFormatted(
+					() -> GetterUtil.getString(
+						values.get("shippingAmountFormatted")));
+				setTaxAmount(
+					() -> {
+						String taxAmountString = GetterUtil.getString(
+							values.get("taxAmount"));
+
+						if (Validator.isNull(taxAmountString)) {
+							return null;
+						}
+
+						return new BigDecimal(taxAmountString);
+					});
+				setTaxAmountFormatted(
+					() -> GetterUtil.getString(
+						values.get("taxAmountFormatted")));
+				setTotal(
+					() -> {
+						String totalString = GetterUtil.getString(
+							values.get("total"));
+
+						if (Validator.isNull(totalString)) {
+							return null;
+						}
+
+						return new BigDecimal(totalString);
+					});
+				setTotalFormatted(
+					() -> GetterUtil.getString(values.get("totalFormatted")));
 			}
 		};
 	}
 
 	@Reference
 	private CommerceOrderLocalService _commerceOrderLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
+	)
+	private ModelResourcePermission<CommerceOrder>
+		_commerceOrderModelResourcePermission;
 
 	@Reference
 	private OrderResource.Factory _orderResourceFactory;

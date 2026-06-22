@@ -8,13 +8,16 @@ package com.liferay.sharing.service.impl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.sharing.model.SharingEntry;
 import com.liferay.sharing.security.permission.SharingEntryAction;
 import com.liferay.sharing.security.permission.SharingPermission;
 import com.liferay.sharing.service.base.SharingEntryServiceBaseImpl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -59,19 +62,22 @@ public class SharingEntryServiceImpl extends SharingEntryServiceBaseImpl {
 	 */
 	@Override
 	public SharingEntry addOrUpdateSharingEntry(
+			String externalReferenceCode, long toTicketId, long toUserGroupId,
 			long toUserId, long classNameId, long classPK, long groupId,
 			boolean shareable,
 			Collection<SharingEntryAction> sharingEntryActions,
 			Date expirationDate, ServiceContext serviceContext)
 		throws PortalException {
 
-		SharingEntry sharingEntry = sharingEntryPersistence.fetchByTU_C_C(
-			toUserId, classNameId, classPK);
+		SharingEntry sharingEntry =
+			sharingEntryPersistence.fetchByTT_TUG_TU_C_C(
+				toTicketId, toUserGroupId, toUserId, classNameId, classPK);
 
 		if (sharingEntry == null) {
 			return sharingEntryService.addSharingEntry(
-				toUserId, classNameId, classPK, groupId, shareable,
-				sharingEntryActions, expirationDate, serviceContext);
+				externalReferenceCode, toTicketId, toUserGroupId, toUserId,
+				classNameId, classPK, groupId, shareable, sharingEntryActions,
+				expirationDate, serviceContext);
 		}
 
 		return sharingEntryService.updateSharingEntry(
@@ -101,6 +107,7 @@ public class SharingEntryServiceImpl extends SharingEntryServiceBaseImpl {
 	 */
 	@Override
 	public SharingEntry addSharingEntry(
+			String externalReferenceCode, long toTicketId, long toUserGroupId,
 			long toUserId, long classNameId, long classPK, long groupId,
 			boolean shareable,
 			Collection<SharingEntryAction> sharingEntryActions,
@@ -112,8 +119,25 @@ public class SharingEntryServiceImpl extends SharingEntryServiceBaseImpl {
 			sharingEntryActions);
 
 		return sharingEntryLocalService.addSharingEntry(
-			getUserId(), toUserId, classNameId, classPK, groupId, shareable,
+			externalReferenceCode, getUserId(), toTicketId, toUserGroupId,
+			toUserId, classNameId, classPK, groupId, shareable,
 			sharingEntryActions, expirationDate, serviceContext);
+	}
+
+	@Override
+	public SharingEntry deleteSharingEntry(
+			long toTicketId, long toUserGroupId, long toUserId,
+			long classNameId, long classPK)
+		throws PortalException {
+
+		SharingEntry sharingEntry = sharingEntryPersistence.findByTT_TUG_TU_C_C(
+			toTicketId, toUserGroupId, toUserId, classNameId, classPK);
+
+		sharingPermission.checkManageCollaboratorsPermission(
+			getPermissionChecker(), sharingEntry.getClassNameId(),
+			sharingEntry.getClassPK(), sharingEntry.getGroupId());
+
+		return sharingEntryLocalService.deleteSharingEntry(sharingEntry);
 	}
 
 	@Override
@@ -121,14 +145,129 @@ public class SharingEntryServiceImpl extends SharingEntryServiceBaseImpl {
 			long sharingEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
-		SharingEntry sharingEntry = sharingEntryLocalService.getSharingEntry(
-			sharingEntryId);
+		return deleteSharingEntry(
+			sharingEntryLocalService.getSharingEntry(sharingEntryId));
+	}
+
+	@Override
+	public SharingEntry deleteSharingEntry(SharingEntry sharingEntry)
+		throws PortalException {
 
 		sharingPermission.checkManageCollaboratorsPermission(
 			getPermissionChecker(), sharingEntry.getClassNameId(),
 			sharingEntry.getClassPK(), sharingEntry.getGroupId());
 
 		return sharingEntryLocalService.deleteSharingEntry(sharingEntry);
+	}
+
+	@Override
+	public SharingEntry deleteSharingEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return deleteSharingEntry(
+			sharingEntryLocalService.getSharingEntryByExternalReferenceCode(
+				externalReferenceCode, groupId));
+	}
+
+	@Override
+	public SharingEntry fetchSharingEntry(
+			long toTicketId, long toUserGroupId, long toUserId,
+			long classNameId, long classPK)
+		throws PortalException {
+
+		SharingEntry sharingEntry = sharingEntryLocalService.fetchSharingEntry(
+			toTicketId, toUserGroupId, toUserId, classNameId, classPK);
+
+		if (sharingEntry != null) {
+			sharingPermission.check(
+				getPermissionChecker(), sharingEntry.getClassNameId(),
+				sharingEntry.getClassPK(), sharingEntry.getGroupId(),
+				Collections.singletonList(SharingEntryAction.VIEW));
+		}
+
+		return sharingEntry;
+	}
+
+	@Override
+	public SharingEntry fetchSharingEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		SharingEntry sharingEntry =
+			sharingEntryLocalService.fetchSharingEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (sharingEntry != null) {
+			sharingPermission.check(
+				getPermissionChecker(), sharingEntry.getClassNameId(),
+				sharingEntry.getClassPK(), groupId,
+				Collections.singletonList(SharingEntryAction.VIEW));
+		}
+
+		return sharingEntry;
+	}
+
+	@Override
+	public List<SharingEntry> getSharingEntries(
+			long classNameId, long classPK, long groupId, int start, int end,
+			OrderByComparator<SharingEntry> orderByComparator)
+		throws PortalException {
+
+		sharingPermission.checkSharePermission(
+			getPermissionChecker(), classNameId, classPK, groupId);
+
+		return sharingEntryLocalService.getSharingEntries(
+			classNameId, classPK, start, end, orderByComparator);
+	}
+
+	@Override
+	public SharingEntry getSharingEntry(long sharingEntryId)
+		throws PortalException {
+
+		SharingEntry sharingEntry = sharingEntryLocalService.getSharingEntry(
+			sharingEntryId);
+
+		sharingPermission.check(
+			getPermissionChecker(), sharingEntry.getClassNameId(),
+			sharingEntry.getClassPK(), sharingEntry.getGroupId(),
+			Collections.singletonList(SharingEntryAction.VIEW));
+
+		return sharingEntry;
+	}
+
+	@Override
+	public SharingEntry getSharingEntry(
+			long toTicketId, long toUserGroupId, long toUserId,
+			long classNameId, long classPK)
+		throws PortalException {
+
+		SharingEntry sharingEntry = sharingEntryPersistence.findByTT_TUG_TU_C_C(
+			toTicketId, toUserGroupId, toUserId, classNameId, classPK);
+
+		sharingPermission.check(
+			getPermissionChecker(), sharingEntry.getClassNameId(),
+			sharingEntry.getClassPK(), sharingEntry.getGroupId(),
+			Collections.singletonList(SharingEntryAction.VIEW));
+
+		return sharingEntry;
+	}
+
+	@Override
+	public SharingEntry getSharingEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		SharingEntry sharingEntry =
+			sharingEntryLocalService.getSharingEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		sharingPermission.check(
+			getPermissionChecker(), sharingEntry.getClassNameId(),
+			sharingEntry.getClassPK(), groupId,
+			Collections.singletonList(SharingEntryAction.VIEW));
+
+		return sharingEntry;
 	}
 
 	/**

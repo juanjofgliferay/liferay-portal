@@ -25,7 +25,7 @@ const DurationBreakdown: React.FC<IBreakdownProps> = ({
 			const {binSize} = breakdown;
 
 			return {
-				binSize: formatTime(binSize)
+				binSize: formatTime(binSize ?? 0)
 			};
 		}
 
@@ -85,7 +85,7 @@ const DurationBreakdown: React.FC<IBreakdownProps> = ({
 							displayType='primary'
 							type='submit'
 						>
-							{Liferay.Language.get('done')}
+							{Liferay.Language.get('apply')}
 						</ClayButton>
 					</div>
 				</Form.Form>

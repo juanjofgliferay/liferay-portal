@@ -1,10 +1,10 @@
 @component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
-	property testray.main.component.name = "Headless Discovery";
+	property testray.main.component.name = "Headless Discovery Application";
 
 	setUp {
 		TestCase.setUpPortalInstance();

@@ -5,12 +5,18 @@
 
 package com.liferay.trash.web.internal.portlet;
 
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.service.AssetEntryService;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.TrashPermissionException;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
@@ -31,24 +37,24 @@ import com.liferay.trash.service.TrashEntryService;
 import com.liferay.trash.web.internal.constants.TrashWebKeys;
 import com.liferay.trash.web.internal.util.TrashUndoUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * Provides the Recycle Bin implementation of the <code>Portlet</code> interface
- * (in <code>javax.portlet</code>). If the Recycle Bin is enabled, this portlet
+ * (in <code>jakarta.portlet</code>). If the Recycle Bin is enabled, this portlet
  * moves assets into the Recycle Bin instead of deleting them directly. The site
  * administrator is able to browse the list of removed asset entries, restore
  * selected entries, and empty the Recycle Bin.
@@ -59,20 +65,19 @@ import org.osgi.service.component.annotations.Reference;
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-trash",
 		"com.liferay.portlet.display-category=category.hidden",
-		"com.liferay.portlet.header-portlet-css=/css/main.css",
 		"com.liferay.portlet.icon=/icons/trash.png",
 		"com.liferay.portlet.preferences-owned-by-group=true",
 		"com.liferay.portlet.private-request-attributes=false",
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.scopeable=true",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Trash",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + TrashPortletKeys.TRASH,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Trash",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + TrashPortletKeys.TRASH,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -152,6 +157,17 @@ public class TrashPortlet extends MVCPortlet {
 		throws IOException, PortletException {
 
 		renderRequest.setAttribute(TrashWebKeys.TRASH_HELPER, _trashHelper);
+
+		try {
+			_checkPermissions(renderRequest);
+		}
+		catch (PortalException portalException) {
+			SessionErrors.add(renderRequest, portalException.getClass());
+
+			include("/error.jsp", renderRequest, renderResponse);
+
+			return;
+		}
 
 		super.render(renderRequest, renderResponse);
 	}
@@ -329,6 +345,34 @@ public class TrashPortlet extends MVCPortlet {
 				restoreEntryException.getCause());
 		}
 	}
+
+	private void _checkPermissions(RenderRequest renderRequest)
+		throws PortalException {
+
+		long trashEntryId = ParamUtil.getLong(renderRequest, "trashEntryId");
+
+		if (trashEntryId == 0) {
+			return;
+		}
+
+		TrashEntry trashEntry = _trashEntryLocalService.getTrashEntry(
+			trashEntryId);
+
+		AssetEntry assetEntry = _assetEntryService.getEntry(
+			trashEntry.getClassName(), trashEntry.getClassPK());
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		if (assetEntry.getGroupId() != themeDisplay.getScopeGroupId()) {
+			throw new PrincipalException.MustHavePermission(
+				themeDisplay.getUserId(), trashEntry.getClassName(),
+				trashEntry.getClassPK(), ActionKeys.VIEW);
+		}
+	}
+
+	@Reference
+	private AssetEntryService _assetEntryService;
 
 	@Reference
 	private Portal _portal;

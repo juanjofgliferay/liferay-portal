@@ -9,11 +9,11 @@ import com.liferay.portal.kernel.portlet.BaseJSPSettingsConfigurationAction;
 import com.liferay.portal.kernel.portlet.ConfigurationAction;
 import com.liferay.wiki.constants.WikiPortletKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -21,7 +21,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Iván Zaera
  */
 @Component(
-	property = "javax.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
+	property = "jakarta.portlet.name=" + WikiPortletKeys.WIKI_ADMIN,
 	service = ConfigurationAction.class
 )
 public class WikiAdminConfigurationAction
@@ -29,7 +29,7 @@ public class WikiAdminConfigurationAction
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
-		return "/wiki_admin/configuration.jsp";
+		return "/wiki_admin/configuration_browse.jsp";
 	}
 
 	@Override
@@ -40,7 +40,6 @@ public class WikiAdminConfigurationAction
 
 		validateEmail(actionRequest, "emailPageAdded");
 		validateEmail(actionRequest, "emailPageUpdated");
-		validateEmailFrom(actionRequest);
 
 		super.processAction(portletConfig, actionRequest, actionResponse);
 	}

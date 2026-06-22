@@ -107,11 +107,18 @@ public class CommerceChannelModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceChannel";
 
+	public static final String ENTITY_ALIAS = "commerceChannel";
+
+	public static final String FILTER_PK_COLUMN_NAME = "commerceChannelId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceChannel.createDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CommerceChannel.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY commerceChannel.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1292,3 +1299,4 @@ public class CommerceChannelModelImpl
 	private CommerceChannel _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1002297807

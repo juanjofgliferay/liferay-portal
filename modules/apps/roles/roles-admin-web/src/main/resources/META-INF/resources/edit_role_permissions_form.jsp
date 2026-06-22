@@ -37,6 +37,18 @@ List<String> modelResources = null;
 if (Validator.isNotNull(portletResource)) {
 	modelResources = ResourceActionsUtil.getPortletModelResources(portletResource);
 }
+
+ObjectDefinition objectDefinition = null;
+
+if (FeatureFlagManagerUtil.isEnabled(company.getCompanyId(), "LPD-69877") && Validator.isNotNull(portletResource)) {
+	String className = portletResource;
+
+	if (portletResource.startsWith(ObjectPortletKeys.OBJECT_DEFINITIONS + StringPool.UNDERLINE)) {
+		className = ObjectDefinitionConstants.CLASS_NAME_PREFIX_CUSTOM_OBJECT_DEFINITION + portletResource.substring(ObjectPortletKeys.OBJECT_DEFINITIONS.length() + 1);
+	}
+
+	objectDefinition = ObjectDefinitionLocalServiceUtil.fetchObjectDefinitionByClassName(company.getCompanyId(), className);
+}
 %>
 
 <portlet:actionURL name="updateActions" var="editRolePermissionsURL">
@@ -55,7 +67,7 @@ if (Validator.isNotNull(portletResource)) {
 
 	<clay:sheet>
 		<clay:sheet-header>
-			<h3 class="sheet-title"><%= HtmlUtil.escape(portletResourceLabel) %></h3>
+			<h3 class="sheet-title" data-qa-id="portletResourceLabel"><%= HtmlUtil.escape(portletResourceLabel) %></h3>
 		</clay:sheet-header>
 
 		<%
@@ -73,9 +85,26 @@ if (Validator.isNotNull(portletResource)) {
 		}
 		%>
 
+		<c:if test="<%= (objectDefinition != null) && !objectDefinition.isAllowStandaloneObjectEntry() && objectDefinition.isRootDescendantNode() %>">
+			<clay:alert
+				displayType="info"
+				message="standalone-entries-are-disabled"
+			/>
+		</c:if>
+
 		<clay:sheet-section>
 			<c:if test="<%= Validator.isNotNull(applicationPermissionsLabel) %>">
-				<h4 class="sheet-subtitle"><liferay-ui:message key="<%= applicationPermissionsLabel %>" /> <liferay-ui:icon-help message='<%= applicationPermissionsLabel + "-help" %>' /></h4>
+				<div class="sheet-subtitle">
+					<liferay-ui:message key="<%= applicationPermissionsLabel %>" />
+
+					<clay:icon
+						aria-label='<%= LanguageUtil.get(request, applicationPermissionsLabel + "-help") %>'
+						cssClass="lfr-portal-tooltip"
+						data-title='<%= LanguageUtil.get(request, applicationPermissionsLabel + "-help") %>'
+						symbol="question-circle-full"
+						tabindex="0"
+					/>
+				</div>
 			</c:if>
 
 			<liferay-util:include page="/edit_role_permissions_resource.jsp" servletContext="<%= application %>" />
@@ -83,7 +112,17 @@ if (Validator.isNotNull(portletResource)) {
 
 		<c:if test="<%= (modelResources != null) && !modelResources.isEmpty() %>">
 			<clay:sheet-section>
-				<h4 class="sheet-subtitle"><liferay-ui:message key="resource-permissions" /> <liferay-ui:icon-help message="resource-permissions-help" /></h4>
+				<div class="sheet-subtitle">
+					<liferay-ui:message key="resource-permissions" />
+
+					<clay:icon
+						aria-label='<%= LanguageUtil.get(request, "resource-permissions-help") %>'
+						cssClass="lfr-portal-tooltip"
+						data-title='<%= LanguageUtil.get(request, "resource-permissions-help") %>'
+						symbol="question-circle-full"
+						tabindex="0"
+					/>
+				</div>
 
 				<div class="permission-group">
 
@@ -96,7 +135,7 @@ if (Validator.isNotNull(portletResource)) {
 						String curModelResourceName = ResourceActionsUtil.getModelResource(request, curModelResource);
 					%>
 
-						<h5 class="sheet-tertiary-title" id="<%= roleDisplayContext.getResourceHtmlId(curModelResource) %>"><%= curModelResourceName %></h5>
+						<div class="sheet-tertiary-title" id="<%= roleDisplayContext.getResourceHtmlId(curModelResource) %>"><%= curModelResourceName %></div>
 
 						<%
 						request.setAttribute("edit_role_permissions.jsp-curModelResource", curModelResource);
@@ -115,7 +154,7 @@ if (Validator.isNotNull(portletResource)) {
 
 		<c:if test="<%= portletResource.equals(PortletKeys.PORTLET_DISPLAY_TEMPLATE) || portletResource.equals(TemplatePortletKeys.TEMPLATE) %>">
 			<clay:sheet-section>
-				<h4 class="sheet-subtitle"><liferay-ui:message key="related-application-permissions" /></h4>
+				<div class="sheet-subtitle"><liferay-ui:message key="related-application-permissions" /></div>
 
 				<div class="related-permissions">
 

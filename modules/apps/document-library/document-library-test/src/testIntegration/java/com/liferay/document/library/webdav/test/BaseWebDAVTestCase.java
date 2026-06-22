@@ -7,6 +7,7 @@ package com.liferay.document.library.webdav.test;
 
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -18,8 +19,6 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.webdav.WebDAVUtil;
 import com.liferay.portal.kernel.webdav.methods.Method;
-import com.liferay.portal.test.log.LogCapture;
-import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.webdav.WebDAVServlet;
 
@@ -124,12 +123,7 @@ public class BaseWebDAVTestCase {
 			mockHttpServletRequest.addHeader(entry.getKey(), entry.getValue());
 		}
 
-		try (LogCapture logCapture1 = LoggerTestUtil.configureLog4JLogger(
-				"org.apache.poi.util.XMLHelper", LoggerTestUtil.WARN);
-			LogCapture logCapture2 = LoggerTestUtil.configureLog4JLogger(
-				"org.apache.xmlbeans.impl.common.SAXHelper",
-				LoggerTestUtil.WARN)) {
-
+		try {
 			WebDAVServlet webDAVServlet = new WebDAVServlet();
 
 			MockHttpServletResponse mockHttpServletResponse =
@@ -312,10 +306,6 @@ public class BaseWebDAVTestCase {
 		return _FOLDER_NAME;
 	}
 
-	protected String getGroupFriendlyURL() {
-		return _GROUP_FRIENDLY_URL;
-	}
-
 	protected String getUserAgent() {
 		return _DEFAULT_USER_AGENT;
 	}
@@ -326,19 +316,15 @@ public class BaseWebDAVTestCase {
 
 	private static final String _FOLDER_NAME = "WebDAVTest";
 
-	private static final String _GROUP_FRIENDLY_URL = "/guest";
-
 	private static final String _LOCK_XML;
 
 	private static final String _PATH_INFO_PREFACE = StringBundler.concat(
-		_GROUP_FRIENDLY_URL, "/document_library/", _FOLDER_NAME, "/");
+		GroupConstants.GUEST_FRIENDLY_URL, "/document_library/", _FOLDER_NAME,
+		"/");
 
 	private static final String _PROPFIND_XML;
 
 	private static final String _SERVLET_PATH = "";
-
-	@Inject
-	private static WebDAVStorage _webDAVStorage;
 
 	static {
 		_LOCK_XML = StringBundler.concat(
@@ -354,5 +340,8 @@ public class BaseWebDAVTestCase {
 			"<D:propfind xmlns:D=\"DAV:\">\n", "<D:allprop/>\n",
 			"</D:propfind>");
 	}
+
+	@Inject
+	private WebDAVStorage _webDAVStorage;
 
 }

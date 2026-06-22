@@ -12,19 +12,29 @@ import com.google.ical.values.DateValue;
 import com.google.ical.values.DateValueImpl;
 
 import com.liferay.calendar.model.CalendarBooking;
+import com.liferay.calendar.recurrence.Frequency;
 import com.liferay.calendar.recurrence.PositionalWeekday;
 import com.liferay.calendar.recurrence.Recurrence;
 import com.liferay.calendar.recurrence.Weekday;
 import com.liferay.calendar.util.comparator.CalendarBookingStartTimeComparator;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.text.ParseException;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -187,7 +197,8 @@ public class RecurrenceUtil {
 		List<CalendarBooking> calendarBookings) {
 
 		calendarBookings = ListUtil.sort(
-			calendarBookings, new CalendarBookingStartTimeComparator(false));
+			calendarBookings,
+			CalendarBookingStartTimeComparator.getInstance(false));
 
 		CalendarBooking lastCalendarBooking = calendarBookings.get(0);
 
@@ -219,6 +230,86 @@ public class RecurrenceUtil {
 		return lastCalendarBooking;
 	}
 
+	public static String getSummary(
+		CalendarBooking calendarBooking, Recurrence recurrence) {
+
+		if (recurrence == null) {
+			return LanguageUtil.get(
+				LocaleUtil.getMostRelevantLocale(), "false");
+		}
+
+		List<Object> arguments = new ArrayList<>();
+
+		StringBundler sb = new StringBundler(4);
+
+		Frequency frequency = recurrence.getFrequency();
+
+		if (recurrence.getInterval() == 1) {
+			sb.append(StringUtil.toLowerCase(frequency.toString()));
+		}
+		else {
+			sb.append("every-x-");
+			sb.append(_intervalUnits.get(frequency));
+
+			arguments.add(recurrence.getInterval());
+		}
+
+		PositionalWeekday positionalWeekday = recurrence.getPositionalWeekday();
+
+		List<Weekday> weekdays = recurrence.getWeekdays();
+
+		if ((positionalWeekday != null) && (frequency != Frequency.WEEKLY)) {
+			Weekday weekday = positionalWeekday.getWeekday();
+
+			if (frequency == Frequency.MONTHLY) {
+				sb.append("-on-x-x");
+
+				arguments.add(
+					_positionLabels.get(positionalWeekday.getPosition()));
+				arguments.add(_weekdayLabels.get(weekday.toString()));
+			}
+			else {
+				Date startDate = new Date(calendarBooking.getStartTime());
+
+				sb.append("-on-x-x-of-x");
+
+				arguments.add(
+					_positionLabels.get(positionalWeekday.getPosition()));
+				arguments.add(_weekdayLabels.get(weekday.toString()));
+				arguments.add(_monthLabels.get(startDate.getMonth()));
+			}
+		}
+		else if ((frequency == Frequency.WEEKLY) && !weekdays.isEmpty()) {
+			sb.append("-on-x");
+
+			arguments.add(
+				ListUtil.toString(
+					TransformUtil.transform(
+						weekdays,
+						weekday -> _weekdayLabels.get(weekday.toString())),
+					StringPool.BLANK));
+		}
+
+		Calendar untilJCalendar = recurrence.getUntilJCalendar();
+
+		if (recurrence.getCount() > 0) {
+			sb.append("-x-times");
+
+			arguments.add(recurrence.getCount());
+		}
+		else if (untilJCalendar != null) {
+			sb.append("-until-x-x-x");
+
+			arguments.add(_monthLabels.get(untilJCalendar.get(Calendar.MONTH)));
+			arguments.add(untilJCalendar.get(Calendar.DATE));
+			arguments.add(untilJCalendar.get(Calendar.YEAR));
+		}
+
+		return LanguageUtil.format(
+			LocaleUtil.getMostRelevantLocale(), sb.toString(),
+			arguments.toArray(new Object[0]));
+	}
+
 	public static Recurrence inTimeZone(
 		Recurrence recurrence, Calendar startTimeJCalendar, TimeZone timeZone) {
 
@@ -230,50 +321,41 @@ public class RecurrenceUtil {
 
 		TimeZone originalTimeZone = recurrence.getTimeZone();
 
-		List<Calendar> newExceptionJCalendars = new ArrayList<>();
-
 		List<Calendar> exceptionJCalendars =
 			recurrence.getExceptionJCalendars();
 
 		Calendar recurrenceStartTimeJCalendar = JCalendarUtil.getJCalendar(
 			startTimeJCalendar, originalTimeZone);
 
-		for (Calendar exceptionJCalendar : exceptionJCalendars) {
-			exceptionJCalendar = JCalendarUtil.mergeJCalendar(
-				exceptionJCalendar, recurrenceStartTimeJCalendar,
-				originalTimeZone);
+		recurrence.setExceptionJCalendars(
+			TransformUtil.transform(
+				exceptionJCalendars,
+				exceptionJCalendar -> {
+					exceptionJCalendar = JCalendarUtil.mergeJCalendar(
+						exceptionJCalendar, recurrenceStartTimeJCalendar,
+						originalTimeZone);
 
-			exceptionJCalendar = JCalendarUtil.getJCalendar(
-				exceptionJCalendar, timeZone);
+					return JCalendarUtil.getJCalendar(
+						exceptionJCalendar, timeZone);
+				}));
 
-			newExceptionJCalendars.add(exceptionJCalendar);
-		}
+		recurrence.setPositionalWeekdays(
+			TransformUtil.transform(
+				recurrence.getPositionalWeekdays(),
+				positionalWeekday -> {
+					Calendar jCalendar = JCalendarUtil.getJCalendar(
+						startTimeJCalendar, originalTimeZone);
 
-		recurrence.setExceptionJCalendars(newExceptionJCalendars);
+					Weekday weekday = positionalWeekday.getWeekday();
 
-		List<PositionalWeekday> newPositionalWeekdays = new ArrayList<>();
+					jCalendar.set(
+						Calendar.DAY_OF_WEEK, weekday.getCalendarWeekday());
 
-		List<PositionalWeekday> positionalWeekdays =
-			recurrence.getPositionalWeekdays();
-
-		for (PositionalWeekday positionalWeekday : positionalWeekdays) {
-			Calendar jCalendar = JCalendarUtil.getJCalendar(
-				startTimeJCalendar, originalTimeZone);
-
-			Weekday weekday = positionalWeekday.getWeekday();
-
-			jCalendar.set(Calendar.DAY_OF_WEEK, weekday.getCalendarWeekday());
-
-			weekday = Weekday.getWeekday(
-				JCalendarUtil.getJCalendar(jCalendar, timeZone));
-
-			positionalWeekday = new PositionalWeekday(
-				weekday, positionalWeekday.getPosition());
-
-			newPositionalWeekdays.add(positionalWeekday);
-		}
-
-		recurrence.setPositionalWeekdays(newPositionalWeekdays);
+					return new PositionalWeekday(
+						Weekday.getWeekday(
+							JCalendarUtil.getJCalendar(jCalendar, timeZone)),
+						positionalWeekday.getPosition());
+				}));
 		recurrence.setTimeZone(timeZone);
 
 		Calendar untilJCalendar = recurrence.getUntilJCalendar();
@@ -324,5 +406,69 @@ public class RecurrenceUtil {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(RecurrenceUtil.class);
+
+	private static final Map<Frequency, String> _intervalUnits =
+		HashMapBuilder.put(
+			Frequency.DAILY, "days"
+		).put(
+			Frequency.MONTHLY, "months"
+		).put(
+			Frequency.WEEKLY, "weeks"
+		).put(
+			Frequency.YEARLY, "years"
+		).build();
+	private static final Map<Integer, String> _monthLabels = HashMapBuilder.put(
+		0, "january"
+	).put(
+		1, "february"
+	).put(
+		2, "march"
+	).put(
+		3, "april"
+	).put(
+		4, "may"
+	).put(
+		5, "june"
+	).put(
+		6, "july"
+	).put(
+		7, "august"
+	).put(
+		8, "september"
+	).put(
+		9, "october"
+	).put(
+		10, "november"
+	).put(
+		11, "december"
+	).build();
+	private static final Map<Integer, String> _positionLabels =
+		HashMapBuilder.put(
+			-1, "position.last"
+		).put(
+			1, "position.first"
+		).put(
+			2, "position.second"
+		).put(
+			3, "position.third"
+		).put(
+			4, "position.fourth"
+		).build();
+	private static final Map<String, String> _weekdayLabels =
+		HashMapBuilder.put(
+			"FR", "weekday.FR"
+		).put(
+			"MO", "weekday.MO"
+		).put(
+			"SA", "weekday.SA"
+		).put(
+			"SU", "weekday.SU"
+		).put(
+			"TH", "weekday.TH"
+		).put(
+			"TU", "weekday.TU"
+		).put(
+			"WE", "weekday.WE"
+		).build();
 
 }

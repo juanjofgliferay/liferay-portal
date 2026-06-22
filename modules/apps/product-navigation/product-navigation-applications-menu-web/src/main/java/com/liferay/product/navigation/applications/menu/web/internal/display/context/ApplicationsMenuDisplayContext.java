@@ -14,16 +14,16 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.webserver.WebServerServletTokenUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.product.navigation.applications.menu.web.internal.constants.ProductNavigationApplicationsMenuPortletKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -44,24 +44,25 @@ public class ApplicationsMenuDisplayContext {
 				WebKeys.THEME_DISPLAY);
 
 		return HashMapBuilder.<String, Object>put(
-			"liferayLogoURL",
+			"defaultLogoURL",
 			() -> {
-				LiferayPortletURL applicationsMenuLiferayLogoURL =
+				LiferayPortletURL applicationsMenuDefaultLogoURL =
 					PortletURLFactoryUtil.create(
 						_httpServletRequest,
 						ProductNavigationApplicationsMenuPortletKeys.
 							PRODUCT_NAVIGATION_APPLICATIONS_MENU,
 						PortletRequest.RESOURCE_PHASE);
 
-				applicationsMenuLiferayLogoURL.setResourceID(
-					"/applications_menu/liferay_logo");
+				applicationsMenuDefaultLogoURL.setResourceID(
+					"/applications_menu/default_logo");
 
-				return applicationsMenuLiferayLogoURL.toString();
+				return applicationsMenuDefaultLogoURL.toString();
 			}
 		).put(
 			"liferayName",
 			GetterUtil.getString(
-				PropsValues.APPLICATIONS_MENU_DEFAULT_LIFERAY_NAME, "Liferay")
+				PropsValues.APPLICATIONS_MENU_DEFAULT_LIFERAY_NAME,
+				"Liferay DXP")
 		).put(
 			"panelAppsURL",
 			() -> {
@@ -74,6 +75,8 @@ public class ApplicationsMenuDisplayContext {
 
 				applicationsMenuPanelAppsURL.setResourceID(
 					"/applications_menu/panel_apps");
+				applicationsMenuPanelAppsURL.setParameter(
+					"backURL", PortalUtil.getCurrentURL(_httpServletRequest));
 				applicationsMenuPanelAppsURL.setParameter(
 					"selectedPortletId", themeDisplay.getPpid());
 
@@ -91,7 +94,7 @@ public class ApplicationsMenuDisplayContext {
 				).put(
 					"logoURL",
 					StringBundler.concat(
-						themeDisplay.getPathImage(), "/company_logo?img_id=",
+						themeDisplay.getPathImage(), "/liferay_logo?img_id=",
 						company.getLogoId(), "&t=",
 						WebServerServletTokenUtil.getToken(company.getLogoId()))
 				).put(

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -49,149 +48,214 @@ public class QueryEntry implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(QueryEntry.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Clause[] getClauses() {
+		if (_clausesSupplier != null) {
+			clauses = _clausesSupplier.get();
+
+			_clausesSupplier = null;
+		}
+
 		return clauses;
 	}
 
 	public void setClauses(Clause[] clauses) {
 		this.clauses = clauses;
+
+		_clausesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClauses(
 		UnsafeSupplier<Clause[], Exception> clausesUnsafeSupplier) {
 
-		try {
-			clauses = clausesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_clausesSupplier = () -> {
+			try {
+				return clausesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Clause[] clauses;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Clause[]> _clausesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Condition getCondition() {
+		if (_conditionSupplier != null) {
+			condition = _conditionSupplier.get();
+
+			_conditionSupplier = null;
+		}
+
 		return condition;
 	}
 
 	public void setCondition(Condition condition) {
 		this.condition = condition;
+
+		_conditionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCondition(
 		UnsafeSupplier<Condition, Exception> conditionUnsafeSupplier) {
 
-		try {
-			condition = conditionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_conditionSupplier = () -> {
+			try {
+				return conditionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Condition condition;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Condition> _conditionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getEnabled() {
+		if (_enabledSupplier != null) {
+			enabled = _enabledSupplier.get();
+
+			_enabledSupplier = null;
+		}
+
 		return enabled;
 	}
 
 	public void setEnabled(Boolean enabled) {
 		this.enabled = enabled;
+
+		_enabledSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEnabled(
 		UnsafeSupplier<Boolean, Exception> enabledUnsafeSupplier) {
 
-		try {
-			enabled = enabledUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_enabledSupplier = () -> {
+			try {
+				return enabledUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean enabled;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _enabledSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Clause[] getPostFilterClauses() {
+		if (_postFilterClausesSupplier != null) {
+			postFilterClauses = _postFilterClausesSupplier.get();
+
+			_postFilterClausesSupplier = null;
+		}
+
 		return postFilterClauses;
 	}
 
 	public void setPostFilterClauses(Clause[] postFilterClauses) {
 		this.postFilterClauses = postFilterClauses;
+
+		_postFilterClausesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPostFilterClauses(
 		UnsafeSupplier<Clause[], Exception> postFilterClausesUnsafeSupplier) {
 
-		try {
-			postFilterClauses = postFilterClausesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_postFilterClausesSupplier = () -> {
+			try {
+				return postFilterClausesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Clause[] postFilterClauses;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Clause[]> _postFilterClausesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Rescore[] getRescores() {
+		if (_rescoresSupplier != null) {
+			rescores = _rescoresSupplier.get();
+
+			_rescoresSupplier = null;
+		}
+
 		return rescores;
 	}
 
 	public void setRescores(Rescore[] rescores) {
 		this.rescores = rescores;
+
+		_rescoresSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRescores(
 		UnsafeSupplier<Rescore[], Exception> rescoresUnsafeSupplier) {
 
-		try {
-			rescores = rescoresUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_rescoresSupplier = () -> {
+			try {
+				return rescoresUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Rescore[] rescores;
+
+	@JsonIgnore
+	private Supplier<Rescore[]> _rescoresSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -220,6 +284,8 @@ public class QueryEntry implements Serializable {
 
 		sb.append("{");
 
+		Clause[] clauses = getClauses();
+
 		if (clauses != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -240,6 +306,8 @@ public class QueryEntry implements Serializable {
 			sb.append("]");
 		}
 
+		Condition condition = getCondition();
+
 		if (condition != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -250,6 +318,8 @@ public class QueryEntry implements Serializable {
 			sb.append(String.valueOf(condition));
 		}
 
+		Boolean enabled = getEnabled();
+
 		if (enabled != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -259,6 +329,8 @@ public class QueryEntry implements Serializable {
 
 			sb.append(enabled);
 		}
+
+		Clause[] postFilterClauses = getPostFilterClauses();
 
 		if (postFilterClauses != null) {
 			if (sb.length() > 1) {
@@ -279,6 +351,8 @@ public class QueryEntry implements Serializable {
 
 			sb.append("]");
 		}
+
+		Rescore[] rescores = getRescores();
 
 		if (rescores != null) {
 			if (sb.length() > 1) {
@@ -305,8 +379,8 @@ public class QueryEntry implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.QueryEntry",
 		name = "x-class-name"
 	)
@@ -352,7 +426,10 @@ public class QueryEntry implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -398,3 +475,4 @@ public class QueryEntry implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:636117096

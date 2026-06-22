@@ -112,11 +112,7 @@ public class CommerceChannelPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CommerceChannel newCommerceChannel = _persistence.create(pk);
-
-		newCommerceChannel.setMvccVersion(RandomTestUtil.nextLong());
+		CommerceChannel newCommerceChannel = addCommerceChannel();
 
 		newCommerceChannel.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -583,12 +579,6 @@ public class CommerceChannelPersistenceTest {
 
 	private void _assertOriginalValues(CommerceChannel commerceChannel) {
 		Assert.assertEquals(
-			Long.valueOf(commerceChannel.getSiteGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				commerceChannel, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "siteGroupId"));
-
-		Assert.assertEquals(
 			commerceChannel.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				commerceChannel, "getColumnOriginalValue",
@@ -604,8 +594,6 @@ public class CommerceChannelPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceChannel commerceChannel = _persistence.create(pk);
-
-		commerceChannel.setMvccVersion(RandomTestUtil.nextLong());
 
 		commerceChannel.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -651,3 +639,4 @@ public class CommerceChannelPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-21638614

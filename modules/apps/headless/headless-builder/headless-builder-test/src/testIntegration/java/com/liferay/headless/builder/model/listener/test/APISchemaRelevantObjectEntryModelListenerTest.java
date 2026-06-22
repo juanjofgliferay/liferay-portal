@@ -6,10 +6,12 @@
 package com.liferay.headless.builder.model.listener.test;
 
 import com.liferay.headless.builder.test.BaseTestCase;
-import com.liferay.headless.builder.util.ObjectDefinitionTestUtil;
+import com.liferay.headless.builder.test.util.ObjectDefinitionTestUtil;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectEntry;
+import com.liferay.object.rest.test.util.ObjectEntryTestUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -17,7 +19,7 @@ import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 
 import java.util.Collections;
 
@@ -28,11 +30,12 @@ import org.junit.Test;
 /**
  * @author Sergio Jiménez del Coso
  */
-@FeatureFlags("LPS-178642")
+@FeatureFlag("LPS-178642")
 public class APISchemaRelevantObjectEntryModelListenerTest
 	extends BaseTestCase {
 
 	@Before
+	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 
@@ -43,6 +46,10 @@ public class APISchemaRelevantObjectEntryModelListenerTest
 					RandomTestUtil.randomString(),
 					"x" + RandomTestUtil.randomString(), false)),
 			ObjectDefinitionConstants.SCOPE_COMPANY);
+
+		_objectEntry = ObjectEntryTestUtil.addObjectEntry(
+			_objectDefinition, "x" + RandomTestUtil.randomString(),
+			RandomTestUtil.randomString());
 	}
 
 	@Test
@@ -57,103 +64,137 @@ public class APISchemaRelevantObjectEntryModelListenerTest
 			).toString(),
 			"headless-builder/applications", Http.Method.POST);
 
-		JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
+		JSONObject jsonObject1 = HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
-				"mainObjectDefinitionERC",
-				_objectDefinition.getExternalReferenceCode()
-			).put(
-				"name", RandomTestUtil.randomString()
-			).toString(),
-			"headless-builder/schemas", Http.Method.POST);
-
-		Assert.assertEquals("BAD_REQUEST", jsonObject.get("status"));
-		Assert.assertEquals(
-			"An API schema must be related to an API application.",
-			jsonObject.get("title"));
-
-		jsonObject = HTTPTestUtil.invokeToJSONObject(
-			JSONUtil.put(
-				"mainObjectDefinitionERC",
-				_objectDefinition.getExternalReferenceCode()
-			).put(
-				"name", RandomTestUtil.randomString()
-			).toString(),
-			"headless-builder/schemas", Http.Method.POST);
-
-		Assert.assertEquals("BAD_REQUEST", jsonObject.get("status"));
-		Assert.assertEquals(
-			"An API schema must be related to an API application.",
-			jsonObject.get("title"));
-
-		jsonObject = HTTPTestUtil.invokeToJSONObject(
-			JSONUtil.put(
-				"mainObjectDefinitionERC",
-				_objectDefinition.getExternalReferenceCode()
+				"mainObjectDefinitionERC", "L_USER"
 			).put(
 				"name", RandomTestUtil.randomString()
 			).put(
-				"r_apiApplicationToAPISchemas_c_apiApplicationId",
-				RandomTestUtil.randomLong()
+				"r_apiApplicationToAPISchemas_l_apiApplicationId",
+				apiApplicationJSONObject.getLong("id")
 			).toString(),
 			"headless-builder/schemas", Http.Method.POST);
 
-		Assert.assertEquals("BAD_REQUEST", jsonObject.get("status"));
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
 		Assert.assertEquals(
-			"An API schema must be related to an API application.",
-			jsonObject.get("title"));
+			"An API schema must be a modifiable object definition.",
+			jsonObject1.get("title"));
 
-		jsonObject = HTTPTestUtil.invokeToJSONObject(
+		jsonObject1 = HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
 				"mainObjectDefinitionERC", RandomTestUtil.randomString()
 			).put(
 				"name", RandomTestUtil.randomString()
 			).put(
-				"r_apiApplicationToAPISchemas_c_apiApplicationId",
+				"r_apiApplicationToAPISchemas_l_apiApplicationId",
 				apiApplicationJSONObject.getLong("id")
 			).toString(),
 			"headless-builder/schemas", Http.Method.POST);
 
-		Assert.assertEquals("BAD_REQUEST", jsonObject.get("status"));
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
 		Assert.assertEquals(
 			"An API schema must be an existing object definition.",
-			jsonObject.get("title"));
+			jsonObject1.get("title"));
 
-		jsonObject = HTTPTestUtil.invokeToJSONObject(
+		jsonObject1 = HTTPTestUtil.invokeToJSONObject(
+			JSONUtil.put(
+				"mainObjectDefinitionERC",
+				_objectDefinition.getExternalReferenceCode()
+			).put(
+				"name", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/schemas", Http.Method.POST);
+
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
+		Assert.assertEquals(
+			"An API schema must be related to an API application.",
+			jsonObject1.get("title"));
+
+		jsonObject1 = HTTPTestUtil.invokeToJSONObject(
+			JSONUtil.put(
+				"mainObjectDefinitionERC",
+				_objectDefinition.getExternalReferenceCode()
+			).put(
+				"name", RandomTestUtil.randomString()
+			).toString(),
+			"headless-builder/schemas", Http.Method.POST);
+
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
+		Assert.assertEquals(
+			"An API schema must be related to an API application.",
+			jsonObject1.get("title"));
+
+		jsonObject1 = HTTPTestUtil.invokeToJSONObject(
+			JSONUtil.put(
+				"mainObjectDefinitionERC",
+				_objectDefinition.getExternalReferenceCode()
+			).put(
+				"name", RandomTestUtil.randomString()
+			).put(
+				"r_apiApplicationToAPISchemas_l_apiApplicationErc",
+				_objectEntry.getExternalReferenceCode()
+			).toString(),
+			"headless-builder/schemas", Http.Method.POST);
+
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
+		Assert.assertEquals(
+			"An API schema must be related to an API application.",
+			jsonObject1.get("title"));
+
+		JSONObject jsonObject2 = HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
 				"mainObjectDefinitionERC",
 				_objectDefinition.getExternalReferenceCode()
 			).put(
 				"name", _API_SCHEMA_NAME
 			).put(
-				"r_apiApplicationToAPISchemas_c_apiApplicationId",
+				"r_apiApplicationToAPISchemas_l_apiApplicationId",
 				apiApplicationJSONObject.getLong("id")
 			).toString(),
 			"headless-builder/schemas", Http.Method.POST);
 
 		Assert.assertEquals(
 			0,
-			jsonObject.getJSONObject(
+			jsonObject2.getJSONObject(
 				"status"
 			).get(
 				"code"
 			));
 
-		jsonObject = HTTPTestUtil.invokeToJSONObject(
+		jsonObject1 = HTTPTestUtil.invokeToJSONObject(
 			JSONUtil.put(
 				"mainObjectDefinitionERC",
 				_objectDefinition.getExternalReferenceCode()
 			).put(
 				"name", _API_SCHEMA_NAME
 			).put(
-				"r_apiApplicationToAPISchemas_c_apiApplicationId",
+				"r_apiApplicationToAPISchemas_l_apiApplicationId",
 				apiApplicationJSONObject.getLong("id")
 			).toString(),
 			"headless-builder/schemas", Http.Method.POST);
 
-		Assert.assertEquals("BAD_REQUEST", jsonObject.get("status"));
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
 		Assert.assertEquals(
 			"There is an API schema with the same name in the API application.",
-			jsonObject.get("title"));
+			jsonObject1.get("title"));
+
+		jsonObject1 = HTTPTestUtil.invokeToJSONObject(
+			JSONUtil.put(
+				"mainObjectDefinitionERC",
+				_objectDefinition.getExternalReferenceCode()
+			).put(
+				"name", RandomTestUtil.randomString()
+			).put(
+				"r_apiApplicationToAPISchemas_l_apiApplicationId",
+				jsonObject2.getLong("id")
+			).toString(),
+			"headless-builder/schemas", Http.Method.POST);
+
+		Assert.assertEquals("BAD_REQUEST", jsonObject1.get("status"));
+		Assert.assertEquals(
+			"The value is invalid for object field " +
+				"\"r_apiApplicationToAPISchemas_l_apiApplicationId\"",
+			jsonObject1.get("title"));
 	}
 
 	private static final String _API_SCHEMA_NAME =
@@ -161,5 +202,7 @@ public class APISchemaRelevantObjectEntryModelListenerTest
 
 	@DeleteAfterTestRun
 	private ObjectDefinition _objectDefinition;
+
+	private ObjectEntry _objectEntry;
 
 }

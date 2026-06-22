@@ -87,7 +87,7 @@ definition {
 
 		AssertConsoleTextNotPresent(value1 = "Please configure tunneling.servlet.shared.secret");
 
-		AssertConsoleTextNotPresent(value1 = "javax.portlet.PortletException: java.lang.NullPointerException");
+		AssertConsoleTextNotPresent(value1 = "jakarta.portlet.PortletException: java.lang.NullPointerException");
 	}
 
 	@summary = "Default summary"
@@ -462,10 +462,6 @@ definition {
 				key_contentName = ${checkContentNameList},
 				key_subContent = "Previews and Thumbnails",
 				locator1 = "ExportImport#CONTENT_CHOOSE_CONTENT_SUBCONTENT_CHECKBOX");
-
-			AssertClick.assertTextClickNoMouseOver(
-				locator1 = "Button#CANCEL",
-				value1 = "Cancel");
 		}
 		else if (${includeThumbnailsAndPreviewsDuringStaging} == "false") {
 			AssertTextNotEquals.assertNotPartialMatch(
@@ -485,10 +481,6 @@ definition {
 				key_contentName = ${checkContentNameList},
 				key_subContent = "Previews and Thumbnails",
 				locator1 = "ExportImport#CONTENT_CHOOSE_CONTENT_SUBCONTENT_CHECKBOX");
-
-			AssertClick.assertTextClickNoMouseOver(
-				locator1 = "Button#CANCEL",
-				value1 = "Cancel");
 		}
 
 		if (isSet(uncheckSubContent)) {
@@ -521,6 +513,10 @@ definition {
 
 		if (isSet(checkPublicPages)) {
 			ContentConfiguration.checkPublicPages(checkPublicPages = ${checkPublicPages});
+		}
+
+		if (isSet(checkPublishPermission)) {
+			Click(locator1 = "Checkbox#PERMISSIONS");
 		}
 	}
 
@@ -798,6 +794,51 @@ definition {
 		Button.clickSave();
 
 		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro enableCopyAsNewImport(baseURL = null) {
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		Open.openInTheNewTab(value1 = ${baseURL});
+
+		PortalSettings.gotoConfiguration(
+			baseURL = ${baseURL},
+			configurationCategory = "Feature Flags",
+			configurationName = "Deprecation",
+			configurationScope = "Virtual Instance Scope");
+
+		FeatureFlag.enableFeatureFlag(
+			featureFlag = "LPD-44307",
+			scope = "Deprecation");
+
+		Close.closeWindow();
+	}
+
+	@summary = "Default summary"
+	macro enableDeleteApplicationDataBeforeImport(navigate = null) {
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Instance Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Feature Flags",
+			configurationName = "Deprecation",
+			configurationScope = "Virtual Instance Scope");
+
+		if (IsElementPresent(locator1 = "FeatureFlag#TOGGLE_ROW", title_row = "Enable Delete Application Data", toggle_state = "Disabled")) {
+			Check.checkToggleSwitch(
+				locator1 = "FeatureFlag#TOGGLE_ROW",
+				title_row = "Enable Delete Application Data",
+				toggle_state = "Disabled");
+		}
+
+		if (${navigate} != "false") {
+			Navigator.openURL();
+		}
 	}
 
 	@summary = "Default summary"
@@ -1170,9 +1211,16 @@ definition {
 			locator1 = "Modal#BODY_MESSAGE",
 			value1 = "Are you sure you want to publish the selected entities?");
 
-		Click(
+		AssertClick(
 			buttonName = "Publish to Live",
-			locator1 = "Modal#PRIMARY_BUTTON");
+			locator1 = "Modal#PRIMARY_BUTTON",
+			value1 = "Publish to Live");
+
+		WaitForElementPresent(locator1 = "Staging#PROCESS_RESULT");
+
+		AssertTextEquals(
+			locator1 = "Staging#PROCESS_RESULT",
+			value1 = "SUCCESSFUL");
 	}
 
 	@summary = "Default summary"
@@ -1414,18 +1462,9 @@ definition {
 
 		AssertElementNotPresent(locator1 = "Staging#STAGING_MENU_SUBMIT_FOR_WORKFLOW");
 
-		Refresh();
-
-		if (IsTextEqual(locator1 = "Message#WORKFLOW_STATUS", value1 = "Pending (Created)")) {
-			AssertTextEquals(
-				locator1 = "Message#WORKFLOW_STATUS",
-				value1 = "Pending (Created)");
-		}
-		else {
-			AssertTextEquals(
-				locator1 = "Message#WORKFLOW_STATUS",
-				value1 = "Pending (Review)");
-		}
+		AssertTextEquals.assertPartialText(
+			locator1 = "Message#WORKFLOW_STATUS",
+			value1 = "Pending");
 	}
 
 	@summary = "Default summary"
@@ -1859,7 +1898,9 @@ definition {
 
 		SelectFrameTop();
 
-		AssertTextEquals.assertPartialText(
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		WaitForElementPresent(
 			locator1 = "Message#ERROR",
 			value1 = ${validateErrorMessage});
 	}

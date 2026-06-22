@@ -7,14 +7,13 @@ package com.liferay.portal.search.tuning.synonyms.web.internal.request;
 
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.search.hits.SearchHits;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
 import com.liferay.portal.search.tuning.synonyms.web.internal.display.context.SynonymSetDisplayContext;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,23 +47,14 @@ public class SearchSynonymSetRequestTest extends BaseSynonymsWebTestCase {
 		setUpSearchEngineAdapter(searchHits);
 
 		_searchSynonymSetRequest = new SearchSynonymSetRequest(
-			_synonymSetIndexName, _httpServletRequest, _queries, _sorts,
-			_searchContainer, searchEngineAdapter);
+			_synonymSetIndexName, _httpServletRequest, _sorts, _searchContainer,
+			searchEngineAdapter);
 
 		SearchSynonymSetResponse searchSynonymSetResponse =
 			_searchSynonymSetRequest.search();
 
 		Assert.assertEquals(
 			searchHits, searchSynonymSetResponse.getSearchHits());
-
-		Mockito.verify(
-			_queries, Mockito.never()
-		).match(
-			Mockito.anyString(), Mockito.anyString()
-		);
-		Mockito.verify(
-			_queries, Mockito.times(1)
-		).matchAll();
 	}
 
 	@Test
@@ -78,28 +68,18 @@ public class SearchSynonymSetRequestTest extends BaseSynonymsWebTestCase {
 		setUpSearchEngineAdapter(searchHits);
 
 		_searchSynonymSetRequest = new SearchSynonymSetRequest(
-			_synonymSetIndexName, _httpServletRequest, _queries, _sorts,
-			_searchContainer, searchEngineAdapter);
+			_synonymSetIndexName, _httpServletRequest, _sorts, _searchContainer,
+			searchEngineAdapter);
 
 		SearchSynonymSetResponse searchSynonymSetResponse =
 			_searchSynonymSetRequest.search();
 
 		Assert.assertEquals(
 			searchHits, searchSynonymSetResponse.getSearchHits());
-
-		Mockito.verify(
-			_queries, Mockito.times(1)
-		).match(
-			Mockito.anyString(), Mockito.anyString()
-		);
-		Mockito.verify(
-			_queries, Mockito.never()
-		).matchAll();
 	}
 
 	private final HttpServletRequest _httpServletRequest = Mockito.mock(
 		HttpServletRequest.class);
-	private final Queries _queries = Mockito.mock(Queries.class);
 	private final SearchContainer<SynonymSetDisplayContext> _searchContainer =
 		Mockito.mock(SearchContainer.class);
 	private SearchSynonymSetRequest _searchSynonymSetRequest;

@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render} from '@testing-library/react';
 import React from 'react';
 import {act} from 'react-dom/test-utils';
 
-import Flags from '../../../src/main/resources/META-INF/resources/flags/js/components/Flags.es';
+import Flags from '../../../src/main/resources/META-INF/resources/flags/js/components/Flags';
 
 const formDataToObject = (formData) =>
 	Array.from(formData).reduce(
@@ -74,19 +74,20 @@ describe('Flags', () => {
 				testingField: 'testingValue',
 			},
 		});
+
 		fetch.mockResponse('');
 
 		await act(async () => {
 			fireEvent.click(getByRole('button'));
-
-			const form = await findByRole('form');
-
-			[...form.elements].forEach((element) => {
-				element.value = 'someValue';
-			});
-
-			fireEvent.submit(form);
 		});
+
+		const form = await findByRole('form');
+
+		[...form.elements].forEach((element) => {
+			element.value = 'someValue';
+		});
+
+		fireEvent.submit(form);
 
 		expect(fetch).toHaveBeenCalledTimes(1);
 

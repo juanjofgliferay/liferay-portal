@@ -13,6 +13,7 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.commerce.product.service.CPDefinitionSpecificationOptionValueLocalService;
+import com.liferay.commerce.product.service.CPSpecificationOptionListTypeDefinitionRelLocalService;
 import com.liferay.commerce.product.service.base.CPSpecificationOptionLocalServiceBaseImpl;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
 import com.liferay.petra.string.CharPool;
@@ -20,6 +21,7 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -47,6 +49,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -75,9 +78,10 @@ public class CPSpecificationOptionLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPSpecificationOption addCPSpecificationOption(
-			long userId, long cpOptionCategoryId, Map<Locale, String> titleMap,
+			String externalReferenceCode, long userId, long cpOptionCategoryId,
+			long[] listTypeDefinitionIds, Map<Locale, String> titleMap,
 			Map<Locale, String> descriptionMap, boolean facetable, String key,
-			ServiceContext serviceContext)
+			double priority, boolean visible, ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userLocalService.getUser(userId);
@@ -93,6 +97,7 @@ public class CPSpecificationOptionLocalServiceImpl
 		CPSpecificationOption cpSpecificationOption =
 			cpSpecificationOptionPersistence.create(cpSpecificationOptionId);
 
+		cpSpecificationOption.setExternalReferenceCode(externalReferenceCode);
 		cpSpecificationOption.setCompanyId(user.getCompanyId());
 		cpSpecificationOption.setUserId(user.getUserId());
 		cpSpecificationOption.setUserName(user.getFullName());
@@ -101,6 +106,8 @@ public class CPSpecificationOptionLocalServiceImpl
 		cpSpecificationOption.setDescriptionMap(descriptionMap);
 		cpSpecificationOption.setFacetable(facetable);
 		cpSpecificationOption.setKey(key);
+		cpSpecificationOption.setPriority(priority);
+		cpSpecificationOption.setVisible(visible);
 		cpSpecificationOption.setExpandoBridgeAttributes(serviceContext);
 
 		cpSpecificationOption = cpSpecificationOptionPersistence.update(
@@ -110,6 +117,19 @@ public class CPSpecificationOptionLocalServiceImpl
 
 		_resourceLocalService.addModelResources(
 			cpSpecificationOption, serviceContext);
+
+		if (listTypeDefinitionIds != null) {
+			for (long listTypeDefinitionId : listTypeDefinitionIds) {
+				if (listTypeDefinitionId <= 0) {
+					continue;
+				}
+
+				_cpSpecificationOptionListTypeDefinitionRelLocalService.
+					addCPSpecificationOptionListTypeDefinitionRel(
+						cpSpecificationOption.getCPSpecificationOptionId(),
+						listTypeDefinitionId);
+			}
+		}
 
 		return cpSpecificationOption;
 	}
@@ -129,6 +149,12 @@ public class CPSpecificationOptionLocalServiceImpl
 
 		_cpDefinitionSpecificationOptionValueLocalService.
 			deleteCPSpecificationOptionDefinitionValues(
+				cpSpecificationOption.getCPSpecificationOptionId());
+
+		// Commerce product specification option list type definition rels
+
+		_cpSpecificationOptionListTypeDefinitionRelLocalService.
+			deleteCPSpecificationOptionListTypeDefinitionRels(
 				cpSpecificationOption.getCPSpecificationOptionId());
 
 		// Resources
@@ -192,12 +218,12 @@ public class CPSpecificationOptionLocalServiceImpl
 	@Override
 	public BaseModelSearchResult<CPSpecificationOption>
 			searchCPSpecificationOptions(
-				long companyId, Boolean facetable, String keywords, int start,
-				int end, Sort sort)
+				long companyId, Boolean facetable, Boolean visible,
+				String keywords, int start, int end, Sort sort)
 		throws PortalException {
 
 		SearchContext searchContext = _buildSearchContext(
-			companyId, facetable, keywords, start, end, sort);
+			companyId, facetable, visible, keywords, start, end, sort);
 
 		return _searchCPSpecificationOptions(searchContext);
 	}
@@ -219,32 +245,53 @@ public class CPSpecificationOptionLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPSpecificationOption updateCPSpecificationOption(
-			long cpSpecificationOptionId, long cpOptionCategoryId,
+			String externalReferenceCode, long cpSpecificationOptionId,
+			long cpOptionCategoryId, long[] listTypeDefinitionIds,
 			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			boolean facetable, String key, ServiceContext serviceContext)
+			boolean facetable, String key, double priority, boolean visible,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		CPSpecificationOption cpSpecificationOption =
 			cpSpecificationOptionPersistence.findByPrimaryKey(
 				cpSpecificationOptionId);
 
-		key = StringUtil.replace(key, CharPool.UNDERLINE, CharPool.DASH);
-
-		key = _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(key);
+		key = _friendlyURLNormalizer.normalizeWithPeriodsAndSlashes(
+			StringUtil.replace(key, CharPool.UNDERLINE, CharPool.DASH));
 
 		_validate(
 			cpSpecificationOption.getCPSpecificationOptionId(),
 			cpSpecificationOption.getCompanyId(), titleMap, key);
 
+		cpSpecificationOption.setExternalReferenceCode(externalReferenceCode);
 		cpSpecificationOption.setCPOptionCategoryId(cpOptionCategoryId);
 		cpSpecificationOption.setTitleMap(titleMap);
 		cpSpecificationOption.setDescriptionMap(descriptionMap);
 		cpSpecificationOption.setFacetable(facetable);
 		cpSpecificationOption.setKey(key);
+		cpSpecificationOption.setPriority(priority);
+		cpSpecificationOption.setVisible(visible);
 		cpSpecificationOption.setExpandoBridgeAttributes(serviceContext);
 
 		cpSpecificationOption = cpSpecificationOptionPersistence.update(
 			cpSpecificationOption);
+
+		if (listTypeDefinitionIds != null) {
+			_cpSpecificationOptionListTypeDefinitionRelLocalService.
+				deleteCPSpecificationOptionListTypeDefinitionRels(
+					cpSpecificationOption.getCPSpecificationOptionId());
+
+			for (long listTypeDefinitionId : listTypeDefinitionIds) {
+				if (listTypeDefinitionId <= 0) {
+					continue;
+				}
+
+				_cpSpecificationOptionListTypeDefinitionRelLocalService.
+					addCPSpecificationOptionListTypeDefinitionRel(
+						cpSpecificationOption.getCPSpecificationOptionId(),
+						listTypeDefinitionId);
+			}
+		}
 
 		_reindexCPDefinitions1(
 			cpSpecificationOption.getCompanyId(), cpSpecificationOptionId);
@@ -253,8 +300,8 @@ public class CPSpecificationOptionLocalServiceImpl
 	}
 
 	private SearchContext _buildSearchContext(
-		long companyId, Boolean facetable, String keywords, int start, int end,
-		Sort sort) {
+		long companyId, Boolean facetable, Boolean visible, String keywords,
+		int start, int end, Sort sort) {
 
 		SearchContext searchContext = new SearchContext();
 
@@ -272,6 +319,8 @@ public class CPSpecificationOptionLocalServiceImpl
 				CPField.FACETABLE, () -> facetable
 			).put(
 				CPField.KEY, keywords
+			).put(
+				CPField.VISIBLE, () -> visible
 			).put(
 				Field.CONTENT, keywords
 			).put(
@@ -371,10 +420,8 @@ public class CPSpecificationOptionLocalServiceImpl
 				cpDefinitionSpecificationOptionValue) -> {
 
 				try {
-					indexableActionableDynamicQuery.addDocuments(
-						indexer.getDocument(
-							cpDefinitionSpecificationOptionValue.
-								getCPDefinition()));
+					return indexer.getDocument(
+						cpDefinitionSpecificationOptionValue.getCPDefinition());
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
@@ -388,6 +435,8 @@ public class CPSpecificationOptionLocalServiceImpl
 							portalException);
 					}
 				}
+
+				return null;
 			});
 
 		indexableActionableDynamicQuery.performActions();
@@ -421,20 +470,29 @@ public class CPSpecificationOptionLocalServiceImpl
 			Map<Locale, String> titleMap, String key)
 		throws PortalException {
 
-		Locale locale = LocaleUtil.getSiteDefault();
-
-		String title = titleMap.get(locale);
-
-		if (Validator.isNull(title)) {
+		if (MapUtil.isEmpty(titleMap)) {
 			throw new CPSpecificationOptionTitleException();
+		}
+
+		CPSpecificationOption cpSpecificationOption =
+			cpSpecificationOptionPersistence.fetchByC_K(companyId, key);
+
+		if (cpSpecificationOptionId > 0) {
+			Locale locale = LocaleUtil.getSiteDefault();
+
+			if (Validator.isNull(titleMap.get(locale)) &&
+				Validator.isNull(
+					titleMap.get(
+						LanguageUtil.getLocale(
+							cpSpecificationOption.getDefaultLanguageId())))) {
+
+				throw new CPSpecificationOptionTitleException();
+			}
 		}
 
 		if (Validator.isNull(key)) {
 			throw new CPSpecificationOptionKeyException.MustNotBeNull();
 		}
-
-		CPSpecificationOption cpSpecificationOption =
-			cpSpecificationOptionPersistence.fetchByC_K(companyId, key);
 
 		if ((cpSpecificationOption != null) &&
 			(cpSpecificationOption.getCPSpecificationOptionId() !=
@@ -454,6 +512,10 @@ public class CPSpecificationOptionLocalServiceImpl
 	@Reference
 	private CPDefinitionSpecificationOptionValueLocalService
 		_cpDefinitionSpecificationOptionValueLocalService;
+
+	@Reference
+	private CPSpecificationOptionListTypeDefinitionRelLocalService
+		_cpSpecificationOptionListTypeDefinitionRelLocalService;
 
 	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;

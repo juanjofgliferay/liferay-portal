@@ -10,23 +10,33 @@ import com.liferay.fragment.processor.DocumentFragmentEntryProcessor;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.fragment.renderer.FragmentDropZoneRenderer;
 import com.liferay.info.constants.InfoDisplayWebKeys;
+import com.liferay.info.form.InfoForm;
 import com.liferay.layout.constants.LayoutWebKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.util.structure.FragmentDropZoneLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
+import org.jsoup.nodes.Attribute;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -46,13 +56,35 @@ public class DropZoneDocumentFragmentEntryProcessor
 
 	@Override
 	public void processFragmentEntryLinkHTML(
-			FragmentEntryLink fragmentEntryLink, Document document,
+			Document document, FragmentEntryLink fragmentEntryLink,
 			FragmentEntryProcessorContext fragmentEntryProcessorContext)
 		throws PortalException {
 
-		Elements elements = document.select("lfr-drop-zone");
+		processFragmentEntryLinkHTML(
+			document, fragmentEntryLink.getEditableValuesJSONObject(),
+			fragmentEntryLink, fragmentEntryProcessorContext);
+	}
 
-		if (elements.size() <= 0) {
+	@Override
+	public void processFragmentEntryLinkHTML(
+			Document document, JSONObject editableValuesJSONObject,
+			FragmentEntryLink fragmentEntryLink,
+			FragmentEntryProcessorContext fragmentEntryProcessorContext)
+		throws PortalException {
+
+		if (fragmentEntryProcessorContext.isIndexMode()) {
+			return;
+		}
+
+		String html = fragmentEntryLink.getHtml();
+
+		if (!html.contains("lfr-drop-zone")) {
+			return;
+		}
+
+		Elements elements = document.getElementsByTag("lfr-drop-zone");
+
+		if (elements.isEmpty()) {
 			return;
 		}
 
@@ -90,12 +122,6 @@ public class DropZoneDocumentFragmentEntryProcessor
 			return;
 		}
 
-		if (httpServletRequest != null) {
-			httpServletRequest.setAttribute(
-				InfoDisplayWebKeys.INFO_FORM,
-				fragmentEntryProcessorContext.getInfoForm());
-		}
-
 		List<String> dropZoneItemIds = layoutStructureItem.getChildrenItemIds();
 
 		if (fragmentEntryProcessorContext.isEditMode()) {
@@ -112,6 +138,26 @@ public class DropZoneDocumentFragmentEntryProcessor
 			}
 
 			if (!idsAvailable) {
+				if (elements.size() != dropZoneItemIds.size()) {
+					if (_log.isWarnEnabled()) {
+						Layout layout = _layoutLocalService.getLayout(
+							fragmentEntryLink.getPlid());
+
+						_log.warn(
+							StringBundler.concat(
+								"Dropzone UUID missing for fragment entry ",
+								"link ID ",
+								fragmentEntryLink.getFragmentEntryLinkId(),
+								", friendly URL ", layout.getFriendlyURL(),
+								", and layout structure item ID ",
+								layoutStructureItem.getItemId(),
+								" because it is expected to have ",
+								elements.size(),
+								" dropzone elements but found ",
+								dropZoneItemIds.size()));
+					}
+				}
+
 				for (int i = 0;
 					 (i < dropZoneItemIds.size()) && (i < elements.size());
 					 i++) {
@@ -132,15 +178,11 @@ public class DropZoneDocumentFragmentEntryProcessor
 						layoutStructure.getLayoutStructureItem(dropZoneItemId);
 
 					if (!(childLayoutStructureItem instanceof
-							FragmentDropZoneLayoutStructureItem)) {
+							FragmentDropZoneLayoutStructureItem
+								fragmentDropZoneLayoutStructureItem)) {
 
 						continue;
 					}
-
-					FragmentDropZoneLayoutStructureItem
-						fragmentDropZoneLayoutStructureItem =
-							(FragmentDropZoneLayoutStructureItem)
-								childLayoutStructureItem;
 
 					String fragmentDropZoneId =
 						fragmentDropZoneLayoutStructureItem.
@@ -155,9 +197,7 @@ public class DropZoneDocumentFragmentEntryProcessor
 					}
 				}
 
-				for (int i = 0; i < elements.size(); i++) {
-					Element element = elements.get(i);
-
+				for (Element element : elements) {
 					String dropZoneId = element.attr("data-lfr-drop-zone-id");
 
 					if (fragmentDropZoneIdsMap.containsKey(dropZoneId)) {
@@ -174,29 +214,67 @@ public class DropZoneDocumentFragmentEntryProcessor
 			return;
 		}
 
-		for (int i = 0; i < elements.size(); i++) {
-			Element element = elements.get(i);
-
-			String dropZoneHTML = _fragmentDropZoneRenderer.renderDropZone(
-				fragmentEntryProcessorContext.getHttpServletRequest(),
-				fragmentEntryProcessorContext.getHttpServletResponse(),
-				dropZoneItemIds.get(i), fragmentEntryProcessorContext.getMode(),
-				true);
-
-			Element dropZoneElement = new Element("div");
-
-			dropZoneElement.html(dropZoneHTML);
-
-			element.replaceWith(dropZoneElement);
-		}
+		InfoForm originalInfoForm = null;
 
 		if (httpServletRequest != null) {
-			httpServletRequest.removeAttribute(InfoDisplayWebKeys.INFO_FORM);
+			originalInfoForm = (InfoForm)httpServletRequest.getAttribute(
+				InfoDisplayWebKeys.INFO_FORM);
+
+			httpServletRequest.setAttribute(
+				InfoDisplayWebKeys.INFO_FORM,
+				fragmentEntryProcessorContext.getInfoForm());
+		}
+
+		try {
+			for (int i = 0; i < elements.size(); i++) {
+				Element element = elements.get(i);
+
+				String dropZoneHTML = StringPool.BLANK;
+
+				if (ListUtil.isNotEmpty(dropZoneItemIds) &&
+					(i < dropZoneItemIds.size())) {
+
+					dropZoneHTML = _fragmentDropZoneRenderer.renderDropZone(
+						fragmentEntryProcessorContext.getHttpServletRequest(),
+						fragmentEntryProcessorContext.getHttpServletResponse(),
+						dropZoneItemIds.get(i),
+						fragmentEntryProcessorContext.getMode(), true);
+				}
+
+				Element dropZoneElement = new Element("div");
+
+				for (Attribute attribute : element.attributes()) {
+					if (StringUtil.startsWith(
+							attribute.getKey(), "data-lfr-")) {
+
+						continue;
+					}
+
+					dropZoneElement.attr(
+						attribute.getKey(), attribute.getValue());
+				}
+
+				dropZoneElement.html(dropZoneHTML);
+
+				element.replaceWith(dropZoneElement);
+			}
+		}
+		finally {
+			if (httpServletRequest != null) {
+				httpServletRequest.setAttribute(
+					InfoDisplayWebKeys.INFO_FORM, originalInfoForm);
+			}
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		DropZoneDocumentFragmentEntryProcessor.class);
+
 	@Reference
 	private FragmentDropZoneRenderer _fragmentDropZoneRenderer;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
 
 	@Reference
 	private LayoutPageTemplateStructureLocalService

@@ -6,15 +6,14 @@
 package com.liferay.layout.admin.web.internal.portlet.action;
 
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
-import com.liferay.layout.prototype.constants.LayoutPrototypePortletKeys;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -23,7 +22,7 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/change_layout_prototype_display_style"
 	},
 	service = MVCActionCommand.class
@@ -45,7 +44,7 @@ public class ChangeLayoutPrototypeDisplayStyleMVCActionCommand
 			PortletPreferencesFactoryUtil.getPortalPreferences(actionRequest);
 
 		portalPreferences.setValue(
-			LayoutPrototypePortletKeys.LAYOUT_PROTOTYPE, "display-style",
+			LayoutAdminPortletKeys.LAYOUT_PROTOTYPE, "display-style",
 			displayStyle);
 	}
 

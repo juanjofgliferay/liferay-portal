@@ -7,8 +7,6 @@
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<div class="cookies-banner cookies-banner-bottom" style="display: none;">
-	<liferay-portlet:runtime
-		portletName="<%= CookiesBannerPortletKeys.COOKIES_BANNER %>"
-	/>
-</div>
+<liferay-portlet:runtime
+	portletName="<%= CookiesBannerPortletKeys.COOKIES_BANNER %>"
+/>

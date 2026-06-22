@@ -1,7 +1,7 @@
 import * as API from 'shared/api';
 import * as breadcrumbs from 'shared/util/breadcrumbs';
 import autobind from 'autobind-decorator';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import DataTransformation, {
 	processFieldMappings
 } from 'settings/components/DataTransformation';
@@ -87,10 +87,6 @@ class ConfigureCSV extends React.Component {
 
 		request(data)
 			.then(response => {
-				if (!id) {
-					analytics.track('Created CSV Datasource');
-				}
-
 				history.push(
 					toRoute(Routes.SETTINGS_DATA_SOURCE, {
 						groupId,

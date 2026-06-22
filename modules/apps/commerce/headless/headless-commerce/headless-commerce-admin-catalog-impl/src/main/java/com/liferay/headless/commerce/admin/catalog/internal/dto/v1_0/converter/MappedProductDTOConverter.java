@@ -13,10 +13,10 @@ import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramEntry;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramEntryService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.MappedProduct;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 
@@ -48,24 +48,19 @@ public class MappedProductDTOConverter
 
 		CPDefinition cpDefinition =
 			_cpDefinitionService.fetchCPDefinitionByCProductId(
-				csDiagramEntry.getCProductId());
+				csDiagramEntry.getCProductId(), false);
 
 		return new MappedProduct() {
 			{
-				actions = dtoConverterContext.getActions();
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					CSDiagramEntry.class.getName(),
-					csDiagramEntry.getCSDiagramEntryId(),
-					csDiagramEntry.getCompanyId(),
-					dtoConverterContext.getLocale());
-				id = csDiagramEntry.getCSDiagramEntryId();
-				productId = csDiagramEntry.getCProductId();
-				quantity = csDiagramEntry.getQuantity();
-				sequence = csDiagramEntry.getSequence();
-				sku = csDiagramEntry.getSku();
-				skuId = GetterUtil.getLong(csDiagramEntry.getCPInstanceId());
-
+				setActions(dtoConverterContext::getActions);
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
+						CSDiagramEntry.class.getName(),
+						csDiagramEntry.getCSDiagramEntryId(),
+						csDiagramEntry.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setId(csDiagramEntry::getCSDiagramEntryId);
 				setProductExternalReferenceCode(
 					() -> {
 						if (cpDefinition == null) {
@@ -76,6 +71,7 @@ public class MappedProductDTOConverter
 
 						return cProduct.getExternalReferenceCode();
 					});
+				setProductId(csDiagramEntry::getCProductId);
 				setProductName(
 					() -> {
 						if (cpDefinition == null) {
@@ -85,6 +81,9 @@ public class MappedProductDTOConverter
 						return LanguageUtils.getLanguageIdMap(
 							cpDefinition.getNameMap());
 					});
+				setQuantity(csDiagramEntry::getQuantity);
+				setSequence(csDiagramEntry::getSequence);
+				setSku(csDiagramEntry::getSku);
 				setSkuExternalReferenceCode(
 					() -> {
 						CPInstance cpInstance =
@@ -98,6 +97,8 @@ public class MappedProductDTOConverter
 
 						return cpInstance.getExternalReferenceCode();
 					});
+				setSkuId(
+					() -> GetterUtil.getLong(csDiagramEntry.getCPInstanceId()));
 				setType(
 					() -> {
 						if (csDiagramEntry.isDiagram()) {

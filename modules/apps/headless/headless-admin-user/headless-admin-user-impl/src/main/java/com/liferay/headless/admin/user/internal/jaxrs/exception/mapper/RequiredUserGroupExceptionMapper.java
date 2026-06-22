@@ -9,8 +9,8 @@ import com.liferay.portal.kernel.exception.RequiredUserGroupException;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -33,8 +33,8 @@ public class RequiredUserGroupExceptionMapper
 		RequiredUserGroupException requiredUserGroupException) {
 
 		return new Problem(
-			Response.Status.BAD_REQUEST,
-			"Remove all users before deleting this user group.");
+			Response.Status.FORBIDDEN,
+			"Remove all users before deleting this user group");
 	}
 
 }

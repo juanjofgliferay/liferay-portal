@@ -14,7 +14,11 @@ import {
 	Toggle,
 } from '@liferay/object-js-components-web';
 import classNames from 'classnames';
-import {LearnMessage, LearnResourcesContext} from 'frontend-js-components-web';
+import {
+	ILearnResourceContext,
+	LearnMessage,
+	LearnResourcesContext,
+} from 'frontend-js-components-web';
 import React, {useEffect, useState} from 'react';
 
 import {
@@ -23,23 +27,34 @@ import {
 	getUpdatedDefaultValueType,
 } from '../../../../utils/defaultValues';
 import {removeFieldSettings} from '../../../../utils/fieldSettings';
+import BooleanDefaultValueSelect from '../../DefaultValueFields/BooleanDefaultValueSelect';
+import DateDefaultValueInput from '../../DefaultValueFields/DateDefaultValueInput';
 import ListTypeDefaultValueSelect from '../../DefaultValueFields/ListTypeDefaultValueSelect';
+import NumericDefaultValueInput from '../../DefaultValueFields/NumericDefaultValueInput';
+import RichTextDefaultValue from '../../DefaultValueFields/RichTextDefaultValue';
+import TextDefaultValueInput from '../../DefaultValueFields/TextDefaultValueInput';
 import {ObjectFieldErrors} from '../../ObjectFieldFormBase';
 interface DefaultValueContainerProps {
+	ckEditor5Config?: object;
 	creationLanguageId: Liferay.Language.Locale;
+	decimalSeparator: string;
+	defaultValueSidebarElements: SidebarCategory[];
 	errors: ObjectFieldErrors;
-	learnResources: ObjectWebLearnResources;
+	learnResources: ILearnResourceContext;
 	modelBuilder?: boolean;
 	onSubmit?: (values?: Partial<ObjectField>) => void;
 	setValues: (value: Partial<ObjectField>) => void;
-	sidebarElements: SidebarCategory[];
 	values: Partial<ObjectField>;
 }
 
 export interface InputAsValueFieldComponentProps {
+	ckEditor5Config?: object;
 	creationLanguageId: Liferay.Language.Locale;
+	dataType?: string;
+	decimalSeparator?: string;
 	defaultValue?: ObjectFieldSettingValue;
 	error?: string;
+	id?: string;
 	label: string;
 	onSubmit?: (values?: Partial<ObjectField>) => void;
 	placeholder?: string;
@@ -49,26 +64,39 @@ export interface InputAsValueFieldComponentProps {
 }
 
 type InputAsValueFieldComponents = {
-	[key in ObjectFieldBusinessType]: React.FC<InputAsValueFieldComponentProps>;
+	[key in ObjectFieldBusinessTypeName]: React.FC<InputAsValueFieldComponentProps>;
 };
 
 const InputAsValueFieldComponents: Partial<InputAsValueFieldComponents> = {
+	Boolean: BooleanDefaultValueSelect,
+	Date: DateDefaultValueInput,
+	DateTime: DateDefaultValueInput,
+	Decimal: NumericDefaultValueInput,
+	EmailAddress: TextDefaultValueInput,
+	Integer: NumericDefaultValueInput,
+	LongInteger: NumericDefaultValueInput,
+	LongText: TextDefaultValueInput,
+	PhoneNumber: TextDefaultValueInput,
 	Picklist: ListTypeDefaultValueSelect,
+	PrecisionDecimal: NumericDefaultValueInput,
+	RichText: RichTextDefaultValue,
+	Text: TextDefaultValueInput,
 };
 
 export function DefaultValueContainer({
+	ckEditor5Config,
 	creationLanguageId,
+	decimalSeparator,
+	defaultValueSidebarElements,
 	errors,
 	learnResources,
 	modelBuilder = false,
 	onSubmit,
 	setValues,
-	sidebarElements,
 	values,
 }: DefaultValueContainerProps) {
-	const {defaultValue, defaultValueType} = getDefaultValueFieldSettings(
-		values
-	);
+	const {defaultValue, defaultValueType} =
+		getDefaultValueFieldSettings(values);
 
 	const [defaultValueToggleEnabled, setDefaultValueToggleEnabled] = useState(
 		!!defaultValueType && !!defaultValue
@@ -78,13 +106,17 @@ export function DefaultValueContainer({
 		defaultValueType || 'inputAsValue'
 	);
 
+	const dataType =
+		values.businessType === 'Decimal' ||
+		values.businessType === 'PrecisionDecimal'
+			? 'double'
+			: '';
+
 	useEffect(() => {
 		if (values.state) {
 			setDefaultValueToggleEnabled(true);
 			setDefaultValueTypeSelection('inputAsValue');
 		}
-
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [values]);
 
 	const handleToggle = (toggled: boolean) => {
@@ -126,7 +158,8 @@ export function DefaultValueContainer({
 		<div
 			className={classNames({
 				'lfr-objects__edit-object-field-card-content': !modelBuilder,
-				'lfr-objects__edit-object-field-model-builder-panel': modelBuilder,
+				'lfr-objects__edit-object-field-model-builder-panel':
+					modelBuilder,
 			})}
 		>
 			{!values.state && (
@@ -139,14 +172,21 @@ export function DefaultValueContainer({
 						<LearnMessage
 							className="alert-link"
 							resource="object-web"
-							resourceKey="general"
+							resourceKey="expression-builder-validations-reference"
 						/>
 					</LearnResourcesContext.Provider>
 				</ClayAlert>
 			)}
 
 			{!values.state && (
-				<ClayForm.Group>
+				<ClayForm.Group
+					className={classNames({
+						'lfr-objects__object-field-default-value-disabled':
+							!defaultValueToggleEnabled,
+						'lfr-objects__object-field-default-value-enabled':
+							defaultValueToggleEnabled,
+					})}
+				>
 					<Toggle
 						label={Liferay.Language.get('use-default-value')}
 						onToggle={(toggled) => {
@@ -157,60 +197,71 @@ export function DefaultValueContainer({
 				</ClayForm.Group>
 			)}
 
-			{defaultValueToggleEnabled && !values.state && (
-				<ClayButton.Group>
-					<ClayButton
-						className={classNames({
-							active:
-								defaultValueTypeSelection === 'inputAsValue',
-						})}
-						displayType="secondary"
-						onClick={() => {
-							setDefaultValueTypeSelection('inputAsValue');
-							setValues({
-								objectFieldSettings: getUpdatedDefaultValueType(
-									values,
-									'inputAsValue'
-								),
-							});
-						}}
-						size="sm"
-					>
-						{Liferay.Language.get('input-as-value')}
-					</ClayButton>
+			{defaultValueSidebarElements &&
+				defaultValueToggleEnabled &&
+				!values.state && (
+					<ClayButton.Group>
+						<ClayButton
+							className={classNames({
+								active:
+									defaultValueTypeSelection ===
+									'inputAsValue',
+							})}
+							displayType="secondary"
+							onClick={() => {
+								setDefaultValueTypeSelection('inputAsValue');
+								setValues({
+									objectFieldSettings:
+										getUpdatedDefaultValueType(
+											values,
+											'inputAsValue'
+										),
+								});
+							}}
+							size="sm"
+						>
+							{Liferay.Language.get('input-as-value')}
+						</ClayButton>
 
-					<ClayButton
-						className={classNames({
-							active:
-								defaultValueTypeSelection ===
-								'expressionBuilder',
-						})}
-						displayType="secondary"
-						onClick={() => {
-							setDefaultValueTypeSelection('expressionBuilder');
-							setValues({
-								objectFieldSettings: getUpdatedDefaultValueType(
-									values,
+						<ClayButton
+							className={classNames({
+								active:
+									defaultValueTypeSelection ===
+									'expressionBuilder',
+							})}
+							displayType="secondary"
+							onClick={() => {
+								setDefaultValueTypeSelection(
 									'expressionBuilder'
-								),
-							});
-						}}
-						size="sm"
-					>
-						{Liferay.Language.get('expression-builder')}
-					</ClayButton>
-				</ClayButton.Group>
-			)}
+								);
+								setValues({
+									objectFieldSettings:
+										getUpdatedDefaultValueType(
+											values,
+											'expressionBuilder'
+										),
+								});
+							}}
+							size="sm"
+						>
+							{Liferay.Language.get('expression-builder')}
+						</ClayButton>
+					</ClayButton.Group>
+				)}
 
 			{defaultValueToggleEnabled &&
 				defaultValueTypeSelection === 'inputAsValue' &&
 				InputAsValueFieldComponent && (
 					<InputAsValueFieldComponent
+						ckEditor5Config={ckEditor5Config}
 						creationLanguageId={creationLanguageId}
+						dataType={dataType}
+						decimalSeparator={decimalSeparator}
 						defaultValue={
 							defaultValueType === 'inputAsValue' && defaultValue
 						}
 						error={errors.defaultValue}
+						id="default_value_container_input"
 						label={
 							!values.state
 								? Liferay.Language.get('default-value')
@@ -228,7 +279,7 @@ export function DefaultValueContainer({
 					<ExpressionBuilder
 						error={errors.defaultValue}
 						feedbackMessage={Liferay.Language.get(
-							'use-expressions-to-create-a-condition'
+							'click-on-the-button-to-expand-the-expression-input-area'
 						)}
 						label={Liferay.Language.get('default-value')}
 						onBlur={(event) => {
@@ -240,11 +291,12 @@ export function DefaultValueContainer({
 						}}
 						onChange={({target: {value}}) => {
 							setValues({
-								objectFieldSettings: getUpdatedDefaultValueFieldSettings(
-									values,
-									value,
-									'expressionBuilder'
-								),
+								objectFieldSettings:
+									getUpdatedDefaultValueFieldSettings(
+										values,
+										value,
+										'expressionBuilder'
+									),
 							});
 						}}
 						onOpenModal={() => {
@@ -253,24 +305,27 @@ export function DefaultValueContainer({
 							parentWindow.Liferay.fire(
 								'openExpressionBuilderModal',
 								{
-									eventSidebarElements: sidebarElements,
+									eventSidebarElements:
+										defaultValueSidebarElements,
 									onSave: (script: string) => {
 										setValues({
-											objectFieldSettings: getUpdatedDefaultValueFieldSettings(
-												values,
-												script,
-												'expressionBuilder'
-											),
+											objectFieldSettings:
+												getUpdatedDefaultValueFieldSettings(
+													values,
+													script,
+													'expressionBuilder'
+												),
 										});
 
 										if (onSubmit) {
 											onSubmit({
 												...values,
-												objectFieldSettings: getUpdatedDefaultValueFieldSettings(
-													values,
-													script,
-													'expressionBuilder'
-												),
+												objectFieldSettings:
+													getUpdatedDefaultValueFieldSettings(
+														values,
+														script,
+														'expressionBuilder'
+													),
 											});
 										}
 									},
@@ -287,6 +342,9 @@ export function DefaultValueContainer({
 								}
 							);
 						}}
+						placeholder={Liferay.Language.get(
+							'create-an-expression'
+						)}
 						required
 						value={
 							defaultValueType === 'expressionBuilder'

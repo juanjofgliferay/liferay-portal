@@ -8,11 +8,11 @@ package com.liferay.headless.admin.workflow.client.dto.v1_0;
 import com.liferay.headless.admin.workflow.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.workflow.client.serdes.v1_0.NodeSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -125,9 +125,10 @@ public class Node implements Cloneable, Serializable {
 
 	public static enum Type {
 
-		CONDITION("CONDITION"), FORK("FORK"), INITIAL_STATE("INITIAL_STATE"),
-		JOIN("JOIN"), JOIN_XOR("JOIN_XOR"), STATE("STATE"), TASK("TASK"),
-		TERMINAL_STATE("TERMINAL_STATE");
+		AI_DECISION("AI_DECISION"), CONDITION("CONDITION"), FORK("FORK"),
+		HTTP_REQUEST("HTTP_REQUEST"), INITIAL_STATE("INITIAL_STATE"),
+		JOIN("JOIN"), JOIN_XOR("JOIN_XOR"), LLM("LLM"), STATE("STATE"),
+		TASK("TASK"), TERMINAL_STATE("TERMINAL_STATE");
 
 		public static Type create(String value) {
 			for (Type type : values()) {
@@ -159,3 +160,4 @@ public class Node implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1635267248

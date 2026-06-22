@@ -1,0 +1,21 @@
+{
+	"friendlyURL": "/documents",
+	"hidden": false,
+	"name_i18n": {
+		"en_US": "Documents"
+	},
+	"permissions": [
+		{
+			"actionIds": [
+			],
+			"roleName": "Guest",
+			"scope": 4
+		}
+	],
+	"private": true,
+	"system": false,
+	"title_i18n": {
+		"en_US": "Documents"
+	},
+	"type": "Content"
+}

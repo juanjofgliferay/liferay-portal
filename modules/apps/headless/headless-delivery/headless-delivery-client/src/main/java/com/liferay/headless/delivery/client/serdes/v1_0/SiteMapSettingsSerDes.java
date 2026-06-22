@@ -8,13 +8,13 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.SiteMapSettings;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -54,9 +54,7 @@ public class SiteMapSettingsSerDes {
 			sb.append("\"changeFrequency\": ");
 
 			sb.append("\"");
-
 			sb.append(siteMapSettings.getChangeFrequency());
-
 			sb.append("\"");
 		}
 
@@ -68,6 +66,16 @@ public class SiteMapSettingsSerDes {
 			sb.append("\"include\": ");
 
 			sb.append(siteMapSettings.getInclude());
+		}
+
+		if (siteMapSettings.getIncludeChildSitePages() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"includeChildSitePages\": ");
+
+			sb.append(siteMapSettings.getIncludeChildSitePages());
 		}
 
 		if (siteMapSettings.getPagePriority() != null) {
@@ -115,6 +123,15 @@ public class SiteMapSettingsSerDes {
 			map.put("include", String.valueOf(siteMapSettings.getInclude()));
 		}
 
+		if (siteMapSettings.getIncludeChildSitePages() == null) {
+			map.put("includeChildSitePages", null);
+		}
+		else {
+			map.put(
+				"includeChildSitePages",
+				String.valueOf(siteMapSettings.getIncludeChildSitePages()));
+		}
+
 		if (siteMapSettings.getPagePriority() == null) {
 			map.put("pagePriority", null);
 		}
@@ -141,6 +158,26 @@ public class SiteMapSettingsSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "changeFrequency")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "include")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "includeChildSitePages")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "pagePriority")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			SiteMapSettings siteMapSettings, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -155,6 +192,14 @@ public class SiteMapSettingsSerDes {
 			else if (Objects.equals(jsonParserFieldName, "include")) {
 				if (jsonParserFieldValue != null) {
 					siteMapSettings.setInclude((Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "includeChildSitePages")) {
+
+				if (jsonParserFieldValue != null) {
+					siteMapSettings.setIncludeChildSitePages(
+						(Boolean)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "pagePriority")) {
@@ -195,36 +240,7 @@ public class SiteMapSettingsSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -236,4 +252,41 @@ public class SiteMapSettingsSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:1719343391

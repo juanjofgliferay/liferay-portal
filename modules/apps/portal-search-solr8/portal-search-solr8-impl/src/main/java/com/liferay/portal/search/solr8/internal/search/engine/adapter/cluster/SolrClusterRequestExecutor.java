@@ -17,15 +17,9 @@ import com.liferay.portal.search.engine.adapter.cluster.StatsClusterResponse;
 import com.liferay.portal.search.engine.adapter.cluster.UpdateSettingsClusterRequest;
 import com.liferay.portal.search.engine.adapter.cluster.UpdateSettingsClusterResponse;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Bryan Engler
  */
-@Component(
-	property = "search.engine.impl=Solr", service = ClusterRequestExecutor.class
-)
 public class SolrClusterRequestExecutor implements ClusterRequestExecutor {
 
 	@Override
@@ -64,17 +58,14 @@ public class SolrClusterRequestExecutor implements ClusterRequestExecutor {
 			updateSettingsClusterRequest);
 	}
 
-	@Reference
-	private HealthClusterRequestExecutor _healthClusterRequestExecutor;
-
-	@Reference
-	private StateClusterRequestExecutor _stateClusterRequestExecutor;
-
-	@Reference
-	private StatsClusterRequestExecutor _statsClusterRequestExecutor;
-
-	@Reference
-	private UpdateSettingsClusterRequestExecutor
-		_updateSettingsClusterRequestExecutor;
+	private final HealthClusterRequestExecutor _healthClusterRequestExecutor =
+		new HealthClusterRequestExecutor();
+	private final StateClusterRequestExecutor _stateClusterRequestExecutor =
+		new StateClusterRequestExecutor();
+	private final StatsClusterRequestExecutor _statsClusterRequestExecutor =
+		new StatsClusterRequestExecutorImpl();
+	private final UpdateSettingsClusterRequestExecutor
+		_updateSettingsClusterRequestExecutor =
+			new UpdateSettingsClusterRequestExecutor();
 
 }

@@ -5,28 +5,47 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.layout.utility.page.kernel.StatusLayoutUtilityPageEntryRequestContributorRegistryUtil;
+import com.liferay.petra.io.BigEndianCodec;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.portlet.InvokerPortlet;
+import com.liferay.portal.kernel.security.ChecksumUtil;
 import com.liferay.portal.kernel.security.auth.AlwaysAllowDoAsUser;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.DummyHttpServletResponse;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.servlet.PersistentHttpServletRequestWrapper;
+import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
+import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upgrade.MockPortletPreferences;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LayoutTypePortletFactoryUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.model.impl.LayoutImpl;
+import com.liferay.portal.model.impl.LayoutSetImpl;
 import com.liferay.portal.model.impl.PortletAppImpl;
 import com.liferay.portal.model.impl.PortletImpl;
 import com.liferay.portal.model.impl.UserImpl;
+import com.liferay.portal.spring.context.PortalContextLoaderListener;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -36,24 +55,26 @@ import com.liferay.portlet.ActionResponseFactory;
 import com.liferay.portlet.internal.MutableRenderParametersImpl;
 import com.liferay.portlet.test.MockLiferayPortletContext;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.logging.Level;
+import java.util.TreeMap;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.PortletMode;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -64,6 +85,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockHttpSession;
 
 /**
  * @author Miguel Pastor
@@ -73,6 +96,18 @@ public class PortalImplUnitTest {
 	@ClassRule
 	public static LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
+
+	@Before
+	public void setUp() throws Exception {
+		_groupLocalServiceUtilMockedStatic.reset();
+		_portalContextLoaderListenerMockedStatic.reset();
+	}
+
+	@After
+	public void tearDown() {
+		_groupLocalServiceUtilMockedStatic.close();
+		_portalContextLoaderListenerMockedStatic.close();
+	}
 
 	@Test
 	public void testCopyRequestParameters() throws PortletException {
@@ -116,6 +151,56 @@ public class PortalImplUnitTest {
 		portalUtilMockedStatic.close();
 
 		_assertActionResponse(actionResponse, params);
+	}
+
+	@Test
+	@TestInfo("LPD-90275")
+	public void testGetCanonicalDomain() {
+		String defaultVirtualHostname = "localhost";
+
+		String hostname = "z-" + RandomTestUtil.randomString();
+
+		String portalDomain = hostname + ":8080";
+
+		LayoutSet layoutSet = new LayoutSetImpl();
+
+		layoutSet.setVirtualHostnames(Collections.emptyNavigableMap());
+
+		Assert.assertEquals(
+			defaultVirtualHostname,
+			_portalImpl.getCanonicalDomain(
+				defaultVirtualHostname, layoutSet, portalDomain,
+				Collections.emptyNavigableMap()));
+
+		Assert.assertEquals(
+			hostname,
+			_portalImpl.getCanonicalDomain(
+				defaultVirtualHostname, layoutSet, portalDomain,
+				TreeMapBuilder.put(
+					hostname, StringPool.BLANK
+				).build()));
+
+		String languageSpecificHostname = "a-" + RandomTestUtil.randomString();
+
+		Assert.assertEquals(
+			hostname,
+			_portalImpl.getCanonicalDomain(
+				defaultVirtualHostname, layoutSet, portalDomain,
+				TreeMapBuilder.put(
+					hostname, StringPool.BLANK
+				).put(
+					languageSpecificHostname,
+					LocaleUtil.toLanguageId(LocaleUtil.US)
+				).build()));
+
+		Assert.assertEquals(
+			defaultVirtualHostname,
+			_portalImpl.getCanonicalDomain(
+				defaultVirtualHostname, layoutSet, portalDomain,
+				TreeMapBuilder.put(
+					languageSpecificHostname,
+					LocaleUtil.toLanguageId(LocaleUtil.US)
+				).build()));
 	}
 
 	@Test
@@ -240,10 +325,13 @@ public class PortalImplUnitTest {
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		mockHttpServletRequest.setServerPort(8080);
+		int portalServerPort = 1234;
+
+		mockHttpServletRequest.setServerPort(portalServerPort);
 
 		Assert.assertEquals(
-			8080, _portalImpl.getForwardedPort(mockHttpServletRequest));
+			portalServerPort,
+			_portalImpl.getForwardedPort(mockHttpServletRequest));
 	}
 
 	@Test
@@ -264,10 +352,10 @@ public class PortalImplUnitTest {
 				new MockHttpServletRequest();
 
 			mockHttpServletRequest.addHeader("X-Forwarded-Custom-Port", 8081);
-			mockHttpServletRequest.setServerPort(8080);
+			mockHttpServletRequest.setServerPort(1234);
 
 			Assert.assertEquals(
-				8080, _portalImpl.getForwardedPort(mockHttpServletRequest));
+				1234, _portalImpl.getForwardedPort(mockHttpServletRequest));
 		}
 		finally {
 			setPropsValuesValue(
@@ -293,10 +381,10 @@ public class PortalImplUnitTest {
 				new MockHttpServletRequest();
 
 			mockHttpServletRequest.addHeader("X-Forwarded-Port", 8081);
-			mockHttpServletRequest.setServerPort(8080);
+			mockHttpServletRequest.setServerPort(1234);
 
 			Assert.assertEquals(
-				8080, _portalImpl.getForwardedPort(mockHttpServletRequest));
+				1234, _portalImpl.getForwardedPort(mockHttpServletRequest));
 		}
 		finally {
 			setPropsValuesValue(
@@ -319,7 +407,7 @@ public class PortalImplUnitTest {
 				new MockHttpServletRequest();
 
 			mockHttpServletRequest.addHeader("X-Forwarded-Port", "8081");
-			mockHttpServletRequest.setServerPort(8080);
+			mockHttpServletRequest.setServerPort(1234);
 
 			Assert.assertEquals(
 				8081, _portalImpl.getForwardedPort(mockHttpServletRequest));
@@ -341,6 +429,244 @@ public class PortalImplUnitTest {
 		_assertGetHost("[::1]:80", "::1");
 		_assertGetHost("abc.com", "abc.com");
 		_assertGetHost("abc.com:80", "abc.com");
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLLayoutSetWithoutVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl(StringPool.BLANK);
+
+		_assertGetLayoutSetFriendlyURL(
+			"/web/test-group", "http://liferay.com:1234", false,
+			new TreeMap<>());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLPrivateLayoutSetWithoutVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl(StringPool.BLANK);
+
+		_assertGetLayoutSetFriendlyURL(
+			"/group/test-group", "http://liferay.com:1234", true,
+			new TreeMap<>());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLUserGroupLayoutSetWithoutVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl(StringPool.BLANK, true);
+
+		_assertGetLayoutSetFriendlyURL(
+			"/user/test-group", "http://liferay.com:1234", true,
+			new TreeMap<>());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWhenLayoutSetMatchesWithDifferentVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl(StringPool.BLANK);
+
+		_assertGetLayoutSetFriendlyURL(
+			"/web/test-group", "http://liferay.com:1234", false,
+			TreeMapBuilder.put(
+				"test.com", StringPool.BLANK
+			).build());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWhenLayoutSetMatchesWithSameVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl(StringPool.BLANK);
+
+		String portalURL = _portalImpl.getPortalURL("test.com", 1234, false);
+
+		_assertGetLayoutSetFriendlyURL(
+			portalURL, portalURL, false,
+			TreeMapBuilder.put(
+				"test.com", StringPool.BLANK
+			).build());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithContextPathWhenLayoutSetMatchesWithDifferentVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl("context-path");
+
+		_assertGetLayoutSetFriendlyURL(
+			"/context-path/web/test-group",
+			"http://liferay.com:1234/context-path", false,
+			TreeMapBuilder.put(
+				"test.com", StringPool.BLANK
+			).build());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithContextPathWhenLayoutSetMatchesWithSameVirtualHost()
+		throws Exception {
+
+		_setUpPortalImpl("context-path");
+
+		String portalURL = _portalImpl.getPortalURL("test.com", 1234, false);
+
+		String portalURLWithContextPath = portalURL + "/context-path";
+
+		_assertGetLayoutSetFriendlyURL(
+			portalURLWithContextPath, portalURLWithContextPath, false,
+			TreeMapBuilder.put(
+				"test.com", StringPool.BLANK
+			).build());
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithPublicServletMappingDisabled()
+		throws Exception {
+
+		boolean publicServletMappingEnabled =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED;
+
+		try {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED", false);
+
+			_setUpPortalImpl(StringPool.BLANK);
+
+			_assertGetLayoutSetFriendlyURL(
+				"/test-group", "http://liferay.com:1234", false,
+				new TreeMap<>());
+		}
+		finally {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED",
+				publicServletMappingEnabled);
+		}
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithPublicServletMappingDisabledAndContextPath()
+		throws Exception {
+
+		boolean publicServletMappingEnabled =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED;
+
+		try {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED", false);
+
+			_setUpPortalImpl("context-path");
+
+			_assertGetLayoutSetFriendlyURL(
+				"/context-path/test-group",
+				"http://liferay.com:1234/context-path", false, new TreeMap<>());
+		}
+		finally {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED",
+				publicServletMappingEnabled);
+		}
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithPublicServletMappingDisabledAndPrivateGroup()
+		throws Exception {
+
+		boolean publicServletMappingEnabled =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED;
+
+		try {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED", false);
+
+			_setUpPortalImpl(StringPool.BLANK);
+
+			_assertGetLayoutSetFriendlyURL(
+				"/group/test-group", "http://liferay.com:1234", true,
+				new TreeMap<>());
+		}
+		finally {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED",
+				publicServletMappingEnabled);
+		}
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithPublicServletMappingDisabledAndUserGroup()
+		throws Exception {
+
+		boolean publicServletMappingEnabled =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED;
+
+		try {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED", false);
+
+			_setUpPortalImpl(StringPool.BLANK, true);
+
+			_assertGetLayoutSetFriendlyURL(
+				"/user/test-group", "http://liferay.com:1234", true,
+				new TreeMap<>());
+		}
+		finally {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED",
+				publicServletMappingEnabled);
+		}
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithPublicServletMappingDisabledAndVirtualHost()
+		throws Exception {
+
+		boolean publicServletMappingEnabled =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED;
+
+		try {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED", false);
+
+			_setUpPortalImpl(StringPool.BLANK);
+
+			_assertGetLayoutSetFriendlyURL(
+				"/test-group", "http://liferay.com:1234", false,
+				TreeMapBuilder.put(
+					"test.com", StringPool.BLANK
+				).build());
+		}
+		finally {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED",
+				publicServletMappingEnabled);
+		}
+	}
+
+	@Test
+	public void testGetLayoutSetFriendlyURLWithPublicServletMappingEnabled()
+		throws Exception {
+
+		boolean publicServletMappingEnabled =
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED;
+
+		try {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED", true);
+
+			_setUpPortalImpl(StringPool.BLANK);
+
+			_assertGetLayoutSetFriendlyURL(
+				"/web/test-group", "http://liferay.com:1234", false,
+				new TreeMap<>());
+		}
+		finally {
+			setPropsValuesValue(
+				"LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING_ENABLED",
+				publicServletMappingEnabled);
+		}
 	}
 
 	@Test
@@ -431,20 +757,32 @@ public class PortalImplUnitTest {
 			MockHttpServletRequest mockHttpServletRequest =
 				new MockHttpServletRequest();
 
+			byte[] doAsUserIdBytes = new byte[Long.BYTES];
+
+			BigEndianCodec.putLong(doAsUserIdBytes, 0, 1L);
+
+			mockHttpServletRequest.setParameter(
+				"doAsUserId",
+				StringUtil.bytesToHexString(
+					ChecksumUtil.appendChecksum(doAsUserIdBytes)));
+
+			_portalImpl.getUserId(mockHttpServletRequest);
+
+			Assert.assertTrue(calledAlwaysAllowDoAsUser[0]);
+
+			calledAlwaysAllowDoAsUser[0] = false;
+
+			mockHttpServletRequest = new MockHttpServletRequest();
+
+			_portalImpl.getUserId(mockHttpServletRequest);
+
+			Assert.assertFalse(calledAlwaysAllowDoAsUser[0]);
+
 			mockHttpServletRequest.setParameter("doAsUserId", "1");
 
 			_portalImpl.getUserId(mockHttpServletRequest);
 
-			Assert.assertTrue(
-				"AlwaysAllowDoAsUser not called", calledAlwaysAllowDoAsUser[0]);
-
-			calledAlwaysAllowDoAsUser[0] = false;
-
-			_portalImpl.getUserId(new MockHttpServletRequest());
-
-			Assert.assertFalse(
-				"AlwaysAllowDoAsUser should not be called",
-				calledAlwaysAllowDoAsUser[0]);
+			Assert.assertFalse(calledAlwaysAllowDoAsUser[0]);
 		}
 		finally {
 			serviceRegistration.unregister();
@@ -533,10 +871,56 @@ public class PortalImplUnitTest {
 
 		Assert.assertFalse(_portalImpl.isValidResourceId(sb.toString()));
 
-		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
-				HttpComponentsUtil.class.getName(), Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				HttpComponentsUtil.class.getName(), LoggerTestUtil.OFF)) {
 
 			Assert.assertFalse(_portalImpl.isValidResourceId("%view.jsp"));
+		}
+	}
+
+	@Test
+	@TestInfo("LPD-85590")
+	public void testSendErrorPassesExceptionViaRequestAttributeAndSessionErrors()
+		throws Exception {
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		MockHttpSession mockHttpSession = new MockHttpSession();
+
+		mockHttpServletRequest.setSession(mockHttpSession);
+
+		Exception exception = new Exception();
+
+		try (MockedStatic<PortalSessionThreadLocal>
+				portalSessionThreadLocalMockedStatic = Mockito.mockStatic(
+					PortalSessionThreadLocal.class);
+			MockedStatic<SessionErrors> sessionErrorsMockedStatic =
+				Mockito.mockStatic(SessionErrors.class);
+			MockedStatic
+				<StatusLayoutUtilityPageEntryRequestContributorRegistryUtil>
+					statusLayoutUtilityPageEntryRequestContributorRegistryUtilMockedStatic =
+						Mockito.mockStatic(
+							StatusLayoutUtilityPageEntryRequestContributorRegistryUtil.class)) {
+
+			portalSessionThreadLocalMockedStatic.when(
+				PortalSessionThreadLocal::getHttpSession
+			).thenReturn(
+				mockHttpSession
+			);
+
+			_portalImpl.sendError(
+				0, exception, mockHttpServletRequest,
+				new MockHttpServletResponse());
+
+			Assert.assertSame(
+				exception,
+				mockHttpServletRequest.getAttribute(
+					WebKeys.PORTAL_STATUS_EXCEPTION));
+
+			sessionErrorsMockedStatic.verify(
+				() -> SessionErrors.add(
+					mockHttpSession, Exception.class, exception));
 		}
 	}
 
@@ -589,6 +973,41 @@ public class PortalImplUnitTest {
 		Assert.assertEquals(host, _portalImpl.getHost(mockHttpServletRequest));
 	}
 
+	private void _assertGetLayoutSetFriendlyURL(
+			String expectedFriendlyURL, String portalURL, boolean privateLayout,
+			TreeMap<String, String> virtualHostnames)
+		throws Exception {
+
+		LayoutSet layoutSet = new LayoutSetImpl();
+
+		layoutSet.setLayoutSetId(11L);
+		layoutSet.setGroupId(2000L);
+		layoutSet.setPrivateLayout(privateLayout);
+		layoutSet.setVirtualHostnames(virtualHostnames);
+
+		ThemeDisplay themeDisplay = ThemeDisplayFactory.create();
+
+		themeDisplay.setDoAsGroupId(0);
+		themeDisplay.setI18nLanguageId(null);
+
+		Layout layout = new LayoutImpl();
+
+		layout.setType(LayoutConstants.TYPE_CONTENT);
+		layout.setLayoutSet(layoutSet);
+
+		themeDisplay.setLayout(layout);
+
+		themeDisplay.setRefererGroupId(0);
+		themeDisplay.setRefererPlid(0);
+		themeDisplay.setSecure(false);
+		themeDisplay.setServerPort(1234);
+		themeDisplay.setURLPortal(portalURL);
+
+		Assert.assertEquals(
+			expectedFriendlyURL,
+			_portalImpl.getLayoutSetFriendlyURL(layoutSet, themeDisplay));
+	}
+
 	private ActionRequest _createActionRequest(
 		Map<String, String[]> params, Enumeration<String> enumeration) {
 
@@ -599,26 +1018,31 @@ public class PortalImplUnitTest {
 		).thenReturn(
 			enumeration
 		);
+
 		Mockito.when(
 			actionRequestMock.getParameterValues("redirect")
 		).thenReturn(
 			params.get("redirect")
 		);
+
 		Mockito.when(
 			actionRequestMock.getParameterValues("p_u_i_d")
 		).thenReturn(
 			params.get("p_u_i_d")
 		);
+
 		Mockito.when(
 			actionRequestMock.getParameterValues("passwordReset")
 		).thenReturn(
 			params.get("passwordReset")
 		);
+
 		Mockito.when(
 			actionRequestMock.getParameterValues("password1")
 		).thenReturn(
 			params.get("password1")
 		);
+
 		Mockito.when(
 			actionRequestMock.getParameterValues("password2")
 		).thenReturn(
@@ -706,6 +1130,57 @@ public class PortalImplUnitTest {
 			"WEB_SERVER_FORWARDED_HOST_HEADER", _webServerForwardedHostHeader);
 	}
 
+	private void _setUpGroupLocalServiceUtil(boolean userGroup)
+		throws Exception {
+
+		Group group = Mockito.mock(Group.class);
+
+		Mockito.when(
+			group.getGroupId()
+		).thenReturn(
+			2000L
+		);
+
+		Mockito.when(
+			group.isUser()
+		).thenReturn(
+			userGroup
+		);
+
+		Mockito.when(
+			group.getFriendlyURL()
+		).thenReturn(
+			"/test-group"
+		);
+
+		Mockito.when(
+			GroupLocalServiceUtil.getGroup(Mockito.anyLong())
+		).thenReturn(
+			group
+		);
+	}
+
+	private void _setUpPortalContextLoaderListener(String contextPath) {
+		Mockito.when(
+			PortalContextLoaderListener.getPortalServletContextPath()
+		).thenReturn(
+			contextPath
+		);
+	}
+
+	private void _setUpPortalImpl(String contextPath) throws Exception {
+		_setUpPortalImpl(contextPath, false);
+	}
+
+	private void _setUpPortalImpl(String contextPath, boolean userGroup)
+		throws Exception {
+
+		_setUpGroupLocalServiceUtil(userGroup);
+		_setUpPortalContextLoaderListener(contextPath);
+
+		_portalImpl = new PortalImpl();
+	}
+
 	private void _storeAndResetPropsValuesValue(
 		String forwaredHostHeader, String forwaredServer) {
 
@@ -727,7 +1202,13 @@ public class PortalImplUnitTest {
 			"WEB_SERVER_FORWARDED_HOST_HEADER", forwaredHostHeader);
 	}
 
-	private final PortalImpl _portalImpl = new PortalImpl();
+	private final MockedStatic<GroupLocalServiceUtil>
+		_groupLocalServiceUtilMockedStatic = Mockito.mockStatic(
+			GroupLocalServiceUtil.class);
+	private final MockedStatic<PortalContextLoaderListener>
+		_portalContextLoaderListenerMockedStatic = Mockito.mockStatic(
+			PortalContextLoaderListener.class);
+	private PortalImpl _portalImpl = new PortalImpl();
 	private String[] _virtualHostsValidHosts;
 	private boolean _webServerForwardedHostEnabled;
 	private String _webServerForwardedHostHeader;

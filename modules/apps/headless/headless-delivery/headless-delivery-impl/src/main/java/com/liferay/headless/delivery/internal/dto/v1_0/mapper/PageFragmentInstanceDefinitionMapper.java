@@ -14,6 +14,7 @@ import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.PortletRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
+import com.liferay.fragment.util.configuration.FragmentConfigurationField;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.headless.delivery.dto.v1_0.ActionExecutionResult;
 import com.liferay.headless.delivery.dto.v1_0.ClassPKReference;
@@ -22,6 +23,7 @@ import com.liferay.headless.delivery.dto.v1_0.Fragment;
 import com.liferay.headless.delivery.dto.v1_0.FragmentField;
 import com.liferay.headless.delivery.dto.v1_0.FragmentFieldAction;
 import com.liferay.headless.delivery.dto.v1_0.FragmentFieldBackgroundImage;
+import com.liferay.headless.delivery.dto.v1_0.FragmentFieldDate;
 import com.liferay.headless.delivery.dto.v1_0.FragmentFieldHTML;
 import com.liferay.headless.delivery.dto.v1_0.FragmentFieldImage;
 import com.liferay.headless.delivery.dto.v1_0.FragmentFieldText;
@@ -50,10 +52,10 @@ import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONDeserializer;
-import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -62,11 +64,13 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -79,15 +83,35 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Rubén Pulido
  * @author Javier de Arcos
  */
-@Component(service = PageFragmentInstanceDefinitionMapper.class)
 public class PageFragmentInstanceDefinitionMapper {
+
+	public PageFragmentInstanceDefinitionMapper(
+		FragmentCollectionContributorRegistry
+			fragmentCollectionContributorRegistry,
+		FragmentEntryConfigurationParser fragmentEntryConfigurationParser,
+		FragmentEntryLinkLocalService fragmentEntryLinkLocalService,
+		FragmentEntryLocalService fragmentEntryLocalService,
+		GroupLocalService groupLocalService,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		JSONFactory jsonFactory, Portal portal, PortletRegistry portletRegistry,
+		WidgetInstanceMapper widgetInstanceMapper) {
+
+		_fragmentCollectionContributorRegistry =
+			fragmentCollectionContributorRegistry;
+		_fragmentEntryConfigurationParser = fragmentEntryConfigurationParser;
+		_fragmentEntryLinkLocalService = fragmentEntryLinkLocalService;
+		_fragmentEntryLocalService = fragmentEntryLocalService;
+		_groupLocalService = groupLocalService;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_jsonFactory = jsonFactory;
+		_portal = portal;
+		_portletRegistry = portletRegistry;
+		_widgetInstanceMapper = widgetInstanceMapper;
+	}
 
 	public PageFragmentInstanceDefinition getPageFragmentInstanceDefinition(
 		FragmentStyledLayoutStructureItem fragmentStyledLayoutStructureItem,
@@ -106,50 +130,57 @@ public class PageFragmentInstanceDefinitionMapper {
 		String rendererKey = fragmentEntryLink.getRendererKey();
 
 		FragmentEntry fragmentEntry = _getFragmentEntry(
-			_fragmentCollectionContributorRegistry,
-			fragmentEntryLink.getFragmentEntryId(), rendererKey);
+			_fragmentCollectionContributorRegistry, fragmentEntryLink);
 
 		return new PageFragmentInstanceDefinition() {
 			{
-				cssClasses = StyledLayoutStructureItemUtil.getCssClasses(
-					fragmentStyledLayoutStructureItem);
-				customCSS = StyledLayoutStructureItemUtil.getCustomCSS(
-					fragmentStyledLayoutStructureItem);
-				customCSSViewports =
-					StyledLayoutStructureItemUtil.getCustomCSSViewports(
-						fragmentStyledLayoutStructureItem);
-				fragment = new Fragment() {
-					{
-						key = _getFragmentKey(fragmentEntry, rendererKey);
+				setCssClasses(
+					() -> StyledLayoutStructureItemUtil.getCssClasses(
+						fragmentStyledLayoutStructureItem));
+				setCustomCSS(
+					() -> StyledLayoutStructureItemUtil.getCustomCSS(
+						fragmentStyledLayoutStructureItem));
+				setCustomCSSViewports(
+					() -> StyledLayoutStructureItemUtil.getCustomCSSViewports(
+						fragmentStyledLayoutStructureItem));
+				setFragment(
+					() -> new Fragment() {
+						{
+							setKey(
+								() -> _getFragmentKey(
+									fragmentEntry, rendererKey));
 
-						setSiteKey(
-							() -> {
-								if ((fragmentEntry == null) ||
-									(fragmentEntry.getGroupId() == 0)) {
+							setSiteKey(
+								() -> {
+									if ((fragmentEntry == null) ||
+										(fragmentEntry.getGroupId() == 0)) {
 
-									return null;
-								}
+										return null;
+									}
 
-								Group group = _groupLocalService.fetchGroup(
-									fragmentEntry.getGroupId());
+									Group group = _groupLocalService.fetchGroup(
+										fragmentEntry.getGroupId());
 
-								if (group == null) {
-									return null;
-								}
+									if (group == null) {
+										return null;
+									}
 
-								return group.getGroupKey();
-							});
-					}
-				};
-				fragmentConfig = _getFragmentConfig(fragmentEntryLink);
-				fragmentFields = _getFragmentFields(
-					fragmentEntryLink, saveInlineContent, saveMapping);
-				fragmentStyle = pageFragmentInstanceDefinitionFragmentStyle;
-				fragmentViewports =
-					pageFragmentInstanceDefinitionFragmentViewports;
-				indexed = fragmentStyledLayoutStructureItem.isIndexed();
-				name = fragmentStyledLayoutStructureItem.getName();
-				widgetInstances = _getWidgetInstances(fragmentEntryLink);
+									return group.getGroupKey();
+								});
+						}
+					});
+				setFragmentConfig(() -> _getFragmentConfig(fragmentEntryLink));
+				setFragmentFields(
+					() -> _getFragmentFields(
+						fragmentEntryLink, saveInlineContent, saveMapping));
+				setFragmentStyle(
+					() -> pageFragmentInstanceDefinitionFragmentStyle);
+				setFragmentViewports(
+					() -> pageFragmentInstanceDefinitionFragmentViewports);
+				setIndexed(fragmentStyledLayoutStructureItem::isIndexed);
+				setName(fragmentStyledLayoutStructureItem::getName);
+				setWidgetInstances(
+					() -> _getWidgetInstances(fragmentEntryLink));
 			}
 		};
 	}
@@ -161,108 +192,128 @@ public class PageFragmentInstanceDefinitionMapper {
 			return Collections.emptyList();
 		}
 
-		List<FragmentField> fragmentFields = new ArrayList<>();
-
 		Set<String> backgroundImageIds = jsonObject.keySet();
 
-		for (String backgroundImageId : backgroundImageIds) {
-			JSONObject imageJSONObject = jsonObject.getJSONObject(
-				backgroundImageId);
+		return TransformUtil.transform(
+			backgroundImageIds,
+			backgroundImageId -> {
+				JSONObject imageJSONObject = jsonObject.getJSONObject(
+					backgroundImageId);
 
-			Map<String, String> localizedValues =
-				LocalizedValueUtil.toLocalizedValues(imageJSONObject);
+				Map<String, String> localizedValues =
+					LocalizedValueUtil.toLocalizedValues(imageJSONObject);
 
-			fragmentFields.add(
-				new FragmentField() {
+				return new FragmentField() {
 					{
-						id = backgroundImageId;
-						value = _toFragmentFieldBackgroundImage(
-							imageJSONObject, localizedValues, saveMapping);
+						setId(() -> backgroundImageId);
+						setValue(
+							() -> _toFragmentFieldBackgroundImage(
+								imageJSONObject, localizedValues, saveMapping));
 					}
-				});
-		}
-
-		return fragmentFields;
+				};
+			});
 	}
 
 	private Map<String, Object> _getFragmentConfig(
 		FragmentEntryLink fragmentEntryLink) {
 
-		try {
-			JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
 
-			JSONObject configJSONObject =
-				editableValuesJSONObject.getJSONObject(
-					FragmentEntryProcessorConstants.
-						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+		if (editableValuesJSONObject == null) {
+			return Collections.emptyMap();
+		}
+
+		JSONObject configJSONObject = editableValuesJSONObject.getJSONObject(
+			FragmentEntryProcessorConstants.
+				KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (configJSONObject == null) {
+			configJSONObject =
+				_fragmentEntryConfigurationParser.
+					getConfigurationDefaultValuesJSONObject(
+						fragmentEntryLink.getConfigurationJSONObject());
 
 			if (configJSONObject == null) {
-				configJSONObject =
-					_fragmentEntryConfigurationParser.
-						getConfigurationDefaultValuesJSONObject(
-							fragmentEntryLink.getConfiguration());
+				return Collections.emptyMap();
+			}
+		}
 
-				if (configJSONObject == null) {
-					return Collections.emptyMap();
+		List<String> excludedFragmentConfigurationFieldNames =
+			new ArrayList<>();
+
+		for (FragmentConfigurationField fragmentConfigurationField :
+				_fragmentEntryConfigurationParser.
+					getFragmentConfigurationFields(
+						fragmentEntryLink.getConfigurationJSONObject())) {
+
+			if (ArrayUtil.contains(
+					_EXCLUDED_FRAGMENT_CONFIGURATION_FIELD_TYPES,
+					fragmentConfigurationField.getType())) {
+
+				excludedFragmentConfigurationFieldNames.add(
+					fragmentConfigurationField.getName());
+			}
+		}
+
+		Map<String, Object> resultMap = new HashMap<>();
+
+		for (String key : configJSONObject.keySet()) {
+			Object value;
+
+			if (excludedFragmentConfigurationFieldNames.contains(key)) {
+				value = configJSONObject.get(key);
+
+				if ((value instanceof JSONObject) &&
+					JSONUtil.isEmpty((JSONObject)value)) {
+
+					value = Collections.emptyMap();
+				}
+			}
+			else {
+				value = _fragmentEntryConfigurationParser.getFieldValue(
+					fragmentEntryLink.getConfigurationJSONObject(),
+					fragmentEntryLink.getEditableValuesJSONObject(), key);
+			}
+
+			if (value == null) {
+				value = configJSONObject.get(key);
+			}
+
+			if (value instanceof JSONObject valueJSONObject) {
+				if (valueJSONObject.has("color")) {
+					value = valueJSONObject.getString("color");
+				}
+				else {
+					JSONDeserializer<Map<String, Object>> jsonDeserializer =
+						_jsonFactory.createJSONDeserializer();
+
+					value = jsonDeserializer.deserialize(value.toString());
 				}
 			}
 
-			JSONObject jsonObject = configJSONObject;
+			if (value instanceof JSONArray jsonArray) {
+				List<String> values = new ArrayList<>();
 
-			return new HashMap<String, Object>() {
-				{
-					for (String key : jsonObject.keySet()) {
-						Object value =
-							_fragmentEntryConfigurationParser.getFieldValue(
-								fragmentEntryLink.getConfiguration(),
-								fragmentEntryLink.getEditableValues(),
-								LocaleUtil.getMostRelevantLocale(), key);
-
-						if (value == null) {
-							value = jsonObject.get(key);
-						}
-
-						if (value instanceof JSONObject) {
-							JSONObject valueJSONObject = (JSONObject)value;
-
-							if (valueJSONObject.has("color")) {
-								value = valueJSONObject.getString("color");
-							}
-						}
-
-						if (value instanceof JSONArray ||
-							value instanceof JSONObject) {
-
-							JSONDeserializer<Map<String, Object>>
-								jsonDeserializer =
-									_jsonFactory.createJSONDeserializer();
-
-							value = jsonDeserializer.deserialize(
-								value.toString());
-						}
-
-						put(key, value);
-					}
+				for (int i = 0; i < jsonArray.length(); i++) {
+					values.add(jsonArray.getString(i));
 				}
-			};
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
+
+				value = values.toArray(new String[0]);
 			}
 
-			return null;
+			resultMap.put(key, value);
 		}
+
+		return resultMap;
 	}
 
 	private FragmentEntry _getFragmentEntry(
 		FragmentCollectionContributorRegistry
 			fragmentCollectionContributorRegistry,
-		long fragmentEntryId, String rendererKey) {
+		FragmentEntryLink fragmentEntryLink) {
 
-		FragmentEntry fragmentEntry =
-			_fragmentEntryLocalService.fetchFragmentEntry(fragmentEntryId);
+		FragmentEntry fragmentEntry = fragmentEntryLink.fetchFragmentEntry();
 
 		if (fragmentEntry != null) {
 			return fragmentEntry;
@@ -271,7 +322,7 @@ public class PageFragmentInstanceDefinitionMapper {
 		Map<String, FragmentEntry> fragmentEntries =
 			fragmentCollectionContributorRegistry.getFragmentEntries();
 
-		return fragmentEntries.get(rendererKey);
+		return fragmentEntries.get(fragmentEntryLink.getRendererKey());
 	}
 
 	private FragmentField[] _getFragmentFields(
@@ -282,28 +333,55 @@ public class PageFragmentInstanceDefinitionMapper {
 			return new FragmentField[0];
 		}
 
-		JSONObject editableValuesJSONObject = null;
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
 
-		try {
-			editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
+		JSONObject processedEditableValuesJSONObject =
+			_jsonFactory.createJSONObject();
+
+		String editableValues = fragmentEntryLink.getEditableValues();
+		String fragmentEntryLinkNamespace = fragmentEntryLink.getNamespace();
+
+		if (editableValues.contains(fragmentEntryLinkNamespace)) {
+			for (String key : editableValuesJSONObject.keySet()) {
+				Object value = editableValuesJSONObject.get(key);
+
+				if (!(value instanceof JSONObject)) {
+					processedEditableValuesJSONObject.put(key, value);
+
+					continue;
+				}
+
+				JSONObject duplicatedJSONObject =
+					_jsonFactory.createJSONObject();
+
+				JSONObject jsonObject = (JSONObject)value;
+
+				for (String curKey : jsonObject.keySet()) {
+					duplicatedJSONObject.put(
+						StringUtil.replace(
+							curKey, fragmentEntryLinkNamespace,
+							"[$NAMESPACE$]"),
+						jsonObject.get(curKey));
+				}
+
+				processedEditableValuesJSONObject.put(
+					key, duplicatedJSONObject);
 			}
+		}
 
-			return null;
+		if (SetUtil.isEmpty(processedEditableValuesJSONObject.keySet())) {
+			processedEditableValuesJSONObject = editableValuesJSONObject;
 		}
 
 		List<FragmentField> fragmentFields = new ArrayList<>(
 			_getBackgroundImageFragmentFields(
-				editableValuesJSONObject.getJSONObject(
+				processedEditableValuesJSONObject.getJSONObject(
 					FragmentEntryProcessorConstants.
 						KEY_BACKGROUND_IMAGE_FRAGMENT_ENTRY_PROCESSOR),
 				saveMapping));
 
-		JSONObject jsonObject = editableValuesJSONObject.getJSONObject(
+		JSONObject jsonObject = processedEditableValuesJSONObject.getJSONObject(
 			FragmentEntryProcessorConstants.
 				KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
 
@@ -344,18 +422,13 @@ public class PageFragmentInstanceDefinitionMapper {
 		Map<String, String> editableTypes, JSONObject jsonObject,
 		boolean saveInlineContent, boolean saveMapping) {
 
-		List<FragmentField> fragmentFields = new ArrayList<>();
-
 		Set<String> textIds = jsonObject.keySet();
 
-		for (String textId : textIds) {
-			fragmentFields.add(
-				_toFragmentField(
-					editableTypes, jsonObject, saveInlineContent, saveMapping,
-					textId));
-		}
-
-		return fragmentFields;
+		return TransformUtil.transform(
+			textIds,
+			textId -> _toFragmentField(
+				editableTypes, jsonObject, saveInlineContent, saveMapping,
+				textId));
 	}
 
 	private WidgetInstance[] _getWidgetInstances(
@@ -393,8 +466,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new ActionExecutionResult() {
 				{
-					type = ActionExecutionResult.Type.DISPLAY_PAGE;
-
+					setType(() -> ActionExecutionResult.Type.DISPLAY_PAGE);
 					setValue(
 						() -> {
 							if (!saveMapping ||
@@ -413,11 +485,14 @@ public class PageFragmentInstanceDefinitionMapper {
 
 							return new DisplayPageActionExecutionResult() {
 								{
-									mapping = new Mapping() {
-										{
-											fieldKey = displayPageUniqueFieldId;
-										}
-									};
+									setMapping(
+										() -> new Mapping() {
+											{
+												setFieldKey(
+													() ->
+														displayPageUniqueFieldId);
+											}
+										});
 								}
 							};
 						});
@@ -429,12 +504,14 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new ActionExecutionResult() {
 				{
-					type = ActionExecutionResult.Type.NONE;
-					value = new NoneActionExecutionResult() {
-						{
-							reload = jsonObject.getBoolean("reload");
-						}
-					};
+					setType(() -> ActionExecutionResult.Type.NONE);
+					setValue(
+						() -> new NoneActionExecutionResult() {
+							{
+								setReload(
+									() -> jsonObject.getBoolean("reload"));
+							}
+						});
 				}
 			};
 		}
@@ -443,7 +520,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new ActionExecutionResult() {
 				{
-					type = ActionExecutionResult.Type.NOTIFICATION;
+					setType(() -> ActionExecutionResult.Type.NOTIFICATION);
 
 					setValue(
 						() -> {
@@ -453,9 +530,11 @@ public class PageFragmentInstanceDefinitionMapper {
 
 							return new NotificationActionExecutionResult() {
 								{
-									reload = jsonObject.getBoolean("reload");
-									text = _toFragmentInlineValue(
-										jsonObject.getJSONObject("text"));
+									setReload(
+										() -> jsonObject.getBoolean("reload"));
+									setText(
+										() -> _toFragmentInlineValue(
+											jsonObject.getJSONObject("text")));
 								}
 							};
 						});
@@ -467,7 +546,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new ActionExecutionResult() {
 				{
-					type = ActionExecutionResult.Type.PAGE;
+					setType(() -> ActionExecutionResult.Type.PAGE);
 
 					setValue(
 						() -> {
@@ -480,10 +559,11 @@ public class PageFragmentInstanceDefinitionMapper {
 
 							return new SitePageActionExecutionResult() {
 								{
-									itemReference =
-										FragmentMappedValueUtil.
-											toLayoutClassFieldsReference(
-												pageJSONObject);
+									setItemReference(
+										() ->
+											FragmentMappedValueUtil.
+												toLayoutClassFieldsReference(
+													pageJSONObject));
 								}
 							};
 						});
@@ -495,7 +575,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new ActionExecutionResult() {
 				{
-					type = ActionExecutionResult.Type.URL;
+					setType(() -> ActionExecutionResult.Type.URL);
 
 					setValue(
 						() -> {
@@ -505,8 +585,9 @@ public class PageFragmentInstanceDefinitionMapper {
 
 							return new URLActionExecutionResult() {
 								{
-									url = _toFragmentInlineValue(
-										jsonObject.getJSONObject("url"));
+									setUrl(
+										() -> _toFragmentInlineValue(
+											jsonObject.getJSONObject("url")));
 								}
 							};
 						});
@@ -531,8 +612,8 @@ public class PageFragmentInstanceDefinitionMapper {
 				entry.getKey(),
 				new ClassPKReference() {
 					{
-						className = FileEntry.class.getName();
-						classPK = jsonObject.getLong("fileEntryId");
+						setClassName(() -> FileEntry.class.getName());
+						setClassPK(() -> jsonObject.getLong("fileEntryId"));
 					}
 				});
 		}
@@ -615,7 +696,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new FragmentInlineValue() {
 				{
-					value = valueString;
+					setValue(() -> valueString);
 				}
 			};
 		}
@@ -655,14 +736,14 @@ public class PageFragmentInstanceDefinitionMapper {
 
 			return new FragmentInlineValue() {
 				{
-					value_i18n = localizedValues;
+					setValue_i18n(() -> localizedValues);
 				}
 			};
 		}
 
 		return new FragmentInlineValue() {
 			{
-				value = alt;
+				setValue(() -> alt);
 			}
 		};
 	}
@@ -675,7 +756,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentField() {
 			{
-				id = textId;
+				setId(() -> textId);
 
 				setValue(
 					() -> {
@@ -685,6 +766,11 @@ public class PageFragmentInstanceDefinitionMapper {
 						if (Objects.equals(type, "action")) {
 							return _toFragmentFieldAction(
 								textJSONObject, saveInlineContent, saveMapping);
+						}
+
+						if (Objects.equals(type, "date-time")) {
+							return _toFragmentFieldDate(
+								textJSONObject, saveMapping);
 						}
 
 						if (Objects.equals(type, "html")) {
@@ -715,13 +801,6 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentFieldAction() {
 			{
-				onError = _toActionExecutionResult(
-					configJSONObject.getJSONObject("onError"),
-					saveInlineContent, saveMapping);
-				onSuccess = _toActionExecutionResult(
-					configJSONObject.getJSONObject("onSuccess"),
-					saveInlineContent, saveMapping);
-
 				setAction(
 					() -> {
 						JSONObject mappedActionJSONObject =
@@ -736,7 +815,14 @@ public class PageFragmentInstanceDefinitionMapper {
 						return _toFragmentMappedValue(
 							null, mappedActionJSONObject);
 					});
-
+				setOnError(
+					() -> _toActionExecutionResult(
+						configJSONObject.getJSONObject("onError"),
+						saveInlineContent, saveMapping));
+				setOnSuccess(
+					() -> _toActionExecutionResult(
+						configJSONObject.getJSONObject("onSuccess"),
+						saveInlineContent, saveMapping));
 				setText(
 					() -> {
 						if (FragmentMappedValueUtil.isSaveFragmentMappedValue(
@@ -756,7 +842,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 						return new FragmentInlineValue() {
 							{
-								value_i18n = localizedValues;
+								setValue_i18n(() -> localizedValues);
 							}
 						};
 					});
@@ -770,32 +856,80 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentFieldBackgroundImage() {
 			{
-				backgroundFragmentImage = new FragmentImage() {
-					{
-						title = _toTitleFragmentInlineValue(
-							jsonObject, localizedValues);
+				setBackgroundFragmentImage(
+					() -> new FragmentImage() {
+						{
+							setTitle(
+								() -> _toTitleFragmentInlineValue(
+									jsonObject, localizedValues));
 
-						setUrl(
-							() -> {
-								if (FragmentMappedValueUtil.
-										isSaveFragmentMappedValue(
-											jsonObject, saveMapping)) {
+							setUrl(
+								() -> {
+									if (FragmentMappedValueUtil.
+											isSaveFragmentMappedValue(
+												jsonObject, saveMapping)) {
 
-									return _toFragmentMappedValue(
-										_toDefaultMappingValue(
-											jsonObject,
-											_getImageURLTransformerFunction()),
-										jsonObject);
-								}
-
-								return new FragmentInlineValue() {
-									{
-										value_i18n = localizedValues;
+										return _toFragmentMappedValue(
+											_toDefaultMappingValue(
+												jsonObject,
+												_getImageURLTransformerFunction()),
+											jsonObject);
 									}
-								};
-							});
-					}
-				};
+
+									return new FragmentInlineValue() {
+										{
+											setValue_i18n(
+												() -> localizedValues);
+										}
+									};
+								});
+						}
+					});
+			}
+		};
+	}
+
+	private FragmentFieldDate _toFragmentFieldDate(
+		JSONObject jsonObject, boolean saveMapping) {
+
+		return new FragmentFieldDate() {
+			{
+				setDate(
+					() -> {
+						if (FragmentMappedValueUtil.isSaveFragmentMappedValue(
+								jsonObject, saveMapping)) {
+
+							return _toFragmentMappedValue(
+								_toDefaultMappingValue(jsonObject, null),
+								jsonObject);
+						}
+
+						return null;
+					});
+				setDateFormat(
+					() -> {
+						JSONObject configJSONObject = jsonObject.getJSONObject(
+							"config");
+
+						if (configJSONObject == null) {
+							return null;
+						}
+
+						JSONObject dateFormatJSONObject =
+							configJSONObject.getJSONObject("dateFormat");
+
+						if (dateFormatJSONObject == null) {
+							return null;
+						}
+
+						return new FragmentInlineValue() {
+							{
+								setValue_i18n(
+									() -> JSONUtil.toStringMap(
+										dateFormatJSONObject));
+							}
+						};
+					});
 			}
 		};
 	}
@@ -817,9 +951,9 @@ public class PageFragmentInstanceDefinitionMapper {
 
 						return new FragmentInlineValue() {
 							{
-								value_i18n =
-									LocalizedValueUtil.toLocalizedValues(
-										jsonObject);
+								setValue_i18n(
+									() -> LocalizedValueUtil.toLocalizedValues(
+										jsonObject));
 							}
 						};
 					});
@@ -840,47 +974,49 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentFieldImage() {
 			{
-				fragmentImage = new FragmentImage() {
-					{
-						description = _toDescriptionFragmentInlineValue(
-							jsonObject);
-						title = _toTitleFragmentInlineValue(
-							jsonObject, localizedValues);
+				setFragmentImage(
+					() -> new FragmentImage() {
+						{
+							setDescription(
+								() -> _toDescriptionFragmentInlineValue(
+									jsonObject));
+							setFragmentImageClassPKReference(
+								() -> {
+									if (MapUtil.isEmpty(localizedJSONObjects) ||
+										MapUtil.isNotEmpty(localizedURLs)) {
 
-						setFragmentImageClassPKReference(
-							() -> {
-								if (MapUtil.isEmpty(localizedJSONObjects) ||
-									MapUtil.isNotEmpty(localizedURLs)) {
-
-									return null;
-								}
-
-								return _toFragmentImageClassPKReference(
-									jsonObject.getJSONObject("config"),
-									localizedJSONObjects);
-							});
-						setUrl(
-							() -> {
-								if (FragmentMappedValueUtil.
-										isSaveFragmentMappedValue(
-											jsonObject, saveMapping)) {
-
-									return _toFragmentMappedValue(
-										_toDefaultMappingValue(
-											jsonObject,
-											_getImageURLTransformerFunction()),
-										jsonObject);
-								}
-
-								return new FragmentInlineValue() {
-									{
-										value_i18n = localizedURLs;
+										return null;
 									}
-								};
-							});
-					}
-				};
-				fragmentLink = _toFragmentLink(jsonObject, saveMapping);
+
+									return _toFragmentImageClassPKReference(
+										jsonObject.getJSONObject("config"),
+										localizedJSONObjects);
+								});
+							setTitle(
+								() -> _toTitleFragmentInlineValue(
+									jsonObject, localizedValues));
+							setUrl(
+								() -> {
+									if (FragmentMappedValueUtil.
+											isSaveFragmentMappedValue(
+												jsonObject, saveMapping)) {
+
+										return _toFragmentMappedValue(
+											_toDefaultMappingValue(
+												jsonObject,
+												_getImageURLTransformerFunction()),
+											jsonObject);
+									}
+
+									return new FragmentInlineValue() {
+										{
+											setValue_i18n(() -> localizedURLs);
+										}
+									};
+								});
+						}
+					});
+				setFragmentLink(() -> _toFragmentLink(jsonObject, saveMapping));
 			}
 		};
 	}
@@ -890,8 +1026,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentFieldText() {
 			{
-				fragmentLink = _toFragmentLink(jsonObject, saveMapping);
-
+				setFragmentLink(() -> _toFragmentLink(jsonObject, saveMapping));
 				setText(
 					() -> {
 						if (FragmentMappedValueUtil.isSaveFragmentMappedValue(
@@ -911,7 +1046,7 @@ public class PageFragmentInstanceDefinitionMapper {
 
 						return new FragmentInlineValue() {
 							{
-								value_i18n = localizedValues;
+								setValue_i18n(() -> localizedValues);
 							}
 						};
 					});
@@ -928,38 +1063,40 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentImageClassPKReference() {
 			{
-				classPKReferences = _toClassPKReferences(localizedJSONObjects);
-				fragmentImageConfiguration = new FragmentImageConfiguration() {
-					{
-						setLandscapeMobile(
-							() -> {
-								if (imageConfigurationJSONObject == null) {
-									return null;
-								}
+				setClassPKReferences(
+					() -> _toClassPKReferences(localizedJSONObjects));
+				setFragmentImageConfiguration(
+					() -> new FragmentImageConfiguration() {
+						{
+							setLandscapeMobile(
+								() -> {
+									if (imageConfigurationJSONObject == null) {
+										return null;
+									}
 
-								return imageConfigurationJSONObject.getString(
-									"landscapeMobile", "auto");
-							});
-						setPortraitMobile(
-							() -> {
-								if (imageConfigurationJSONObject == null) {
-									return null;
-								}
+									return imageConfigurationJSONObject.
+										getString("landscapeMobile", "auto");
+								});
+							setPortraitMobile(
+								() -> {
+									if (imageConfigurationJSONObject == null) {
+										return null;
+									}
 
-								return imageConfigurationJSONObject.getString(
-									"portraitMobile", "auto");
-							});
-						setTablet(
-							() -> {
-								if (imageConfigurationJSONObject == null) {
-									return null;
-								}
+									return imageConfigurationJSONObject.
+										getString("portraitMobile", "auto");
+								});
+							setTablet(
+								() -> {
+									if (imageConfigurationJSONObject == null) {
+										return null;
+									}
 
-								return imageConfigurationJSONObject.getString(
-									"tablet", "auto");
-							});
-					}
-				};
+									return imageConfigurationJSONObject.
+										getString("tablet", "auto");
+								});
+						}
+					});
 			}
 		};
 	}
@@ -967,7 +1104,8 @@ public class PageFragmentInstanceDefinitionMapper {
 	private FragmentInlineValue _toFragmentInlineValue(JSONObject jsonObject) {
 		return new FragmentInlineValue() {
 			{
-				value_i18n = LocalizedValueUtil.toLocalizedValues(jsonObject);
+				setValue_i18n(
+					() -> LocalizedValueUtil.toLocalizedValues(jsonObject));
 			}
 		};
 	}
@@ -983,9 +1121,11 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentLink() {
 			{
-				value = _toFragmentLinkValue(configJSONObject, saveMapping);
-				value_i18n = _toLocalizedFragmentLinkValues(
-					configJSONObject, saveMapping);
+				setValue(
+					() -> _toFragmentLinkValue(configJSONObject, saveMapping));
+				setValue_i18n(
+					() -> _toLocalizedFragmentLinkValues(
+						configJSONObject, saveMapping));
 			}
 		};
 	}
@@ -1034,12 +1174,12 @@ public class PageFragmentInstanceDefinitionMapper {
 											configJSONObject.getJSONObject(
 												"href");
 
-										if (hrefJSONObject != null) {
-											return JSONUtil.toStringMap(
-												hrefJSONObject);
+										if (hrefJSONObject == null) {
+											return null;
 										}
 
-										return null;
+										return JSONUtil.toStringMap(
+											hrefJSONObject);
 									});
 							}
 						};
@@ -1072,15 +1212,18 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentMappedValue() {
 			{
-				mapping = new Mapping() {
-					{
-						defaultFragmentInlineValue = fragmentInlineValue;
-						fieldKey = FragmentMappedValueUtil.getFieldKey(
-							jsonObject);
-						itemReference = FragmentMappedValueUtil.toItemReference(
-							jsonObject);
-					}
-				};
+				setDefaultFragmentInlineValue(() -> fragmentInlineValue);
+				setMapping(
+					() -> new Mapping() {
+						{
+							setFieldKey(
+								() -> FragmentMappedValueUtil.getFieldKey(
+									jsonObject));
+							setItemReference(
+								() -> FragmentMappedValueUtil.toItemReference(
+									jsonObject));
+						}
+					});
 			}
 		};
 	}
@@ -1179,43 +1322,28 @@ public class PageFragmentInstanceDefinitionMapper {
 
 		return new FragmentInlineValue() {
 			{
-				value = imageTitle;
+				setValue(() -> imageTitle);
 			}
 		};
 	}
 
+	private static final String[] _EXCLUDED_FRAGMENT_CONFIGURATION_FIELD_TYPES =
+		{"itemSelector", "url"};
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		PageFragmentInstanceDefinitionMapper.class);
 
-	@Reference
-	private FragmentCollectionContributorRegistry
+	private final FragmentCollectionContributorRegistry
 		_fragmentCollectionContributorRegistry;
-
-	@Reference
-	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
-
-	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
-
-	@Reference
-	private FragmentEntryLocalService _fragmentEntryLocalService;
-
-	@Reference
-	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private InfoItemServiceRegistry _infoItemServiceRegistry;
-
-	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference
-	private Portal _portal;
-
-	@Reference
-	private PortletRegistry _portletRegistry;
-
-	@Reference
-	private WidgetInstanceMapper _widgetInstanceMapper;
+	private final FragmentEntryConfigurationParser
+		_fragmentEntryConfigurationParser;
+	private final FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+	private final FragmentEntryLocalService _fragmentEntryLocalService;
+	private final GroupLocalService _groupLocalService;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+	private final JSONFactory _jsonFactory;
+	private final Portal _portal;
+	private final PortletRegistry _portletRegistry;
+	private final WidgetInstanceMapper _widgetInstanceMapper;
 
 }

@@ -4,44 +4,59 @@
  */
 
 import {SidebarCategory} from '@liferay/object-js-components-web';
+import {ILearnResourceContext} from 'frontend-js-components-web';
 import React, {ElementType} from 'react';
 
+import {DEFAULT_VALUE_SUPPORTED_BUSINESS_TYPES} from '../../../../utils/constants';
 import {ObjectFieldErrors} from '../../ObjectFieldFormBase';
+import {AutocompleteContainer} from './AutocompleteContainer';
+import {BlockedDomainsContainer} from './BlockedDomainsContainer';
 import {DefaultValueContainer} from './DefaultValueContainer';
 import {ReadOnlyContainer} from './ReadOnlyContainer';
 
 interface AdvancedTabProps {
+	ckEditor5Config?: object;
 	containerWrapper: ElementType;
 	creationLanguageId: Liferay.Language.Locale;
+	decimalSeparator: string;
+	defaultValueSidebarElements: SidebarCategory[];
 	errors: ObjectFieldErrors;
 	isDefaultStorageType: boolean;
-	learnResources: ObjectWebLearnResources;
+	isRootDescendantNode: boolean;
+	learnResources: ILearnResourceContext;
 	modelBuilder?: boolean;
 	onSubmit?: () => void;
 	readOnlySidebarElements: SidebarCategory[];
 	setValues: (value: Partial<ObjectField>) => void;
-	sidebarElements: SidebarCategory[];
 	values: Partial<ObjectField>;
 }
 
 export function AdvancedTab({
+	ckEditor5Config,
 	containerWrapper: ContainerWrapper,
 	creationLanguageId,
+	decimalSeparator,
+	defaultValueSidebarElements,
 	errors,
 	isDefaultStorageType,
+	isRootDescendantNode,
 	learnResources,
 	modelBuilder = false,
 	onSubmit,
 	readOnlySidebarElements,
 	setValues,
-	sidebarElements,
 	values,
 }: AdvancedTabProps) {
 	const disabledReadyOnly =
 		values.businessType === 'Aggregation' ||
 		values.businessType === 'AutoIncrement' ||
 		values.businessType === 'Formula' ||
+		(values.businessType === 'Relationship' && isRootDescendantNode) ||
+		values.required ||
 		values.system;
+	const hasDefaultValue =
+		values.businessType &&
+		DEFAULT_VALUE_SUPPORTED_BUSINESS_TYPES.includes(values.businessType);
 
 	return (
 		<>
@@ -66,7 +81,7 @@ export function AdvancedTab({
 				</ContainerWrapper>
 			)}
 
-			{values.businessType === 'Picklist' && (
+			{hasDefaultValue && (
 				<ContainerWrapper
 					collapsable
 					defaultExpanded
@@ -76,16 +91,54 @@ export function AdvancedTab({
 					title={Liferay.Language.get('default-value')}
 				>
 					<DefaultValueContainer
+						ckEditor5Config={ckEditor5Config}
 						creationLanguageId={creationLanguageId}
+						decimalSeparator={decimalSeparator}
+						defaultValueSidebarElements={
+							defaultValueSidebarElements
+						}
 						errors={errors}
 						learnResources={learnResources}
 						modelBuilder={modelBuilder}
 						onSubmit={onSubmit}
 						setValues={setValues}
-						sidebarElements={sidebarElements}
 						values={values}
 					/>
 				</ContainerWrapper>
+			)}
+
+			{values.businessType === 'EmailAddress' && (
+				<>
+					<ContainerWrapper
+						collapsable
+						defaultExpanded
+						disabled={false}
+						displayTitle={Liferay.Language.get('blocked-domains')}
+						displayType="unstyled"
+						title={Liferay.Language.get('blocked-domains')}
+					>
+						<BlockedDomainsContainer
+							onSubmit={onSubmit}
+							setValues={setValues}
+							values={values}
+						/>
+					</ContainerWrapper>
+
+					<ContainerWrapper
+						collapsable
+						defaultExpanded
+						disabled={false}
+						displayTitle={Liferay.Language.get('autocomplete')}
+						displayType="unstyled"
+						title={Liferay.Language.get('autocomplete')}
+					>
+						<AutocompleteContainer
+							onSubmit={onSubmit}
+							setValues={setValues}
+							values={values}
+						/>
+					</ContainerWrapper>
+				</>
 			)}
 		</>
 	);

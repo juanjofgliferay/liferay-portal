@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -85,6 +86,13 @@ public class ObjectActionLocalServiceUtil {
 			active, conditionExpression, description, errorMessageMap, labelMap,
 			name, objectActionExecutorKey, objectActionTriggerKey,
 			parametersUnicodeProperties, system);
+	}
+
+	public static void addOrUpdateSubscriptionObjectActions(
+			com.liferay.object.model.ObjectDefinition objectDefinition)
+		throws PortalException {
+
+		getService().addOrUpdateSubscriptionObjectActions(objectDefinition);
 	}
 
 	/**
@@ -247,6 +255,12 @@ public class ObjectActionLocalServiceUtil {
 	}
 
 	public static ObjectAction fetchObjectAction(
+		long objectDefinitionId, String name) {
+
+		return getService().fetchObjectAction(objectDefinitionId, name);
+	}
+
+	public static ObjectAction fetchObjectAction(
 		String externalReferenceCode, long objectDefinitionId) {
 
 		return getService().fetchObjectAction(
@@ -324,6 +338,12 @@ public class ObjectActionLocalServiceUtil {
 		return getService().getObjectActionByUuidAndCompanyId(uuid, companyId);
 	}
 
+	public static List<ObjectAction> getObjectActions(
+		boolean active, String objectActionExecutorKey) {
+
+		return getService().getObjectActions(active, objectActionExecutorKey);
+	}
+
 	/**
 	 * Returns a range of all the object actions.
 	 *
@@ -359,6 +379,13 @@ public class ObjectActionLocalServiceUtil {
 		return getService().getObjectActionsCount();
 	}
 
+	public static Map<Long, List<ObjectAction>> getObjectActionsMap(
+		long companyId, boolean active, String objectActionTriggerKey) {
+
+		return getService().getObjectActionsMap(
+			companyId, active, objectActionTriggerKey);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -375,6 +402,13 @@ public class ObjectActionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
+	}
+
+	public static ObjectAction updateActive(
+			ObjectAction objectAction, boolean active)
+		throws PortalException {
+
+		return getService().updateActive(objectAction, active);
 	}
 
 	/**
@@ -415,13 +449,12 @@ public class ObjectActionLocalServiceUtil {
 	}
 
 	public static ObjectActionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ObjectActionLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ObjectActionLocalService _service;
+	private static final Snapshot<ObjectActionLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectActionLocalServiceUtil.class, ObjectActionLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1137417248

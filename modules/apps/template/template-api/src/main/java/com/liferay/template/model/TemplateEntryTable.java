@@ -29,6 +29,10 @@ public class TemplateEntryTable extends BaseTable<TemplateEntryTable> {
 		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<TemplateEntryTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<TemplateEntryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<TemplateEntryTable, Long> templateEntryId =
 		createColumn(
 			"templateEntryId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
@@ -64,3 +68,4 @@ public class TemplateEntryTable extends BaseTable<TemplateEntryTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2132257399

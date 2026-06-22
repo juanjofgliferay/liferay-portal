@@ -6,7 +6,7 @@
 		}
 	},
 	"id": "antivirus",
-	"image": "clamav/clamav:stable",
+	"image": "clamav/clamav:1.5.1",
 	"kind": "StatefulSet",
 	"livenessProbe": {
 		"failureThreshold": 12,

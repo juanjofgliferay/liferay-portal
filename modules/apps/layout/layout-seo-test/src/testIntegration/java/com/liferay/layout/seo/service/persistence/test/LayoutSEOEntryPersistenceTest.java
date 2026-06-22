@@ -111,11 +111,7 @@ public class LayoutSEOEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		LayoutSEOEntry newLayoutSEOEntry = _persistence.create(pk);
-
-		newLayoutSEOEntry.setMvccVersion(RandomTestUtil.nextLong());
+		LayoutSEOEntry newLayoutSEOEntry = addLayoutSEOEntry();
 
 		newLayoutSEOEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -142,8 +138,6 @@ public class LayoutSEOEntryPersistenceTest {
 		newLayoutSEOEntry.setCanonicalURLEnabled(
 			RandomTestUtil.randomBoolean());
 
-		newLayoutSEOEntry.setDDMStorageId(RandomTestUtil.nextLong());
-
 		newLayoutSEOEntry.setOpenGraphDescription(
 			RandomTestUtil.randomString());
 
@@ -152,8 +146,11 @@ public class LayoutSEOEntryPersistenceTest {
 
 		newLayoutSEOEntry.setOpenGraphImageAlt(RandomTestUtil.randomString());
 
-		newLayoutSEOEntry.setOpenGraphImageFileEntryId(
-			RandomTestUtil.nextLong());
+		newLayoutSEOEntry.setOpenGraphImageFileEntryERC(
+			RandomTestUtil.randomString());
+
+		newLayoutSEOEntry.setOpenGraphImageFileEntryScopeERC(
+			RandomTestUtil.randomString());
 
 		newLayoutSEOEntry.setOpenGraphTitle(RandomTestUtil.randomString());
 
@@ -208,9 +205,6 @@ public class LayoutSEOEntryPersistenceTest {
 			existingLayoutSEOEntry.isCanonicalURLEnabled(),
 			newLayoutSEOEntry.isCanonicalURLEnabled());
 		Assert.assertEquals(
-			existingLayoutSEOEntry.getDDMStorageId(),
-			newLayoutSEOEntry.getDDMStorageId());
-		Assert.assertEquals(
 			existingLayoutSEOEntry.getOpenGraphDescription(),
 			newLayoutSEOEntry.getOpenGraphDescription());
 		Assert.assertEquals(
@@ -220,8 +214,11 @@ public class LayoutSEOEntryPersistenceTest {
 			existingLayoutSEOEntry.getOpenGraphImageAlt(),
 			newLayoutSEOEntry.getOpenGraphImageAlt());
 		Assert.assertEquals(
-			existingLayoutSEOEntry.getOpenGraphImageFileEntryId(),
-			newLayoutSEOEntry.getOpenGraphImageFileEntryId());
+			existingLayoutSEOEntry.getOpenGraphImageFileEntryERC(),
+			newLayoutSEOEntry.getOpenGraphImageFileEntryERC());
+		Assert.assertEquals(
+			existingLayoutSEOEntry.getOpenGraphImageFileEntryScopeERC(),
+			newLayoutSEOEntry.getOpenGraphImageFileEntryScopeERC());
 		Assert.assertEquals(
 			existingLayoutSEOEntry.getOpenGraphTitle(),
 			newLayoutSEOEntry.getOpenGraphTitle());
@@ -298,11 +295,11 @@ public class LayoutSEOEntryPersistenceTest {
 			"uuid", true, "layoutSEOEntryId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "privateLayout", true, "layoutId", true,
-			"canonicalURL", true, "canonicalURLEnabled", true, "DDMStorageId",
-			true, "openGraphDescription", true, "openGraphDescriptionEnabled",
-			true, "openGraphImageAlt", true, "openGraphImageFileEntryId", true,
-			"openGraphTitle", true, "openGraphTitleEnabled", true,
-			"lastPublishDate", true);
+			"canonicalURL", true, "canonicalURLEnabled", true,
+			"openGraphDescription", true, "openGraphDescriptionEnabled", true,
+			"openGraphImageAlt", true, "openGraphImageFileEntryERC", true,
+			"openGraphImageFileEntryScopeERC", true, "openGraphTitle", true,
+			"openGraphTitleEnabled", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -603,8 +600,6 @@ public class LayoutSEOEntryPersistenceTest {
 
 		LayoutSEOEntry layoutSEOEntry = _persistence.create(pk);
 
-		layoutSEOEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		layoutSEOEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		layoutSEOEntry.setUuid(RandomTestUtil.randomString());
@@ -629,8 +624,6 @@ public class LayoutSEOEntryPersistenceTest {
 
 		layoutSEOEntry.setCanonicalURLEnabled(RandomTestUtil.randomBoolean());
 
-		layoutSEOEntry.setDDMStorageId(RandomTestUtil.nextLong());
-
 		layoutSEOEntry.setOpenGraphDescription(RandomTestUtil.randomString());
 
 		layoutSEOEntry.setOpenGraphDescriptionEnabled(
@@ -638,7 +631,11 @@ public class LayoutSEOEntryPersistenceTest {
 
 		layoutSEOEntry.setOpenGraphImageAlt(RandomTestUtil.randomString());
 
-		layoutSEOEntry.setOpenGraphImageFileEntryId(RandomTestUtil.nextLong());
+		layoutSEOEntry.setOpenGraphImageFileEntryERC(
+			RandomTestUtil.randomString());
+
+		layoutSEOEntry.setOpenGraphImageFileEntryScopeERC(
+			RandomTestUtil.randomString());
 
 		layoutSEOEntry.setOpenGraphTitle(RandomTestUtil.randomString());
 
@@ -657,3 +654,4 @@ public class LayoutSEOEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:906125614

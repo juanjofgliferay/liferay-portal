@@ -5,7 +5,6 @@
 
 package com.liferay.journal.internal.upgrade.v1_0_0;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -33,10 +32,9 @@ public class JournalArticleImageUpgradeProcess extends UpgradeProcess {
 	private void _deleteOrphanJournalArticleImages() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement = connection.prepareStatement(
-				StringBundler.concat(
-					"delete from JournalArticleImage where not exists",
-					"(select 1 from Image where",
-					"(JournalArticleImage.articleImageId = Image.imageId))"))) {
+				"delete from JournalArticleImage where not exists (select 1 " +
+					"from Image where JournalArticleImage.articleImageId = " +
+						"Image.imageId)")) {
 
 			preparedStatement.executeUpdate();
 		}
@@ -44,10 +42,12 @@ public class JournalArticleImageUpgradeProcess extends UpgradeProcess {
 
 	private void _updateJournalArticleImagesInstanceId() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select articleId, elName from JournalArticleImage where " +
 					"(elInstanceId = '' or elInstanceId is null) group by " +
 						"articleId, elName");
+
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			try (PreparedStatement preparedStatement2 =
@@ -57,12 +57,11 @@ public class JournalArticleImageUpgradeProcess extends UpgradeProcess {
 							"where articleId = ? and elName = ?")) {
 
 				while (resultSet.next()) {
-					String articleId = resultSet.getString(1);
-					String elName = resultSet.getString(2);
-
 					preparedStatement2.setString(1, StringUtil.randomString(4));
-					preparedStatement2.setString(2, articleId);
-					preparedStatement2.setString(3, elName);
+					preparedStatement2.setString(
+						2, resultSet.getString("articleId"));
+					preparedStatement2.setString(
+						3, resultSet.getString("elName"));
 
 					preparedStatement2.addBatch();
 				}
@@ -74,8 +73,10 @@ public class JournalArticleImageUpgradeProcess extends UpgradeProcess {
 
 	private void _updateJournalArticleImagesName() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select articleImageId, elName from JournalArticleImage");
+
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			try (PreparedStatement preparedStatement2 =
@@ -85,7 +86,7 @@ public class JournalArticleImageUpgradeProcess extends UpgradeProcess {
 							"articleImageId = ?")) {
 
 				while (resultSet.next()) {
-					String elName = resultSet.getString(2);
+					String elName = resultSet.getString("elName");
 
 					int lastIndexOf = elName.lastIndexOf(StringPool.UNDERLINE);
 
@@ -101,7 +102,8 @@ public class JournalArticleImageUpgradeProcess extends UpgradeProcess {
 
 					preparedStatement2.setString(
 						1, elName.substring(0, lastIndexOf));
-					preparedStatement2.setLong(2, resultSet.getLong(1));
+					preparedStatement2.setLong(
+						2, resultSet.getLong("articleImageId"));
 
 					preparedStatement2.addBatch();
 				}

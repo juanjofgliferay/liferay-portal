@@ -85,6 +85,8 @@ public class DLContentModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DLContent";
 
+	public static final String ENTITY_ALIAS = "dlContent";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY dlContent.version DESC";
 
@@ -760,7 +762,7 @@ public class DLContentModelImpl
 	private long _repositoryId;
 	private String _path;
 	private String _version;
-	private DLContentDataBlobModel _dataBlobModel;
+	private transient DLContentDataBlobModel _dataBlobModel;
 	private long _size;
 
 	public <T> T getColumnValue(String columnName) {
@@ -854,3 +856,4 @@ public class DLContentModelImpl
 	private DLContent _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-419473032

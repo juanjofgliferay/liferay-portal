@@ -1,21 +1,14 @@
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
-import ClayDropDown, {Align} from '@clayui/drop-down';
-import ClayForm, {ClayInput} from '@clayui/form';
-import ClayIcon from '@clayui/icon';
+import ClayForm from '@clayui/form';
 import ClayModal from '@clayui/modal';
-import DatePicker from 'shared/components/date-picker';
-import moment from 'moment';
 import React, {useState} from 'react';
-import {addAlert} from 'shared/actions/alerts';
-import {Alert} from 'shared/types';
-import {formatDate} from './utils';
-import {MomentDateRange} from '../DateRangeInput';
+import {Align} from '@clayui/drop-down';
+import {DropdownRangeKey} from '../dropdown-range-key/DropdownRangeKey';
 import {pickBy} from 'lodash';
-import {RangeKeyTimeRanges} from 'shared/util/constants';
-import {removeUriQueryParam, setUriQueryValues} from 'shared/util/router';
-import {spritemap} from 'shared/util/constants';
-import {useDispatch} from 'react-redux';
+import {RangeSelectors} from 'shared/types';
+import {setUriQueryValues} from 'shared/util/router';
+import {Text} from '@clayui/core';
 import {useHistory} from 'react-router-dom';
 
 export enum ReportType {
@@ -24,219 +17,147 @@ export enum ReportType {
 }
 
 interface IDownloadReportModal {
-	alertMessage: string;
-	descriptionMessage: string;
+	children?: React.ReactNode;
+	dateRangeDescription?: string;
 	disabled?: boolean;
 	infoMessage: string;
 	observer: any;
 	onClose: () => void;
-	onSubmit: (dateRange?: MomentDateRange) => void;
-	requiredDateRange?: boolean;
+	onSubmit: (rangeSelectors?: RangeSelectors) => void;
+	rangeSelectors?: RangeSelectors;
 	showDateRange?: boolean;
 	type?: ReportType;
 }
 
 export const DownloadReportModal: React.FC<IDownloadReportModal> = ({
-	alertMessage,
 	children,
-	descriptionMessage,
+	dateRangeDescription = Liferay.Language.get(
+		'only-select-a-date-range-if-you-want-to-modify-the-current-date-filter'
+	),
 	disabled = false,
 	infoMessage,
 	observer,
 	onClose,
 	onSubmit,
-	requiredDateRange = false,
+	rangeSelectors: initialRangeSelectors,
 	showDateRange = true,
 	type
 }) => {
-	const dispatch = useDispatch();
 	const history = useHistory();
 	const [openAlert, setOpenAlert] = useState(true);
-	const [dateRange, setDateRange] = useState<MomentDateRange>({
-		end: null,
-		start: null
-	});
 	const [submitDisabled, setSubmitDisabled] = useState(false);
+	const [rangeSelectors, setRangeSelectors] = useState<
+		RangeSelectors | undefined
+	>(initialRangeSelectors);
 
 	return (
 		<ClayModal observer={observer}>
-			<ClayForm
-				onSubmit={event => {
-					event.preventDefault();
+			<ClayForm>
+				<div className='modal-content'>
+					<ClayModal.Header>
+						{Liferay.Language.get('download-reports')}
+					</ClayModal.Header>
 
-					setSubmitDisabled(true);
-
-					onClose();
-
-					dispatch(
-						addAlert({
-							alertType: Alert.Types.Default,
-							message: alertMessage
-						})
-					);
-
-					if (type === 'CSV') {
-						onSubmit(dateRange);
-
-						return;
-					}
-
-					if (dateRange && dateRange.end && dateRange.start) {
-						history.push(
-							setUriQueryValues(
-								pickBy({
-									downloadReport: true,
-									rangeEnd: formatDate(dateRange.end),
-									rangeKey: RangeKeyTimeRanges.CustomRange,
-									rangeStart: formatDate(dateRange.start)
-								}),
-								removeUriQueryParam(
-									window.location.href,
-									'rangeEnd',
-									'rangeStart'
-								)
-							)
-						);
-
-						const observer = new MutationObserver(() => {
-							const loadingElement = document.querySelectorAll(
-								'.page-container .loading-animation'
-							);
-
-							if (!loadingElement.length) {
-								observer.disconnect();
-
-								onSubmit();
-							}
-						});
-
-						observer.observe(document.body, {
-							attributes: true,
-							characterData: true,
-							childList: true,
-							subtree: true
-						});
-					} else {
-						onSubmit();
-					}
-				}}
-			>
-				<ClayModal.Header>
-					{Liferay.Language.get('download-report')}
-				</ClayModal.Header>
-
-				<ClayModal.Body>
 					{openAlert && (
 						<ClayAlert
 							onClose={() => setOpenAlert(false)}
-							spritemap={spritemap}
 							title={Liferay.Language.get('info')}
+							variant='stripe'
 						>
 							{infoMessage}
 						</ClayAlert>
 					)}
 
-					<p>{descriptionMessage}</p>
+					<ClayModal.Body>
+						{showDateRange && (
+							<ClayForm.Group className='mb-0'>
+								<label htmlFor='timeRange'>
+									{Liferay.Language.get('date-range')}
+								</label>
 
-					{showDateRange && (
-						<ClayForm.Group>
-							<label htmlFor='timeRange'>
-								{requiredDateRange
-									? Liferay.Language.get('date-range')
-									: Liferay.Language.get(
-											'date-range-optional'
-									  )}
-							</label>
+								<p>
+									<Text size={3}>{dateRangeDescription}</Text>
+								</p>
 
-							<ClayDropDown
-								alignmentPosition={Align.BottomLeft}
-								menuElementAttrs={{
-									style: {maxWidth: 'none', minWidth: 'none'}
-								}}
-								trigger={
-									<ClayInput.Group>
-										<ClayInput.GroupItem prepend>
-											<ClayInput
-												id='timeRange'
-												placeholder={`${Liferay.Language.get(
-													'yyyy-mm-dd'
-												)} - ${Liferay.Language.get(
-													'yyyy-mm-dd'
-												)}`}
-												readOnly
-												type='text'
-												value={
-													dateRange.start &&
-													dateRange.end
-														? `${formatDate(
-																dateRange.start
-														  )} - ${formatDate(
-																dateRange.end
-														  )}`
-														: ''
-												}
-											/>
-										</ClayInput.GroupItem>
-
-										<ClayInput.GroupItem append shrink>
-											<ClayInput.GroupText>
-												<ClayIcon symbol='calendar' />
-											</ClayInput.GroupText>
-										</ClayInput.GroupItem>
-									</ClayInput.Group>
-								}
-							>
-								<DatePicker
-									className='p-2'
-									date={dateRange}
-									displayLabel={false}
-									maxDate={moment().subtract(1, 'days')}
-									maxRange={365}
-									minDate={moment().subtract(10, 'years')}
-									onSelect={({
-										end,
-										start
-									}: MomentDateRange) => {
-										setDateRange({
-											end,
-											start
-										});
-									}}
+								<DropdownRangeKey
+									alignmentPosition={Align.BottomLeft}
+									legacy={false}
+									onRangeSelectorChange={setRangeSelectors}
+									rangeSelectors={rangeSelectors}
 								/>
-							</ClayDropDown>
-						</ClayForm.Group>
-					)}
+							</ClayForm.Group>
+						)}
 
-					{children}
-				</ClayModal.Body>
+						{children}
+					</ClayModal.Body>
 
-				<ClayModal.Footer
-					last={
-						<ClayButton.Group spaced>
-							<ClayButton
-								data-testid='cancel'
-								displayType='secondary'
-								onClick={onClose}
-							>
-								{Liferay.Language.get('cancel')}
-							</ClayButton>
+					<ClayModal.Footer
+						last={
+							<ClayButton.Group spaced>
+								<ClayButton
+									data-testid='cancel'
+									displayType='secondary'
+									onClick={onClose}
+								>
+									{Liferay.Language.get('cancel')}
+								</ClayButton>
 
-							<ClayButton
-								data-testid='submit'
-								disabled={
-									(requiredDateRange &&
-										!dateRange.end &&
-										!dateRange.start) ||
-									disabled ||
-									submitDisabled
-								}
-								type='submit'
-							>
-								{Liferay.Language.get('download')}
-							</ClayButton>
-						</ClayButton.Group>
-					}
-				/>
+								<ClayButton
+									data-testid='submit'
+									disabled={disabled || submitDisabled}
+									onClick={() => {
+										setSubmitDisabled(true);
+
+										onClose();
+
+										if (type === ReportType.CSV) {
+											onSubmit(rangeSelectors);
+											return;
+										}
+
+										if (rangeSelectors) {
+											history.push(
+												setUriQueryValues(
+													pickBy({
+														downloadReport: true,
+														...rangeSelectors
+													})
+												)
+											);
+
+											const observer =
+												new MutationObserver(() => {
+													const loadingElement =
+														document.querySelectorAll(
+															'.page-container .loading-animation'
+														);
+
+													if (
+														!loadingElement.length
+													) {
+														observer.disconnect();
+
+														onSubmit();
+													}
+												});
+
+											observer.observe(document.body, {
+												attributes: true,
+												characterData: true,
+												childList: true,
+												subtree: true
+											});
+										} else {
+											onSubmit();
+										}
+									}}
+								>
+									{Liferay.Language.get('download')}
+								</ClayButton>
+							</ClayButton.Group>
+						}
+					/>
+				</div>
 			</ClayForm>
 		</ClayModal>
 	);

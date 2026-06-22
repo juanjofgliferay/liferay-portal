@@ -109,11 +109,7 @@ public class ViewCountEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		ViewCountEntryPK pk = new ViewCountEntryPK(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong());
-
-		ViewCountEntry newViewCountEntry = _persistence.create(pk);
+		ViewCountEntry newViewCountEntry = addViewCountEntry();
 
 		newViewCountEntry.setViewCount(RandomTestUtil.nextLong());
 
@@ -134,6 +130,14 @@ public class ViewCountEntryPersistenceTest {
 		Assert.assertEquals(
 			existingViewCountEntry.getViewCount(),
 			newViewCountEntry.getViewCount());
+	}
+
+	@Test
+	public void testCountByC_CN() throws Exception {
+		_persistence.countByC_CN(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_CN(0L, 0L);
 	}
 
 	@Test
@@ -409,3 +413,4 @@ public class ViewCountEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-838149116

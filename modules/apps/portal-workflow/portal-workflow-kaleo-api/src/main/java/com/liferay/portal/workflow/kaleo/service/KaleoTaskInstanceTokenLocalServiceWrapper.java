@@ -426,6 +426,14 @@ public class KaleoTaskInstanceTokenLocalServiceWrapper
 
 	@Override
 	public java.util.List<KaleoTaskInstanceToken> getKaleoTaskInstanceTokens(
+		String className, long classPK) {
+
+		return _kaleoTaskInstanceTokenLocalService.getKaleoTaskInstanceTokens(
+			className, classPK);
+	}
+
+	@Override
+	public java.util.List<KaleoTaskInstanceToken> getKaleoTaskInstanceTokens(
 		String assigneeClassName, long assigneeClassPK, Boolean completed,
 		int start, int end,
 		com.liferay.portal.kernel.util.OrderByComparator<KaleoTaskInstanceToken>
@@ -538,6 +546,14 @@ public class KaleoTaskInstanceTokenLocalServiceWrapper
 
 		return _kaleoTaskInstanceTokenLocalService.hasPendingKaleoTaskForms(
 			kaleoTaskInstanceTokenId);
+	}
+
+	@Override
+	public boolean isNotifiableUser(long userId, long workflowTaskId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _kaleoTaskInstanceTokenLocalService.isNotifiableUser(
+			userId, workflowTaskId);
 	}
 
 	@Override
@@ -813,3 +829,4 @@ public class KaleoTaskInstanceTokenLocalServiceWrapper
 		_kaleoTaskInstanceTokenLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:734348315

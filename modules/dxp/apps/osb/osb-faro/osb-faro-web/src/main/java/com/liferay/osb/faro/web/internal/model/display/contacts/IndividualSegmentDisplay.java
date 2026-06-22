@@ -6,10 +6,12 @@
 package com.liferay.osb.faro.web.internal.model.display.contacts;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import com.liferay.osb.faro.engine.client.model.Asset;
 import com.liferay.osb.faro.engine.client.model.Author;
+import com.liferay.osb.faro.engine.client.model.CustomEvent;
 import com.liferay.osb.faro.engine.client.model.DXPGroup;
 import com.liferay.osb.faro.engine.client.model.DXPRole;
 import com.liferay.osb.faro.engine.client.model.DXPTeam;
@@ -20,6 +22,7 @@ import com.liferay.osb.faro.engine.client.model.FieldMapping;
 import com.liferay.osb.faro.engine.client.model.IndividualSegment;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembership;
 import com.liferay.osb.faro.engine.client.model.Organization;
+import com.liferay.osb.faro.engine.client.model.SegmentActivation;
 import com.liferay.osb.faro.web.internal.constants.FaroConstants;
 import com.liferay.osb.faro.web.internal.model.display.main.FaroEntityDisplay;
 import com.liferay.osb.faro.web.internal.util.JSONUtil;
@@ -49,7 +52,8 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 		_channelId = individualSegment.getChannelId();
 		_dateCreated = individualSegment.getDateCreated();
 		_dateModified = individualSegment.getDateModified();
-		_filter = individualSegment.getFilter();
+		_externalReferenceCode = individualSegment.getExternalReferenceCode();
+		_filterString = individualSegment.getFilterString();
 		_id = individualSegment.getId();
 		_includeAnonymousUsers = individualSegment.isIncludeAnonymousUsers();
 
@@ -79,6 +83,11 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 					referencedObjects, Asset::getId, AssetDisplay::new,
 					"assets",
 					new TypeReference<List<Asset>>() {
+					});
+				_addReferencedObject(
+					referencedObjects, CustomEvent::getName,
+					CustomEventDisplay::new, "custom-events",
+					new TypeReference<List<CustomEvent>>() {
 					});
 				_addReferencedObject(
 					referencedObjects, DXPGroup::getId, DXPGroupDisplay::new,
@@ -114,10 +123,22 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 		}
 
 		_individualCount = individualSegment.getIndividualCount();
+
+		SegmentActivation segmentActivation =
+			individualSegment.getSegmentActivation();
+
+		if (segmentActivation != null) {
+			_individualSegmentActivationDisplay =
+				new IndividualSegmentActivationDisplay(segmentActivation);
+		}
+
 		_knownIndividualCount = individualSegment.getKnownIndividualCount();
 		_lastActivityDate = individualSegment.getLastActivityDate();
+		_lastMembershipUpdateDate =
+			individualSegment.getLastMembershipUpdateDate();
 		_name = individualSegment.getName();
 		_segmentType = individualSegment.getSegmentType();
+		_sequential = individualSegment.isSequential();
 		_state = individualSegment.getState();
 		_status = individualSegment.getStatus();
 		_type = FaroConstants.TYPE_SEGMENT_INDIVIDUALS;
@@ -207,20 +228,30 @@ public class IndividualSegmentDisplay implements FaroEntityDisplay {
 	private String _channelId;
 	private Date _dateCreated;
 	private Date _dateModified;
-	private String _filter;
+	private String _externalReferenceCode;
+
+	@JsonProperty("filter")
+	private String _filterString;
+
 	private String _id;
 	private boolean _includeAnonymousUsers;
 	private Date _individualAddedDate;
 	private long _individualCount;
+
+	@JsonProperty("activation")
+	private IndividualSegmentActivationDisplay
+		_individualSegmentActivationDisplay;
 
 	@JsonIgnore
 	private Map<String, List<Field>> _interestsFieldMap;
 
 	private long _knownIndividualCount;
 	private Date _lastActivityDate;
+	private Date _lastMembershipUpdateDate;
 	private String _name;
 	private final Map<String, Object> _referencedObjects = new HashMap<>();
 	private String _segmentType;
+	private boolean _sequential;
 	private String _state;
 	private String _status;
 	private int _type;

@@ -5,24 +5,26 @@
 
 package com.liferay.osb.faro.web.internal.servlet.filter;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.servlet.BaseFilter;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -101,9 +103,23 @@ public class FaroFilter extends BaseFilter {
 		String uri = httpServletRequest.getRequestURI();
 
 		if (uri.startsWith("/web/guest")) {
-			httpServletResponse.sendRedirect(
-				_portal.getPortalURL(httpServletRequest) +
-					"/c/portal/login?redirect=/");
+			StringBuilder sb = new StringBuilder();
+
+			sb.append(_portal.getPortalURL(httpServletRequest));
+			sb.append("/c/portal/login");
+			sb.append("?redirect=");
+
+			String redirect = GetterUtil.getString(
+				httpServletRequest.getParameter("redirect"));
+
+			if (redirect.contains("/workspace")) {
+				sb.append(redirect);
+			}
+			else {
+				sb.append(StringPool.FORWARD_SLASH);
+			}
+
+			httpServletResponse.sendRedirect(sb.toString());
 		}
 		else {
 			String encodeURL = URLCodec.encodeURL(

@@ -11,12 +11,15 @@ import React, {useEffect, useRef, useState} from 'react';
 import ServiceProvider from '../../ServiceProvider/index';
 import {CP_INSTANCE_CHANGED} from '../../utilities/eventsDefinitions';
 
+import './tier_price.scss';
+
 function TierPrice({
 	accountId,
 	alwaysVisible,
 	autoload,
 	channelId,
 	cpInstanceId,
+	label,
 	namespace,
 	productId,
 }) {
@@ -39,7 +42,7 @@ function TierPrice({
 		const skuUnitOfMeasures = cpInstance.skuUnitOfMeasures || [];
 
 		if (skuUnitOfMeasures.length) {
-			setColumns([
+			const cols = [
 				{
 					classes: 'text-weight-semi-bold',
 					key: 'unit',
@@ -58,7 +61,26 @@ function TierPrice({
 					key: 'price',
 					label: Liferay.Language.get('net-price'),
 				},
-			]);
+			];
+
+			const havePricingQuantity = skuUnitOfMeasures.find(
+				(unitOfMeasure) => {
+					return unitOfMeasure.price?.pricingQuantityPriceFormatted;
+				}
+			);
+
+			if (havePricingQuantity) {
+				cols.push({
+					classes: 'price-col text-weight-semi-bold',
+					key: 'pricingQuantity',
+					label:
+						Liferay.Language.get('price') +
+						' / ' +
+						Liferay.Language.get('quantity'),
+				});
+			}
+
+			setColumns(cols);
 
 			for (const unitOfMeasure of skuUnitOfMeasures) {
 				const priceOnApplication =
@@ -73,7 +95,15 @@ function TierPrice({
 				rows.push({
 					classes: priceOnApplication ? 'price-on-application' : '',
 					key: unitOfMeasure.key,
-					price: unitOfMeasure.price?.priceFormatted,
+					price: unitOfMeasure.price?.priceFormatted || '',
+					pricingQuantity:
+						unitOfMeasure.price?.pricingQuantityPriceFormatted ||
+						unitOfMeasure.price?.priceFormatted +
+							' / ' +
+							(unitOfMeasure.incrementalOrderQuantity !== 1
+								? unitOfMeasure.incrementalOrderQuantity + ' '
+								: '') +
+							unitOfMeasure.name,
 					quantity: unitOfMeasure.incrementalOrderQuantity,
 					unit: unitOfMeasure.name,
 				});
@@ -85,6 +115,15 @@ function TierPrice({
 						classes: '',
 						key: unitOfMeasure.key,
 						price: tierPrice.priceFormatted,
+						pricingQuantity:
+							tierPrice.pricingQuantityPriceFormatted ||
+							tierPrice.priceFormatted +
+								' / ' +
+								(unitOfMeasure.incrementalOrderQuantity !== 1
+									? unitOfMeasure.incrementalOrderQuantity +
+										' '
+									: '') +
+								unitOfMeasure.name,
 						quantity: tierPrice.quantity,
 						unit: unitOfMeasure.name,
 					});
@@ -142,7 +181,10 @@ function TierPrice({
 					channelId,
 					productId,
 					cpInstanceId,
-					accountId
+					accountId,
+					Liferay.CommerceContext
+						? Liferay.CommerceContext.currency.currencyCode
+						: ''
 				)
 				.then((cpInstance) => {
 					handleCPInstanceChanged({cpInstance});
@@ -167,70 +209,74 @@ function TierPrice({
 	return (
 		<>
 			{alwaysVisible || rows.length > 1 ? (
-				<div
-					className={classNames('table-container', {
-						expanded: isExpanded,
-					})}
-				>
-					<ClayTable className="table-bordered">
-						<ClayTable.Head>
-							<ClayTable.Row>
-								{columns.map((column, colIndex) => {
+				<>
+					{label && <label>{label}</label>}
+
+					<div
+						className={classNames('table-container', {
+							expanded: isExpanded,
+						})}
+					>
+						<ClayTable className="table-bordered">
+							<ClayTable.Head>
+								<ClayTable.Row>
+									{columns.map((column, colIndex) => {
+										return (
+											<ClayTable.Cell
+												headingCell
+												key={`column-${colIndex}`}
+											>
+												<span>{column.label}</span>
+											</ClayTable.Cell>
+										);
+									})}
+								</ClayTable.Row>
+							</ClayTable.Head>
+
+							<ClayTable.Body>
+								{rows.map((row, rowIndex) => {
 									return (
-										<ClayTable.Cell
-											headingCell
-											key={`column-${colIndex}`}
-										>
-											<span>{column.label}</span>
-										</ClayTable.Cell>
+										<ClayTable.Row key={`row-${rowIndex}`}>
+											{columns.map((column, colIndex) => {
+												return (
+													<ClayTable.Cell
+														className={classNames(
+															column.classes,
+															row.classes,
+															{
+																'text-nowrap': true,
+															}
+														)}
+														key={`cell-${rowIndex}-${colIndex}`}
+													>
+														{row[column.key]}
+													</ClayTable.Cell>
+												);
+											})}
+										</ClayTable.Row>
 									);
 								})}
-							</ClayTable.Row>
-						</ClayTable.Head>
+							</ClayTable.Body>
+						</ClayTable>
 
-						<ClayTable.Body>
-							{rows.map((row, rowIndex) => {
-								return (
-									<ClayTable.Row key={`row-${rowIndex}`}>
-										{columns.map((column, colIndex) => {
-											return (
-												<ClayTable.Cell
-													className={classNames(
-														column.classes,
-														row.classes,
-														{
-															'text-nowrap': true,
-														}
-													)}
-													key={`cell-${rowIndex}-${colIndex}`}
-												>
-													{row[column.key]}
-												</ClayTable.Cell>
-											);
-										})}
-									</ClayTable.Row>
-								);
-							})}
-						</ClayTable.Body>
-					</ClayTable>
-
-					{rows.length > 5 ? (
-						<div
-							className="paginator"
-							onClick={() => {
-								setIsExpanded((prevState) => {
-									return !prevState;
-								});
-							}}
-						>
-							{isExpanded
-								? Liferay.Language.get('view-less')
-								: Liferay.Language.get('view-more')}
-						</div>
-					) : (
-						<></>
-					)}
-				</div>
+						{rows.length > 5 ? (
+							<div
+								className="paginator"
+								onClick={() => {
+									setIsExpanded((prevState) => {
+										return !prevState;
+									});
+								}}
+							>
+								{isExpanded
+									? Liferay.Language.get('view-less')
+									: Liferay.Language.get('view-more')}
+							</div>
+						) : (
+							<></>
+						)}
+					</div>
+				</>
 			) : (
 				<></>
 			)}
@@ -249,6 +295,7 @@ TierPrice.propTypes = {
 	autoload: PropTypes.bool,
 	channelId: PropTypes.number.isRequired,
 	cpInstanceId: PropTypes.number.isRequired,
+	label: PropTypes.string,
 	namespace: PropTypes.string,
 	productId: PropTypes.number.isRequired,
 };

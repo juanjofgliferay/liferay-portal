@@ -7,7 +7,9 @@ package com.liferay.oauth2.provider.client.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
@@ -15,13 +17,13 @@ import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +33,6 @@ import org.osgi.framework.BundleActivator;
 /**
  * @author Carlos Sierra Andrés
  */
-@Ignore
 @RunWith(Arquillian.class)
 public class IsolationAcrossCompaniesTest extends BaseClientTestCase {
 
@@ -40,7 +41,7 @@ public class IsolationAcrossCompaniesTest extends BaseClientTestCase {
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
 
-	@Test
+	@Test(expected = NotAuthorizedException.class)
 	public void testAnnotated() throws Exception {
 		WebTarget webTarget = getWebTarget("/annotated");
 
@@ -58,15 +59,17 @@ public class IsolationAcrossCompaniesTest extends BaseClientTestCase {
 		builder = builder.header("Host", "host2.xyz");
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+				"com.liferay.oauth2.provider.rest.internal.endpoint.liferay." +
+					"LiferayOAuthDataProvider",
+				LoggerTestUtil.OFF)) {
 
 			Response response = builder.get();
 
-			Assert.assertEquals(403, response.getStatus());
+			Assert.assertEquals(401, response.getStatus());
 		}
 	}
 
-	@Test
+	@Test(expected = NotAuthorizedException.class)
 	public void testNoScopes() throws Exception {
 		WebTarget webTarget = getWebTarget("/no-scopes");
 
@@ -84,15 +87,22 @@ public class IsolationAcrossCompaniesTest extends BaseClientTestCase {
 		builder = builder.header("Host", "host2.xyz");
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				"portal_web.docroot.errors.code_jsp", LoggerTestUtil.WARN)) {
+				"com.liferay.oauth2.provider.rest.internal.endpoint.liferay." +
+					"LiferayOAuthDataProvider",
+				LoggerTestUtil.OFF)) {
 
 			Response response = builder.get();
 
-			Assert.assertEquals(403, response.getStatus());
+			Assert.assertEquals(401, response.getStatus());
 		}
 	}
 
-	public static class IsolationAccrossCompaniesTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new IsolationAccrossCompaniesTestPreparatorBundleActivator();
+	}
+
+	private class IsolationAccrossCompaniesTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
@@ -111,24 +121,29 @@ public class IsolationAcrossCompaniesTest extends BaseClientTestCase {
 
 			Company company1 = createCompany("host1");
 
-			createOAuth2Application(
-				company1.getCompanyId(),
-				UserTestUtil.getAdminUser(company1.getCompanyId()),
-				"oauthTestApplication");
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						company1.getCompanyId())) {
+
+				createOAuth2Application(
+					company1.getCompanyId(),
+					UserTestUtil.getAdminUser(company1.getCompanyId()),
+					"oauthTestApplication");
+			}
 
 			Company company2 = createCompany("host2");
 
-			createOAuth2Application(
-				company2.getCompanyId(),
-				UserTestUtil.getAdminUser(company2.getCompanyId()),
-				"oauthTestApplication");
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						company2.getCompanyId())) {
+
+				createOAuth2Application(
+					company2.getCompanyId(),
+					UserTestUtil.getAdminUser(company2.getCompanyId()),
+					"oauthTestApplication");
+			}
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new IsolationAccrossCompaniesTestPreparatorBundleActivator();
 	}
 
 }

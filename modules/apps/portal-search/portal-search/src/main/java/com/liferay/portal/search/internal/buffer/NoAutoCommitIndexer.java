@@ -16,11 +16,11 @@ import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.Collection;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 /**
  * @author André de Oliveira
@@ -211,13 +211,13 @@ public class NoAutoCommitIndexer<T> implements Indexer<T> {
 	}
 
 	@Override
-	public void reindex(String[] ids) throws SearchException {
-		_indexer.reindex(ids);
+	public void reindex(T object) throws SearchException {
+		_indexer.reindex(object);
 	}
 
 	@Override
-	public void reindex(T object) throws SearchException {
-		_indexer.reindex(object);
+	public void reindexCompany(long companyId) throws SearchException {
+		_indexer.reindexCompany(companyId);
 	}
 
 	@Override

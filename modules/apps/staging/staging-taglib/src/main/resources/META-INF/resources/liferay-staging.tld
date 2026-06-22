@@ -48,13 +48,20 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
+			<description></description>
+			<name>data</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>java.util.Map</type>
+		</attribute>
+		<attribute>
 			<description>The number of deletions. It is displayed after the label when it is greater than zero.</description>
 			<name>deletions</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<description>The language key of the checkbox's description text. It is displayed after the label.</description>
+			<description>The checkbox's description text. It is displayed below the checkbox</description>
 			<name>description</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
@@ -96,13 +103,19 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<description>The language key of the checkbox's suggestion text. It is displayed after the label.</description>
+			<description></description>
 			<name>suggestion</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<description>The language key of the checkbox's warning text. It is displayed after the suggestion.</description>
+			<description></description>
+			<name>tag</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<description></description>
 			<name>warning</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
@@ -519,6 +532,13 @@
 			<type>boolean</type>
 		</attribute>
 		<attribute>
+			<description>Whether to show the details menu. The default value is false.</description>
+			<name>detailsMenu</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
 			<description>The empty results message's language key.</description>
 			<name>emptyResultsMessage</name>
 			<required>true</required>
@@ -579,6 +599,13 @@
 		<attribute>
 			<description>Whether to show the delete menu. The default value is true.</description>
 			<name>deleteMenu</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
+			<description>Whether to show the details menu. The default value is false.</description>
+			<name>detailsMenu</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 			<type>boolean</type>

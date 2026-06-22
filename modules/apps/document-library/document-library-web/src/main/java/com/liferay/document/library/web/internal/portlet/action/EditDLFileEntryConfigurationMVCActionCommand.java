@@ -12,14 +12,15 @@ import com.liferay.document.library.exception.DLFileEntryConfigurationException;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.configuration.persistence.listener.ConfigurationModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -29,9 +30,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/instance_settings/edit_dl_file_entry_configuration"
 	},
 	service = MVCActionCommand.class
@@ -52,10 +53,20 @@ public class EditDLFileEntryConfigurationMVCActionCommand
 				_getMaxNumberOfPages(actionRequest), scope,
 				_getScopePK(actionRequest, scope));
 		}
-		catch (ConfigurationModelListenerException |
-			   DLFileEntryConfigurationException exception) {
+		catch (ConfigurationException | DLFileEntryConfigurationException
+					exception) {
 
-			SessionErrors.add(actionRequest, exception.getClass(), exception);
+			Throwable throwable = exception.getCause();
+
+			if (throwable instanceof ConfigurationModelListenerException) {
+				SessionErrors.add(
+					actionRequest, ConfigurationModelListenerException.class,
+					exception);
+			}
+			else {
+				SessionErrors.add(
+					actionRequest, exception.getClass(), exception);
+			}
 
 			actionResponse.sendRedirect(
 				ParamUtil.getString(actionRequest, "redirect"));
@@ -128,7 +139,7 @@ public class EditDLFileEntryConfigurationMVCActionCommand
 			(scope != ExtendedObjectClassDefinition.Scope.SYSTEM)) {
 
 			throw new PortalException(
-				"Invalid scope primary key 0 for " + scope + " scope");
+				"Invalid scope primary key 0 for scope " + scope);
 		}
 
 		return scopePK;

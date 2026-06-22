@@ -19,12 +19,12 @@ page import="com.liferay.osb.faro.engine.client.constants.FieldMappingConstants"
 page import="com.liferay.osb.faro.engine.client.constants.LCPProjectConstants" %><%@
 page import="com.liferay.osb.faro.engine.client.constants.SegmentConstants" %><%@
 page import="com.liferay.osb.faro.engine.client.constants.TimeConstants" %><%@
+page import="com.liferay.osb.faro.provisioning.client.constants.FaroSubscriptionConstants" %><%@
 page import="com.liferay.osb.faro.util.FaroPropsValues" %><%@
 page import="com.liferay.osb.faro.web.internal.constants.FaroConstants" %><%@
 page import="com.liferay.osb.faro.web.internal.constants.FaroPaginationConstants" %><%@
 page import="com.liferay.osb.faro.web.internal.constants.FaroPortletKeys" %><%@
 page import="com.liferay.osb.faro.web.internal.constants.FaroPreferencesConstants" %><%@
-page import="com.liferay.osb.faro.web.internal.constants.FaroSubscriptionConstants" %><%@
 page import="com.liferay.osb.faro.web.internal.constants.FaroWebKeys" %><%@
 page import="com.liferay.osb.faro.web.internal.constants.UserConstants" %><%@
 page import="com.liferay.osb.faro.web.internal.util.JSONUtil" %><%@
@@ -63,7 +63,7 @@ page import="com.liferay.portal.kernel.util.PortalUtil" %>
 		.put("fieldTypes", FieldMappingConstants.getFieldTypes())
 		.put("locale", locale.toString())
 		.put("pagination", FaroPaginationConstants.getConstants())
-		.put("pathThemeImages", themeDisplay.getPathThemeImages())
+		.put("pathThemeRoot", themeDisplay.getPathThemeRoot())
 		.put("portletNamespace", PortalUtil.getPortletNamespace(FaroPortletKeys.FARO))
 		.put("preferencesScopes", FaroPreferencesConstants.getScopes())
 		.put("projectLocations", LCPProjectConstants.getLocations())

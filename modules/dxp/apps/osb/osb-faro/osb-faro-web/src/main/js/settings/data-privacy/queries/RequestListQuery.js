@@ -1,4 +1,4 @@
-import {gql} from 'apollo-boost';
+import {gql} from '@apollo/client';
 
 export default gql`
 	query RequestList(
@@ -23,7 +23,7 @@ export default gql`
 				batchId
 				completeDate
 				createDate
-				emailAddress
+				emailAddresses
 				id
 				status
 				type

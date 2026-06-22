@@ -116,11 +116,7 @@ public class CommerceOrderItemPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		CommerceOrderItem newCommerceOrderItem = _persistence.create(pk);
-
-		newCommerceOrderItem.setMvccVersion(RandomTestUtil.nextLong());
+		CommerceOrderItem newCommerceOrderItem = addCommerceOrderItem();
 
 		newCommerceOrderItem.setUuid(RandomTestUtil.randomString());
 
@@ -160,7 +156,8 @@ public class CommerceOrderItemPersistenceTest {
 
 		newCommerceOrderItem.setShippingAddressId(RandomTestUtil.nextLong());
 
-		newCommerceOrderItem.setDeliveryGroup(RandomTestUtil.randomString());
+		newCommerceOrderItem.setDeliveryGroupName(
+			RandomTestUtil.randomString());
 
 		newCommerceOrderItem.setDeliveryMaxSubscriptionCycles(
 			RandomTestUtil.nextLong());
@@ -351,8 +348,8 @@ public class CommerceOrderItemPersistenceTest {
 			existingCommerceOrderItem.getShippingAddressId(),
 			newCommerceOrderItem.getShippingAddressId());
 		Assert.assertEquals(
-			existingCommerceOrderItem.getDeliveryGroup(),
-			newCommerceOrderItem.getDeliveryGroup());
+			existingCommerceOrderItem.getDeliveryGroupName(),
+			newCommerceOrderItem.getDeliveryGroupName());
 		Assert.assertEquals(
 			existingCommerceOrderItem.getDeliveryMaxSubscriptionCycles(),
 			newCommerceOrderItem.getDeliveryMaxSubscriptionCycles());
@@ -610,6 +607,14 @@ public class CommerceOrderItemPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_PCOI() throws Exception {
+		_persistence.countByC_PCOI(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_PCOI(0L, 0L);
+	}
+
+	@Test
 	public void testCountByC_S() throws Exception {
 		_persistence.countByC_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
@@ -659,7 +664,7 @@ public class CommerceOrderItemPersistenceTest {
 			"commercePriceListId", true, "CPInstanceId", true,
 			"CPMeasurementUnitId", true, "CProductId", true,
 			"customerCommerceOrderItemId", true, "parentCommerceOrderItemId",
-			true, "shippingAddressId", true, "deliveryGroup", true,
+			true, "shippingAddressId", true, "deliveryGroupName", true,
 			"deliveryMaxSubscriptionCycles", true, "deliverySubscriptionLength",
 			true, "deliverySubscriptionType", true,
 			"deliverySubscriptionTypeSettings", true, "depth", true,
@@ -971,13 +976,6 @@ public class CommerceOrderItemPersistenceTest {
 				new Class<?>[] {String.class}, "groupId"));
 
 		Assert.assertEquals(
-			Long.valueOf(
-				commerceOrderItem.getCommerceInventoryBookedQuantityId()),
-			ReflectionTestUtil.<Long>invoke(
-				commerceOrderItem, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "CIBookedQuantityId"));
-
-		Assert.assertEquals(
 			commerceOrderItem.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				commerceOrderItem, "getColumnOriginalValue",
@@ -993,8 +991,6 @@ public class CommerceOrderItemPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceOrderItem commerceOrderItem = _persistence.create(pk);
-
-		commerceOrderItem.setMvccVersion(RandomTestUtil.nextLong());
 
 		commerceOrderItem.setUuid(RandomTestUtil.randomString());
 
@@ -1034,7 +1030,7 @@ public class CommerceOrderItemPersistenceTest {
 
 		commerceOrderItem.setShippingAddressId(RandomTestUtil.nextLong());
 
-		commerceOrderItem.setDeliveryGroup(RandomTestUtil.randomString());
+		commerceOrderItem.setDeliveryGroupName(RandomTestUtil.randomString());
 
 		commerceOrderItem.setDeliveryMaxSubscriptionCycles(
 			RandomTestUtil.nextLong());
@@ -1169,3 +1165,4 @@ public class CommerceOrderItemPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:595072859

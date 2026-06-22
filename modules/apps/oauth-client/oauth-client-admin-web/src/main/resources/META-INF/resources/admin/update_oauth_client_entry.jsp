@@ -20,7 +20,6 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 
 <portlet:actionURL name="/oauth_client_admin/update_oauth_client_entry" var="updateOAuthClientEntryURL">
 	<portlet:param name="mvcRenderCommandName" value="/oauth_client_admin/update_oauth_client_entry" />
-	<portlet:param name="redirect" value="<%= HtmlUtil.escape(redirect) %>" />
 </portlet:actionURL>
 
 <aui:form action="<%= updateOAuthClientEntryURL %>" id="oauth-client-entry-fm" method="post" name="oauth-client-entry-fm" onSubmit="event.preventDefault();">
@@ -57,11 +56,13 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 
 				<aui:input helpMessage="oauth-client-as-well-known-uri-help" label="oauth-client-as-well-known-uri" name="authServerWellKnownURI" type="text" />
 
+				<aui:input helpMessage="metadata-cache-time-help" label="metadata-cache-time" name="metadataCacheTime" type="text" value="<%= (oAuthClientEntry != null) ? oAuthClientEntry.getMetadataCacheTime() : OAuthClientEntryConstants.METADATA_CACHE_TIME_DEFAULT %>" />
+
 				<aui:input
+					cssClass="client-info-textarea"
 					helpMessage="oauth-client-info-json-help"
 					label="oauth-client-info-json"
 					name="infoJSON"
-					style="min-height: 600px;"
 					type="textarea"
 					value='<%=
 						JSONUtil.put(
@@ -83,10 +84,10 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 				<aui:input name="oAuthClientEntryId" type="hidden" value="<%= (oAuthClientEntry != null) ? oAuthClientEntry.getOAuthClientEntryId() : 0 %>" />
 
 				<aui:input
+					cssClass="request-parameters-textarea"
 					helpMessage='<%= LanguageUtil.format(request, "oauth-client-default-auth-request-parameters-json-help", "https://www.iana.org/assignments/oauth-parameters", false) %>'
 					label="oauth-client-default-auth-request-parameters-json"
 					name="authRequestParametersJSON"
-					style="min-height: 200px;"
 					type="textarea"
 					value='<%=
 						JSONUtil.put(
@@ -102,10 +103,10 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 				/>
 
 				<aui:input
+					cssClass="request-parameters-textarea"
 					helpMessage='<%= LanguageUtil.format(request, "oauth-client-default-token-request-parameters-json-help", "https://www.iana.org/assignments/oauth-parameters", false) %>'
 					label="oauth-client-default-token-request-parameters-json"
 					name="tokenRequestParametersJSON"
-					style="min-height: 200px;"
 					type="textarea"
 					value='<%=
 						JSONUtil.put(
@@ -118,13 +119,97 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 
 				<h3 class="sheet-subtitle"><liferay-ui:message key="oauth-client-oidc-specific-configurations" /></h3>
 
-				<aui:input helpMessage="oauth-client-oidc-user-info-mapper-json-help" label="oauth-client-oidc-user-info-mapper-json" name="OIDCUserInfoMapperJSON" style="min-height: 400px;" type="textarea" value="<%= OAuthClientEntryConstants.OIDC_USER_INFO_MAPPER_JSON %>" />
+				<c:if test='<%= FeatureFlagManagerUtil.isEnabled(company.getCompanyId(), "LPD-49855") %>'>
 
-				<aui:button-row>
-					<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "doSubmit();" %>' type="submit" />
-					<aui:button href="<%= HtmlUtil.escape(redirect) %>" type="cancel" />
-				</aui:button-row>
+					<%
+					String matcherField = (oAuthClientEntry != null) ? oAuthClientEntry.getMatcherField() : "email";
+					%>
+
+					<aui:select helpMessage="matcher-field-help" label="matcher-field" name="matcherField" required="<%= true %>" type="text">
+						<aui:option label="email" selected='<%= Objects.equals(matcherField, "email") %>' value="email" />
+						<aui:option label="screen-name" selected='<%= Objects.equals(matcherField, "screenName") %>' value="screenName" />
+					</aui:select>
+				</c:if>
+
+				<aui:input cssClass="info-mapper-textarea" helpMessage="oauth-client-oidc-user-info-mapper-json-help" label="oauth-client-oidc-user-info-mapper-json" name="OIDCUserInfoMapperJSON" type="textarea" value="<%= OAuthClientEntryConstants.OIDC_USER_INFO_MAPPER_JSON %>" />
+
+				<c:if test='<%= FeatureFlagManagerUtil.isEnabled(company.getCompanyId(), "LPD-49855") %>'>
+					<div class="lfr-form-rows" id="<portlet:namespace />customClaimsContentBox">
+						<label class="c-mb-1 c-mt-2 font-weight-semi-bold text-4">
+							<liferay-ui:message key="custom-claims" />
+
+							<span class="c-ml-1 lfr-portal-tooltip taglib-icon-help" tabindex="0" title="<%= LanguageUtil.get(request, "custom-claims-help") %>">
+								<clay:icon
+									symbol="question-circle-full"
+								/>
+							</span>
+						</label>
+
+						<%
+						JSONObject customClaimsJSONObject = null;
+
+						if (oAuthClientEntry != null) {
+							customClaimsJSONObject = JSONFactoryUtil.createJSONObject(oAuthClientEntry.getCustomClaimsJSON());
+						}
+
+						if ((customClaimsJSONObject == null) || (customClaimsJSONObject.length() < 1)) {
+							customClaimsJSONObject = JSONUtil.put("", "");
+						}
+
+						int index = 0;
+
+						for (String key : customClaimsJSONObject.keySet()) {
+							String customClaimsKeyId = "customClaimsKey-" + index;
+							String customClaimsValueId = "customClaimsValue-" + index;
+
+							index++;
+						%>
+
+						<div class="lfr-form-row">
+							<div class="form-group">
+								<div class="form-group-autofit">
+									<div class="form-group-item">
+										<aui:select fieldParam="<%= customClaimsKeyId %>" id="<%= customClaimsKeyId %>" inlineField="<%= true %>" label="user-custom-fields" name="<%= customClaimsKeyId %>" showEmptyOption="<%= true %>">
+
+												<%
+												for (ExpandoColumn expandoColumn : (List<ExpandoColumn>)request.getAttribute(OAuthClientWebKeys.EXPANDO_COLUMNS)) {
+												%>
+
+													<aui:option label="<%= expandoColumn.getName() %>" selected="<%= Objects.equals(expandoColumn.getName(), key) %>" value="<%= expandoColumn.getName() %>"></aui:option>
+
+												<%
+												}
+												%>
+
+											</aui:select>
+										</div>
+									<div class="form-group-item">
+										<aui:input fieldParam="<%= customClaimsValueId %>" id="<%= customClaimsValueId %>" label="custom-claim" name="<%= customClaimsValueId %>" type="text" value="<%= customClaimsJSONObject.get(key) %>" />
+									</div>
+								</div>
+							</div>
+
+						<%
+						}
+						%>
+
+						<aui:input name="customClaimsIndexes" type="hidden" />
+					</div>
+
+					<aui:script use="liferay-auto-fields">
+						new Liferay.AutoFields({
+							contentBox: '#<portlet:namespace />customClaimsContentBox',
+							fieldIndexes: '<portlet:namespace />customClaimsIndexes',
+							namespace: '<portlet:namespace />',
+						}).render();
+					</aui:script>
+				</c:if>
 			</aui:fieldset>
+
+			<aui:button-row>
+				<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "doSubmit();" %>' type="submit" />
+				<aui:button href="<%= redirect %>" type="cancel" />
+			</aui:button-row>
 		</div>
 	</clay:container-fluid>
 </aui:form>
@@ -133,8 +218,9 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 	<portlet:namespace />init();
 
 	function <portlet:namespace />doSubmit() {
-		var infoJSON = document.getElementById('<portlet:namespace />infoJSON')
-			.value;
+		var infoJSON = document.getElementById(
+			'<portlet:namespace />infoJSON'
+		).value;
 
 		try {
 			infoJSON = JSON.stringify(JSON.parse(infoJSON), null, 0);
@@ -193,8 +279,24 @@ renderResponse.setTitle((oAuthClientEntry == null) ? LanguageUtil.get(request, "
 		).value;
 
 		try {
+			oidcUserInfoMapperJSON = JSON.parse(oidcUserInfoMapperJSON);
+
+			var matcherFieldValue = document.getElementById(
+				'<portlet:namespace />matcherField'
+			)?.value;
+
+			if (
+				matcherFieldValue == 'screenName' &&
+				!oidcUserInfoMapperJSON.user.screenName
+			) {
+				alert(
+					'Missing screenName value at OpenId Connect User Information Mapper JSON'
+				);
+				return;
+			}
+
 			oidcUserInfoMapperJSON = JSON.stringify(
-				JSON.parse(oidcUserInfoMapperJSON),
+				oidcUserInfoMapperJSON,
 				null,
 				0
 			);

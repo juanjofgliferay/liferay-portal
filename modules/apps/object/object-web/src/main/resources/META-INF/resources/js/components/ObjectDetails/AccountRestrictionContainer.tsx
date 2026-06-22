@@ -18,7 +18,6 @@ interface AccountRestrictionContainerProps {
 	errors: FormError<ObjectDefinition>;
 	isApproved: boolean;
 	isLinkedObjectDefinition?: boolean;
-	isRootDescendantNode: boolean;
 	objectFields: ObjectField[];
 	onSubmit?: (editedObjectDefinition?: Partial<ObjectDefinition>) => void;
 	setValues: (values: Partial<ObjectDefinition>) => void;
@@ -29,7 +28,6 @@ export function AccountRestrictionContainer({
 	errors,
 	isApproved,
 	isLinkedObjectDefinition,
-	isRootDescendantNode,
 	objectFields,
 	onSubmit,
 	setValues,
@@ -39,12 +37,10 @@ export function AccountRestrictionContainer({
 		LabelValueObject[]
 	>([]);
 
-	const [disableAccountToggle, setDisableAccountToggle] = useState<boolean>(
-		false
-	);
-	const [disableAccountSelect, setDisableAccountSelect] = useState<boolean>(
-		false
-	);
+	const [disableAccountToggle, setDisableAccountToggle] =
+		useState<boolean>(false);
+	const [disableAccountSelect, setDisableAccountSelect] =
+		useState<boolean>(false);
 
 	useEffect(() => {
 		const accountRelationshipFieldsResponse = objectFields.filter(
@@ -88,6 +84,7 @@ export function AccountRestrictionContainer({
 				setDisableAccountSelect(true);
 			}
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [objectFields]);
 
@@ -98,8 +95,7 @@ export function AccountRestrictionContainer({
 					disabled={
 						!accountRelationshipFields.length ||
 						disableAccountToggle ||
-						isLinkedObjectDefinition ||
-						isRootDescendantNode
+						isLinkedObjectDefinition
 					}
 					label={sub(
 						Liferay.Language.get('enable-x'),
@@ -115,7 +111,8 @@ export function AccountRestrictionContainer({
 					}}
 					onToggle={() =>
 						setValues({
-							accountEntryRestricted: !values.accountEntryRestricted,
+							accountEntryRestricted:
+								!values.accountEntryRestricted,
 							accountEntryRestrictedObjectFieldName:
 								!values.accountEntryRestricted === false
 									? ''
@@ -131,10 +128,10 @@ export function AccountRestrictionContainer({
 					!accountRelationshipFields.length ||
 					!values.accountEntryRestricted ||
 					disableAccountSelect ||
-					isLinkedObjectDefinition ||
-					isRootDescendantNode
+					isLinkedObjectDefinition
 				}
 				error={errors.accountEntryRestrictedObjectFieldName}
+				id="lfr-objects__account-restriction-container-account-restricted-field"
 				items={accountRelationshipFields}
 				label={Liferay.Language.get(
 					'account-entry-restricted-object-field-id'
@@ -147,7 +144,8 @@ export function AccountRestrictionContainer({
 					if (onSubmit) {
 						onSubmit({
 							...values,
-							accountEntryRestrictedObjectFieldName: value as string,
+							accountEntryRestrictedObjectFieldName:
+								value as string,
 						});
 					}
 				}}

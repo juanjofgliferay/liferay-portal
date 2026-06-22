@@ -117,10 +117,8 @@ public class CommerceMLForecastAlertEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		CommerceMLForecastAlertEntry newCommerceMLForecastAlertEntry =
-			_persistence.create(pk);
+			addCommerceMLForecastAlertEntry();
 
 		newCommerceMLForecastAlertEntry.setUuid(RandomTestUtil.randomString());
 
@@ -692,3 +690,4 @@ public class CommerceMLForecastAlertEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-505970838

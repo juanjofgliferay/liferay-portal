@@ -54,6 +54,8 @@ definition {
 				echo("timeout exceeded");
 			}
 
+			WaitForElementPresent(locator1 = "WorkflowMetrics#METRICS_ALL_ITEMS_TABLE_NAME");
+
 			AssertElementPresent(locator1 = "WorkflowMetrics#METRICS_ALL_ITEMS_TABLE_NAME");
 
 			AssertElementPresent(locator1 = "WorkflowMetrics#METRICS_ALL_ITEMS_TABLE_INSTANCE");
@@ -364,10 +366,7 @@ definition {
 
 	@summary = "Default summary"
 	macro checkWorkflowReports(key_overdueValue = null,key_onTimeValue = null,key_totalPendingValue = null) {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		AssertTextEquals(
 			locator1 = "WorkflowMetrics#METRICS_WORKFLOW_PROCESS_VALUE_OVERDUE",
@@ -697,7 +696,7 @@ definition {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = ${key_workflowProcess});
 
 		if (${workflowMetricsTab} == "PERFORMANCE") {
-			Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+			WorkflowMetrics.goToPerformanceTab();
 		}
 
 		if (${workflowMetricsTab} == "DASHBOARD") {
@@ -717,6 +716,17 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro goToPerformanceTab() {
+		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+
+		// We need this pause to wait for the performance tab to fully load after upgrading to React 18. See LPD-28140
+
+		Pause(value1 = 5000);
+
+		AssertNotVisible(locator1 = "Home#LOADING_ANIMATION");
+	}
+
+	@summary = "Default summary"
 	macro goToReassignTask(itemSubject = null) {
 		if (isSet(itemSubject)) {
 			Click(
@@ -726,7 +736,7 @@ definition {
 		else {
 			PortletEntry.selectAll();
 
-			Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+			Click(locator1 = "ManagementBar#ELLIPSIS");
 		}
 
 		MenuItem.click(menuItem = "Reassign Task");
@@ -736,14 +746,14 @@ definition {
 	macro goToTransitionSteps() {
 		PortletEntry.selectAll();
 
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Transition");
 	}
 
 	@summary = "Default summary"
 	macro goToUpdateTasksDueDates() {
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Update Tasks Due Dates");
 	}
@@ -789,7 +799,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = ${workflowProcessName});
 
-		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_COMPLETED_ITEMS_TITLE");
 	}
@@ -1570,7 +1580,7 @@ definition {
 		var key_endDateRange = ${endDateRange};
 		var key_startDateRange = ${startDateRange};
 
-		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_BY_STEP_RANGE_DROPDOWN");
 
@@ -1764,7 +1774,7 @@ definition {
 
 			WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-			Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+			WorkflowMetrics.goToPerformanceTab();
 		}
 
 		if (IsTextEqual(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_${key_status}_ITEMS_VALUE", value1 = ${key_expectedValue})) {

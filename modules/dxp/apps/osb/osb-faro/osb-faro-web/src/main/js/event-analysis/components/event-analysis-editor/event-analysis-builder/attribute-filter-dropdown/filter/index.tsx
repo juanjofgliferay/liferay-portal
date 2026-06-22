@@ -58,13 +58,12 @@ const FilterOptions: React.FC<IFilterOptionsProps> = ({
 		description,
 		displayName,
 		id: attributeId,
-		name,
-		type
+		name
 	} = attribute;
 
 	const FilterBody = FILTERS_MAP[dataType];
 
-	const filter = filters[filterId];
+	const filter = filterId ? filters[filterId] : undefined;
 
 	const onSubmit = (newFilter: Filter) => {
 		if (filterId) {
@@ -80,16 +79,9 @@ const FilterOptions: React.FC<IFilterOptionsProps> = ({
 			});
 		}
 
-		onAttributeChange(null);
+		onAttributeChange(undefined);
 
 		onActiveChange(false);
-
-		const {attributeType} = newFilter;
-		analytics.track('Event Analysis Editor - Selected a Filter', {
-			attributeName: displayName || name,
-			attributeType,
-			type
-		});
 	};
 
 	return (
@@ -98,7 +90,7 @@ const FilterOptions: React.FC<IFilterOptionsProps> = ({
 				<ClayButton
 					className='button-root back-to-attributes-button'
 					displayType='unstyled'
-					onClick={() => onAttributeChange(null)}
+					onClick={() => onAttributeChange(undefined)}
 					size='sm'
 				>
 					<ClayIcon
@@ -120,9 +112,11 @@ const FilterOptions: React.FC<IFilterOptionsProps> = ({
 				attributeId={attributeId}
 				attributeOwnerType={attributeOwnerType}
 				description={description}
-				displayName={displayName}
+				displayName={displayName ?? ''}
 				eventId={eventId}
-				filter={filter?.attributeId === attributeId ? filter : null}
+				filter={
+					filter?.attributeId === attributeId ? filter : undefined
+				}
 				onSubmit={onSubmit}
 			/>
 		</div>

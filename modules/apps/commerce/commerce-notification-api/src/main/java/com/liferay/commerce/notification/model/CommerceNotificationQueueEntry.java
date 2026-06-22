@@ -16,8 +16,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntryModel
+ * @deprecated
  * @generated
  */
+@Deprecated
 @ImplementationClassName(
 	"com.liferay.commerce.notification.model.impl.CommerceNotificationQueueEntryImpl"
 )
@@ -56,3 +58,4 @@ public interface CommerceNotificationQueueEntry
 			};
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1551162497

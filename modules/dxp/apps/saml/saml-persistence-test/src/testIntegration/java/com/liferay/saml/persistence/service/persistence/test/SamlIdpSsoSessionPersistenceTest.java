@@ -112,9 +112,7 @@ public class SamlIdpSsoSessionPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		SamlIdpSsoSession newSamlIdpSsoSession = _persistence.create(pk);
+		SamlIdpSsoSession newSamlIdpSsoSession = addSamlIdpSsoSession();
 
 		newSamlIdpSsoSession.setCompanyId(RandomTestUtil.nextLong());
 
@@ -155,6 +153,13 @@ public class SamlIdpSsoSessionPersistenceTest {
 		Assert.assertEquals(
 			existingSamlIdpSsoSession.getSamlIdpSsoSessionKey(),
 			newSamlIdpSsoSession.getSamlIdpSsoSessionKey());
+	}
+
+	@Test
+	public void testCountByUserId() throws Exception {
+		_persistence.countByUserId(RandomTestUtil.nextLong());
+
+		_persistence.countByUserId(0L);
 	}
 
 	@Test
@@ -477,6 +482,12 @@ public class SamlIdpSsoSessionPersistenceTest {
 
 	private void _assertOriginalValues(SamlIdpSsoSession samlIdpSsoSession) {
 		Assert.assertEquals(
+			Long.valueOf(samlIdpSsoSession.getUserId()),
+			ReflectionTestUtil.<Long>invoke(
+				samlIdpSsoSession, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "userId"));
+
+		Assert.assertEquals(
 			samlIdpSsoSession.getSamlIdpSsoSessionKey(),
 			ReflectionTestUtil.invoke(
 				samlIdpSsoSession, "getColumnOriginalValue",
@@ -512,3 +523,4 @@ public class SamlIdpSsoSessionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:412833869

@@ -9,6 +9,7 @@ import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.change.tracking.CTModel;
 import com.liferay.portal.kernel.search.BooleanQuery;
@@ -31,13 +32,13 @@ import com.liferay.portal.search.indexer.IndexerSummaryBuilder;
 import com.liferay.portal.search.indexer.IndexerWriter;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 /**
  * @author Michael C. Han
@@ -103,6 +104,11 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	}
 
 	@Override
+	public long getCompanyId() {
+		return _modelSearchSettings.getCompanyId();
+	}
+
+	@Override
 	public Document getDocument(T baseModel) throws SearchException {
 		return _indexerDocumentBuilder.getDocument(baseModel);
 	}
@@ -131,6 +137,24 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	}
 
 	@Override
+	public long getReindexEntryCount(long companyId) {
+		long indexerCompanyId = getCompanyId();
+
+		if (((indexerCompanyId != 0) && (indexerCompanyId != companyId)) ||
+			!_indexerWriter.shouldRun(companyId)) {
+
+			return 0;
+		}
+
+		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
+			_indexerWriter.getIndexableActionableDynamicQuery();
+
+		indexableActionableDynamicQuery.setCompanyId(companyId);
+
+		return indexableActionableDynamicQuery.performCount();
+	}
+
+	@Override
 	public String[] getSearchClassNames() {
 		return _modelSearchSettings.getSearchClassNames();
 	}
@@ -138,6 +162,13 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	@Override
 	public String getSortField(String orderByCol) {
 		return StringPool.BLANK;
+	}
+
+	@Override
+	public Summary getSummary(Document document, Locale locale, String snippet)
+		throws SearchException {
+
+		return _indexerSummaryBuilder.getSummary(document, snippet, locale);
 	}
 
 	@Override
@@ -251,11 +282,6 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	}
 
 	@Override
-	public void reindex(String[] ids) throws SearchException {
-		_indexerWriter.reindex(ids);
-	}
-
-	@Override
 	public void reindex(T baseModel) throws SearchException {
 		_indexerWriter.reindex(baseModel);
 	}
@@ -263,6 +289,11 @@ public class DefaultIndexer<T extends BaseModel<?>> implements Indexer<T> {
 	@Override
 	public void reindex(T baseModel, boolean notify) throws SearchException {
 		_indexerWriter.reindex(baseModel, notify);
+	}
+
+	@Override
+	public void reindexCompany(long companyId) throws SearchException {
+		_indexerWriter.reindexCompany(companyId);
 	}
 
 	@Override

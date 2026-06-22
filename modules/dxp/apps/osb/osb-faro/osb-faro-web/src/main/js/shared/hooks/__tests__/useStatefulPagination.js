@@ -1,123 +1,219 @@
 import Constants from 'shared/util/constants';
-import useStatefulPagination from '../useStatefulPagination';
+import React from 'react';
+import {act, render} from '@testing-library/react';
 import {createOrderIOMap} from 'shared/util/pagination';
 import {Map, Set} from 'immutable';
-import {renderHook} from '@testing-library/react-hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 const {cur: DEFAULT_PAGE, delta: DEFAULT_DELTA} = Constants.pagination;
 
+jest.unmock('react-dom');
+
 describe('useStatefulPagination', () => {
 	it('should return default values', () => {
-		const {result} = renderHook(() => useStatefulPagination());
+		let result = null;
 
-		jest.runAllTimers();
+		const Component = () => {
+			result = useStatefulPagination();
 
-		expect(result.current).toMatchSnapshot();
+			return null;
+		};
+
+		render(<Component />);
+
+		expect(result).toMatchObject({
+			delta: DEFAULT_DELTA,
+			filterBy: expect.anything(),
+			page: DEFAULT_PAGE,
+			query: ''
+		});
+		expect(typeof result.onDeltaChange).toBe('function');
+		expect(typeof result.onPageChange).toBe('function');
+		expect(typeof result.onQueryChange).toBe('function');
+		expect(typeof result.onFilterByChange).toBe('function');
+		expect(typeof result.onOrderIOMapChange).toBe('function');
+		expect(typeof result.resetPage).toBe('function');
 	});
 
 	it('should set delta value on onDeltaChange and reset page', () => {
-		const {result} = renderHook(() => useStatefulPagination());
+		let result = null;
+
+		const Component = () => {
+			result = useStatefulPagination();
+
+			return null;
+		};
+
+		const {rerender} = render(<Component />);
+
 		const newDelta = 10;
 		const newPage = 2;
 
 		jest.runAllTimers();
-		expect(result.current.delta).toBe(DEFAULT_DELTA);
 
-		result.current.onPageChange(newPage);
+		expect(result.delta).toBe(DEFAULT_DELTA);
 
-		jest.runAllTimers();
-		expect(result.current.page).toBe(newPage);
+		act(() => {
+			result.onPageChange(newPage);
+		});
 
-		result.current.onDeltaChange(newDelta);
+		rerender(<Component />);
 
-		jest.runAllTimers();
-		expect(result.current.delta).toBe(newDelta);
-		expect(result.current.page).toBe(DEFAULT_PAGE);
+		expect(result.page).toBe(newPage);
+
+		act(() => {
+			result.onDeltaChange(newDelta);
+		});
+
+		rerender(<Component />);
+
+		expect(result.delta).toBe(newDelta);
+		expect(result.page).toBe(DEFAULT_PAGE);
 	});
 
 	it('should set page value on onPageChange and page be reseted', () => {
-		const {result} = renderHook(() => useStatefulPagination());
+		let result = null;
+
+		const Component = () => {
+			result = useStatefulPagination();
+
+			return null;
+		};
+
+		const {rerender} = render(<Component />);
+
 		const newPage = 2;
 
 		jest.runAllTimers();
-		expect(result.current.page).toBe(DEFAULT_PAGE);
 
-		result.current.onPageChange(newPage);
+		expect(result.page).toBe(DEFAULT_PAGE);
 
-		jest.runAllTimers();
-		expect(result.current.page).toBe(newPage);
+		act(() => {
+			result.onPageChange(newPage);
+		});
 
-		result.current.resetPage();
+		rerender(<Component />);
 
-		jest.runAllTimers();
-		expect(result.current.page).toBe(DEFAULT_PAGE);
+		expect(result.page).toBe(newPage);
+
+		act(() => {
+			result.resetPage();
+		});
+
+		rerender(<Component />);
+
+		expect(result.page).toBe(DEFAULT_PAGE);
 	});
 
 	it('should set orderIOMap value on onOrderIOMapChange and page be reseted', () => {
-		const {result} = renderHook(() =>
-			useStatefulPagination(null, {
+		let result = null;
+
+		const Component = () => {
+			result = useStatefulPagination(null, {
 				initialOrderIOMap: createOrderIOMap('name')
-			})
-		);
+			});
+
+			return null;
+		};
+
+		const {rerender} = render(<Component />);
+
 		const newPage = 2;
 
 		jest.runAllTimers();
-		expect(result.current.orderIOMap.size).toBe(1);
 
-		result.current.onPageChange(newPage);
+		expect(result.orderIOMap.size).toBe(1);
 
-		jest.runAllTimers();
-		expect(result.current.page).toBe(newPage);
+		act(() => {
+			result.onPageChange(newPage);
+		});
 
-		result.current.onOrderIOMapChange(
-			createOrderIOMap('dateModified', 'ASC')
-		);
+		rerender(<Component />);
 
-		jest.runAllTimers();
-		expect(result.current.orderIOMap.size).toBe(1);
-		expect(result.current.page).toBe(DEFAULT_PAGE);
+		expect(result.page).toBe(newPage);
+
+		act(() => {
+			result.onOrderIOMapChange(createOrderIOMap('dateModified', 'ASC'));
+		});
+
+		rerender(<Component />);
+
+		expect(result.orderIOMap.size).toBe(1);
+		expect(result.page).toBe(DEFAULT_PAGE);
 	});
 
 	it('should set query value on onQueryChange and reset page', () => {
-		const {result} = renderHook(() => useStatefulPagination());
+		let result = null;
+
+		const Component = () => {
+			result = useStatefulPagination();
+
+			return null;
+		};
+
+		const {rerender} = render(<Component />);
+
 		const newQuery = 'test';
 		const newPage = 2;
 
 		jest.runAllTimers();
-		expect(result.current.query).toBe('');
 
-		result.current.onPageChange(newPage);
+		expect(result.query).toBe('');
 
-		jest.runAllTimers();
-		expect(result.current.page).toBe(newPage);
+		act(() => {
+			result.onPageChange(newPage);
+		});
 
-		result.current.onQueryChange(newQuery);
+		rerender(<Component />);
 
-		jest.runAllTimers();
-		expect(result.current.query).toBe(newQuery);
-		expect(result.current.page).toBe(DEFAULT_PAGE);
+		expect(result.page).toBe(newPage);
+
+		act(() => {
+			result.onQueryChange(newQuery);
+		});
+
+		rerender(<Component />);
+
+		expect(result.query).toBe(newQuery);
+		expect(result.page).toBe(DEFAULT_PAGE);
 	});
 
 	it('should set filterBy value on onFilterByChange and reset page', () => {
-		const {result} = renderHook(() => useStatefulPagination());
+		let result = null;
+
+		const Component = () => {
+			result = useStatefulPagination();
+
+			return null;
+		};
+
+		const {rerender} = render(<Component />);
+
 		const newPage = 2;
 
 		jest.runAllTimers();
-		expect(result.current.filterBy.size).toBe(0);
 
-		result.current.onPageChange(newPage);
+		expect(result.filterBy.size).toBe(0);
 
-		jest.runAllTimers();
-		expect(result.current.page).toBe(newPage);
+		act(() => {
+			result.onPageChange(newPage);
+		});
 
-		result.current.onFilterByChange(
-			Map({
-				biz: Set(['buz'])
-			})
-		);
+		rerender(<Component />);
 
-		jest.runAllTimers();
-		expect(result.current.filterBy.size).toBe(1);
-		expect(result.current.page).toBe(DEFAULT_PAGE);
+		expect(result.page).toBe(newPage);
+
+		act(() => {
+			result.onFilterByChange(
+				Map({
+					biz: Set(['buz'])
+				})
+			);
+		});
+
+		rerender(<Component />);
+
+		expect(result.filterBy.size).toBe(1);
+		expect(result.page).toBe(DEFAULT_PAGE);
 	});
 });

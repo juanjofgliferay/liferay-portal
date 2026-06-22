@@ -7,17 +7,13 @@ package com.liferay.product.navigation.product.menu.web.internal.servlet.taglib;
 
 import com.liferay.application.list.PanelAppRegistry;
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
-import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -25,21 +21,20 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.product.navigation.applications.menu.configuration.ApplicationsMenuInstanceConfiguration;
 import com.liferay.product.navigation.control.menu.manager.ProductNavigationControlMenuManager;
 import com.liferay.product.navigation.product.menu.constants.ProductNavigationProductMenuPortletKeys;
 import com.liferay.taglib.portletext.RuntimeTag;
 import com.liferay.taglib.servlet.PageContextFactoryUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -71,13 +66,9 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 
 		Group scopeGroup = themeDisplay.getScopeGroup();
 
-		if ((_isApplicationsMenuApp(themeDisplay) || scopeGroup.isDepot()) &&
-			_isEnableApplicationsMenu(themeDisplay.getCompanyId())) {
+		if (_isApplicationsMenuApp(themeDisplay) || scopeGroup.isDepot() ||
+			!_hasPanelCategories(themeDisplay)) {
 
-			return;
-		}
-
-		if (!_hasPanelCategories(themeDisplay)) {
 			return;
 		}
 
@@ -87,7 +78,7 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 		try {
 			JspWriter jspWriter = pageContext.getOut();
 
-			jspWriter.write("<div aria-label=\"");
+			jspWriter.write("<nav aria-label=\"");
 			jspWriter.write(_language.get(httpServletRequest, "product-menu"));
 			jspWriter.write("\" class=\"");
 
@@ -109,8 +100,7 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 				_portal.getPortletNamespace(
 					ProductNavigationProductMenuPortletKeys.
 						PRODUCT_NAVIGATION_PRODUCT_MENU));
-			jspWriter.write(
-				"sidenavSliderId\" role=\"tabpanel\" tabindex=\"-1\">");
+			jspWriter.write("sidenavSliderId\" tabindex=\"-1\">");
 			jspWriter.write(
 				"<div class=\"product-menu sidebar sidenav-menu\">");
 
@@ -122,7 +112,7 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 
 			runtimeTag.doTag(pageContext);
 
-			jspWriter.write("</div></div>");
+			jspWriter.write("</div></nav>");
 		}
 		catch (Exception exception) {
 			ReflectionUtil.throwException(exception);
@@ -143,27 +133,11 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 
 	private boolean _hasPanelCategories(ThemeDisplay themeDisplay) {
 		List<PanelCategory> childPanelCategories =
-			_panelCategoryRegistry.getChildPanelCategories(
+			PanelCategoryRegistryUtil.getChildPanelCategories(
 				PanelCategoryKeys.ROOT, themeDisplay.getPermissionChecker(),
 				themeDisplay.getScopeGroup());
 
-		if (!childPanelCategories.isEmpty()) {
-			return true;
-		}
-
-		if (!_isEnableApplicationsMenu(themeDisplay.getCompanyId())) {
-			childPanelCategories =
-				_panelCategoryRegistry.getChildPanelCategories(
-					PanelCategoryKeys.APPLICATIONS_MENU,
-					themeDisplay.getPermissionChecker(),
-					themeDisplay.getScopeGroup());
-
-			if (!childPanelCategories.isEmpty()) {
-				return true;
-			}
-		}
-
-		return false;
+		return !childPanelCategories.isEmpty();
 	}
 
 	private boolean _isApplicationsMenuApp(ThemeDisplay themeDisplay) {
@@ -172,7 +146,7 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 		}
 
 		PanelCategoryHelper panelCategoryHelper = new PanelCategoryHelper(
-			_panelAppRegistry, _panelCategoryRegistry);
+			_panelAppRegistry);
 
 		if (!panelCategoryHelper.isApplicationsMenuApp(
 				themeDisplay.getPpid())) {
@@ -189,46 +163,13 @@ public class ProductMenuBodyTopDynamicInclude extends BaseDynamicInclude {
 		return true;
 	}
 
-	private boolean _isEnableApplicationsMenu(long companyId) {
-		try {
-			ApplicationsMenuInstanceConfiguration
-				applicationsMenuInstanceConfiguration =
-					_configurationProvider.getCompanyConfiguration(
-						ApplicationsMenuInstanceConfiguration.class, companyId);
-
-			if (applicationsMenuInstanceConfiguration.
-					enableApplicationsMenu()) {
-
-				return true;
-			}
-		}
-		catch (ConfigurationException configurationException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Unable to get applications menu instance configuration",
-					configurationException);
-			}
-		}
-
-		return false;
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		ProductMenuBodyTopDynamicInclude.class);
-
 	private volatile BundleContext _bundleContext;
-
-	@Reference
-	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private Language _language;
 
 	@Reference
 	private PanelAppRegistry _panelAppRegistry;
-
-	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
 
 	@Reference
 	private Portal _portal;

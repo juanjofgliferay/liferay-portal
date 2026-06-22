@@ -1,142 +1,137 @@
 import * as API from 'shared/api';
-import BaseListPage from 'contacts/components/BaseListPage';
-import ClayLink from '@clayui/link';
+import * as breadcrumbs from 'shared/util/breadcrumbs';
+import AccountsDataSet from 'shared/components/AccountsDataSet';
+import BasePage from 'shared/components/base-page';
+import Link from '@clayui/link';
+import Loading from 'shared/components/Loading';
+import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
+import TotalAccounts from 'contacts/components/account/TotalAccounts';
 import URLConstants from 'shared/util/url-constants';
-import {
-	ACCOUNT_TYPE,
-	ACTIVITIES_COUNT,
-	createOrderIOMap,
-	getDefaultSortOrder,
-	INDIVIDUAL_COUNT,
-	NAME
-} from 'shared/util/pagination';
-import {accountsListColumns} from 'shared/util/table-columns';
-import {FetchSegmentsParams} from 'segment/pages/List';
+import {isNil} from 'lodash/fp';
 import {Routes, toRoute} from 'shared/util/router';
+import {SectionHeader} from 'shared/components/SectionHeader';
 import {Sizes} from 'shared/util/constants';
-import {useQueryPagination} from 'shared/hooks';
-import {User} from 'shared/util/records';
-import {withCurrentUser} from 'shared/hoc';
-
-const getAccountsDataSource = ({
-	channelId,
-	delta,
-	groupId,
-	orderIOMap,
-	page,
-	query
-}: FetchSegmentsParams) =>
-	API.accounts.search({
-		channelId,
-		delta,
-		groupId,
-		orderIOMap,
-		page,
-		query
-	});
+import {useChannelContext} from 'shared/context/channel';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useRequest} from 'shared/hooks/useRequest';
 
 interface IListProps {
 	channelId: string;
-	currentUser: User;
 	groupId: string;
 }
 
-const List: React.FC<IListProps> = ({
-	channelId,
-	currentUser,
-	groupId,
-	...otherProps
-}) => {
-	const authorized = currentUser.isAdmin();
+const List: React.FC<IListProps> = ({channelId, groupId}) => {
+	const currentUser = useCurrentUser();
+	const {selectedChannel} = useChannelContext();
 
-	const columns = [
-		accountsListColumns.getName({channelId, groupId}),
-		accountsListColumns.type,
-		accountsListColumns.individualCount,
-		accountsListColumns.activitiesCount
-	];
-
-	const {delta, orderIOMap, page, query} = useQueryPagination({
-		initialOrderIOMap: createOrderIOMap(NAME, getDefaultSortOrder(NAME))
+	const {data: dataSourceData, loading: dataSourceLoading} = useRequest({
+		dataSourceFn: API.dataSource.fetchChannels,
+		variables: {
+			channelIds: [channelId],
+			groupId
+		}
 	});
 
-	return (
-		<BaseListPage
-			{...otherProps}
-			columns={columns}
-			currentUser={currentUser}
-			dataSourceFn={getAccountsDataSource}
-			delta={delta}
-			emptyStateTitle={Liferay.Language.get(
-				'no-accounts-synced-from-data-sources'
-			)}
-			entityLabel={Liferay.Language.get('accounts')}
-			noResultsConfig={{
-				description: (
-					<>
-						{Liferay.Language.get(
-							'connect-a-data-source-to-get-started'
-						)}
+	const authorized = currentUser.isAdmin();
 
-						<a
-							className='d-block mb-3'
-							href={URLConstants.DataSourceConnection}
-							key='DOCUMENTATION'
-							target='_blank'
-						>
-							{Liferay.Language.get(
-								'access-our-documentation-to-learn-more'
-							)}
-						</a>
+	const dataSourceConnected =
+		!isNil(dataSourceData?.total) && dataSourceData?.total > 0;
 
-						{authorized && (
-							<ClayLink
+	const NoDataSourcesConnected = () => (
+		<NoResultsDisplay
+			description={
+				<>
+					{Liferay.Language.get(
+						'connect-a-data-source-to-start-syncing-accounts'
+					)}
+
+					{authorized && (
+						<>
+							<p>
+								<Link
+									className='d-block mb-3'
+									href={URLConstants.DataSourceConnection}
+									key='DOCUMENTATION'
+									target='_blank'
+								>
+									{Liferay.Language.get(
+										'access-our-documentation-to-learn-more'
+									)}
+								</Link>
+							</p>
+							<Link
 								button
 								className='button-root'
 								displayType='primary'
-								href={toRoute(Routes.SETTINGS_ADD_DATA_SOURCE, {
-									groupId
-								})}
+								href={toRoute(
+									Routes.SETTINGS_DATA_SOURCE_LIST,
+									{
+										groupId
+									}
+								)}
 							>
 								{Liferay.Language.get('connect-data-source')}
-							</ClayLink>
-						)}
-					</>
-				),
-				icon: {
-					border: false,
-					size: Sizes.XXXLarge,
-					symbol: 'ac-satellite'
-				},
-				title: Liferay.Language.get(
-					'no-accounts-synced-from-data-sources'
-				)
+							</Link>
+						</>
+					)}
+				</>
+			}
+			displayCard
+			icon={{
+				border: false,
+				size: Sizes.XXXLarge,
+				symbol: 'ac_satellite'
 			}}
-			orderByOptions={[
-				{
-					label: Liferay.Language.get('account-name'),
-					value: NAME
-				},
-				{
-					label: Liferay.Language.get('account-type'),
-					value: ACCOUNT_TYPE
-				},
-				{
-					label: Liferay.Language.get('individuals'),
-					value: INDIVIDUAL_COUNT
-				},
-				{
-					label: Liferay.Language.get('total-activities'),
-					value: ACTIVITIES_COUNT
-				}
-			]}
-			orderIOMap={orderIOMap}
-			page={page}
-			query={query}
-			rowIdentifier='id'
+			spacer
+			title={Liferay.Language.get('no-data-sources-connected')}
 		/>
+	);
+
+	if (dataSourceLoading) {
+		return <Loading />;
+	}
+
+	return (
+		<BasePage documentTitle={Liferay.Language.get('accounts')}>
+			<BasePage.Header
+				breadcrumbs={[
+					breadcrumbs.getHome({
+						channelId,
+						groupId,
+						label: selectedChannel && selectedChannel.name
+					})
+				]}
+				groupId={groupId}
+			>
+				<BasePage.Row>
+					<BasePage.Header.TitleSection
+						title={Liferay.Language.get('accounts')}
+					/>
+				</BasePage.Row>
+			</BasePage.Header>
+			<BasePage.Body>
+				{dataSourceConnected ? (
+					<>
+						<TotalAccounts groupId={groupId} />
+
+						<SectionHeader
+							icon='box-container'
+							title={Liferay.Language.get('accounts')}
+						/>
+
+						<AccountsDataSet
+							apiURL={`/o/faro/contacts/${groupId}/account/search?channelId=${channelId}`}
+							channelId={channelId}
+							groupId={groupId}
+						/>
+					</>
+				) : (
+					<NoDataSourcesConnected />
+				)}
+			</BasePage.Body>
+		</BasePage>
 	);
 };
 
-export default withCurrentUser(List);
+export default List;

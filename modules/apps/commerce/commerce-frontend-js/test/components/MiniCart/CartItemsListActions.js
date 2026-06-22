@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render, wait} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
+import ServiceProvider from '../../../src/main/resources/META-INF/resources/ServiceProvider/index';
 import {ALL} from '../../../src/main/resources/META-INF/resources/components/add_to_cart/constants';
 import CartItemsListActions from '../../../src/main/resources/META-INF/resources/components/mini_cart/CartItemsListActions';
 import MiniCartContext from '../../../src/main/resources/META-INF/resources/components/mini_cart/MiniCartContext';
@@ -16,20 +17,33 @@ import {
 } from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/constants';
 import {DEFAULT_LABELS} from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/labels';
 import * as Basetests_utilities from '../../../src/main/resources/META-INF/resources/utilities';
-import {PRODUCT_REMOVED_FROM_CART} from '../../../src/main/resources/META-INF/resources/utilities/eventsDefinitions';
+import {CART_PRODUCT_QUANTITY_CHANGED} from '../../../src/main/resources/META-INF/resources/utilities/eventsDefinitions';
+
+jest.mock(
+	'../../../src/main/resources/META-INF/resources/ServiceProvider/index',
+	() => {
+		const updateCartById = jest.fn();
+		const cartApi = {updateCartById};
+
+		return {
+			__esModule: true,
+			default: {
+				DeliveryCartAPI: jest.fn(() => cartApi),
+			},
+		};
+	}
+);
 
 describe('MiniCart Items List Actions', () => {
+	const CartResource = ServiceProvider.DeliveryCartAPI('v1');
+
 	const BASE_CONTEXT_MOCK = {
-		CartResource: {
-			updateCartById: jest
-				.fn()
-				.mockReturnValue(Promise.resolve({id: 101})),
-		},
 		actionURLs: {
 			orderDetailURL: 'http://order-detail.url',
 		},
 		cartState: {
 			id: 101,
+			summary: {},
 		},
 		labels: DEFAULT_LABELS,
 		setIsUpdating: jest.fn(),
@@ -39,15 +53,15 @@ describe('MiniCart Items List Actions', () => {
 	const COMPONENT_SELECTOR = '.mini-cart-header';
 
 	beforeEach(() => {
-		BASE_CONTEXT_MOCK.CartResource.updateCartById = jest
-			.fn()
-			.mockReturnValue(Promise.resolve({id: 101}));
+		CartResource.updateCartById.mockReturnValue(Promise.resolve({id: 101}));
 		BASE_CONTEXT_MOCK.setIsUpdating = jest.fn();
 		BASE_CONTEXT_MOCK.updateCartModel = jest
 			.fn()
 			.mockReturnValue(Promise.resolve());
 
-		jest.spyOn(Basetests_utilities, 'liferayNavigate');
+		jest.spyOn(Basetests_utilities, 'liferayNavigate').mockImplementation(
+			() => {}
+		);
 
 		window.Liferay = {
 			Language: {
@@ -60,8 +74,6 @@ describe('MiniCart Items List Actions', () => {
 
 	afterEach(() => {
 		jest.resetAllMocks();
-
-		cleanup();
 	});
 
 	describe('by default', () => {
@@ -76,15 +88,13 @@ describe('MiniCart Items List Actions', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ActionsWrapperElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const ActionsWrapperElement =
+					container.querySelector(COMPONENT_SELECTOR);
 				const ActionsElement = ActionsWrapperElement.querySelector(
 					`${COMPONENT_SELECTOR}-actions`
 				);
-				const ActionButtonsElements = ActionsElement.querySelectorAll(
-					'.action'
-				);
+				const ActionButtonsElements =
+					ActionsElement.querySelectorAll('.action');
 
 				expect(ActionsWrapperElement).toBeInTheDocument();
 				expect(ActionsElement).toBeInTheDocument();
@@ -113,7 +123,7 @@ describe('MiniCart Items List Actions', () => {
 			...BASE_CONTEXT_MOCK,
 			cartState: {
 				...BASE_CONTEXT_MOCK.cartState,
-				cartItems: [{id: 1}],
+				summary: {itemsCount: 1},
 			},
 		};
 
@@ -125,15 +135,13 @@ describe('MiniCart Items List Actions', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ActionsWrapperElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const ActionsWrapperElement =
+					container.querySelector(COMPONENT_SELECTOR);
 				const ActionsElement = ActionsWrapperElement.querySelector(
 					`${COMPONENT_SELECTOR}-actions`
 				);
-				const ActionButtonsElements = ActionsElement.querySelectorAll(
-					'.action'
-				);
+				const ActionButtonsElements =
+					ActionsElement.querySelectorAll('.action');
 
 				expect(ActionsElement).toBeInTheDocument();
 				expect(ActionButtonsElements.length).toEqual(2);
@@ -152,12 +160,12 @@ describe('MiniCart Items List Actions', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ActionsWrapperElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
-				const ItemsCountTextElement = ActionsWrapperElement.querySelector(
-					`${COMPONENT_SELECTOR}-resume`
-				);
+				const ActionsWrapperElement =
+					container.querySelector(COMPONENT_SELECTOR);
+				const ItemsCountTextElement =
+					ActionsWrapperElement.querySelector(
+						`${COMPONENT_SELECTOR}-resume`
+					);
 
 				expect(ItemsCountTextElement).toBeInTheDocument();
 
@@ -174,7 +182,7 @@ describe('MiniCart Items List Actions', () => {
 							...WITH_ITEMS_CONTEXT_MOCK,
 							cartState: {
 								...WITH_ITEMS_CONTEXT_MOCK.cartState,
-								cartItems: [{id: 1}, {id: 2}],
+								summary: {itemsCount: 2},
 							},
 						}}
 					>
@@ -182,12 +190,12 @@ describe('MiniCart Items List Actions', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const ActionsWrapperElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
-				const ItemsCountTextElement = ActionsWrapperElement.querySelector(
-					`${COMPONENT_SELECTOR}-resume`
-				);
+				const ActionsWrapperElement =
+					container.querySelector(COMPONENT_SELECTOR);
+				const ItemsCountTextElement =
+					ActionsWrapperElement.querySelector(
+						`${COMPONENT_SELECTOR}-resume`
+					);
 
 				expect(ItemsCountTextElement).toBeInTheDocument();
 
@@ -207,21 +215,19 @@ describe('MiniCart Items List Actions', () => {
 						</MiniCartContext.Provider>
 					);
 
-					const ActionsWrapperElement = container.querySelector(
-						COMPONENT_SELECTOR
-					);
+					const ActionsWrapperElement =
+						container.querySelector(COMPONENT_SELECTOR);
 					const ActionsElement = ActionsWrapperElement.querySelector(
 						`${COMPONENT_SELECTOR}-actions`
 					);
-					const [viewDetailsButton] = ActionsElement.querySelectorAll(
-						'.action'
-					);
+					const [viewDetailsButton] =
+						ActionsElement.querySelectorAll('.action');
 
 					await act(async () => {
 						fireEvent.click(viewDetailsButton);
 					});
 
-					await wait(() => {
+					await waitFor(() => {
 						expect(
 							Basetests_utilities.liferayNavigate
 						).toHaveBeenCalledWith(
@@ -242,25 +248,22 @@ describe('MiniCart Items List Actions', () => {
 							</MiniCartContext.Provider>
 						);
 
-						const ActionsWrapperElement = container.querySelector(
-							COMPONENT_SELECTOR
-						);
-						const ActionsElement = ActionsWrapperElement.querySelector(
-							`${COMPONENT_SELECTOR}-actions`
-						);
-						const [
-							,
-							removeAllItemsButton,
-						] = ActionsElement.querySelectorAll('.action');
+						const ActionsWrapperElement =
+							container.querySelector(COMPONENT_SELECTOR);
+						const ActionsElement =
+							ActionsWrapperElement.querySelector(
+								`${COMPONENT_SELECTOR}-actions`
+							);
+						const [, removeAllItemsButton] =
+							ActionsElement.querySelectorAll('.action');
 
 						await act(async () => {
 							fireEvent.click(removeAllItemsButton);
 						});
 
-						await wait(() => {
-							const ConfirmationPromptElement = container.querySelector(
-								'.confirmation-prompt'
-							);
+						await waitFor(() => {
+							const ConfirmationPromptElement =
+								container.querySelector('.confirmation-prompt');
 
 							expect(
 								ConfirmationPromptElement
@@ -288,16 +291,14 @@ describe('MiniCart Items List Actions', () => {
 							</MiniCartContext.Provider>
 						);
 
-						const ActionsWrapperElement = container.querySelector(
-							COMPONENT_SELECTOR
-						);
-						const ActionsElement = ActionsWrapperElement.querySelector(
-							`${COMPONENT_SELECTOR}-actions`
-						);
-						const [
-							,
-							removeAllItemsButton,
-						] = ActionsElement.querySelectorAll('.action');
+						const ActionsWrapperElement =
+							container.querySelector(COMPONENT_SELECTOR);
+						const ActionsElement =
+							ActionsWrapperElement.querySelector(
+								`${COMPONENT_SELECTOR}-actions`
+							);
+						const [, removeAllItemsButton] =
+							ActionsElement.querySelectorAll('.action');
 
 						await act(async () => {
 							fireEvent.click(removeAllItemsButton);
@@ -307,10 +308,9 @@ describe('MiniCart Items List Actions', () => {
 							fireEvent.click(getByText('no'));
 						});
 
-						await wait(() => {
-							const ConfirmationPromptElement = container.querySelector(
-								'.confirmation-prompt'
-							);
+						await waitFor(() => {
+							const ConfirmationPromptElement =
+								container.querySelector('.confirmation-prompt');
 
 							expect(
 								ConfirmationPromptElement.classList.contains(
@@ -334,16 +334,14 @@ describe('MiniCart Items List Actions', () => {
 							</MiniCartContext.Provider>
 						);
 
-						const ActionsWrapperElement = container.querySelector(
-							COMPONENT_SELECTOR
-						);
-						const ActionsElement = ActionsWrapperElement.querySelector(
-							`${COMPONENT_SELECTOR}-actions`
-						);
-						const [
-							,
-							removeAllItemsButton,
-						] = ActionsElement.querySelectorAll('.action');
+						const ActionsWrapperElement =
+							container.querySelector(COMPONENT_SELECTOR);
+						const ActionsElement =
+							ActionsWrapperElement.querySelector(
+								`${COMPONENT_SELECTOR}-actions`
+							);
+						const [, removeAllItemsButton] =
+							ActionsElement.querySelectorAll('.action');
 
 						await act(async () => {
 							fireEvent.click(removeAllItemsButton);
@@ -353,21 +351,17 @@ describe('MiniCart Items List Actions', () => {
 							fireEvent.click(getByText('yes'));
 						});
 
-						await wait(() => {
-							const {
-								CartResource,
-								setIsUpdating,
-								updateCartModel,
-							} = WITH_ITEMS_CONTEXT_MOCK;
-							const {
-								id: orderId,
-							} = WITH_ITEMS_CONTEXT_MOCK.cartState;
+						await waitFor(() => {
+							const {setIsUpdating, updateCartModel} =
+								WITH_ITEMS_CONTEXT_MOCK;
+							const {id: orderId} =
+								WITH_ITEMS_CONTEXT_MOCK.cartState;
 
 							expect(
 								CartResource.updateCartById
 							).toHaveBeenCalledWith(orderId, {cartItems: []});
 							expect(updateCartModel).toHaveBeenCalledWith({
-								id: orderId,
+								order: {id: orderId},
 							});
 							expect(setIsUpdating).toHaveBeenCalledTimes(2);
 							expect(setIsUpdating.mock.calls).toEqual([
@@ -375,8 +369,9 @@ describe('MiniCart Items List Actions', () => {
 								[false],
 							]);
 							expect(window.Liferay.fire).toHaveBeenCalledWith(
-								PRODUCT_REMOVED_FROM_CART,
+								CART_PRODUCT_QUANTITY_CHANGED,
 								{
+									quantity: 0,
 									skuId: ALL,
 								}
 							);

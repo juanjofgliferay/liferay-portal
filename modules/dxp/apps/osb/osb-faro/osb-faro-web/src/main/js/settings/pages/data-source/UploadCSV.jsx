@@ -1,6 +1,6 @@
 import * as breadcrumbs from 'shared/util/breadcrumbs';
 import autobind from 'autobind-decorator';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import FileDropTarget from 'shared/components/FileDropTarget';
 import Form, {
 	toPromise,
@@ -45,7 +45,7 @@ export default class UploadCSV extends React.Component {
 			state: {fileVersionId}
 		} = this;
 
-		const {name} = this._formRef.current.getFormikBag().values;
+		const {name} = this._formRef.current.values;
 
 		if (fileVersionId) {
 			const url = toRoute(Routes.SETTINGS_CSV_UPLOAD_CONFIGURE, {
@@ -108,7 +108,7 @@ export default class UploadCSV extends React.Component {
 				breadcrumbItems={[
 					breadcrumbs.getDataSources({groupId}),
 					{
-						href: toRoute(Routes.SETTINGS_ADD_DATA_SOURCE, {
+						href: toRoute(Routes.SETTINGS_DATA_SOURCE_LIST, {
 							groupId
 						}),
 						label: Liferay.Language.get('add-data-source')
@@ -131,7 +131,7 @@ export default class UploadCSV extends React.Component {
 						</div>
 					</Sheet.Header>
 
-					<Form initialValues={{name: ''}} ref={this._formRef}>
+					<Form initialValues={{name: ''}} innerRef={this._formRef}>
 						{({isValid, values: {name}}) => (
 							<Form.Form>
 								<NavigationWarning
@@ -177,7 +177,7 @@ export default class UploadCSV extends React.Component {
 								<Sheet.Footer divider={false}>
 									<FormNavigation
 										cancelHref={toRoute(
-											Routes.SETTINGS_ADD_DATA_SOURCE,
+											Routes.SETTINGS_DATA_SOURCE_LIST,
 											{
 												groupId
 											}

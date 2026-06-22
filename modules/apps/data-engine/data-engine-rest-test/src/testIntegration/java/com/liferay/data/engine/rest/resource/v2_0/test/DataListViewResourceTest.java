@@ -9,11 +9,10 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.data.engine.rest.client.dto.v2_0.DataDefinition;
 import com.liferay.data.engine.rest.client.dto.v2_0.DataListView;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
-import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.ModelResourceActionTestUtil;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
-import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -47,9 +46,8 @@ public class DataListViewResourceTest extends BaseDataListViewResourceTestCase {
 	}
 
 	@AfterClass
-	public static void tearDownClass() {
-		ModelResourceActionTestUtil.deleteModelResourceAction(
-			_resourceActionLocalService, _resourceActions);
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
 	}
 
 	@Before
@@ -117,6 +115,13 @@ public class DataListViewResourceTest extends BaseDataListViewResourceTestCase {
 	}
 
 	@Override
+	protected Long testDeleteDataDefinitionDataListView_getDataDefinitionId(
+		DataListView dataListView) {
+
+		return dataListView.getDataDefinitionId();
+	}
+
+	@Override
 	protected DataListView testDeleteDataListView_addDataListView()
 		throws Exception {
 
@@ -157,11 +162,35 @@ public class DataListViewResourceTest extends BaseDataListViewResourceTestCase {
 	}
 
 	@Override
+	protected Long testGraphQLDataDefinitionDataListView_getDataDefinitionId()
+		throws Exception {
+
+		return _dataDefinition.getId();
+	}
+
+	@Override
 	protected DataListView testGraphQLDataListView_addDataListView()
 		throws Exception {
 
 		return dataListViewResource.postDataDefinitionDataListView(
 			_dataDefinition.getId(), randomDataListView());
+	}
+
+	@Override
+	protected Long
+		testGraphQLDeleteDataDefinitionDataListView_getDataDefinitionId(
+			DataListView dataListView) {
+
+		return dataListView.getDataDefinitionId();
+	}
+
+	@Override
+	protected Long
+			testGraphQLPostDataDefinitionDataListView_getDataDefinitionId(
+				DataListView dataListView)
+		throws Exception {
+
+		return _dataDefinition.getId();
 	}
 
 	@Override
@@ -171,9 +200,6 @@ public class DataListViewResourceTest extends BaseDataListViewResourceTestCase {
 		return dataListViewResource.postDataDefinitionDataListView(
 			_dataDefinition.getId(), randomDataListView());
 	}
-
-	@Inject
-	private static ResourceActionLocalService _resourceActionLocalService;
 
 	@Inject
 	private static ResourceActions _resourceActions;

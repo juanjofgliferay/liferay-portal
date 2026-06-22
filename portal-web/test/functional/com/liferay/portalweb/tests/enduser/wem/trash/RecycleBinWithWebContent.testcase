@@ -1,10 +1,9 @@
-@component-name = "portal-wcm"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Recycle Bin,Web Content Administration";
 	property testray.main.component.name = "Recycle Bin";
 
 	setUp {
@@ -131,11 +130,7 @@ definition {
 		}
 
 		task ("Navigate to Web Content admin") {
-			ApplicationsMenu.gotoSite(site = "Test Site Name");
-
-			ProductMenu.gotoPortlet(
-				category = "Content & Data",
-				portlet = "Web Content");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 		}
 
 		task ("Expand the Recycle Bin category") {
@@ -289,7 +284,7 @@ definition {
 				webContentText = "WC WebContent Text",
 				webContentTitle = "WC WebContent Title");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Move WC to recycle bin and view in recycle bin") {

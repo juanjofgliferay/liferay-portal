@@ -111,12 +111,8 @@ public class JournalArticleLocalizationPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
 		JournalArticleLocalization newJournalArticleLocalization =
-			_persistence.create(pk);
-
-		newJournalArticleLocalization.setMvccVersion(RandomTestUtil.nextLong());
+			addJournalArticleLocalization();
 
 		newJournalArticleLocalization.setCtCollectionId(
 			RandomTestUtil.nextLong());
@@ -167,27 +163,11 @@ public class JournalArticleLocalizationPersistenceTest {
 	}
 
 	@Test
-	public void testCountByArticlePK() throws Exception {
-		_persistence.countByArticlePK(RandomTestUtil.nextLong());
-
-		_persistence.countByArticlePK(0L);
-	}
-
-	@Test
 	public void testCountByC_A() throws Exception {
 		_persistence.countByC_A(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_A(0L, 0L);
-	}
-
-	@Test
-	public void testCountByA_L() throws Exception {
-		_persistence.countByA_L(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByA_L(0L, "null");
-
-		_persistence.countByA_L(0L, (String)null);
 	}
 
 	@Test
@@ -198,16 +178,6 @@ public class JournalArticleLocalizationPersistenceTest {
 		_persistence.countByC_A_L(0L, 0L, "null");
 
 		_persistence.countByC_A_L(0L, 0L, (String)null);
-	}
-
-	@Test
-	public void testCountByC_A_T_L() throws Exception {
-		_persistence.countByC_A_T_L(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "", "");
-
-		_persistence.countByC_A_T_L(0L, 0L, "null", "null");
-
-		_persistence.countByC_A_T_L(0L, 0L, (String)null, (String)null);
 	}
 
 	@Test
@@ -527,49 +497,6 @@ public class JournalArticleLocalizationPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				journalArticleLocalization, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "articlePK"));
-
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getArticlePK()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "articlePK"));
-		Assert.assertEquals(
-			journalArticleLocalization.getLanguageId(),
-			ReflectionTestUtil.invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "languageId"));
-
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getArticlePK()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "articlePK"));
-		Assert.assertEquals(
-			journalArticleLocalization.getLanguageId(),
-			ReflectionTestUtil.invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "languageId"));
-
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getArticlePK()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "articlePK"));
-		Assert.assertEquals(
-			journalArticleLocalization.getTitle(),
-			ReflectionTestUtil.invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "title"));
 		Assert.assertEquals(
 			journalArticleLocalization.getLanguageId(),
 			ReflectionTestUtil.invoke(
@@ -584,8 +511,6 @@ public class JournalArticleLocalizationPersistenceTest {
 
 		JournalArticleLocalization journalArticleLocalization =
 			_persistence.create(pk);
-
-		journalArticleLocalization.setMvccVersion(RandomTestUtil.nextLong());
 
 		journalArticleLocalization.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -612,3 +537,4 @@ public class JournalArticleLocalizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-929088097

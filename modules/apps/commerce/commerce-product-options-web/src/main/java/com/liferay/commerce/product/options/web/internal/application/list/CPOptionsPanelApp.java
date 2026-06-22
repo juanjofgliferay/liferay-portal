@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CPOptionsPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "list-ul-rtl";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -36,7 +41,9 @@ public class CPOptionsPanelApp extends BasePanelApp {
 		return CPPortletKeys.CP_OPTIONS;
 	}
 
-	@Reference(target = "(javax.portlet.name=" + CPPortletKeys.CP_OPTIONS + ")")
+	@Reference(
+		target = "(jakarta.portlet.name=" + CPPortletKeys.CP_OPTIONS + ")"
+	)
 	private Portlet _portlet;
 
 }

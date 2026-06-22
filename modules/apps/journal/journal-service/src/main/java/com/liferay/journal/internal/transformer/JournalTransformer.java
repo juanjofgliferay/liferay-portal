@@ -39,6 +39,8 @@ import com.liferay.portal.kernel.mobile.device.Device;
 import com.liferay.portal.kernel.mobile.device.UnknownDevice;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -59,6 +61,7 @@ import com.liferay.portal.kernel.templateparser.TransformerListener;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -70,6 +73,11 @@ import com.liferay.portal.kernel.xml.Attribute;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.Element;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -83,11 +91,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -110,8 +113,7 @@ public class JournalTransformer {
 			String script, ThemeDisplay themeDisplay, String viewMode)
 		throws Exception {
 
-		Set<String> transformedArticleIds =
-			_transformedArticleIdsThreadLocal.get();
+		Set<String> transformedArticleIds = _transformedArticleIds.get();
 
 		String articleId = article.getArticleId();
 
@@ -244,60 +246,14 @@ public class JournalTransformer {
 		List<TemplateNode> templateNodes, ThemeDisplay themeDisplay,
 		Map<String, String> tokens) {
 
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_ID, templateNodes,
-			themeDisplay, tokens, article.getArticleId());
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_VERSION, templateNodes,
-			themeDisplay, tokens, String.valueOf(article.getVersion()));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_TITLE, templateNodes,
-			themeDisplay, tokens, article.getTitle(languageId));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_URL_TITLE, templateNodes,
-			themeDisplay, tokens, article.getUrlTitle());
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_DESCRIPTION,
-			templateNodes, themeDisplay, tokens,
-			article.getDescription(languageId));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_CREATE_DATE,
-			templateNodes, themeDisplay, tokens,
-			Time.getRFC822(article.getCreateDate()));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_MODIFIED_DATE,
-			templateNodes, themeDisplay, tokens,
-			Time.getRFC822(article.getModifiedDate()));
-
-		if (article.getDisplayDate() != null) {
-			_addReservedEl(
-				JournalStructureConstants.RESERVED_ARTICLE_DISPLAY_DATE,
-				templateNodes, themeDisplay, tokens,
-				Time.getRFC822(article.getDisplayDate()));
-		}
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_SMALL_IMAGE_URL,
-			templateNodes, themeDisplay, tokens,
-			article.getArticleImageURL(themeDisplay));
-
 		String[] assetTagNames = AssetTagLocalServiceUtil.getTagNames(
 			JournalArticle.class.getName(), article.getResourcePrimKey());
 
 		_addReservedEl(
+			languageId,
 			JournalStructureConstants.RESERVED_ARTICLE_ASSET_TAG_NAMES,
 			templateNodes, themeDisplay, tokens,
 			StringUtil.merge(assetTagNames));
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_ID, templateNodes,
-			themeDisplay, tokens, String.valueOf(article.getUserId()));
 
 		String userName = StringPool.BLANK;
 		String userEmailAddress = StringPool.BLANK;
@@ -314,31 +270,104 @@ public class JournalTransformer {
 		}
 
 		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_NAME,
-			templateNodes, themeDisplay, tokens, userName);
-
-		_addReservedEl(
-			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_EMAIL_ADDRESS,
-			templateNodes, themeDisplay, tokens, userEmailAddress);
-
-		_addReservedEl(
+			languageId,
 			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_COMMENTS,
 			templateNodes, themeDisplay, tokens, userComments);
 
 		_addReservedEl(
+			languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_EMAIL_ADDRESS,
+			templateNodes, themeDisplay, tokens, userEmailAddress);
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_ID,
+			templateNodes, themeDisplay, tokens,
+			String.valueOf(article.getUserId()));
+
+		_addReservedEl(
+			languageId,
 			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_JOB_TITLE,
 			templateNodes, themeDisplay, tokens, userJobTitle);
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_NAME,
+			templateNodes, themeDisplay, tokens, userName);
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_CREATE_DATE,
+			templateNodes, themeDisplay, tokens,
+			Time.getRFC822(article.getCreateDate()));
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_DESCRIPTION,
+			templateNodes, themeDisplay, tokens,
+			article.getDescription(languageId));
+
+		if (article.getDisplayDate() != null) {
+			_addReservedEl(
+				languageId,
+				JournalStructureConstants.RESERVED_ARTICLE_DISPLAY_DATE,
+				templateNodes, themeDisplay, tokens,
+				Time.getRFC822(article.getDisplayDate()));
+		}
+
+		_addReservedEl(
+			languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_EXTERNAL_REFERENCE_CODE,
+			templateNodes, themeDisplay, tokens,
+			article.getExternalReferenceCode());
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_ID,
+			templateNodes, themeDisplay, tokens, article.getArticleId());
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_ID_,
+			templateNodes, themeDisplay, tokens,
+			String.valueOf(article.getId()));
+
+		_addReservedEl(
+			languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_MODIFIED_DATE,
+			templateNodes, themeDisplay, tokens,
+			Time.getRFC822(article.getModifiedDate()));
+
+		_addReservedEl(
+			languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_RESOURCE_PRIM_KEY,
+			templateNodes, themeDisplay, tokens,
+			String.valueOf(article.getResourcePrimKey()));
+
+		_addReservedEl(
+			languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_SMALL_IMAGE_URL,
+			templateNodes, themeDisplay, tokens,
+			GetterUtil.getString(article.getArticleImageURL(themeDisplay)));
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_TITLE,
+			templateNodes, themeDisplay, tokens, article.getTitle(languageId));
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_URL_TITLE,
+			templateNodes, themeDisplay, tokens, article.getUrlTitle());
+
+		_addReservedEl(
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_VERSION,
+			templateNodes, themeDisplay, tokens,
+			String.valueOf(article.getVersion()));
 	}
 
 	private void _addReservedEl(
-		String name, List<TemplateNode> templateNodes,
+		String languageId, String name, List<TemplateNode> templateNodes,
 		ThemeDisplay themeDisplay, Map<String, String> tokens, String value) {
 
 		// Template nodes
 
 		templateNodes.add(
 			new TemplateNode(
-				themeDisplay, name, value, StringPool.BLANK, new HashMap<>()));
+				LocaleUtil.fromLanguageId(languageId), themeDisplay, name,
+				value, StringPool.BLANK, new HashMap<>()));
 
 		// Tokens
 
@@ -436,8 +465,8 @@ public class JournalTransformer {
 
 		String data = StringPool.BLANK;
 
-		Element dynamicContentElement = dynamicElementElement.element(
-			"dynamic-content");
+		Element dynamicContentElement = _getDynamicContentElement(
+			dynamicElementElement, LocaleUtil.toLanguageId(locale));
 
 		if (dynamicContentElement != null) {
 			data = dynamicContentElement.getText();
@@ -448,7 +477,9 @@ public class JournalTransformer {
 
 		Map<String, String> attributes = new HashMap<>();
 
-		if (type.equals(DDMFormFieldTypeConstants.IMAGE)) {
+		if (type.equals(DDMFormFieldTypeConstants.DOCUMENT_LIBRARY) ||
+			type.equals(DDMFormFieldTypeConstants.IMAGE)) {
+
 			JSONObject dataJSONObject = JSONFactoryUtil.createJSONObject(data);
 
 			Iterator<String> iterator = dataJSONObject.keys();
@@ -462,20 +493,15 @@ public class JournalTransformer {
 			}
 		}
 		else if (type.equals(DDMFormFieldTypeConstants.SELECT) &&
-				 ddmFormField.isMultiple()) {
+				 (dynamicContentElement != null) &&
+				 (dynamicContentElement.element("option") != null)) {
 
-			JSONArray dataJSONArray = JSONFactoryUtil.createJSONArray();
-
-			Iterator<Element> iterator = dynamicContentElement.elementIterator(
-				"option");
-
-			while (iterator.hasNext()) {
-				Element optionElement = iterator.next();
-
-				dataJSONArray.put(optionElement.getData());
-			}
-
-			data = JSONUtil.toString(dataJSONArray);
+			data = ddmFormField.isMultiple() ?
+				_getMultipleSelectData(data, dynamicContentElement) :
+					_getSingleSelectData(data, dynamicContentElement);
+		}
+		else if (type.equals(DDMFormFieldTypeConstants.TEXT)) {
+			data = HtmlUtil.escape(data);
 		}
 
 		if (dynamicContentElement != null) {
@@ -485,7 +511,7 @@ public class JournalTransformer {
 		}
 
 		TemplateNode templateNode = new TemplateNode(
-			themeDisplay, ddmFormField.getFieldReference(),
+			locale, themeDisplay, ddmFormField.getFieldReference(),
 			_convertToReferenceIfNeeded(
 				StringUtil.stripCDATA(data), ddmFormField),
 			type, attributes);
@@ -546,6 +572,28 @@ public class JournalTransformer {
 		return UnknownDevice.getInstance();
 	}
 
+	private Element _getDynamicContentElement(
+		Element dynamicElementElement, String languageId) {
+
+		List<Element> dynamicContentElements = dynamicElementElement.elements(
+			"dynamic-content");
+
+		if (dynamicContentElements.isEmpty()) {
+			return null;
+		}
+
+		for (Element dynamicContentElement : dynamicContentElements) {
+			if (Objects.equals(
+					dynamicContentElement.attributeValue("language-id"),
+					languageId)) {
+
+				return dynamicContentElement;
+			}
+		}
+
+		return dynamicContentElements.get(0);
+	}
+
 	private TemplateResource _getErrorTemplateResource() {
 		try {
 			JournalServiceConfiguration journalServiceConfiguration =
@@ -596,7 +644,7 @@ public class JournalTransformer {
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
 			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
-					JournalArticle.class.getName());
+					article.getCompanyId(), JournalArticle.class.getName());
 
 		if (layoutDisplayPageProvider == null) {
 			return friendlyURLMap;
@@ -626,12 +674,24 @@ public class JournalTransformer {
 			friendlyURLMap.put(
 				LocaleUtil.toLanguageId(locale),
 				journalHelper.createURLPattern(
-					article, locale, false,
-					FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE,
+					article, locale, false, _getFriendlyURLSeparator(),
 					themeDisplay));
 		}
 
 		return friendlyURLMap;
+	}
+
+	private String _getFriendlyURLSeparator() {
+		FriendlyURLResolver friendlyURLResolver =
+			FriendlyURLResolverRegistryUtil.
+				getFriendlyURLResolverByDefaultURLSeparator(
+					FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE);
+
+		if (friendlyURLResolver != null) {
+			return friendlyURLResolver.getURLSeparator();
+		}
+
+		return FriendlyURLResolverConstants.URL_SEPARATOR_JOURNAL_ARTICLE;
 	}
 
 	private Locale _getLocale(ThemeDisplay themeDisplay, Locale locale)
@@ -642,6 +702,40 @@ public class JournalTransformer {
 		}
 
 		return locale;
+	}
+
+	private String _getMultipleSelectData(String defaultData, Element element) {
+		JSONArray dataJSONArray = JSONFactoryUtil.createJSONArray();
+
+		Iterator<Element> iterator = element.elementIterator("option");
+
+		while (iterator.hasNext()) {
+			Element optionElement = iterator.next();
+
+			if (Validator.isNotNull(optionElement.getData())) {
+				dataJSONArray.put(optionElement.getData());
+			}
+		}
+
+		if (dataJSONArray.length() != 0) {
+			return JSONUtil.toString(dataJSONArray);
+		}
+
+		return defaultData;
+	}
+
+	private String _getSingleSelectData(String defaultData, Element element) {
+		Iterator<Element> iterator = element.elementIterator("option");
+
+		if (iterator.hasNext()) {
+			Element optionElement = iterator.next();
+
+			if (Validator.isNotNull(optionElement.getData())) {
+				return (String)optionElement.getData();
+			}
+		}
+
+		return defaultData;
 	}
 
 	private Template _getTemplate(String templateId, String script)
@@ -709,7 +803,7 @@ public class JournalTransformer {
 
 				templateNodes.add(
 					new TemplateNode(
-						themeDisplay, name, StringUtil.stripCDATA(data),
+						locale, themeDisplay, name, StringUtil.stripCDATA(data),
 						StringPool.BLANK, new HashMap<>()));
 
 				continue;
@@ -870,19 +964,19 @@ public class JournalTransformer {
 			if (portletRequestModel != null) {
 				originalPortletRequest =
 					(PortletRequest)httpServletRequest.getAttribute(
-						JavaConstants.JAVAX_PORTLET_REQUEST);
+						JavaConstants.JAKARTA_PORTLET_REQUEST);
 				originalPortletResponse =
 					(PortletResponse)httpServletRequest.getAttribute(
-						JavaConstants.JAVAX_PORTLET_RESPONSE);
+						JavaConstants.JAKARTA_PORTLET_RESPONSE);
 				originalLifecyclePhase =
 					(String)httpServletRequest.getAttribute(
 						PortletRequest.LIFECYCLE_PHASE);
 
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST,
+					JavaConstants.JAKARTA_PORTLET_REQUEST,
 					portletRequestModel.getPortletRequest());
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE,
+					JavaConstants.JAKARTA_PORTLET_RESPONSE,
 					portletRequestModel.getPortletResponse());
 				httpServletRequest.setAttribute(
 					PortletRequest.LIFECYCLE_PHASE,
@@ -988,10 +1082,10 @@ public class JournalTransformer {
 		finally {
 			if ((httpServletRequest != null) && (portletRequestModel != null)) {
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST,
+					JavaConstants.JAKARTA_PORTLET_REQUEST,
 					originalPortletRequest);
 				httpServletRequest.setAttribute(
-					JavaConstants.JAVAX_PORTLET_RESPONSE,
+					JavaConstants.JAKARTA_PORTLET_RESPONSE,
 					originalPortletResponse);
 				httpServletRequest.setAttribute(
 					PortletRequest.LIFECYCLE_PHASE, originalLifecyclePhase);
@@ -1045,10 +1139,9 @@ public class JournalTransformer {
 		JournalTransformer.class.getName() + ".XmlAfterListener");
 	private static final Log _logXmlBeforeListener = LogFactoryUtil.getLog(
 		JournalTransformer.class.getName() + ".XmlBeforeListener");
-	private static final ThreadLocal<Set<String>>
-		_transformedArticleIdsThreadLocal = new CentralizedThreadLocal<>(
-			JournalTransformer.class.getName() +
-				"._transformedArticleIdsThreadLocal",
+	private static final ThreadLocal<Set<String>> _transformedArticleIds =
+		new CentralizedThreadLocal<>(
+			JournalTransformer.class.getName() + "._transformedArticleIds",
 			HashSet::new);
 
 }

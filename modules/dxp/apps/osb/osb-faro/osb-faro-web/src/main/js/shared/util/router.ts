@@ -1,8 +1,27 @@
 import Constants, {DataSourceTypes, EntityTypes} from '../util/constants';
-import pathToRegexp from 'path-to-regexp';
-import Uri from 'metal-uri';
+import {compile} from 'shared/util/path-to-regexp';
 import {invert, isEmpty, isString, memoize} from 'lodash';
 import {matchPath} from 'react-router-dom';
+
+function createURL(href: string): URL {
+	try {
+		return new URL(href);
+	} catch {
+		return new URL(href, document.baseURI);
+	}
+}
+
+function isDef(param: unknown): boolean {
+	return param !== null && param !== undefined;
+}
+
+function addParam(url: URL, key: string, value: unknown): void {
+	url.searchParams.delete(key);
+
+	if (isDef(key) && isDef(value)) {
+		url.searchParams.append(key, String(value));
+	}
+}
 
 const {cur: defaultCur, orderDefault} = Constants.pagination;
 
@@ -18,9 +37,9 @@ export const CONTACTS = 'contacts';
 export const CSV = 'csv';
 export const GROWTH = 'growth';
 export const INDIVIDUALS = 'individuals';
+export const LIFECYCLE = 'lifecycle';
 export const LIFERAY = 'liferay';
 export const PAGES = 'pages';
-export const SALESFORCE = 'salesforce';
 export const SEGMENTS = 'segments';
 export const SETTINGS = 'settings';
 export const TOUCHPOINTS = 'pages';
@@ -31,6 +50,11 @@ export const USERS = 'users';
 
 export const PERIOD = 'rangeKey';
 export const SEGMENT_STATE = 'state';
+export const SEGMENT_TYPE = 'segmentType';
+export const INDIVIDUAL_COUNT = 'individualCount';
+export const DATE_MODIFIED = 'dateModified';
+export const LAST_MEMBERSHIP_UPDATE_DATE = 'lastMembershipUpdateDate';
+export const USER_NAME = 'userName';
 export const STATUSES = 'statuses';
 export const TYPES = 'types';
 
@@ -59,54 +83,65 @@ export const Routes = buildRoutes({
 								path: '/assets',
 								routes: {
 									ASSETS_BLOGS: {
-										path: '/:assetType(blogs)?',
+										path: '/blogs',
 										routes: {
 											ASSETS_BLOGS_KNOWN_INDIVIDUALS:
-												'/:assetId/known-individuals/:touchpoint/:title?',
+												'/:assetId/known-individuals/:touchpoint/:title?/:type?',
 											ASSETS_BLOGS_OVERVIEW:
-												'/:assetId/page/:touchpoint/:title?',
+												'/:assetId/page/:touchpoint/:title?/:type?',
 											ASSETS_BLOGS_ROUTES:
-												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?'
+												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?/:type?'
 										}
 									},
 									ASSETS_CUSTOM: {
 										path: '/custom',
 										routes: {
 											ASSETS_CUSTOM_DASHBOARD:
-												'/:id/page/:touchpoint/:title?'
+												'/:id/page/:touchpoint/:title?/:type?'
 										}
 									},
 									ASSETS_DOCUMENTS_AND_MEDIA: {
 										path: '/documents-and-media',
 										routes: {
 											ASSETS_DOCUMENTS_AND_MEDIA_KNOWN_INDIVIDUALS:
-												'/:assetId/known-individuals/:touchpoint/:title?',
+												'/:assetId/known-individuals/:touchpoint/:title?/:type?',
 											ASSETS_DOCUMENTS_AND_MEDIA_OVERVIEW:
-												'/:assetId/page/:touchpoint/:title?',
+												'/:assetId/page/:touchpoint/:title?/:type?',
 											ASSETS_DOCUMENTS_AND_MEDIA_ROUTES:
-												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title'
+												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?/:type?'
 										}
 									},
 									ASSETS_FORMS: {
 										path: '/forms',
 										routes: {
 											ASSETS_FORMS_KNOWN_INDIVIDUALS:
-												'/:assetId/known-individuals/:touchpoint/:title?',
+												'/:assetId/known-individuals/:touchpoint/:title?/:type?',
 											ASSETS_FORMS_OVERVIEW:
-												'/:assetId/page/:touchpoint/:title?',
+												'/:assetId/page/:touchpoint/:title?/:type?',
 											ASSETS_FORMS_ROUTES:
-												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?'
+												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?/:type?'
+										}
+									},
+									ASSETS_OBJECT_ENTRY: {
+										path: '/object-entry',
+										routes: {
+											ASSETS_OBJECT_ENTRY_KNOWN_INDIVIDUALS:
+												'/:assetId/known-individuals/:touchpoint/:title?/:type?',
+											ASSETS_OBJECT_ENTRY_OVERVIEW:
+												'/:assetId/page/:touchpoint/:title?/:type?',
+											ASSETS_OBJECT_ENTRY_ROUTES:
+												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?/:type?'
 										}
 									},
 									ASSETS_WEB_CONTENT: {
 										path: '/web-content',
 										routes: {
 											ASSETS_WEB_CONTENT_KNOWN_INDIVIDUALS:
-												'/:assetId/known-individuals/:touchpoint/:title?',
+												'/:assetId/known-individuals/:touchpoint/:title?/:type?',
 											ASSETS_WEB_CONTENT_OVERVIEW:
-												'/:assetId/page/:touchpoint/:title?',
+												'/:assetId/page/:touchpoint/:title?/:type?',
 											ASSETS_WEB_CONTENT_ROUTES:
-												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?'
+												'/:assetId/:tabId(page|known-individuals)/:touchpoint/:title?/:type?'
 										}
 									}
 								}
@@ -125,6 +160,8 @@ export const Routes = buildRoutes({
 											CONTACTS_ACCOUNT_INTEREST_DETAILS: `/interests/:interestId/:tabId(${INDIVIDUALS}|${PAGES})?`,
 											CONTACTS_ACCOUNT_INTERESTS:
 												'/interests',
+											CONTACTS_ACCOUNT_PROFILE:
+												'/profile',
 											CONTACTS_ACCOUNT_SEGMENTS: `/${SEGMENTS}`
 										}
 									},
@@ -138,23 +175,24 @@ export const Routes = buildRoutes({
 												'/interests/:interestId',
 											CONTACTS_INDIVIDUALS_INTERESTS:
 												'/interests',
-											CONTACTS_INDIVIDUALS_KNOWN_INDIVIDUALS: {
-												path: '/known-individuals',
-												routes: {
-													CONTACTS_INDIVIDUAL: {
-														path: '/:id',
-														routes: {
-															CONTACTS_INDIVIDUAL_DETAILS:
-																'/details',
-															CONTACTS_INDIVIDUAL_INTEREST_DETAILS:
-																'/interests/:interestId',
-															CONTACTS_INDIVIDUAL_INTERESTS:
-																'/interests',
-															CONTACTS_INDIVIDUAL_SEGMENTS: `/${SEGMENTS}`
+											CONTACTS_INDIVIDUALS_KNOWN_INDIVIDUALS:
+												{
+													path: '/known-individuals',
+													routes: {
+														CONTACTS_INDIVIDUAL: {
+															path: '/:id',
+															routes: {
+																CONTACTS_INDIVIDUAL_DETAILS:
+																	'/details',
+																CONTACTS_INDIVIDUAL_INTEREST_DETAILS:
+																	'/interests/:interestId',
+																CONTACTS_INDIVIDUAL_INTERESTS:
+																	'/interests',
+																CONTACTS_INDIVIDUAL_SEGMENTS: `/${SEGMENTS}`
+															}
 														}
 													}
 												}
-											}
 										}
 									},
 									// Deprecated - Prefer the more specific routes for the entity type
@@ -194,6 +232,10 @@ export const Routes = buildRoutes({
 									EVENT_ANALYSIS_EDIT: '/:id'
 								}
 							},
+							LIFECYCLE: {
+								path: '/lifecycle',
+								routes: {}
+							},
 							SITES: {
 								path: '/sites',
 								routes: {
@@ -203,6 +245,10 @@ export const Routes = buildRoutes({
 											SITES_INTEREST_DETAILS:
 												'/:interestId'
 										}
+									},
+									SITES_SEARCH_TERMS: {
+										path: '/search-terms',
+										routes: {}
 									},
 									SITES_TOUCHPOINTS: {
 										path: '/pages',
@@ -231,7 +277,6 @@ export const Routes = buildRoutes({
 					SETTINGS: {
 						path: '/settings',
 						routes: {
-							SETTINGS_ADD_DATA_SOURCE: '/data-source/add',
 							SETTINGS_APIS: {
 								path: '/apis',
 								routes: {
@@ -258,6 +303,8 @@ export const Routes = buildRoutes({
 								'/data-source/:id/delete',
 							SETTINGS_DATA_SOURCE_EDIT: '/data-source/:id/edit',
 							SETTINGS_DATA_SOURCE_LIST: '/data-source',
+							SETTINGS_DATA_SOURCE_ONBOARDING:
+								'/data-source/:id/onboarding',
 							SETTINGS_DEFINITIONS: {
 								path: '/definitions',
 								routes: {
@@ -294,6 +341,7 @@ export const Routes = buildRoutes({
 									SETTINGS_DEFINITIONS_SEARCH: '/search'
 								}
 							},
+							SETTINGS_FEATURE_FLAGS: '/feature-flags',
 							SETTINGS_RECOMMENDATIONS: {
 								path: '/recommendations',
 								routes: {
@@ -306,17 +354,6 @@ export const Routes = buildRoutes({
 									},
 									SETTINGS_RECOMMENDATIONS_CREATE_ITEM_SIMILARITY_MODEL:
 										'/create-item-similarity-model'
-								}
-							},
-							SETTINGS_SALESFORCE_ADD: `/data-source/${SALESFORCE}`,
-							SETTINGS_SALESFORCE_CONFIGURATION_STATUS: `/data-source/:id/${SALESFORCE}/configuration-status`,
-							SETTINGS_SALESFORCE_FIELD_MAPPING: {
-								path: `/data-source/:id/${SALESFORCE}`,
-								routes: {
-									SETTINGS_SALESFORCE_FIELD_MAPPING_ACCOUNTS:
-										'/field-mapping/accounts',
-									SETTINGS_SALESFORCE_FIELD_MAPPING_INDIVIDUALS:
-										'/field-mapping/individuals'
 								}
 							},
 							SETTINGS_USAGE: '/usage',
@@ -356,17 +393,19 @@ export function buildRoutes(
 		} else {
 			routes[key] = prefix + pathOrConfig.path;
 
-			buildRoutes(pathOrConfig.routes, routes, routes[key]);
+			if (pathOrConfig.routes) {
+				buildRoutes(pathOrConfig.routes, routes, routes[key]);
+			}
 		}
 	}
 
 	return routes;
 }
 
-const getCompiledRoute = memoize(pathToRegexp.compile);
+const getCompiledRoute = memoize(compile);
 
 export function toRoute(route: string, options?: {[key: string]: any}) {
-	return getCompiledRoute(route)(options);
+	return getCompiledRoute(route)(options || {});
 }
 
 const ROUTE_TO_TYPE_MAP = {
@@ -394,7 +433,11 @@ export const assetTypePaths = {
 	journal: Routes.ASSETS_WEB_CONTENT_OVERVIEW
 };
 
-export const toAssetOverviewRoute = (assetType, routeParams, query) => {
+export const toAssetOverviewRoute = (
+	assetType: keyof typeof assetTypePaths,
+	routeParams: {[key: string]: any},
+	query: {[key: string]: any}
+) => {
 	let route = '';
 
 	if (assetType === 'blog') {
@@ -409,15 +452,17 @@ export const toAssetOverviewRoute = (assetType, routeParams, query) => {
 	return !isEmpty(query) ? setUriQueryValues(query, route) : route;
 };
 
-export function getType(routeName) {
+export function getType(routeName: keyof typeof ROUTE_TO_TYPE_MAP) {
 	return ROUTE_TO_TYPE_MAP[routeName];
 }
 
-export function getRouteName(type) {
+export function getRouteName(type: keyof typeof TYPE_TO_ROUTE_MAP) {
 	return TYPE_TO_ROUTE_MAP[type];
 }
 
-export function getDataSourceType(routeName) {
+export function getDataSourceType(
+	routeName: keyof typeof PROVIDER_ROUTE_TO_TYPE_MAP
+) {
 	return PROVIDER_ROUTE_TO_TYPE_MAP[routeName];
 }
 
@@ -429,7 +474,10 @@ export function getDataSourceType(routeName) {
  * @param {string} pathname - The current pathname.
  * @returns {string} Matched path string or null if no match.
  */
-export function getMatchedRoute(routes, pathname = location.pathname) {
+export function getMatchedRoute(
+	routes: {exact?: boolean; route: string}[],
+	pathname = location.pathname
+) {
 	const matchedRoute = routes.find(({exact = true, route}) =>
 		matchPath(pathname, {exact, path: route})
 	);
@@ -449,32 +497,49 @@ export function getMatchedRoute(routes, pathname = location.pathname) {
  * @param {FilterBy} filterBy - A Map of active filters.
  * @param {string} href - The url with filter params added.
  */
-export function setUriFilterValues(filterBy, href = window.location.href) {
-	const uri = new Uri(href);
+export function setUriFilterValues(
+	filterBy: {
+		forEach: (
+			callback: (
+				valueISet: {
+					filter: (predicate: (value: unknown) => unknown) => {
+						toArray: () => unknown[];
+					};
+				},
+				key: string
+			) => void
+		) => void;
+	},
+	href = window.location.href
+) {
+	const uri = createURL(href);
 
 	filterBy.forEach((valueISet, key) => {
-		uri.setParameterValue(key, valueISet.filter(Boolean).toArray());
+		addParam(uri, key, valueISet.filter(Boolean).toArray());
 	});
 
-	return `${uri.getPathname()}${uri.getSearch()}`;
+	return `${uri.pathname}${uri.search}`;
 }
 
-export function setUriQueryValue(href, name, value) {
-	const uri = new Uri(href);
+export function setUriQueryValue(href: string, name: string, value: unknown) {
+	const uri = createURL(href);
 
-	uri.setParameterValue(name, value);
+	addParam(uri, name, value);
 
-	return `${uri.getPathname()}${uri.getSearch()}`;
+	return `${uri.pathname}${uri.search}`;
 }
 
-export function setUriQueryValues(values, href = window.location.href) {
-	const uri = new Uri(href);
+export function setUriQueryValues(
+	values: {[key: string]: any},
+	href = window.location.href
+) {
+	const uri = createURL(href);
 
 	for (const [name, value] of Object.entries(values)) {
-		uri.setParameterValue(name, value);
+		addParam(uri, name, value);
 	}
 
-	return `${uri.getPathname()}${uri.getSearch()}`;
+	return `${uri.pathname}${uri.search}`;
 }
 
 /**
@@ -482,41 +547,43 @@ export function setUriQueryValues(values, href = window.location.href) {
  * @param {string} href
  * @param {string} names
  */
-export function removeUriQueryParam(href, ...names) {
-	const uri = new Uri(href);
+export function removeUriQueryParam(href: string, ...names: string[]) {
+	const uri = createURL(href);
 
-	names.map(name => uri.removeParameter(name));
-
-	return `${uri.getPathname()}${uri.getSearch()}`;
-}
-
-export function removePageParam(newPath, currentUrl = window.location.href) {
-	const uri = new Uri(currentUrl);
-
-	if (newPath) {
-		uri.setPathname(newPath);
+	for (const name of names) {
+		uri.searchParams.delete(name);
 	}
 
-	uri.removeParameter('page');
+	return `${uri.pathname}${uri.search}`;
+}
 
-	return `${uri.getPathname()}${uri.getSearch()}`;
+export function removePageParam(newPath: string, href = window.location.href) {
+	const uri = createURL(href);
+
+	if (newPath) {
+		uri.pathname = newPath;
+	}
+
+	uri.searchParams.delete('page');
+
+	return `${uri.pathname}${uri.search}`;
 }
 
 export function resetPaginationParams(
-	newPath,
-	currentUrl = window.location.href
+	newPath: string,
+	href = window.location.href
 ) {
-	const uri = new Uri(currentUrl);
+	const uri = createURL(href);
 
 	if (newPath) {
-		uri.setPathname(newPath);
+		uri.pathname = newPath;
 	}
 
-	uri.setParameterValue('page', defaultCur);
-	uri.setParameterValue('orderBy', orderDefault);
-	uri.setParameterValue('query', '');
+	addParam(uri, 'page', defaultCur);
+	addParam(uri, 'orderBy', orderDefault);
+	addParam(uri, 'query', '');
 
-	return `${uri.getPathname()}${uri.getSearch()}`;
+	return `${uri.pathname}${uri.search}`;
 }
 
 export function reloadPage() {

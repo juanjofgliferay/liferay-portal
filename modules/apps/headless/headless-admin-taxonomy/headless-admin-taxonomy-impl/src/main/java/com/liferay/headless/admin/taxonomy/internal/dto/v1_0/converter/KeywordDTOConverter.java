@@ -7,18 +7,21 @@ package com.liferay.headless.admin.taxonomy.internal.dto.v1_0.converter;
 
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.AssetTagGroupRelLocalService;
+import com.liferay.headless.admin.taxonomy.dto.v1_0.AssetLibrary;
 import com.liferay.headless.admin.taxonomy.dto.v1_0.Keyword;
 import com.liferay.headless.admin.taxonomy.internal.dto.v1_0.util.CreatorUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.vulcan.dto.action.DTOActionProvider;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.util.GroupUtil;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
 import org.osgi.service.component.annotations.Component;
@@ -47,31 +50,85 @@ public class KeywordDTOConverter implements DTOConverter<AssetTag, Keyword> {
 
 		return new Keyword() {
 			{
-				actions = _dtoActionProvider.getActions(
-					assetTag.getGroupId(), assetTag.getTagId(),
-					dtoConverterContext.getUriInfo(),
-					dtoConverterContext.getUserId());
-				assetLibraryKey = GroupUtil.getAssetLibraryKey(group);
-				dateCreated = assetTag.getCreateDate();
-				dateModified = assetTag.getModifiedDate();
-				id = assetTag.getTagId();
-				name = assetTag.getName();
-				siteId = GroupUtil.getSiteId(group);
-				subscribed = _subscriptionLocalService.isSubscribed(
-					assetTag.getCompanyId(), dtoConverterContext.getUserId(),
-					AssetTag.class.getName(), assetTag.getTagId());
+				setActions(dtoConverterContext::getActions);
+				setAssetLibraries(
+					() -> TransformUtil.transformToArray(
+						_assetTagGroupRelLocalService.
+							getAssetTagGroupRelsByTagId(assetTag.getTagId()),
+						assetTagGroupRel -> {
+							Group depotEntryGroup =
+								_groupLocalService.fetchGroup(
+									assetTagGroupRel.getGroupId());
 
-				setCreator(
+							return new AssetLibrary() {
+								{
+									setExternalReferenceCode(
+										() -> {
+											if (depotEntryGroup == null) {
+												return null;
+											}
+
+											return depotEntryGroup.
+												getExternalReferenceCode();
+										});
+									setId(assetTagGroupRel::getGroupId);
+									setName(
+										() -> {
+											if (depotEntryGroup == null) {
+												return null;
+											}
+
+											return depotEntryGroup.
+												getDescriptiveName(
+													dtoConverterContext.
+														getLocale());
+										});
+									setName_i18n(
+										() -> {
+											if (depotEntryGroup == null) {
+												return null;
+											}
+
+											return LocalizedMapUtil.getI18nMap(
+												dtoConverterContext.
+													isAcceptAllLanguages(),
+												depotEntryGroup.getNameMap());
+										});
+									setScopeKey(
+										() -> {
+											if (depotEntryGroup == null) {
+												return null;
+											}
+
+											return depotEntryGroup.
+												getGroupKey();
+										});
+								}
+							};
+						},
+						AssetLibrary.class));
+				setAssetLibraryKey(
 					() -> {
-						if (assetTag.getUserId() != 0) {
-							return CreatorUtil.toCreator(
-								_portal,
-								_userLocalService.fetchUser(
-									assetTag.getUserId()));
+						if (group == null) {
+							return null;
 						}
 
-						return null;
+						return GroupUtil.getAssetLibraryKey(group);
 					});
+				setCreator(
+					() -> {
+						if (assetTag.getUserId() == 0) {
+							return null;
+						}
+
+						return CreatorUtil.toCreator(
+							_portal,
+							_userLocalService.fetchUser(assetTag.getUserId()));
+					});
+				setDateCreated(assetTag::getCreateDate);
+				setDateModified(assetTag::getModifiedDate);
+				setExternalReferenceCode(assetTag::getExternalReferenceCode);
+				setId(assetTag::getTagId);
 				setKeywordUsageCount(
 					() -> {
 						Hits hits = _assetEntryLocalService.search(
@@ -88,6 +145,28 @@ public class KeywordDTOConverter implements DTOConverter<AssetTag, Keyword> {
 
 						return hits.getLength();
 					});
+				setName(assetTag::getName);
+				setSiteExternalReferenceCode(
+					() -> {
+						if (group == null) {
+							return null;
+						}
+
+						return GroupUtil.getSiteExternalReferenceCode(group);
+					});
+				setSiteId(
+					() -> {
+						if (group == null) {
+							return null;
+						}
+
+						return GroupUtil.getSiteId(group);
+					});
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						assetTag.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						AssetTag.class.getName(), assetTag.getTagId()));
 			}
 		};
 	}
@@ -95,10 +174,8 @@ public class KeywordDTOConverter implements DTOConverter<AssetTag, Keyword> {
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
 
-	@Reference(
-		target = "(dto.class.name=com.liferay.headless.admin.taxonomy.dto.v1_0.Keyword)"
-	)
-	private DTOActionProvider _dtoActionProvider;
+	@Reference
+	private AssetTagGroupRelLocalService _assetTagGroupRelLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

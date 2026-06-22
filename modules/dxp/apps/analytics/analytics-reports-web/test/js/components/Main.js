@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
@@ -160,6 +160,19 @@ const mockTrafficSourcesDataProvider = jest.fn(() =>
 	])
 );
 
+const mockExperiencesDataProvider = jest.fn(() =>
+	Promise.resolve([
+		{
+			id: '35145',
+			name: 'Default Experience',
+		},
+		{
+			id: '35146',
+			name: 'Summer Campaign Experience',
+		},
+	])
+);
+
 const mockTotalViewsDataProvider = jest.fn(() => {
 	return Promise.resolve(9999);
 });
@@ -197,6 +210,7 @@ const mockedProps = {
 	},
 	canonicalURL: 'http://localhost:8080/en/web/guest/-/basic-web-content',
 	chartDataProviders: [mockViewsDataProvider, mockReadsDataProvider],
+	experiencesDataProvider: mockExperiencesDataProvider,
 	onSelectedLanguageClick: () => {},
 	onTrafficSourceClick: () => {},
 	pagePublishDate: mockPublishDate,

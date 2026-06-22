@@ -1,0 +1,11 @@
+{
+	"friendlyURL": "/categorization/view-tag-usages",
+	"hidden": false,
+	"name": "Tag Usages",
+	"name_i18n": {
+		"en_US": "Tag Usages"
+	},
+	"private": false,
+	"system": false,
+	"type": "content"
+}

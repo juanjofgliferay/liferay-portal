@@ -16,13 +16,12 @@ import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.search.query.FieldQueryFactory;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.search.analysis.FieldQueryBuilderFactory;
-import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
+import com.liferay.portal.search.expando.ExpandoBridgeUtil;
 import com.liferay.portal.search.internal.analysis.DescriptionFieldQueryBuilder;
 import com.liferay.portal.search.internal.analysis.SimpleKeywordTokenizer;
 import com.liferay.portal.search.internal.analysis.SubstringFieldQueryBuilder;
@@ -39,11 +38,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import org.osgi.framework.BundleContext;
@@ -76,6 +77,11 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		_fieldQueryBuilderFactoryServiceRegistration.unregister();
 
 		_fieldQueryFactoryServiceRegistration.unregister();
+	}
+
+	@After
+	public void tearDown() {
+		_expandoBridgeUtilMockedStatic.close();
 	}
 
 	@Test
@@ -209,37 +215,6 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		return expandoBridgeFactory;
 	}
 
-	protected ExpandoBridgeIndexer createExpandoBridgeIndexer() {
-		ExpandoBridgeIndexer expandoBridgeIndexer = Mockito.mock(
-			ExpandoBridgeIndexer.class);
-
-		Mockito.doReturn(
-			_FIELD_KEYWORD
-		).when(
-			expandoBridgeIndexer
-		).encodeFieldName(
-			Mockito.eq(_indexTypeKeywordExpandoColumn)
-		);
-
-		Mockito.doReturn(
-			_FIELD_TEXT
-		).when(
-			expandoBridgeIndexer
-		).encodeFieldName(
-			Mockito.eq(_indexTypeTextExpandoColumn)
-		);
-
-		Mockito.doReturn(
-			StringPool.BLANK
-		).when(
-			expandoBridgeIndexer
-		).getNumericSuffix(
-			Mockito.anyInt()
-		);
-
-		return expandoBridgeIndexer;
-	}
-
 	protected ExpandoColumn createExpandoColumn(int indexType) {
 		ExpandoColumn expandoColumn = Mockito.mock(ExpandoColumn.class);
 
@@ -286,15 +261,14 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 	protected ExpandoQueryContributorHelper
 		createExpandoQueryContributorHelper() {
 
+		setUpExpandoBridgeUtil();
+
 		ExpandoQueryContributorHelperImpl expandoQueryContributorHelperImpl =
 			new ExpandoQueryContributorHelperImpl();
 
 		ReflectionTestUtil.setFieldValue(
 			expandoQueryContributorHelperImpl, "_expandoBridgeFactory",
 			createExpandoBridgeFactory());
-		ReflectionTestUtil.setFieldValue(
-			expandoQueryContributorHelperImpl, "_expandoBridgeIndexer",
-			createExpandoBridgeIndexer());
 		ReflectionTestUtil.setFieldValue(
 			expandoQueryContributorHelperImpl, "_expandoColumnLocalService",
 			createExpandoColumnLocalService());
@@ -320,7 +294,7 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 	protected Void doAssertSearch(String keywords, int expectedCount)
 		throws Exception {
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
 		SearchContext searchContext = createSearchContext();
 
@@ -339,6 +313,27 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 			Field.STATUS, expectedCount);
 
 		return null;
+	}
+
+	protected void setUpExpandoBridgeUtil() {
+		_expandoBridgeUtilMockedStatic.when(
+			() -> ExpandoBridgeUtil.encodeFieldName(
+				_indexTypeKeywordExpandoColumn)
+		).thenReturn(
+			_FIELD_KEYWORD
+		);
+
+		_expandoBridgeUtilMockedStatic.when(
+			() -> ExpandoBridgeUtil.encodeFieldName(_indexTypeTextExpandoColumn)
+		).thenReturn(
+			_FIELD_TEXT
+		);
+
+		_expandoBridgeUtilMockedStatic.when(
+			() -> ExpandoBridgeUtil.getNumericSuffix(Mockito.anyInt())
+		).thenReturn(
+			StringPool.BLANK
+		);
 	}
 
 	private static final String _ATTRIBUTE_KEYWORD =
@@ -362,6 +357,10 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		_fieldQueryBuilderFactoryServiceRegistration;
 	private static FieldQueryFactoryImpl _fieldQueryFactoryImpl;
 	private static ServiceRegistration<?> _fieldQueryFactoryServiceRegistration;
+
+	private final MockedStatic<ExpandoBridgeUtil>
+		_expandoBridgeUtilMockedStatic = Mockito.mockStatic(
+			ExpandoBridgeUtil.class);
 
 	@Mock
 	private ExpandoColumn _indexTypeKeywordExpandoColumn = createExpandoColumn(

@@ -8,12 +8,12 @@ package com.liferay.segments.asah.rest.client.dto.v1_0;
 import com.liferay.segments.asah.rest.client.function.UnsafeSupplier;
 import com.liferay.segments.asah.rest.client.serdes.v1_0.ExperimentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -222,3 +222,4 @@ public class Experiment implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1880248468

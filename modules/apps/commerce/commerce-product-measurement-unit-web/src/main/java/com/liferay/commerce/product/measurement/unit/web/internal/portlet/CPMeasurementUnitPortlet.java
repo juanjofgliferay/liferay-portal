@@ -5,20 +5,20 @@
 
 package com.liferay.commerce.product.measurement.unit.web.internal.portlet;
 
-import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.measurement.unit.web.internal.display.context.CPMeasurementUnitsDisplayContext;
+import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.service.CPMeasurementUnitService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,13 +38,13 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Measurement Units",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.CP_MEASUREMENT_UNIT,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Measurement Units",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.CP_MEASUREMENT_UNIT,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -57,8 +57,8 @@ public class CPMeasurementUnitPortlet extends MVCPortlet {
 
 		CPMeasurementUnitsDisplayContext cpMeasurementUnitsDisplayContext =
 			new CPMeasurementUnitsDisplayContext(
-				_cpMeasurementUnitService, _portletResourcePermission,
-				renderRequest, renderResponse);
+				_cpMeasurementUnitModelResourcePermission,
+				_cpMeasurementUnitService, renderRequest, renderResponse);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, cpMeasurementUnitsDisplayContext);
@@ -66,12 +66,13 @@ public class CPMeasurementUnitPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CPMeasurementUnit)"
+	)
+	private ModelResourcePermission<CPMeasurementUnit>
+		_cpMeasurementUnitModelResourcePermission;
+
 	@Reference
 	private CPMeasurementUnitService _cpMeasurementUnitService;
-
-	@Reference(
-		target = "(resource.name=" + CPConstants.RESOURCE_NAME_PRODUCT + ")"
-	)
-	private PortletResourcePermission _portletResourcePermission;
 
 }

@@ -12,11 +12,14 @@ import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.product.configuration.CPDefinitionOptionRelConfiguration;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
+import com.liferay.commerce.service.CommerceOrderTypeLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -26,17 +29,18 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Fabio Mastrorilli
+ * @author Gianmarco Brunialti Masera
  */
 @Component(
 	property = "service.ranking:Integer=" + Integer.MAX_VALUE,
@@ -109,6 +113,9 @@ public class CommerceFrontendJsDynamicInclude extends BaseDynamicInclude {
 				"commerceAccountGroupIds",
 				commerceContext.getCommerceAccountGroupIds()
 			).put(
+				"commerceChannelGroupId",
+				commerceContext.getCommerceChannelGroupId()
+			).put(
 				"commerceChannelId", commerceContext.getCommerceChannelId()
 			).put(
 				"commerceSiteType", commerceContext.getCommerceSiteType()
@@ -145,6 +152,22 @@ public class CommerceFrontendJsDynamicInclude extends BaseDynamicInclude {
 					);
 				}
 			).put(
+				"orderTypes",
+				() -> JSONUtil.toJSONArray(
+					_commerceOrderTypeLocalService.getCommerceOrderTypes(
+						_portal.getCompanyId(httpServletRequest),
+						CommerceChannel.class.getName(),
+						commerceContext.getCommerceChannelId(), true,
+						QueryUtil.ALL_POS, QueryUtil.ALL_POS),
+					commerceOrderType -> JSONUtil.put(
+						"name_i18n",
+						commerceOrderType.getName(
+							_portal.getLocale(httpServletRequest))
+					).put(
+						"orderTypeId",
+						commerceOrderType.getCommerceOrderTypeId()
+					))
+			).put(
 				"showSeparateOrderItems",
 				() -> {
 					CommerceChannel commerceChannel =
@@ -167,11 +190,20 @@ public class CommerceFrontendJsDynamicInclude extends BaseDynamicInclude {
 					return commerceOrderCheckoutConfiguration.
 						showSeparateOrderItems();
 				}
+			).put(
+				"showUnselectableOptions",
+				() -> {
+					CPDefinitionOptionRelConfiguration
+						cpDefinitionOptionRelConfiguration =
+							_configurationProvider.getCompanyConfiguration(
+								CPDefinitionOptionRelConfiguration.class,
+								_portal.getCompanyId(httpServletRequest));
+
+					return cpDefinitionOptionRelConfiguration.
+						showUnselectableOptions();
+				}
 			),
-			";</script><link href=\"",
-			_portal.getPathProxy() + httpServletRequest.getContextPath(),
-			"/o/commerce-frontend-js/styles/main.css\" rel=\"stylesheet\" ",
-			"type=\"text/css\" />");
+			";</script>");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -179,6 +211,9 @@ public class CommerceFrontendJsDynamicInclude extends BaseDynamicInclude {
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
+
+	@Reference
+	private CommerceOrderTypeLocalService _commerceOrderTypeLocalService;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;

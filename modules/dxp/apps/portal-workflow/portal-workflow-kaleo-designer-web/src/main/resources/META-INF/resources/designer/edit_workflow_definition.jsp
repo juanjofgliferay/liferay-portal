@@ -8,21 +8,16 @@
 <%@ include file="/designer/init.jsp" %>
 
 <%
-KaleoDefinitionVersion kaleoDefinitionVersion = (KaleoDefinitionVersion)request.getAttribute(KaleoDesignerWebKeys.KALEO_DRAFT_DEFINITION);
+KaleoDefinitionVersion currentKaleoDefinitionVersion = (KaleoDefinitionVersion)request.getAttribute(KaleoDesignerWebKeys.KALEO_DRAFT_DEFINITION);
 
 portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(
-	PortletURLBuilder.create(
-		PortalUtil.getControlPanelPortletURL(renderRequest, KaleoDesignerPortletKeys.CONTROL_PANEL_WORKFLOW, PortletRequest.RENDER_PHASE)
-	).setMVCPath(
-		"/view.jsp"
-	).buildString());
+portletDisplay.setURLBack(kaleoDesignerDisplayContext.getBackURL(renderRequest));
 
 boolean view = Objects.equals(request.getParameter(WorkflowWebKeys.WORKFLOW_JSP_STATE), "view");
 
 String titleKey = "new-workflow-definition";
 
-if (kaleoDefinitionVersion != null) {
+if (currentKaleoDefinitionVersion != null) {
 	titleKey = "edit-workflow-definition";
 
 	if (view) {
@@ -34,30 +29,42 @@ renderResponse.setTitle(LanguageUtil.get(request, titleKey));
 %>
 
 <react:component
-	module="designer/js/definition-builder/DefinitionBuilder"
+	module="{DefinitionBuilder} from portal-workflow-kaleo-designer-web"
 	props='<%=
 		HashMapBuilder.<String, Object>put(
 			"accountEntryId", ParamUtil.getLong(liferayPortletRequest, "accountEntryId")
 		).put(
-			"definitionName", (kaleoDefinitionVersion == null) ? null : kaleoDefinitionVersion.getName()
+			"allowScriptContentToBeExecutedOrIncluded", kaleoDesignerDisplayContext.isAllowScriptContentToBeExecutedOrIncluded()
+		).put(
+			"definitionName", (currentKaleoDefinitionVersion == null) ? null : currentKaleoDefinitionVersion.getName()
+		).put(
+			"definitionVersions", (currentKaleoDefinitionVersion == null) ? null : kaleoDesignerDisplayContext.getKaleoDefinitionVersionsJSONArray(currentKaleoDefinitionVersion)
 		).put(
 			"displayNames", LocaleUtil.toDisplayNames(LanguageUtil.getAvailableLocales(), locale)
 		).put(
 			"functionActionExecutors", kaleoDesignerDisplayContext.getFunctionActionExecutorsJSONArray()
 		).put(
-			"isView", view || !kaleoDesignerDisplayContext.canPublishWorkflowDefinition()
+			"groupExternalReferenceCode", kaleoDesignerDisplayContext.getGroupExternalReferenceCode(renderRequest)
+		).put(
+			"isView", view || kaleoDesignerDisplayContext.isReadOnly()
 		).put(
 			"languageIds", LocaleUtil.toLanguageIds(LanguageUtil.getAvailableLocales())
 		).put(
 			"portletNamespace", PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.KALEO_DESIGNER)
 		).put(
+			"scope", kaleoDesignerDisplayContext.getScope(renderRequest)
+		).put(
+			"scriptManagementConfigurationPortletURL", kaleoDesignerDisplayContext.getScriptManagementConfigurationPortletURL()
+		).put(
 			"statuses", kaleoDesignerDisplayContext.getStatusesJSONArray()
 		).put(
-			"title", (kaleoDefinitionVersion == null) ? LanguageUtil.get(request, "new-workflow") : kaleoDefinitionVersion.getTitle(locale)
+			"timeZoneId", kaleoDesignerDisplayContext.getTimeZoneId()
 		).put(
-			"translations", (kaleoDefinitionVersion == null) ? new HashMap<>() : kaleoDefinitionVersion.getTitleMap()
+			"title", (currentKaleoDefinitionVersion == null) ? LanguageUtil.get(request, "new-workflow") : currentKaleoDefinitionVersion.getTitle(locale)
 		).put(
-			"version", (kaleoDefinitionVersion == null) ? "0" : kaleoDefinitionVersion.getVersion()
+			"translations", (currentKaleoDefinitionVersion == null) ? new HashMap<>() : currentKaleoDefinitionVersion.getTitleMap()
+		).put(
+			"version", (currentKaleoDefinitionVersion == null) ? "0" : currentKaleoDefinitionVersion.getVersion()
 		).build()
 	%>'
 />

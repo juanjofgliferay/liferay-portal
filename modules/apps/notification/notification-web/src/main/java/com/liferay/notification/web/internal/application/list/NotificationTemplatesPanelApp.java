@@ -30,6 +30,11 @@ import org.osgi.service.component.annotations.Reference;
 public class NotificationTemplatesPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "bell-on";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -47,7 +52,7 @@ public class NotificationTemplatesPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + NotificationPortletKeys.NOTIFICATION_TEMPLATES + ")"
+		target = "(jakarta.portlet.name=" + NotificationPortletKeys.NOTIFICATION_TEMPLATES + ")"
 	)
 	private Portlet _portlet;
 

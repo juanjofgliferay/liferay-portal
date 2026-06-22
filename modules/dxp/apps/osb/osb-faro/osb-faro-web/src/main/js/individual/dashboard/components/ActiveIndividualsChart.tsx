@@ -1,5 +1,6 @@
 // @ts-nocheck - Fix it at this LRAC-13388
 
+import ClayLink from '@clayui/link';
 import ComposedChartWithEmptyState from 'shared/components/ComposedChartWithEmptyState';
 import Loading from 'shared/components/Loading';
 import React, {useState} from 'react';
@@ -23,7 +24,7 @@ import {
 	XAxis,
 	YAxis
 } from 'recharts';
-import {CHART_COLOR_NAMES} from 'shared/components/Chart';
+import {CHART_COLOR_NAMES} from 'shared/util/charts';
 import {
 	formatXAxisDate,
 	getBarColor,
@@ -124,7 +125,7 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 						)}
 					</span>
 
-					<a
+					<ClayLink
 						href={
 							URLConstants.IndividualDashboardActiveIndividualsDocumentation
 						}
@@ -134,7 +135,7 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 						{Liferay.Language.get(
 							'learn-more-about-active-individuals'
 						)}
-					</a>
+					</ClayLink>
 				</>
 			}
 			emptyTitle={Liferay.Language.get(
@@ -153,9 +154,8 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 					<XAxis
 						axisLine={{stroke: AXIS.borderStroke}}
 						dataKey='intervalInitDate'
-						domain={['dataMin', 'dataMax']}
 						interval='preserveStart'
-						padding={{left: 20, right: 20}}
+						stroke={AXIS.gridStroke}
 						tick={getAxisTickText('x', value =>
 							formatXAxisDate(
 								value,
@@ -167,7 +167,6 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 						tickLine={false}
 						tickMargin={12}
 						ticks={intervals}
-						type='number'
 					/>
 
 					<XAxis
@@ -181,7 +180,6 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 					/>
 
 					<YAxis
-						allowDecimals={false}
 						axisLine={{stroke: AXIS.borderStroke}}
 						label={getYAxisLabel(
 							Liferay.Language.get('individuals'),
@@ -191,9 +189,7 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 						name={Liferay.Language.get('individuals')}
 						stroke={AXIS.gridStroke}
 						tick={getAxisTickText('y')}
-						tickCount={6}
 						tickLine={false}
-						type='number'
 						width={yAxisWidth}
 					/>
 
@@ -204,12 +200,15 @@ const ActiveIndividualsChart: React.FC<IActiveIndividualsChartProps> = ({
 						tick={false}
 						tickLine={false}
 						type='number'
-						width={1}
+						width={12}
 						yAxisId='right'
 					/>
 
 					<Legend
 						align='right'
+						formatter={dataKey => (
+							<span className='legend-text-color'>{dataKey}</span>
+						)}
 						iconSize={8}
 						onMouseEnter={({dataKey}) =>
 							setLegendHoverItem(dataKey)

@@ -15,13 +15,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.tuning.rankings.web.internal.constants.ResultRankingsConstants;
+import com.liferay.portal.search.tuning.rankings.constants.ResultRankingsConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,7 +46,7 @@ public class EditRankingMVCActionCommandTest
 		_editRankingMVCActionCommand = new EditRankingMVCActionCommand();
 
 		ReflectionTestUtil.setFieldValue(
-			_editRankingMVCActionCommand, "duplicateQueryStringsDetector",
+			_editRankingMVCActionCommand, "_duplicateQueryStringsDetector",
 			duplicateQueryStringsDetector);
 		ReflectionTestUtil.setFieldValue(
 			_editRankingMVCActionCommand, "indexNameBuilder", indexNameBuilder);
@@ -89,7 +89,8 @@ public class EditRankingMVCActionCommandTest
 		setUpPortal();
 		setUpPortalUtil();
 		setUpPortletRequestParamValue(
-			_actionRequest, ResultRankingsConstants.ACTIVATE, Constants.CMD);
+			_actionRequest, ResultRankingsConstants.ACTION_ACTIVATE,
+			Constants.CMD);
 
 		_editRankingMVCActionCommand.doProcessAction(
 			_actionRequest, _actionResponse);
@@ -130,7 +131,8 @@ public class EditRankingMVCActionCommandTest
 		setUpPortal();
 		setUpPortalUtil();
 		setUpPortletRequestParamValue(
-			_actionRequest, ResultRankingsConstants.DEACTIVATE, Constants.CMD);
+			_actionRequest, ResultRankingsConstants.ACTION_DEACTIVATE,
+			Constants.CMD);
 
 		_editRankingMVCActionCommand.doProcessAction(
 			_actionRequest, _actionResponse);
@@ -182,6 +184,7 @@ public class EditRankingMVCActionCommandTest
 		).sendRedirect(
 			Mockito.anyString()
 		);
+
 		Mockito.verify(
 			_actionResponse, Mockito.times(1)
 		).setRenderParameter(
@@ -249,7 +252,9 @@ public class EditRankingMVCActionCommandTest
 				else if (argument.equals(WebKeys.PORTLET_ID)) {
 					return "thePortletId";
 				}
-				else if (argument.equals(JavaConstants.JAVAX_PORTLET_CONFIG)) {
+				else if (argument.equals(
+							JavaConstants.JAKARTA_PORTLET_CONFIG)) {
+
 					return portletConfig;
 				}
 

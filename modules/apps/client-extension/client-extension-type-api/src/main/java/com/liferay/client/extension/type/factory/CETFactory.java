@@ -13,10 +13,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collection;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -28,19 +28,19 @@ public interface CETFactory {
 
 	public CET create(
 			CETConfiguration cetConfiguration, long companyId,
-			String externalReferenceCode)
+			String externalReferenceCode, boolean replaceVariables)
 		throws PortalException;
 
-	public CET create(ClientExtensionEntry clientExtensionEntry)
+	public CET create(
+			ClientExtensionEntry clientExtensionEntry, boolean replaceVariables)
 		throws PortalException;
 
-	public CET create(PortletRequest portletRequest, String type)
-		throws PortalException;
+	public CET create(PortletRequest portletRequest) throws PortalException;
 
 	public Collection<String> getTypes();
 
 	public void validate(
-			UnicodeProperties newTypeSettingsUnicodeProperties,
+			long companyId, UnicodeProperties newTypeSettingsUnicodeProperties,
 			UnicodeProperties oldTypeSettingsUnicodeProperties, String type)
 		throws PortalException;
 

@@ -16,9 +16,11 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.users.admin.constants.UserScreenNavigationEntryConstants;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 import com.liferay.users.admin.management.toolbar.FilterContributor;
 import com.liferay.users.admin.search.UserSearch;
@@ -26,14 +28,14 @@ import com.liferay.users.admin.search.UserSearchTerms;
 import com.liferay.users.admin.web.internal.constants.UsersAdminWebKeys;
 import com.liferay.users.admin.web.internal.util.DisplayStyleUtil;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.LinkedHashMap;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -95,11 +97,12 @@ public class ViewFlatUsersDisplayContextFactory {
 		viewFlatUsersDisplayContext.setManagementToolbarDisplayContext(
 			managementToolbarDisplayContext);
 
+		viewFlatUsersDisplayContext.setScreenNavigationCategoryKey(
+			ParamUtil.getString(
+				httpServletRequest, "screenNavigationCategoryKey",
+				UserScreenNavigationEntryConstants.CATEGORY_KEY_USERS));
 		viewFlatUsersDisplayContext.setSearchContainer(searchContainer);
 		viewFlatUsersDisplayContext.setStatus(userSearchTerms.getStatus());
-		viewFlatUsersDisplayContext.setToolbarItem(
-			ParamUtil.getString(
-				httpServletRequest, "toolbarItem", "view-all-users"));
 		viewFlatUsersDisplayContext.setUsersListView(
 			GetterUtil.getString(
 				httpServletRequest.getAttribute("view.jsp-usersListView")));
@@ -159,12 +162,17 @@ public class ViewFlatUsersDisplayContextFactory {
 
 		if (filterContributors != null) {
 			for (FilterContributor filterContributor : filterContributors) {
+				String parameterValue = ParamUtil.getString(
+					httpServletRequest, filterContributor.getParameter(),
+					filterContributor.getDefaultValue());
+
 				params.putAll(
-					filterContributor.getSearchParameters(
-						ParamUtil.getString(
-							httpServletRequest,
-							filterContributor.getParameter(),
-							filterContributor.getDefaultValue())));
+					filterContributor.getSearchParameters(parameterValue));
+
+				if (Validator.isNotNull(parameterValue)) {
+					portletURL.setParameter(
+						filterContributor.getParameter(), parameterValue);
+				}
 			}
 		}
 

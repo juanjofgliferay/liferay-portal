@@ -553,6 +553,20 @@ public class CPDefinitionOptionRelLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<CPDefinitionOptionRel>
+		getCPOptionCPDefinitionOptionRels(long cpOptionId) {
+
+		return _cpDefinitionOptionRelLocalService.
+			getCPOptionCPDefinitionOptionRels(cpOptionId);
+	}
+
+	@Override
+	public int getCPOptionCPDefinitionOptionRelsCount(long cpOptionId) {
+		return _cpDefinitionOptionRelLocalService.
+			getCPOptionCPDefinitionOptionRelsCount(cpOptionId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
 		getExportActionableDynamicQuery(
 			com.liferay.exportimport.kernel.lar.PortletDataContext
@@ -740,3 +754,4 @@ public class CPDefinitionOptionRelLocalServiceWrapper
 		_cpDefinitionOptionRelLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2045127550

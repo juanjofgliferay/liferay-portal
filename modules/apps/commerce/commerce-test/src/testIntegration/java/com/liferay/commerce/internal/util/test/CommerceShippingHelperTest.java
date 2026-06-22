@@ -8,6 +8,7 @@ package com.liferay.commerce.internal.util.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
+import com.liferay.commerce.helper.CommerceShippingHelper;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.Dimensions;
@@ -18,7 +19,6 @@ import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.service.CommerceOrderLocalServiceUtil;
 import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
-import com.liferay.commerce.util.CommerceShippingHelper;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -195,19 +195,17 @@ public class CommerceShippingHelperTest {
 		return _cpInstanceLocalService.updateCPInstance(cpInstance);
 	}
 
-	private static CommerceInventoryWarehouse _commerceInventoryWarehouse;
-
-	@Inject
-	private static CPInstanceLocalService _cpInstanceLocalService;
-
-	private static User _user;
-
 	private CommerceChannel _commerceChannel;
 	private CommerceCurrency _commerceCurrency;
+	private CommerceInventoryWarehouse _commerceInventoryWarehouse;
 
 	@Inject
 	private CommerceShippingHelper _commerceShippingHelper;
 
+	@Inject
+	private CPInstanceLocalService _cpInstanceLocalService;
+
 	private Group _group;
+	private User _user;
 
 }

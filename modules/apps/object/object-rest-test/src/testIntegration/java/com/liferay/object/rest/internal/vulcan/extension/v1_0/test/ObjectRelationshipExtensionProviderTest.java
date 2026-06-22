@@ -6,8 +6,14 @@
 package com.liferay.object.rest.internal.vulcan.extension.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.test.util.CPTestUtil;
+import com.liferay.commerce.product.type.simple.constants.SimpleCPTypeConstants;
 import com.liferay.headless.admin.user.dto.v1_0.UserAccount;
+import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
@@ -20,13 +26,17 @@ import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalServiceUtil;
 import com.liferay.object.system.SystemObjectDefinitionManager;
 import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -79,6 +89,7 @@ public class ObjectRelationshipExtensionProviderTest {
 
 		ObjectDefinition userSystemObjectDefinition =
 			_objectDefinitionLocalService.fetchSystemObjectDefinition(
+				TestPropsValues.getCompanyId(),
 				_userSystemObjectDefinitionManager.getName());
 
 		_user = TestPropsValues.getUser();
@@ -88,7 +99,7 @@ public class ObjectRelationshipExtensionProviderTest {
 				null, _user.getUserId(),
 				_objectDefinition.getObjectDefinitionId(),
 				userSystemObjectDefinition.getObjectDefinitionId(), 0,
-				ObjectRelationshipConstants.DELETION_TYPE_PREVENT,
+				ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				StringUtil.randomId(), false,
 				ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
@@ -123,41 +134,8 @@ public class ObjectRelationshipExtensionProviderTest {
 
 	@Test
 	public void testGetExtendedProperties() throws Exception {
-		UserAccount userAccount = new UserAccount() {
-			{
-				id = _user.getUserId();
-			}
-		};
-
-		NestedFieldsContextThreadLocal.setNestedFieldsContext(null);
-
-		Map<String, Serializable> extendedProperties =
-			_extensionProvider.getExtendedProperties(
-				TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-				UserAccount.class.getName(), userAccount);
-
-		Assert.assertNull(extendedProperties);
-
-		NestedFieldsContextThreadLocal.setNestedFieldsContext(
-			_getNestedFieldsContext(RandomTestUtil.randomString()));
-
-		extendedProperties = _extensionProvider.getExtendedProperties(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			UserAccount.class.getName(), userAccount);
-
-		Assert.assertTrue(extendedProperties.isEmpty());
-
-		NestedFieldsContextThreadLocal.setNestedFieldsContext(
-			_getNestedFieldsContext(_objectRelationship.getName()));
-
-		extendedProperties = _extensionProvider.getExtendedProperties(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			UserAccount.class.getName(), userAccount);
-
-		Assert.assertEquals(
-			extendedProperties.toString(), 1, extendedProperties.size());
-		Assert.assertNotNull(
-			extendedProperties.get(_objectRelationship.getName()));
+		_testGetExtendedPropertiesWithCommerceProduct();
+		_testGetExtendedPropertiesWithUserAccount();
 	}
 
 	@Test
@@ -197,8 +175,10 @@ public class ObjectRelationshipExtensionProviderTest {
 		throws Exception {
 
 		return ObjectEntryLocalServiceUtil.addObjectEntry(
-			TestPropsValues.getUserId(), 0,
+			0, TestPropsValues.getUserId(),
 			_objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
 			HashMapBuilder.<String, Serializable>put(
 				_OBJECT_FIELD_NAME, objectFieldValue
 			).build(),
@@ -209,7 +189,7 @@ public class ObjectRelationshipExtensionProviderTest {
 		String nestedFieldName) {
 
 		return new NestedFieldsContext(
-			1, Collections.singletonList(nestedFieldName), null, null, null,
+			1, null, Collections.singletonList(nestedFieldName), null, null,
 			null);
 	}
 
@@ -219,16 +199,150 @@ public class ObjectRelationshipExtensionProviderTest {
 
 		ObjectDefinition objectDefinition =
 			_objectDefinitionLocalService.addCustomObjectDefinition(
-				TestPropsValues.getUserId(), 0, false, false, false,
+				null, TestPropsValues.getUserId(), 0, null, true, false, true,
+				false, true, false, false, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null, null,
+				ObjectDefinitionTestUtil.getRandomName(), null, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				true, ObjectDefinitionConstants.SCOPE_COMPANY,
-				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT, objectFields);
+				ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+				Collections.emptyList(), objectFields, Collections.emptyList(),
+				new ServiceContext());
 
 		return _objectDefinitionLocalService.publishCustomObjectDefinition(
 			TestPropsValues.getUserId(),
 			objectDefinition.getObjectDefinitionId());
+	}
+
+	private void _testGetExtendedPropertiesWithCommerceProduct()
+		throws Exception {
+
+		CommerceCatalog commerceCatalog = CPTestUtil.getSystemCommerceCatalog(
+			TestPropsValues.getCompanyId());
+
+		CPDefinition cpDefinition = CPTestUtil.addCPDefinitionFromCatalog(
+			commerceCatalog.getGroupId(), SimpleCPTypeConstants.NAME, true,
+			true);
+
+		ObjectDefinition cpDefinitionObjectDefinition =
+			_objectDefinitionLocalService.fetchObjectDefinitionByClassName(
+				TestPropsValues.getCompanyId(), CPDefinition.class.getName());
+
+		ObjectDefinition objectDefinition = _publishObjectDefinition(
+			Collections.singletonList(
+				ObjectFieldUtil.createObjectField(
+					"Text", "String", true, true, null,
+					RandomTestUtil.randomString(), _OBJECT_FIELD_NAME, false)));
+
+		ObjectEntry objectEntry = ObjectEntryLocalServiceUtil.addObjectEntry(
+			0, TestPropsValues.getUserId(),
+			objectDefinition.getObjectDefinitionId(),
+			ObjectEntryFolderConstants.PARENT_OBJECT_ENTRY_FOLDER_ID_DEFAULT,
+			null,
+			HashMapBuilder.<String, Serializable>put(
+				_OBJECT_FIELD_NAME, _OBJECT_FIELD_VALUE
+			).build(),
+			ServiceContextTestUtil.getServiceContext());
+
+		ObjectRelationship objectRelationship =
+			ObjectRelationshipLocalServiceUtil.addObjectRelationship(
+				null, TestPropsValues.getUserId(),
+				objectDefinition.getObjectDefinitionId(),
+				cpDefinitionObjectDefinition.getObjectDefinitionId(), 0,
+				ObjectRelationshipConstants.DELETION_TYPE_PREVENT, false,
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				StringUtil.randomId(), false,
+				ObjectRelationshipConstants.TYPE_MANY_TO_MANY, null);
+
+		ObjectRelationshipLocalServiceUtil.
+			addObjectRelationshipMappingTableValues(
+				TestPropsValues.getUserId(),
+				objectRelationship.getObjectRelationshipId(),
+				objectEntry.getPrimaryKey(), cpDefinition.getCProductId(),
+				ServiceContextTestUtil.getServiceContext());
+
+		NestedFieldsContext originalNestedFieldsContext =
+			NestedFieldsContextThreadLocal.getNestedFieldsContext();
+
+		try {
+			NestedFieldsContextThreadLocal.setNestedFieldsContext(
+				_getNestedFieldsContext(objectRelationship.getName()));
+
+			Map<String, Serializable> extendedProperties =
+				_extensionProvider.getExtendedProperties(
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					Product.class.getName(),
+					new Product() {
+						{
+							id = cpDefinition.getCPDefinitionId();
+							productId = cpDefinition.getCProductId();
+						}
+					});
+
+			Assert.assertEquals(
+				extendedProperties.toString(), 1, extendedProperties.size());
+			Assert.assertNotNull(
+				extendedProperties.get(objectRelationship.getName()));
+		}
+		finally {
+			ObjectRelationshipLocalServiceUtil.
+				deleteObjectRelationshipMappingTableValues(
+					objectRelationship.getObjectRelationshipId(),
+					objectEntry.getPrimaryKey(), cpDefinition.getCProductId());
+
+			ObjectRelationshipLocalServiceUtil.deleteObjectRelationship(
+				objectRelationship);
+
+			PersistedModelLocalService persistedModelLocalService =
+				PersistedModelLocalServiceRegistryUtil.
+					getPersistedModelLocalService(CPDefinition.class.getName());
+
+			persistedModelLocalService.deletePersistedModel(cpDefinition);
+
+			_objectDefinitionLocalService.deleteObjectDefinition(
+				objectDefinition.getObjectDefinitionId());
+
+			NestedFieldsContextThreadLocal.setNestedFieldsContext(
+				originalNestedFieldsContext);
+		}
+	}
+
+	private void _testGetExtendedPropertiesWithUserAccount() throws Exception {
+		UserAccount userAccount = new UserAccount() {
+			{
+				id = _user.getUserId();
+			}
+		};
+
+		NestedFieldsContextThreadLocal.setNestedFieldsContext(null);
+
+		Map<String, Serializable> extendedProperties =
+			_extensionProvider.getExtendedProperties(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+				UserAccount.class.getName(), userAccount);
+
+		Assert.assertNull(extendedProperties);
+
+		NestedFieldsContextThreadLocal.setNestedFieldsContext(
+			_getNestedFieldsContext(RandomTestUtil.randomString()));
+
+		extendedProperties = _extensionProvider.getExtendedProperties(
+			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			UserAccount.class.getName(), userAccount);
+
+		Assert.assertTrue(extendedProperties.isEmpty());
+
+		NestedFieldsContextThreadLocal.setNestedFieldsContext(
+			_getNestedFieldsContext(_objectRelationship.getName()));
+
+		extendedProperties = _extensionProvider.getExtendedProperties(
+			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			UserAccount.class.getName(), userAccount);
+
+		Assert.assertEquals(
+			extendedProperties.toString(), 1, extendedProperties.size());
+		Assert.assertNotNull(
+			extendedProperties.get(_objectRelationship.getName()));
 	}
 
 	private static final String _OBJECT_FIELD_NAME =
@@ -237,19 +351,21 @@ public class ObjectRelationshipExtensionProviderTest {
 	private static final String _OBJECT_FIELD_VALUE =
 		RandomTestUtil.randomString();
 
-	@Inject
-	private static ObjectDefinitionLocalService _objectDefinitionLocalService;
-
-	@Inject
-	private static ObjectFieldLocalService _objectFieldLocalService;
-
 	@Inject(
 		filter = "component.name=com.liferay.object.rest.internal.vulcan.extension.v1_0.ObjectRelationshipExtensionProvider"
 	)
 	private ExtensionProvider _extensionProvider;
 
 	private ObjectDefinition _objectDefinition;
+
+	@Inject
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
 	private ObjectEntry _objectEntry;
+
+	@Inject
+	private ObjectFieldLocalService _objectFieldLocalService;
+
 	private ObjectRelationship _objectRelationship;
 	private NestedFieldsContext _originalNestedFieldsContext;
 

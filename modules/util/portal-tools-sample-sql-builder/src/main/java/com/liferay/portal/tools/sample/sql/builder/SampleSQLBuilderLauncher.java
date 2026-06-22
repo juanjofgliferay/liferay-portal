@@ -44,7 +44,8 @@ public class SampleSQLBuilderLauncher {
 		File tempDir = FileUtil.createTempFolder();
 
 		ClassLoader classLoader = new URLClassLoader(
-			_getURLs(contextClassLoader, tempDir.toPath()), null);
+			_getURLs(contextClassLoader, tempDir.toPath()),
+			ClassLoader.getPlatformClassLoader());
 
 		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
 				classLoader)) {
@@ -68,6 +69,7 @@ public class SampleSQLBuilderLauncher {
 
 		try (FileSystem fileSystem = FileSystems.newFileSystem(
 				url.toURI(), Collections.emptyMap());
+
 			DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
 				fileSystem.getPath("/lib"), "*.jar")) {
 

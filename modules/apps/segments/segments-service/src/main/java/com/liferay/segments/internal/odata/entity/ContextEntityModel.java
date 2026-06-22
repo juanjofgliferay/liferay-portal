@@ -10,7 +10,6 @@ import com.liferay.portal.odata.entity.CollectionEntityField;
 import com.liferay.portal.odata.entity.ComplexEntityField;
 import com.liferay.portal.odata.entity.DateEntityField;
 import com.liferay.portal.odata.entity.DateTimeEntityField;
-import com.liferay.portal.odata.entity.DoubleEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.StringEntityField;
@@ -49,24 +48,26 @@ public class ContextEntityModel implements EntityModel {
 					Context.LAST_SIGN_IN_DATE_TIME,
 					locale -> Context.LAST_SIGN_IN_DATE_TIME,
 					locale -> Context.LAST_SIGN_IN_DATE_TIME),
-				new DoubleEntityField(
-					Context.DEVICE_SCREEN_RESOLUTION_HEIGHT,
-					locale -> Context.DEVICE_SCREEN_RESOLUTION_HEIGHT),
-				new DoubleEntityField(
-					Context.DEVICE_SCREEN_RESOLUTION_WIDTH,
-					locale -> Context.DEVICE_SCREEN_RESOLUTION_WIDTH),
 				new StringEntityField(
 					Context.BROWSER, locale -> Context.BROWSER),
 				new StringEntityField(
-					Context.DEVICE_BRAND, locale -> Context.DEVICE_BRAND),
+					Context.BROWSER_VERSION, locale -> Context.BROWSER_VERSION),
 				new StringEntityField(
-					Context.DEVICE_MODEL, locale -> Context.DEVICE_MODEL),
+					Context.DEVICE_TYPE, locale -> Context.DEVICE_TYPE),
+				new StringEntityField(
+					Context.GEOLOCATION, locale -> Context.GEOLOCATION),
 				new StringEntityField(
 					Context.HOSTNAME, locale -> Context.HOSTNAME),
 				new StringEntityField(
 					Context.LANGUAGE_ID, locale -> Context.LANGUAGE_ID),
 				new StringEntityField(
+					Context.LOCAL_TIME, locale -> Context.LOCAL_TIME),
+				new StringEntityField(
+					Context.PATHNAME, locale -> Context.PATHNAME),
+				new StringEntityField(
 					Context.REFERRER_URL, locale -> Context.REFERRER_URL),
+				new StringEntityField(
+					Context.TIME_ZONE, locale -> Context.TIME_ZONE),
 				new StringEntityField(Context.URL, locale -> Context.URL),
 				new StringEntityField(
 					Context.USER_AGENT, locale -> Context.USER_AGENT)));

@@ -19,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -111,11 +115,7 @@ public class DLFileEntryPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		DLFileEntry newDLFileEntry = _persistence.create(pk);
-
-		newDLFileEntry.setMvccVersion(RandomTestUtil.nextLong());
+		DLFileEntry newDLFileEntry = addDLFileEntry();
 
 		newDLFileEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
@@ -174,6 +174,8 @@ public class DLFileEntryPersistenceTest {
 		newDLFileEntry.setCustom2ImageId(RandomTestUtil.nextLong());
 
 		newDLFileEntry.setManualCheckInRequired(RandomTestUtil.randomBoolean());
+
+		newDLFileEntry.setDisplayDate(RandomTestUtil.nextDate());
 
 		newDLFileEntry.setExpirationDate(RandomTestUtil.nextDate());
 
@@ -264,6 +266,9 @@ public class DLFileEntryPersistenceTest {
 		Assert.assertEquals(
 			existingDLFileEntry.isManualCheckInRequired(),
 			newDLFileEntry.isManualCheckInRequired());
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingDLFileEntry.getDisplayDate()),
+			Time.getShortTimestamp(newDLFileEntry.getDisplayDate()));
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingDLFileEntry.getExpirationDate()),
 			Time.getShortTimestamp(newDLFileEntry.getExpirationDate()));
@@ -491,6 +496,15 @@ public class DLFileEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_C_C() throws Exception {
+		_persistence.countByC_C_C(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.nextLong());
+
+		_persistence.countByC_C_C(0L, 0L, 0L);
+	}
+
+	@Test
 	public void testCountByS_L_C1_C2() throws Exception {
 		_persistence.countByS_L_C1_C2(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -533,6 +547,24 @@ public class DLFileEntryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -548,8 +580,9 @@ public class DLFileEntryPersistenceTest {
 			true, "title", true, "description", true, "fileEntryTypeId", true,
 			"version", true, "size", true, "smallImageId", true, "largeImageId",
 			true, "custom1ImageId", true, "custom2ImageId", true,
-			"manualCheckInRequired", true, "expirationDate", true, "reviewDate",
-			true, "lastPublishDate", true);
+			"manualCheckInRequired", true, "displayDate", true,
+			"expirationDate", true, "reviewDate", true, "lastPublishDate",
+			true);
 	}
 
 	@Test
@@ -890,8 +923,6 @@ public class DLFileEntryPersistenceTest {
 
 		DLFileEntry dlFileEntry = _persistence.create(pk);
 
-		dlFileEntry.setMvccVersion(RandomTestUtil.nextLong());
-
 		dlFileEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		dlFileEntry.setUuid(RandomTestUtil.randomString());
@@ -950,6 +981,8 @@ public class DLFileEntryPersistenceTest {
 
 		dlFileEntry.setManualCheckInRequired(RandomTestUtil.randomBoolean());
 
+		dlFileEntry.setDisplayDate(RandomTestUtil.nextDate());
+
 		dlFileEntry.setExpirationDate(RandomTestUtil.nextDate());
 
 		dlFileEntry.setReviewDate(RandomTestUtil.nextDate());
@@ -966,3 +999,4 @@ public class DLFileEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1990051859

@@ -1,537 +1,955 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Subscription Details renders subscription details for BASIC PLAN 1`] = `
+<div
+  class="card card-root"
+  data-testid="subscription-details"
+>
+  <div
+    class="card-header py-2"
+  >
+    <div
+      class="card-title"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        SUBSCRIPTION DETAILS
+      </span>
+    </div>
+  </div>
+  <hr
+    class="m-0"
+  />
+  <div
+    class="card-body"
+  >
+    <div
+      class="mb-2"
+    >
+      <span
+        class="text-3 font-weight-semi-bold"
+      >
+        Basic
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Individuals
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        1,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Page Views
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        300,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Workspace Users
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        Unlimited
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Subscription Details renders subscription details for BUSINESS PLAN 1`] = `
+<div
+  class="card card-root"
+  data-testid="subscription-details"
+>
+  <div
+    class="card-header py-2"
+  >
+    <div
+      class="card-title"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        SUBSCRIPTION DETAILS
+      </span>
+    </div>
+  </div>
+  <hr
+    class="m-0"
+  />
+  <div
+    class="card-body pb-0"
+  >
+    <div
+      class="mb-2"
+    >
+      <span
+        class="text-3 font-weight-semi-bold"
+      >
+        Business
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Individuals
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        10,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Page Views
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        5,000,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Workspace Users
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        Unlimited
+      </span>
+    </div>
+  </div>
+  <div
+    class="card-header pb-2"
+  >
+    <div
+      class="card-title"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        PURCHASED ADD-ONS
+      </span>
+    </div>
+  </div>
+  <div
+    class="card-body"
+  >
+    <hr
+      class="mt-0"
+    />
+    <div
+      class="mb-2"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        Tailor limits to business needs. Incrementally increase individual or page view limits as needed without committing to a new plan.
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Individuals
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        10,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Page Views
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        5,000,000
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Subscription Details renders subscription details for ENTERPRISE PLAN 1`] = `
+<div
+  class="card card-root"
+  data-testid="subscription-details"
+>
+  <div
+    class="card-header py-2"
+  >
+    <div
+      class="card-title"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        SUBSCRIPTION DETAILS
+      </span>
+    </div>
+  </div>
+  <hr
+    class="m-0"
+  />
+  <div
+    class="card-body pb-0"
+  >
+    <div
+      class="mb-2"
+    >
+      <span
+        class="text-3 font-weight-semi-bold"
+      >
+        Enterprise
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Individuals
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        100,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Page Views
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        60,000,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Workspace Users
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        Unlimited
+      </span>
+    </div>
+  </div>
+  <div
+    class="card-header pb-2"
+  >
+    <div
+      class="card-title"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        PURCHASED ADD-ONS
+      </span>
+    </div>
+  </div>
+  <div
+    class="card-body"
+  >
+    <hr
+      class="mt-0"
+    />
+    <div
+      class="mb-2"
+    >
+      <span
+        class="text-3 text-secondary"
+      >
+        Tailor limits to business needs. Incrementally increase individual or page view limits as needed without committing to a new plan.
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Individuals
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        10,000
+      </span>
+    </div>
+    <div
+      class="d-flex justify-content-between mb-1"
+    >
+      <span
+        class="text-3 text-secondary font-weight-semi-bold"
+      >
+        Page Views
+      </span>
+      <span
+        class="text-3 text-secondary"
+      >
+        5,000,000
+      </span>
+    </div>
+  </div>
+</div>
+`;
+
 exports[`UsageOverview should render 1`] = `
 <div>
   <div
-    class="settings-base-page-root usage-overview-page-root"
+    class="settings-root"
   >
-    <div
-      class="maintenance-alert-root"
-    />
-    <div
-      class="content-header"
+    <nav
+      class="bg-white mb-4 tbar component-tbar"
     >
-      <div
-        class="header-text"
+      <ul
+        class="mx-4 tbar-nav"
       >
-        <div
-          class="d-flex"
+        <li
+          class="tbar-item"
         >
-          <h3
-            class="title-text text-truncate"
+          <div
+            class="component-action"
+          >
+            <a
+              aria-label="Back"
+              class="text-secondary"
+              href="/workspace/2000"
+            >
+              <svg
+                class="lexicon-icon lexicon-icon-angle-left mb-1"
+                role="presentation"
+              >
+                <use
+                  href="#angle-left"
+                />
+              </svg>
+            </a>
+          </div>
+        </li>
+        <li
+          class="pl-0 tbar-item"
+        >
+          <div
+            class="tbar-section"
           >
             <span
-              class="text-truncate"
-              data-tooltip="false"
-              title=""
+              class="text-dark"
             >
-              Current Usage Limits
+              <span
+                class="text-5 font-weight-bold"
+              >
+                Settings
+              </span>
             </span>
-          </h3>
+          </div>
+        </li>
+      </ul>
+    </nav>
+    <div
+      class="content-wrapper"
+    >
+      <nav
+        class="section-side settings-side-bar"
+      >
+        <div>
+          <h5
+            class="section-title"
+          >
+            Workspace Data
+          </h5>
+          <ul
+            class="nav"
+          >
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/apis/tokens"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-ac_api icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#ac_api"
+                    />
+                  </svg>
+                </span>
+                APIs
+              </a>
+            </li>
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/definitions"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-definitions icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#definitions"
+                    />
+                  </svg>
+                </span>
+                Definitions
+              </a>
+            </li>
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/data-privacy"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-data_privacy_lock icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#data_privacy_lock"
+                    />
+                  </svg>
+                </span>
+                Data Control & Privacy
+              </a>
+            </li>
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/data-source"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-faro_data_source icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#faro_data_source"
+                    />
+                  </svg>
+                </span>
+                Data Sources
+              </a>
+            </li>
+          </ul>
         </div>
-      </div>
+        <div>
+          <h5
+            class="section-title"
+          >
+            Workspace Settings
+          </h5>
+          <ul
+            class="nav"
+          >
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/users"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-user_management icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#user_management"
+                    />
+                  </svg>
+                </span>
+                User Management
+              </a>
+            </li>
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/properties"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-ac_page icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#ac_page"
+                    />
+                  </svg>
+                </span>
+                Properties
+              </a>
+            </li>
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/usage"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-usage icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#usage"
+                    />
+                  </svg>
+                </span>
+                Subscription & Usage
+              </a>
+            </li>
+            <li
+              class="item"
+            >
+              <a
+                class="button-root"
+                href="/workspace/2000/settings/workspace"
+              >
+                <span
+                  class="icon-wrapper"
+                >
+                  <svg
+                    class="lexicon-icon lexicon-icon-cog icon-root"
+                    role="presentation"
+                  >
+                    <use
+                      href="#cog"
+                    />
+                  </svg>
+                </span>
+                Workspace
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
       <div
-        class="page-actions-container"
-      />
-    </div>
-    <div>
-      <div
-        class="row"
+        class="content section-main"
       >
         <div
-          class="col-xl-8"
+          class="settings-base-page-root"
         >
           <div
-            class="text-secondary"
+            class="maintenance-alert-root"
+          />
+          <div
+            class="content-header has-page-actions"
           >
-            <p>
-              <b>
+            <div
+              class="header-text"
+            >
+              <div
+                class="d-flex"
+              >
+                <h3
+                  class="title-text text-truncate"
+                >
+                  <span
+                    class="text-truncate"
+                    data-tooltip="false"
+                    title=""
+                  >
+                    Subscription & Usage
+                  </span>
+                </h3>
+              </div>
+              <div
+                class="description"
+              >
                 Plans are limited by the total amount of individuals and page views.
-              </b>
-            </p>
-            <p>
-              When either limit is exceeded, the current plan will either have to be upgraded or add-ons will have to be purchased to accommodate the overage.
-            </p>
-          </div>
-          <div
-            class="card card-root"
-          >
-            <div
-              class="card-body"
-            >
-              <div
-                class="overview-usage-metric-root"
-              >
-                <h3
-                  class="metric-name"
-                >
-                  Individuals
-                </h3>
-                <div
-                  class="metric-breakdown"
-                >
-                  <div
-                    class="sticker sticker-root sticker-static sticker-rounded sticker-dark"
-                  >
-                    <svg
-                      class="lexicon-icon lexicon-icon-ac-individual icon-root"
-                      role="presentation"
-                    >
-                      <use
-                        href="#ac-individual"
-                      />
-                    </svg>
-                  </div>
-                  <div
-                    class="metric-breakdown-content"
-                  >
-                    <div>
-                      <span>
-                        <span
-                          class="metric-current"
-                        >
-                          2,057
-                        </span>
-                         of 
-                        <span
-                          class="metric-limit"
-                        >
-                          105,000
-                        </span>
-                      </span>
-                      <span
-                        class="text-secondary usage-since-label semibold"
-                      >
-                        2% since July 8, 2018
-                      </span>
-                    </div>
-                    <div
-                      class="text-muted small semibold"
-                    >
-                      Enterprise Plan 95,000 + 5,000 Add-On (2x)
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="metric-bar-root"
-                >
-                  <div
-                    class="bar bar-primary bar-default"
-                    style="width: 2%;"
-                  />
-                </div>
-                <div
-                  class="metric-definition text-secondary"
-                >
-                  Contacts with a known email address that are synced to Analytics Cloud.
-                </div>
-              </div>
-              <div
-                class="overview-usage-metric-root"
-              >
-                <h3
-                  class="metric-name"
-                >
-                  Page Views
-                </h3>
-                <div
-                  class="metric-breakdown"
-                >
-                  <div
-                    class="sticker sticker-root sticker-static sticker-rounded sticker-dark"
-                  >
-                    <svg
-                      class="lexicon-icon lexicon-icon-faro-page-views icon-root"
-                      role="presentation"
-                    >
-                      <use
-                        href="#faro-page-views"
-                      />
-                    </svg>
-                  </div>
-                  <div
-                    class="metric-breakdown-content"
-                  >
-                    <div>
-                      <span>
-                        <span
-                          class="metric-current"
-                        >
-                          100,023
-                        </span>
-                         of 
-                        <span
-                          class="metric-limit"
-                        >
-                          7,000,000
-                        </span>
-                      </span>
-                      <span
-                        class="text-secondary usage-since-label semibold"
-                      >
-                        1.4% since July 8, 2018
-                      </span>
-                    </div>
-                    <div
-                      class="text-muted small semibold"
-                    >
-                      Enterprise Plan 2,000,000 + 5,000,000 Add-On (1x)
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="metric-bar-root"
-                >
-                  <div
-                    class="bar bar-primary bar-default"
-                    style="width: 1%;"
-                  />
-                </div>
-                <div
-                  class="metric-definition text-secondary"
-                >
-                  Non-unique visits to any of the pages synced to Analytics Cloud.
-                </div>
               </div>
             </div>
+            <div
+              class="page-actions-container"
+            >
+              <a
+                class="button-root btn btn-primary"
+                href="https://support.liferay.com/"
+                rel="noreferrer noopener"
+                target="_blank"
+              >
+                <svg
+                  class="lexicon-icon lexicon-icon-shortcut mr-2"
+                  role="presentation"
+                >
+                  <use
+                    href="#shortcut"
+                  />
+                </svg>
+                Go to Customer Portal
+                <span
+                  class="sr-only"
+                >
+                  (Opens a new window)
+                </span>
+              </a>
+            </div>
           </div>
-        </div>
-        <div
-          class="col-xl-4 plans"
-        >
           <div>
-            <h4>
-              Plans
-            </h4>
             <div
-              class="text-secondary"
-            >
-              <p>
-                Balance pricing and value. Higher tiers offer more flexibility through cheaper add-ons and higher limits.
-              </p>
-            </div>
-            <div
-              class="plans-list-root"
+              class="row"
             >
               <div
-                class="panel-root"
+                class="col-xl-8"
               >
                 <div
-                  class="panel-header"
-                  role="button"
-                  tabindex="0"
+                  class="card card-root"
                 >
                   <div
-                    class="trigger"
-                  >
-                    <svg
-                      class="lexicon-icon lexicon-icon-angle-up icon-root"
-                      role="presentation"
-                    >
-                      <use
-                        href="#angle-up"
-                      />
-                    </svg>
-                  </div>
-                  <div
-                    class="panel-title"
+                    class="card-header"
                   >
                     <div
-                      class="plan-title"
+                      class="card-title"
+                    >
+                      Usage Limits
+                    </div>
+                  </div>
+                  <div
+                    class="card-body"
+                  >
+                    <p>
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        When either limit is exceeded, the current plan will either have to be upgraded or add-ons will have to be purchased to accommodate the overage.
+                      </span>
+                    </p>
+                    <p
+                      class="mb-0"
+                      data-testid="next-anniversary-date"
+                    >
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        Plan usage resets on 
+                        <b>
+                          Jul 08, 2019
+                        </b>
+                        .
+                      </span>
+                    </p>
+                    <div
+                      class="mt-4 mb-5"
+                    >
+                      <span
+                        class="text-3 text-secondary font-weight-semi-bold"
+                      >
+                        KNOWN INDIVIDUALS
+                      </span>
+                      <hr
+                        class="my-2"
+                      />
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        Active users logged on your DXP instance have been tracked by Analytics Cloud since Jul 08, 2018.
+                      </span>
+                      <div
+                        class="mt-3"
+                      >
+                        <div
+                          class="d-flex justify-content-between mb-1"
+                        >
+                          <span
+                            class="text-3 text-secondary"
+                          >
+                            CURRENT USAGE
+                          </span>
+                          <span
+                            class="text-3 text-secondary"
+                          >
+                            2,057 of 105,000 - 2% known individuals were used.
+                          </span>
+                        </div>
+                        <div
+                          class="recharts-responsive-container"
+                          style="width: 100%; height: 24px; min-width: 0;"
+                        />
+                        <span
+                          class="text-3 text-secondary"
+                        >
+                          102,943 known individuals are available.
+                        </span>
+                        <div
+                          class="mt-4"
+                        >
+                          <div
+                            class="mb-1"
+                          >
+                            <span
+                              class="text-3 text-secondary"
+                            >
+                              INDIVIDUALS BREAKDOWN
+                            </span>
+                          </div>
+                          <div
+                            class="recharts-responsive-container"
+                            style="width: 100%; height: 24px; min-width: 0;"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <span
+                      class="text-3 text-secondary font-weight-semi-bold"
+                    >
+                      PAGE VIEWS
+                    </span>
+                    <hr
+                      class="my-2"
+                    />
+                    <span
+                      class="text-3 text-secondary"
+                    >
+                      Total page views have been tracked by Analytics Cloud since Jul 08, 2018.
+                    </span>
+                    <div
+                      class="mt-3"
                     >
                       <div
-                        class="plan-name"
+                        class="d-flex justify-content-between mb-1"
+                      >
+                        <span
+                          class="text-3 text-secondary"
+                        >
+                          CURRENT USAGE
+                        </span>
+                        <span
+                          class="text-3 text-secondary"
+                        >
+                          100,023 of 7,000,000 - 1.4% page views were used.
+                        </span>
+                      </div>
+                      <div
+                        class="recharts-responsive-container"
+                        style="width: 100%; height: 24px; min-width: 0;"
+                      />
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        6,899,977 page views are available.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="col-xl-4"
+              >
+                <div
+                  class="card card-root"
+                  data-testid="subscription-details"
+                >
+                  <div
+                    class="card-header py-2"
+                  >
+                    <div
+                      class="card-title"
+                    >
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        SUBSCRIPTION DETAILS
+                      </span>
+                    </div>
+                  </div>
+                  <hr
+                    class="m-0"
+                  />
+                  <div
+                    class="card-body pb-0"
+                  >
+                    <div
+                      class="mb-2"
+                    >
+                      <span
+                        class="text-3 font-weight-semi-bold"
                       >
                         Enterprise
-                      </div>
-                      <div
-                        class="label label-root label-primary label-lg label-uppercase"
-                      >
-                        <span
-                          class="label-item"
-                        >
-                          Current Plan
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div
-                  class="panel-body"
-                >
-                  <div
-                    class="plan-breakdown small"
-                  >
-                    <div
-                      class="limits"
-                    >
-                      <ul>
-                        <li>
-                          <svg
-                            class="lexicon-icon lexicon-icon-ac-individual icon-root"
-                            role="presentation"
-                          >
-                            <use
-                              href="#ac-individual"
-                            />
-                          </svg>
-                          <span
-                            class="limit-amount semibold"
-                          >
-                            100,000
-                          </span>
-                          <span
-                            class="text-secondary"
-                          >
-                            Individuals
-                          </span>
-                        </li>
-                        <li>
-                          <svg
-                            class="lexicon-icon lexicon-icon-faro-page-views icon-root"
-                            role="presentation"
-                          >
-                            <use
-                              href="#faro-page-views"
-                            />
-                          </svg>
-                          <span
-                            class="limit-amount semibold"
-                          >
-                            60,000,000
-                          </span>
-                          <span
-                            class="text-secondary"
-                          >
-                            Page Views
-                          </span>
-                        </li>
-                        <li>
-                          <svg
-                            class="lexicon-icon lexicon-icon-ac-users icon-root"
-                            role="presentation"
-                          >
-                            <use
-                              href="#ac-users"
-                            />
-                          </svg>
-                          <span
-                            class="limit-amount semibold"
-                          >
-                            Unlimited
-                          </span>
-                          <span
-                            class="text-secondary"
-                          >
-                            Users
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                    <div
-                      class="addons"
-                    >
-                      <p
-                        class="text-secondary semibold addon-list-header"
-                      >
-                        Add-ons
-                      </p>
-                      <ul>
-                        <li
-                          class="extra-small"
-                        >
-                          <span
-                            class="limit-amount semibold"
-                          >
-                            5,000
-                          </span>
-                          <span
-                            class="text-secondary"
-                          >
-                            <b
-                              class="addon-name"
-                            >
-                              Individuals
-                            </b>
-                             for 
-                            500
-                             USD
-                          </span>
-                        </li>
-                        <li
-                          class="extra-small"
-                        >
-                          <span
-                            class="limit-amount semibold"
-                          >
-                            5,000,000
-                          </span>
-                          <span
-                            class="text-secondary"
-                          >
-                            <b
-                              class="addon-name"
-                            >
-                              Page Views
-                            </b>
-                             for 
-                            250
-                             USD
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h4>
-              Add-ons
-            </h4>
-            <div
-              class="text-secondary"
-            >
-              <p>
-                Tailor limits to business needs. Incrementally increase individual or page view limits as needed without committing to a new plan.
-              </p>
-            </div>
-            <div
-              class="addons-list-root"
-            >
-              <div
-                class="panel-root"
-              >
-                <div
-                  class="panel-body"
-                >
-                  <div
-                    class="plan-title"
-                  >
-                    <div
-                      class="plan-name"
-                    >
-                      <span>
-                        <svg
-                          class="lexicon-icon lexicon-icon-ac-individual icon-root"
-                          role="presentation"
-                        >
-                          <use
-                            href="#ac-individual"
-                          />
-                        </svg>
-                        <span
-                          class="limit-amount semibold"
-                        >
-                          <b
-                            class="text-secondary"
-                          >
-                            +
-                          </b>
-                          5,000
-                        </span>
-                        <span
-                          class="text-secondary"
-                        >
-                          <b
-                            class="details-label"
-                          >
-                            Individuals
-                          </b>
-                        </span>
                       </span>
                     </div>
                     <div
-                      class="label label-root label-primary label-lg label-uppercase"
+                      class="d-flex justify-content-between mb-1"
                     >
                       <span
-                        class="label-item"
+                        class="text-3 text-secondary font-weight-semi-bold"
                       >
-                        2X
+                        Individuals
+                      </span>
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        100,000
                       </span>
                     </div>
                     <div
-                      class="annual-price"
-                    >
-                      <div>
-                        <strong>
-                          500 USD
-                        </strong>
-                        <span
-                          class="text-secondary small"
-                        >
-                           / year
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                class="panel-root"
-              >
-                <div
-                  class="panel-body"
-                >
-                  <div
-                    class="plan-title"
-                  >
-                    <div
-                      class="plan-name"
-                    >
-                      <span>
-                        <svg
-                          class="lexicon-icon lexicon-icon-faro-page-views icon-root"
-                          role="presentation"
-                        >
-                          <use
-                            href="#faro-page-views"
-                          />
-                        </svg>
-                        <span
-                          class="limit-amount semibold"
-                        >
-                          <b
-                            class="text-secondary"
-                          >
-                            +
-                          </b>
-                          5,000,000
-                        </span>
-                        <span
-                          class="text-secondary"
-                        >
-                          <b
-                            class="details-label"
-                          >
-                            Page Views
-                          </b>
-                        </span>
-                      </span>
-                    </div>
-                    <div
-                      class="label label-root label-primary label-lg label-uppercase"
+                      class="d-flex justify-content-between mb-1"
                     >
                       <span
-                        class="label-item"
+                        class="text-3 text-secondary font-weight-semi-bold"
                       >
-                        1X
+                        Page Views
+                      </span>
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        60,000,000
                       </span>
                     </div>
                     <div
-                      class="annual-price"
+                      class="d-flex justify-content-between mb-1"
                     >
-                      <div>
-                        <strong>
-                          250 USD
-                        </strong>
-                        <span
-                          class="text-secondary small"
-                        >
-                           / year
-                        </span>
-                      </div>
+                      <span
+                        class="text-3 text-secondary font-weight-semi-bold"
+                      >
+                        Workspace Users
+                      </span>
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        Unlimited
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    class="card-header pb-2"
+                  >
+                    <div
+                      class="card-title"
+                    >
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        PURCHASED ADD-ONS
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    class="card-body"
+                  >
+                    <hr
+                      class="mt-0"
+                    />
+                    <div
+                      class="mb-2"
+                    >
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        Tailor limits to business needs. Incrementally increase individual or page view limits as needed without committing to a new plan.
+                      </span>
+                    </div>
+                    <div
+                      class="d-flex justify-content-between mb-1"
+                    >
+                      <span
+                        class="text-3 text-secondary font-weight-semi-bold"
+                      >
+                        Individuals
+                      </span>
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        10,000
+                      </span>
+                    </div>
+                    <div
+                      class="d-flex justify-content-between mb-1"
+                    >
+                      <span
+                        class="text-3 text-secondary font-weight-semi-bold"
+                      >
+                        Page Views
+                      </span>
+                      <span
+                        class="text-3 text-secondary"
+                      >
+                        5,000,000
+                      </span>
                     </div>
                   </div>
                 </div>

@@ -8,6 +8,7 @@ package com.liferay.portal.kernel.repository.model;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.lock.Lock;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.repository.capabilities.Capability;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.util.Accessor;
@@ -24,7 +25,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @JSON
 @ProviderType
-public interface FileEntry extends RepositoryEntry, RepositoryModel<FileEntry> {
+public interface FileEntry
+	extends ExternalReferenceCodeModel, RepositoryEntry,
+			RepositoryModel<FileEntry> {
 
 	public static final Accessor<FileEntry, Long> FILE_ENTRY_ID_ACCESSOR =
 		new Accessor<FileEntry, Long>() {
@@ -70,7 +73,13 @@ public interface FileEntry extends RepositoryEntry, RepositoryModel<FileEntry> {
 	@Override
 	public Date getCreateDate();
 
+	public default long getCtCollectionId() {
+		return 0;
+	}
+
 	public String getDescription();
+
+	public Date getDisplayDate();
 
 	public Date getExpirationDate();
 

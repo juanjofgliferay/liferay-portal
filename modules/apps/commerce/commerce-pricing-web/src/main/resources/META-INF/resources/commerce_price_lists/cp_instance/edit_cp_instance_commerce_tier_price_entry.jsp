@@ -30,6 +30,8 @@ CPInstance cpInstance = cpInstanceCommerceTierPriceEntryDisplayContext.getCPInst
 		<aui:input name="cpInstanceId" type="hidden" value="<%= cpInstance.getCPInstanceId() %>" />
 
 		<liferay-ui:error exception="<%= CommerceTierPriceEntryMinQuantityException.class %>" message="the-specified-quantity-is-not-allowed" />
+		<liferay-ui:error exception="<%= CommerceTierPriceEntryPriceException.class %>" message="please-enter-a-valid-price" />
+		<liferay-ui:error exception="<%= CommerceTierPriceEntryQuantityException.class %>" message="please-enter-a-valid-quantity" />
 		<liferay-ui:error exception="<%= DuplicateCommerceTierPriceEntryException.class %>" message="there-is-already-a-tier-price-entry-with-the-same-minimum-quantity" />
 
 		<div class="row">
@@ -40,19 +42,11 @@ CPInstance cpInstance = cpInstanceCommerceTierPriceEntryDisplayContext.getCPInst
 
 				if ((commerceTierPriceEntry != null) && (commerceTierPriceEntry.getMinQuantity() != null)) {
 					minQuantity = commerceTierPriceEntry.getMinQuantity();
-
-					minQuantity = minQuantity.stripTrailingZeros();
 				}
 
 				CommercePriceList commercePriceList = commercePriceEntry.getCommercePriceList();
 
 				CommerceCurrency commerceCurrency = commercePriceList.getCommerceCurrency();
-
-				BigDecimal price = BigDecimal.ZERO;
-
-				if ((commerceTierPriceEntry != null) && (commerceTierPriceEntry.getPrice() != null)) {
-					price = commerceCurrency.round(commerceTierPriceEntry.getPrice());
-				}
 
 				boolean discountDiscovery = BeanParamUtil.getBoolean(commerceTierPriceEntry, request, "discountDiscovery", true);
 
@@ -63,13 +57,14 @@ CPInstance cpInstance = cpInstanceCommerceTierPriceEntryDisplayContext.getCPInst
 				}
 				%>
 
-				<aui:input label='<%= LanguageUtil.get(request, "quantity") %>' name="minQuantity" required="<%= true %>" value="<%= minQuantity.toString() %>">
+				<aui:input label='<%= LanguageUtil.get(request, "quantity") %>' name="minQuantity" required="<%= true %>" value="<%= BigDecimalUtil.stripTrailingZeros(minQuantity) %>">
 					<aui:validator name="min"><%= 0 %></aui:validator>
+					<aui:validator name="number" />
 				</aui:input>
 
 				<aui:model-context bean="<%= commerceTierPriceEntry %>" model="<%= CommerceTierPriceEntry.class %>" />
 
-				<aui:input label="tier-price" name="price" required="<%= true %>" suffix="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" type="text" value="<%= commerceCurrency.round(price) %>">
+				<aui:input label="tier-price" name="price" required="<%= true %>" suffix="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" type="currency" value="<%= cpInstanceCommerceTierPriceEntryDisplayContext.getFormattedPrice(commerceCurrency) %>">
 					<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 					<aui:validator name="number" />
 				</aui:input>
@@ -81,25 +76,25 @@ CPInstance cpInstance = cpInstanceCommerceTierPriceEntryDisplayContext.getCPInst
 						<label class="control-label" for="<portlet:namespace />discountLevel1"><liferay-ui:message key="discount-levels" /></label>
 
 						<div class="d-flex">
-							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l1" name="discountLevel1" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : commerceTierPriceEntry.getDiscountLevel1() %>" wrapperCssClass="discount-label-wrapper">
+							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l1" name="discountLevel1" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : cpInstanceCommerceTierPriceEntryDisplayContext.getFormattedDiscount(commerceCurrency, commerceTierPriceEntry.getDiscountLevel1()) %>" wrapperCssClass="discount-label-wrapper">
 								<aui:validator name="min"><%= CommercePriceConstants.PRICE_VALUE_MIN %></aui:validator>
 								<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 								<aui:validator name="number" />
 							</aui:input>
 
-							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l2" name="discountLevel2" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : commerceTierPriceEntry.getDiscountLevel2() %>" wrapperCssClass="discount-label-wrapper">
+							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l2" name="discountLevel2" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : cpInstanceCommerceTierPriceEntryDisplayContext.getFormattedDiscount(commerceCurrency, commerceTierPriceEntry.getDiscountLevel2()) %>" wrapperCssClass="discount-label-wrapper">
 								<aui:validator name="min"><%= CommercePriceConstants.PRICE_VALUE_MIN %></aui:validator>
 								<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 								<aui:validator name="number" />
 							</aui:input>
 
-							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l3" name="discountLevel3" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : commerceTierPriceEntry.getDiscountLevel3() %>" wrapperCssClass="discount-label-wrapper">
+							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l3" name="discountLevel3" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : cpInstanceCommerceTierPriceEntryDisplayContext.getFormattedDiscount(commerceCurrency, commerceTierPriceEntry.getDiscountLevel3()) %>" wrapperCssClass="discount-label-wrapper">
 								<aui:validator name="min"><%= CommercePriceConstants.PRICE_VALUE_MIN %></aui:validator>
 								<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 								<aui:validator name="number" />
 							</aui:input>
 
-							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l4" name="discountLevel4" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : commerceTierPriceEntry.getDiscountLevel4() %>" wrapperCssClass="discount-label-wrapper">
+							<aui:input disabled="<%= discountDiscovery %>" ignoreRequestValue="<%= true %>" inlineField="<%= true %>" label="l4" name="discountLevel4" type="text" value="<%= (commerceTierPriceEntry == null) ? StringPool.BLANK : cpInstanceCommerceTierPriceEntryDisplayContext.getFormattedDiscount(commerceCurrency, commerceTierPriceEntry.getDiscountLevel4()) %>" wrapperCssClass="discount-label-wrapper">
 								<aui:validator name="min"><%= CommercePriceConstants.PRICE_VALUE_MIN %></aui:validator>
 								<aui:validator name="max"><%= CommercePriceConstants.PRICE_VALUE_MAX %></aui:validator>
 								<aui:validator name="number" />

@@ -22,9 +22,9 @@ import com.liferay.headless.commerce.admin.account.resource.v1_0.AccountResource
 import com.liferay.headless.commerce.admin.account.resource.v1_0.AdminAccountGroupResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
@@ -33,15 +33,15 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLTypeExtension;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Map;
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -112,9 +112,46 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {account(id: ___){accountAddresses, accountMembers, accountOrganizations, active, customFields, dateCreated, dateModified, defaultBillingAccountAddressId, defaultShippingAccountAddressId, emailAddresses, externalReferenceCode, id, logoId, logoURL, name, root, taxId, type}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads an Account by its internal ID. Returns the account; nested addresses, members, and organizations are not included inline and are fetched through the corresponding sub-resources. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}` from the headless-admin-user module instead."
+	)
+	public Account account(@GraphQLName("id") Long id) throws Exception {
+		return _applyComponentServiceObjects(
+			_accountResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountResource -> accountResource.getAccount(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCode(externalReferenceCode: ___){accountAddresses, accountMembers, accountOrganizations, active, customFields, dateCreated, dateModified, defaultBillingAccountAddressId, defaultShippingAccountAddressId, emailAddresses, externalReferenceCode, id, logoId, logoURL, name, root, taxId, type}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads an Account by its external reference code. Returns the account; nested addresses, members, and organizations are not included inline and are fetched through the corresponding sub-resources. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public Account accountByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountResource ->
+				accountResource.getAccountByExternalReferenceCode(
+					externalReferenceCode));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accounts(filter: ___, page: ___, pageSize: ___, search: ___, sorts: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists Accounts with paging, search, filter, and sort. Filterable and sortable fields -- dateCreated, dateModified, externalReferenceCode, name, active, taxId, and type. Search corpus -- the account's indexed name and description fields. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts` from the headless-admin-user module instead."
+	)
 	public AccountPage accounts(
 			@GraphQLName("search") String search,
 			@GraphQLName("filter") String filterString,
@@ -137,32 +174,19 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCode(externalReferenceCode: ___){accountAddresses, accountMembers, accountOrganizations, active, customFields, dateCreated, dateModified, defaultBillingAccountAddressId, defaultShippingAccountAddressId, emailAddresses, externalReferenceCode, id, logoId, logoURL, name, root, taxId, type}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountAddress(id: ___){city, countryISOCode, defaultBilling, defaultShipping, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, type, zip}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
-	public Account accountByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+	@GraphQLField(
+		description = "Reads an account address by its internal ID. Returns the account address. Deprecated. Use `GET /o/headless-admin-user/v1.0/postal-addresses/{postalAddressId}` from the headless-admin-user module instead."
+	)
+	public AccountAddress accountAddress(@GraphQLName("id") Long id)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_accountResourceComponentServiceObjects,
+			_accountAddressResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountResource ->
-				accountResource.getAccountByExternalReferenceCode(
-					externalReferenceCode));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {account(id: ___){accountAddresses, accountMembers, accountOrganizations, active, customFields, dateCreated, dateModified, defaultBillingAccountAddressId, defaultShippingAccountAddressId, emailAddresses, externalReferenceCode, id, logoId, logoURL, name, root, taxId, type}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public Account account(@GraphQLName("id") Long id) throws Exception {
-		return _applyComponentServiceObjects(
-			_accountResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountResource -> accountResource.getAccount(id));
+			accountAddressResource -> accountAddressResource.getAccountAddress(
+				id));
 	}
 
 	/**
@@ -170,7 +194,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountAddressByExternalReferenceCode(externalReferenceCode: ___){city, countryISOCode, defaultBilling, defaultShipping, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, type, zip}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Reads an account address by its external reference code. Returns the account address. Deprecated. Use `GET /o/headless-admin-user/v1.0/postal-addresses/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
 	public AccountAddress accountAddressByExternalReferenceCode(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode)
 		throws Exception {
@@ -186,25 +212,11 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountAddress(id: ___){city, countryISOCode, defaultBilling, defaultShipping, description, externalReferenceCode, id, latitude, longitude, name, phoneNumber, regionISOCode, street1, street2, street3, type, zip}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountAddress accountAddress(@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountAddressResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountAddressResource -> accountAddressResource.getAccountAddress(
-				id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountAddresses(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists addresses for the Account identified by external reference code. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/postal-addresses` from the headless-admin-user module instead."
+	)
 	public AccountAddressPage accountByExternalReferenceCodeAccountAddresses(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("pageSize") int pageSize,
@@ -225,7 +237,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountAddresses(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists addresses for the Account identified by internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}/postal-addresses` from the headless-admin-user module instead."
+	)
 	public AccountAddressPage accountIdAccountAddresses(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -242,165 +256,11 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelBillingAddressId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelBillingAddressId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelBillingAddressId(
-					id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelCurrencyId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelCurrencyId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelCurrencyId(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelDeliveryTermId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelDeliveryTermId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelDeliveryTermId(
-					id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelDiscountId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelDiscountId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelDiscountId(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelPaymentMethodId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelPaymentMethodId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelPaymentMethodId(
-					id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelPaymentTermId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelPaymentTermId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelPaymentTermId(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelPriceListId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelPriceListId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelPriceListId(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelShippingAddressId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelShippingAddressId(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelShippingAddressId(
-					id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelUserId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelEntry accountChannelUserId(@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelEntryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelEntryResource ->
-				accountChannelEntryResource.getAccountChannelUserId(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelBillingAddresses(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account billing address channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelBillingAddresses(
 				@GraphQLName("externalReferenceCode") String
@@ -423,7 +283,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelCurrencies(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account currency channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelCurrencies(
 				@GraphQLName("externalReferenceCode") String
@@ -446,7 +308,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelDeliveryTerms(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account delivery term channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelDeliveryTerms(
 				@GraphQLName("externalReferenceCode") String
@@ -469,7 +333,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelDiscounts(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account discount channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelDiscounts(
 				@GraphQLName("externalReferenceCode") String
@@ -492,7 +358,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelPaymentMethods(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account payment method channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelPaymentMethods(
 				@GraphQLName("externalReferenceCode") String
@@ -515,7 +383,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelPaymentTerms(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account payment term channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelPaymentTerms(
 				@GraphQLName("externalReferenceCode") String
@@ -538,7 +408,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelPriceLists(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account price list channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelPriceLists(
 				@GraphQLName("externalReferenceCode") String
@@ -561,7 +433,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelShippingAddresses(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account shipping address channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelShippingAddresses(
 				@GraphQLName("externalReferenceCode") String
@@ -584,7 +458,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelUsers(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account user channel overrides for the Account identified by external reference code."
+	)
 	public AccountChannelEntryPage
 			accountByExternalReferenceCodeAccountChannelUsers(
 				@GraphQLName("externalReferenceCode") String
@@ -605,9 +481,185 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelBillingAddressId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account billing address channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelBillingAddressId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelBillingAddressId(
+					id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelCurrencyId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account currency channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelCurrencyId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelCurrencyId(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelDeliveryTermId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account delivery term channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelDeliveryTermId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelDeliveryTermId(
+					id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelDiscountId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account discount channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelDiscountId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelDiscountId(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelPaymentMethodId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account payment method channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelPaymentMethodId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelPaymentMethodId(
+					id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelPaymentTermId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account payment term channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelPaymentTermId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelPaymentTermId(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelPriceListId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account price list channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelPriceListId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelPriceListId(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelShippingAddressId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account shipping address channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelShippingAddressId(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelShippingAddressId(
+					id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelUserId(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, classExternalReferenceCode, classPK, id, overrideEligibility, priority}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads the per-account user channel override identified by its internal ID. Returns 404 when no entry exists."
+	)
+	public AccountChannelEntry accountChannelUserId(@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelEntryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelEntryResource ->
+				accountChannelEntryResource.getAccountChannelUserId(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelBillingAddresses(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account billing address channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelBillingAddresses(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -627,7 +679,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelCurrencies(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account currency channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelCurrencies(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -647,7 +701,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelDeliveryTerms(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account delivery term channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelDeliveryTerms(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -667,7 +723,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelDiscounts(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account discount channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelDiscounts(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -687,7 +745,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelPaymentMethods(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account payment method channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelPaymentMethods(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -707,7 +767,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelPaymentTerms(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account payment term channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelPaymentTerms(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -727,7 +789,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelPriceLists(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account price list channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelPriceLists(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -747,7 +811,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelShippingAddresses(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account shipping address channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelShippingAddresses(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -767,7 +833,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelUsers(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account user channel overrides for the Account identified by internal ID."
+	)
 	public AccountChannelEntryPage accountIdAccountChannelUsers(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -784,27 +852,11 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelShippingOption(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, id, shippingMethodId, shippingMethodKey, shippingOptionId, shippingOptionKey}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AccountChannelShippingOption accountChannelShippingOption(
-			@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_accountChannelShippingOptionResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			accountChannelShippingOptionResource ->
-				accountChannelShippingOptionResource.
-					getAccountChannelShippingOption(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountChannelShippingOption(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account channel shipping options for the Account identified by external reference code."
+	)
 	public AccountChannelShippingOptionPage
 			accountByExternalReferenceCodeAccountChannelShippingOption(
 				@GraphQLName("externalReferenceCode") String
@@ -827,9 +879,31 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountChannelShippingOption(id: ___){accountExternalReferenceCode, accountId, actions, channelExternalReferenceCode, channelId, id, shippingMethodId, shippingMethodKey, shippingOptionId, shippingOptionKey}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads a per-account channel shipping option by its internal ID. Returns the per-account channel shipping option. Returns 404 when no entry exists."
+	)
+	public AccountChannelShippingOption accountChannelShippingOption(
+			@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountChannelShippingOptionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountChannelShippingOptionResource ->
+				accountChannelShippingOptionResource.
+					getAccountChannelShippingOption(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountChannelShippingOption(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the per-account channel shipping options for the Account identified by internal ID."
+	)
 	public AccountChannelShippingOptionPage
 			accountIdAccountChannelShippingOption(
 				@GraphQLName("id") Long id,
@@ -850,9 +924,33 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountMember(externalReferenceCode: ___, userId: ___){accountId, accountRoles, email, externalReferenceCode, name, userExternalReferenceCode, userId}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads a single AccountMember, addressed by Account external reference code and User internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{accountExternalReferenceCode}/user-accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public AccountMember accountByExternalReferenceCodeAccountMember(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("userId") Long userId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_accountMemberResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			accountMemberResource ->
+				accountMemberResource.
+					getAccountByExternalReferenceCodeAccountMember(
+						externalReferenceCode, userId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountMembers(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the AccountMembers of the Account identified by external reference code. Each entry pairs a user with their account-scoped AccountRoles. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/user-accounts` from the headless-admin-user module instead."
+	)
 	public AccountMemberPage accountByExternalReferenceCodeAccountMembers(
 			@GraphQLName("externalReferenceCode") String externalReferenceCode,
 			@GraphQLName("pageSize") int pageSize,
@@ -871,21 +969,20 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountMember(externalReferenceCode: ___, userId: ___){accountId, accountRoles, email, externalReferenceCode, name, userExternalReferenceCode, userId}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountMember(id: ___, userId: ___){accountId, accountRoles, email, externalReferenceCode, name, userExternalReferenceCode, userId}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
-	public AccountMember accountByExternalReferenceCodeAccountMember(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("userId") Long userId)
+	@GraphQLField(
+		description = "Reads a single AccountMember, addressed by Account internal ID and User internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}/user-accounts/{userAccountId}` from the headless-admin-user module instead."
+	)
+	public AccountMember accountIdAccountMember(
+			@GraphQLName("id") Long id, @GraphQLName("userId") Long userId)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_accountMemberResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			accountMemberResource ->
-				accountMemberResource.
-					getAccountByExternalReferenceCodeAccountMember(
-						externalReferenceCode, userId));
+				accountMemberResource.getAccountIdAccountMember(id, userId));
 	}
 
 	/**
@@ -893,7 +990,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountMembers(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the AccountMembers of the Account identified by internal ID. Each entry pairs a user with their account-scoped AccountRoles. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}/user-accounts` from the headless-admin-user module instead."
+	)
 	public AccountMemberPage accountIdAccountMembers(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -910,18 +1009,25 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountMember(id: ___, userId: ___){accountId, accountRoles, email, externalReferenceCode, name, userExternalReferenceCode, userId}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountOrganization(externalReferenceCode: ___, organizationId: ___){accountId, name, organizationExternalReferenceCode, organizationId, treePath}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
-	public AccountMember accountIdAccountMember(
-			@GraphQLName("id") Long id, @GraphQLName("userId") Long userId)
+	@GraphQLField(
+		description = "Reads a single Account-Organization link, addressed by Account external reference code and Organization internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/organizations/{organizationId}` from the headless-admin-user module instead."
+	)
+	public AccountOrganization
+			accountByExternalReferenceCodeAccountOrganization(
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("organizationId") Long organizationId)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_accountMemberResourceComponentServiceObjects,
+			_accountOrganizationResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountMemberResource ->
-				accountMemberResource.getAccountIdAccountMember(id, userId));
+			accountOrganizationResource ->
+				accountOrganizationResource.
+					getAccountByExternalReferenceCodeAccountOrganization(
+						externalReferenceCode, organizationId));
 	}
 
 	/**
@@ -929,7 +1035,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountOrganizations(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the Organizations linked to the Account, addressed by Account external reference code. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/organizations` from the headless-admin-user module instead."
+	)
 	public AccountOrganizationPage
 			accountByExternalReferenceCodeAccountOrganizations(
 				@GraphQLName("externalReferenceCode") String
@@ -950,23 +1058,22 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountOrganization(externalReferenceCode: ___, organizationId: ___){accountId, name, organizationExternalReferenceCode, organizationId, treePath}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountOrganization(id: ___, organizationId: ___){accountId, name, organizationExternalReferenceCode, organizationId, treePath}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
-	public AccountOrganization
-			accountByExternalReferenceCodeAccountOrganization(
-				@GraphQLName("externalReferenceCode") String
-					externalReferenceCode,
-				@GraphQLName("organizationId") Long organizationId)
+	@GraphQLField(
+		description = "Reads a single Account-Organization link, addressed by Account internal ID and Organization internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}/organizations/{organizationId}` from the headless-admin-user module instead."
+	)
+	public AccountOrganization accountIdAccountOrganization(
+			@GraphQLName("id") Long id,
+			@GraphQLName("organizationId") Long organizationId)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_accountOrganizationResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			accountOrganizationResource ->
-				accountOrganizationResource.
-					getAccountByExternalReferenceCodeAccountOrganization(
-						externalReferenceCode, organizationId));
+				accountOrganizationResource.getAccountIdAccountOrganization(
+					id, organizationId));
 	}
 
 	/**
@@ -974,7 +1081,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountOrganizations(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the Organizations linked to the Account, addressed by Account internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}/organizations` from the headless-admin-user module instead."
+	)
 	public AccountOrganizationPage accountIdAccountOrganizations(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -992,20 +1101,63 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountOrganization(id: ___, organizationId: ___){accountId, name, organizationExternalReferenceCode, organizationId, treePath}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountGroups(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
-	public AccountOrganization accountIdAccountOrganization(
-			@GraphQLName("id") Long id,
-			@GraphQLName("organizationId") Long organizationId)
+	@GraphQLField(
+		description = "Lists the AccountGroups the Account belongs to, addressed by Account external reference code. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{accountExternalReferenceCode}/account-groups` from the headless-admin-user module instead."
+	)
+	public AdminAccountGroupPage accountByExternalReferenceCodeAccountGroups(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("pageSize") int pageSize,
+			@GraphQLName("page") int page)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_accountOrganizationResourceComponentServiceObjects,
+			_adminAccountGroupResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			accountOrganizationResource ->
-				accountOrganizationResource.getAccountIdAccountOrganization(
-					id, organizationId));
+			adminAccountGroupResource -> new AdminAccountGroupPage(
+				adminAccountGroupResource.
+					getAccountByExternalReferenceCodeAccountGroupsPage(
+						externalReferenceCode, Pagination.of(page, pageSize))));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountGroup(id: ___){customFields, description, externalReferenceCode, id, name}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads an AccountGroup by its internal ID. Returns the account group. Deprecated. Use `GET /o/headless-admin-user/v1.0/account-groups/{accountGroupId}` from the headless-admin-user module instead."
+	)
+	public AdminAccountGroup accountGroup(@GraphQLName("id") Long id)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_adminAccountGroupResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			adminAccountGroupResource ->
+				adminAccountGroupResource.getAccountGroup(id));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountGroupByExternalReferenceCode(externalReferenceCode: ___){customFields, description, externalReferenceCode, id, name}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField(
+		description = "Reads an AccountGroup by its external reference code. Returns the account group. Deprecated. Use `GET /o/headless-admin-user/v1.0/account-groups/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+	)
+	public AdminAccountGroup accountGroupByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_adminAccountGroupResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			adminAccountGroupResource ->
+				adminAccountGroupResource.
+					getAccountGroupByExternalReferenceCode(
+						externalReferenceCode));
 	}
 
 	/**
@@ -1013,7 +1165,9 @@ public class Query {
 	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountGroups(filter: ___, page: ___, pageSize: ___, search: ___, sorts: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists AccountGroups with paging, search, filter, and sort. Filterable and sortable field -- name. Search corpus -- the account group's indexed name field. Deprecated. Use `GET /o/headless-admin-user/v1.0/account-groups` from the headless-admin-user module instead."
+	)
 	public AdminAccountGroupPage accountGroups(
 			@GraphQLName("search") String search,
 			@GraphQLName("filter") String filterString,
@@ -1038,65 +1192,11 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountGroupByExternalReferenceCode(externalReferenceCode: ___){customFields, description, externalReferenceCode, id, name}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AdminAccountGroup accountGroupByExternalReferenceCode(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_adminAccountGroupResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			adminAccountGroupResource ->
-				adminAccountGroupResource.
-					getAccountGroupByExternalReferenceCode(
-						externalReferenceCode));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountGroup(id: ___){customFields, description, externalReferenceCode, id, name}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AdminAccountGroup accountGroup(@GraphQLName("id") Long id)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_adminAccountGroupResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			adminAccountGroupResource ->
-				adminAccountGroupResource.getAccountGroup(id));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountByExternalReferenceCodeAccountGroups(externalReferenceCode: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public AdminAccountGroupPage accountByExternalReferenceCodeAccountGroups(
-			@GraphQLName("externalReferenceCode") String externalReferenceCode,
-			@GraphQLName("pageSize") int pageSize,
-			@GraphQLName("page") int page)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_adminAccountGroupResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			adminAccountGroupResource -> new AdminAccountGroupPage(
-				adminAccountGroupResource.
-					getAccountByExternalReferenceCodeAccountGroupsPage(
-						externalReferenceCode, Pagination.of(page, pageSize))));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {accountIdAccountGroups(id: ___, page: ___, pageSize: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
-	@GraphQLField
+	@GraphQLField(
+		description = "Lists the AccountGroups the Account belongs to, addressed by Account internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/{accountId}/account-groups` from the headless-admin-user module instead."
+	)
 	public AdminAccountGroupPage accountIdAccountGroups(
 			@GraphQLName("id") Long id, @GraphQLName("pageSize") int pageSize,
 			@GraphQLName("page") int page)
@@ -1110,6 +1210,416 @@ public class Query {
 					id, Pagination.of(page, pageSize))));
 	}
 
+	@GraphQLTypeExtension(AccountAddress.class)
+	public class GetAccountByExternalReferenceCodeTypeExtension {
+
+		public GetAccountByExternalReferenceCodeTypeExtension(
+			AccountAddress accountAddress) {
+
+			_accountAddress = accountAddress;
+		}
+
+		@GraphQLField(
+			description = "Reads an Account by its external reference code. Returns the account; nested addresses, members, and organizations are not included inline and are fetched through the corresponding sub-resources. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+		)
+		public Account accountByExternalReferenceCode() throws Exception {
+			return _applyComponentServiceObjects(
+				_accountResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountResource ->
+					accountResource.getAccountByExternalReferenceCode(
+						_accountAddress.getExternalReferenceCode()));
+		}
+
+		private AccountAddress _accountAddress;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class GetAccountAddressByExternalReferenceCodeTypeExtension {
+
+		public GetAccountAddressByExternalReferenceCodeTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Reads an account address by its external reference code. Returns the account address. Deprecated. Use `GET /o/headless-admin-user/v1.0/postal-addresses/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+		)
+		public AccountAddress addressByExternalReferenceCode()
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountAddressResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountAddressResource ->
+					accountAddressResource.
+						getAccountAddressByExternalReferenceCode(
+							_account.getExternalReferenceCode()));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class GetAccountGroupByExternalReferenceCodeTypeExtension {
+
+		public GetAccountGroupByExternalReferenceCodeTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Reads an AccountGroup by its external reference code. Returns the account group. Deprecated. Use `GET /o/headless-admin-user/v1.0/account-groups/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+		)
+		public AdminAccountGroup groupByExternalReferenceCode()
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_adminAccountGroupResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				adminAccountGroupResource ->
+					adminAccountGroupResource.
+						getAccountGroupByExternalReferenceCode(
+							_account.getExternalReferenceCode()));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountAddressesPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountAddressesPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists addresses for the Account identified by external reference code. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/postal-addresses` from the headless-admin-user module instead."
+		)
+		public AccountAddressPage byExternalReferenceCodeAccountAddresses(
+				@GraphQLName("pageSize") int pageSize,
+				@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountAddressResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountAddressResource -> new AccountAddressPage(
+					accountAddressResource.
+						getAccountByExternalReferenceCodeAccountAddressesPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelBillingAddressesPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelBillingAddressesPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account billing address channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelBillingAddresses(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelCurrenciesPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelCurrenciesPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account currency channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelCurrencies(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account delivery term channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelDeliveryTerms(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelDiscountsPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelDiscountsPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account discount channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelDiscounts(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account payment method channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelPaymentMethods(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelPaymentTermsPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelPaymentTermsPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account payment term channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelPaymentTerms(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelPriceListsPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelPriceListsPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account price list channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelPriceLists(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelShippingAddressesPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelShippingAddressesPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account shipping address channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelShippingAddresses(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountChannelUsersPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountChannelUsersPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the per-account user channel overrides for the Account identified by external reference code."
+		)
+		public AccountChannelEntryPage
+				byExternalReferenceCodeAccountChannelUsers(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountChannelEntryResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountChannelEntryResource -> new AccountChannelEntryPage(
+					accountChannelEntryResource.
+						getAccountByExternalReferenceCodeAccountChannelUsersPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
 	@GraphQLTypeExtension(Account.class)
 	public class
 		GetAccountByExternalReferenceCodeAccountChannelShippingOptionPageTypeExtension {
@@ -1120,7 +1630,9 @@ public class Query {
 			_account = account;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Lists the per-account channel shipping options for the Account identified by external reference code."
+		)
 		public AccountChannelShippingOptionPage
 				byExternalReferenceCodeAccountChannelShippingOption(
 					@GraphQLName("pageSize") int pageSize,
@@ -1144,37 +1656,6 @@ public class Query {
 
 	@GraphQLTypeExtension(Account.class)
 	public class
-		GetAccountByExternalReferenceCodeAccountChannelPaymentTermsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelPaymentTermsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelPaymentTerms(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelPaymentTermsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
 		GetAccountByExternalReferenceCodeAccountMembersPageTypeExtension {
 
 		public GetAccountByExternalReferenceCodeAccountMembersPageTypeExtension(
@@ -1183,7 +1664,9 @@ public class Query {
 			_account = account;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Lists the AccountMembers of the Account identified by external reference code. Each entry pairs a user with their account-scoped AccountRoles. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/user-accounts` from the headless-admin-user module instead."
+		)
 		public AccountMemberPage byExternalReferenceCodeAccountMembers(
 				@GraphQLName("pageSize") int pageSize,
 				@GraphQLName("page") int page)
@@ -1205,168 +1688,61 @@ public class Query {
 
 	@GraphQLTypeExtension(Account.class)
 	public class
-		GetAccountByExternalReferenceCodeAccountAddressesPageTypeExtension {
+		GetAccountByExternalReferenceCodeAccountOrganizationsPageTypeExtension {
 
-		public GetAccountByExternalReferenceCodeAccountAddressesPageTypeExtension(
+		public GetAccountByExternalReferenceCodeAccountOrganizationsPageTypeExtension(
 			Account account) {
 
 			_account = account;
 		}
 
-		@GraphQLField
-		public AccountAddressPage byExternalReferenceCodeAccountAddresses(
+		@GraphQLField(
+			description = "Lists the Organizations linked to the Account, addressed by Account external reference code. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/organizations` from the headless-admin-user module instead."
+		)
+		public AccountOrganizationPage
+				byExternalReferenceCodeAccountOrganizations(
+					@GraphQLName("pageSize") int pageSize,
+					@GraphQLName("page") int page)
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_accountOrganizationResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				accountOrganizationResource -> new AccountOrganizationPage(
+					accountOrganizationResource.
+						getAccountByExternalReferenceCodeAccountOrganizationsPage(
+							_account.getExternalReferenceCode(),
+							Pagination.of(page, pageSize))));
+		}
+
+		private Account _account;
+
+	}
+
+	@GraphQLTypeExtension(Account.class)
+	public class
+		GetAccountByExternalReferenceCodeAccountGroupsPageTypeExtension {
+
+		public GetAccountByExternalReferenceCodeAccountGroupsPageTypeExtension(
+			Account account) {
+
+			_account = account;
+		}
+
+		@GraphQLField(
+			description = "Lists the AccountGroups the Account belongs to, addressed by Account external reference code. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{accountExternalReferenceCode}/account-groups` from the headless-admin-user module instead."
+		)
+		public AdminAccountGroupPage byExternalReferenceCodeAccountGroups(
 				@GraphQLName("pageSize") int pageSize,
 				@GraphQLName("page") int page)
 			throws Exception {
 
 			return _applyComponentServiceObjects(
-				_accountAddressResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountAddressResource -> new AccountAddressPage(
-					accountAddressResource.
-						getAccountByExternalReferenceCodeAccountAddressesPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(AccountAddress.class)
-	public class GetAccountByExternalReferenceCodeTypeExtension {
-
-		public GetAccountByExternalReferenceCodeTypeExtension(
-			AccountAddress accountAddress) {
-
-			_accountAddress = accountAddress;
-		}
-
-		@GraphQLField
-		public Account accountByExternalReferenceCode() throws Exception {
-			return _applyComponentServiceObjects(
-				_accountResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountResource ->
-					accountResource.getAccountByExternalReferenceCode(
-						_accountAddress.getExternalReferenceCode()));
-		}
-
-		private AccountAddress _accountAddress;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelShippingAddressesPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelShippingAddressesPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelShippingAddresses(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelShippingAddressesPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class GetAccountGroupByExternalReferenceCodeTypeExtension {
-
-		public GetAccountGroupByExternalReferenceCodeTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AdminAccountGroup groupByExternalReferenceCode()
-			throws Exception {
-
-			return _applyComponentServiceObjects(
 				_adminAccountGroupResourceComponentServiceObjects,
 				Query.this::_populateResourceContext,
-				adminAccountGroupResource ->
+				adminAccountGroupResource -> new AdminAccountGroupPage(
 					adminAccountGroupResource.
-						getAccountGroupByExternalReferenceCode(
-							_account.getExternalReferenceCode()));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelBillingAddressesPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelBillingAddressesPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelBillingAddresses(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelBillingAddressesPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelUsersPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelUsersPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelUsers(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelUsersPage(
+						getAccountByExternalReferenceCodeAccountGroupsPage(
 							_account.getExternalReferenceCode(),
 							Pagination.of(page, pageSize))));
 		}
@@ -1384,7 +1760,9 @@ public class Query {
 			_account = account;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Reads a single AccountMember, addressed by Account external reference code and User internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{accountExternalReferenceCode}/user-accounts/by-external-reference-code/{externalReferenceCode}` from the headless-admin-user module instead."
+		)
 		public AccountMember byExternalReferenceCodeAccountMember(
 				@GraphQLName("userId") Long userId)
 			throws Exception {
@@ -1412,7 +1790,9 @@ public class Query {
 			_account = account;
 		}
 
-		@GraphQLField
+		@GraphQLField(
+			description = "Reads a single Account-Organization link, addressed by Account external reference code and Organization internal ID. Deprecated. Use `GET /o/headless-admin-user/v1.0/accounts/by-external-reference-code/{externalReferenceCode}/organizations/{organizationId}` from the headless-admin-user module instead."
+		)
 		public AccountOrganization byExternalReferenceCodeAccountOrganization(
 				@GraphQLName("organizationId") Long organizationId)
 			throws Exception {
@@ -1425,248 +1805,6 @@ public class Query {
 						getAccountByExternalReferenceCodeAccountOrganization(
 							_account.getExternalReferenceCode(),
 							organizationId));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelPriceListsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelPriceListsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelPriceLists(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelPriceListsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelCurrenciesPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelCurrenciesPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelCurrencies(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelCurrenciesPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountGroupsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountGroupsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AdminAccountGroupPage byExternalReferenceCodeAccountGroups(
-				@GraphQLName("pageSize") int pageSize,
-				@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_adminAccountGroupResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				adminAccountGroupResource -> new AdminAccountGroupPage(
-					adminAccountGroupResource.
-						getAccountByExternalReferenceCodeAccountGroupsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelPaymentMethodsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelPaymentMethods(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelPaymentMethodsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountOrganizationsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountOrganizationsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountOrganizationPage
-				byExternalReferenceCodeAccountOrganizations(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountOrganizationResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountOrganizationResource -> new AccountOrganizationPage(
-					accountOrganizationResource.
-						getAccountByExternalReferenceCodeAccountOrganizationsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelDiscountsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelDiscountsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelDiscounts(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelDiscountsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class
-		GetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPageTypeExtension {
-
-		public GetAccountByExternalReferenceCodeAccountChannelDeliveryTermsPageTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountChannelEntryPage
-				byExternalReferenceCodeAccountChannelDeliveryTerms(
-					@GraphQLName("pageSize") int pageSize,
-					@GraphQLName("page") int page)
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountChannelEntryResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountChannelEntryResource -> new AccountChannelEntryPage(
-					accountChannelEntryResource.
-						getAccountByExternalReferenceCodeAccountChannelDeliveryTermsPage(
-							_account.getExternalReferenceCode(),
-							Pagination.of(page, pageSize))));
-		}
-
-		private Account _account;
-
-	}
-
-	@GraphQLTypeExtension(Account.class)
-	public class GetAccountAddressByExternalReferenceCodeTypeExtension {
-
-		public GetAccountAddressByExternalReferenceCodeTypeExtension(
-			Account account) {
-
-			_account = account;
-		}
-
-		@GraphQLField
-		public AccountAddress addressByExternalReferenceCode()
-			throws Exception {
-
-			return _applyComponentServiceObjects(
-				_accountAddressResourceComponentServiceObjects,
-				Query.this::_populateResourceContext,
-				accountAddressResource ->
-					accountAddressResource.
-						getAccountAddressByExternalReferenceCode(
-							_account.getExternalReferenceCode()));
 		}
 
 		private Account _account;
@@ -1935,6 +2073,10 @@ public class Query {
 		accountResource.setContextUriInfo(_uriInfo);
 		accountResource.setContextUser(_user);
 		accountResource.setGroupLocalService(_groupLocalService);
+		accountResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -1951,6 +2093,10 @@ public class Query {
 		accountAddressResource.setContextUriInfo(_uriInfo);
 		accountAddressResource.setContextUser(_user);
 		accountAddressResource.setGroupLocalService(_groupLocalService);
+		accountAddressResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountAddressResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountAddressResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -1967,6 +2113,10 @@ public class Query {
 		accountChannelEntryResource.setContextUriInfo(_uriInfo);
 		accountChannelEntryResource.setContextUser(_user);
 		accountChannelEntryResource.setGroupLocalService(_groupLocalService);
+		accountChannelEntryResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountChannelEntryResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountChannelEntryResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -1986,6 +2136,10 @@ public class Query {
 		accountChannelShippingOptionResource.setContextUser(_user);
 		accountChannelShippingOptionResource.setGroupLocalService(
 			_groupLocalService);
+		accountChannelShippingOptionResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountChannelShippingOptionResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountChannelShippingOptionResource.setRoleLocalService(
 			_roleLocalService);
 	}
@@ -2002,6 +2156,10 @@ public class Query {
 		accountMemberResource.setContextUriInfo(_uriInfo);
 		accountMemberResource.setContextUser(_user);
 		accountMemberResource.setGroupLocalService(_groupLocalService);
+		accountMemberResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountMemberResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountMemberResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -2018,6 +2176,10 @@ public class Query {
 		accountOrganizationResource.setContextUriInfo(_uriInfo);
 		accountOrganizationResource.setContextUser(_user);
 		accountOrganizationResource.setGroupLocalService(_groupLocalService);
+		accountOrganizationResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		accountOrganizationResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		accountOrganizationResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -2034,6 +2196,10 @@ public class Query {
 		adminAccountGroupResource.setContextUriInfo(_uriInfo);
 		adminAccountGroupResource.setContextUser(_user);
 		adminAccountGroupResource.setGroupLocalService(_groupLocalService);
+		adminAccountGroupResource.setResourceActionLocalService(
+			_resourceActionLocalService);
+		adminAccountGroupResource.setResourcePermissionLocalService(
+			_resourcePermissionLocalService);
 		adminAccountGroupResource.setRoleLocalService(_roleLocalService);
 	}
 
@@ -2054,13 +2220,19 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
+	private ResourceActionLocalService _resourceActionLocalService;
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 
 }
+// LIFERAY-REST-BUILDER-HASH:462848892

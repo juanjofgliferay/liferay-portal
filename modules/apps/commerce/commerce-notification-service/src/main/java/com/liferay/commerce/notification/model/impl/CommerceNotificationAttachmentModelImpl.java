@@ -50,8 +50,10 @@ import java.util.function.Function;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationAttachmentImpl
+ * @deprecated
  * @generated
  */
+@Deprecated
 public class CommerceNotificationAttachmentModelImpl
 	extends BaseModelImpl<CommerceNotificationAttachment>
 	implements CommerceNotificationAttachmentModel {
@@ -96,6 +98,8 @@ public class CommerceNotificationAttachmentModelImpl
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CNotificationAttachment";
+
+	public static final String ENTITY_ALIAS = "commerceNotificationAttachment";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY commerceNotificationAttachment.createDate DESC";
@@ -1045,3 +1049,4 @@ public class CommerceNotificationAttachmentModelImpl
 	private CommerceNotificationAttachment _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1453916742

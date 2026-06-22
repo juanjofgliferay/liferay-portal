@@ -8,9 +8,9 @@
 <%@ include file="/init.jsp" %>
 
 <div class="form-group form-group-sm">
-	<label class="control-label <%= fragmentCollectionFilterCategoryDisplayContext.isShowLabel() ? "" : "sr-only" %>">
+	<span class="control-label <%= fragmentCollectionFilterCategoryDisplayContext.isShowLabel() ? "" : "sr-only" %>">
 		<%= fragmentCollectionFilterCategoryDisplayContext.getLabel() %>
-	</label>
+	</span>
 
 	<div>
 		<clay:button
@@ -22,7 +22,7 @@
 		/>
 
 		<react:component
-			module="js/SelectCategory.es"
+			module="{SelectCategory} from fragment-collection-filter-category"
 			props="<%= fragmentCollectionFilterCategoryDisplayContext.getProps() %>"
 		/>
 	</div>

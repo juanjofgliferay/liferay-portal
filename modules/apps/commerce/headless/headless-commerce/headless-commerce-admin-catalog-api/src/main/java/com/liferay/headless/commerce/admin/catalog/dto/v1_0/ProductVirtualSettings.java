@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,20 +29,20 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("ProductVirtualSettings")
+@GraphQLName(
+	description = "Digital download configuration for a virtual product; controls the download URL, sample file, terms of use, activation gating, and usage and duration limits; returned as null when the product is not virtual or has no virtual settings.",
+	value = "ProductVirtualSettings"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Digital download configuration for a virtual product; controls the download URL, sample file, terms of use, activation gating, and usage and duration limits; returned as null when the product is not virtual or has no virtual settings."
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "ProductVirtualSettings")
 public class ProductVirtualSettings implements Serializable {
@@ -52,268 +57,535 @@ public class ProductVirtualSettings implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "0")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Order status at which the download becomes available to the buyer; numeric code where 0 means Completed (default), 1 means Pending, and 10 means Processing.",
+		example = "0"
+	)
 	public Integer getActivationStatus() {
+		if (_activationStatusSupplier != null) {
+			activationStatus = _activationStatusSupplier.get();
+
+			_activationStatusSupplier = null;
+		}
+
 		return activationStatus;
 	}
 
 	public void setActivationStatus(Integer activationStatus) {
 		this.activationStatus = activationStatus;
+
+		_activationStatusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActivationStatus(
 		UnsafeSupplier<Integer, Exception> activationStatusUnsafeSupplier) {
 
-		try {
-			activationStatus = activationStatusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activationStatusSupplier = () -> {
+			try {
+				return activationStatusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Order status at which the download becomes available to the buyer; numeric code where 0 means Completed (default), 1 means Pending, and 10 means Processing."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer activationStatus;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _activationStatusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Resolved human-readable label and localized label for the activation status value; read-only."
+	)
 	@Valid
 	public Status getActivationStatusInfo() {
+		if (_activationStatusInfoSupplier != null) {
+			activationStatusInfo = _activationStatusInfoSupplier.get();
+
+			_activationStatusInfoSupplier = null;
+		}
+
 		return activationStatusInfo;
 	}
 
 	public void setActivationStatusInfo(Status activationStatusInfo) {
 		this.activationStatusInfo = activationStatusInfo;
+
+		_activationStatusInfoSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActivationStatusInfo(
 		UnsafeSupplier<Status, Exception> activationStatusInfoUnsafeSupplier) {
 
-		try {
-			activationStatusInfo = activationStatusInfoUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activationStatusInfoSupplier = () -> {
+			try {
+				return activationStatusInfoUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Resolved human-readable label and localized label for the activation status value; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Status activationStatusInfo;
 
-	@Schema(description = "Base64 encoded file")
+	@JsonIgnore
+	private Supplier<Status> _activationStatusInfoSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Base64-encoded payload of the primary downloadable file accepted on write; the service decodes it and stores it as a Document Library file referenced by the virtual setting; write-only.",
+		example = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+	)
 	public String getAttachment() {
+		if (_attachmentSupplier != null) {
+			attachment = _attachmentSupplier.get();
+
+			_attachmentSupplier = null;
+		}
+
 		return attachment;
 	}
 
 	public void setAttachment(String attachment) {
 		this.attachment = attachment;
+
+		_attachmentSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAttachment(
 		UnsafeSupplier<String, Exception> attachmentUnsafeSupplier) {
 
-		try {
-			attachment = attachmentUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attachmentSupplier = () -> {
+			try {
+				return attachmentUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Base64 encoded file")
+	@GraphQLField(
+		description = "Base64-encoded payload of the primary downloadable file accepted on write; the service decodes it and stores it as a Document Library file referenced by the virtual setting; write-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String attachment;
 
-	@Schema(description = "Number of days to download the attachment")
+	@JsonIgnore
+	private Supplier<String> _attachmentSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Number of days after activation during which the buyer may download.",
+		example = "30"
+	)
 	public Long getDuration() {
+		if (_durationSupplier != null) {
+			duration = _durationSupplier.get();
+
+			_durationSupplier = null;
+		}
+
 		return duration;
 	}
 
 	public void setDuration(Long duration) {
 		this.duration = duration;
+
+		_durationSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDuration(
 		UnsafeSupplier<Long, Exception> durationUnsafeSupplier) {
 
-		try {
-			duration = durationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_durationSupplier = () -> {
+			try {
+				return durationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Number of days to download the attachment")
+	@GraphQLField(
+		description = "Number of days after activation during which the buyer may download."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long duration;
 
-	@Schema(description = "Number of downloads available for attachment")
+	@JsonIgnore
+	private Supplier<Long> _durationSupplier;
+
+	@DecimalMin("0")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the virtual settings record.",
+		example = "30130"
+	)
+	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+
+		_idSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "Identifier of the virtual settings record.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long id;
+
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Maximum number of times the buyer may download the file; 0 typically means unlimited.",
+		example = "0"
+	)
 	public Integer getMaxUsages() {
+		if (_maxUsagesSupplier != null) {
+			maxUsages = _maxUsagesSupplier.get();
+
+			_maxUsagesSupplier = null;
+		}
+
 		return maxUsages;
 	}
 
 	public void setMaxUsages(Integer maxUsages) {
 		this.maxUsages = maxUsages;
+
+		_maxUsagesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMaxUsages(
 		UnsafeSupplier<Integer, Exception> maxUsagesUnsafeSupplier) {
 
-		try {
-			maxUsages = maxUsagesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_maxUsagesSupplier = () -> {
+			try {
+				return maxUsagesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Number of downloads available for attachment")
+	@GraphQLField(
+		description = "Maximum number of times the buyer may download the file; 0 typically means unlimited."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer maxUsages;
 
-	@Schema(description = "Base64 encoded sample file")
+	@JsonIgnore
+	private Supplier<Integer> _maxUsagesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Collection of downloadable file entries attached to these virtual settings; each entry models one downloadable file or external URL."
+	)
+	@Valid
+	public ProductVirtualSettingsFileEntry[]
+		getProductVirtualSettingsFileEntries() {
+
+		if (_productVirtualSettingsFileEntriesSupplier != null) {
+			productVirtualSettingsFileEntries =
+				_productVirtualSettingsFileEntriesSupplier.get();
+
+			_productVirtualSettingsFileEntriesSupplier = null;
+		}
+
+		return productVirtualSettingsFileEntries;
+	}
+
+	public void setProductVirtualSettingsFileEntries(
+		ProductVirtualSettingsFileEntry[] productVirtualSettingsFileEntries) {
+
+		this.productVirtualSettingsFileEntries =
+			productVirtualSettingsFileEntries;
+
+		_productVirtualSettingsFileEntriesSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setProductVirtualSettingsFileEntries(
+		UnsafeSupplier<ProductVirtualSettingsFileEntry[], Exception>
+			productVirtualSettingsFileEntriesUnsafeSupplier) {
+
+		_productVirtualSettingsFileEntriesSupplier = () -> {
+			try {
+				return productVirtualSettingsFileEntriesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "Collection of downloadable file entries attached to these virtual settings; each entry models one downloadable file or external URL."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected ProductVirtualSettingsFileEntry[]
+		productVirtualSettingsFileEntries;
+
+	@JsonIgnore
+	private Supplier<ProductVirtualSettingsFileEntry[]>
+		_productVirtualSettingsFileEntriesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Base64-encoded payload of a public sample file accepted on write; the service decodes it and stores it as the sample file referenced by the virtual settings; write-only.",
+		example = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+	)
 	public String getSampleAttachment() {
+		if (_sampleAttachmentSupplier != null) {
+			sampleAttachment = _sampleAttachmentSupplier.get();
+
+			_sampleAttachmentSupplier = null;
+		}
+
 		return sampleAttachment;
 	}
 
 	public void setSampleAttachment(String sampleAttachment) {
 		this.sampleAttachment = sampleAttachment;
+
+		_sampleAttachmentSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSampleAttachment(
 		UnsafeSupplier<String, Exception> sampleAttachmentUnsafeSupplier) {
 
-		try {
-			sampleAttachment = sampleAttachmentUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sampleAttachmentSupplier = () -> {
+			try {
+				return sampleAttachmentUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Base64 encoded sample file")
+	@GraphQLField(
+		description = "Base64-encoded payload of a public sample file accepted on write; the service decodes it and stores it as the sample file referenced by the virtual settings; write-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sampleAttachment;
 
-	@Schema(description = "URL to download the sample file")
+	@JsonIgnore
+	private Supplier<String> _sampleAttachmentSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Resolved download URL for the sample file; null when no sample file is set; read-only.",
+		example = "https://example.com/sample.pdf"
+	)
 	public String getSampleSrc() {
+		if (_sampleSrcSupplier != null) {
+			sampleSrc = _sampleSrcSupplier.get();
+
+			_sampleSrcSupplier = null;
+		}
+
 		return sampleSrc;
 	}
 
 	public void setSampleSrc(String sampleSrc) {
 		this.sampleSrc = sampleSrc;
+
+		_sampleSrcSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSampleSrc(
 		UnsafeSupplier<String, Exception> sampleSrcUnsafeSupplier) {
 
-		try {
-			sampleSrc = sampleSrcUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sampleSrcSupplier = () -> {
+			try {
+				return sampleSrcUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "URL to download the sample file")
+	@GraphQLField(
+		description = "Resolved download URL for the sample file; null when no sample file is set; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String sampleSrc;
 
-	@Schema(description = "URL of the sample file")
+	@JsonIgnore
+	private Supplier<String> _sampleSrcSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External URL pointing at a sample of the product; alternative to `sampleAttachment`; validated for syntax when `useSample` is true.",
+		example = "https://example.com/sample.pdf"
+	)
 	public String getSampleURL() {
+		if (_sampleURLSupplier != null) {
+			sampleURL = _sampleURLSupplier.get();
+
+			_sampleURLSupplier = null;
+		}
+
 		return sampleURL;
 	}
 
 	public void setSampleURL(String sampleURL) {
 		this.sampleURL = sampleURL;
+
+		_sampleURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSampleURL(
 		UnsafeSupplier<String, Exception> sampleURLUnsafeSupplier) {
 
-		try {
-			sampleURL = sampleURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sampleURLSupplier = () -> {
+			try {
+				return sampleURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "URL of the sample file")
+	@GraphQLField(
+		description = "External URL pointing at a sample of the product; alternative to `sampleAttachment`; validated for syntax when `useSample` is true."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sampleURL;
 
-	@Schema(description = "URL to download the file")
+	@JsonIgnore
+	private Supplier<String> _sampleURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Resolved download URL for the first attached file entry; null when no file is attached; read-only.",
+		example = "https://example.com/download.zip"
+	)
 	public String getSrc() {
+		if (_srcSupplier != null) {
+			src = _srcSupplier.get();
+
+			_srcSupplier = null;
+		}
+
 		return src;
 	}
 
 	public void setSrc(String src) {
 		this.src = src;
+
+		_srcSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSrc(UnsafeSupplier<String, Exception> srcUnsafeSupplier) {
-		try {
-			src = srcUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_srcSupplier = () -> {
+			try {
+				return srcUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "URL to download the file")
+	@GraphQLField(
+		description = "Resolved download URL for the first attached file entry; null when no file is attached; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String src;
 
-	@Schema(
-		description = "Terms of Use content",
-		example = "{en_US=Croatia, hr_HR=Hrvatska, hu_HU=Horvatorszag}"
+	@JsonIgnore
+	private Supplier<String> _srcSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized terms of use shown to the buyer before download; map keys are locale codes and values are the translated strings; mutually exclusive with `termsOfUseJournalArticleId` (supplying an article identifier clears this map).",
+		example = "{en_US=By downloading you accept the license terms., hr_HR=Preuzimanjem prihvacate uvjete licence., hu_HU=A letoltessel elfogadja a licencfelteteleket.}"
 	)
 	@Valid
 	public Map<String, String> getTermsOfUseContent() {
+		if (_termsOfUseContentSupplier != null) {
+			termsOfUseContent = _termsOfUseContentSupplier.get();
+
+			_termsOfUseContentSupplier = null;
+		}
+
 		return termsOfUseContent;
 	}
 
 	public void setTermsOfUseContent(Map<String, String> termsOfUseContent) {
 		this.termsOfUseContent = termsOfUseContent;
+
+		_termsOfUseContentSupplier = null;
 	}
 
 	@JsonIgnore
@@ -321,28 +593,47 @@ public class ProductVirtualSettings implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			termsOfUseContentUnsafeSupplier) {
 
-		try {
-			termsOfUseContent = termsOfUseContentUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_termsOfUseContentSupplier = () -> {
+			try {
+				return termsOfUseContentUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Terms of Use content")
+	@GraphQLField(
+		description = "Localized terms of use shown to the buyer before download; map keys are locale codes and values are the translated strings; mutually exclusive with `termsOfUseJournalArticleId` (supplying an article identifier clears this map)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> termsOfUseContent;
 
-	@Schema(description = "Terms of Use related Article Id")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _termsOfUseContentSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the web content article whose body serves as the terms of use; mutually exclusive with `termsOfUseContent`.",
+		example = "30130"
+	)
 	public Long getTermsOfUseJournalArticleId() {
+		if (_termsOfUseJournalArticleIdSupplier != null) {
+			termsOfUseJournalArticleId =
+				_termsOfUseJournalArticleIdSupplier.get();
+
+			_termsOfUseJournalArticleIdSupplier = null;
+		}
+
 		return termsOfUseJournalArticleId;
 	}
 
 	public void setTermsOfUseJournalArticleId(Long termsOfUseJournalArticleId) {
 		this.termsOfUseJournalArticleId = termsOfUseJournalArticleId;
+
+		_termsOfUseJournalArticleIdSupplier = null;
 	}
 
 	@JsonIgnore
@@ -350,103 +641,163 @@ public class ProductVirtualSettings implements Serializable {
 		UnsafeSupplier<Long, Exception>
 			termsOfUseJournalArticleIdUnsafeSupplier) {
 
-		try {
-			termsOfUseJournalArticleId =
-				termsOfUseJournalArticleIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_termsOfUseJournalArticleIdSupplier = () -> {
+			try {
+				return termsOfUseJournalArticleIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Terms of Use related Article Id")
+	@GraphQLField(
+		description = "Identifier of the web content article whose body serves as the terms of use; mutually exclusive with `termsOfUseContent`."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long termsOfUseJournalArticleId;
 
-	@Schema(description = "Terms of Use required")
+	@JsonIgnore
+	private Supplier<Long> _termsOfUseJournalArticleIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the buyer must accept terms of use before downloading; when true, either a terms-of-use article or a non-empty terms-of-use content map must be supplied.",
+		example = "true"
+	)
 	public Boolean getTermsOfUseRequired() {
+		if (_termsOfUseRequiredSupplier != null) {
+			termsOfUseRequired = _termsOfUseRequiredSupplier.get();
+
+			_termsOfUseRequiredSupplier = null;
+		}
+
 		return termsOfUseRequired;
 	}
 
 	public void setTermsOfUseRequired(Boolean termsOfUseRequired) {
 		this.termsOfUseRequired = termsOfUseRequired;
+
+		_termsOfUseRequiredSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTermsOfUseRequired(
 		UnsafeSupplier<Boolean, Exception> termsOfUseRequiredUnsafeSupplier) {
 
-		try {
-			termsOfUseRequired = termsOfUseRequiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_termsOfUseRequiredSupplier = () -> {
+			try {
+				return termsOfUseRequiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Terms of Use required")
+	@GraphQLField(
+		description = "Whether the buyer must accept terms of use before downloading; when true, either a terms-of-use article or a non-empty terms-of-use content map must be supplied."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean termsOfUseRequired;
 
-	@Schema(description = "URL of the file")
+	@JsonIgnore
+	private Supplier<Boolean> _termsOfUseRequiredSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External URL where the file is hosted as an alternative to `attachment`; persisted on the first downloadable file entry.",
+		example = "https://example.com/download.zip"
+	)
 	public String getUrl() {
+		if (_urlSupplier != null) {
+			url = _urlSupplier.get();
+
+			_urlSupplier = null;
+		}
+
 		return url;
 	}
 
 	public void setUrl(String url) {
 		this.url = url;
+
+		_urlSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUrl(UnsafeSupplier<String, Exception> urlUnsafeSupplier) {
-		try {
-			url = urlUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_urlSupplier = () -> {
+			try {
+				return urlUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "URL of the file")
+	@GraphQLField(
+		description = "External URL where the file is hosted as an alternative to `attachment`; persisted on the first downloadable file entry."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String url;
 
-	@Schema(description = "Enable sample file")
+	@JsonIgnore
+	private Supplier<String> _urlSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the storefront exposes a sample to anonymous visitors; when true, either a sample file or a syntactically valid sample URL is required.",
+		example = "true"
+	)
 	public Boolean getUseSample() {
+		if (_useSampleSupplier != null) {
+			useSample = _useSampleSupplier.get();
+
+			_useSampleSupplier = null;
+		}
+
 		return useSample;
 	}
 
 	public void setUseSample(Boolean useSample) {
 		this.useSample = useSample;
+
+		_useSampleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUseSample(
 		UnsafeSupplier<Boolean, Exception> useSampleUnsafeSupplier) {
 
-		try {
-			useSample = useSampleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_useSampleSupplier = () -> {
+			try {
+				return useSampleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField(description = "Enable sample file")
+	@GraphQLField(
+		description = "Whether the storefront exposes a sample to anonymous visitors; when true, either a sample file or a syntactically valid sample URL is required."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean useSample;
+
+	@JsonIgnore
+	private Supplier<Boolean> _useSampleSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -476,6 +827,8 @@ public class ProductVirtualSettings implements Serializable {
 
 		sb.append("{");
 
+		Integer activationStatus = getActivationStatus();
+
 		if (activationStatus != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -486,6 +839,8 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append(activationStatus);
 		}
 
+		Status activationStatusInfo = getActivationStatusInfo();
+
 		if (activationStatusInfo != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -495,6 +850,8 @@ public class ProductVirtualSettings implements Serializable {
 
 			sb.append(String.valueOf(activationStatusInfo));
 		}
+
+		String attachment = getAttachment();
 
 		if (attachment != null) {
 			if (sb.length() > 1) {
@@ -510,6 +867,8 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		Long duration = getDuration();
+
 		if (duration != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -520,6 +879,20 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append(duration);
 		}
 
+		Long id = getId();
+
+		if (id != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"id\": ");
+
+			sb.append(id);
+		}
+
+		Integer maxUsages = getMaxUsages();
+
 		if (maxUsages != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -529,6 +902,31 @@ public class ProductVirtualSettings implements Serializable {
 
 			sb.append(maxUsages);
 		}
+
+		ProductVirtualSettingsFileEntry[] productVirtualSettingsFileEntries =
+			getProductVirtualSettingsFileEntries();
+
+		if (productVirtualSettingsFileEntries != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"productVirtualSettingsFileEntries\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < productVirtualSettingsFileEntries.length; i++) {
+				sb.append(String.valueOf(productVirtualSettingsFileEntries[i]));
+
+				if ((i + 1) < productVirtualSettingsFileEntries.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		String sampleAttachment = getSampleAttachment();
 
 		if (sampleAttachment != null) {
 			if (sb.length() > 1) {
@@ -544,6 +942,8 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		String sampleSrc = getSampleSrc();
+
 		if (sampleSrc != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -557,6 +957,8 @@ public class ProductVirtualSettings implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String sampleURL = getSampleURL();
 
 		if (sampleURL != null) {
 			if (sb.length() > 1) {
@@ -572,6 +974,8 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		String src = getSrc();
+
 		if (src != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -586,6 +990,8 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> termsOfUseContent = getTermsOfUseContent();
+
 		if (termsOfUseContent != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -595,6 +1001,8 @@ public class ProductVirtualSettings implements Serializable {
 
 			sb.append(_toJSON(termsOfUseContent));
 		}
+
+		Long termsOfUseJournalArticleId = getTermsOfUseJournalArticleId();
 
 		if (termsOfUseJournalArticleId != null) {
 			if (sb.length() > 1) {
@@ -606,6 +1014,8 @@ public class ProductVirtualSettings implements Serializable {
 			sb.append(termsOfUseJournalArticleId);
 		}
 
+		Boolean termsOfUseRequired = getTermsOfUseRequired();
+
 		if (termsOfUseRequired != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -615,6 +1025,8 @@ public class ProductVirtualSettings implements Serializable {
 
 			sb.append(termsOfUseRequired);
 		}
+
+		String url = getUrl();
 
 		if (url != null) {
 			if (sb.length() > 1) {
@@ -629,6 +1041,8 @@ public class ProductVirtualSettings implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Boolean useSample = getUseSample();
 
 		if (useSample != null) {
 			if (sb.length() > 1) {
@@ -645,8 +1059,8 @@ public class ProductVirtualSettings implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductVirtualSettings",
 		name = "x-class-name"
 	)
@@ -692,7 +1106,10 @@ public class ProductVirtualSettings implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -738,3 +1155,4 @@ public class ProductVirtualSettings implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1444670841

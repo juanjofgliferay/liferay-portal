@@ -1,0 +1,366 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2026 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+import ClayButton from '@clayui/button';
+import Card from '@clayui/card/src/Card';
+import {ClayDropDownWithItems} from '@clayui/drop-down';
+import ClayIcon from '@clayui/icon';
+import {DateRenderer} from '@liferay/frontend-data-set-web';
+import {AssigneeAvatar} from '@liferay/object-dynamic-data-mapping-form-field-type';
+import {
+	displayErrorToast,
+	displayRequestSuccessToast,
+} from '@liferay/site-cms-site-initializer';
+import classNames from 'classnames';
+import {navigate} from 'frontend-js-web';
+import React, {forwardRef, useContext} from 'react';
+import {useDrag} from 'react-dnd';
+
+import {
+	deleteTaskById,
+	getUserAccount,
+	patchTaskById,
+	postSubscribeTaskByExternalReferenceCode,
+	postUnsubscribeTaskByExternalReferenceCode,
+} from '../../../../../utils/api';
+import {openCMPModal} from '../../../../../utils/openCMPModal';
+import {
+	displayAssignSuccessToast,
+	displayDeleteSuccessToast,
+} from '../../../../../utils/toastUtil';
+import {IItemsActions, ITask} from '../../../../../utils/types';
+import StateLabel from '../../../../StateLabel';
+import DeleteTaskModal from '../../../../modal/DeleteTaskModal';
+import EditAssigneeModalContent from '../../../../modal/EditAssigneeModalContent';
+import {KanbanViewContext} from '../context';
+import {ItemTypes} from './Column';
+
+import './Task.scss';
+
+function getTaskItemsActions(
+	itemsActions: IItemsActions[],
+	loadData: Function,
+	task: ITask
+) {
+	const items = [];
+
+	const hasBottomItems = Boolean(task.actions.delete);
+
+	const hasMiddleItems = Boolean(
+		task.actions.assignToMe ||
+			task.actions.subscribe ||
+			task.actions.unsubscribe ||
+			task.actions.update
+	);
+
+	const hasTopItems = Boolean(task.actions.update || task.actions.get);
+
+	if (task.actions.update) {
+		items.push({
+			label: Liferay.Language.get('edit'),
+			onClick: () => {
+				const editURL = getURL('edit', itemsActions, task);
+				if (editURL) {
+					navigate(editURL);
+				}
+			},
+			symbolLeft: 'pencil',
+		});
+	}
+
+	if (task.actions.get) {
+		items.push({
+			label: Liferay.Language.get('view'),
+			onClick: () => {
+				const viewURL = getURL('actionLink', itemsActions, task);
+				if (viewURL) {
+					navigate(viewURL);
+				}
+			},
+			symbolLeft: 'view',
+		});
+	}
+
+	if (hasTopItems && hasMiddleItems) {
+		items.push({
+			type: 'divider' as const,
+		});
+	}
+
+	if (task.actions.subscribe) {
+		items.push({
+			label: Liferay.Language.get('watch-task'),
+			onClick: async () => {
+				const {error} = await postSubscribeTaskByExternalReferenceCode({
+					externalReferenceCode: task.embedded.externalReferenceCode,
+					scopeKey: task.embedded.scopeKey,
+				});
+
+				if (!error) {
+					loadData();
+					displayRequestSuccessToast();
+				}
+				else {
+					displayErrorToast(error);
+				}
+			},
+			symbolLeft: 'bell-on',
+		});
+	}
+
+	if (task.actions.unsubscribe) {
+		items.push({
+			label: Liferay.Language.get('stop-watching-task'),
+			onClick: async () => {
+				const {error} =
+					await postUnsubscribeTaskByExternalReferenceCode({
+						externalReferenceCode:
+							task.embedded.externalReferenceCode,
+						scopeKey: task.embedded.scopeKey,
+					});
+
+				if (!error) {
+					loadData();
+					displayRequestSuccessToast();
+				}
+				else {
+					displayErrorToast(error);
+				}
+			},
+			symbolLeft: 'bell-off',
+		});
+	}
+
+	if (task.actions.assignToMe) {
+		items.push({
+			label: Liferay.Language.get('assign-to-me'),
+			onClick: async () => {
+				const user = (await getUserAccount(
+					Liferay.ThemeDisplay.getUserId().toString()
+				)) as {
+					externalReferenceCode: string;
+					name: string;
+				};
+
+				const {error} = await patchTaskById({
+					body: {
+						assignTo: {
+							externalReferenceCode: user.externalReferenceCode,
+							name: user.name,
+							type: 'User',
+						},
+					},
+					taskId: String(task.embedded.id),
+				});
+
+				if (!error) {
+					loadData();
+					displayAssignSuccessToast(task.embedded.title, user.name);
+				}
+				else {
+					displayErrorToast(error);
+				}
+			},
+		});
+	}
+
+	if (task.actions.update) {
+		items.push({
+			label: Liferay.Language.get('assign-to-...'),
+			onClick: async () => {
+				await openCMPModal({
+					center: true,
+					contentComponent: ({
+						closeModal,
+					}: {
+						closeModal: () => void;
+					}) => (
+						<EditAssigneeModalContent
+							closeModal={closeModal}
+							loadData={loadData}
+							taskId={String(task.embedded.id)}
+							taskTitle={task.embedded.title}
+							value={task.embedded.assignTo}
+						/>
+					),
+					size: 'md',
+				});
+			},
+		});
+	}
+
+	if (hasBottomItems) {
+		if (hasTopItems || hasMiddleItems) {
+			items.push({
+				type: 'divider' as const,
+			});
+		}
+
+		items.push({
+
+			// @ts-ignore
+
+			className: 'text-danger',
+			label: Liferay.Language.get('delete'),
+			onClick: async () => {
+				await openCMPModal({
+					center: true,
+					contentComponent: ({
+						closeModal,
+					}: {
+						closeModal: () => void;
+					}) => (
+						<DeleteTaskModal
+							closeModal={closeModal}
+							onSubmit={async () => {
+								const {error} = await deleteTaskById({
+									taskId: String(task.embedded.id),
+								});
+
+								if (!error) {
+									loadData();
+									displayDeleteSuccessToast(
+										task.embedded.title
+									);
+								}
+								else {
+									displayErrorToast(error);
+								}
+								closeModal();
+							}}
+							title={task.embedded.title}
+						/>
+					),
+					size: 'md',
+					status: 'danger',
+				});
+			},
+			symbolLeft: 'trash',
+		});
+	}
+
+	return items;
+}
+
+function getURL(actionId: string, itemsActions: IItemsActions[], task: ITask) {
+	return itemsActions
+		.flatMap((group) => group.items || [])
+		.find((action) => action.data.id === actionId)
+		?.href.replace('{embedded.id}', String(task.embedded.id));
+}
+
+const TaskCard = React.memo(
+	forwardRef<HTMLDivElement, {isDragging?: boolean; task: ITask}>(
+		({isDragging, task}, ref) => {
+			const {itemsActions, loadData, projectId} =
+				useContext(KanbanViewContext);
+
+			return (
+				<div
+					className={classNames('lfr__kaban-task-card', {
+						'lfr__kaban-task-card-dragging': isDragging,
+					})}
+					ref={ref}
+				>
+					<Card>
+						<Card.Body>
+							<Card.Row>
+								<div className="lfr__kaban-task-card-row">
+									<strong className="lfr__kaban-task-card-row-text-content">
+										{task.embedded.title}
+									</strong>
+
+									<ClayDropDownWithItems
+										items={getTaskItemsActions(
+											itemsActions,
+											loadData,
+											task
+										)}
+										trigger={
+											<ClayButton
+												aria-label={Liferay.Language.get(
+													'actions'
+												)}
+												className="component-action"
+												displayType="unstyled"
+												monospaced
+											>
+												<ClayIcon symbol="ellipsis-v" />
+											</ClayButton>
+										}
+									/>
+								</div>
+							</Card.Row>
+
+							<Card.Row>
+								<Card.Description
+									className="lfr__kaban-task-card-row-text-content"
+									displayType="subtitle"
+								>
+									{!projectId
+										? task.embedded.cmpProjectToCMPTasks
+												.title
+										: DateRenderer({
+												value: task.embedded.dueDate,
+											})}
+								</Card.Description>
+							</Card.Row>
+
+							<Card.Row>
+								<div className="lfr__kaban-task-card-row">
+									<StateLabel
+										dueDate={task.embedded.dueDate}
+										state={{
+											key: task.embedded.state.key,
+											name: task.embedded.state.name,
+										}}
+									/>
+
+									<div className="lfr__kaban-task-card-assignee">
+										<AssigneeAvatar
+											name={task.embedded.assignTo.name}
+											portrait={
+												task.embedded.assignTo.portrait
+											}
+										/>
+									</div>
+								</div>
+							</Card.Row>
+						</Card.Body>
+					</Card>
+				</div>
+			);
+		}
+	)
+);
+
+TaskCard.displayName = 'TaskCard';
+
+export default function Task(task: ITask) {
+	const [isHovering, setIsHovering] = React.useState(false);
+
+	const [{isDragging}, drag, preview] = useDrag({
+		collect: (monitor) => ({
+			isDragging: !!monitor.isDragging(),
+		}),
+		item: {task, type: ItemTypes.TASK},
+	});
+
+	return (
+		<div
+			className="lfr__kaban-task-card-container"
+			onMouseEnter={() => setIsHovering(true)}
+			onMouseLeave={() => setIsHovering(false)}
+		>
+			<TaskCard isDragging={isDragging} ref={drag} task={task} />
+
+			{isHovering && (
+				<div className="lfr__kaban-task-card-preview" ref={preview}>
+					<TaskCard task={task} />
+				</div>
+			)}
+		</div>
+	);
+}

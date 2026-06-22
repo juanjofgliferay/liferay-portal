@@ -21,6 +21,7 @@ import com.liferay.osb.faro.contacts.demo.internal.data.creator.SalesforceIndivi
 import com.liferay.osb.faro.engine.client.constants.FieldMappingConstants;
 import com.liferay.osb.faro.engine.client.model.Author;
 import com.liferay.osb.faro.engine.client.model.Channel;
+import com.liferay.osb.faro.engine.client.model.ChannelsConfiguration;
 import com.liferay.osb.faro.engine.client.model.Credentials;
 import com.liferay.osb.faro.engine.client.model.DataSource;
 import com.liferay.osb.faro.engine.client.model.FieldMapping;
@@ -34,17 +35,15 @@ import com.liferay.osb.faro.engine.client.model.credentials.TokenCredentials;
 import com.liferay.osb.faro.engine.client.model.provider.LiferayProvider;
 import com.liferay.osb.faro.engine.client.model.provider.SalesforceProvider;
 import com.liferay.osb.faro.model.FaroProject;
+import com.liferay.osb.faro.util.DateUtil;
 import com.liferay.osb.faro.util.FaroThreadLocal;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 
 import java.util.Collections;
 import java.util.Date;
@@ -180,23 +179,17 @@ public class NaniteDemoCreatorService extends DemoCreatorService {
 	}
 
 	protected void createIndividualSegments(String channelId) throws Exception {
+		User user = userLocalService.getUserByEmailAddress(
+			portal.getDefaultCompanyId(), "test@liferay.com");
+
 		for (Map.Entry<String, String> individualSegment :
 				_individualSegments.entrySet()) {
 
-			Http.Options options = new Http.Options();
-
-			options.addPart("channelId", channelId);
-			options.addPart("filter", individualSegment.getValue());
-			options.addPart("name", individualSegment.getKey());
-			options.addPart(
-				"segmentType", IndividualSegment.Type.DYNAMIC.name());
-			options.setHeaders(headers);
-			options.setLocation(
-				"http://localhost:8080/o/faro/contacts/" +
-					faroProject.getGroupId() + "/individual_segment");
-			options.setPost(true);
-
-			http.URLtoString(options);
+			contactsEngineClient.addIndividualSegment(
+				faroProject, user.getUserId(), channelId, null,
+				individualSegment.getValue(), false, individualSegment.getKey(),
+				IndividualSegment.Type.BATCH.name(), false,
+				IndividualSegment.Status.ACTIVE.name());
 		}
 	}
 
@@ -399,24 +392,25 @@ public class NaniteDemoCreatorService extends DemoCreatorService {
 				faroProject, "UpdateDynamicMembershipsNanite",
 				HashMapBuilder.<String, Object>put(
 					"dateModified",
-					() -> {
-						DateFormat dateFormat = new SimpleDateFormat(
-							"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-
-						return dateFormat.format(
-							new Date(System.currentTimeMillis() - Time.MONTH));
-					}
+					() -> DateUtil.formatDate(
+						new Date(System.currentTimeMillis() - Time.MONTH),
+						DateUtil.PATTERN_DATE_TIME)
 				).put(
 					"individualSegmentJSONObject",
 					HashMapBuilder.<String, Object>put(
 						"channelId", individualSegment.getChannelId()
 					).put(
-						"filter", individualSegment.getFilter()
+						"externalReferenceCode",
+						individualSegment.getExternalReferenceCode()
+					).put(
+						"filter", individualSegment.getFilterString()
 					).put(
 						"id", individualSegment.getId()
 					).put(
 						"includeAnonymousUsers",
 						individualSegment.isIncludeAnonymousUsers()
+					).put(
+						"sequential", individualSegment.isSequential()
 					).build()
 				).build());
 		}
@@ -464,11 +458,6 @@ public class NaniteDemoCreatorService extends DemoCreatorService {
 
 		// Field Mappings
 
-		createFieldMappings(
-			dataSource.getId(),
-			FieldMappingConstants.getSalesforceAccountFieldMappingMaps(),
-			FieldMappingConstants.CONTEXT_ORGANIZATION,
-			FieldMappingConstants.OWNER_TYPE_ACCOUNT);
 		createFieldMappings(
 			dataSource.getId(),
 			FieldMappingConstants.getSalesforceIndividualFieldMappingMaps(),
@@ -549,6 +538,13 @@ public class NaniteDemoCreatorService extends DemoCreatorService {
 		accountsConfiguration.setEnableAllAccounts(true);
 
 		salesforceProvider.setAccountsConfiguration(accountsConfiguration);
+
+		ChannelsConfiguration channelsConfiguration =
+			new ChannelsConfiguration();
+
+		channelsConfiguration.setEnableAllChannels(false);
+
+		salesforceProvider.setChannelsConfiguration(channelsConfiguration);
 
 		SalesforceProvider.ContactsConfiguration contactsConfiguration =
 			new SalesforceProvider.ContactsConfiguration();

@@ -100,7 +100,7 @@ public class AppServer {
 		}
 
 		if (javaHome == null) {
-			javaHome = System.getenv("JAVA_HOME");
+			javaHome = Environment.get("JAVA_HOME");
 		}
 
 		return javaHome;
@@ -114,7 +114,7 @@ public class AppServer {
 		}
 
 		if (javaOpts == null) {
-			javaOpts = System.getenv("JAVA_OPTS");
+			javaOpts = Environment.get("JAVA_OPTS");
 		}
 
 		return javaOpts;
@@ -135,7 +135,7 @@ public class AppServer {
 		String path = _project.getProperty("env.PATH");
 
 		if (path == null) {
-			path = System.getenv("PATH");
+			path = Environment.get("PATH");
 		}
 
 		String javaHome = _getJavaHome();
@@ -154,16 +154,10 @@ public class AppServer {
 	}
 
 	private String _getReadLiferayLogCommand() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(2);
 
-		sb.append("#!/bin/bash\n");
-
-		sb.append("while [ ! -f logs/liferay.*.log ]\n");
-		sb.append("do\n");
-		sb.append("sleep 1;\n");
-		sb.append("done\n");
-
-		sb.append("tail -f logs/liferay.*.log;");
+		sb.append("#!/bin/bash\nwhile [ ! -f logs/liferay.*.log ]\ndo\nsleep ");
+		sb.append("1;\ndone\ntail -f logs/liferay.*.log;");
 
 		File file = new File(_getAppServerParentDir(), "read_liferay_log.sh");
 

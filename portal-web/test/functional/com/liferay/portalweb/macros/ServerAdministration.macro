@@ -120,14 +120,16 @@ definition {
 			locator1 = "ServerAdministrationScript#EXECUTE_BUTTON",
 			value1 = "Execute");
 
-		Alert.viewSuccessMessage();
+		if (!(isSet(skipSuccessAssert)) || (${skipSuccessAssert} == "false")) {
+			Alert.viewSuccessMessage();
+		}
 	}
 
 	@summary = "Execute server resource actions"
 	macro executeServerResourcesActions(actionsDescription = null) {
 		Navigator.gotoNavItem(navItem = "Resources");
 
-		Panel.expandPanel(panel = "Clean Up Actions");
+		Panel.expandPanel(panel = "System Cleanup Actions");
 
 		var key_actionsDescription = ${actionsDescription};
 
@@ -151,10 +153,7 @@ definition {
 
 	@summary = "TearDown DM File Upload settings"
 	macro tearDownDMFileUploadSettings() {
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Server Administration");
+		ServerAdministration.openServerAdmin();
 
 		Navigator.gotoNavItem(navItem = "File Uploads");
 
@@ -169,10 +168,7 @@ definition {
 
 	@summary = "TearDown Mail server settings"
 	macro tearDownMailServerSettings() {
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Server Administration");
+		ServerAdministration.openServerAdmin();
 
 		Navigator.gotoNavItem(navItem = "Mail");
 

@@ -10,13 +10,13 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppHelperLocalServiceUtil;
 import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.DocumentRepository;
@@ -60,6 +60,17 @@ public class TemporaryFileEntriesCapabilityImpl
 			String fileName, String mimeType, InputStream inputStream)
 		throws PortalException {
 
+		return addTemporaryFileEntry(
+			temporaryFileEntriesScope, null, fileName, mimeType, inputStream);
+	}
+
+	@Override
+	public FileEntry addTemporaryFileEntry(
+			TemporaryFileEntriesScope temporaryFileEntriesScope,
+			String externalReferenceCode, String fileName, String mimeType,
+			InputStream inputStream)
+		throws PortalException {
+
 		Folder folder = _addTempFolder(temporaryFileEntriesScope);
 
 		File file = null;
@@ -77,9 +88,9 @@ public class TemporaryFileEntriesCapabilityImpl
 			serviceContext.setAddGuestPermissions(true);
 
 			return _documentRepository.addFileEntry(
-				null, temporaryFileEntriesScope.getUserId(),
+				externalReferenceCode, temporaryFileEntriesScope.getUserId(),
 				folder.getFolderId(), fileName, mimeType, fileName, fileName,
-				StringPool.BLANK, StringPool.BLANK, file, null, null,
+				StringPool.BLANK, StringPool.BLANK, file, null, null, null,
 				serviceContext);
 		}
 		catch (IOException ioException) {

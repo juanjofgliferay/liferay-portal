@@ -5,9 +5,11 @@
 
 package com.liferay.server.admin.web.internal.scripting.util;
 
+import com.liferay.petra.io.unsync.UnsyncPrintWriter;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.scripting.ScriptingException;
@@ -53,7 +55,7 @@ public class ServerScriptingUtil {
 		}
 		catch (Exception exception) {
 			throw new ScriptingException(
-				_getErrorMessage(exception.getMessage(), script), exception);
+				_getErrorMessage(exception, script), exception);
 		}
 		finally {
 			if (_log.isDebugEnabled()) {
@@ -71,13 +73,13 @@ public class ServerScriptingUtil {
 			Map<String, Object> inputObjects, String script)
 		throws Exception {
 
-		Class<?> clazz = ServerScriptingUtil.class;
-
 		Thread currentThread = Thread.currentThread();
 
 		GroovyShell groovyShell = new GroovyShell(
 			AggregateClassLoader.getAggregateClassLoader(
-				clazz.getClassLoader(), currentThread.getContextClassLoader()));
+				GroovyShell.class.getClassLoader(),
+				ServerScriptingUtil.class.getClassLoader(),
+				currentThread.getContextClassLoader()));
 
 		Script compiledScript = groovyShell.parse(script);
 
@@ -86,10 +88,8 @@ public class ServerScriptingUtil {
 		compiledScript.run();
 	}
 
-	private static String _getErrorMessage(
-		String exceptionMessage, String script) {
-
-		String errorMessage = exceptionMessage.concat(StringPool.NEW_LINE);
+	private static String _getErrorMessage(Exception exception, String script) {
+		String errorMessage = "Unable to execute script: \n";
 
 		try {
 			LineNumberReader lineNumberReader = new LineNumberReader(
@@ -112,11 +112,14 @@ public class ServerScriptingUtil {
 				_log.debug(ioException);
 			}
 
-			return StringBundler.concat(
-				exceptionMessage, StringPool.NEW_LINE, script);
+			errorMessage = errorMessage + script;
 		}
 
-		return errorMessage;
+		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
+
+		exception.printStackTrace(new UnsyncPrintWriter(unsyncStringWriter));
+
+		return errorMessage + unsyncStringWriter;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -8,12 +8,8 @@ package com.liferay.layout.seo.web.internal.servlet.taglib;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalService;
 import com.liferay.document.library.util.DLURLHelper;
-import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.service.DDMFieldLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
-import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.item.InfoItemDetails;
 import com.liferay.info.item.InfoItemFieldValues;
@@ -22,6 +18,7 @@ import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.layout.seo.kernel.LayoutSEOLink;
 import com.liferay.layout.seo.kernel.LayoutSEOLinkManager;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTag;
 import com.liferay.layout.seo.open.graph.OpenGraphConfiguration;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalService;
 import com.liferay.layout.seo.service.LayoutSEOSiteLocalService;
@@ -29,10 +26,12 @@ import com.liferay.layout.seo.template.LayoutSEOTemplateProcessor;
 import com.liferay.layout.seo.web.internal.configuration.LayoutSEODynamicRenderingConfiguration;
 import com.liferay.layout.seo.web.internal.util.OpenGraphImageProvider;
 import com.liferay.layout.seo.web.internal.util.TitleProvider;
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryTypeUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
@@ -41,13 +40,18 @@ import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.ListMergeable;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.translation.info.item.provider.InfoItemLanguagesProvider;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -56,11 +60,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -83,6 +83,15 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 		throws IOException {
 
 		try {
+			String layoutUtilityPageEntryType =
+				LayoutUtilityPageEntryTypeUtil.
+					getStatusLayoutUtilityPageEntryType(
+						httpServletResponse.getStatus());
+
+			if (Validator.isNotNull(layoutUtilityPageEntryType)) {
+				return;
+			}
+
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)httpServletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
@@ -122,7 +131,8 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 					_layoutSEOLinkManager.getLocalizedLayoutSEOLinks(
 						layout, locale, canonicalURL, availableLocales)) {
 
-				printWriter.println(_addLinkTag(layoutSEOLink));
+				printWriter.println(
+					_addLinkTag(httpServletRequest, layoutSEOLink));
 			}
 
 			LayoutSEOEntry layoutSEOEntry =
@@ -130,47 +140,24 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 					layout.getGroupId(), layout.isPrivateLayout(),
 					layout.getLayoutId());
 
-			if ((layoutSEOEntry != null) &&
-				(layoutSEOEntry.getDDMStorageId() != 0)) {
+			if (layoutSEOEntry != null) {
+				List<LayoutSEOEntryCustomMetaTag> layoutSEOEntryCustomMetaTags =
+					_layoutSEOEntryLocalService.getLayoutSEOEntryCustomMetaTags(
+						layoutSEOEntry.getGroupId(),
+						layoutSEOEntry.getLayoutSEOEntryId());
 
-				DDMFormValues ddmFormValues =
-					_ddmStorageEngineManager.getDDMFormValues(
-						layoutSEOEntry.getDDMStorageId());
+				for (LayoutSEOEntryCustomMetaTag layoutSEOEntryCustomMetaTag :
+						layoutSEOEntryCustomMetaTags) {
 
-				Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
-					ddmFormValues.getDDMFormFieldValuesMap();
-
-				for (List<DDMFormFieldValue> ddmFormFieldValues :
-						ddmFormFieldValuesMap.values()) {
-
-					for (DDMFormFieldValue nameDDMFormFieldValue :
-							ddmFormFieldValues) {
-
-						if (_isLegacyDDMFormFieldValue(nameDDMFormFieldValue)) {
-							List<DDMFormFieldValue> nestedDDMFormFieldValues =
-								nameDDMFormFieldValue.
-									getNestedDDMFormFieldValues();
-
-							nameDDMFormFieldValue =
-								nestedDDMFormFieldValues.get(0);
-						}
-
-						Value nameValue = nameDDMFormFieldValue.getValue();
-
-						List<DDMFormFieldValue> nestedDDMFormFieldValues =
-							nameDDMFormFieldValue.getNestedDDMFormFieldValues();
-
-						DDMFormFieldValue valueDDMFormFieldValue =
-							nestedDDMFormFieldValues.get(0);
-
-						Value valueValue = valueDDMFormFieldValue.getValue();
-
-						printWriter.println(
-							_getOpenGraphTag(
-								nameValue.getString(themeDisplay.getLocale()),
-								valueValue.getString(
-									themeDisplay.getLocale())));
-					}
+					printWriter.println(
+						_getMetaTag(
+							"property",
+							layoutSEOEntryCustomMetaTag.getProperty(),
+							GetterUtil.get(
+								layoutSEOEntryCustomMetaTag.getContent(
+									themeDisplay.getLocale()),
+								layoutSEOEntryCustomMetaTag.getContent(
+									themeDisplay.getSiteDefaultLocale()))));
 				}
 			}
 
@@ -201,24 +188,51 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 				}
 			}
 
+			ListMergeable<String> pageDescriptionListMergeable =
+				(ListMergeable<String>)httpServletRequest.getAttribute(
+					WebKeys.PAGE_DESCRIPTION);
+
+			if (!layout.isTypeAssetDisplay() &&
+				(pageDescriptionListMergeable != null)) {
+
+				String pageDescription =
+					pageDescriptionListMergeable.mergeToString(
+						StringPool.SPACE);
+
+				if (Validator.isNotNull(description) &&
+					Validator.isNotNull(pageDescription)) {
+
+					description = StringBundler.concat(
+						pageDescription, StringPool.PERIOD, StringPool.SPACE,
+						description);
+				}
+				else if (Validator.isNull(description) &&
+						 Validator.isNotNull(pageDescription)) {
+
+					description = pageDescription;
+				}
+			}
+
 			printWriter.println(
-				_getOpenGraphTag(
-					"og:description",
+				_getMetaTag(
+					"property", "og:description",
 					HtmlUtil.unescape(HtmlUtil.stripHtml(description))));
 
 			printWriter.println(
-				_getOpenGraphTag("og:locale", themeDisplay.getLanguageId()));
+				_getMetaTag(
+					"property", "og:locale", themeDisplay.getLanguageId()));
 
 			availableLocales.forEach(
 				availableLocale -> printWriter.println(
-					_getOpenGraphTag(
-						"og:locale:alternate",
+					_getMetaTag(
+						"property", "og:locale:alternate",
 						LocaleUtil.toLanguageId(availableLocale))));
 
 			Group group = layout.getGroup();
 
 			printWriter.println(
-				_getOpenGraphTag("og:site_name", group.getDescriptiveName()));
+				_getMetaTag(
+					"property", "og:site_name", group.getDescriptiveName()));
 
 			String title = _getMappedValue(
 				layout.getTypeSettingsProperty(
@@ -237,9 +251,9 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 				}
 			}
 
-			printWriter.println(_getOpenGraphTag("og:title", title));
+			printWriter.println(_getMetaTag("property", "og:title", title));
 
-			printWriter.println(_getOpenGraphTag("og:type", "website"));
+			printWriter.println(_getMetaTag("property", "og:type", "website"));
 
 			LayoutSEOLink layoutSEOLink =
 				_layoutSEOLinkManager.getCanonicalLayoutSEOLink(
@@ -247,7 +261,10 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 					themeDisplay);
 
 			printWriter.println(
-				_getOpenGraphTag("og:url", layoutSEOLink.getHref()));
+				_getMetaTag("property", "og:url", layoutSEOLink.getHref()));
+
+			printWriter.println(
+				_getMetaTag("name", "twitter:url", layoutSEOLink.getHref()));
 
 			OpenGraphImageProvider.OpenGraphImage openGraphImage =
 				_openGraphImageProvider.getOpenGraphImage(
@@ -255,36 +272,41 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 
 			if (openGraphImage != null) {
 				printWriter.println(
-					_getOpenGraphTag("og:image", openGraphImage.getURL()));
+					_getMetaTag(
+						"property", "og:image", openGraphImage.getURL()));
 
 				String alt = openGraphImage.getAlt();
 
 				if (alt != null) {
-					printWriter.println(_getOpenGraphTag("og:image:alt", alt));
+					printWriter.println(
+						_getMetaTag("property", "og:image:alt", alt));
 				}
 
 				if (themeDisplay.isSecure()) {
 					printWriter.println(
-						_getOpenGraphTag(
-							"og:image:secure_url", openGraphImage.getURL()));
+						_getMetaTag(
+							"property", "og:image:secure_url",
+							openGraphImage.getURL()));
 				}
 
 				String type = openGraphImage.getMimeType();
 
 				if (type != null) {
 					printWriter.println(
-						_getOpenGraphTag("og:image:type", type));
+						_getMetaTag("property", "og:image:type", type));
 				}
 
 				printWriter.println(
-					_getOpenGraphTag("og:image:url", openGraphImage.getURL()));
+					_getMetaTag(
+						"property", "og:image:url", openGraphImage.getURL()));
 
 				for (KeyValuePair keyValuePair :
 						openGraphImage.getMetadataTagKeyValuePairs()) {
 
 					printWriter.println(
-						_getOpenGraphTag(
-							keyValuePair.getKey(), keyValuePair.getValue()));
+						_getMetaTag(
+							"property", keyValuePair.getKey(),
+							keyValuePair.getValue()));
 				}
 			}
 		}
@@ -314,21 +336,25 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 		_titleProvider = new TitleProvider(_layoutSEOLinkManager);
 	}
 
-	private String _addLinkTag(LayoutSEOLink layoutSEOLink) {
+	private String _addLinkTag(
+		HttpServletRequest httpServletRequest, LayoutSEOLink layoutSEOLink) {
+
 		StringBundler sb = new StringBundler(10);
 
-		sb.append("<link data-senna-track=\"temporary\" ");
-		sb.append("href=\"");
+		sb.append("<link data-senna-track=\"temporary\" href=\"");
 		sb.append(layoutSEOLink.getHref());
-		sb.append("\" ");
+		sb.append(StringPool.QUOTE);
 
 		if (Validator.isNotNull(layoutSEOLink.getHrefLang())) {
-			sb.append("hreflang=\"");
+			sb.append(" hreflang=\"");
 			sb.append(layoutSEOLink.getHrefLang());
-			sb.append("\" ");
+			sb.append(StringPool.QUOTE);
 		}
 
-		sb.append("rel=\"");
+		sb.append(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest));
+		sb.append(" rel=\"");
 		sb.append(layoutSEOLink.getRelationship());
 		sb.append("\" />");
 
@@ -411,14 +437,17 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 			template, infoItemFieldValues, locale);
 	}
 
-	private String _getOpenGraphTag(String property, String content) {
-		if (Validator.isNull(content) || Validator.isNull(property)) {
+	private String _getMetaTag(
+		String attributeName, String attributeValue, String content) {
+
+		if (Validator.isNull(attributeValue) || Validator.isNull(content)) {
 			return StringPool.BLANK;
 		}
 
 		return StringBundler.concat(
-			"<meta property=\"", HtmlUtil.escapeAttribute(property),
-			"\" content=\"", HtmlUtil.escapeAttribute(content), "\">");
+			"<meta ", attributeName, "=\"",
+			HtmlUtil.escapeAttribute(attributeValue), "\" content=\"",
+			HtmlUtil.escapeAttribute(content), "\">");
 	}
 
 	private String _getTitle(HttpServletRequest httpServletRequest) {
@@ -430,27 +459,8 @@ public class OpenGraphTopHeadDynamicInclude extends BaseDynamicInclude {
 		}
 	}
 
-	private boolean _isLegacyDDMFormFieldValue(
-		DDMFormFieldValue ddmFormFieldValue) {
-
-		List<DDMFormFieldValue> nestedDDMFormFieldValues =
-			ddmFormFieldValue.getNestedDDMFormFieldValues();
-
-		DDMFormFieldValue childDDMFormFieldValue = nestedDDMFormFieldValues.get(
-			0);
-
-		if (Objects.equals(childDDMFormFieldValue.getName(), "property")) {
-			return true;
-		}
-
-		return false;
-	}
-
 	@Reference
 	private DDMFieldLocalService _ddmFieldLocalService;
-
-	@Reference
-	private DDMStorageEngineManager _ddmStorageEngineManager;
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;

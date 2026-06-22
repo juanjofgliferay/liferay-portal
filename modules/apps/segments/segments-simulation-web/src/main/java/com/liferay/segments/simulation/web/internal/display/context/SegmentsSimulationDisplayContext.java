@@ -6,18 +6,18 @@
 package com.liferay.segments.simulation.web.internal.display.context;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
@@ -31,12 +31,11 @@ import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Eduardo García
@@ -55,21 +54,12 @@ public class SegmentsSimulationDisplayContext {
 		_segmentsEntryLocalService = segmentsEntryLocalService;
 		_segmentsExperienceLocalService = segmentsExperienceLocalService;
 
-		RenderResponse renderResponse =
-			(RenderResponse)httpServletRequest.getAttribute(
-				JavaConstants.JAVAX_PORTLET_RESPONSE);
-
-		_liferayPortletResponse = PortalUtil.getLiferayPortletResponse(
-			renderResponse);
-
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
 	public Map<String, Object> getData() throws Exception {
 		return HashMapBuilder.<String, Object>put(
-			"deactivateSimulationURL", _getDeactivateSimulationURL()
-		).put(
 			"namespace", _getPortletNamespace()
 		).put(
 			"segmentationEnabled", _isSegmentationEnabled()
@@ -80,17 +70,7 @@ public class SegmentsSimulationDisplayContext {
 			"segmentsEntries", _getSegmentsEntriesJSONArray()
 		).put(
 			"segmentsExperiences", _getSegmentsExperiencesJSONArray()
-		).put(
-			"simulateSegmentsEntriesURL", _getSimulateSegmentsEntriesURL()
 		).build();
-	}
-
-	private String _getDeactivateSimulationURL() {
-		return PortletURLBuilder.createActionURL(
-			_liferayPortletResponse, SegmentsPortletKeys.SEGMENTS_SIMULATION
-		).setActionName(
-			"/segments_simulation/deactivate_simulation"
-		).buildString();
 	}
 
 	private String _getPortletNamespace() {
@@ -115,8 +95,24 @@ public class SegmentsSimulationDisplayContext {
 			return _segmentsEntries;
 		}
 
-		_segmentsEntries = SegmentsEntryServiceUtil.getSegmentsEntries(
-			_getStagingAwareGroupId(), true);
+		if (FeatureFlagManagerUtil.isEnabled(
+				CompanyConstants.SYSTEM, "LPD-78863")) {
+
+			_segmentsEntries = SegmentsEntryServiceUtil.getSegmentsEntries(
+				_getStagingAwareGroupId(),
+				new String[] {
+					SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
+					SegmentsEntryConstants.SOURCE_DEFAULT,
+					SegmentsEntryConstants.SOURCE_REFERRED
+				},
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+		}
+		else {
+			_segmentsEntries = SegmentsEntryServiceUtil.getSegmentsEntries(
+				_getStagingAwareGroupId(),
+				new String[] {SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND},
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+		}
 
 		return _segmentsEntries;
 	}
@@ -162,18 +158,8 @@ public class SegmentsSimulationDisplayContext {
 				"active", _isActive(segmentsExperience, segmentsExperiences)
 			).put(
 				"segmentsEntryName",
-				() -> {
-					SegmentsEntry segmentsEntry =
-						_segmentsEntryLocalService.fetchSegmentsEntry(
-							segmentsExperience.getSegmentsEntryId());
-
-					if (segmentsEntry != null) {
-						return segmentsEntry.getName(_themeDisplay.getLocale());
-					}
-
-					return SegmentsEntryConstants.getDefaultSegmentsEntryName(
-						_themeDisplay.getLocale());
-				}
+				segmentsExperience.getSegmentsEntryName(
+					_themeDisplay.getLocale())
 			).put(
 				"segmentsExperienceId",
 				segmentsExperience.getSegmentsExperienceId()
@@ -196,14 +182,6 @@ public class SegmentsSimulationDisplayContext {
 		return _segmentsExperiencesJSONArray;
 	}
 
-	private String _getSimulateSegmentsEntriesURL() {
-		return PortletURLBuilder.createActionURL(
-			_liferayPortletResponse, SegmentsPortletKeys.SEGMENTS_SIMULATION
-		).setActionName(
-			"/segments_simulation/simulate_segments_entries"
-		).buildString();
-	}
-
 	private long _getStagingAwareGroupId() {
 		if (_groupId != null) {
 			return _groupId;
@@ -223,10 +201,13 @@ public class SegmentsSimulationDisplayContext {
 		List<SegmentsExperience> segmentsExperiences) {
 
 		for (SegmentsExperience curSegmentsExperience : segmentsExperiences) {
-			if ((curSegmentsExperience.getSegmentsEntryId() ==
-					segmentsExperience.getSegmentsEntryId()) ||
-				(curSegmentsExperience.getSegmentsEntryId() ==
-					SegmentsEntryConstants.ID_DEFAULT)) {
+			if ((Objects.equals(
+					curSegmentsExperience.getSegmentsEntryERC(),
+					segmentsExperience.getSegmentsEntryERC()) &&
+				 Objects.equals(
+					 curSegmentsExperience.getSegmentsEntryScopeERC(),
+					 segmentsExperience.getSegmentsEntryScopeERC())) ||
+				curSegmentsExperience.hasDefaultSegmentsEntry()) {
 
 				if (curSegmentsExperience.getSegmentsExperienceId() ==
 						segmentsExperience.getSegmentsExperienceId()) {
@@ -259,7 +240,6 @@ public class SegmentsSimulationDisplayContext {
 	private Long _groupId;
 	private final HttpServletRequest _httpServletRequest;
 	private final Language _language;
-	private final LiferayPortletResponse _liferayPortletResponse;
 	private final SegmentsConfigurationProvider _segmentsConfigurationProvider;
 	private List<SegmentsEntry> _segmentsEntries;
 	private JSONArray _segmentsEntriesJSONArray;

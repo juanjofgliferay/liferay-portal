@@ -12,7 +12,6 @@ import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useMemo, useState} from 'react';
 
-import {fromControlsId} from '../../../app/components/layout_data_items/Collection';
 import {EDITABLE_FRAGMENT_ENTRY_PROCESSOR} from '../../../app/config/constants/editableFragmentEntryProcessor';
 import {ITEM_ACTIVATION_ORIGINS} from '../../../app/config/constants/itemActivationOrigins';
 import {ITEM_TYPES} from '../../../app/config/constants/itemTypes';
@@ -25,18 +24,14 @@ import {
 	useEditableProcessorUniqueId,
 	useSetEditableProcessorUniqueId,
 } from '../../../app/contexts/EditableProcessorContext';
-import {
-	useSelector,
-	useSelectorCallback,
-} from '../../../app/contexts/StoreContext';
+import {useSelector} from '../../../app/contexts/StoreContext';
 import selectCanUpdateEditables from '../../../app/selectors/selectCanUpdateEditables';
-import {selectPageContentDropdownItems} from '../../../app/selectors/selectPageContentDropdownItems';
 import getEditableId from '../../../app/utils/getEditableId';
-import getFirstControlsId from '../../../app/utils/getFirstControlsId';
-import getFragmentItem from '../../../app/utils/getFragmentItem';
+import {getPageContentDropdownItems} from '../../../app/utils/getPageContentDropdownItems';
 import ImageEditorModal from './ImageEditorModal';
 
 export default function PageContent({
+	actions,
 	classNameId,
 	classPK,
 	editableId,
@@ -53,54 +48,46 @@ export default function PageContent({
 	const canUpdateEditables = useSelector(selectCanUpdateEditables);
 	const fragmentEntryLinks = useSelector((state) => state.fragmentEntryLinks);
 	const [isHovered, setIsHovered] = useState(false);
-	const layoutData = useSelector((state) => state.layoutData);
-	const [
-		nextEditableProcessorUniqueId,
-		setNextEditableProcessorUniqueId,
-	] = useState(null);
+	const [nextEditableProcessorUniqueId, setNextEditableProcessorUniqueId] =
+		useState(null);
 	const selectItem = useSelectItem();
 	const setEditableProcessorUniqueId = useSetEditableProcessorUniqueId();
 	const [imageEditorParams, setImageEditorParams] = useState(null);
 
 	const isBeingEdited = useMemo(
-		() => editableId === fromControlsId(editableProcessorUniqueId),
+		() => editableId === editableProcessorUniqueId,
 		[editableId, editableProcessorUniqueId]
 	);
 
-	const dropdownItems = useSelectorCallback(
-		(state) => {
-			const pageContentDropdownItems = selectPageContentDropdownItems({
-				classNameId,
-				classPK,
-				externalReferenceCode,
-			})(state);
+	const dropdownItems = useMemo(() => {
+		const pageContentDropdownItems = getPageContentDropdownItems({
+			actions,
+		});
 
-			return pageContentDropdownItems?.map((item) => {
-				if (item.label === Liferay.Language.get('edit-image')) {
-					const {
-						editImageURL,
-						fileEntryId,
-						previewURL,
-						...editImageItem
-					} = item;
+		return pageContentDropdownItems?.map((item) => {
+			if (item.label === Liferay.Language.get('edit-image')) {
+				const {
+					editImageURL,
+					fileEntryId,
+					previewURL,
+					...editImageItem
+				} = item;
 
-					return {
-						...editImageItem,
-						onClick: () => {
-							setImageEditorParams({
-								editImageURL,
-								fileEntryId,
-								previewURL,
-							});
-						},
-					};
-				}
+				return {
+					...editImageItem,
+					onClick: () => {
+						setImageEditorParams({
+							editImageURL,
+							fileEntryId,
+							previewURL,
+						});
+					},
+				};
+			}
 
-				return item;
-			});
-		},
-		[classNameId, classPK, externalReferenceCode]
-	);
+			return item;
+		});
+	}, [actions]);
 
 	useEffect(() => {
 		if (editableProcessorUniqueId || !nextEditableProcessorUniqueId) {
@@ -121,10 +108,8 @@ export default function PageContent({
 				setIsHovered(editableId === hoveredItemId);
 			}
 			else {
-				const [
-					fragmentEntryLinkId,
-					...editableId
-				] = hoveredItemId.split('-');
+				const [fragmentEntryLinkId, ...editableId] =
+					hoveredItemId.split('-');
 
 				if (fragmentEntryLinks[fragmentEntryLinkId]) {
 					const fragmentEntryLink =
@@ -185,18 +170,6 @@ export default function PageContent({
 		hoverItem(null);
 	};
 
-	const getInlineTextItemId = () => {
-		return getFirstControlsId({
-			item: {
-				id: editableId,
-				itemType: ITEM_TYPES.editable,
-				parentId: getFragmentItem(layoutData, editableId.split('-')[0])
-					?.itemId,
-			},
-			layoutData,
-		});
-	};
-
 	const isInlineText = !!editableId;
 
 	const onClickEditInlineText = () => {
@@ -204,7 +177,7 @@ export default function PageContent({
 			return;
 		}
 
-		const itemId = getInlineTextItemId();
+		const itemId = editableId;
 
 		setNextEditableProcessorUniqueId(itemId);
 	};
@@ -214,7 +187,7 @@ export default function PageContent({
 			return;
 		}
 
-		const itemId = getInlineTextItemId();
+		const itemId = editableId;
 
 		selectItem(itemId, {
 			itemType: ITEM_TYPES.editable,
@@ -233,10 +206,10 @@ export default function PageContent({
 				},
 				'role': 'button',
 				'tabIndex': '0',
-		  }
+			}
 		: {
 				'aria-label': title,
-		  };
+			};
 
 	return (
 		<li

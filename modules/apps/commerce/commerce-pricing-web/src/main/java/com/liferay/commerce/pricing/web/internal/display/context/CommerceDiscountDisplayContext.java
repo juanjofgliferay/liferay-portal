@@ -7,6 +7,7 @@ package com.liferay.commerce.pricing.web.internal.display.context;
 
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.discount.constants.CommerceDiscountActionKeys;
 import com.liferay.commerce.discount.constants.CommerceDiscountConstants;
 import com.liferay.commerce.discount.model.CommerceDiscount;
@@ -46,19 +47,19 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.CustomAttributesUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -73,6 +74,7 @@ public class CommerceDiscountDisplayContext extends BasePricingDisplayContext {
 		CommerceDiscountRuleService commerceDiscountRuleService,
 		CommerceDiscountRuleTypeRegistry commerceDiscountRuleTypeRegistry,
 		CommerceDiscountTargetRegistry commerceDiscountTargetRegistry,
+		CommercePriceFormatter commercePriceFormatter,
 		PercentageFormatter percentageFormatter,
 		HttpServletRequest httpServletRequest, Portal portal) {
 
@@ -85,6 +87,7 @@ public class CommerceDiscountDisplayContext extends BasePricingDisplayContext {
 		_commerceDiscountRuleService = commerceDiscountRuleService;
 		_commerceDiscountRuleTypeRegistry = commerceDiscountRuleTypeRegistry;
 		_commerceDiscountTargetRegistry = commerceDiscountTargetRegistry;
+		_commercePriceFormatter = commercePriceFormatter;
 		_percentageFormatter = percentageFormatter;
 		this.portal = portal;
 	}
@@ -531,6 +534,13 @@ public class CommerceDiscountDisplayContext extends BasePricingDisplayContext {
 			StringPool.PERCENT);
 	}
 
+	public String getMaximumDiscountAmount() throws PortalException {
+		CommerceDiscount commerceDiscount = getCommerceDiscount();
+
+		return _getCommerceDiscountAmount(
+			commerceDiscount.getMaximumDiscountAmount());
+	}
+
 	public PortletURL getPortletDiscountRuleURL() {
 		PortletURL portletURL = liferayPortletResponse.createRenderURL();
 
@@ -573,14 +583,8 @@ public class CommerceDiscountDisplayContext extends BasePricingDisplayContext {
 	}
 
 	public boolean getUsePercentage(String commerceDiscountType) {
-		if (Objects.equals(
-				commerceDiscountType,
-				CommerceDiscountConstants.TYPE_PERCENTAGE)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			commerceDiscountType, CommerceDiscountConstants.TYPE_PERCENTAGE);
 	}
 
 	public boolean hasAddPermission() throws PortalException {
@@ -647,14 +651,16 @@ public class CommerceDiscountDisplayContext extends BasePricingDisplayContext {
 
 	protected final Portal portal;
 
-	private String _getCommerceDiscountAmount(
-		BigDecimal commerceDiscountAmount) {
+	private String _getCommerceDiscountAmount(BigDecimal commerceDiscountAmount)
+		throws PortalException {
 
 		if (commerceDiscountAmount == null) {
 			commerceDiscountAmount = BigDecimal.ZERO;
 		}
 
-		return String.valueOf(round(commerceDiscountAmount));
+		return _commercePriceFormatter.format(
+			round(commerceDiscountAmount),
+			commercePricingRequestHelper.getLocale());
 	}
 
 	private String _getManageDiscountPermissionsURL() throws PortalException {
@@ -700,6 +706,7 @@ public class CommerceDiscountDisplayContext extends BasePricingDisplayContext {
 	private final CommerceDiscountService _commerceDiscountService;
 	private final CommerceDiscountTargetRegistry
 		_commerceDiscountTargetRegistry;
+	private final CommercePriceFormatter _commercePriceFormatter;
 	private final PercentageFormatter _percentageFormatter;
 
 }

@@ -6,6 +6,7 @@
 package com.liferay.commerce.internal.upgrade.v8_7_1;
 
 import com.liferay.commerce.product.constants.CommerceChannelAccountEntryRelConstants;
+import com.liferay.commerce.product.model.CommerceChannelAccountEntryRel;
 import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelLocalService;
 import com.liferay.commerce.term.model.CommerceTermEntry;
 import com.liferay.commerce.term.service.CommerceTermEntryLocalService;
@@ -63,20 +64,33 @@ public class AccountEntryUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select accountEntryId, userId, defaultBillingAddressId, " +
 					"defaultShippingAddressId from AccountEntry");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
 				long userId = resultSet.getLong("userId");
 				long accountEntryId = resultSet.getLong("accountEntryId");
+
 				long defaultBillingAddressId = resultSet.getLong(
 					"defaultBillingAddressId");
-				long defaultShippingAddressId = resultSet.getLong(
-					"defaultShippingAddressId");
 
 				Address billingAddress = _addressLocalService.fetchAddress(
 					defaultBillingAddressId);
 
 				if (billingAddress != null) {
+					CommerceChannelAccountEntryRel
+						existingCommerceChannelAccountEntryRel =
+							_commerceChannelAccountEntryRelLocalService.
+								fetchCommerceChannelAccountEntryRel(
+									accountEntryId, Address.class.getName(),
+									billingAddress.getAddressId(), 0,
+									CommerceChannelAccountEntryRelConstants.
+										TYPE_BILLING_ADDRESS);
+
+					if (existingCommerceChannelAccountEntryRel != null) {
+						continue;
+					}
+
 					_commerceChannelAccountEntryRelLocalService.
 						addCommerceChannelAccountEntryRel(
 							userId, accountEntryId, Address.class.getName(),
@@ -85,10 +99,26 @@ public class AccountEntryUpgradeProcess extends UpgradeProcess {
 								TYPE_BILLING_ADDRESS);
 				}
 
+				long defaultShippingAddressId = resultSet.getLong(
+					"defaultShippingAddressId");
+
 				Address shippingAddress = _addressLocalService.fetchAddress(
 					defaultShippingAddressId);
 
 				if (shippingAddress != null) {
+					CommerceChannelAccountEntryRel
+						existingCommerceChannelAccountEntryRel =
+							_commerceChannelAccountEntryRelLocalService.
+								fetchCommerceChannelAccountEntryRel(
+									accountEntryId, Address.class.getName(),
+									shippingAddress.getAddressId(), 0,
+									CommerceChannelAccountEntryRelConstants.
+										TYPE_SHIPPING_ADDRESS);
+
+					if (existingCommerceChannelAccountEntryRel != null) {
+						continue;
+					}
+
 					_commerceChannelAccountEntryRelLocalService.
 						addCommerceChannelAccountEntryRel(
 							userId, accountEntryId, Address.class.getName(),
@@ -104,6 +134,7 @@ public class AccountEntryUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select accountEntryId, userId, defaultDeliveryCTermEntryId, " +
 					"defaultPaymentCTermEntryId from AccountEntry");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {

@@ -16,12 +16,12 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.zip.ZipWriter;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.File;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Zsolt Berentey
@@ -66,6 +66,16 @@ public class ExportImportHelperUtil {
 			companyId, excludeDataAlwaysStaged);
 	}
 
+	public static Portlet getDataSiteLevelPortlet(
+		String className, long companyId, boolean excludeDataAlwaysStaged) {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getDataSiteLevelPortlet(
+			className, companyId, excludeDataAlwaysStaged);
+	}
+
 	public static List<Portlet> getDataSiteLevelPortlets(long companyId)
 		throws Exception {
 
@@ -84,6 +94,16 @@ public class ExportImportHelperUtil {
 
 		return exportImportHelper.getDataSiteLevelPortlets(
 			companyId, excludeDataAlwaysStaged);
+	}
+
+	public static List<Portlet> getExportablePortlets(
+		long companyId, boolean excludeDataAlwaysStaged, long groupId) {
+
+		ExportImportHelper exportImportHelper =
+			_exportImportHelperSnapshot.get();
+
+		return exportImportHelper.getExportablePortlets(
+			companyId, excludeDataAlwaysStaged, groupId);
 	}
 
 	public static String getExportableRootPortletId(

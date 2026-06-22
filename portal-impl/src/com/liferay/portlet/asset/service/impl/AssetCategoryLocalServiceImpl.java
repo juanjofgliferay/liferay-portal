@@ -6,12 +6,20 @@
 package com.liferay.portlet.asset.service.impl;
 
 import com.liferay.asset.kernel.exception.AssetCategoryNameException;
+import com.liferay.asset.kernel.exception.AssetCategoryParentCategoryIdException;
+import com.liferay.asset.kernel.exception.CategoryExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.DuplicateCategoryException;
 import com.liferay.asset.kernel.exception.DuplicateCategoryExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.InvalidAssetCategoryException;
+import com.liferay.asset.kernel.exception.NoSuchCategoryException;
+import com.liferay.asset.kernel.exception.NoSuchVocabularyException;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.asset.kernel.service.persistence.AssetVocabularyPersistence;
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManagerUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
@@ -46,9 +54,11 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.asset.service.base.AssetCategoryLocalServiceBaseImpl;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 
@@ -56,6 +66,7 @@ import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -105,18 +116,17 @@ public class AssetCategoryLocalServiceImpl
 
 		User user = _userLocalService.getUser(userId);
 
-		Locale defaultLocale = PortalUtil.getSiteDefaultLocale(groupId);
-
-		String name = titleMap.get(defaultLocale);
-
-		name = ModelHintsUtil.trimString(
-			AssetCategory.class.getName(), "name", name);
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
 
 		if (categoryProperties == null) {
 			categoryProperties = new String[0];
 		}
 
-		validate(0, parentCategoryId, name, vocabularyId);
+		Locale defaultLocale = PortalUtil.getSiteDefaultLocale(groupId);
+
+		String name = trimmedTitleMap.get(defaultLocale);
+
+		validate(0, groupId, parentCategoryId, name, vocabularyId);
 
 		AssetCategory parentCategory = null;
 
@@ -125,11 +135,13 @@ public class AssetCategoryLocalServiceImpl
 				parentCategoryId);
 		}
 
-		_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
+		if (vocabularyId != AssetVocabularyConstants.EMPTY_VOCABULARY_ID) {
+			_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
+		}
 
 		long categoryId = counterLocalService.increment();
 
-		_validateExternalReferenceCode(externalReferenceCode, groupId);
+		_validateExternalReferenceCode(externalReferenceCode, groupId, 0);
 
 		AssetCategory category = assetCategoryPersistence.create(categoryId);
 
@@ -150,9 +162,16 @@ public class AssetCategoryLocalServiceImpl
 		}
 
 		category.setName(name);
-		category.setTitleMap(titleMap);
+		category.setTitleMap(trimmedTitleMap);
 		category.setDescriptionMap(descriptionMap);
 		category.setVocabularyId(vocabularyId);
+
+		if (EmptyModelManagerUtil.isEmptyModel()) {
+			category.setStatus(WorkflowConstants.STATUS_EMPTY);
+		}
+		else {
+			category.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		category = assetCategoryPersistence.update(category);
 
@@ -416,6 +435,109 @@ public class AssetCategoryLocalServiceImpl
 	}
 
 	@Override
+	public AssetCategory getOrAddEmptyCategory(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException {
+
+		return EmptyModelManagerUtil.getOrAddEmptyModel(
+			AssetCategory.class,
+			() -> assetCategoryLocalService.addCategory(
+				externalReferenceCode, userId, groupId,
+				AssetCategoryConstants.EMPTY_PARENT_CATEGORY_ID,
+				Collections.singletonMap(
+					LocaleUtil.getSiteDefault(), externalReferenceCode),
+				null, AssetVocabularyConstants.EMPTY_VOCABULARY_ID,
+				new String[0], new ServiceContext()),
+			externalReferenceCode,
+			this::fetchAssetCategoryByExternalReferenceCode,
+			this::getAssetCategoryByExternalReferenceCode, groupId, "category");
+	}
+
+	@Override
+	public AssetCategory getOrAddEmptyCategoryWithAncestors(
+			String externalReferenceCode, long userId, long groupId,
+			String parentCategoryExternalReferenceCode,
+			String vocabularyExternalReferenceCode)
+		throws PortalException {
+
+		AssetCategory assetCategory =
+			assetCategoryLocalService.getOrAddEmptyCategory(
+				externalReferenceCode, userId, groupId);
+
+		if ((assetCategory.getParentCategoryId() !=
+				AssetCategoryConstants.EMPTY_PARENT_CATEGORY_ID) ||
+			(assetCategory.getVocabularyId() !=
+				AssetVocabularyConstants.EMPTY_VOCABULARY_ID)) {
+
+			return assetCategory;
+		}
+
+		AssetVocabulary assetVocabulary = null;
+
+		if (Validator.isNotNull(vocabularyExternalReferenceCode)) {
+			assetVocabulary =
+				_assetVocabularyLocalService.getOrAddEmptyVocabulary(
+					vocabularyExternalReferenceCode, userId, groupId);
+
+			assetCategory.setVocabularyId(assetVocabulary.getVocabularyId());
+		}
+
+		if (Validator.isNotNull(parentCategoryExternalReferenceCode)) {
+			AssetCategory parentAssetCategory =
+				assetCategoryLocalService.getOrAddEmptyCategory(
+					parentCategoryExternalReferenceCode, userId, groupId);
+
+			long parentVocabularyId = parentAssetCategory.getVocabularyId();
+
+			if (assetVocabulary != null) {
+				if ((parentVocabularyId !=
+						AssetVocabularyConstants.EMPTY_VOCABULARY_ID) &&
+					(parentVocabularyId != assetVocabulary.getVocabularyId())) {
+
+					throw new AssetCategoryParentCategoryIdException(
+						"Parent category exists in a different vocabulary");
+				}
+
+				parentAssetCategory.setVocabularyId(
+					assetVocabulary.getVocabularyId());
+			}
+			else if ((parentVocabularyId !=
+						AssetVocabularyConstants.EMPTY_VOCABULARY_ID) &&
+					 (assetCategory.getVocabularyId() ==
+						 AssetVocabularyConstants.EMPTY_VOCABULARY_ID)) {
+
+				assetCategory.setVocabularyId(parentVocabularyId);
+			}
+
+			boolean emptyParentCategory = false;
+
+			if (parentAssetCategory.getParentCategoryId() ==
+					AssetCategoryConstants.EMPTY_PARENT_CATEGORY_ID) {
+
+				emptyParentCategory = true;
+
+				parentAssetCategory.setParentCategoryId(
+					AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
+			}
+
+			if ((assetVocabulary != null) || emptyParentCategory) {
+				parentAssetCategory =
+					assetCategoryLocalService.updateAssetCategory(
+						parentAssetCategory);
+			}
+
+			assetCategory.setParentCategoryId(
+				parentAssetCategory.getCategoryId());
+		}
+		else {
+			assetCategory.setParentCategoryId(
+				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID);
+		}
+
+		return assetCategoryLocalService.updateAssetCategory(assetCategory);
+	}
+
+	@Override
 	public List<Long> getSubcategoryIds(long parentCategoryId) {
 		AssetCategory parentAssetCategory =
 			assetCategoryPersistence.fetchByPrimaryKey(parentCategoryId);
@@ -516,41 +638,7 @@ public class AssetCategoryLocalServiceImpl
 		AssetCategory category = assetCategoryPersistence.findByPrimaryKey(
 			categoryId);
 
-		validate(
-			categoryId, parentCategoryId, category.getName(), vocabularyId);
-
-		if (categoryId == parentCategoryId) {
-			throw new InvalidAssetCategoryException(parentCategoryId, 2);
-		}
-
-		AssetCategory parentCategory = null;
-
-		if (parentCategoryId > 0) {
-			parentCategory = assetCategoryPersistence.findByPrimaryKey(
-				parentCategoryId);
-
-			String treePath = parentCategory.getTreePath();
-
-			if (treePath.startsWith(category.getTreePath())) {
-				throw new InvalidAssetCategoryException(categoryId, 1);
-			}
-		}
-
-		if (vocabularyId != category.getVocabularyId()) {
-			_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
-
-			updateChildrenVocabularyId(category, vocabularyId);
-
-			category.setVocabularyId(vocabularyId);
-		}
-
-		if (parentCategoryId != category.getParentCategoryId()) {
-			_rebuildTreePath(category, parentCategory);
-
-			category.setParentCategoryId(parentCategoryId);
-		}
-
-		return assetCategoryPersistence.update(category);
+		return _moveCategory(category, parentCategoryId, vocabularyId);
 	}
 
 	@Override
@@ -614,10 +702,10 @@ public class AssetCategoryLocalServiceImpl
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public AssetCategory updateCategory(
-			long userId, long categoryId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long categoryId,
+			long parentCategoryId, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, long vocabularyId,
+			String[] categoryProperties, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Category
@@ -625,55 +713,34 @@ public class AssetCategoryLocalServiceImpl
 		AssetCategory category = assetCategoryPersistence.findByPrimaryKey(
 			categoryId);
 
+		if (Validator.isNotNull(externalReferenceCode)) {
+			_validateExternalReferenceCode(
+				externalReferenceCode, category.getGroupId(), categoryId);
+
+			category.setExternalReferenceCode(externalReferenceCode);
+		}
+
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
+
 		Locale defaultLocale = PortalUtil.getSiteDefaultLocale(
 			category.getGroupId());
 
-		String name = titleMap.get(defaultLocale);
-
-		name = ModelHintsUtil.trimString(
-			AssetCategory.class.getName(), "name", name);
+		String name = trimmedTitleMap.get(defaultLocale);
 
 		if (categoryProperties == null) {
 			categoryProperties = new String[0];
 		}
 
-		validate(categoryId, parentCategoryId, name, vocabularyId);
-
-		if (categoryId == parentCategoryId) {
-			throw new InvalidAssetCategoryException(
-				parentCategoryId,
-				InvalidAssetCategoryException.CANNOT_MOVE_INTO_ITSELF);
-		}
-
-		AssetCategory parentCategory = null;
-
-		if (parentCategoryId > 0) {
-			parentCategory = assetCategoryPersistence.findByPrimaryKey(
-				parentCategoryId);
-		}
-
-		if (vocabularyId != category.getVocabularyId()) {
-			_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
-
-			parentCategoryId =
-				AssetCategoryConstants.DEFAULT_PARENT_CATEGORY_ID;
-
-			category.setVocabularyId(vocabularyId);
-
-			updateChildrenVocabularyId(category, vocabularyId);
-		}
-
-		if (parentCategoryId != category.getParentCategoryId()) {
-			_rebuildTreePath(category, parentCategory);
-
-			category.setParentCategoryId(parentCategoryId);
-		}
-
 		category.setName(name);
-		category.setTitleMap(titleMap);
+		category.setTitleMap(trimmedTitleMap);
 		category.setDescriptionMap(descriptionMap);
+		category.setStatus(
+			EmptyModelManagerUtil.solveEmptyModel(
+				externalReferenceCode, category.getModelClassName(),
+				category.getCompanyId(), category.getGroupId(),
+				category.getStatus(), () -> WorkflowConstants.STATUS_APPROVED));
 
-		return assetCategoryPersistence.update(category);
+		return _moveCategory(category, parentCategoryId, vocabularyId);
 	}
 
 	protected SearchContext buildSearchContext(
@@ -751,7 +818,7 @@ public class AssetCategoryLocalServiceImpl
 	}
 
 	protected void validate(
-			long categoryId, long parentCategoryId, String name,
+			long categoryId, long groupId, long parentCategoryId, String name,
 			long vocabularyId)
 		throws PortalException {
 
@@ -771,6 +838,91 @@ public class AssetCategoryLocalServiceImpl
 					"There is another category named ", name,
 					" as a child of category ", parentCategoryId));
 		}
+
+		if (vocabularyId != AssetVocabularyConstants.EMPTY_VOCABULARY_ID) {
+			AssetVocabulary assetVocabulary =
+				_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
+
+			if (assetVocabulary.getGroupId() != groupId) {
+				throw new NoSuchVocabularyException(
+					StringBundler.concat(
+						"Vocabulary ", vocabularyId,
+						" does not exist in group ", groupId));
+			}
+		}
+
+		if (parentCategoryId > 0) {
+			AssetCategory parentAssetCategory = getCategory(parentCategoryId);
+
+			if (parentAssetCategory.getGroupId() != groupId) {
+				throw new NoSuchCategoryException(
+					StringBundler.concat(
+						"Category ", parentCategoryId,
+						" does not exist in group ", groupId));
+			}
+		}
+	}
+
+	private Map<Locale, String> _getTrimmedTitleMap(
+		Map<Locale, String> titleMap) {
+
+		Map<Locale, String> trimmedTitleMap = new HashMap<>();
+
+		for (Map.Entry<Locale, String> entry : titleMap.entrySet()) {
+			trimmedTitleMap.put(
+				entry.getKey(),
+				ModelHintsUtil.trimString(
+					AssetCategory.class.getName(), "name", entry.getValue()));
+		}
+
+		return trimmedTitleMap;
+	}
+
+	private AssetCategory _moveCategory(
+			AssetCategory category, long parentCategoryId, long vocabularyId)
+		throws PortalException {
+
+		validate(
+			category.getCategoryId(), category.getGroupId(), parentCategoryId,
+			category.getName(), vocabularyId);
+
+		if (category.getCategoryId() == parentCategoryId) {
+			throw new InvalidAssetCategoryException(
+				parentCategoryId,
+				InvalidAssetCategoryException.CANNOT_MOVE_INTO_ITSELF);
+		}
+
+		AssetCategory parentCategory = null;
+
+		if (parentCategoryId > 0) {
+			parentCategory = assetCategoryPersistence.findByPrimaryKey(
+				parentCategoryId);
+
+			String treePath = parentCategory.getTreePath();
+
+			if (treePath.startsWith(category.getTreePath())) {
+				throw new InvalidAssetCategoryException(
+					category.getCategoryId(),
+					InvalidAssetCategoryException.
+						CANNOT_MOVE_INTO_CHILD_CATEGORY);
+			}
+		}
+
+		if (parentCategoryId != category.getParentCategoryId()) {
+			_rebuildTreePath(category, parentCategory);
+
+			category.setParentCategoryId(parentCategoryId);
+		}
+
+		if (vocabularyId != category.getVocabularyId()) {
+			_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
+
+			updateChildrenVocabularyId(category, vocabularyId);
+
+			category.setVocabularyId(vocabularyId);
+		}
+
+		return assetCategoryPersistence.update(category);
 	}
 
 	private void _rebuildTreePath(
@@ -809,23 +961,38 @@ public class AssetCategoryLocalServiceImpl
 	}
 
 	private void _validateExternalReferenceCode(
-			String externalReferenceCode, long groupId)
+			String externalReferenceCode, long groupId, long categoryId)
 		throws PortalException {
 
 		if (Validator.isNull(externalReferenceCode)) {
 			return;
 		}
 
+		int maxLength = ModelHintsUtil.getMaxLength(
+			AssetCategory.class.getName(), "externalReferenceCode");
+
+		if (externalReferenceCode.length() > maxLength) {
+			throw new CategoryExternalReferenceCodeException(
+				StringBundler.concat(
+					"External reference code length cannot exceed ", maxLength,
+					" characters"));
+		}
+
 		AssetCategory assetCategory = assetCategoryPersistence.fetchByERC_G(
 			externalReferenceCode, groupId);
 
-		if (assetCategory != null) {
+		if ((assetCategory != null) &&
+			(assetCategory.getCategoryId() != categoryId)) {
+
 			throw new DuplicateCategoryExternalReferenceCodeException(
 				StringBundler.concat(
 					"Duplicate category external reference code ",
-					externalReferenceCode, " in group", groupId));
+					externalReferenceCode, " in group ", groupId));
 		}
 	}
+
+	@BeanReference(type = AssetVocabularyLocalService.class)
+	private AssetVocabularyLocalService _assetVocabularyLocalService;
 
 	@BeanReference(type = AssetVocabularyPersistence.class)
 	private AssetVocabularyPersistence _assetVocabularyPersistence;

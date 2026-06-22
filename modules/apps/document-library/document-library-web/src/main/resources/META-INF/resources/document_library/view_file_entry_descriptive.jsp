@@ -80,13 +80,38 @@ else {
 	>
 		<%= latestFileVersion.getTitle() %>
 	</aui:a>
+
+	<span>
+
+		<%
+		DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDisplayContext(liferayPortletRequest, liferayPortletResponse);
+		%>
+
+		<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+			<clay:icon
+				aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+				cssClass="c-ml-2 c-mt-1 lfr-portal-tooltip text-4 text-secondary"
+				data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+				symbol="password-policies"
+			/>
+		</c:if>
+	</span>
 </h2>
 
 <span>
 	<liferay-ui:message arguments="<%= new String[] {modifiedDateDescription, HtmlUtil.escape(latestFileVersion.getUserName())} %>" key="modified-x-ago-by-x" />
 </span>
 <span>
-	<%= DLUtil.getAbsolutePath(liferayPortletRequest, dlAdminDisplayContext.getRootFolderId(), fileEntry.getFolderId()).replace(StringPool.RAQUO_CHAR, StringPool.GREATER_THAN) %>
+
+	<%
+	long folderId = fileEntry.getFolderId();
+
+	if (fileShortcut != null) {
+		folderId = fileShortcut.getFolderId();
+	}
+	%>
+
+	<%= DLUtil.getAbsolutePath(liferayPortletRequest, dlAdminDisplayContext.getRootFolderId(), folderId).replace(StringPool.RAQUO_CHAR, StringPool.GREATER_THAN) %>
 </span>
 
 <c:if test="<%= latestFileVersion.getModel() instanceof DLFileVersion %>">
@@ -103,7 +128,34 @@ else {
 </c:if>
 
 <span class="file-entry-status">
-	<aui:workflow-status showIcon="<%= false %>" showLabel="<%= false %>" status="<%= latestFileVersion.getStatus() %>" />
+	<c:if test="<%= !latestFileVersion.isApproved() && dlViewFileVersionDisplayContext.hasApprovedVersion() %>">
+		<liferay-portal-workflow:status
+			showStatusLabel="<%= false %>"
+			status="<%= WorkflowConstants.STATUS_APPROVED %>"
+		/>
+	</c:if>
+
+	<liferay-portal-workflow:status
+		showStatusLabel="<%= false %>"
+		status="<%= latestFileVersion.getStatus() %>"
+	/>
+
+	<c:if test="<%= latestFileVersion.isScheduled() %>">
+
+		<%
+		String displayDateString = StringPool.BLANK;
+
+		if (latestFileVersion.getDisplayDate() != null) {
+			displayDateString = dateTimeFormat.format(latestFileVersion.getDisplayDate());
+		}
+		%>
+
+		<span aria-label="<%= displayDateString %>" class="lfr-portal-tooltip" tabindex="0" title="<%= displayDateString %>">
+			<clay:icon
+				symbol="question-circle-full"
+			/>
+		</span>
+	</c:if>
 
 	<c:choose>
 		<c:when test="<%= fileShortcut != null %>">
@@ -113,10 +165,13 @@ else {
 			/>
 		</c:when>
 		<c:when test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
-			<clay:icon
-				cssClass="inline-item inline-item-after state-icon"
-				symbol="lock"
-			/>
+			<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
+				<clay:icon
+					aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
+					cssClass="inline-item inline-item-after state-icon"
+					symbol="lock"
+				/>
+			</span>
 		</c:when>
 	</c:choose>
 

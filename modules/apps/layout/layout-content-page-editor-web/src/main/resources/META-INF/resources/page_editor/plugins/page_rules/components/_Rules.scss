@@ -1,52 +1,48 @@
-@import 'cadmin-variables';
-
 html#{$cadmin-selector} .cadmin {
-	.page-editor__rule:hover {
-		background: $cadmin-list-group-active-bg;
-	}
-
-	.page-editor__rule-builder-item {
-		border: 1px solid $cadmin-gray-300;
-		border-radius: 0.25rem;
-		height: 50px;
+	.page-editor__rule {
+		&:focus-visible,
+		&:hover {
+			background: $cadmin-list-group-active-bg;
+		}
 
 		&:focus-visible {
-			box-shadow: 0 0 0 2px $cadmin-white, 0 0 0 4px $cadmin-primary-l0;
+			box-shadow: 0 0 0 2px $cadmin-primary-l0;
 			outline: 0;
+			z-index: 1;
 		}
 
-		.page-editor__rule-builder-delete-button {
-			opacity: 0;
+		input {
+			&:active,
+			&:focus {
+				outline-color: $cadmin-primary-l1;
+			}
 		}
 
-		&:hover .page-editor__rule-builder-delete-button,
-		&:focus-within:not(:focus) .page-editor__rule-builder-delete-button,
-		&:focus-visible .page-editor__rule-builder-delete-button,
-		.page-editor__rule-builder-delete-button:focus-visible {
-			opacity: 1;
-		}
-
-		&.page-editor__rule-builder-item--action {
-			border-left: 4px solid $purple;
-		}
-
-		&.page-editor__rule-builder-item--condition {
-			border-left: 4px solid $cadmin-warning-l1;
+		.text-muted .label {
+			color: $cadmin-secondary-l1;
 		}
 	}
 
+	.layout__row-builder-item.page-editor__rule-builder-item--action {
+		border-left: 4px solid $cadmin-purple;
+	}
+
+	.page-editor__rule-builder-date-picker,
 	.page-editor__rule-builder-select {
 		max-width: 180px;
+	}
+
+	.page-editor__rule-builder-date-picker .form-feedback-item {
+		white-space: nowrap;
+	}
+
+	.page-editor__rule-builder-multi-select {
+		min-width: 180px;
 	}
 
 	.page-editor__rule-builder-section {
 		.lexicon-icon {
 			margin-top: 0;
-		}
-
-		.panel-header {
-			background-color: $cadmin-gray-100;
-			border-bottom: none;
 		}
 
 		.page-editor__rule-builder-section-title {
@@ -60,6 +56,10 @@ html#{$cadmin-selector} .cadmin {
 				color: $cadmin-warning-l1;
 				transform: rotate(-90deg);
 			}
+		}
+
+		.lfr-objects__code-editor {
+			height: 60vh;
 		}
 	}
 }

@@ -112,11 +112,7 @@ public class ObjectRelationshipPersistenceTest {
 
 	@Test
 	public void testUpdateExisting() throws Exception {
-		long pk = RandomTestUtil.nextLong();
-
-		ObjectRelationship newObjectRelationship = _persistence.create(pk);
-
-		newObjectRelationship.setMvccVersion(RandomTestUtil.nextLong());
+		ObjectRelationship newObjectRelationship = addObjectRelationship();
 
 		newObjectRelationship.setUuid(RandomTestUtil.randomString());
 
@@ -249,6 +245,13 @@ public class ObjectRelationshipPersistenceTest {
 	}
 
 	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
 	public void testCountByObjectDefinitionId1() throws Exception {
 		_persistence.countByObjectDefinitionId1(RandomTestUtil.nextLong());
 
@@ -277,6 +280,14 @@ public class ObjectRelationshipPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_U() throws Exception {
+		_persistence.countByC_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_U(0L, 0L);
+	}
+
+	@Test
 	public void testCountByODI1_E() throws Exception {
 		_persistence.countByODI1_E(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
@@ -299,6 +310,14 @@ public class ObjectRelationshipPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByODI1_R(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByODI2_E() throws Exception {
+		_persistence.countByODI2_E(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByODI2_E(0L, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -774,8 +793,6 @@ public class ObjectRelationshipPersistenceTest {
 
 		ObjectRelationship objectRelationship = _persistence.create(pk);
 
-		objectRelationship.setMvccVersion(RandomTestUtil.nextLong());
-
 		objectRelationship.setUuid(RandomTestUtil.randomString());
 
 		objectRelationship.setExternalReferenceCode(
@@ -826,3 +843,4 @@ public class ObjectRelationshipPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1339717317

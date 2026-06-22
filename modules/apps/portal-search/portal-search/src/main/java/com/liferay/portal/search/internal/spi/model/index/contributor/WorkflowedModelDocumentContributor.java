@@ -10,8 +10,10 @@ import com.liferay.portal.kernel.model.WorkflowedModel;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentContributor;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.UserLocalService;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
@@ -31,8 +33,23 @@ public class WorkflowedModelDocumentContributor
 		WorkflowedModel workflowedModel = (WorkflowedModel)baseModel;
 
 		document.addKeyword(Field.STATUS, workflowedModel.getStatus());
-		document.addKeyword(
-			"statusByUserId", workflowedModel.getStatusByUserId());
+
+		long userId = workflowedModel.getStatusByUserId();
+
+		document.addKeyword("statusByUserId", userId);
+
+		if (userId != 0) {
+			String[] userData = UserDataUtil.getUserData(
+				baseModel.getClass(), userLocalService, userId);
+
+			if (userData != null) {
+				document.addKeyword(
+					"statusByUserExternalReferenceCode", userData[0]);
+			}
+		}
 	}
+
+	@Reference
+	protected UserLocalService userLocalService;
 
 }

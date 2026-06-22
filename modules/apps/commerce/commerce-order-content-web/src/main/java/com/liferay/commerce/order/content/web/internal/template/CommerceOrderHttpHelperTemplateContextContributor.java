@@ -6,11 +6,13 @@
 package com.liferay.commerce.order.content.web.internal.template;
 
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.template.TemplateContextContributor;
+import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,9 +33,16 @@ public class CommerceOrderHttpHelperTemplateContextContributor
 		HttpServletRequest httpServletRequest) {
 
 		contextObjects.put("commerceOrderHttpHelper", _commerceOrderHttpHelper);
+		contextObjects.put(
+			"commerceReturnsEnabled",
+			FeatureFlagManagerUtil.isEnabled(
+				_portal.getCompanyId(httpServletRequest), "LPD-10562"));
 	}
 
 	@Reference
 	private CommerceOrderHttpHelper _commerceOrderHttpHelper;
+
+	@Reference
+	private Portal _portal;
 
 }

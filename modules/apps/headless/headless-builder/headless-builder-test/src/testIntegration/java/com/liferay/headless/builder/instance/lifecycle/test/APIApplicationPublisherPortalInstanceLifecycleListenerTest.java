@@ -7,7 +7,7 @@ package com.liferay.headless.builder.instance.lifecycle.test;
 
 import com.liferay.headless.builder.application.APIApplication;
 import com.liferay.headless.builder.test.BaseTestCase;
-import com.liferay.headless.builder.util.APIApplicationTestUtil;
+import com.liferay.headless.builder.test.util.APIApplicationTestUtil;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -19,7 +19,7 @@ import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.test.rule.FeatureFlags;
+import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -35,7 +35,7 @@ import org.osgi.util.promise.Promise;
 /**
  * @author Carlos Correa
  */
-@FeatureFlags("LPS-178642")
+@FeatureFlag("LPS-178642")
 public class APIApplicationPublisherPortalInstanceLifecycleListenerTest
 	extends BaseTestCase {
 
@@ -204,9 +204,6 @@ public class APIApplicationPublisherPortalInstanceLifecycleListenerTest
 		promise.getValue();
 	}
 
-	@Inject
-	private static ServiceComponentRuntime _serviceComponentRuntime;
-
 	@Inject(
 		filter = "component.name=com.liferay.headless.builder.internal.model.listener.APIApplicationPublisherObjectEntryModelListener"
 	)
@@ -216,5 +213,8 @@ public class APIApplicationPublisherPortalInstanceLifecycleListenerTest
 		filter = "component.name=com.liferay.headless.builder.internal.instance.lifecycle.APIApplicationPublisherPortalInstanceLifecycleListener"
 	)
 	private PortalInstanceLifecycleListener _portalInstanceLifecycleListener;
+
+	@Inject
+	private ServiceComponentRuntime _serviceComponentRuntime;
 
 }

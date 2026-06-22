@@ -5,6 +5,7 @@
 
 package com.liferay.depot.service;
 
+import com.liferay.depot.model.DepotEntry;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -26,46 +27,57 @@ public class DepotEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry addDepotEntry(
+	public DepotEntry addDepotEntry(
 			java.util.Map<java.util.Locale, String> nameMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
+			java.util.Map<java.util.Locale, String> descriptionMap, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryService.addDepotEntry(
-			nameMap, descriptionMap, serviceContext);
+			nameMap, descriptionMap, type, serviceContext);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry deleteDepotEntry(
-			long depotEntryId)
+	public DepotEntry deleteDepotEntry(long depotEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryService.deleteDepotEntry(depotEntryId);
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-			getCurrentAndGroupConnectedDepotEntries(
-				long groupId, int start, int end)
+	public DepotEntry fetchGroupDepotEntry(long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _depotEntryService.getCurrentAndGroupConnectedDepotEntries(
-			groupId, start, end);
+		return _depotEntryService.fetchGroupDepotEntry(groupId);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry getDepotEntry(long depotEntryId)
+	public java.util.List<DepotEntry> getCurrentAndGroupConnectedDepotEntries(
+			long groupId, int type, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _depotEntryService.getCurrentAndGroupConnectedDepotEntries(
+			groupId, type, start, end);
+	}
+
+	@Override
+	public DepotEntry getDepotEntry(long depotEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryService.getDepotEntry(depotEntryId);
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-			getGroupConnectedDepotEntries(
-				long groupId, boolean ddmStructuresAvailable, int start,
-				int end)
+	public java.util.List<Long> getDepotEntryGroupIds(
+		long companyId, long userId, int type) {
+
+		return _depotEntryService.getDepotEntryGroupIds(
+			companyId, userId, type);
+	}
+
+	@Override
+	public java.util.List<DepotEntry> getGroupConnectedDepotEntries(
+			long groupId, boolean ddmStructuresAvailable, int start, int end)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryService.getGroupConnectedDepotEntries(
@@ -73,23 +85,24 @@ public class DepotEntryServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntry>
-			getGroupConnectedDepotEntries(long groupId, int start, int end)
+	public java.util.List<DepotEntry> getGroupConnectedDepotEntries(
+			long groupId, int type, int start, int end)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryService.getGroupConnectedDepotEntries(
-			groupId, start, end);
+			groupId, type, start, end);
 	}
 
 	@Override
-	public int getGroupConnectedDepotEntriesCount(long groupId)
+	public int getGroupConnectedDepotEntriesCount(long groupId, int type)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _depotEntryService.getGroupConnectedDepotEntriesCount(groupId);
+		return _depotEntryService.getGroupConnectedDepotEntriesCount(
+			groupId, type);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry getGroupDepotEntry(long groupId)
+	public DepotEntry getGroupDepotEntry(long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryService.getGroupDepotEntry(groupId);
@@ -106,7 +119,7 @@ public class DepotEntryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntry updateDepotEntry(
+	public DepotEntry updateDepotEntry(
 			long depotEntryId, java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
 			java.util.Map<String, Boolean> depotAppCustomizationMap,
@@ -133,3 +146,4 @@ public class DepotEntryServiceWrapper
 	private DepotEntryService _depotEntryService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1245536009

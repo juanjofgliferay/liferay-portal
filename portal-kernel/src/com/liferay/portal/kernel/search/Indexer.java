@@ -7,11 +7,15 @@ package com.liferay.portal.kernel.search;
 
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.util.Collection;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 /**
  * @author Brian Wing Shun Chan
@@ -20,7 +24,8 @@ import javax.portlet.PortletResponse;
  */
 public interface Indexer<T> {
 
-	public static final int DEFAULT_INTERVAL = 10000;
+	public static final int DEFAULT_INTERVAL = GetterUtil.getInteger(
+		PropsUtil.get(PropsKeys.INDEX_INTERVAL), 10000);
 
 	public void delete(long companyId, String uid) throws SearchException;
 
@@ -28,6 +33,10 @@ public interface Indexer<T> {
 	public void delete(T object) throws SearchException;
 
 	public String getClassName();
+
+	public default long getCompanyId() {
+		return 0;
+	}
 
 	public Document getDocument(T object) throws SearchException;
 
@@ -40,6 +49,10 @@ public interface Indexer<T> {
 
 	public IndexerPostProcessor[] getIndexerPostProcessors();
 
+	public default long getReindexEntryCount(long companyId) {
+		return Long.MAX_VALUE;
+	}
+
 	public String[] getSearchClassNames();
 
 	/**
@@ -48,6 +61,13 @@ public interface Indexer<T> {
 	 */
 	@Deprecated
 	public String getSortField(String orderByCol);
+
+	public default Summary getSummary(
+			Document document, Locale locale, String snippet)
+		throws SearchException {
+
+		return null;
+	}
 
 	public Summary getSummary(
 			Document document, String snippet, PortletRequest portletRequest,
@@ -123,8 +143,6 @@ public interface Indexer<T> {
 	@Bufferable
 	public void reindex(String className, long classPK) throws SearchException;
 
-	public void reindex(String[] ids) throws SearchException;
-
 	@Bufferable
 	public void reindex(T object) throws SearchException;
 
@@ -132,6 +150,17 @@ public interface Indexer<T> {
 		throws SearchException {
 
 		reindex(object);
+	}
+
+	public void reindexCompany(long companyId) throws SearchException;
+
+	public default Document safeGetDocument(T object) {
+		try {
+			return getDocument(object);
+		}
+		catch (SearchException searchException) {
+			return null;
+		}
 	}
 
 	public Hits search(SearchContext searchContext) throws SearchException;

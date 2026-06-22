@@ -6,11 +6,11 @@ exports[`SelectDataSource should render 1`] = `
     class="select-data-source-root"
   >
     <section>
-      <h4
-        class="text-uppercase section-title"
+      <div
+        class="h4 text-uppercase section-title"
       >
         section 1 title
-      </h4>
+      </div>
       <div
         class="section-items"
       >
@@ -22,11 +22,11 @@ exports[`SelectDataSource should render 1`] = `
             class="image"
           >
             <svg
-              class="lexicon-icon lexicon-icon-csv-logo icon-root icon-size-xxxl"
+              class="lexicon-icon lexicon-icon-csv_logo icon-root icon-size-xxxl"
               role="presentation"
             >
               <use
-                href="#csv-logo"
+                href="#csv_logo"
               />
             </svg>
           </div>
@@ -36,13 +36,12 @@ exports[`SelectDataSource should render 1`] = `
             <div
               class="title"
             >
-              <h4>
+              <div
+                class="h4 m-0"
+              >
                 test
-              </h4>
+              </div>
             </div>
-            <div
-              class="subtitle"
-            />
           </div>
         </a>
         <a
@@ -53,11 +52,11 @@ exports[`SelectDataSource should render 1`] = `
             class="image"
           >
             <svg
-              class="lexicon-icon lexicon-icon-liferay-logo icon-root icon-size-xxxl"
+              class="lexicon-icon lexicon-icon-liferay_logo icon-root icon-size-xxxl"
               role="presentation"
             >
               <use
-                href="#liferay-logo"
+                href="#liferay_logo"
               />
             </svg>
           </div>
@@ -67,23 +66,22 @@ exports[`SelectDataSource should render 1`] = `
             <div
               class="title"
             >
-              <h4>
+              <div
+                class="h4 m-0"
+              >
                 test1
-              </h4>
+              </div>
             </div>
-            <div
-              class="subtitle"
-            />
           </div>
         </a>
       </div>
     </section>
     <section>
-      <h4
-        class="text-uppercase section-title"
+      <div
+        class="h4 text-uppercase section-title"
       >
         section two title
-      </h4>
+      </div>
       <div
         class="section-items"
       >
@@ -95,11 +93,11 @@ exports[`SelectDataSource should render 1`] = `
             class="image"
           >
             <svg
-              class="lexicon-icon lexicon-icon-salesforce-logo icon-root icon-size-xxl"
+              class="lexicon-icon lexicon-icon-salesforce_logo icon-root icon-size-xxl"
               role="presentation"
             >
               <use
-                href="#salesforce-logo"
+                href="#salesforce_logo"
               />
             </svg>
           </div>
@@ -109,13 +107,12 @@ exports[`SelectDataSource should render 1`] = `
             <div
               class="title"
             >
-              <h4>
+              <div
+                class="h4 m-0"
+              >
                 test1
-              </h4>
+              </div>
             </div>
-            <div
-              class="subtitle"
-            />
           </div>
         </button>
       </div>

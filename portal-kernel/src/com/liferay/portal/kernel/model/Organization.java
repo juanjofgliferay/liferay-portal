@@ -91,7 +91,7 @@ public interface Organization
 
 	public String getParentOrganizationName();
 
-	public javax.portlet.PortletPreferences getPreferences();
+	public jakarta.portlet.PortletPreferences getPreferences();
 
 	public int getPrivateLayoutsPageCount();
 
@@ -119,3 +119,4 @@ public interface Organization
 	public boolean isRoot();
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:440731118

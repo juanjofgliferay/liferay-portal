@@ -19,7 +19,7 @@
 	managementToolbarDisplayContext="<%= new SiteMySitesManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, siteMySitesDisplayContext) %>"
 />
 
-<aui:form action="<%= siteMySitesDisplayContext.getPortletURL() %>" cssClass="container-fluid container-fluid-max-xl" method="get" name="fm">
+<aui:form action="<%= siteMySitesDisplayContext.getPortletURL() %>" cssClass="container-fluid" method="get" name="fm">
 	<liferay-ui:search-container
 		searchContainer="<%= siteMySitesDisplayContext.getGroupSearchContainer() %>"
 	>
@@ -139,7 +139,7 @@
 							<clay:dropdown-actions
 								aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 								dropdownItems="<%= dropdownItems %>"
-								propsTransformer="js/SiteDropdownDefaultPropsTransformer"
+								propsTransformer="{SiteDropdownDefaultPropsTransformer} from site-my-sites-web"
 							/>
 						</liferay-ui:search-container-column-text>
 					</c:if>
@@ -240,7 +240,7 @@
 							<clay:dropdown-actions
 								aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 								dropdownItems="<%= dropdownItems %>"
-								propsTransformer="js/SiteDropdownDefaultPropsTransformer"
+								propsTransformer="{SiteDropdownDefaultPropsTransformer} from site-my-sites-web"
 							/>
 						</liferay-ui:search-container-column-text>
 					</c:if>

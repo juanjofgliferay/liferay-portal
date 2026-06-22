@@ -1,0 +1,143 @@
+@import 'atlas-custom-properties/_variables';
+
+@import '../../../css/variables';
+
+$fieldTypeFieldGroup: $primary;
+$fieldTypeFieldSet: $success;
+
+.field-type {
+	border: 2px solid transparent;
+	border-radius: 4px;
+	box-sizing: border-box;
+	padding: 0.75rem 0;
+	transition: transform 0.3s $animation;
+
+	&:not(.disabled) {
+		cursor: move;
+		cursor: grab;
+	}
+
+	&:focus,
+	&:hover:not(.disabled) {
+		border-color: $blue-l2;
+		box-shadow: 0 2px 4px unquote('hsl(from #{$gray-900} h s l / 0.12)');
+		outline: none;
+	}
+
+	&.disabled .autofit-col {
+		opacity: 0.3;
+	}
+
+	&.dragging {
+		background-color: $gray-300;
+		opacity: 0.5;
+	}
+
+	.sticker {
+		background-color: $gray-100;
+		color: $gray-600;
+	}
+
+	.list-group-subtitle {
+		line-height: 0.875rem;
+
+		small {
+			font-size: 0.75rem;
+		}
+	}
+
+	.reference-mark {
+		color: #b95000;
+		font-size: 6px;
+		margin: 2px 0 0 2px;
+	}
+}
+
+.field-type-drag-preview {
+	max-width: 280px;
+
+	.field-type {
+		background-color: $white;
+		border-color: $blue-l2;
+		box-shadow: 0 8px 16px unquote('hsl(from #{$gray-900} h s l / 0.16)');
+		cursor: grabbing;
+	}
+}
+
+.field-type-list {
+	.field-type-fieldgroup {
+		.field-type-header {
+			&:hover {
+				background-color: unquote(
+					'hsl(from #{$fieldTypeFieldGroup} h s l / 0.05)'
+				) !important;
+			}
+
+			.data-layout-builder-field-sticker {
+				background-color: unquote(
+					'hsl(from #{$fieldTypeFieldGroup} h s l / 0.1)'
+				) !important;
+
+				.sticker-overlay {
+					svg {
+						color: $fieldTypeFieldGroup !important;
+					}
+				}
+			}
+		}
+
+		.field-type-item:before {
+			border-color: unquote(
+				'hsl(from #{$fieldTypeFieldGroup} h s l / 0.2)'
+			);
+		}
+	}
+
+	.field-type-fieldset {
+		.field-type-header {
+			&:hover {
+				background-color: unquote(
+					'hsl(from #{$fieldTypeFieldSet} h s l / 0.1)'
+				) !important;
+			}
+
+			.data-layout-builder-field-sticker {
+				background-color: unquote(
+					'hsl(from #{$fieldTypeFieldSet} h s l / 0.2)'
+				) !important;
+
+				.sticker-overlay {
+					svg {
+						color: $fieldTypeFieldSet !important;
+					}
+				}
+			}
+		}
+
+		.field-type-item:before {
+			border-color: unquote(
+				'hsl(from #{$fieldTypeFieldSet} h s l / 0.2)'
+			);
+		}
+	}
+
+	.field-type-item:before {
+		border-left: 2px solid;
+		content: '';
+		height: calc(100% - 15px);
+		position: absolute;
+		width: 0;
+	}
+
+	.panel-body {
+		padding-right: 0;
+	}
+}
+
+.rtl {
+	.field-type-drag-preview {
+		.field-type {
+			transform: translate(2250px);
+		}
+	}
+}
