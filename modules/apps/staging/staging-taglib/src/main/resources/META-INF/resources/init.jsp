@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -55,6 +55,7 @@ page import="com.liferay.portal.kernel.exception.NoSuchLayoutException" %><%@
 page import="com.liferay.portal.kernel.exception.NoSuchRoleException" %><%@
 page import="com.liferay.portal.kernel.exception.RemoteOptionsException" %><%@
 page import="com.liferay.portal.kernel.exception.SystemException" %><%@
+page import="com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil" %><%@
 page import="com.liferay.portal.kernel.group.capability.GroupCapabilityUtil" %><%@
 page import="com.liferay.portal.kernel.json.JSONArray" %><%@
 page import="com.liferay.portal.kernel.json.JSONFactoryUtil" %><%@
@@ -101,10 +102,16 @@ page import="com.liferay.portal.kernel.util.Tuple" %><%@
 page import="com.liferay.portal.kernel.util.UnicodeFormatter" %><%@
 page import="com.liferay.portal.kernel.util.UnicodeProperties" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
+page import="com.liferay.staging.StagingGroupHelper" %><%@
+page import="com.liferay.staging.StagingGroupHelperUtil" %><%@
 page import="com.liferay.staging.constants.StagingProcessesWebKeys" %><%@
 page import="com.liferay.staging.taglib.internal.display.context.LayoutsTreeDisplayContext" %><%@
 page import="com.liferay.staging.taglib.internal.display.context.ProcessListDisplayContext" %><%@
 page import="com.liferay.staging.taglib.internal.display.context.RenderControlsDisplayContext" %>
+
+<%@ page import="jakarta.portlet.PortletMode" %><%@
+page import="jakarta.portlet.PortletRequest" %><%@
+page import="jakarta.portlet.PortletResponse" %>
 
 <%@ page import="java.io.Serializable" %>
 
@@ -120,10 +127,6 @@ page import="java.util.Objects" %><%@
 page import="java.util.ResourceBundle" %><%@
 page import="java.util.Set" %>
 
-<%@ page import="javax.portlet.PortletMode" %><%@
-page import="javax.portlet.PortletRequest" %><%@
-page import="javax.portlet.PortletResponse" %>
-
 <liferay-frontend:defineObjects />
 
 <liferay-staging:defineObjects />
@@ -133,9 +136,9 @@ page import="javax.portlet.PortletResponse" %>
 <portlet:defineObjects />
 
 <%
-PortletRequest portletRequest = (PortletRequest)request.getAttribute(JavaConstants.JAVAX_PORTLET_REQUEST);
+PortletRequest portletRequest = (PortletRequest)request.getAttribute(JavaConstants.JAKARTA_PORTLET_REQUEST);
 
-PortletResponse portletResponse = (PortletResponse)request.getAttribute(JavaConstants.JAVAX_PORTLET_RESPONSE);
+PortletResponse portletResponse = (PortletResponse)request.getAttribute(JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 if ((portletRequest == null) || (portletResponse == null)) {
 	currentURL = PortalUtil.getCurrentURL(request);

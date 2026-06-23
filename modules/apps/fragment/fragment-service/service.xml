@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.fragment">
 	<namespace>Fragment</namespace>
-	<entity local-service="true" name="FragmentCollection" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="FragmentCollection" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -26,6 +26,7 @@
 		<column name="fragmentCollectionKey" type="String" />
 		<column name="name" type="String" />
 		<column name="description" type="String" />
+		<column name="marketplace" type="boolean" />
 		<column name="lastPublishDate" type="Date" />
 
 		<!-- Order -->
@@ -47,8 +48,17 @@
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column comparator="LIKE" name="name" />
 		</finder>
+		<finder name="G_M" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="groupId" />
+			<finder-column name="marketplace" />
+		</finder>
+		<finder name="G_LikeN_M" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="groupId" />
+			<finder-column comparator="LIKE" name="name" />
+			<finder-column name="marketplace" />
+		</finder>
 	</entity>
-	<entity local-service="true" name="FragmentComposition" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="FragmentComposition" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -74,6 +84,7 @@
 		<column name="description" type="String" />
 		<column name="data" type="String" />
 		<column name="previewFileEntryId" type="long" />
+		<column name="marketplace" type="boolean" />
 		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -119,7 +130,7 @@
 			<finder-column name="status" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="FragmentEntry" remote-service="true" uuid="true" versioned="true">
+	<entity external-reference-code="group" local-service="true" name="FragmentEntry" remote-service="true" uuid="true" versioned="true">
 
 		<!-- PK fields -->
 
@@ -149,6 +160,7 @@
 		<column name="configuration" type="String" />
 		<column name="icon" type="String" />
 		<column name="previewFileEntryId" type="long" />
+		<column name="marketplace" type="boolean" />
 		<column name="readOnly" type="boolean" />
 		<column name="type" type="int" />
 		<column name="typeOptions" type="String" />
@@ -211,7 +223,7 @@
 			<finder-column name="status" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="FragmentEntryLink" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="FragmentEntryLink" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -231,8 +243,9 @@
 
 		<!-- Other fields -->
 
-		<column name="originalFragmentEntryLinkId" type="long" />
-		<column name="fragmentEntryId" type="long" />
+		<column name="originalFragmentEntryLinkERC" type="String" />
+		<column name="fragmentEntryERC" type="String" />
+		<column name="fragmentEntryScopeERC" type="String" />
 		<column name="segmentsExperienceId" type="long" />
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
@@ -263,15 +276,11 @@
 		<finder name="GroupId" return-type="Collection">
 			<finder-column name="groupId" />
 		</finder>
-		<finder name="FragmentEntryId" return-type="Collection">
-			<finder-column arrayable-operator="true" name="fragmentEntryId" />
-		</finder>
 		<finder name="RendererKey" return-type="Collection">
 			<finder-column name="rendererKey" />
 		</finder>
-		<finder name="G_F" return-type="Collection">
-			<finder-column name="groupId" />
-			<finder-column name="fragmentEntryId" />
+		<finder name="Type" return-type="Collection">
+			<finder-column name="type" />
 		</finder>
 		<finder name="G_P" return-type="Collection">
 			<finder-column name="groupId" />
@@ -281,24 +290,19 @@
 			<finder-column name="companyId" />
 			<finder-column arrayable-operator="OR" name="rendererKey" />
 		</finder>
-		<finder name="F_D" return-type="Collection">
-			<finder-column arrayable-operator="true" name="fragmentEntryId" />
-			<finder-column name="deleted" />
+		<finder name="FEERC_FESERC" return-type="Collection">
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
 		</finder>
-		<finder name="G_OFELI_P" return-type="Collection">
+		<finder name="G_OFELERC_P" return-type="Collection">
 			<finder-column name="groupId" />
-			<finder-column name="originalFragmentEntryLinkId" />
+			<finder-column name="originalFragmentEntryLinkERC" />
 			<finder-column name="plid" />
 		</finder>
-		<finder name="G_F_C" return-type="Collection">
+		<finder name="G_FEERC_FESERC" return-type="Collection">
 			<finder-column name="groupId" />
-			<finder-column name="fragmentEntryId" />
-			<finder-column name="classNameId" />
-		</finder>
-		<finder name="G_F_P" return-type="Collection">
-			<finder-column name="groupId" />
-			<finder-column name="fragmentEntryId" />
-			<finder-column name="plid" />
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
 		</finder>
 		<finder name="G_S_P" return-type="Collection">
 			<finder-column name="groupId" />
@@ -315,11 +319,28 @@
 			<finder-column name="plid" />
 			<finder-column name="deleted" />
 		</finder>
-		<finder name="G_F_C_C" return-type="Collection">
+		<finder name="FEERC_FESERC_D" return-type="Collection">
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
+			<finder-column name="deleted" />
+		</finder>
+		<finder name="G_FEERC_FESERC_C" return-type="Collection">
 			<finder-column name="groupId" />
-			<finder-column name="fragmentEntryId" />
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
 			<finder-column name="classNameId" />
-			<finder-column name="classPK" />
+		</finder>
+		<finder name="G_FEERC_FESERC_P" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
+			<finder-column name="plid" />
+		</finder>
+		<finder name="G_FEERC_FESERC_D" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
+			<finder-column name="deleted" />
 		</finder>
 		<finder name="G_S_C_C" return-type="Collection">
 			<finder-column name="groupId" />
@@ -339,6 +360,13 @@
 			<finder-column name="plid" />
 			<finder-column name="rendererKey" />
 		</finder>
+		<finder name="G_FEERC_FESERC_C_C" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="fragmentEntryERC" />
+			<finder-column name="fragmentEntryScopeERC" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+		</finder>
 	</entity>
 	<exceptions>
 		<exception>DuplicateFragmentCollection</exception>
@@ -357,5 +385,7 @@
 		<exception>InvalidFile</exception>
 		<exception>InvalidFragmentCompositionKey</exception>
 		<exception>RequiredFragmentEntry</exception>
+		<exception>RequiredFragmentEntryVersion</exception>
+		<exception>UnsupportedUnpublishFragmentEntryOperation</exception>
 	</exceptions>
 </service-builder>

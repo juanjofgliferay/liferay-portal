@@ -7,7 +7,7 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 import {StoreContextProvider} from '../../../../../../src/main/resources/META-INF/resources/page_editor/app/contexts/StoreContext';
 import PageContents from '../../../../../../src/main/resources/META-INF/resources/page_editor/plugins/page_content/components/PageContents';
@@ -57,6 +57,18 @@ const contents = {
 	],
 };
 
+const selectOption = async (option) => {
+	const dropdown = screen.getByRole('combobox');
+
+	await userEvent.click(dropdown, {
+		advanceTimers: jest.advanceTimersByTime,
+	});
+
+	const dropdownItems = document.querySelectorAll('.dropdown-item');
+
+	fireEvent.click(dropdownItems[option]);
+};
+
 const renderPageContents = ({pageContents = contents} = {}) =>
 	render(
 		<StoreContextProvider
@@ -84,12 +96,14 @@ describe('PageContent', () => {
 		});
 	});
 
-	it('filters content according to a input value', () => {
+	it('filters content according to a input value', async () => {
 		renderPageContents();
 		const input = screen.getByLabelText('search-content');
 
-		act(() => {
-			userEvent.type(input, 'WC');
+		await act(async () => {
+			await userEvent.type(input, 'WC', {
+				advanceTimers: jest.advanceTimersByTime,
+			});
 
 			jest.runAllTimers();
 		});
@@ -102,15 +116,23 @@ describe('PageContent', () => {
 		expect(screen.queryByText('mountain.png')).not.toBeInTheDocument();
 	});
 
-	it('filters content according to a type value', () => {
+	it('filters content according to a type value: Collections', async () => {
 		renderPageContents();
-		const dropdown = screen.getByRole('combobox');
 
-		userEvent.click(dropdown);
+		await selectOption(1);
 
-		const dropdownItems = document.querySelectorAll('.dropdown-item');
+		expect(screen.queryByText('Collection1')).toBeInTheDocument();
+		expect(screen.queryByText('mountain.png')).not.toBeInTheDocument();
+		expect(
+			screen.queryByText('This is a inline text')
+		).not.toBeInTheDocument();
+		expect(screen.queryByText('WC1')).not.toBeInTheDocument();
+	});
 
-		fireEvent.click(dropdownItems[2]);
+	it('filters content according to a type value: Document', async () => {
+		renderPageContents();
+
+		await selectOption(2);
 
 		expect(screen.queryByText('mountain.png')).toBeInTheDocument();
 		expect(screen.queryByText('Collection1')).not.toBeInTheDocument();
@@ -118,5 +140,29 @@ describe('PageContent', () => {
 			screen.queryByText('This is a inline text')
 		).not.toBeInTheDocument();
 		expect(screen.queryByText('WC1')).not.toBeInTheDocument();
+	});
+
+	it('filters content according to a type value: Inline Text', async () => {
+		renderPageContents();
+
+		await selectOption(3);
+
+		expect(screen.queryByText('This is a inline text')).toBeInTheDocument();
+		expect(screen.queryByText('mountain.png')).not.toBeInTheDocument();
+		expect(screen.queryByText('Collection1')).not.toBeInTheDocument();
+		expect(screen.queryByText('WC1')).not.toBeInTheDocument();
+	});
+
+	it('filters content according to a type value: Web Content', async () => {
+		renderPageContents();
+
+		await selectOption(4);
+
+		expect(screen.queryByText('WC1')).toBeInTheDocument();
+		expect(
+			screen.queryByText('This is a inline text')
+		).not.toBeInTheDocument();
+		expect(screen.queryByText('mountain.png')).not.toBeInTheDocument();
+		expect(screen.queryByText('Collection1')).not.toBeInTheDocument();
 	});
 });

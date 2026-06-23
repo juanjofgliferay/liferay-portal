@@ -6,22 +6,32 @@
 package com.liferay.wiki.internal.exportimport.data.handler.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.props.test.util.PropsTemporarySwapper;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.service.WikiNodeLocalServiceUtil;
 import com.liferay.wiki.test.util.WikiTestUtil;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -37,10 +47,176 @@ public class WikiNodeStagedModelDataHandlerTest
 		new LiferayIntegrationTestRule();
 
 	@Override
+	@Test
+	public void testCleanStagedModelDataHandler() throws Exception {
+		super.testCleanStagedModelDataHandler();
+
+		try (PropsTemporarySwapper propsTemporarySwapper =
+				new PropsTemporarySwapper(
+					"feature.flag.LPD-35013", Boolean.FALSE.toString())) {
+
+			initExport();
+
+			Map<String, List<StagedModel>> dependentStagedModelsMap =
+				addDependentStagedModelsMap(stagingGroup);
+
+			StagedModel stagedModel = addStagedModel(
+				stagingGroup, dependentStagedModelsMap);
+
+			addComments(stagedModel);
+
+			addRatings(stagedModel);
+
+			StagedModelDataHandlerUtil.exportStagedModel(
+				portletDataContext, stagedModel);
+
+			validateExport(
+				portletDataContext, stagedModel, dependentStagedModelsMap);
+
+			try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+				deleteStagedModel(
+					stagedModel, dependentStagedModelsMap, stagingGroup);
+
+				StagedModel exportedStagedModel = readExportedStagedModel(
+					stagedModel);
+
+				Assert.assertNull(exportedStagedModel);
+			}
+		}
+	}
+
+	@Test
+	@TestInfo("LPD-85488")
+	public void testExportImportPreservesLastPostDate() throws Exception {
+		initExport();
+
+		Map<String, List<StagedModel>> dependentStagedModelsMap =
+			addDependentStagedModelsMap(stagingGroup);
+
+		StagedModel stagedModel = addStagedModel(
+			stagingGroup, dependentStagedModelsMap);
+
+		WikiNode wikiNode = (WikiNode)stagedModel;
+
+		wikiNode.setLastPostDate(new Date());
+
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, stagedModel);
+
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				stagedModel);
+
+			ExportImportThreadLocal.setLayoutImportInProcess(true);
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, exportedStagedModel);
+
+			StagedModel importedStagedModel = getStagedModel(
+				exportedStagedModel.getUuid(), liveGroup);
+
+			WikiNode exportedWikiNode = (WikiNode)exportedStagedModel;
+			WikiNode importedWikiNode = (WikiNode)importedStagedModel;
+
+			Assert.assertEquals(
+				exportedWikiNode.getLastPostDate(),
+				importedWikiNode.getLastPostDate());
+		}
+		finally {
+			ExportImportThreadLocal.setLayoutImportInProcess(false);
+		}
+	}
+
+	@Override
+	@Test
+	public void testExportImportWithDefaultData() throws Exception {
+		super.testExportImportWithDefaultData();
+
+		try (PropsTemporarySwapper propsTemporarySwapper =
+				new PropsTemporarySwapper(
+					"feature.flag.LPD-35013", Boolean.FALSE.toString())) {
+
+			initExport();
+
+			Map<String, List<StagedModel>> defaultDependentStagedModelsMap =
+				addDefaultDependentStagedModelsMap(stagingGroup);
+
+			StagedModel stagedModel = addDefaultStagedModel(
+				stagingGroup, defaultDependentStagedModelsMap);
+
+			if (stagedModel == null) {
+				return;
+			}
+
+			StagedModelDataHandlerUtil.exportStagedModel(
+				portletDataContext, stagedModel);
+
+			validateExport(
+				portletDataContext, stagedModel,
+				defaultDependentStagedModelsMap);
+
+			Map<String, List<StagedModel>> secondDependentStagedModelsMap =
+				addDefaultDependentStagedModelsMap(liveGroup);
+
+			addDefaultStagedModel(liveGroup, secondDependentStagedModelsMap);
+
+			try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+				StagedModel exportedStagedModel = readExportedStagedModel(
+					stagedModel);
+
+				Assert.assertNull(exportedStagedModel);
+			}
+		}
+	}
+
+	@Override
+	@Test
+	public void testStagedModelDataHandler() throws Exception {
+		super.testStagedModelDataHandler();
+
+		try (PropsTemporarySwapper propsTemporarySwapper =
+				new PropsTemporarySwapper(
+					"feature.flag.LPD-35013", Boolean.FALSE.toString())) {
+
+			initExport();
+
+			Map<String, List<StagedModel>> dependentStagedModelsMap =
+				addDependentStagedModelsMap(stagingGroup);
+
+			StagedModel stagedModel = addStagedModel(
+				stagingGroup, dependentStagedModelsMap);
+
+			addComments(stagedModel);
+
+			addRatings(stagedModel);
+
+			StagedModelDataHandlerUtil.exportStagedModel(
+				portletDataContext, stagedModel);
+
+			validateExport(
+				portletDataContext, stagedModel, dependentStagedModelsMap);
+
+			try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+				StagedModel exportedStagedModel = readExportedStagedModel(
+					stagedModel);
+
+				Assert.assertNull(exportedStagedModel);
+			}
+		}
+	}
+
+	@Override
 	protected StagedModel addDefaultStagedModel(
 			Group group,
 			Map<String, List<StagedModel>> dependentStagedModelsMap)
 		throws Exception {
+
+		WikiNode wikiNode = WikiNodeLocalServiceUtil.fetchNode(
+			group.getGroupId(), "Main");
+
+		if (wikiNode != null) {
+			return wikiNode;
+		}
 
 		return WikiTestUtil.addDefaultNode(group.getGroupId());
 	}
@@ -52,6 +228,19 @@ public class WikiNodeStagedModelDataHandlerTest
 		throws Exception {
 
 		return WikiTestUtil.addNode(group.getGroupId());
+	}
+
+	@Override
+	protected StagedModel addStagedModelWithExternalReferenceCode(
+			Group group, String externalReferenceCode,
+			Map<String, List<StagedModel>> dependentStagedModelsMap)
+		throws Exception {
+
+		return WikiNodeLocalServiceUtil.addNode(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Override

@@ -12,11 +12,11 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 boolean male = ParamUtil.getBoolean(request, "male", true);
 
-Calendar birthdayCalendar = CalendarFactoryUtil.getCalendar();
+Calendar calendar = CalendarFactoryUtil.getCalendar();
 
-birthdayCalendar.set(Calendar.MONTH, Calendar.JANUARY);
-birthdayCalendar.set(Calendar.DATE, 1);
-birthdayCalendar.set(Calendar.YEAR, 1970);
+calendar.set(Calendar.MONTH, Calendar.JANUARY);
+calendar.set(Calendar.DATE, 1);
+calendar.set(Calendar.YEAR, 1970);
 
 renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 %>
@@ -61,7 +61,6 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 	<liferay-ui:error exception="<%= PhoneNumberExtensionException.class %>" message="please-enter-a-valid-phone-number-extension" />
 	<liferay-ui:error exception="<%= RequiredFieldException.class %>" message="please-fill-out-all-required-fields" />
 	<liferay-ui:error exception="<%= TermsOfUseException.class %>" message="you-must-agree-to-the-terms-of-use" />
-	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeDuplicate.class %>" message="the-email-address-you-requested-is-already-taken" />
 	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeNull.class %>" message="please-enter-an-email-address" />
 	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBePOP3User.class %>" message="the-email-address-you-requested-is-reserved" />
 	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeReserved.class %>" message="the-email-address-you-requested-is-reserved" />
@@ -88,6 +87,24 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 		%>
 
 		<liferay-ui:message arguments="<%= HtmlUtil.escape(upe.regex) %>" key="that-password-does-not-comply-with-the-regular-expression" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreAlphanumeric.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreAlphanumeric upe = (UserPasswordException.MustHaveMoreAlphanumeric)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minAlphanumeric) %>" key="that-password-must-contain-at-least-x-alphanumeric-characters" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreLowercase.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreLowercase upe = (UserPasswordException.MustHaveMoreLowercase)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minLowercase) %>" key="that-password-must-contain-at-least-x-lowercase-characters" translateArguments="<%= false %>" />
 	</liferay-ui:error>
 
 	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreNumbers.class %>">
@@ -127,6 +144,16 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 	<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeReserved.class %>" message="the-screen-name-you-requested-is-reserved" />
 	<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeReservedForAnonymous.class %>" focusField="screenName" message="the-screen-name-you-requested-is-reserved-for-the-anonymous-user" />
 	<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeUsedByGroup.class %>" focusField="screenName" message="the-screen-name-you-requested-is-already-taken-by-a-site" />
+
+	<liferay-ui:error exception="<%= UserScreenNameException.MustNotExceedMaximumLength.class %>" focusField="screenName">
+
+		<%
+		int screenNameMaxLength = ModelHintsUtil.getMaxLength(User.class.getName(), "screenName");
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(screenNameMaxLength) %>" key="please-enter-a-screen-name-with-fewer-than-x-characters" />
+	</liferay-ui:error>
+
 	<liferay-ui:error exception="<%= UserScreenNameException.MustProduceValidFriendlyURL.class %>" focusField="screenName" message="the-screen-name-you-requested-must-produce-a-valid-friendly-url" />
 
 	<liferay-ui:error exception="<%= UserScreenNameException.MustValidate.class %>" focusField="screenName">
@@ -191,7 +218,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 					>
 						<c:choose>
 							<c:when test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_CONTACT_BIRTHDAY) %>">
-								<aui:input name="birthday" value="<%= birthdayCalendar %>" />
+								<aui:input name="birthday" value="<%= calendar %>" />
 							</c:when>
 							<c:otherwise>
 								<aui:input name="birthdayMonth" type="hidden" value="<%= Calendar.JANUARY %>" />
@@ -230,19 +257,19 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 				</div>
 			</c:if>
 
-			<div class="form-group">
-				<h3 class="mb-2 sheet-subtitle"><liferay-ui:message key="verification" /></h3>
+			<c:if test="<%= captchaConfiguration.createAccountCaptchaEnabled() %>">
+				<div class="form-group">
+					<h3 class="mb-2 sheet-subtitle"><liferay-ui:message key="verification" /></h3>
 
-				<clay:row>
-					<clay:col
-						md="6"
-					>
-						<c:if test="<%= captchaConfiguration.createAccountCaptchaEnabled() %>">
+					<clay:row>
+						<clay:col
+							md="6"
+						>
 							<liferay-captcha:captcha />
-						</c:if>
-					</clay:col>
-				</clay:row>
-			</div>
+						</clay:col>
+					</clay:row>
+				</div>
+			</c:if>
 
 			<div class="form-group">
 				<aui:button-row>

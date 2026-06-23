@@ -60,10 +60,10 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -107,10 +107,10 @@ public class UpdateDisplayPageEntryContentTypeMVCActionCommandTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-				serviceContext.getScopeGroupId(), 0,
+				null, serviceContext.getScopeGroupId(), 0, null,
 				_portal.getClassNameId(JournalArticle.class.getName()),
-				ddmStructure.getStructureId(), RandomTestUtil.randomString(), 0,
-				WorkflowConstants.STATUS_DRAFT, serviceContext);
+				ddmStructure.getStructureKey(), RandomTestUtil.randomString(),
+				0, WorkflowConstants.STATUS_DRAFT, serviceContext);
 
 		String redirect = RandomTestUtil.randomString();
 
@@ -170,10 +170,10 @@ public class UpdateDisplayPageEntryContentTypeMVCActionCommandTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-				serviceContext.getScopeGroupId(), 0,
+				null, serviceContext.getScopeGroupId(), 0, null,
 				_portal.getClassNameId(JournalArticle.class.getName()),
-				ddmStructure.getStructureId(), RandomTestUtil.randomString(), 0,
-				WorkflowConstants.STATUS_DRAFT, serviceContext);
+				ddmStructure.getStructureKey(), RandomTestUtil.randomString(),
+				0, WorkflowConstants.STATUS_DRAFT, serviceContext);
 
 		User user = UserTestUtil.addCompanyAdminUser(
 			_companyLocalService.getCompany(_group.getCompanyId()));
@@ -224,8 +224,8 @@ public class UpdateDisplayPageEntryContentTypeMVCActionCommandTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-				serviceContext.getScopeGroupId(), 0, classNameId,
-				journalArticle.getDDMStructureId(),
+				null, serviceContext.getScopeGroupId(), 0, null, classNameId,
+				journalArticle.getDDMStructureKey(),
 				RandomTestUtil.randomString(), 0,
 				WorkflowConstants.STATUS_DRAFT, serviceContext);
 
@@ -291,7 +291,7 @@ public class UpdateDisplayPageEntryContentTypeMVCActionCommandTest {
 		DDMFormLayout ddmFormLayout = DDMUtil.getDefaultDDMFormLayout(ddmForm);
 
 		return _ddmStructureLocalService.addStructure(
-			TestPropsValues.getUserId(), _group.getGroupId(), 0,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), 0,
 			_portal.getClassNameId(JournalArticle.class.getName()), null,
 			RandomTestUtil.randomLocaleStringMap(), null, ddmForm,
 			ddmFormLayout, StorageType.DEFAULT.toString(),

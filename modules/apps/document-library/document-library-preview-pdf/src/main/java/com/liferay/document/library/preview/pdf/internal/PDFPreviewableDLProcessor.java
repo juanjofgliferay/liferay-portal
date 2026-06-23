@@ -25,12 +25,12 @@ import com.liferay.petra.process.ProcessExecutor;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.repository.event.FileVersionPreviewEventListener;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -42,12 +42,12 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SystemEnv;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.IOException;
@@ -114,14 +114,12 @@ public class PDFPreviewableDLProcessor
 						PortalUUIDUtil.generate());
 
 					_backgroundTaskManager.addBackgroundTask(
-						UserConstants.USER_ID_DEFAULT, CompanyConstants.SYSTEM,
-						jobName,
+						UserConstants.USER_ID_DEFAULT,
+						BackgroundTaskConstants.GROUP_ID_DEFAULT, jobName,
 						PDFPreviewBackgroundTaskExecutor.class.getName(),
 						HashMapBuilder.<String, Serializable>put(
 							BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS,
 							true
-						).put(
-							"companyId", companyId
 						).build(),
 						new ServiceContext());
 				}
@@ -475,11 +473,29 @@ public class PDFPreviewableDLProcessor
 						FileUtil.delete(file);
 					}
 
-					File file = _documentConversion.convert(
-						tempFileId, inputStream, extension, "pdf");
+					try {
+						File file = _documentConversion.convert(
+							tempFileId, inputStream, extension, "pdf");
 
-					_generateImages(
-						destinationFileVersion, file, maxNumberOfPages);
+						_generateImages(
+							destinationFileVersion, file, maxNumberOfPages);
+					}
+					catch (IOException ioException) {
+						_fileVersionPreviewEventListener.onFailure(
+							destinationFileVersion);
+
+						if (_log.isWarnEnabled()) {
+							_log.warn(
+								StringBundler.concat(
+									"Unable to process ",
+									destinationFileVersion.getFileVersionId(),
+									" ", destinationFileVersion.getTitle()));
+						}
+
+						if (_log.isDebugEnabled()) {
+							_log.debug(ioException);
+						}
+					}
 				}
 			}
 		}

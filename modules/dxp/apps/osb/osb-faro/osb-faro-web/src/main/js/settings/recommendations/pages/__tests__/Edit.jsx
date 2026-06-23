@@ -3,8 +3,8 @@ import client from 'shared/apollo/client';
 import Edit from '../Edit';
 import mockStore from 'test/mock-store';
 import React from 'react';
-import {ApolloProvider} from '@apollo/react-components';
-import {MockedProvider} from '@apollo/react-testing';
+import {ApolloProvider} from '@apollo/client';
+import {MockedProvider} from '@apollo/client/testing';
 import {mockRecommendationReq} from 'test/graphql-data';
 import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
@@ -12,6 +12,13 @@ import {StaticRouter} from 'react-router-dom';
 import {waitForLoading} from 'test/helpers';
 
 jest.unmock('react-dom');
+
+jest.mock('react-router-dom', () => ({
+	...jest.requireActual('react-router-dom'),
+	useParams: () => ({
+		groupId: '23'
+	})
+}));
 
 const defaultProps = {
 	router: {params: {groupId: '23'}, query: {delta: '10', page: '1'}}

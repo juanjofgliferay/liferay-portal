@@ -16,6 +16,7 @@ import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener;
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -34,6 +35,10 @@ public class DDMCleanUpPortalInstanceLifecycleListener
 	@Override
 	public void portalInstancePreunregistered(Company company)
 		throws Exception {
+
+		if (PropsValues.DATABASE_PARTITION_ENABLED) {
+			return;
+		}
 
 		for (DDMTemplate ddmTemplate :
 				_ddmTemplateLocalService.getTemplatesByGroupId(

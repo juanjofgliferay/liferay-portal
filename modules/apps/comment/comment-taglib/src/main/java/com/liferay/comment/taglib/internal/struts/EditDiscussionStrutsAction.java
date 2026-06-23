@@ -14,6 +14,7 @@ import com.liferay.message.boards.exception.NoSuchMessageException;
 import com.liferay.message.boards.exception.RequiredMessageException;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.comment.Comment;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -38,12 +39,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.servlet.NamespaceServletRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.function.Function;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,9 +64,6 @@ public class EditDiscussionStrutsAction implements StrutsAction {
 			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		AuthTokenUtil.checkCSRFToken(
-			httpServletRequest, EditDiscussionStrutsAction.class.getName());
-
 		String namespace = ParamUtil.getString(httpServletRequest, "namespace");
 
 		HttpServletRequest namespacedHttpServletRequest =
@@ -76,17 +74,25 @@ public class EditDiscussionStrutsAction implements StrutsAction {
 			namespacedHttpServletRequest, Constants.CMD);
 
 		try {
+			AuthTokenUtil.checkCSRFToken(
+				httpServletRequest, EditDiscussionStrutsAction.class.getName());
+
+			boolean ajax = ParamUtil.getBoolean(
+				namespacedHttpServletRequest, "ajax", true);
+
 			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
 				long commentId = _updateComment(namespacedHttpServletRequest);
 
-				boolean ajax = ParamUtil.getBoolean(
-					namespacedHttpServletRequest, "ajax", true);
-
 				if (ajax) {
+					Comment comment = _commentManager.fetchComment(commentId);
+
 					_writeJSON(
 						httpServletResponse,
 						JSONUtil.put(
 							"commentId", commentId
+						).put(
+							"externalReferenceCode",
+							comment.getExternalReferenceCode()
 						).put(
 							"randomNamespace",
 							ParamUtil.getString(
@@ -98,12 +104,33 @@ public class EditDiscussionStrutsAction implements StrutsAction {
 			}
 			else if (cmd.equals(Constants.DELETE)) {
 				_deleteComment(namespacedHttpServletRequest);
+
+				if (ajax) {
+					_writeJSON(
+						httpServletResponse, _jsonFactory.createJSONObject());
+
+					return null;
+				}
 			}
 			else if (cmd.equals(Constants.SUBSCRIBE_TO_COMMENTS)) {
 				_subscribeToComments(namespacedHttpServletRequest, true);
+
+				if (ajax) {
+					_writeJSON(
+						httpServletResponse, _jsonFactory.createJSONObject());
+
+					return null;
+				}
 			}
 			else if (cmd.equals(Constants.UNSUBSCRIBE_FROM_COMMENTS)) {
 				_subscribeToComments(namespacedHttpServletRequest, false);
+
+				if (ajax) {
+					_writeJSON(
+						httpServletResponse, _jsonFactory.createJSONObject());
+
+					return null;
+				}
 			}
 
 			String redirect = _portal.escapeRedirect(
@@ -252,7 +279,7 @@ public class EditDiscussionStrutsAction implements StrutsAction {
 		CommentGroupServiceConfiguration commentGroupServiceConfiguration =
 			_configurationProvider.getGroupConfiguration(
 				CommentGroupServiceConfiguration.class,
-				themeDisplay.getScopeGroupId());
+				themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId());
 
 		if (commentGroupServiceConfiguration.subscribe()) {
 			_commentManager.subscribeDiscussion(

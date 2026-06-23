@@ -15,11 +15,11 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portlet.admin.util.OmniadminUtil;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Brian Wing Shun Chan
@@ -155,6 +155,7 @@ public abstract class BasePermissionChecker implements PermissionChecker {
 	private static final Log _log = LogFactoryUtil.getLog(
 		BasePermissionChecker.class);
 
-	private final Map<Object, Object> _permissionChecksMap = new HashMap<>();
+	private final Map<Object, Object> _permissionChecksMap =
+		new ConcurrentHashMap<>();
 
 }

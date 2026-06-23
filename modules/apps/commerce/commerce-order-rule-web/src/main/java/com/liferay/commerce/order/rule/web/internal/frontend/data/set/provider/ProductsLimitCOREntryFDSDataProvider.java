@@ -28,9 +28,9 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,7 +69,7 @@ public class ProductsLimitCOREntryFDSDataProvider
 								TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_IDS)),
 					cProductId ->
 						_cpDefinitionService.fetchCPDefinitionByCProductId(
-							Long.valueOf(cProductId))),
+							Long.valueOf(cProductId), false)),
 				cpDefinition -> cpDefinition != null),
 			filteredCPDefinition -> {
 				ThemeDisplay themeDisplay =
@@ -104,7 +104,7 @@ public class ProductsLimitCOREntryFDSDataProvider
 				try {
 					CPDefinition cpDefinition =
 						_cpDefinitionService.fetchCPDefinitionByCProductId(
-							Long.valueOf(cProductId));
+							Long.valueOf(cProductId), false);
 
 					return cpDefinition != null;
 				}

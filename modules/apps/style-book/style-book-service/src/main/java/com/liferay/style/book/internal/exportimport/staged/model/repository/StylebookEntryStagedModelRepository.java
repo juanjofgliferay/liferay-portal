@@ -46,9 +46,12 @@ public class StylebookEntryStagedModelRepository
 		}
 
 		return _styleBookEntryLocalService.addStyleBookEntry(
-			userId, styleBookEntry.getGroupId(),
+			styleBookEntry.getExternalReferenceCode(), userId,
+			styleBookEntry.getGroupId(),
+			styleBookEntry.isDefaultStyleBookEntry(),
 			styleBookEntry.getFrontendTokensValues(), styleBookEntry.getName(),
-			styleBookEntry.getStyleBookEntryKey(), serviceContext);
+			styleBookEntry.getStyleBookEntryKey(), styleBookEntry.getThemeId(),
+			serviceContext);
 	}
 
 	@Override
@@ -131,7 +134,8 @@ public class StylebookEntryStagedModelRepository
 			styleBookEntry.isDefaultStyleBookEntry(),
 			styleBookEntry.getFrontendTokensValues(), styleBookEntry.getName(),
 			styleBookEntry.getStyleBookEntryKey(),
-			styleBookEntry.getPreviewFileEntryId());
+			styleBookEntry.getPreviewFileEntryId(),
+			portletDataContext.createServiceContext(styleBookEntry));
 	}
 
 	@Reference

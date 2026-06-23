@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -30,20 +35,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
  * @generated
  */
 @Generated("")
-@GraphQLName("OrderItem")
+@GraphQLName(
+	description = "Wire shape for an order line uploaded alongside its parent order to the analytics pipeline. Carries product, SKU, quantity, and price information per line.",
+	value = "OrderItem"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "OrderItem")
 public class OrderItem implements Serializable {
@@ -56,489 +58,791 @@ public class OrderItem implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(OrderItem.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the product the line points to (FK identifier).",
+		example = "30130"
+	)
 	public Long getCpDefinitionId() {
+		if (_cpDefinitionIdSupplier != null) {
+			cpDefinitionId = _cpDefinitionIdSupplier.get();
+
+			_cpDefinitionIdSupplier = null;
+		}
+
 		return cpDefinitionId;
 	}
 
 	public void setCpDefinitionId(Long cpDefinitionId) {
 		this.cpDefinitionId = cpDefinitionId;
+
+		_cpDefinitionIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCpDefinitionId(
 		UnsafeSupplier<Long, Exception> cpDefinitionIdUnsafeSupplier) {
 
-		try {
-			cpDefinitionId = cpDefinitionIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_cpDefinitionIdSupplier = () -> {
+			try {
+				return cpDefinitionIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the product the line points to (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long cpDefinitionId;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Long> _cpDefinitionIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date the order line was created, in ISO 8601 (yyyy-MM-dd). Read-only.",
+		example = "2017-07-21"
+	)
 	public Date getCreateDate() {
+		if (_createDateSupplier != null) {
+			createDate = _createDateSupplier.get();
+
+			_createDateSupplier = null;
+		}
+
 		return createDate;
 	}
 
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+
+		_createDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCreateDate(
 		UnsafeSupplier<Date, Exception> createDateUnsafeSupplier) {
 
-		try {
-			createDate = createDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_createDateSupplier = () -> {
+			try {
+				return createDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	@GraphQLField(
+		description = "Date the order line was created, in ISO 8601 (yyyy-MM-dd). Read-only."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date createDate;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _createDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Free-form custom attributes attached to the order line. Map keys are the attribute names; values are their typed values serialised as JSON.",
+		example = "{giftWrap=true}"
+	)
 	@Valid
 	public Map<String, ?> getCustomFields() {
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
 	public void setCustomFields(Map<String, ?> customFields) {
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
 		UnsafeSupplier<Map<String, ?>, Exception> customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Free-form custom attributes attached to the order line. Map keys are the attribute names; values are their typed values serialised as JSON."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> customFields;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Map<String, ?>> _customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key for the order line; must be unique per line within the parent order.",
+		example = "AB-34098-789-N"
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key for the order line; must be unique per line within the parent order."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "200")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Line total after discounts and promotions, expressed in the parent order's currency. Tax inclusion follows the channel's tax-inclusive setting.",
+		example = "200"
+	)
 	@Valid
 	public BigDecimal getFinalPrice() {
+		if (_finalPriceSupplier != null) {
+			finalPrice = _finalPriceSupplier.get();
+
+			_finalPriceSupplier = null;
+		}
+
 		return finalPrice;
 	}
 
 	public void setFinalPrice(BigDecimal finalPrice) {
 		this.finalPrice = finalPrice;
+
+		_finalPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFinalPrice(
 		UnsafeSupplier<BigDecimal, Exception> finalPriceUnsafeSupplier) {
 
-		try {
-			finalPrice = finalPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_finalPriceSupplier = () -> {
+			try {
+				return finalPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Line total after discounts and promotions, expressed in the parent order's currency. Tax inclusion follows the channel's tax-inclusive setting."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal finalPrice;
 
+	@JsonIgnore
+	private Supplier<BigDecimal> _finalPriceSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the order line (FK identifier).",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Reference to the order line (FK identifier).")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date the order line was last modified, in ISO 8601 (yyyy-MM-dd). Read-only.",
+		example = "2017-07-21"
+	)
 	public Date getModifiedDate() {
+		if (_modifiedDateSupplier != null) {
+			modifiedDate = _modifiedDateSupplier.get();
+
+			_modifiedDateSupplier = null;
+		}
+
 		return modifiedDate;
 	}
 
 	public void setModifiedDate(Date modifiedDate) {
 		this.modifiedDate = modifiedDate;
+
+		_modifiedDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setModifiedDate(
 		UnsafeSupplier<Date, Exception> modifiedDateUnsafeSupplier) {
 
-		try {
-			modifiedDate = modifiedDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_modifiedDateSupplier = () -> {
+			try {
+				return modifiedDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	@GraphQLField(
+		description = "Date the order line was last modified, in ISO 8601 (yyyy-MM-dd). Read-only."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date modifiedDate;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Date> _modifiedDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized product name captured at the time the order was placed. Map keys are locale codes; values are the translated strings.",
 		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
 	)
 	@Valid
 	public Map<String, String> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, String> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized product name captured at the time the order was placed. Map keys are locale codes; values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Serialised JSON of the product option selections captured at the time the order was placed.",
+		example = "color=red,size=large"
+	)
 	public String getOptions() {
+		if (_optionsSupplier != null) {
+			options = _optionsSupplier.get();
+
+			_optionsSupplier = null;
+		}
+
 		return options;
 	}
 
 	public void setOptions(String options) {
 		this.options = options;
+
+		_optionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptions(
 		UnsafeSupplier<String, Exception> optionsUnsafeSupplier) {
 
-		try {
-			options = optionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionsSupplier = () -> {
+			try {
+				return optionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Serialised JSON of the product option selections captured at the time the order was placed."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String options;
 
+	@JsonIgnore
+	private Supplier<String> _optionsSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30128")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the parent order (FK identifier).",
+		example = "30128"
+	)
 	public Long getOrderId() {
+		if (_orderIdSupplier != null) {
+			orderId = _orderIdSupplier.get();
+
+			_orderIdSupplier = null;
+		}
+
 		return orderId;
 	}
 
 	public void setOrderId(Long orderId) {
 		this.orderId = orderId;
+
+		_orderIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderId(
 		UnsafeSupplier<Long, Exception> orderIdUnsafeSupplier) {
 
-		try {
-			orderId = orderIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderIdSupplier = () -> {
+			try {
+				return orderIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the parent order (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long orderId;
 
+	@JsonIgnore
+	private Supplier<Long> _orderIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30128")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the parent order line when the line is part of a bundle (FK identifier). Zero when the line is top-level.",
+		example = "30128"
+	)
 	public Long getParentOrderItemId() {
+		if (_parentOrderItemIdSupplier != null) {
+			parentOrderItemId = _parentOrderItemIdSupplier.get();
+
+			_parentOrderItemIdSupplier = null;
+		}
+
 		return parentOrderItemId;
 	}
 
 	public void setParentOrderItemId(Long parentOrderItemId) {
 		this.parentOrderItemId = parentOrderItemId;
+
+		_parentOrderItemIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setParentOrderItemId(
 		UnsafeSupplier<Long, Exception> parentOrderItemIdUnsafeSupplier) {
 
-		try {
-			parentOrderItemId = parentOrderItemIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_parentOrderItemIdSupplier = () -> {
+			try {
+				return parentOrderItemIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the parent order line when the line is part of a bundle (FK identifier). Zero when the line is top-level."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long parentOrderItemId;
 
+	@JsonIgnore
+	private Supplier<Long> _parentOrderItemIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "2")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Number of units ordered. Combined with the unit-of-measure key when the SKU is sold in fractional units.",
+		example = "2"
+	)
 	public Integer getQuantity() {
+		if (_quantitySupplier != null) {
+			quantity = _quantitySupplier.get();
+
+			_quantitySupplier = null;
+		}
+
 		return quantity;
 	}
 
 	public void setQuantity(Integer quantity) {
 		this.quantity = quantity;
+
+		_quantitySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setQuantity(
 		UnsafeSupplier<Integer, Exception> quantityUnsafeSupplier) {
 
-		try {
-			quantity = quantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_quantitySupplier = () -> {
+			try {
+				return quantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Number of units ordered. Combined with the unit-of-measure key when the SKU is sold in fractional units."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer quantity;
 
-	@Schema(example = "12341234")
+	@JsonIgnore
+	private Supplier<Integer> _quantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "SKU string identifying the product variant on this line.",
+		example = "12341234"
+	)
 	public String getSku() {
+		if (_skuSupplier != null) {
+			sku = _skuSupplier.get();
+
+			_skuSupplier = null;
+		}
+
 		return sku;
 	}
 
 	public void setSku(String sku) {
 		this.sku = sku;
+
+		_skuSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSku(UnsafeSupplier<String, Exception> skuUnsafeSupplier) {
-		try {
-			sku = skuUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuSupplier = () -> {
+			try {
+				return skuUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "SKU string identifying the product variant on this line."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sku;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<String> _skuSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "True when the order line represents a subscription; false for one-shot purchases.",
+		example = "true"
+	)
 	public Boolean getSubscription() {
+		if (_subscriptionSupplier != null) {
+			subscription = _subscriptionSupplier.get();
+
+			_subscriptionSupplier = null;
+		}
+
 		return subscription;
 	}
 
 	public void setSubscription(Boolean subscription) {
 		this.subscription = subscription;
+
+		_subscriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSubscription(
 		UnsafeSupplier<Boolean, Exception> subscriptionUnsafeSupplier) {
 
-		try {
-			subscription = subscriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_subscriptionSupplier = () -> {
+			try {
+				return subscriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "True when the order line represents a subscription; false for one-shot purchases."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean subscription;
 
-	@Schema(example = "pc")
+	@JsonIgnore
+	private Supplier<Boolean> _subscriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Unit-of-measure key the quantity is expressed in. Resolved against the SKU's allowed units of measure.",
+		example = "pc"
+	)
 	public String getUnitOfMeasure() {
+		if (_unitOfMeasureSupplier != null) {
+			unitOfMeasure = _unitOfMeasureSupplier.get();
+
+			_unitOfMeasureSupplier = null;
+		}
+
 		return unitOfMeasure;
 	}
 
 	public void setUnitOfMeasure(String unitOfMeasure) {
 		this.unitOfMeasure = unitOfMeasure;
+
+		_unitOfMeasureSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitOfMeasure(
 		UnsafeSupplier<String, Exception> unitOfMeasureUnsafeSupplier) {
 
-		try {
-			unitOfMeasure = unitOfMeasureUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitOfMeasureSupplier = () -> {
+			try {
+				return unitOfMeasureUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Unit-of-measure key the quantity is expressed in. Resolved against the SKU's allowed units of measure."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unitOfMeasure;
 
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "101")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Unit price at the time the order was placed, expressed in the parent order's currency. Tax inclusion follows the channel's tax-inclusive setting.",
+		example = "101"
+	)
 	@Valid
 	public BigDecimal getUnitPrice() {
+		if (_unitPriceSupplier != null) {
+			unitPrice = _unitPriceSupplier.get();
+
+			_unitPriceSupplier = null;
+		}
+
 		return unitPrice;
 	}
 
 	public void setUnitPrice(BigDecimal unitPrice) {
 		this.unitPrice = unitPrice;
+
+		_unitPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnitPrice(
 		UnsafeSupplier<BigDecimal, Exception> unitPriceUnsafeSupplier) {
 
-		try {
-			unitPrice = unitPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitPriceSupplier = () -> {
+			try {
+				return unitPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Unit price at the time the order was placed, expressed in the parent order's currency. Tax inclusion follows the channel's tax-inclusive setting."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal unitPrice;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<BigDecimal> _unitPriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the user who added the line to the order (FK identifier).",
+		example = "20078"
+	)
 	public Long getUserId() {
+		if (_userIdSupplier != null) {
+			userId = _userIdSupplier.get();
+
+			_userIdSupplier = null;
+		}
+
 		return userId;
 	}
 
 	public void setUserId(Long userId) {
 		this.userId = userId;
+
+		_userIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUserId(
 		UnsafeSupplier<Long, Exception> userIdUnsafeSupplier) {
 
-		try {
-			userId = userIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_userIdSupplier = () -> {
+			try {
+				return userIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the user who added the line to the order (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long userId;
+
+	@JsonIgnore
+	private Supplier<Long> _userIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -570,6 +874,8 @@ public class OrderItem implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Long cpDefinitionId = getCpDefinitionId();
+
 		if (cpDefinitionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -579,6 +885,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(cpDefinitionId);
 		}
+
+		Date createDate = getCreateDate();
 
 		if (createDate != null) {
 			if (sb.length() > 1) {
@@ -594,6 +902,8 @@ public class OrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, ?> customFields = getCustomFields();
+
 		if (customFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -603,6 +913,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(_toJSON(customFields));
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -618,6 +930,8 @@ public class OrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		BigDecimal finalPrice = getFinalPrice();
+
 		if (finalPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -628,6 +942,8 @@ public class OrderItem implements Serializable {
 			sb.append(finalPrice);
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -637,6 +953,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(id);
 		}
+
+		Date modifiedDate = getModifiedDate();
 
 		if (modifiedDate != null) {
 			if (sb.length() > 1) {
@@ -652,6 +970,8 @@ public class OrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -661,6 +981,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(_toJSON(name));
 		}
+
+		String options = getOptions();
 
 		if (options != null) {
 			if (sb.length() > 1) {
@@ -676,6 +998,8 @@ public class OrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Long orderId = getOrderId();
+
 		if (orderId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -685,6 +1009,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(orderId);
 		}
+
+		Long parentOrderItemId = getParentOrderItemId();
 
 		if (parentOrderItemId != null) {
 			if (sb.length() > 1) {
@@ -696,6 +1022,8 @@ public class OrderItem implements Serializable {
 			sb.append(parentOrderItemId);
 		}
 
+		Integer quantity = getQuantity();
+
 		if (quantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -705,6 +1033,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(quantity);
 		}
+
+		String sku = getSku();
 
 		if (sku != null) {
 			if (sb.length() > 1) {
@@ -720,6 +1050,8 @@ public class OrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean subscription = getSubscription();
+
 		if (subscription != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -729,6 +1061,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(subscription);
 		}
+
+		String unitOfMeasure = getUnitOfMeasure();
 
 		if (unitOfMeasure != null) {
 			if (sb.length() > 1) {
@@ -744,6 +1078,8 @@ public class OrderItem implements Serializable {
 			sb.append("\"");
 		}
 
+		BigDecimal unitPrice = getUnitPrice();
+
 		if (unitPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -753,6 +1089,8 @@ public class OrderItem implements Serializable {
 
 			sb.append(unitPrice);
 		}
+
+		Long userId = getUserId();
 
 		if (userId != null) {
 			if (sb.length() > 1) {
@@ -769,8 +1107,8 @@ public class OrderItem implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.machine.learning.dto.v1_0.OrderItem",
 		name = "x-class-name"
 	)
@@ -816,7 +1154,10 @@ public class OrderItem implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -862,3 +1203,4 @@ public class OrderItem implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1810767700

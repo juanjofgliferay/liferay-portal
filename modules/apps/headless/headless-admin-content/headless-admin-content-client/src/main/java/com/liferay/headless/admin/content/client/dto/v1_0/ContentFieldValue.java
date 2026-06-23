@@ -8,11 +8,11 @@ package com.liferay.headless.admin.content.client.dto.v1_0;
 import com.liferay.headless.admin.content.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.content.client.serdes.v1_0.ContentFieldValueSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -201,3 +201,4 @@ public class ContentFieldValue implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-712068904

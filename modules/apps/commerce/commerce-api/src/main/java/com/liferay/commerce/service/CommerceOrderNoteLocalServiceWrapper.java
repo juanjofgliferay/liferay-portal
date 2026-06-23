@@ -268,15 +268,6 @@ public class CommerceOrderNoteLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.model.CommerceOrderNote
-		fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId) {
-
-		return _commerceOrderNoteLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public com.liferay.commerce.model.CommerceOrderNote fetchCommerceOrderNote(
 		long commerceOrderNoteId) {
 
@@ -561,3 +552,4 @@ public class CommerceOrderNoteLocalServiceWrapper
 	private CommerceOrderNoteLocalService _commerceOrderNoteLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:276218290

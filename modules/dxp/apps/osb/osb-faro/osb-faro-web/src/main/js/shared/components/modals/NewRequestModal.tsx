@@ -1,16 +1,19 @@
 import * as API from 'shared/api';
 import ClayButton from '@clayui/button';
+import ClayLink from '@clayui/link';
+import ClayMultiSelect from '@clayui/multi-select';
 import FileDropTarget from 'shared/components/FileDropTarget';
 import Form from 'shared/components/form';
 import getCN from 'classnames';
 import Input from 'shared/components/Input';
 import Loading, {Align} from 'shared/components/Loading';
 import Modal from 'shared/components/modal';
-import React, {useRef, useState} from 'react';
-import SearchInputList from 'shared/components/SearchInputList';
-import {Formik, FormikValues} from 'formik';
+import React, {useEffect, useRef, useState} from 'react';
+import {FormikValues} from 'formik';
+import {NetworkStatus} from '@clayui/data-provider';
 import {paginationDefaults} from 'shared/util/pagination';
 import {sub} from 'shared/util/lang';
+import {useDebounce} from 'shared/hooks/useDebounce';
 
 const SAMPLE_CSV = 'user@example.com\nuser1@example.com\nuser2@example.com';
 
@@ -46,24 +49,50 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 	onClose,
 	onSubmit
 }) => {
-	const [emails, setEmails] = useState([]);
-	const [fileName, setFileName] = useState(null);
+	const [items, setItems] = useState<{label: string; value: string}[]>([]);
+	const [fileName, setFileName] = useState<string | null>(null);
+	const [email, setEmail] = useState('');
+	const [networkStatus, setNetworkStatus] = useState(NetworkStatus.Unused);
+	const [emails, setEmails] = useState<{label: string; value: string}[]>([]);
 
-	const _formRef = useRef<Formik>();
+	const debouncedEmail = useDebounce(email, 500);
 
-	const fetchIndividuals = (inputValue: string): Promise<any> =>
-		API.individuals
-			.search({
+	useEffect(() => {
+		setNetworkStatus(NetworkStatus.Loading);
+
+		async function fetchIndividuals() {
+			const {items} = await API.individuals.search({
 				delta: AUTOCOMPLETE_DELTA,
-				filter: inputValue
-					? `contains(demographics/email/value, '${inputValue}')`
+				filter: debouncedEmail
+					? `contains(demographics/email/value, '${debouncedEmail}')`
 					: '',
 				groupId,
 				page
-			})
-			.then(({items}) => items.map(({properties}) => properties.email));
+			});
 
-	const handleAccessClick = event => {
+			setItems(
+				items.map(
+					({
+						id,
+						properties: {email}
+					}: {
+						id: string;
+						properties: {email: string};
+					}) => ({
+						label: email,
+						value: id
+					})
+				)
+			);
+			setNetworkStatus(NetworkStatus.Unused);
+		}
+
+		fetchIndividuals();
+	}, [debouncedEmail]);
+
+	const _formRef = useRef<any>(null);
+
+	const handleAccessClick = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const {checked} = event.target;
 
 		if (_formRef.current) {
@@ -73,7 +102,7 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 		}
 	};
 
-	const handleDeleteClick = event => {
+	const handleDeleteClick = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const {checked} = event.target;
 
 		if (_formRef.current) {
@@ -85,13 +114,19 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 		}
 	};
 
-	const handleFileChange = file => {
+	const handleFileChange = (
+		file: {
+			completed?: boolean;
+			response?: string;
+			status?: number;
+		} | null
+	) => {
 		if (file) {
 			const {completed, response, status} = file;
 
 			const fileUploaded = completed && status !== 500;
 
-			setFileName(fileUploaded ? response : null);
+			setFileName(fileUploaded ? response ?? null : null);
 		} else {
 			setFileName(null);
 		}
@@ -102,8 +137,8 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 		deleteRequest,
 		subjectIdType,
 		suppressRequest
-	}) => {
-		let types = [];
+	}: FormikValues) => {
+		let types: string[] = [];
 
 		if (accessRequest) {
 			types = [...types, 'ACCESS'];
@@ -119,18 +154,20 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 
 		if (subjectIdType === SubjectIdType.ByEmail) {
 			onSubmit({
-				emailAddresses: emails,
+				emailAddresses: emails.map(({label}) => label),
 				types
 			});
 		} else {
 			onSubmit({
-				fileName,
+				fileName: fileName ?? undefined,
 				types
 			});
 		}
 	};
 
-	const handleSuppressClick = event => {
+	const handleSuppressClick = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
 		const {checked} = event.target;
 
 		if (_formRef.current) {
@@ -176,8 +213,8 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 					subjectIdType: SubjectIdType.ByEmail,
 					suppressRequest: false
 				}}
+				innerRef={_formRef as any}
 				onSubmit={handleSubmit}
-				ref={_formRef}
 			>
 				{({handleSubmit, isSubmitting, values}) => (
 					<Form.Form onSubmit={handleSubmit}>
@@ -189,7 +226,9 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 							</p>
 
 							<Form.Group>
-								<h4>{Liferay.Language.get('job-type')}</h4>
+								<div className='h4'>
+									{Liferay.Language.get('job-type')}
+								</div>
 
 								<Form.GroupItem>
 									<Form.Checkbox
@@ -237,9 +276,9 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 							</Form.Group>
 
 							<Form.Group>
-								<h4>
+								<div className='h4'>
 									{Liferay.Language.get('data-subject-id')}
-								</h4>
+								</div>
 
 								<Form.GroupItem>
 									<Form.RadioGroup name='subjectIdType'>
@@ -253,21 +292,20 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 
 										<Form.RadioGroup.Subsection>
 											<Input.Group>
-												<SearchInputList
-													clearOnAdd
-													containerClass='new-request-modal-container'
-													dataSourceFn={
-														fetchIndividuals
-													}
+												<ClayMultiSelect
+													allowsCustomLabel={false}
 													disabled={
 														values.subjectIdType ===
 														SubjectIdType.ByFile
 													}
-													items={emails}
+													loadingState={networkStatus}
+													onChange={setEmail}
 													onItemsChange={setEmails}
 													placeholder={Liferay.Language.get(
 														'example-email'
 													)}
+													sourceItems={items}
+													value={email}
 												/>
 											</Input.Group>
 										</Form.RadioGroup.Subsection>
@@ -300,15 +338,17 @@ const NewRequestModal: React.FC<INewRequestModalProps> = ({
 															'please-upload-files-in-csv-format.-a-sample-file-can-be-found-x'
 														),
 														[
-															<a
+															<ClayLink
 																download='example_user_request.csv'
+																// @ts-ignore
+																externalLink
 																href={`data:text/octet-stream;charset=utf-8,${SAMPLE_CSV}`}
 																key='EXAMPLE_FILE'
 															>
 																{Liferay.Language.get(
-																	'here-fragment'
-																)}
-															</a>
+																	'here'
+																).toLowerCase()}
+															</ClayLink>
 														],
 														false
 													)}

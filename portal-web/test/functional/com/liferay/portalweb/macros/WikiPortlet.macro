@@ -19,8 +19,6 @@ definition {
 	macro configureEmailCP(bodyContent = null) {
 		Portlet.gotoPortletOptions(portletOption = "Configuration");
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
 		if (isSet(pageAddedEmail)) {
 			AssertClick(
 				locator1 = "Configuration#NAVIGATION_PAGE_ADDED_EMAIL",
@@ -34,10 +32,34 @@ definition {
 
 			SelectFrame(value1 = "relative=top");
 
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
 			PortletEntry.save();
 		}
+	}
+
+	@summary = "Default summary"
+	macro enableWiki() {
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Instance Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Feature Flags",
+			configurationName = "Deprecation",
+			configurationScope = "Virtual Instance Scope");
+
+		if (IsElementNotPresent(locator1 = "FeatureFlag#TOGGLE_ROW", title_row = "Wiki", toggle_state = "")) {
+			Search.searchCP(searchTerm = "Wiki");
+		}
+
+		if (IsElementPresent(locator1 = "FeatureFlag#TOGGLE_ROW", title_row = "Wiki", toggle_state = "Disabled")) {
+			Check.checkToggleSwitch(
+				locator1 = "FeatureFlag#TOGGLE_ROW",
+				title_row = "Wiki",
+				toggle_state = "Disabled");
+		}
+
+		Navigator.openURL();
 	}
 
 	@summary = "Default summary"
@@ -104,8 +126,6 @@ definition {
 	macro viewEmailCP(bodyContent = null) {
 		Portlet.gotoPortletOptions(portletOption = "Configuration");
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
 		if (isSet(pageAddedEmail)) {
 			AssertClick(
 				locator1 = "Configuration#NAVIGATION_PAGE_ADDED_EMAIL",
@@ -116,8 +136,6 @@ definition {
 			AssertTextEquals.assertPartialText(
 				locator1 = "CKEditor#BODY",
 				value1 = ${bodyContent});
-
-			SelectFrame(value1 = "relative=top");
 		}
 	}
 

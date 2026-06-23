@@ -505,7 +505,7 @@ definition {
 		}
 
 		if (isSet(recycleBinDisabled)) {
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(locator1 = "Button#DELETE");
 
 			AssertConfirm(value1 = "Are you sure you want to delete the selected entries? They will be deleted immediately.");
 
@@ -521,7 +521,7 @@ definition {
 	@summary = "Default summary"
 	macro deleteCP(depotName = null) {
 		if (isSet(deletions)) {
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(locator1 = "Button#DELETE");
 		}
 		else {
 			LexiconEntry.gotoEntryMenuItemNoError(
@@ -672,7 +672,7 @@ definition {
 			User.logoutPG();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://localhost:${remotePort}",
 				userEmailAddress = "test@liferay.com");
 		}
@@ -692,7 +692,7 @@ definition {
 		if (isSet(remotePort)) {
 			User.loginPG(
 				nodePort = 8080,
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com");
 		}
 
@@ -768,8 +768,6 @@ definition {
 			card = ${userScreenName},
 			item = "Remove Membership");
 
-		Confirm(value1 = "null");
-
 		Alert.viewSuccessMessage();
 	}
 
@@ -794,8 +792,6 @@ definition {
 				tableEntry = ${orgName});
 		}
 
-		Confirm(value1 = "null");
-
 		Alert.viewSuccessMessage();
 	}
 
@@ -810,7 +806,7 @@ definition {
 					locator1 = "LexiconTable#TABLE_ENTRY_CHECKBOX");
 			}
 
-			ClickNoError(locator1 = "Icon#DELETE");
+			ClickNoError(locator1 = "Button#DELETE");
 		}
 		else {
 			Search.searchCP(searchTerm = ${userGroupName});
@@ -1085,35 +1081,21 @@ definition {
 	macro viewLanguageOrderInWebContent(localizationName4 = null, localizationName1 = null, localizationName2 = null, localizationName3 = null) {
 		Click(locator1 = "Button#LOCALIZATION_GENERIC");
 
-		Depot.viewLanguageSelectionOrder(
-			localizationName1 = ${localizationName1},
-			localizationName2 = ${localizationName2},
-			localizationName3 = ${localizationName3},
-			localizationName4 = ${localizationName4});
+		AssertTextEquals.assertPartialText(
+			locator1 = "LanguageConfiguration#DEPOT_LANGUAGE_LOCALIZATION_NAME_TRANSLATED_1",
+			value1 = ${localizationName1});
 
-		Panel.expandPanel(panel = "Basic Information");
+		AssertTextEquals.assertPartialText(
+			locator1 = "LanguageConfiguration#DEPOT_LANGUAGE_LOCALIZATION_NAME_TRANSLATED_2",
+			value1 = ${localizationName2});
 
-		Click(
-			key_portletName = "JournalPortlet_description",
-			locator1 = "Button#LANGUAGE_DROPDOWN");
+		AssertTextEquals.assertPartialText(
+			locator1 = "LanguageConfiguration#DEPOT_LANGUAGE_LOCALIZATION_NAME_TRANSLATED_3",
+			value1 = ${localizationName3});
 
-		Depot.viewLanguageSelectionOrder(
-			localizationName1 = ${localizationName1},
-			localizationName2 = ${localizationName2},
-			localizationName3 = ${localizationName3},
-			localizationName4 = ${localizationName4});
-
-		Panel.expandPanel(panel = "Friendly URL");
-
-		Click(
-			key_portletName = "JournalPortlet_friendlyURLMenu",
-			locator1 = "Button#LANGUAGE_DROPDOWN");
-
-		Depot.viewLanguageSelectionOrder(
-			localizationName1 = ${localizationName1},
-			localizationName2 = ${localizationName2},
-			localizationName3 = ${localizationName3},
-			localizationName4 = ${localizationName4});
+		AssertTextEquals.assertPartialText(
+			locator1 = "LanguageConfiguration#DEPOT_LANGUAGE_LOCALIZATION_NAME_TRANSLATED_4",
+			value1 = ${localizationName4});
 	}
 
 	@summary = "Default summary"
@@ -1234,12 +1216,12 @@ definition {
 		if (${resultCount} != 1) {
 			AssertTextEquals.assertPartialText(
 				locator1 = "ManagementBar#SEARCH_RESULT_SUMMARY",
-				value1 = "${resultCount} Results for ${searchTerm}");
+				value1 = "${resultCount} Results Found for ${searchTerm}");
 		}
 		else {
 			AssertTextEquals.assertPartialText(
 				locator1 = "ManagementBar#SEARCH_RESULT_SUMMARY",
-				value1 = "1 Result for ${searchTerm}");
+				value1 = "1 Result Found for ${searchTerm}");
 		}
 
 		for (var depotName : list ${includedResults}) {

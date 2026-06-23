@@ -30,6 +30,10 @@ public class DDMTemplateTable extends BaseTable<DDMTemplateTable> {
 		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<DDMTemplateTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<DDMTemplateTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<DDMTemplateTable, Long> templateId = createColumn(
 		"templateId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<DDMTemplateTable, Long> groupId = createColumn(
@@ -90,3 +94,4 @@ public class DDMTemplateTable extends BaseTable<DDMTemplateTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1073998791

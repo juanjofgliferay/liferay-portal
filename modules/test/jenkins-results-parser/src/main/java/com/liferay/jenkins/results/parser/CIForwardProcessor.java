@@ -83,6 +83,12 @@ public class CIForwardProcessor {
 				return;
 			}
 
+			if (_hasMergeConflict()) {
+				_pullRequest.addComment(_getMergeConflictCommentBody());
+
+				return;
+			}
+
 			_pullRequest.addComment(_getPassedCommentBody());
 
 			final String senderUsername;
@@ -111,20 +117,35 @@ public class CIForwardProcessor {
 							_getCIForwardBranchName(), senderUsername,
 							_gitRepositoryDir);
 
+						String forwardLabel = "ci:forward";
+
+						if (_force) {
+							forwardLabel = "ci:forward:force";
+						}
+
+						GitHubRemoteGitRepository gitHubRemoteGitRepository =
+							_pullRequest.getGitHubRemoteGitRepository();
+
+						gitHubRemoteGitRepository.addLabel(
+							"bcf5db", "", forwardLabel);
+
+						GitHubRemoteGitRepository.Label ciForwardForceLabel =
+							gitHubRemoteGitRepository.getLabel(forwardLabel);
+
+						_pullRequest.addLabel(ciForwardForceLabel);
+
 						_pullRequest.close();
 
-						StringBuilder sb = new StringBuilder();
-
-						sb.append("Original Pull Request URL: ");
-						sb.append(_pullRequest.getURL());
-						sb.append("\nNew Pull Request URL: ");
-						sb.append(pullRequestURL);
-
-						NotificationUtil.sendSlackNotification(
-							sb.toString(), "#ci-notifications",
-							"Pull Request Successfully Forwarded.");
-
 						return pullRequestURL;
+					}
+					catch (PullRequest.ForwardPullRequestException
+								forwardPullRequestException) {
+
+						if (!forwardPullRequestException.isRetryable()) {
+							breakLoop();
+						}
+
+						throw new RuntimeException(forwardPullRequestException);
 					}
 					catch (Exception exception) {
 						if (exception instanceof RuntimeException) {
@@ -162,15 +183,25 @@ public class CIForwardProcessor {
 
 				NotificationUtil.sendSlackNotification(
 					sb.toString(), "#ci-notifications", ":liferay-ci:",
-					"Unable to forward pull request. ", "Liferay CI");
+					"Unable to forward pull request", "Liferay CI");
 
 				throw new GitHubSecondaryRateLimitRuntimeException(
-					gitHubSecondaryRateLimitRuntimeException.getGitHubApiUrl(),
+					gitHubSecondaryRateLimitRuntimeException.getGitHubAPIURL(),
 					gitHubSecondaryRateLimitRuntimeException.
 						getRetryAfterSeconds(),
 					sb.toString(), gitHubSecondaryRateLimitRuntimeException);
 			}
 			catch (Exception exception) {
+				Throwable throwable = exception.getCause();
+
+				if (throwable instanceof
+						PullRequest.ForwardPullRequestException) {
+
+					_pullRequest.addComment(throwable.getMessage());
+
+					return;
+				}
+
 				exception.printStackTrace();
 
 				StringBuilder sb = new StringBuilder();
@@ -205,20 +236,48 @@ public class CIForwardProcessor {
 			forwardedPullRequestURL);
 
 		try {
-			for (String suiteTestResultGitHubComment :
+			for (PullRequest.Comment comment :
 					_getSuiteTestResultGitHubComments()) {
 
-				forwardedPullRequest.addComment(suiteTestResultGitHubComment);
+				forwardedPullRequest.addComment(comment.getBody());
 			}
 		}
 		catch (IOException ioException) {
 			ioException.printStackTrace();
 		}
 
-		if (!JenkinsResultsParserUtil.isNullOrEmpty(forwardedPullRequestURL)) {
-			_pullRequest.addComment(
-				_getSuccessCommentBody(forwardedPullRequestURL));
+		_pullRequest.addComment(
+			_getSuccessCommentBody(forwardedPullRequestURL));
+		_pullRequest.copyLabelsToPullRequest(forwardedPullRequest);
+		_pullRequest.copyStatusesToPullRequest(forwardedPullRequest);
+	}
+
+	private PullRequest.Comment _findMostRecentTestResultComment(
+		String testSuiteName, boolean requiredPassing,
+		List<PullRequest.Comment> comments) {
+
+		StringBuilder sb = new StringBuilder();
+
+		if (requiredPassing) {
+			sb.append("heavy_check_mark: ci:test:");
 		}
+		else {
+			sb.append(": ci:test:");
+		}
+
+		sb.append(testSuiteName);
+
+		String testSuiteString = sb.toString();
+
+		for (PullRequest.Comment comment : comments) {
+			String commentBody = comment.getBody();
+
+			if (commentBody.contains(testSuiteString)) {
+				return comment;
+			}
+		}
+
+		return null;
 	}
 
 	private String[] _getBuildPropertyAsArray(String propertyName)
@@ -226,7 +285,7 @@ public class CIForwardProcessor {
 
 		String propertyValue = JenkinsResultsParserUtil.getProperty(
 			JenkinsResultsParserUtil.getBuildProperties(), propertyName,
-			_pullRequest.getGitRepositoryName());
+			_pullRequest.getGitRepositoryName(), _pullRequest.getRefName());
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(propertyValue)) {
 			return new String[0];
@@ -334,7 +393,7 @@ public class CIForwardProcessor {
 		throws IOException {
 
 		List<String> passingTestSuiteNames =
-			_pullRequest.getPassingTestSuites();
+			_pullRequest.getPassingTestSuiteNames();
 
 		String joinedPassingTestSuiteNames = JenkinsResultsParserUtil.join(
 			",", passingTestSuiteNames);
@@ -358,10 +417,14 @@ public class CIForwardProcessor {
 		for (String requiredPassingTestSuiteName :
 				requiredPassingTestSuiteNames) {
 
-			if (!passingTestSuiteNames.contains(requiredPassingTestSuiteName)) {
-				failingRequiredPassingTestSuiteNames.add(
-					requiredPassingTestSuiteName);
+			if (passingTestSuiteNames.contains(requiredPassingTestSuiteName) ||
+				_hasPassingStatus(requiredPassingTestSuiteName)) {
+
+				continue;
 			}
+
+			failingRequiredPassingTestSuiteNames.add(
+				requiredPassingTestSuiteName);
 		}
 
 		return failingRequiredPassingTestSuiteNames;
@@ -398,6 +461,31 @@ public class CIForwardProcessor {
 		return JenkinsResultsParserUtil.getGitHubApiSearchUrl(filters);
 	}
 
+	private List<PullRequest.Comment> _getGitHubCIComments() {
+		try {
+			List<PullRequest.Comment> comments = _pullRequest.getComments();
+
+			Collections.reverse(comments);
+
+			String gitHubCIUsername = JenkinsResultsParserUtil.getBuildProperty(
+				"github.ci.username");
+
+			List<PullRequest.Comment> gitHubCIComments = new ArrayList<>(
+				comments.size());
+
+			for (PullRequest.Comment comment : comments) {
+				if (gitHubCIUsername.equals(comment.getUserLogin())) {
+					gitHubCIComments.add(comment);
+				}
+			}
+
+			return gitHubCIComments;
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+	}
+
 	private String _getHasOpenForwardedPullRequestCommentBody(
 		List<String> openForwardedPullRequestURLs) {
 
@@ -428,7 +516,7 @@ public class CIForwardProcessor {
 		throws IOException {
 
 		List<String> completedTestSuiteNames =
-			_pullRequest.getCompletedTestSuites();
+			_pullRequest.getCompletedTestSuiteNames();
 
 		String joinedCompletedTestSuiteNames = JenkinsResultsParserUtil.join(
 			",", completedTestSuiteNames);
@@ -461,6 +549,19 @@ public class CIForwardProcessor {
 		}
 
 		return incompleteRequiredCompletedTestSuiteNames;
+	}
+
+	private String _getMergeConflictCommentBody() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("Unable to forward to ");
+		sb.append(_recipientUsername);
+		sb.append(":");
+		sb.append(_pullRequest.getUpstreamRemoteGitBranchName());
+		sb.append(" because the new pull request would contain a merge ");
+		sb.append("conflict.");
+
+		return sb.toString();
 	}
 
 	private List<String> _getOpenForwardedPullRequestUrls() throws IOException {
@@ -511,6 +612,29 @@ public class CIForwardProcessor {
 		return sb.toString();
 	}
 
+	private String _getPRCheckMessage() {
+		if (_pullRequest.hasLabel("pr-check - skipped")) {
+			return JenkinsResultsParserUtil.combine(
+				"Pull requests with a skipped `pr-check` may not be ",
+				"forwarded. Please send this pull request manually using ",
+				"the `pr` Claude Code skill.");
+		}
+
+		if (_pullRequest.hasLabel("pr-check - failure") ||
+			_pullRequest.hasLabel("pr-check - success")) {
+
+			return JenkinsResultsParserUtil.combine(
+				"The `pr-check` result does not match the current head ",
+				"commit. Please rerun the `/pr-check` Claude Code skill ",
+				"and publish the result with `/pr-check-publish`.");
+		}
+
+		return JenkinsResultsParserUtil.combine(
+			"This pull request has no `pr-check` result. Please run the ",
+			"`/pr-check` Claude Code skill and publish the result with ",
+			"`/pr-check-publish`.");
+	}
+
 	private String[] _getRequiredCompletedTestSuiteNames() throws IOException {
 		return _getBuildPropertyAsArray(
 			JenkinsResultsParserUtil.combine(
@@ -559,56 +683,41 @@ public class CIForwardProcessor {
 		return sb.toString();
 	}
 
-	private Set<String> _getSuiteTestResultGitHubComments() throws IOException {
-		Set<String> suiteTestResultGitHubComments = new HashSet<>();
+	private List<PullRequest.Comment> _getSuiteTestResultGitHubComments()
+		throws IOException {
 
 		Set<String> testSuiteNames = new HashSet<>();
 
-		Collections.addAll(
-			testSuiteNames, _getRequiredCompletedTestSuiteNames());
-		Collections.addAll(testSuiteNames, _getRequiredPassingTestSuiteNames());
+		List<String> requiredCompletedTestSuiteNames = Arrays.asList(
+			_getRequiredCompletedTestSuiteNames());
 
-		List<PullRequest.Comment> comments = _pullRequest.getComments();
+		testSuiteNames.addAll(requiredCompletedTestSuiteNames);
 
-		String githubCIUsername = JenkinsResultsParserUtil.getBuildProperty(
-			"github.ci.username");
+		List<String> requiredPassingTestSuiteNames = Arrays.asList(
+			_getRequiredPassingTestSuiteNames());
 
-		for (String ciForwardRequiredSuite : testSuiteNames) {
-			if (ciForwardRequiredSuite.equals("stable") &&
-				testSuiteNames.contains("relevant")) {
+		testSuiteNames.addAll(requiredPassingTestSuiteNames);
 
-				continue;
-			}
+		List<PullRequest.Comment> filteredComments = new ArrayList<>(
+			testSuiteNames.size());
 
-			String failingTestSuiteString =
-				":x: ci:test:" + ciForwardRequiredSuite;
-			String passingTestSuiteString =
-				":heavy_check_mark: ci:test:" + ciForwardRequiredSuite;
+		List<PullRequest.Comment> comments = _getGitHubCIComments();
 
-			for (int i = comments.size() - 1; i >= 0; i--) {
-				PullRequest.Comment comment = comments.get(i);
+		for (String testSuiteName : testSuiteNames) {
+			boolean requiredPassing = requiredPassingTestSuiteNames.contains(
+				testSuiteName);
 
-				String commentUserLogin = comment.getUserLogin();
+			PullRequest.Comment comment = _findMostRecentTestResultComment(
+				testSuiteName, requiredPassing, comments);
 
-				if (!commentUserLogin.equals(githubCIUsername)) {
-					continue;
-				}
-
-				String commentBody = comment.getBody();
-
-				if (!commentBody.contains(failingTestSuiteString) &&
-					!commentBody.contains(passingTestSuiteString)) {
-
-					continue;
-				}
-
-				suiteTestResultGitHubComments.add(commentBody);
-
-				break;
+			if ((comment != null) && !filteredComments.contains(comment)) {
+				filteredComments.add(comment);
 			}
 		}
 
-		return suiteTestResultGitHubComments;
+		Collections.sort(filteredComments);
+
+		return filteredComments;
 	}
 
 	private String _getUnsuccessfulCommentBody() throws IOException {
@@ -642,6 +751,13 @@ public class CIForwardProcessor {
 				sb.append(requiredPassingTestSuiteName);
 				sb.append("`");
 
+				if (requiredPassingTestSuiteName.equals("pr-check") &&
+					failedRequiredPassingTestSuiteNames.contains("pr-check")) {
+
+					sb.append(" - ");
+					sb.append(_getPRCheckMessage());
+				}
+
 				if (requiredPassingTestSuiteName.equals("stable")) {
 					sb.append(" - If you believe that the stable test ");
 					sb.append("failures were caused by flaky tests, please ");
@@ -667,6 +783,110 @@ public class CIForwardProcessor {
 		return sb.toString();
 	}
 
+	private boolean _hasMergeConflict() {
+		String upstreamBranchName =
+			_pullRequest.getUpstreamRemoteGitBranchName();
+
+		GitWorkingDirectory gitWorkingDirectory =
+			GitWorkingDirectoryFactory.newGitWorkingDirectory(
+				upstreamBranchName, _gitRepositoryDir.getAbsolutePath(),
+				_pullRequest.getGitRepositoryName());
+
+		String receiverRemoteURL = GitUtil.getUserRemoteURL(
+			_pullRequest.getGitRepositoryName(), _recipientUsername);
+
+		RemoteGitBranch senderRemoteGitBranch =
+			_pullRequest.getSenderRemoteGitBranch();
+
+		RemoteGitBranch receiverRemoteGitBranch =
+			gitWorkingDirectory.getRemoteGitBranch(
+				upstreamBranchName, receiverRemoteURL, true);
+
+		if (receiverRemoteGitBranch.getMergeBaseCommit(senderRemoteGitBranch) ==
+				null) {
+
+			return false;
+		}
+
+		gitWorkingDirectory.fetch(receiverRemoteGitBranch);
+		gitWorkingDirectory.fetch(senderRemoteGitBranch);
+
+		LocalGitBranch receiverLocalGitBranch =
+			gitWorkingDirectory.createLocalGitBranch(
+				JenkinsResultsParserUtil.combine(
+					_recipientUsername, "-", upstreamBranchName, "-precheck"),
+				true, receiverRemoteGitBranch.getSHA(),
+				receiverRemoteGitBranch);
+
+		LocalGitBranch senderLocalGitBranch =
+			gitWorkingDirectory.createLocalGitBranch(
+				_pullRequest.getLocalSenderBranchName() + "-precheck", true,
+				_pullRequest.getSenderSHA(), senderRemoteGitBranch);
+
+		try {
+			gitWorkingDirectory.rebase(
+				true, receiverLocalGitBranch, senderLocalGitBranch);
+
+			return false;
+		}
+		catch (GitWorkingDirectory.GitWorkingDirectoryRuntimeException
+					gitWorkingDirectoryRuntimeException) {
+
+			String message = gitWorkingDirectoryRuntimeException.getMessage();
+
+			if ((message != null) && message.contains("Unable to rebase ")) {
+				System.out.println(
+					JenkinsResultsParserUtil.combine(
+						"Detected merge conflict between ",
+						senderRemoteGitBranch.getUsername(), ":",
+						senderRemoteGitBranch.getName(), " and ",
+						_recipientUsername, ":", upstreamBranchName, "\n",
+						message));
+
+				return true;
+			}
+
+			System.out.println(
+				"WARNING: Unable to determine merge conflict status\n" +
+					String.valueOf(message));
+
+			return false;
+		}
+	}
+
+	private boolean _hasPassingStatus(String statusContext) {
+		JSONObject statusJSONObject =
+			_pullRequest.getSenderSHAStatusJSONObject();
+
+		if (statusJSONObject == null) {
+			return false;
+		}
+
+		JSONArray statusesJSONArray = statusJSONObject.optJSONArray("statuses");
+
+		if (statusesJSONArray == null) {
+			return false;
+		}
+
+		for (int i = 0; i < statusesJSONArray.length(); i++) {
+			JSONObject statusesJSONObject = statusesJSONArray.getJSONObject(i);
+
+			String context = statusesJSONObject.getString("context");
+
+			if (!context.equals(statusContext)) {
+				continue;
+			}
+
+			String state = statusesJSONObject.getString("state");
+
+			if (state.equals("success")) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private boolean _isForwardEligible() throws IOException {
 		List<String> incompleteRequiredCompletedTestSuiteNames =
 			_getIncompleteRequiredCompletedTestSuiteNames();
@@ -678,11 +898,7 @@ public class CIForwardProcessor {
 		List<String> failedRequiredPassingTestSuiteNames =
 			_getFailedRequiredPassingTestSuiteNames();
 
-		if (!failedRequiredPassingTestSuiteNames.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return failedRequiredPassingTestSuiteNames.isEmpty();
 	}
 
 	private static final long _RETRY_PERIOD = 1000L * 60L;

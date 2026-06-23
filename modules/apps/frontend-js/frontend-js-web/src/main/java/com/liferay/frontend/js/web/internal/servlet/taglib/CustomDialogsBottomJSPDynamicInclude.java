@@ -5,7 +5,6 @@
 
 package com.liferay.frontend.js.web.internal.servlet.taglib;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.frontend.js.web.internal.configuration.CustomDialogsSettingsConfiguration;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
@@ -19,10 +18,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,7 +52,7 @@ public class CustomDialogsBottomJSPDynamicInclude implements DynamicInclude {
 				customDialogsSettingsConfiguration =
 					_configurationProvider.getGroupConfiguration(
 						CustomDialogsSettingsConfiguration.class,
-						group.getGroupId());
+						group.getCompanyId(), group.getGroupId());
 
 			ScriptData scriptData = new ScriptData();
 
@@ -83,9 +82,6 @@ public class CustomDialogsBottomJSPDynamicInclude implements DynamicInclude {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

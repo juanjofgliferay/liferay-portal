@@ -41,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Kocsis
  */
 @Component(
-	property = "javax.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
+	property = "jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
 	service = StagedModelDataHandler.class
 )
 public class CalendarBookingStagedModelDataHandler
@@ -69,6 +69,15 @@ public class CalendarBookingStagedModelDataHandler
 		if (calendarBooking != null) {
 			deleteStagedModel(calendarBooking);
 		}
+	}
+
+	@Override
+	public CalendarBooking fetchStagedModelByExternalReferenceCodeAndGroupId(
+		String externalReferenceCode, long groupId) {
+
+		return _calendarBookingLocalService.
+			fetchCalendarBookingByExternalReferenceCode(
+				externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -221,10 +230,8 @@ public class CalendarBookingStagedModelDataHandler
 		CalendarBooking importedCalendarBooking = null;
 
 		if (portletDataContext.isDataStrategyMirror()) {
-			CalendarBooking existingCalendarBooking =
-				fetchStagedModelByUuidAndGroupId(
-					calendarBooking.getUuid(),
-					portletDataContext.getScopeGroupId());
+			CalendarBooking existingCalendarBooking = fetchExistingStagedModel(
+				calendarBooking, portletDataContext.getScopeGroupId());
 
 			if (existingCalendarBooking == null) {
 				serviceContext.setUuid(calendarBooking.getUuid());
@@ -263,6 +270,12 @@ public class CalendarBookingStagedModelDataHandler
 						calendarBooking.getSecondReminder(),
 						calendarBooking.getSecondReminderType(),
 						serviceContext);
+
+				importedCalendarBooking.setUuid(calendarBooking.getUuid());
+
+				importedCalendarBooking =
+					_calendarBookingLocalService.updateCalendarBooking(
+						importedCalendarBooking);
 			}
 		}
 		else {

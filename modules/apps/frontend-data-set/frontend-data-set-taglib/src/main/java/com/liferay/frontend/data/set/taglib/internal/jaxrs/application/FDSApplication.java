@@ -5,47 +5,48 @@
 
 package com.liferay.frontend.data.set.taglib.internal.jaxrs.application;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import com.liferay.frontend.data.set.model.FDSDataRow;
+import com.liferay.frontend.data.set.provider.FDSActionProvider;
+import com.liferay.frontend.data.set.provider.FDSActionProviderRegistry;
 import com.liferay.frontend.data.set.provider.FDSDataProvider;
 import com.liferay.frontend.data.set.provider.FDSDataProviderRegistry;
 import com.liferay.frontend.data.set.provider.search.FDSKeywordsFactory;
 import com.liferay.frontend.data.set.provider.search.FDSKeywordsFactoryRegistry;
 import com.liferay.frontend.data.set.provider.search.FDSPagination;
-import com.liferay.frontend.data.set.taglib.internal.factory.FDSDataJSONFactory;
 import com.liferay.frontend.data.set.taglib.internal.jaxrs.context.provider.PaginationContextProvider;
 import com.liferay.frontend.data.set.taglib.internal.jaxrs.context.provider.SortContextProvider;
 import com.liferay.frontend.data.set.taglib.internal.jaxrs.context.provider.ThemeDisplayContextProvider;
-import com.liferay.frontend.data.set.taglib.internal.servlet.ServletContextUtil;
-import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.FormParam;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -64,45 +65,6 @@ import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
 	service = Application.class
 )
 public class FDSApplication extends Application {
-
-	@DELETE
-	@Path("/fds/{fdsName}/custom-views/{fdsCustomViewId}")
-	public Response deleteFDSCustomView(
-		@PathParam("fdsName") String fdsName,
-		@PathParam("fdsCustomViewId") String fdsCustomViewId,
-		@Context HttpServletRequest httpServletRequest,
-		@Context ThemeDisplay themeDisplay) {
-
-		try {
-			PortalPreferences portalPreferences =
-				PortletPreferencesFactoryUtil.getPortalPreferences(
-					httpServletRequest);
-
-			String fdsSettingsNamespace =
-				ServletContextUtil.getFDSSettingsNamespace(
-					httpServletRequest, fdsName);
-
-			JSONObject customViewsJSONObject = _jsonFactory.createJSONObject(
-				portalPreferences.getValue(
-					fdsSettingsNamespace, "customViews", "{}"));
-
-			customViewsJSONObject.remove(fdsCustomViewId);
-
-			portalPreferences.setValue(
-				fdsSettingsNamespace, "customViews",
-				customViewsJSONObject.toString());
-
-			return Response.noContent(
-			).build();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
-
-		return Response.status(
-			Response.Status.INTERNAL_SERVER_ERROR
-		).build();
-	}
 
 	@GET
 	@Path("/data-set/{tableName}/{fdsDataProviderKey}")
@@ -132,15 +94,16 @@ public class FDSApplication extends Application {
 					fdsDataProviderKey);
 
 			return Response.ok(
-				_fdsDataJSONFactory.create(
-					groupId, tableName,
-					fdsDataProvider.getItems(
-						fdsKeywordsFactory.create(httpServletRequest),
-						fdsPagination, httpServletRequest, sort),
-					fdsDataProvider.getItemsCount(
-						fdsKeywordsFactory.create(httpServletRequest),
-						httpServletRequest),
-					httpServletRequest),
+				_objectMapper.writeValueAsString(
+					new FDSResponse(
+						_getFDSTableRows(
+							fdsDataProvider.getItems(
+								fdsKeywordsFactory.create(httpServletRequest),
+								fdsPagination, httpServletRequest, sort),
+							tableName, httpServletRequest, groupId),
+						fdsDataProvider.getItemsCount(
+							fdsKeywordsFactory.create(httpServletRequest),
+							httpServletRequest))),
 				MediaType.APPLICATION_JSON
 			).build();
 		}
@@ -165,154 +128,48 @@ public class FDSApplication extends Application {
 		return singletons;
 	}
 
-	@Path("/fds/{fdsName}/custom-views/{fdsCustomViewId}/label")
-	@POST
-	public Response renameFDSCustomView(
-		@PathParam("fdsName") String fdsName,
-		@PathParam("fdsCustomViewId") String fdsCustomViewId,
-		@FormParam("customViewLabel") String fdsCustomViewLabel,
-		@Context HttpServletRequest httpServletRequest,
-		@Context ThemeDisplay themeDisplay) {
+	private List<FDSDataRow> _getFDSTableRows(
+			List<Object> items, String tableName,
+			HttpServletRequest httpServletRequest, long groupId)
+		throws Exception {
 
-		try {
-			PortalPreferences portalPreferences =
-				PortletPreferencesFactoryUtil.getPortalPreferences(
-					httpServletRequest);
+		List<FDSDataRow> fdsDataRows = new ArrayList<>();
 
-			String fdsSettingsNamespace =
-				ServletContextUtil.getFDSSettingsNamespace(
-					httpServletRequest, fdsName);
+		List<FDSActionProvider> fdsActionProviders =
+			_fdsActionProviderRegistry.getFDSActionProviders(tableName);
 
-			JSONObject customViewsJSONObject = _jsonFactory.createJSONObject(
-				portalPreferences.getValue(
-					fdsSettingsNamespace, "customViews", "{}"));
+		for (Object item : items) {
+			FDSDataRow fdsDataRow = new FDSDataRow(item);
 
-			JSONObject customViewJSONObject =
-				customViewsJSONObject.getJSONObject(fdsCustomViewId);
+			if (fdsActionProviders != null) {
+				for (FDSActionProvider fdsActionProvider : fdsActionProviders) {
+					List<DropdownItem> actionDropdownItems =
+						fdsActionProvider.getDropdownItems(
+							groupId, httpServletRequest, item);
 
-			if (customViewJSONObject == null) {
-				return Response.status(
-					Response.Status.NOT_FOUND
-				).build();
+					if (actionDropdownItems != null) {
+						fdsDataRow.addActionDropdownItems(actionDropdownItems);
+					}
+				}
 			}
 
-			customViewJSONObject.put("customViewLabel", fdsCustomViewLabel);
-
-			customViewsJSONObject.put(fdsCustomViewId, customViewJSONObject);
-
-			portalPreferences.setValue(
-				fdsSettingsNamespace, "customViews",
-				customViewsJSONObject.toString());
-
-			return Response.ok(
-			).build();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
+			fdsDataRows.add(fdsDataRow);
 		}
 
-		return Response.status(
-			Response.Status.INTERNAL_SERVER_ERROR
-		).build();
-	}
-
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Path("/data-set/{id}/save-active-view-settings")
-	@POST
-	public Response saveActiveFDSViewSettings(
-		@PathParam("id") String id,
-		@Context HttpServletRequest httpServletRequest,
-		@Context HttpServletResponse httpServletResponse,
-		@Context ThemeDisplay themeDisplay, @Context UriInfo uriInfo,
-		String activeViewSettingsJSON) {
-
-		try {
-			PortalPreferences portalPreferences =
-				PortletPreferencesFactoryUtil.getPortalPreferences(
-					httpServletRequest);
-
-			String currentActiveViewSettingsJSON = portalPreferences.getValue(
-				ServletContextUtil.getFDSSettingsNamespace(
-					httpServletRequest, id),
-				"activeViewSettingsJSON", "{}");
-
-			JSONObject currentActiveViewSettingsJSONObject =
-				_jsonFactory.createJSONObject(currentActiveViewSettingsJSON);
-
-			JSONObject activeViewSettingsJSONObject =
-				_jsonFactory.createJSONObject(activeViewSettingsJSON);
-
-			for (String key : activeViewSettingsJSONObject.keySet()) {
-				currentActiveViewSettingsJSONObject.put(
-					key, activeViewSettingsJSONObject.get(key));
-			}
-
-			portalPreferences.setValue(
-				ServletContextUtil.getFDSSettingsNamespace(
-					httpServletRequest, id),
-				"activeViewSettingsJSON",
-				currentActiveViewSettingsJSONObject.toString());
-
-			return Response.ok(
-			).build();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
-
-		return Response.status(
-			Response.Status.NOT_FOUND
-		).build();
-	}
-
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Path("/fds/{fdsName}/custom-views")
-	@POST
-	public Response saveFDSCustomView(
-		@PathParam("fdsName") String fdsName,
-		@Context HttpServletRequest httpServletRequest,
-		@Context ThemeDisplay themeDisplay, String customViewJSON) {
-
-		try {
-			PortalPreferences portalPreferences =
-				PortletPreferencesFactoryUtil.getPortalPreferences(
-					httpServletRequest);
-
-			String fdsSettingsNamespace =
-				ServletContextUtil.getFDSSettingsNamespace(
-					httpServletRequest, fdsName);
-
-			JSONObject customViewsJSONObject = _jsonFactory.createJSONObject(
-				portalPreferences.getValue(
-					fdsSettingsNamespace, "customViews", "{}"));
-
-			JSONObject customViewJSONObject = _jsonFactory.createJSONObject(
-				customViewJSON);
-
-			customViewsJSONObject.put(
-				String.valueOf(customViewJSONObject.get("customViewId")),
-				customViewJSONObject.get("viewState"));
-
-			portalPreferences.setValue(
-				fdsSettingsNamespace, "customViews",
-				customViewsJSONObject.toString());
-
-			return Response.ok(
-			).build();
-		}
-		catch (Exception exception) {
-			_log.error(exception);
-		}
-
-		return Response.status(
-			Response.Status.INTERNAL_SERVER_ERROR
-		).build();
+		return fdsDataRows;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(FDSApplication.class);
 
+	private static final ObjectMapper _objectMapper = new ObjectMapper() {
+		{
+			configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+			disable(SerializationFeature.INDENT_OUTPUT);
+		}
+	};
+
 	@Reference
-	private FDSDataJSONFactory _fdsDataJSONFactory;
+	private FDSActionProviderRegistry _fdsActionProviderRegistry;
 
 	@Reference
 	private FDSDataProviderRegistry _fdsDataProviderRegistry;
@@ -321,12 +178,24 @@ public class FDSApplication extends Application {
 	private FDSKeywordsFactoryRegistry _fdsKeywordsFactoryRegistry;
 
 	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference
 	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	private class FDSResponse {
+
+		public FDSResponse(List<FDSDataRow> fdsDataRows, int totalCount) {
+			_fdsDataRows = fdsDataRows;
+			_totalCount = totalCount;
+		}
+
+		@JsonProperty("items")
+		private final List<FDSDataRow> _fdsDataRows;
+
+		@JsonProperty("totalCount")
+		private final int _totalCount;
+
+	}
 
 }

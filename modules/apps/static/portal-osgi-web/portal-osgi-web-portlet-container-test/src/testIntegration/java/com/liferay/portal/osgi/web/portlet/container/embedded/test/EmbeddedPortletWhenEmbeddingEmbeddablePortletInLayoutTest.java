@@ -22,10 +22,10 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.List;
 
@@ -157,7 +157,7 @@ public class EmbeddedPortletWhenEmbeddingEmbeddablePortletInLayoutTest {
 		PortletPreferences embeddedPortletPreferences = portletPreferences.get(
 			0);
 
-		javax.portlet.PortletPreferences jxPortletPreferences =
+		jakarta.portlet.PortletPreferences jxPortletPreferences =
 			_portletPreferenceValueLocalService.getPreferences(
 				embeddedPortletPreferences);
 
@@ -167,21 +167,20 @@ public class EmbeddedPortletWhenEmbeddingEmbeddablePortletInLayoutTest {
 	}
 
 	@DeleteAfterTestRun
-	private static Group _group;
+	private Group _group;
 
-	private static Layout _layout;
-	private static String[] _layoutStaticPortletsAll;
-	private static LayoutTypePortlet _layoutTypePortlet;
-
-	@Inject
-	private static PortletLocalService _portletLocalService;
+	private Layout _layout;
+	private String[] _layoutStaticPortletsAll;
+	private LayoutTypePortlet _layoutTypePortlet;
 
 	@Inject
-	private static PortletPreferencesLocalService
-		_portletPreferencesLocalService;
+	private PortletLocalService _portletLocalService;
 
 	@Inject
-	private static PortletPreferenceValueLocalService
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@Inject
+	private PortletPreferenceValueLocalService
 		_portletPreferenceValueLocalService;
 
 }

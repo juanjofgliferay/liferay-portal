@@ -6,16 +6,31 @@
 package com.liferay.commerce.product.type.virtual.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.configuration.CProductVersionConfiguration;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalServiceUtil;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeConstants;
+import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
+import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingLocalService;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
@@ -55,10 +70,17 @@ public class CPDefinitionVirtualTest {
 
 	@Before
 	public void setUp() throws Exception {
+		Company company = _companyLocalService.getCompany(
+			TestPropsValues.getCompanyId());
+
+		_serviceContext = ServiceContextTestUtil.getServiceContext(
+			company.getGroupId(), TestPropsValues.getUserId());
+
+		ServiceContextThreadLocal.pushServiceContext(_serviceContext);
+
 		_commerceCatalog = CommerceCatalogLocalServiceUtil.addCommerceCatalog(
 			null, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			LocaleUtil.US.getDisplayLanguage(),
-			ServiceContextTestUtil.getServiceContext());
+			LocaleUtil.US.getDisplayLanguage(), _serviceContext);
 	}
 
 	@After
@@ -72,6 +94,65 @@ public class CPDefinitionVirtualTest {
 				cpDefinitionToDelete.getCPDefinitionId());
 
 			iterator.remove();
+		}
+	}
+
+	@Test
+	public void testCopyCPDefinition() throws Exception {
+		frutillaRule.scenario(
+			"Copy a product"
+		).given(
+			"A product definition"
+		).when(
+			"the copy method is run"
+		).then(
+			"the copy is created without exception"
+		).and(
+			"Virtual file settings is cloned too"
+		);
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						CProductVersionConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"enabled", true
+						).put(
+							"versionThreshold", 2
+						).build())) {
+
+			CPDefinition cpDefinition1 = CPTestUtil.addCPDefinition(
+				_commerceCatalog.getGroupId(), VirtualCPTypeConstants.NAME);
+
+			FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+				null, TestPropsValues.getUserId(),
+				_commerceCatalog.getGroupId(),
+				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+				RandomTestUtil.randomString() + ".jpg", ContentTypes.IMAGE_JPEG,
+				FileUtil.getBytes(
+					CPDefinitionVirtualTest.class, "dependencies/image.jpg"),
+				null, null, null, _serviceContext);
+
+			CPDefinitionVirtualSetting cpDefinitionVirtualSetting =
+				_cpDefinitionVirtualSettingLocalService.
+					addCPDefinitionVirtualSetting(
+						cpDefinition1.getModelClassName(),
+						cpDefinition1.getCPDefinitionId(),
+						fileEntry.getFileEntryId(), null, 1, 0,
+						RandomTestUtil.randomInt(), true, 0,
+						"https://liferay.com", false, null, 0, false,
+						_serviceContext);
+
+			CPDefinition cpDefinition2 =
+				_cpDefinitionLocalService.copyCPDefinition(
+					cpDefinitionVirtualSetting.getClassPK());
+
+			Assert.assertNotNull(
+				_cpDefinitionVirtualSettingLocalService.
+					fetchCPDefinitionVirtualSetting(
+						cpDefinition2.getModelClassName(),
+						cpDefinition2.getCPDefinitionId()));
 		}
 	}
 
@@ -124,24 +205,24 @@ public class CPDefinitionVirtualTest {
 		Date expirationDate = cpDefinition.getExpirationDate();
 
 		_cpDefinitionLocalService.updateCPDefinition(
-			cpDefinitionId, cpDefinition.getNameMap(),
-			cpDefinition.getShortDescriptionMap(),
-			cpDefinition.getDescriptionMap(), cpDefinition.getUrlTitleMap(),
-			cpDefinition.getMetaTitleMap(),
-			cpDefinition.getMetaDescriptionMap(),
-			cpDefinition.getMetaKeywordsMap(),
-			cpDefinition.isIgnoreSKUCombinations(), true, true, true,
-			cpDefinition.getShippingExtraPrice(), cpDefinition.getWidth(),
-			cpDefinition.getHeight(), cpDefinition.getDepth(),
-			cpDefinition.getWeight(), cpDefinition.getCPTaxCategoryId(),
-			cpDefinition.isTaxExempt(), cpDefinition.isTelcoOrElectronics(),
-			cpDefinition.getDDMStructureKey(), cpDefinition.isPublished(),
-			displayDate.getMonth(), displayDate.getDay(), displayDate.getYear(),
+			cpDefinitionId, cpDefinition.getCPTaxCategoryId(),
+			cpDefinition.isAccountGroupFilterEnabled(),
+			cpDefinition.isChannelFilterEnabled(),
+			cpDefinition.getDDMStructureKey(), cpDefinition.getDepth(),
+			cpDefinition.getDescriptionMap(), displayDate.getDate(),
 			displayDate.getHours(), displayDate.getMinutes(),
-			expirationDate.getMonth(), expirationDate.getDay(),
-			expirationDate.getYear(), expirationDate.getHours(),
-			expirationDate.getMinutes(), true,
-			ServiceContextTestUtil.getServiceContext());
+			displayDate.getMonth(), displayDate.getYear(),
+			expirationDate.getDate(), expirationDate.getHours(),
+			expirationDate.getMinutes(), expirationDate.getMonth(),
+			expirationDate.getYear(), true, cpDefinition.getHeight(),
+			cpDefinition.isIgnoreSKUCombinations(),
+			cpDefinition.getMetaDescriptionMap(),
+			cpDefinition.getMetaKeywordsMap(), cpDefinition.getMetaTitleMap(),
+			cpDefinition.getNameMap(), true, cpDefinition.isPublished(), true,
+			true, cpDefinition.getShippingExtraPrice(),
+			cpDefinition.getShortDescriptionMap(), cpDefinition.isTaxExempt(),
+			cpDefinition.isTelcoOrElectronics(), cpDefinition.getUrlTitleMap(),
+			cpDefinition.getWeight(), cpDefinition.getWidth(), _serviceContext);
 
 		cpDefinition = _cpDefinitionLocalService.getCPDefinition(
 			cpDefinitionId);
@@ -156,8 +237,20 @@ public class CPDefinitionVirtualTest {
 	private CommerceCatalog _commerceCatalog;
 
 	@Inject
+	private CompanyLocalService _companyLocalService;
+
+	@Inject
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
 	private final List<CPDefinition> _cpDefinitions = new ArrayList<>();
+
+	@Inject
+	private CPDefinitionVirtualSettingLocalService
+		_cpDefinitionVirtualSettingLocalService;
+
+	@Inject
+	private DLAppLocalService _dlAppLocalService;
+
+	private ServiceContext _serviceContext;
 
 }

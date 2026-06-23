@@ -189,7 +189,7 @@ public class DLContentLocalServiceImpl extends DLContentLocalServiceBaseImpl {
 		throws NoSuchContentException {
 
 		OrderByComparator<DLContent> orderByComparator =
-			new DLContentVersionComparator();
+			DLContentVersionComparator.getInstance(false);
 
 		List<DLContent> dlContents = dlContentPersistence.findByC_R_P(
 			companyId, repositoryId, path, 0, 1, orderByComparator);
@@ -208,7 +208,7 @@ public class DLContentLocalServiceImpl extends DLContentLocalServiceBaseImpl {
 
 		if (version.isEmpty()) {
 			OrderByComparator<DLContent> orderByComparator =
-				new DLContentVersionComparator();
+				DLContentVersionComparator.getInstance(false);
 
 			List<DLContent> dlContents = dlContentPersistence.findByC_R_P(
 				companyId, repositoryId, path, 0, 1, orderByComparator);
@@ -309,19 +309,6 @@ public class DLContentLocalServiceImpl extends DLContentLocalServiceBaseImpl {
 			return new OutputBlob(
 				unsyncByteArrayInputStream,
 				unsyncByteArrayInputStream.available());
-		}
-
-		if (inputStream instanceof
-				com.liferay.portal.kernel.io.unsync.
-					UnsyncByteArrayInputStream) {
-
-			com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream
-				unsyncByteArrayInputStream =
-					(com.liferay.portal.kernel.io.unsync.
-						UnsyncByteArrayInputStream)inputStream;
-
-			return new OutputBlob(
-				inputStream, unsyncByteArrayInputStream.available());
 		}
 
 		if (inputStream instanceof FileInputStream) {

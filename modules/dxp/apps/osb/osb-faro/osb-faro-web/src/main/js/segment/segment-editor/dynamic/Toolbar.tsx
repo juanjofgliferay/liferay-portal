@@ -19,6 +19,7 @@ import {INDIVIDUALS} from 'shared/util/router';
 import {individualsListColumns} from 'shared/util/table-columns';
 import {Modal} from 'shared/types';
 import {Routes, SEGMENTS, toRoute} from 'shared/util/router';
+import {SegmentTypes} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
 import {validateSegmentInputs} from './utils/utils';
 
@@ -32,6 +33,7 @@ interface IToolbarProps {
 	includeAnonymousUsers: boolean;
 	open: Modal.open;
 	valid: boolean;
+	segmentType: SegmentTypes;
 }
 
 interface IToolbarState {
@@ -55,7 +57,7 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 		);
 	}
 
-	componentDidUpdate(prevProps) {
+	componentDidUpdate(prevProps: IToolbarProps) {
 		if (
 			hasChanges(
 				prevProps,
@@ -78,7 +80,7 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 
 	@autoCancel
 	@autobind
-	fetchMembers(params) {
+	fetchMembers(params: Record<string, any>) {
 		const {channelId, criteriaString, groupId} = this.props;
 
 		return API.individuals.search({
@@ -148,7 +150,7 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 
 	render() {
 		const {
-			props: {channelId, groupId, id, valid},
+			props: {channelId, groupId, id, segmentType, valid},
 			state: {countLoading, criteriaValid, membersCount}
 		} = this;
 
@@ -156,6 +158,19 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 			<Loading key='LOADING' />
 		) : (
 			membersCount.toLocaleString()
+		);
+
+		const isBatch = segmentType === SegmentTypes.Batch;
+
+		const viewMembersButtonContent = isBatch ? (
+			<span {...this.getPreviewCriteriaTooltipProps()}>
+				<ClayIcon className='icon-root' symbol='view' />
+			</span>
+		) : (
+			<div {...this.getPreviewCriteriaTooltipProps()}>
+				<ClayIcon className='icon-root mr-2' symbol='view' />
+				{Liferay.Language.get('view-members')}
+			</div>
 		);
 
 		return (
@@ -173,46 +188,50 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 						</div>
 
 						<div className='form-header-section-right'>
-							<div className='btn-group'>
-								<div className='btn-group-item'>
-									<Form.ToggleSwitch
-										className='include-anonymous'
-										label={Liferay.Language.get(
-											'include-anonymous'
-										)}
-										name='includeAnonymousUsers'
-									/>
-								</div>
+							{isBatch && (
+								<div className='btn-group'>
+									<div className='btn-group-item'>
+										<Form.ToggleSwitch
+											className='include-anonymous'
+											label={Liferay.Language.get(
+												'include-anonymous'
+											)}
+											name='includeAnonymousUsers'
+										/>
+									</div>
 
-								<div className='btn-group-item'>
-									<InfoPopover
-										className='include-anon-help-icon'
-										content={Liferay.Language.get(
-											'criteria-containing-individual-or-account-attributes-excludes-anonymous-individuals'
-										)}
-									/>
-								</div>
-							</div>
-
-							<div className='btn-group'>
-								<div className='btn-group-item'>
-									<div className='total-members'>
-										{sub(
-											Liferay.Language.get(
-												'total-members-x'
-											),
-											[
-												<div
-													className='total-members-count'
-													key='TOTAL_MEMBERS_COUNT'
-												>
-													{totalMembersCount}
-												</div>
-											],
-											false
-										)}
+									<div className='btn-group-item'>
+										<InfoPopover
+											className='include-anon-help-icon'
+											content={Liferay.Language.get(
+												'criteria-containing-individual-or-account-attributes-excludes-anonymous-individuals'
+											)}
+										/>
 									</div>
 								</div>
+							)}
+
+							<div className='btn-group'>
+								{isBatch && (
+									<div className='btn-group-item'>
+										<div className='total-members'>
+											{sub(
+												Liferay.Language.get(
+													'total-members-x'
+												),
+												[
+													<div
+														className='total-members-count'
+														key='TOTAL_MEMBERS_COUNT'
+													>
+														{totalMembersCount}
+													</div>
+												],
+												false
+											)}
+										</div>
+									</div>
+								)}
 
 								<div className='btn-group-item'>
 									<ClayButton
@@ -234,14 +253,7 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 											'view-members'
 										)}
 									>
-										<span
-											{...this.getPreviewCriteriaTooltipProps()}
-										>
-											<ClayIcon
-												className='icon-root'
-												symbol='view'
-											/>
-										</span>
+										{viewMembersButtonContent}
 									</ClayButton>
 								</div>
 							</div>
@@ -283,6 +295,7 @@ export class Toolbar extends React.Component<IToolbarProps, IToolbarState> {
 														}
 												  )
 										}
+										small
 									>
 										{Liferay.Language.get('cancel')}
 									</ClayLink>

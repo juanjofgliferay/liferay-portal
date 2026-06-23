@@ -11,22 +11,21 @@ import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONSerializable;
 import com.liferay.portal.kernel.json.JSONSerializer;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceAction;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceActionsManager;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceActionsManagerUtil;
-import com.liferay.portal.kernel.jsonwebservice.NoSuchJSONWebServiceException;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceAction;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceActionsManager;
+import com.liferay.portal.remote.json.web.service.exception.NoSuchJSONWebServiceException;
 import com.liferay.portal.remote.json.web.service.web.internal.action.JSONWebServiceInvokerAction;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.reflect.Method;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.AfterClass;
 
@@ -49,10 +48,18 @@ public abstract class BaseJSONWebServiceTestCase {
 	}
 
 	protected static void initPortalServices() {
+		JSONWebServiceActionsManagerImpl jsonWebServiceActionsManagerImpl =
+			new JSONWebServiceActionsManagerImpl();
+
+		jsonWebServiceActionsManagerImpl.activate(
+			SystemBundleUtil.getBundleContext());
+
 		_jsonWebServiceActionsManagerServiceRegistration =
 			_bundleContext.registerService(
 				JSONWebServiceActionsManager.class,
-				new JSONWebServiceActionsManagerImpl(), null);
+				jsonWebServiceActionsManagerImpl, null);
+
+		jsonWebServiceActionsManager = jsonWebServiceActionsManagerImpl;
 	}
 
 	protected static void registerAction(Object action) {
@@ -90,7 +97,7 @@ public abstract class BaseJSONWebServiceTestCase {
 			String method = JSONWebServiceMappingResolverUtil.resolveHttpMethod(
 				actionMethod);
 
-			JSONWebServiceActionsManagerUtil.registerJSONWebServiceAction(
+			jsonWebServiceActionsManager.registerJSONWebServiceAction(
 				servletContextName, StringPool.BLANK, action, actionClass,
 				actionMethod, path, method);
 		}
@@ -124,7 +131,7 @@ public abstract class BaseJSONWebServiceTestCase {
 			HttpServletRequest httpServletRequest)
 		throws NoSuchJSONWebServiceException {
 
-		return JSONWebServiceActionsManagerUtil.getJSONWebServiceAction(
+		return jsonWebServiceActionsManager.getJSONWebServiceAction(
 			httpServletRequest);
 	}
 
@@ -208,6 +215,8 @@ public abstract class BaseJSONWebServiceTestCase {
 
 		return jsonDeserializer.deserialize(json);
 	}
+
+	protected static JSONWebServiceActionsManager jsonWebServiceActionsManager;
 
 	private static final BundleContext _bundleContext =
 		SystemBundleUtil.getBundleContext();

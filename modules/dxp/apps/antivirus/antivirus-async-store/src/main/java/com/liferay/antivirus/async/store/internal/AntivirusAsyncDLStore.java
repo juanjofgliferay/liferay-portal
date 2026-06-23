@@ -19,8 +19,8 @@ import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
@@ -141,6 +141,39 @@ public class AntivirusAsyncDLStore implements DLStore {
 
 	@Override
 	public void copyFileVersion(
+			DLStoreRequest dlStoreRequest, String toVersionLabel)
+		throws PortalException {
+
+		InputStream inputStream = _store.getFileAsStream(
+			dlStoreRequest.getCompanyId(), dlStoreRequest.getRepositoryId(),
+			dlStoreRequest.getFileName(), dlStoreRequest.getVersionLabel());
+
+		if (inputStream == null) {
+			inputStream = new UnsyncByteArrayInputStream(new byte[0]);
+		}
+
+		addFile(
+			DLStoreRequest.builder(
+				dlStoreRequest.getCompanyId(), dlStoreRequest.getRepositoryId(),
+				dlStoreRequest.getFileName()
+			).className(
+				dlStoreRequest.getClassName()
+			).classPK(
+				dlStoreRequest.getClassPK()
+			).fileExtension(
+				dlStoreRequest.getFileExtension()
+			).sourceFileName(
+				dlStoreRequest.getSourceFileName()
+			).validateFileExtension(
+				false
+			).versionLabel(
+				toVersionLabel
+			).build(),
+			inputStream);
+	}
+
+	@Override
+	public void copyFileVersion(
 			long companyId, long repositoryId, String fileName,
 			String fromVersionLabel, String toVersionLabel)
 		throws PortalException {
@@ -161,6 +194,19 @@ public class AntivirusAsyncDLStore implements DLStore {
 		long companyId, long repositoryId, String dirName) {
 
 		_store.deleteDirectory(companyId, repositoryId, dirName);
+	}
+
+	@Override
+	public void deleteFile(long companyId, long repositoryId, String fileName)
+		throws PortalException {
+
+		_validate(fileName, null, null, false, StringPool.BLANK);
+
+		for (String versionLabel :
+				_store.getFileVersions(companyId, repositoryId, fileName)) {
+
+			_store.deleteFile(companyId, repositoryId, fileName, versionLabel);
+		}
 	}
 
 	@Override
@@ -349,7 +395,8 @@ public class AntivirusAsyncDLStore implements DLStore {
 
 		TransactionCommitCallbackUtil.registerCallback(
 			() -> {
-				_destination.send(message);
+				_messageBus.sendMessage(
+					AntivirusAsyncDestinationNames.ANTIVIRUS, message);
 
 				return null;
 			});
@@ -375,16 +422,14 @@ public class AntivirusAsyncDLStore implements DLStore {
 	private AntivirusAsyncEventListenerManager
 		_antivirusAsyncEventListenerManager;
 
-	@Reference(
-		target = "(destination.name=" + AntivirusAsyncDestinationNames.ANTIVIRUS + ")"
-	)
-	private Destination _destination;
-
 	@Reference
 	private DLValidator _dlValidator;
 
 	@Reference
 	private com.liferay.portal.kernel.util.File _file;
+
+	@Reference
+	private MessageBus _messageBus;
 
 	@Reference(target = "(default=true)")
 	private Store _store;

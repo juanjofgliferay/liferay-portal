@@ -4,7 +4,7 @@
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.segments">
 	<author>Eduardo Garcia</author>
 	<namespace>Segments</namespace>
-	<entity local-service="true" name="SegmentsEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="SegmentsEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -30,7 +30,6 @@
 		<column name="active" type="boolean" />
 		<column name="criteria" type="String" />
 		<column name="source" type="String" />
-		<column name="type" type="String" />
 		<column name="lastPublishDate" type="Date" />
 
 		<!-- Order -->
@@ -41,17 +40,17 @@
 
 		<!-- Finder methods -->
 
+		<finder name="SegmentsEntryId" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="segmentsEntryId" />
+		</finder>
 		<finder name="GroupId" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 		</finder>
-		<finder name="CompanyId" return-type="Collection">
-			<finder-column arrayable-operator="OR" name="companyId" />
+		<finder name="Active" return-type="Collection">
+			<finder-column name="active" />
 		</finder>
 		<finder name="Source" return-type="Collection">
 			<finder-column name="source" />
-		</finder>
-		<finder name="Type" return-type="Collection">
-			<finder-column name="type" />
 		</finder>
 		<finder name="G_S" return-type="SegmentsEntry" unique="true">
 			<finder-column name="groupId" />
@@ -61,20 +60,14 @@
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column name="active" />
 		</finder>
-		<finder name="A_T" return-type="Collection">
-			<finder-column name="active" />
-			<finder-column name="type" />
+		<finder name="G_SRC" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="groupId" />
+			<finder-column arrayable-operator="OR" name="source" />
 		</finder>
-		<finder name="G_A_T" return-type="Collection">
+		<finder name="G_A_SRC" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column name="active" />
-			<finder-column name="type" />
-		</finder>
-		<finder name="G_A_S_T" return-type="Collection">
-			<finder-column arrayable-operator="OR" name="groupId" />
-			<finder-column name="active" />
-			<finder-column name="source" />
-			<finder-column name="type" />
+			<finder-column arrayable-operator="OR" name="source" />
 		</finder>
 	</entity>
 	<entity local-service="true" name="SegmentsEntryRel" remote-service="true">
@@ -153,7 +146,7 @@
 			<finder-column name="roleId" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="SegmentsExperience" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="SegmentsExperience" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -173,7 +166,8 @@
 
 		<!-- Other fields -->
 
-		<column name="segmentsEntryId" type="long" />
+		<column name="segmentsEntryERC" type="String" />
+		<column name="segmentsEntryScopeERC" type="String" />
 		<column name="segmentsExperienceKey" type="String" />
 		<column name="plid" type="long" />
 		<column localized="true" name="name" type="String" />
@@ -193,17 +187,22 @@
 		<finder name="GroupId" return-type="Collection">
 			<finder-column name="groupId" />
 		</finder>
-		<finder name="SegmentsEntryId" return-type="Collection">
-			<finder-column name="segmentsEntryId" />
-		</finder>
 		<finder name="G_P" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="plid" />
 		</finder>
-		<finder name="G_S_P" return-type="Collection">
+		<finder name="G_A" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="groupId" />
+			<finder-column name="active" />
+		</finder>
+		<finder name="SEERC_SESERC" return-type="Collection">
+			<finder-column name="segmentsEntryERC" />
+			<finder-column name="segmentsEntryScopeERC" />
+		</finder>
+		<finder name="G_SEERC_SESERC" return-type="Collection">
 			<finder-column name="groupId" />
-			<finder-column name="segmentsEntryId" />
-			<finder-column name="plid" />
+			<finder-column name="segmentsEntryERC" />
+			<finder-column name="segmentsEntryScopeERC" />
 		</finder>
 		<finder name="G_SEK_P" return-type="SegmentsExperience" unique="true">
 			<finder-column name="groupId" />
@@ -230,11 +229,58 @@
 			<finder-column name="plid" />
 			<finder-column name="active" />
 		</finder>
-		<finder name="G_S_P_A" return-type="Collection">
+		<finder name="G_SEERC_SESERC_P" return-type="Collection">
 			<finder-column name="groupId" />
-			<finder-column arrayable-operator="OR" name="segmentsEntryId" />
+			<finder-column name="segmentsEntryERC" />
+			<finder-column name="segmentsEntryScopeERC" />
+			<finder-column name="plid" />
+		</finder>
+		<finder name="G_SEERC_SESERC_P_A" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column arrayable-operator="OR" name="segmentsEntryERC" />
+			<finder-column name="segmentsEntryScopeERC" />
 			<finder-column name="plid" />
 			<finder-column name="active" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="SegmentsExperienceAudienceEntryRel" remote-service="false" table="SExperienceAudienceEntryRel" uuid="true">
+
+		<!-- PK fields -->
+
+		<column db-name="sExperienceAudienceEntryRelId" name="segmentsExperienceAudienceEntryRelId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="audienceEntryERC" type="String" />
+		<column name="priority" type="int" />
+		<column name="segmentsExperienceERC" type="String" />
+
+		<!-- Order -->
+
+		<order by="desc">
+			<order-column name="priority" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="SegmentsExperienceERC" return-type="Collection">
+			<finder-column name="segmentsExperienceERC" />
+		</finder>
+		<finder name="AEERC_SEERC" return-type="SegmentsExperienceAudienceEntryRel" unique="true">
+			<finder-column name="audienceEntryERC" />
+			<finder-column name="segmentsExperienceERC" />
 		</finder>
 	</entity>
 	<entity local-service="true" name="SegmentsExperiment" remote-service="true" uuid="true">
@@ -344,6 +390,7 @@
 		<exception>SegmentsExperimentRelName</exception>
 		<exception>SegmentsExperimentRelSplit</exception>
 		<exception>SegmentsExperimentStatus</exception>
+		<exception>SegmentsExperimentType</exception>
 		<exception>WinnerSegmentsExperience</exception>
 	</exceptions>
 </service-builder>

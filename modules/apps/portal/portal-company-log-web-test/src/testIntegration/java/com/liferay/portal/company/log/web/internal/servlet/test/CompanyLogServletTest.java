@@ -12,9 +12,11 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchCompanyException;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log4j.Log4JUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -32,13 +34,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.webdav.methods.Method;
-import com.liferay.portal.log4j.Log4JUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PortalImpl;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -48,10 +52,9 @@ import java.nio.channels.FileChannel;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -243,11 +246,12 @@ public class CompanyLogServletTest {
 
 		_servlet.service(mockHttpServletRequest, _mockHttpServletResponse);
 
-		JSONArray jsonArray = _jsonFactory.createJSONArray(
+		Map<Long, JSONObject> jsonObjects = _toCompanyJSONObjects(
 			_mockHttpServletResponse.getContentAsString());
 
 		_assertCompanyLogFiles(
-			_company, (JSONObject)jsonArray.get(0), mockHttpServletRequest);
+			_company, jsonObjects.get(_company.getCompanyId()),
+			mockHttpServletRequest);
 	}
 
 	@Ignore
@@ -265,29 +269,31 @@ public class CompanyLogServletTest {
 	}
 
 	@Test
-	public void testListWithOmniAdminUser() throws Exception {
-		User omniAdminUser = null;
+	public void testListWithOmniadminUser() throws Exception {
+		User omniadminUser = null;
 
 		try {
-			omniAdminUser = UserTestUtil.addOmniAdminUser();
+			omniadminUser = UserTestUtil.addOmniadminUser();
 
 			MockHttpServletRequest mockHttpServletRequest =
-				_createMockHttpServletRequest("/", omniAdminUser);
+				_createMockHttpServletRequest("/", omniadminUser);
 
 			_servlet.service(mockHttpServletRequest, _mockHttpServletResponse);
 
-			JSONArray jsonArray = _jsonFactory.createJSONArray(
+			Map<Long, JSONObject> jsonObjects = _toCompanyJSONObjects(
 				_mockHttpServletResponse.getContentAsString());
 
 			_assertCompanyLogFiles(
 				_companyLocalService.getCompany(TestPropsValues.getCompanyId()),
-				(JSONObject)jsonArray.get(0), mockHttpServletRequest);
+				jsonObjects.get(TestPropsValues.getCompanyId()),
+				mockHttpServletRequest);
 			_assertCompanyLogFiles(
-				_company, (JSONObject)jsonArray.get(1), mockHttpServletRequest);
+				_company, jsonObjects.get(_company.getCompanyId()),
+				mockHttpServletRequest);
 		}
 		finally {
-			if (omniAdminUser != null) {
-				_userLocalService.deleteUser(omniAdminUser);
+			if (omniadminUser != null) {
+				_userLocalService.deleteUser(omniadminUser);
 			}
 		}
 	}
@@ -507,6 +513,22 @@ public class CompanyLogServletTest {
 		mockHttpServletRequest.setPathInfo(path);
 
 		return mockHttpServletRequest;
+	}
+
+	private Map<Long, JSONObject> _toCompanyJSONObjects(String json)
+		throws JSONException {
+
+		Map<Long, JSONObject> jsonObjects = new HashMap<>();
+
+		JSONArray jsonArray = _jsonFactory.createJSONArray(json);
+
+		for (int i = 0; i < jsonArray.length(); i++) {
+			JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+			jsonObjects.put(jsonObject.getLong("companyId"), jsonObject);
+		}
+
+		return jsonObjects;
 	}
 
 	private static Company _company;

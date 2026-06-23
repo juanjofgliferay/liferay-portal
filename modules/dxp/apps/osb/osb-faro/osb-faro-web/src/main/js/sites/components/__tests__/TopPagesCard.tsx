@@ -1,13 +1,17 @@
 import BasePage from 'shared/components/base-page';
-import client from 'shared/apollo/client';
+import mockStore from 'test/mock-store';
 import React from 'react';
 import TopPagesCard from '../TopPagesCard';
-import {ApolloProvider} from '@apollo/react-components';
-import {MockedProvider} from '@apollo/react-testing';
-import {mockSitesTopPagesReq, mockTimeRangeReq} from 'test/graphql-data';
+import {MemoryRouter} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
+import {
+	mockPreferenceReq,
+	mockSitesTopPagesReq,
+	mockTimeRangeReq
+} from 'test/graphql-data';
+import {Provider} from 'react-redux';
 import {RangeKeyTimeRanges} from 'shared/util/constants';
 import {render} from '@testing-library/react';
-import {StaticRouter} from 'react-router-dom';
 import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
@@ -26,11 +30,16 @@ const MOCK_CONTEXT = {
 };
 
 const DefaultComponent = () => (
-	<ApolloProvider client={client}>
+	<Provider store={mockStore()}>
 		<BasePage.Context.Provider value={MOCK_CONTEXT}>
-			<StaticRouter>
+			<MemoryRouter>
 				<MockedProvider
-					mocks={[mockTimeRangeReq(), mockSitesTopPagesReq()]}
+					addTypename={false}
+					mocks={[
+						mockTimeRangeReq(),
+						mockPreferenceReq(),
+						mockSitesTopPagesReq()
+					]}
 				>
 					<TopPagesCard
 						footer={{
@@ -40,9 +49,9 @@ const DefaultComponent = () => (
 						label='card label'
 					/>
 				</MockedProvider>
-			</StaticRouter>
+			</MemoryRouter>
 		</BasePage.Context.Provider>
-	</ApolloProvider>
+	</Provider>
 );
 
 describe('TopPagesCard', () => {

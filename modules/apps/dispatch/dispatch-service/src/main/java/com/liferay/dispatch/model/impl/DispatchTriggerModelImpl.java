@@ -110,11 +110,18 @@ public class DispatchTriggerModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DispatchTrigger";
 
+	public static final String ENTITY_ALIAS = "dispatchTrigger";
+
+	public static final String FILTER_PK_COLUMN_NAME = "dispatchTriggerId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY dispatchTrigger.modifiedDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DispatchTrigger.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY dispatchTrigger.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1433,3 +1440,4 @@ public class DispatchTriggerModelImpl
 	private DispatchTrigger _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1242782378

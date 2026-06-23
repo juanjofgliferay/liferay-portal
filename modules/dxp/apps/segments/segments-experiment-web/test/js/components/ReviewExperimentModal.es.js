@@ -12,7 +12,7 @@ import {ReviewExperimentModal} from '../../../src/main/resources/META-INF/resour
 import SegmentsExperimentContext from '../../../src/main/resources/META-INF/resources/js/context.es';
 import {StateContext} from '../../../src/main/resources/META-INF/resources/js/state/context.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 const variants = [
 	{
@@ -124,6 +124,15 @@ const getEstimatedTimeMockFactory = (days) => () => {
 };
 
 describe('ReviewExperimentModal', () => {
+	beforeAll(() => {
+		window.Liferay = {
+			...Liferay,
+			FeatureFlags: {
+				'LRAC-15017': true,
+			},
+		};
+	});
+
 	describe('Estimated days', () => {
 		afterEach(() => {
 			jest.clearAllTimers();
@@ -159,12 +168,10 @@ describe('ReviewExperimentModal', () => {
 			const getEstimatedTimeMock = jest.fn(
 				getEstimatedTimeMockFactory(10)
 			);
-			const {
-				findByDisplayValue,
-				getByDisplayValue,
-			} = renderReviewExperimentModal({
-				getEstimatedTimeMock,
-			});
+			const {findByDisplayValue, getByDisplayValue} =
+				renderReviewExperimentModal({
+					getEstimatedTimeMock,
+				});
 
 			act(() => jest.runAllTimers());
 

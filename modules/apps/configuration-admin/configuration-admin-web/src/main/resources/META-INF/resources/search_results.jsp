@@ -33,13 +33,15 @@ portletDisplay.setURLBack(redirect);
 renderResponse.setTitle(LanguageUtil.get(request, "search-results"));
 %>
 
-<div class="sticky-top" style="top: var(--control-menu-container-height);">
+<aui:style type="text/css">
+	.configuration-admin--search-results {
+		top: var(--control-menu-container-height);
+	}
+</aui:style>
+
+<div class="configuration-admin--search-results">
 	<clay:management-toolbar
-		clearResultsURL="<%= redirect %>"
-		itemsTotal="<%= configurationEntryIterator.getTotal() %>"
-		searchActionURL="<%= searchURL.toString() %>"
-		selectable="<%= false %>"
-		showSearch="<%= true %>"
+		managementToolbarDisplayContext="<%= new ConfigurationScopeManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, configurationEntryIterator.getTotal()) %>"
 	/>
 </div>
 

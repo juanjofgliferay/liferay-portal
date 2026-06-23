@@ -14,14 +14,14 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.Locale;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Locale;
 
 /**
  * @author Cristina González
@@ -83,10 +83,11 @@ public class SubscribeJournalArticleContentDashboardItemAction
 		return getURL();
 	}
 
+	@Override
 	public boolean isDisabled() {
 		try {
 			_journalArticleModelResourcePermission.check(
-				GuestOrUserUtil.getPermissionChecker(),
+				PermissionThreadLocal.getPermissionChecker(),
 				_journalArticle.getResourcePrimKey(), ActionKeys.SUBSCRIBE);
 
 			return false;

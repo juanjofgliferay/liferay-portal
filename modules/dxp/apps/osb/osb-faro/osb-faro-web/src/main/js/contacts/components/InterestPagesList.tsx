@@ -9,7 +9,7 @@ import {
 } from 'shared/util/pagination';
 import {pagesListColumns} from 'shared/util/table-columns';
 import {Routes} from 'shared/util/router';
-import {useQueryPagination} from 'shared/hooks';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 
 const PAGES_ORDER_BY_OPTIONS = [
 	{
@@ -96,7 +96,13 @@ const InactivePagesList: React.FC<IInterestPages> = ({
 	);
 };
 
-const InterestPagesList = ({dataSourceParams, ...otherProps}) => {
+const InterestPagesList = ({
+	dataSourceParams,
+	...otherProps
+}: {
+	dataSourceParams: {[key: string]: any};
+	[key: string]: any;
+}) => {
 	const {active} = dataSourceParams;
 
 	const PagesListComponent = active ? ActivePagesList : InactivePagesList;

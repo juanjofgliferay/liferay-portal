@@ -1,10 +1,11 @@
-@component-name = "portal-wcm"
+@component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Sites Administration";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		task ("Set up instance and sign in") {
@@ -21,9 +22,7 @@ definition {
 
 		task ("Activate local live staging for two sites") {
 			for (var n : list "1,2") {
-				Staging.openStagingAdmin(siteURLKey = "test-site-name-${n}");
-
-				Staging.activateStagingCP(siteName = "Test Site Name ${n}");
+				JSONStaging.enableLocalStaging(groupName = "Test Site Name ${n}");
 			}
 		}
 
@@ -133,10 +132,10 @@ definition {
 
 		task ("Add a display page to the first site") {
 			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				classTypeKey = "BASIC-WEB-CONTENT",
 				contentType = "Web Content Article",
 				displayPageTemplateEntryName = "Display Page Name",
-				groupId = ${groupId},
-				subType = "Basic Web Content");
+				groupId = ${groupId});
 		}
 
 		task ("Add a Title Fragment to the display page") {
@@ -189,7 +188,7 @@ definition {
 				pageName = "Display Page Name",
 				pageType = "Display Page Templates");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Publish the first site to live") {
@@ -209,6 +208,8 @@ definition {
 			LAR.openExportAdmin(siteScopeName = "test-site-name-1");
 
 			LexiconEntry.gotoAdd();
+
+			LAR.configureExportOptions();
 
 			LAR.exportWithAssertionOnSuccess();
 
@@ -233,23 +234,23 @@ definition {
 		task ("Assert the fragments from the first site survived the import") {
 			FragmentsAdminNavigator.openFragmentsAdmin(siteURLKey = "test-site-name-2-staging");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Content");
+			LexiconCard.viewCardPresent(card = "Content");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Image");
+			LexiconCard.viewCardPresent(card = "Image");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Button");
+			LexiconCard.viewCardPresent(card = "Button");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Multiple Editables");
+			LexiconCard.viewCardPresent(card = "Multiple Editables");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Static Text");
+			LexiconCard.viewCardPresent(card = "Static Text");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Image 2");
+			LexiconCard.viewCardPresent(card = "Image 2");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Rich Text");
+			LexiconCard.viewCardPresent(card = "Rich Text");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Title 2");
+			LexiconCard.viewCardPresent(card = "Title 2");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Title");
+			LexiconCard.viewCardPresent(card = "Title");
 
 			FragmentsAdminNavigator.gotoEntryEllipsisItem(
 				entry = "Button",

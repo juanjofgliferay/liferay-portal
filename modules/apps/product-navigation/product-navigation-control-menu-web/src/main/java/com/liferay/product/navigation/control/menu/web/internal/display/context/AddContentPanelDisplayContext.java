@@ -43,6 +43,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,10 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -78,7 +79,7 @@ public class AddContentPanelDisplayContext {
 			WebKeys.THEME_DISPLAY);
 	}
 
-	public Map<String, Object> getAddContentPanelData() {
+	public Map<String, Object> getAddContentPanelData() throws Exception {
 		return HashMapBuilder.<String, Object>put(
 			"addContentsURLs",
 			() -> {
@@ -103,11 +104,15 @@ public class AddContentPanelDisplayContext {
 				ResourceURL resourceURL =
 					_liferayPortletResponse.createResourceURL();
 
+				resourceURL.setParameter(
+					"status", String.valueOf(WorkflowConstants.STATUS_ANY));
 				resourceURL.setResourceID(
 					"/product_navigation_control_menu/get_contents");
 
 				return resourceURL.toString();
 			}
+		).put(
+			"hasAddContentPermission", hasAddContentPermission()
 		).put(
 			"languageDirection", _getLanguageDirection()
 		).put(
@@ -159,7 +164,7 @@ public class AddContentPanelDisplayContext {
 
 			AssetRenderer<?> assetRenderer = assetEntry.getAssetRenderer();
 
-			if ((assetRenderer == null) || !assetRenderer.isDisplayable()) {
+			if (assetRenderer == null) {
 				continue;
 			}
 
@@ -214,7 +219,7 @@ public class AddContentPanelDisplayContext {
 		Layout layout = _themeDisplay.getLayout();
 
 		if (!stateMaximized && layout.isTypePortlet() &&
-			!layout.isLayoutPrototypeLinkActive() &&
+			!layout.isPortletLayoutPageTemplateEntryLinkActive() &&
 			!layoutTypeController.isFullPageDisplayable() &&
 			(hasLayoutUpdatePermission() ||
 			 (layoutTypePortlet.isCustomizable() &&

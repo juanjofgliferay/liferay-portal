@@ -5,7 +5,7 @@ import EventAnalysisResultQuery, {
 } from 'event-analysis/queries/EventAnalysisResultQuery';
 import getCN from 'classnames';
 import PercentOfCell from './PercentOfCell';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef} from 'react';
 import Table from 'shared/components/table';
 import TextTruncate from 'shared/components/TextTruncate';
 import WithEmptyState from './hoc/WithEmptyState';
@@ -13,6 +13,7 @@ import {
 	Attributes,
 	Breakdown,
 	BreakdownData,
+	BreakdownDataItem,
 	Breakdowns,
 	CalculationTypes,
 	Event,
@@ -21,15 +22,18 @@ import {
 	ParsedBreakdownItem
 } from 'event-analysis/utils/types';
 import {compose} from 'redux';
-import {debounce, get, isNil, omit} from 'lodash';
 import {EditBreakdown, withAttributesConsumer} from '../context/attributes';
+import {get, isNil, omit} from 'lodash';
 import {getMaxEventValue, parseBreakdownData} from 'event-analysis/utils/utils';
-import {getSafeRangeSelectors} from 'shared/util/util';
+import {
+	getSafeDecodedURIComponent,
+	getSafeRangeSelectors
+} from 'shared/util/util';
 import {OrderedMap} from 'immutable';
 import {SafeResults} from 'shared/hoc/util';
 import {sub} from 'shared/util/lang';
-import {useQuery} from '@apollo/react-hooks';
-import {useStatefulPagination} from 'shared/hooks';
+import {useQuery} from '@apollo/client';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 import {withPaginationBar} from 'shared/hoc';
 import {WithRangeKeyProps} from 'shared/hoc/WithRangeKey';
 
@@ -57,30 +61,6 @@ export interface IBreakdownTableProps
 	type: CalculationTypes;
 }
 
-type TableColumnAttributesType = {
-	charWidthRatio: number;
-	columnSizePercentage: {
-		breakdownColumn1x: number;
-		breakdownColumn2x: number;
-		breakdownColumn3x: number;
-	};
-	fontSize: number;
-	paddingX: number;
-	truncateGap: number;
-};
-
-const TABLE_COLUMN_ATTRIBUTES_MAP: TableColumnAttributesType = {
-	charWidthRatio: 2,
-	columnSizePercentage: {
-		breakdownColumn1x: 0.33,
-		breakdownColumn2x: 0.25,
-		breakdownColumn3x: 0.2
-	},
-	fontSize: 14,
-	paddingX: 32,
-	truncateGap: 1
-};
-
 const getBreakdownByAccessor = (
 	accessor: string,
 	breakdownOrder: string[],
@@ -107,23 +87,21 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 	onPageChange,
 	page
 }) => {
-	const [maxBreakdownLength, setMaxBreakdownLength] = useState<number>();
-
 	const parseData = (
 		data: BreakdownData
 	): {
-		columns: {
-			accessor: string;
+		columns: Array<{
+			accessor?: string;
 			cellRenderer: (props: {
-				className: string;
+				className?: string;
 				data: ParsedBreakdownItem;
-			}) => React.TdHTMLAttributes<HTMLElement>;
+			}) => React.ReactNode;
 			headProps?: {
 				order: string;
 			};
-			label: string;
-			sortable: boolean;
-		};
+			label: React.ReactNode;
+			sortable?: boolean;
+		}>;
 		count: number;
 		highestValue: number;
 		items: ParsedBreakdownData;
@@ -142,7 +120,6 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 			compareToPrevious,
 			event,
 			highestValue,
-			maxBreakdownLength,
 			order: breakdownOrder,
 			value: data.value
 		});
@@ -155,9 +132,8 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 		};
 	};
 
-	const {columns, count, highestValue, items} = parseData(
-		eventAnalysisResult
-	);
+	const {columns, count, highestValue, items} =
+		parseData(eventAnalysisResult);
 
 	const orderIOMap = OrderedMap(
 		breakdownOrder.map((breakdownId, i) => {
@@ -172,58 +148,16 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 
 	const tableRef = useRef<HTMLDivElement>(null);
 
-	const getBreakdownColumnMaxCharLength = (
-		tableSize: number,
-		breakDownLength: number
+	const handleSort = (
+		orderIOMap: OrderedMap<string, {field: string; sortOrder: string}>
 	) => {
-		const {
-			charWidthRatio,
-			columnSizePercentage,
-			fontSize,
-			paddingX,
-			truncateGap
-		} = TABLE_COLUMN_ATTRIBUTES_MAP;
+		const first = orderIOMap.first();
 
-		const columnTablePercentage = Math.floor(
-			tableSize *
-				columnSizePercentage[`breakdownColumn${breakDownLength}x`]
-		);
-		const columnContentWidth = columnTablePercentage - paddingX;
-		const pixelsPerFontSize = Math.floor(columnContentWidth / fontSize);
-		const maxCharLengthPerColumn =
-			pixelsPerFontSize * charWidthRatio - truncateGap;
+		if (!first) {
+			return;
+		}
 
-		setMaxBreakdownLength(maxCharLengthPerColumn);
-	};
-
-	useEffect(() => {
-		const handleResize = debounce(
-			() =>
-				getBreakdownColumnMaxCharLength(
-					tableRef.current.clientWidth,
-					breakdownOrder.length
-				),
-			100
-		);
-
-		window.removeEventListener('resize', handleResize);
-
-		window.addEventListener('resize', handleResize);
-
-		return () => {
-			window.removeEventListener('resize', handleResize);
-		};
-	}, [breakdownOrder.length]);
-
-	useEffect(() => {
-		getBreakdownColumnMaxCharLength(
-			tableRef.current.clientWidth,
-			breakdownOrder.length
-		);
-	}, [breakdownOrder.length]);
-
-	const handleSort = orderIOMap => {
-		const {field, sortOrder} = orderIOMap.first();
+		const {field, sortOrder} = first;
 
 		const breakdown = getBreakdownByAccessor(
 			field,
@@ -237,9 +171,9 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 			attribute,
 			breakdown: {
 				...breakdown,
-				sortType: sortOrder
+				sortType: sortOrder as Breakdown['sortType']
 			},
-			id: breakdown.id
+			id: breakdown.id ?? ''
 		});
 	};
 
@@ -251,12 +185,14 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 			ref={tableRef}
 		>
 			{!breakdownOrder.length ? (
-				<BarComparisonCell
-					compareToPrevious={compareToPrevious}
-					event={event}
-					events={items[0].events}
-					topValue={highestValue}
-				/>
+				<div className='table-hover'>
+					<BarComparisonCell
+						compareToPrevious={compareToPrevious}
+						event={event}
+						events={items[0].events}
+						topValue={highestValue}
+					/>
+				</div>
 			) : (
 				<TableWithPagination
 					bordered
@@ -270,6 +206,7 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 					orderIOMap={orderIOMap}
 					page={page}
 					rowIdentifier='index'
+					striped={false}
 					total={count}
 				/>
 			)}
@@ -277,7 +214,9 @@ const BreakdownTable: React.FC<IBreakdownTableProps> = ({
 	);
 };
 
-const BreakdownWithSafeResults: React.FC<IBreakdownTableWithSafeResultsProps> = ({
+const BreakdownWithSafeResults: React.FC<
+	IBreakdownTableWithSafeResultsProps
+> = ({
 	attributes,
 	breakdownOrder,
 	breakdowns,
@@ -310,7 +249,7 @@ const BreakdownWithSafeResults: React.FC<IBreakdownTableWithSafeResultsProps> = 
 			eventDefinitionId: event.id,
 			page: page - 1,
 			size: delta,
-			...getSafeRangeSelectors(rangeSelectors)
+			...getSafeRangeSelectors(rangeSelectors!)
 		}
 	});
 
@@ -346,79 +285,128 @@ const BreakdownWithSafeResults: React.FC<IBreakdownTableWithSafeResultsProps> = 
 	);
 };
 
+type BreakdownColumn = {
+	accessor?: string;
+	cellRenderer: (props: {
+		className?: string;
+		data: ParsedBreakdownItem;
+	}) => React.ReactNode;
+	headProps?: {order: string};
+	label: React.ReactNode;
+	sortable?: boolean;
+};
+
 const getColumns = ({
 	attributes,
 	breakdowns,
 	compareToPrevious,
 	event,
 	highestValue,
-	maxBreakdownLength,
 	order,
 	value
-}) => {
-	const columns = order.map((breakdownId: string, i: number) => {
-		const {attributeId, sortType} = breakdowns[breakdownId];
+}: {
+	attributes: Attributes;
+	breakdowns: Breakdowns;
+	compareToPrevious: boolean;
+	event: Event;
+	highestValue: number;
+	order: string[];
+	value: number;
+}): BreakdownColumn[] => {
+	const columns: BreakdownColumn[] = order.map(
+		(breakdownId: string, i: number) => {
+			const {attributeId, attributeType, sortType} =
+				breakdowns[breakdownId];
 
-		const accessor = `breakdown${i}`;
+			const accessor = `breakdown${i}`;
 
-		return {
-			accessor,
-			cellRenderer: ({className, data}) => {
-				const dataEvents = get(data, 'events');
-				const dataValue = get(data, accessor);
-				const nextDataValue = get(data, `breakdown${i + 1}`);
+			return {
+				accessor,
+				cellRenderer: ({
+					className,
+					data
+				}: {
+					className?: string;
+					data: ParsedBreakdownItem;
+				}) => {
+					const dataEvents = get(data, 'events');
+					const dataValue = get(data, accessor);
+					const nextDataValue = get(data, `breakdown${i + 1}`);
 
-				if (
-					isNil(dataValue) &&
-					isNil(dataEvents) &&
-					isNil(nextDataValue)
-				) {
+					if (
+						isNil(dataValue) &&
+						isNil(dataEvents) &&
+						isNil(nextDataValue)
+					) {
+						return (
+							<td
+								className={getCN(
+									'align-top',
+									'empty-breakdown-column',
+									className
+								)}
+							>
+								{Liferay.Language.get('no-results')}
+							</td>
+						);
+					} else if (isNil(dataValue)) {
+						return null;
+					}
+
 					return (
 						<td
 							className={getCN(
+								'font-weight-semibold',
 								'align-top',
-								'empty-breakdown-column',
 								className
 							)}
+							data-testid={getSafeDecodedURIComponent(
+								(dataValue as BreakdownDataItem).name
+							)}
+							rowSpan={
+								(
+									dataValue as BreakdownDataItem & {
+										rowSpan: number;
+									}
+								).rowSpan
+							}
 						>
-							{Liferay.Language.get('no-results')}
+							<div style={{width: 128}}>
+								<TextTruncate
+									className='white-space-normal'
+									maxCharLength={200}
+									title={getSafeDecodedURIComponent(
+										(dataValue as BreakdownDataItem).name
+									)}
+								/>
+							</div>
 						</td>
 					);
-				} else if (isNil(dataValue)) {
-					return null;
-				}
+				},
+				headProps: {
+					order: sortType
+				},
+				label: (
+					<div>
+						<span className='breakdown-category'>
+							{attributeType}
+						</span>
 
-				return (
-					<td
-						className={getCN(
-							'font-weight-semibold',
-							'align-top',
-							className
-						)}
-						rowSpan={dataValue.rowSpan}
-					>
-						<TextTruncate
-							maxCharLength={maxBreakdownLength}
-							title={dataValue.name}
-						/>
-					</td>
-				);
-			},
-			headProps: {
-				order: sortType
-			},
-			label: (
-				<div>
-					{/* TODO: Enable when multiple types available <span className='breakdown-category'>{attributeType}</span>*/}
-
-					{attributes[attributeId].displayName}
-				</div>
-			)
-		};
-	});
+						{attributes[attributeId].displayName}
+					</div>
+				)
+			};
+		}
+	);
 
 	columns.push({
-		cellRenderer: ({className, data: {events}}) => {
+		cellRenderer: ({
+			className,
+			data: {events}
+		}: {
+			className?: string;
+			data: ParsedBreakdownItem;
+		}) => {
 			if (isNil(events)) {
 				return (
 					<td
@@ -448,9 +436,19 @@ const getColumns = ({
 		sortable: false
 	});
 
+	const fullTitleText = sub(Liferay.Language.get('percent-of-x'), [
+		event.displayName || event.name
+	]);
+
 	columns.push({
-		cellRenderer: ({className, data: {events}}) => (
-			<td className={getCN('align-top', className)}>
+		cellRenderer: ({
+			className,
+			data: {events}
+		}: {
+			className?: string;
+			data: ParsedBreakdownItem;
+		}) => (
+			<td className={getCN('align-top ', className)}>
 				<PercentOfCell
 					compareToPrevious={compareToPrevious}
 					events={events}
@@ -458,16 +456,22 @@ const getColumns = ({
 				/>
 			</td>
 		),
-		label: sub(Liferay.Language.get('percent-of-x'), [
-			event.displayName || event.name
-		]),
+		label: (
+			<div style={{width: 128}}>
+				<TextTruncate
+					className='white-space-normal table-column-text-end'
+					maxCharLength={40}
+					title={fullTitleText}
+				/>
+			</div>
+		),
 		sortable: false
 	});
 
 	return columns;
 };
 
-export default compose(
+export default compose<React.ComponentType<any>>(
 	withAttributesConsumer,
 	WithEmptyState
 )(BreakdownWithSafeResults);

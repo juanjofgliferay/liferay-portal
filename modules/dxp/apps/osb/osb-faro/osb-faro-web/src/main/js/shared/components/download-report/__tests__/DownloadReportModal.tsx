@@ -1,50 +1,98 @@
 import ClayForm from '@clayui/form';
+import client from 'shared/apollo/client';
 import mockStore from 'test/mock-store';
 import React, {useState} from 'react';
 import ReactDOM from 'react-dom';
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
-import {Checkbox, Containers, formatContainers} from '../DownloadPDFReport';
+import {ApolloProvider} from '@apollo/client';
+import {
+	Checkbox,
+	formattedContainers,
+	ReportContainer
+} from '../DownloadPDFReport';
+import {createMemoryHistory} from 'history';
+import {CSVType, useDownloadCSV} from '../utils';
 import {DownloadReportButton} from '../DownloadReportButton';
 import {DownloadReportModal, ReportType} from '../DownloadReportModal';
+import {MockedProvider} from '@apollo/client/testing';
+import {mockPreferenceReq, mockTimeRangeReq} from 'test/graphql-data';
 import {Provider} from 'react-redux';
+import {RangeKeyTimeRanges} from 'shared/util/constants';
+import {RangeSelectors} from 'shared/types';
+import {Router} from 'react-router-dom';
 import {sub} from 'shared/util/lang';
-import {toLocale} from 'shared/util/numbers';
 import {useModal} from '@clayui/modal';
+import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
-const WrapperCSVComponent = () => (
-	<WrapperComponent
-		alertMessage={
-			sub(
-				Liferay.Language.get(
-					'the-x-file-is-being-generated-and-your-download-will-start-soon'
-				),
-				['CSV']
-			) as string
+jest.mock('react-router-dom', () => ({
+	...jest.requireActual('react-router-dom'),
+	useParams: () => ({
+		channelId: '456',
+		groupId: '2000',
+		query: {
+			rangeKey: RangeKeyTimeRanges.Last30Days
 		}
-		descriptionMessage={
-			sub(
-				Liferay.Language.get(
-					'select-a-date-range-to-export-this-list-as-a-csv-document.-the-maximum-number-of-entries-supported-per-export-is-x.-the-request-may-take-a-couple-minutes-to-process'
-				),
-				[toLocale(10000)]
-			) as string
-		}
-		infoMessage={
-			sub(
-				Liferay.Language.get(
-					'the-x-list-will-be-downloaded-respecting-the-current-ordering,-filter,-and-search-results.-please-verify-if-the-desired-changes-are-applied'
-				),
-				[Liferay.Language.get('individuals')]
-			) as string
-		}
-		requiredDateRange
-		type={ReportType.CSV}
-	/>
-);
+	})
+}));
 
-const WrapperPDFomponent = ({children}) => (
+jest.mock('shared/hooks/useTimeZone', () => ({
+	useTimeZone: () => ({timeZoneId: 'UTC'})
+}));
+
+interface IWrapperCSVComponentProps extends React.HTMLAttributes<HTMLElement> {
+	type: CSVType;
+}
+
+let CSV_URL = '';
+
+const WrapperCSVComponent: React.FC<IWrapperCSVComponentProps> = ({
+	type,
+	...props
+}) => {
+	const generateURL = useDownloadCSV({
+		assetId: '123',
+		assetType: 'myAssetType',
+		type
+	});
+
+	return (
+		<WrapperComponent
+			{...props}
+			alertMessage={
+				sub(
+					Liferay.Language.get(
+						'the-x-file-is-being-generated-and-your-download-will-start-soon'
+					),
+					['CSV']
+				) as string
+			}
+			infoMessage={
+				sub(
+					Liferay.Language.get(
+						'the-x-list-will-be-downloaded-respecting-the-current-ordering,-filter,-and-search-results.-please-verify-if-the-desired-changes-are-applied'
+					),
+					[Liferay.Language.get('individuals')]
+				) as string
+			}
+			onSubmit={rangeSelectors => {
+				const url = generateURL(rangeSelectors);
+
+				CSV_URL = url;
+			}}
+			type={ReportType.CSV}
+		/>
+	);
+};
+
+const WrapperPDFomponent = ({
+	children,
+	...otherProps
+}: {
+	children?: React.ReactNode;
+	[key: string]: any;
+}) => (
 	<WrapperComponent
 		alertMessage={
 			sub(
@@ -54,59 +102,59 @@ const WrapperPDFomponent = ({children}) => (
 				['PDF']
 			) as string
 		}
-		descriptionMessage={
-			sub(
-				Liferay.Language.get(
-					'select-the-reports,-and-optionally-specify-the-date-range-to-generate-a-PDF-file-from-the-current-dashboard.-your-download-may-take-a-couple-of-minutes-to-process'
-				),
-				[toLocale(10000)]
-			) as string
-		}
 		infoMessage={Liferay.Language.get(
-			'the-dashboard-will-be-downloaded-exactly-as-it-is-displayed-on-your-screen.-please-verify-if-the-desired-tabs-and-filters-are-selected-before-downloading'
+			'the-dashboard-will-be-downloaded-exactly-as-it-is-displayed-on-your-screen.-please-verify-if-the-desired-tabs-and-filters-are-selected-before-proceeding'
 		)}
+		onSubmit={jest.fn()}
 		type={ReportType.PDF}
+		{...otherProps}
 	>
 		{children}
 	</WrapperComponent>
 );
 
-interface IWrapperComponent extends React.HTMLAttributes<HTMLElement> {
+interface IWrapperComponent {
 	alertMessage: string;
-	descriptionMessage: string;
+	children?: React.ReactNode;
 	infoMessage: string;
-	requiredDateRange?: boolean;
+	onSubmit: (rangeSelectors?: RangeSelectors) => void;
 	type: ReportType;
 }
 
 const WrapperComponent: React.FC<IWrapperComponent> = ({
-	alertMessage,
 	children,
-	descriptionMessage,
 	infoMessage,
-	requiredDateRange = false,
-	type
+	onSubmit,
+	type,
+	...otherProps
 }) => {
 	const [visible, setVisible] = useState(false);
 	const {observer} = useModal({onClose: () => setVisible(false)});
+	const history = createMemoryHistory();
 
 	return (
 		<>
 			{visible && (
-				<Provider store={mockStore()}>
-					<DownloadReportModal
-						alertMessage={alertMessage}
-						descriptionMessage={descriptionMessage}
-						infoMessage={infoMessage}
-						observer={observer}
-						onClose={jest.fn()}
-						onSubmit={jest.fn()}
-						requiredDateRange={requiredDateRange}
-						type={type}
-					>
-						{children}
-					</DownloadReportModal>
-				</Provider>
+				<ApolloProvider client={client}>
+					<Router history={history}>
+						<MockedProvider
+							mocks={[mockTimeRangeReq(), mockPreferenceReq()]}
+						>
+							<Provider store={mockStore()}>
+								<DownloadReportModal
+									{...otherProps}
+									infoMessage={infoMessage}
+									observer={observer}
+									onClose={jest.fn()}
+									onSubmit={onSubmit}
+									type={type}
+								>
+									{children}
+								</DownloadReportModal>
+							</Provider>
+						</MockedProvider>
+					</Router>
+				</ApolloProvider>
 			)}
 
 			<DownloadReportButton
@@ -117,6 +165,26 @@ const WrapperComponent: React.FC<IWrapperComponent> = ({
 	);
 };
 
+const generateCSVURL = (type: CSVType) => {
+	const {getByRole, getByTestId} = render(
+		<WrapperCSVComponent type={type} />
+	);
+
+	fireEvent.click(
+		getByRole('button', {
+			name: /download report/i
+		})
+	);
+
+	act(() => {
+		jest.runAllTimers();
+	});
+
+	const submitButton = getByTestId('submit');
+
+	fireEvent.click(submitButton);
+};
+
 describe('DownloadReportModal CSV', () => {
 	afterEach(() => {
 		jest.clearAllTimers();
@@ -125,6 +193,8 @@ describe('DownloadReportModal CSV', () => {
 	});
 
 	beforeAll(() => {
+		CSV_URL = '';
+
 		jest.useFakeTimers();
 
 		// @ts-ignore
@@ -135,9 +205,9 @@ describe('DownloadReportModal CSV', () => {
 		jest.useRealTimers();
 	});
 
-	it('renders component', () => {
+	it('renders component', async () => {
 		const {container, getByRole, getByTestId, getByText} = render(
-			<WrapperCSVComponent />
+			<WrapperCSVComponent type={CSVType.Blog} />
 		);
 
 		fireEvent.click(
@@ -150,16 +220,14 @@ describe('DownloadReportModal CSV', () => {
 			jest.runAllTimers();
 		});
 
+		await waitForLoadingToBeRemoved(container);
+
+		expect(getByText('Select Date Range')).toBeInTheDocument();
+
 		expect(
 			getByRole('heading', {
 				name: /download report/i
 			})
-		).toBeInTheDocument();
-
-		expect(
-			getByText(
-				'Select a date range to export this list as a CSV document. The maximum number of entries supported per export is 10,000. The request may take a couple minutes to process.'
-			)
 		).toBeInTheDocument();
 
 		expect(
@@ -172,54 +240,23 @@ describe('DownloadReportModal CSV', () => {
 
 		expect(getByTestId('cancel')).toBeInTheDocument();
 		expect(getByTestId('submit')).toBeInTheDocument();
-
-		expect(container).toMatchSnapshot();
 	});
 
-	it('download button should be disabled when there are no date range value', () => {
-		const {getByRole, getByTestId} = render(<WrapperCSVComponent />);
+	it.each`
+		name
+		${CSVType.Blog}
+		${CSVType.Document}
+		${CSVType.Event}
+		${CSVType.Form}
+		${CSVType.Individual}
+		${CSVType.Journal}
+		${CSVType.Page}
+	`('generate a link to download CSV report for type $name', ({name}) => {
+		generateCSVURL(name);
 
-		fireEvent.click(
-			getByRole('button', {
-				name: /download report/i
-			})
+		expect(CSV_URL).toEqual(
+			`/o/faro/main/2000/reports/export/csv/${name}?channelId=456&rangeKey=30&assetId=123&assetType=myAssetType`
 		);
-
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		expect(getByTestId('submit')).toHaveAttribute('disabled');
-	});
-
-	it('download button should be enabled when there are date range value', () => {
-		const {getByRole, getByTestId} = render(<WrapperCSVComponent />);
-
-		fireEvent.click(
-			getByRole('button', {
-				name: /download report/i
-			})
-		);
-
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		const customRangeInput = getByRole('textbox', {name: /date range/i});
-
-		fireEvent.click(customRangeInput);
-
-		const startDate = getByRole('button', {name: /10/i});
-		const endDate = getByRole('button', {name: /11/i});
-
-		fireEvent.click(startDate);
-		fireEvent.click(endDate);
-
-		expect(customRangeInput).toHaveAttribute(
-			'value',
-			'2023-11-10 - 2023-11-11'
-		);
-		expect(getByTestId('submit')).not.toHaveAttribute('disabled');
 	});
 });
 
@@ -241,43 +278,43 @@ describe('DownloadReportModal PDF', () => {
 		jest.useRealTimers();
 	});
 
-	it('renders component', () => {
+	it('renders component', async () => {
 		const containers = [
-			Containers.AcquisitionsCard,
-			Containers.ActiveIndividualsCard,
-			Containers.AssetAppearsOnCard,
-			Containers.AudienceCard,
-			Containers.CohortAnalysisCard,
-			Containers.CurrentTotalsCard,
-			Containers.DistributionBreakdownCard,
-			Containers.DownloadsByLocationCard,
-			Containers.DownloadsByTechnologyCard,
-			Containers.EnrichedProfilesCard,
-			Containers.InterestsCard,
-			Containers.SearchTermsCard,
-			Containers.SegmentCompositionCard,
-			Containers.SegmentCriteriaCard,
-			Containers.SegmentMembershipCard,
-			Containers.SessionsByLocationCard,
-			Containers.SessionTechnologyCard,
-			Containers.SiteActivityCard,
-			Containers.SubmissionsByLocationCard,
-			Containers.SubmissionsByTechnologyCard,
-			Containers.TopInterestsAsOfYesterdayCard,
-			Containers.TopInterestsCard,
-			Containers.TopPagesCard,
-			Containers.ViewsByLocationCard,
-			Containers.ViewsByTechnologyCard,
-			Containers.VisitorsBehaviorCard,
-			Containers.VisitorsByTimeCard
+			ReportContainer.AcquisitionsCard,
+			ReportContainer.ActiveIndividualsCard,
+			ReportContainer.AssetAppearsOnCard,
+			ReportContainer.AudienceCard,
+			ReportContainer.CohortAnalysisCard,
+			ReportContainer.CurrentTotalsCard,
+			ReportContainer.DistributionBreakdownCard,
+			ReportContainer.DownloadsByLocationCard,
+			ReportContainer.DownloadsByTechnologyCard,
+			ReportContainer.EnrichedProfilesCard,
+			ReportContainer.InterestsCard,
+			ReportContainer.SearchTermsCard,
+			ReportContainer.SegmentCompositionCard,
+			ReportContainer.SegmentCriteriaCard,
+			ReportContainer.SegmentMembershipCard,
+			ReportContainer.SessionsByLocationCard,
+			ReportContainer.SessionTechnologyCard,
+			ReportContainer.SiteActivityCard,
+			ReportContainer.SubmissionsByLocationCard,
+			ReportContainer.SubmissionsByTechnologyCard,
+			ReportContainer.TopInterestsAsOfYesterdayCard,
+			ReportContainer.TopInterestsCard,
+			ReportContainer.TopPagesCard,
+			ReportContainer.ViewsByLocationCard,
+			ReportContainer.ViewsByTechnologyCard,
+			ReportContainer.VisitorsBehaviorCard,
+			ReportContainer.VisitorsByTimeCard
 		];
 
 		const {container, getByRole, getByTestId, getByText} = render(
 			<WrapperPDFomponent>
 				<ClayForm.Group>
-					<label>{Liferay.Language.get('select-reports')}</label>
+					<label>{Liferay.Language.get('dashboard-reports')}</label>
 
-					{Object.values(formatContainers(containers)).map(
+					{Object.values(formattedContainers(containers)).map(
 						({id, label}) => (
 							<Checkbox
 								key={id}
@@ -300,6 +337,10 @@ describe('DownloadReportModal PDF', () => {
 			jest.runAllTimers();
 		});
 
+		await waitForLoadingToBeRemoved(container);
+
+		expect(getByText('Select Date Range')).toBeInTheDocument();
+
 		expect(
 			getByRole('heading', {
 				name: /download report/i
@@ -308,21 +349,19 @@ describe('DownloadReportModal PDF', () => {
 
 		expect(
 			getByText(
-				'Select the reports, and optionally specify the date range to generate a PDF file from the current dashboard. Your download may take a couple of minutes to process.'
-			)
-		).toBeInTheDocument();
-
-		expect(
-			getByText(
-				'The dashboard will be downloaded exactly as it is displayed on your screen. Please verify if the desired tabs and filters are selected before downloading.'
+				'The dashboard will be downloaded exactly as it is displayed on your screen. Please verify if the desired tabs and filters are selected before proceeding.'
 			)
 		);
 
-		expect(getByText('Date Range (Optional)')).toBeInTheDocument();
+		expect(
+			getByText(
+				'Only select a date range if you want to modify the current date filter.'
+			)
+		).toBeInTheDocument();
+
+		expect(getByText('Date Range')).toBeInTheDocument();
 
 		expect(getByTestId('cancel')).toBeInTheDocument();
 		expect(getByTestId('submit')).toBeInTheDocument();
-
-		expect(container).toMatchSnapshot();
 	});
 });

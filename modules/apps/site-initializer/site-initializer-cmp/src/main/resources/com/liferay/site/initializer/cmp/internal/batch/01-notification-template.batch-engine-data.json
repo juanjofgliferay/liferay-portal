@@ -1,0 +1,191 @@
+{
+	"configuration": {
+		"className": "com.liferay.notification.rest.dto.v1_0.NotificationTemplate",
+		"multiCompany": true,
+		"parameters": {
+			"containsHeaders": "true",
+			"createStrategy": "UPSERT",
+			"featureFlag": "LPD-58677",
+			"importStrategy": "ON_ERROR_FAIL",
+			"updateStrategy": "UPDATE"
+		},
+		"taskItemDelegateName": "DEFAULT"
+	},
+	"items": [
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>There is a new comment on the project ${ObjectField_title.getData()}.<p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/project/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View comment on ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_PROJECT_SUBSCRIPTION_COMMENT_ADDED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Project Subscription Comment Added Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "New Comment on [%CMPPROJECT_TITLE%]"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		},
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>The project ${ObjectField_title.getData()} was marked as blocked.</p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/project/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View blocked project ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_PROJECT_SUBSCRIPTION_STATE_BLOCKED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Project Subscription State Blocked Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "Project [%CMPPROJECT_TITLE%] Is Now Blocked"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		},
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>The project was updated.</p><p>Current Description: ${ObjectField_description.getData()}</p><p>Current Due Date: ${ObjectField_dueDate.getData()}</p><p>Current Title: ${ObjectField_title.getData()}</p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/project/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_PROJECT_SUBSCRIPTION_UPDATED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Project Subscription Updated Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "[%CMPPROJECT_TITLE%] Was Updated"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		},
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>A new task was created in the project ${.data_model['ObjectRelationship#CMPProject#cmpProjectToCMPTasks_title'].getData()}.</p><p>Task: ${ObjectField_title.getData()}</p><#if ObjectField_assignTo.getData()?has_content><#assign assignee = jsonFactoryUtil.createJSONObject(ObjectField_assignTo.getData()) /><#if assignee?? && assignee.name??>Assignee: ${assignee.name}</#if></#if><p>Due Date: ${ObjectField_dueDate.getData()}</p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/task/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View new task ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_TASK_SUBSCRIPTION_ADDED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Task Subscription Added Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "New Task Created in [%CMPPROJECTTOCMPTASKS_CMPPROJECT_TITLE%]:[%CMPTASK_TITLE%]"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		},
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>There is a new comment on the task ${ObjectField_title.getData()}.</p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/task/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View comment on ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_TASK_SUBSCRIPTION_COMMENT_ADDED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Task Subscription Comment Added Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "New Comment on [%CMPTASK_TITLE%]"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		},
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>The task ${ObjectField_title.getData()} was marked as blocked.</p><p>Project: ${.data_model['ObjectRelationship#CMPProject#cmpProjectToCMPTasks_title'].getData()}</p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/task/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View blocked task ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_TASK_SUBSCRIPTION_STATE_BLOCKED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Task Subscription State Blocked Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "Task [%CMPTASK_TITLE%] Is Now Blocked"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		},
+		{
+			"body": {
+				"en_US": "<p>Hello,</p><p>The task ${ObjectField_title.getData()} was updated.</p><#if ObjectField_assignTo.getData()?has_content><#assign assignee = jsonFactoryUtil.createJSONObject(ObjectField_assignTo.getData()) /><#if assignee?? && assignee.name??>Current Assignee: ${assignee.name}</#if></#if><p>Current Description: ${ObjectField_description.getData()}</p>\n<p>Current Due Date: ${ObjectField_dueDate.getData()}</p><p>Current State: ${ObjectField_state.getData()}</p><p>Current Title: ${ObjectField_title.getData()}</p><p><a href='${portalURL + portalUtil.getPathFriendlyURLPublic() + \"/cms/e/task/\" + classNameId + \"/\" + ObjectEntry_objectEntryId.getData()}'>View task ${ObjectField_title.getData()}</a></p>"
+			},
+			"editorType": "freeMarker",
+			"externalReferenceCode": "L_CMP_TASK_SUBSCRIPTION_UPDATED_NOTIFICATION_TEMPLATE",
+			"name": "CMP Task Subscription Updated Notification",
+			"recipientType": "email",
+			"recipients": [
+				{
+					"from": "team@liferay.com",
+					"fromName": {
+						"en_US": "Liferay Team"
+					},
+					"singleRecipient": true,
+					"toType": "subscribers"
+				}
+			],
+			"subject": {
+				"en_US": "[%CMPTASK_TITLE%] Was Updated"
+			},
+			"system": true,
+			"type": "email",
+			"typeLabel": "Email"
+		}
+	]
+}

@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.RepositoryModelOperation;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.InputStream;
 import java.io.Serializable;
@@ -57,11 +58,8 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 
 		LiferayFileVersion liferayFileVersion = (LiferayFileVersion)object;
 
-		if (Objects.equals(_dlFileVersion, liferayFileVersion._dlFileVersion)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			_dlFileVersion, liferayFileVersion._dlFileVersion);
 	}
 
 	@Override
@@ -112,6 +110,11 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 		return _dlFileVersion.getCreateDate();
 	}
 
+	@Override
+	public long getCtCollectionId() {
+		return _dlFileVersion.getCtCollectionId();
+	}
+
 	public long getCTCollectionId() {
 		return _dlFileVersion.getCtCollectionId();
 	}
@@ -119,6 +122,11 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 	@Override
 	public String getDescription() {
 		return _dlFileVersion.getDescription();
+	}
+
+	@Override
+	public Date getDisplayDate() {
+		return _dlFileVersion.getDisplayDate();
 	}
 
 	@Override
@@ -323,6 +331,15 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 	@Override
 	public boolean isPending() {
 		return _dlFileVersion.isPending();
+	}
+
+	@Override
+	public boolean isScheduled() {
+		if (getStatus() == WorkflowConstants.STATUS_SCHEDULED) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override

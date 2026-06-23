@@ -33,6 +33,11 @@ import org.osgi.service.component.annotations.Reference;
 public class DispatchPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "sheets";
+	}
+
+	@Override
 	public String getKey() {
 		return _KEY;
 	}
@@ -61,7 +66,7 @@ public class DispatchPanelApp extends BasePanelApp {
 	private Language _language;
 
 	@Reference(
-		target = "(javax.portlet.name=" + DispatchPortletKeys.DISPATCH + ")"
+		target = "(jakarta.portlet.name=" + DispatchPortletKeys.DISPATCH + ")"
 	)
 	private Portlet _portlet;
 

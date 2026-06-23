@@ -5,11 +5,15 @@
 
 package com.liferay.commerce.currency.internal.search;
 
+import com.liferay.commerce.currency.internal.search.spi.model.result.contributor.CommerceCurrencyModelSummaryContributor;
 import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
+import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -42,15 +46,20 @@ public class CommerceCurrencyModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.currency.model.CommerceCurrency)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			IndexerWriterMode.UPDATE,
+			_commerceCurrencyLocalService::getIndexableActionableDynamicQuery);
+		_modelSummaryContributor =
+			new CommerceCurrencyModelSummaryContributor();
+	}
+
+	@Reference
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
+
 	private ModelIndexerWriterContributor<CommerceCurrency>
 		_modelIndexWriterContributor;
-
-	@Reference(
-		target = "(indexer.class.name=com.liferay.commerce.currency.model.CommerceCurrency)"
-	)
 	private ModelSummaryContributor _modelSummaryContributor;
 
 }

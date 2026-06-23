@@ -6,24 +6,27 @@
 package com.liferay.asset.publisher.web.internal.util;
 
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
+import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.service.component.annotations.Component;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Pavel Savinov
  */
-@Component(
-	configurationPid = "com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration",
-	service = AssetPublisherCustomizer.class
-)
 public class RecentContentAssetPublisherCustomizer
 	extends DefaultAssetPublisherCustomizer {
+
+	public RecentContentAssetPublisherCustomizer(
+		AssetPublisherHelper assetPublisherHelper,
+		AssetPublisherWebConfiguration assetPublisherWebConfiguration) {
+
+		super(assetPublisherHelper, assetPublisherWebConfiguration);
+	}
 
 	@Override
 	public Integer getDelta(HttpServletRequest httpServletRequest) {
@@ -56,11 +59,7 @@ public class RecentContentAssetPublisherCustomizer
 	public boolean isOrderingByTitleEnabled(
 		HttpServletRequest httpServletRequest) {
 
-		if (!assetPublisherWebConfiguration.searchWithIndex()) {
-			return false;
-		}
-
-		return true;
+		return assetPublisherWebConfiguration.searchWithIndex();
 	}
 
 	@Override

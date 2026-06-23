@@ -118,6 +118,8 @@ public class DepotEntryGroupRelPersistenceTest {
 
 		newDepotEntryGroupRel.setMvccVersion(RandomTestUtil.nextLong());
 
+		newDepotEntryGroupRel.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newDepotEntryGroupRel.setUuid(RandomTestUtil.randomString());
 
 		newDepotEntryGroupRel.setGroupId(RandomTestUtil.nextLong());
@@ -141,6 +143,8 @@ public class DepotEntryGroupRelPersistenceTest {
 
 		newDepotEntryGroupRel.setToGroupId(RandomTestUtil.nextLong());
 
+		newDepotEntryGroupRel.setType(RandomTestUtil.nextInt());
+
 		newDepotEntryGroupRel.setLastPublishDate(RandomTestUtil.nextDate());
 
 		_depotEntryGroupRels.add(_persistence.update(newDepotEntryGroupRel));
@@ -152,6 +156,9 @@ public class DepotEntryGroupRelPersistenceTest {
 		Assert.assertEquals(
 			existingDepotEntryGroupRel.getMvccVersion(),
 			newDepotEntryGroupRel.getMvccVersion());
+		Assert.assertEquals(
+			existingDepotEntryGroupRel.getCtCollectionId(),
+			newDepotEntryGroupRel.getCtCollectionId());
 		Assert.assertEquals(
 			existingDepotEntryGroupRel.getUuid(),
 			newDepotEntryGroupRel.getUuid());
@@ -189,6 +196,9 @@ public class DepotEntryGroupRelPersistenceTest {
 		Assert.assertEquals(
 			existingDepotEntryGroupRel.getToGroupId(),
 			newDepotEntryGroupRel.getToGroupId());
+		Assert.assertEquals(
+			existingDepotEntryGroupRel.getType(),
+			newDepotEntryGroupRel.getType());
 		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingDepotEntryGroupRel.getLastPublishDate()),
@@ -261,6 +271,14 @@ public class DepotEntryGroupRelPersistenceTest {
 	}
 
 	@Test
+	public void testCountByTGI_T() throws Exception {
+		_persistence.countByTGI_T(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
+
+		_persistence.countByTGI_T(0L, 0);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		DepotEntryGroupRel newDepotEntryGroupRel = addDepotEntryGroupRel();
 
@@ -286,12 +304,12 @@ public class DepotEntryGroupRelPersistenceTest {
 
 	protected OrderByComparator<DepotEntryGroupRel> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"DepotEntryGroupRel", "mvccVersion", true, "uuid", true,
-			"depotEntryGroupRelId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "ddmStructuresAvailable", true,
-			"depotEntryId", true, "searchable", true, "toGroupId", true,
-			"lastPublishDate", true);
+			"DepotEntryGroupRel", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "depotEntryGroupRelId", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "ddmStructuresAvailable", true,
+			"depotEntryId", true, "searchable", true, "toGroupId", true, "type",
+			true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -600,6 +618,8 @@ public class DepotEntryGroupRelPersistenceTest {
 
 		depotEntryGroupRel.setMvccVersion(RandomTestUtil.nextLong());
 
+		depotEntryGroupRel.setCtCollectionId(RandomTestUtil.nextLong());
+
 		depotEntryGroupRel.setUuid(RandomTestUtil.randomString());
 
 		depotEntryGroupRel.setGroupId(RandomTestUtil.nextLong());
@@ -623,6 +643,8 @@ public class DepotEntryGroupRelPersistenceTest {
 
 		depotEntryGroupRel.setToGroupId(RandomTestUtil.nextLong());
 
+		depotEntryGroupRel.setType(RandomTestUtil.nextInt());
+
 		depotEntryGroupRel.setLastPublishDate(RandomTestUtil.nextDate());
 
 		_depotEntryGroupRels.add(_persistence.update(depotEntryGroupRel));
@@ -636,3 +658,4 @@ public class DepotEntryGroupRelPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:409011754

@@ -9,15 +9,20 @@ import React from 'react';
 import QueryBuilder from '../../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/edit_sxp_blueprint/query_builder_tab/index';
 import {QUERY_SXP_ELEMENTS} from '../../mocks/sxpElements';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 import getUIConfigurationValues from '../../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/utils/sxp_element/get_ui_configuration_values';
 
 jest.mock(
 	'../../../../src/main/resources/META-INF/resources/sxp_blueprint_admin/js/shared/CodeMirrorEditor',
-	() => ({onChange, value}) => (
-		<textarea aria-label="text-area" onChange={onChange} value={value} />
-	)
+	() =>
+		({onChange, value}) => (
+			<textarea
+				aria-label="text-area"
+				onChange={onChange}
+				value={value}
+			/>
+		)
 );
 
 function renderBuilder(props) {
@@ -30,6 +35,7 @@ function renderBuilder(props) {
 			}))}
 			onDeleteSXPElement={jest.fn()}
 			onFrameworkConfigChange={jest.fn()}
+			scope={[]}
 			setFieldValue={jest.fn()}
 			{...props}
 		/>

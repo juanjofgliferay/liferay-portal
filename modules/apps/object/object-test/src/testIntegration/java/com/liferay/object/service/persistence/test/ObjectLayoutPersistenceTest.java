@@ -195,6 +195,14 @@ public class ObjectLayoutPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_DOL() throws Exception {
+		_persistence.countByC_DOL(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByC_DOL(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
 	public void testCountByODI_DOL() throws Exception {
 		_persistence.countByODI_DOL(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
@@ -481,3 +489,4 @@ public class ObjectLayoutPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-780112452

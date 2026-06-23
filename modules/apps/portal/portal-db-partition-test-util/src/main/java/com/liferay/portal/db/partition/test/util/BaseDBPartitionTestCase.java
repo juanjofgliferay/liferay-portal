@@ -8,56 +8,50 @@ package com.liferay.portal.db.partition.test.util;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.dao.init.DBInitUtil;
-import com.liferay.portal.dao.jdbc.util.ConnectionWrapper;
-import com.liferay.portal.dao.jdbc.util.DataSourceWrapper;
-import com.liferay.portal.db.partition.DBPartitionUtil;
-import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
+import com.liferay.portal.db.partition.db.DBPartitionDB;
+import com.liferay.portal.db.partition.util.DBPartitionUtil;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.db.DBType;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.CurrentConnection;
 import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.db.partition.DBPartition;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.UserConstants;
-import com.liferay.portal.kernel.module.util.BundleUtil;
-import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.AssumeTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.Props;
+import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.model.impl.CompanyImpl;
+import com.liferay.portal.model.impl.VirtualHostImpl;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PropsUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Statement;
+
+import java.util.Set;
 
 import javax.sql.DataSource;
 
 import org.junit.Assume;
 import org.junit.ClassRule;
 import org.junit.Rule;
-
-import org.osgi.framework.Bundle;
-import org.osgi.service.component.runtime.ServiceComponentRuntime;
-import org.osgi.util.promise.Promise;
-
-import org.springframework.jdbc.datasource.LazyConnectionDataSourceProxy;
 
 /**
  * @author Alberto Chaparro
@@ -72,9 +66,13 @@ public abstract class BaseDBPartitionTestCase {
 			PermissionCheckerMethodTestRule.INSTANCE);
 
 	public static void assume() {
-		db = DBManagerUtil.getDB();
+		Assume.assumeTrue(PropsValues.DATABASE_PARTITION_ENABLED);
 
-		Assume.assumeTrue(db.getDBType() == DBType.MYSQL);
+		if (db == null) {
+			db = DBManagerUtil.getDB();
+		}
+
+		Assume.assumeTrue(db.isSupportsDBPartition());
 	}
 
 	protected static void addDBPartitions() throws Exception {
@@ -90,7 +88,17 @@ public abstract class BaseDBPartitionTestCase {
 
 			for (long companyId : COMPANY_IDS) {
 				DBPartitionUtil.addDBPartition(companyId);
+
+				PortalInstancePool.add(
+					new CompanyImpl() {
+						{
+							setCompanyId(companyId);
+							setWebId("Test" + companyId);
+						}
+					});
 			}
+
+			_clearCaches(COMPANY_IDS);
 		}
 		finally {
 			ReflectionTestUtil.setFieldValue(
@@ -102,16 +110,25 @@ public abstract class BaseDBPartitionTestCase {
 	protected static void createControlTable(String tableName)
 		throws Exception {
 
-		db.runSQL(
-			"create table " + tableName + " (testColumn bigint primary key)");
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					PortalInstancePool.getDefaultCompanyId())) {
+
+			db.runSQL(
+				"create table " + tableName +
+					" (testColumn bigint primary key)");
+		}
+
+		if (_controlTableNames == null) {
+			_controlTableNames = ReflectionTestUtil.getFieldValue(
+				DBInspector.class, "_controlTableNames");
+		}
+
+		_controlTableNames.add(StringUtil.toLowerCase(TEST_CONTROL_TABLE_NAME));
 	}
 
 	protected static void createIndex(String tableName) throws Exception {
 		db.runSQL(getCreateIndexSQL(tableName));
-	}
-
-	protected static void createTable(String tableName) throws Exception {
-		db.runSQL(getCreateTableSQL(tableName));
 	}
 
 	protected static void createUniqueIndex(String tableName) throws Exception {
@@ -125,7 +142,8 @@ public abstract class BaseDBPartitionTestCase {
 		try (Statement statement = connection.createStatement()) {
 			for (long companyId : COMPANY_IDS) {
 				try (SafeCloseable safeCloseable =
-						CompanyThreadLocal.setWithSafeCloseable(companyId)) {
+						CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+							companyId)) {
 
 					statement.execute(
 						"delete from Company where companyId = " + companyId);
@@ -137,42 +155,23 @@ public abstract class BaseDBPartitionTestCase {
 						"delete from VirtualHost where companyId = " +
 							companyId);
 				}
+
+				PortalInstancePool.remove(companyId);
 			}
 		}
 	}
 
-	protected static void disableDBPartition() throws Exception {
-		DataAccess.cleanUp(connection);
+	protected static void dropControlTable(String tableName) throws Exception {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					PortalInstancePool.getDefaultCompanyId())) {
 
-		if (_dbPartitionEnabled) {
-			return;
+			dropTable(tableName);
 		}
 
-		_disableComponents(
-			"com.liferay.portal.db.partition",
-			StringBundler.concat(
-				"com.liferay.portal.db.partition.internal.configuration.",
-				"persistence.listener.DBPartitionVirtualInstanceExtraction",
-				"ConfigurationModelListener"),
-			StringBundler.concat(
-				"com.liferay.portal.db.partition.internal.configuration.",
-				"persistence.listener.DBPartitionVirtualInstanceInsertion",
-				"ConfigurationModelListener"));
-
-		PropsUtil.set(
-			"database.partition.enabled", _originalDatabasePartitionEnabled);
-
-		ReflectionTestUtil.setFieldValue(
-			DBInitUtil.class, "_dataSource", _currentDataSource);
-		ReflectionTestUtil.setFieldValue(
-			DBPartitionUtil.class, "_DATABASE_PARTITION_SCHEMA_NAME_PREFIX",
-			StringPool.BLANK);
-
-		_lazyConnectionDataSourceProxy.setTargetDataSource(_currentDataSource);
-
-		ReflectionTestUtil.setFieldValue(
-			InfrastructureUtil.class, "_dataSource",
-			_lazyConnectionDataSourceProxy);
+		if (_controlTableNames != null) {
+			_controlTableNames.remove(StringUtil.toLowerCase(tableName));
+		}
 	}
 
 	protected static void dropIndex(String tableName) throws Exception {
@@ -183,75 +182,31 @@ public abstract class BaseDBPartitionTestCase {
 
 	protected static void dropSchemas() throws Exception {
 		for (long companyId : COMPANY_IDS) {
-			db.runSQL("drop schema if exists " + getSchemaName(companyId));
+			db.runSQL(
+				dbPartitionDB.getDropPartitionSQL(getPartitionName(companyId)));
 		}
 	}
 
 	protected static void dropTable(String tableName) throws Exception {
-		db.runSQL("drop table if exists " + tableName);
+		db.runSQL("drop table if exists " + tableName + " cascade");
 	}
 
-	protected static void enableDBPartition() throws Exception {
-		CompanyThreadLocal.setCompanyId(PortalInstances.getDefaultCompanyId());
-
-		_dbPartitionEnabled = DBPartition.isPartitionEnabled();
-
-		if (_dbPartitionEnabled) {
-			connection = DataAccess.getConnection();
-
-			dbInspector = new DBInspector(connection);
-
-			return;
-		}
-
-		_originalDatabasePartitionEnabled = PropsUtil.get(
-			"database.partition.enabled");
-
-		PropsUtil.set("database.partition.enabled", "true");
-
-		ReflectionTestUtil.setFieldValue(
-			DBPartitionUtil.class, "_DATABASE_PARTITION_SCHEMA_NAME_PREFIX",
-			_DATABASE_PARTITION_SCHEMA_NAME_PREFIX);
-		ReflectionTestUtil.setFieldValue(
-			DBPartitionUtil.class, "_DATABASE_PARTITION_THREAD_POOL_ENABLED",
-			true);
-
-		DBPartitionUtil.setDefaultCompanyId(portal.getDefaultCompanyId());
-
-		DataSource dbPartitionDataSource = _wrapDataSource(
-			DBPartitionUtil.wrapDataSource(_currentDataSource));
-
-		_lazyConnectionDataSourceProxy =
-			(LazyConnectionDataSourceProxy)PortalBeanLocatorUtil.locate(
-				"liferayDataSource");
-
-		_lazyConnectionDataSourceProxy.setTargetDataSource(
-			dbPartitionDataSource);
-
-		ReflectionTestUtil.setFieldValue(
-			DBInitUtil.class, "_dataSource", dbPartitionDataSource);
-		ReflectionTestUtil.setFieldValue(
-			InfrastructureUtil.class, "_dataSource",
-			_lazyConnectionDataSourceProxy);
-
-		_restartComponent(
-			"com.liferay.portal.db.partition",
-			"com.liferay.portal.db.partition.internal.component.enabler." +
-				"DBPartitionComponentEnabler");
-
-		connection = DataAccess.getConnection();
-
-		dbInspector = new DBInspector(connection);
+	protected static void exportCompany(long companyId) throws Exception {
+		_executeOnDBPartitions(
+			new long[] {companyId},
+			currentCompanyId -> ReflectionTestUtil.invoke(
+				DBPartitionUtil.class, "_exportCompany",
+				new Class<?>[] {long.class}, companyId));
 	}
 
-	protected static void extractDBPartitions() throws Exception {
-		extractDBPartitions(COMPANY_IDS);
+	protected static void exportDBPartitions() throws Exception {
+		exportDBPartitions(COMPANY_IDS);
 	}
 
-	protected static void extractDBPartitions(long[] companyIds)
+	protected static void exportDBPartitions(long[] companyIds)
 		throws Exception {
 
-		_executeOnDBPartitions(companyIds, DBPartitionUtil::extractDBPartition);
+		_executeOnDBPartitions(companyIds, DBPartitionUtil::exportDBPartition);
 	}
 
 	protected static String getCreateIndexSQL(String tableName) {
@@ -265,17 +220,21 @@ public abstract class BaseDBPartitionTestCase {
 			" (testColumn bigint primary key, companyId bigint)";
 	}
 
-	protected static String getSchemaName(long companyId) {
-		if (_dbPartitionEnabled) {
-			return (String)ReflectionTestUtil.getFieldValue(
-				DBPartitionUtil.class,
-				"_DATABASE_PARTITION_SCHEMA_NAME_PREFIX") + companyId;
-		}
-
-		return _DATABASE_PARTITION_SCHEMA_NAME_PREFIX + companyId;
+	protected static String getExportedPartitionName(long companyId) {
+		return ReflectionTestUtil.invoke(
+			DBPartitionUtil.class, "_getExportedPartitionName",
+			new Class<?>[] {long.class}, companyId);
 	}
 
-	protected static void insertDBPartitions() throws Exception {
+	protected static String getPartitionName(long companyId) {
+		if (companyId == PortalInstancePool.getDefaultCompanyId()) {
+			return defaultPartitionName;
+		}
+
+		return PropsValues.DATABASE_PARTITION_SCHEMA_NAME_PREFIX + companyId;
+	}
+
+	protected static void importDBPartitions() throws Exception {
 		CurrentConnection defaultCurrentConnection =
 			CurrentConnectionUtil.getCurrentConnection();
 
@@ -287,7 +246,7 @@ public abstract class BaseDBPartitionTestCase {
 				currentConnection);
 
 			for (long companyId : COMPANY_IDS) {
-				DBPartitionUtil.insertDBPartition(companyId);
+				DBPartitionUtil.importDBPartition(companyId);
 			}
 		}
 		finally {
@@ -300,19 +259,20 @@ public abstract class BaseDBPartitionTestCase {
 	protected static void insertPartitionData() throws Exception {
 		for (long companyId : COMPANY_IDS) {
 			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setWithSafeCloseable(companyId);
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId);
 				PreparedStatement preparedStatement1 =
 					connection.prepareStatement(
 						"insert into Group_ (mvccVersion, ctCollectionId, " +
-							"companyId, groupId, classNameId, classPK) " +
-								"values (?, ?, ?, ?, ?, ?)");
+							"companyId, groupId, classNameId, classPK, " +
+								"groupKey) values (?, ?, ?, ?, ?, ?, ?)");
 				PreparedStatement preparedStatement2 =
 					connection.prepareStatement(
 						"insert into PasswordPolicy (mvccVersion, " +
 							"passwordPolicyId, companyId, defaultPolicy) " +
 								"values (?, ?, ?, ?)");
 				PreparedStatement preparedStatement3 =
-					connection.prepareStatement(
+					AutoBatchPreparedStatementUtil.autoBatch(
+						connection,
 						"insert into Role_ (mvccVersion, ctCollectionId, " +
 							"roleId, companyId, name, type_) values (?, ?, " +
 								"?, ?, ?, ?)");
@@ -329,13 +289,14 @@ public abstract class BaseDBPartitionTestCase {
 				preparedStatement1.setLong(
 					5, ClassNameLocalServiceUtil.getClassNameId(Company.class));
 				preparedStatement1.setLong(6, companyId);
+				preparedStatement1.setString(7, RandomTestUtil.randomString());
 
 				preparedStatement1.executeUpdate();
 
 				preparedStatement2.setLong(1, 0);
 				preparedStatement2.setLong(2, 1);
 				preparedStatement2.setLong(3, companyId);
-				preparedStatement2.setInt(4, 1);
+				preparedStatement2.setBoolean(4, true);
 
 				preparedStatement2.executeUpdate();
 
@@ -347,8 +308,10 @@ public abstract class BaseDBPartitionTestCase {
 					preparedStatement3.setString(5, ROLE_NAMES[i]);
 					preparedStatement3.setLong(6, 1);
 
-					preparedStatement3.executeUpdate();
+					preparedStatement3.addBatch();
 				}
+
+				preparedStatement3.executeBatch();
 
 				preparedStatement4.setLong(1, 1);
 				preparedStatement4.setLong(2, companyId);
@@ -366,7 +329,7 @@ public abstract class BaseDBPartitionTestCase {
 	protected static void insertPartitionRequiredData() throws Exception {
 		for (long companyId : COMPANY_IDS) {
 			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setWithSafeCloseable(companyId);
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId);
 				PreparedStatement preparedStatement1 =
 					connection.prepareStatement(
 						"insert into Company (companyId, mx, webId) values " +
@@ -385,7 +348,7 @@ public abstract class BaseDBPartitionTestCase {
 				preparedStatement1.executeUpdate();
 
 				preparedStatement2.setLong(1, 0L);
-				preparedStatement2.setLong(2, RandomTestUtil.nextLong());
+				preparedStatement2.setLong(2, RandomTestUtil.randomLong());
 				preparedStatement2.setLong(3, companyId);
 				preparedStatement2.setLong(4, 0L);
 				preparedStatement2.setString(5, "test" + companyId);
@@ -393,7 +356,20 @@ public abstract class BaseDBPartitionTestCase {
 
 				preparedStatement2.executeUpdate();
 			}
+
+			Company company = new CompanyImpl();
+
+			company.setCompanyId(companyId);
+			company.setWebId("Test" + companyId);
+
+			PortalInstancePool.add(company);
 		}
+	}
+
+	protected static boolean isCopyableQuartzTable(String tableName) {
+		return ReflectionTestUtil.invoke(
+			DBPartitionUtil.class, "_isCopyableQuartzTable",
+			new Class<?>[] {String.class}, tableName);
 	}
 
 	protected static void removeDBPartitions() throws Exception {
@@ -404,22 +380,60 @@ public abstract class BaseDBPartitionTestCase {
 		throws Exception {
 
 		_executeOnDBPartitions(companyIds, DBPartitionUtil::removeDBPartition);
+
+		for (long companyId : companyIds) {
+			PortalInstancePool.remove(companyId);
+		}
+
+		_clearCaches(companyIds);
+	}
+
+	protected static void setUpClass() throws Exception {
+		connection = DataAccess.getConnection();
+
+		dbInspector = new DBInspector(connection);
+
+		dbPartitionDB = ReflectionTestUtil.getFieldValue(
+			DBPartitionUtil.class, "_dbPartitionDB");
+		defaultPartitionName = ReflectionTestUtil.getFieldValue(
+			DBPartitionUtil.class, "_defaultPartitionName");
+	}
+
+	protected static void setUpDBPartitions() throws Exception {
+		addDBPartitions();
+
+		insertPartitionRequiredData();
+
+		insertPartitionData();
+	}
+
+	protected static void tearDownDBPartitions() throws Exception {
+		deletePartitionRequiredData();
+
+		removeDBPartitions();
 	}
 
 	protected void createAndPopulateControlTable(String tableName)
 		throws Exception {
 
-		try (Statement statement = connection.createStatement()) {
-			statement.execute(
-				"create table " + tableName +
-					" (testColumn bigint primary key)");
+		createControlTable(tableName);
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					PortalInstancePool.getDefaultCompanyId());
+			Statement statement = connection.createStatement()) {
 
 			statement.execute("insert into " + tableName + " values (1)");
 		}
 	}
 
 	protected void createAndPopulateTable(String tableName) throws Exception {
-		try (Statement statement = connection.createStatement()) {
+		DataSource dataSource = InfrastructureUtil.getDataSource();
+
+		try (Connection connection = dataSource.getConnection();
+
+			Statement statement = connection.createStatement()) {
+
 			statement.execute(getCreateTableSQL(tableName));
 
 			statement.execute(
@@ -444,26 +458,25 @@ public abstract class BaseDBPartitionTestCase {
 
 	protected static final String TEST_TABLE_NAME = "TestTable";
 
+	@Inject
+	protected static CompanyLocalService companyLocalService;
+
 	protected static Connection connection;
 	protected static DB db;
 	protected static DBInspector dbInspector;
+	protected static DBPartitionDB dbPartitionDB;
+	protected static String defaultPartitionName;
 
 	@Inject
 	protected static Portal portal;
 
-	private static void _disableComponents(
-			String bundleSymbolicName, String... components)
-		throws Exception {
+	private static void _clearCaches(long[] companyIds) throws Exception {
+		EntityCacheUtil.clearCache(CompanyImpl.class);
+		EntityCacheUtil.clearCache(VirtualHostImpl.class);
 
-		Bundle bundle = BundleUtil.getBundle(
-			SystemBundleUtil.getBundleContext(), bundleSymbolicName);
-
-		for (String component : components) {
-			Promise<?> promise = _serviceComponentRuntime.disableComponent(
-				_serviceComponentRuntime.getComponentDescriptionDTO(
-					bundle, component));
-
-			promise.getValue();
+		for (long companyId : companyIds) {
+			PortalCacheHelperUtil.removePortalCaches(
+				PortalCacheManagerNames.MULTI_VM, companyId);
 		}
 	}
 
@@ -493,74 +506,6 @@ public abstract class BaseDBPartitionTestCase {
 		}
 	}
 
-	private static void _restartComponent(
-			String bundleSymbolicName, String component)
-		throws Exception {
-
-		Bundle bundle = BundleUtil.getBundle(
-			SystemBundleUtil.getBundleContext(), bundleSymbolicName);
-
-		Promise<?> promise = _serviceComponentRuntime.disableComponent(
-			_serviceComponentRuntime.getComponentDescriptionDTO(
-				bundle, component));
-
-		promise.getValue();
-
-		promise = _serviceComponentRuntime.enableComponent(
-			_serviceComponentRuntime.getComponentDescriptionDTO(
-				bundle, component));
-
-		promise.getValue();
-	}
-
-	private static DataSource _wrapDataSource(DataSource dataSource) {
-		return new DataSourceWrapper(dataSource) {
-
-			@Override
-			public Connection getConnection() throws SQLException {
-				return _wrapConnection(super.getConnection());
-			}
-
-			@Override
-			public Connection getConnection(String userName, String password)
-				throws SQLException {
-
-				return _wrapConnection(super.getConnection());
-			}
-
-			private Connection _wrapConnection(Connection connection) {
-				return new ConnectionWrapper(connection) {
-
-					@Override
-					public void close() throws SQLException {
-						String defaultSchemaName =
-							ReflectionTestUtil.getFieldValue(
-								DBPartitionUtil.class, "_defaultSchemaName");
-
-						setCatalog(defaultSchemaName);
-
-						super.close();
-					}
-
-				};
-			}
-
-		};
-	}
-
-	private static final String _DATABASE_PARTITION_SCHEMA_NAME_PREFIX =
-		"lpartitiontest_";
-
-	private static final DataSource _currentDataSource =
-		ReflectionTestUtil.getFieldValue(DBInitUtil.class, "_dataSource");
-	private static boolean _dbPartitionEnabled;
-	private static LazyConnectionDataSourceProxy _lazyConnectionDataSourceProxy;
-	private static String _originalDatabasePartitionEnabled;
-
-	@Inject
-	private static Props _props;
-
-	@Inject
-	private static ServiceComponentRuntime _serviceComponentRuntime;
+	private static Set<String> _controlTableNames;
 
 }

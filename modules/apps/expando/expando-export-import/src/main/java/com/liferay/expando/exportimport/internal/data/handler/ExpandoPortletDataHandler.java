@@ -8,6 +8,7 @@ package com.liferay.expando.exportimport.internal.data.handler;
 import com.liferay.expando.constants.ExpandoPortletKeys;
 import com.liferay.expando.kernel.model.adapter.StagedExpandoColumn;
 import com.liferay.expando.model.adapter.StagedExpandoTable;
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -20,9 +21,9 @@ import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -32,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Akos Thurzo
  */
 @Component(
-	property = "javax.portlet.name=" + ExpandoPortletKeys.EXPANDO,
+	property = "jakarta.portlet.name=" + ExpandoPortletKeys.EXPANDO,
 	service = PortletDataHandler.class
 )
 public class ExpandoPortletDataHandler extends BasePortletDataHandler {
@@ -46,13 +47,18 @@ public class ExpandoPortletDataHandler extends BasePortletDataHandler {
 		return SCHEMA_VERSION;
 	}
 
+	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_OTHER;
+	}
+
 	@Activate
 	protected void activate() {
 		setDataLevel(DataLevel.PORTAL);
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(StagedExpandoTable.class),
 			new StagedModelType(StagedExpandoColumn.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "expando-table", true, true, null,
 				StagedExpandoTable.class.getName()),

@@ -107,11 +107,18 @@ public class SegmentsExperimentModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table SegmentsExperiment";
 
+	public static final String ENTITY_ALIAS = "segmentsExperiment";
+
+	public static final String FILTER_PK_COLUMN_NAME = "segmentsExperimentId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY segmentsExperiment.createDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY SegmentsExperiment.createDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY segmentsExperiment.createDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1285,3 +1292,4 @@ public class SegmentsExperimentModelImpl
 	private SegmentsExperiment _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1982629903

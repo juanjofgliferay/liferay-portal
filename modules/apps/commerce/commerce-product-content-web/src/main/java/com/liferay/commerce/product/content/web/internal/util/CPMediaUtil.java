@@ -29,10 +29,10 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.documentlibrary.lar.FileEntryUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -117,7 +117,9 @@ public class CPMediaUtil {
 				cpAttachmentFileEntries) {
 
 			String originalImgTag = StringBundler.concat(
-				"<img class=\"product-img\" src=\"",
+				"<img aria-label=\"",
+				cpAttachmentFileEntry.getTitle(httpServletRequest.getLocale()),
+				"\" class=\"product-img\" src=\"",
 				commerceMediaResolver.getURL(
 					commerceAccountId,
 					cpAttachmentFileEntry.getCPAttachmentFileEntryId()),

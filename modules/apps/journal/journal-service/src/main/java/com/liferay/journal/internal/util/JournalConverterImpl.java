@@ -16,6 +16,7 @@ import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.dynamic.data.mapping.storage.constants.FieldConstants;
 import com.liferay.dynamic.data.mapping.util.DDM;
 import com.liferay.dynamic.data.mapping.util.DDMFieldsCounter;
+import com.liferay.dynamic.data.mapping.util.DDMFormFieldUtil;
 import com.liferay.journal.exception.ArticleContentException;
 import com.liferay.journal.util.JournalConverter;
 import com.liferay.petra.string.StringBundler;
@@ -28,7 +29,6 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -82,14 +82,19 @@ public class JournalConverterImpl implements JournalConverter {
 		throws PortalException {
 
 		try {
+			if (Validator.isNull(content)) {
+				return new Fields();
+			}
+
 			Document document = SAXReaderUtil.read(content);
 
 			Fields ddmFields = new Fields();
 
-			ddmFields.put(
-				new Field(
-					ddmStructure.getStructureId(), DDM.FIELDS_DISPLAY_NAME,
-					StringPool.BLANK));
+			Field fieldsDisplayField = new Field(
+				ddmStructure.getStructureId(), DDM.FIELDS_DISPLAY_NAME,
+				StringPool.BLANK);
+
+			ddmFields.put(fieldsDisplayField);
 
 			DDMForm ddmForm = ddmStructure.getDDMForm();
 
@@ -100,11 +105,15 @@ public class JournalConverterImpl implements JournalConverter {
 			String defaultLanguageId = rootElement.attributeValue(
 				"default-locale");
 
+			StringBundler sb = new StringBundler();
+
 			for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
 				_addDDMFields(
 					availableLanguageIds, defaultLanguageId, ddmFields,
-					ddmFormField, ddmStructure, rootElement);
+					ddmFormField, ddmStructure, rootElement, sb, rootElement);
 			}
+
+			fieldsDisplayField.setValue(sb.toString());
 
 			return ddmFields;
 		}
@@ -151,38 +160,71 @@ public class JournalConverterImpl implements JournalConverter {
 	private void _addDDMFields(
 			String[] availableLanguageIds, String defaultLanguageId,
 			Fields ddmFields, DDMFormField ddmFormField,
-			DDMStructure ddmStructure, Element element)
+			DDMStructure ddmStructure, Element element, StringBundler sb,
+			Element rootElement)
 		throws PortalException {
 
+		String ddmFormFieldName = ddmFormField.getName();
+
 		List<Element> dynamicElementElements = _getDynamicElementElements(
-			element, ddmFormField.getName());
+			element, ddmFormFieldName);
+
+		if (dynamicElementElements == null) {
+			dynamicElementElements = _getDynamicElementElements(
+				element,
+				DDMFormFieldUtil.getLegacyDDMFormFieldName(ddmFormFieldName));
+		}
+
+		if (dynamicElementElements == null) {
+
+			// This may happen when fields in the structure have been
+			// rearranged. In this case, look for the field starting from the
+			// root again. See LPD-69008.
+
+			dynamicElementElements = _getDynamicElementElements(
+				rootElement, ddmFormFieldName);
+		}
 
 		if (dynamicElementElements == null) {
 			if (Objects.equals(
 					ddmFormField.getType(),
 					DDMFormFieldTypeConstants.FIELDSET)) {
 
-				_updateFieldsDisplay(
-					ddmFields, ddmFormField.getName(),
-					String.valueOf(ddmStructure.getStructureId()));
+				_populateFieldsDisplayValue(
+					ddmFormFieldName, StringUtil.randomString(), sb);
 			}
 
 			_addNestedDDMFields(
 				availableLanguageIds, defaultLanguageId, ddmFields,
-				ddmFormField, ddmStructure, element);
+				ddmFormField, ddmStructure, element, sb, rootElement);
 
 			return;
 		}
 
 		for (Element dynamicElementElement : dynamicElementElements) {
 			if (!ddmFormField.isTransient()) {
+				Field existingDDMField = ddmFields.get(ddmFormFieldName);
+
+				if (existingDDMField == null) {
+					String legacyDDMFormFieldName =
+						DDMFormFieldUtil.getLegacyDDMFormFieldName(
+							ddmFormFieldName);
+
+					if (!StringUtil.equals(
+							ddmFormFieldName, legacyDDMFormFieldName)) {
+
+						existingDDMField = ddmFields.get(
+							legacyDDMFormFieldName);
+
+						if (existingDDMField != null) {
+							existingDDMField.setName(ddmFormFieldName);
+						}
+					}
+				}
+
 				Field ddmField = _getField(
-					dynamicElementElement, ddmStructure, availableLanguageIds,
-					defaultLanguageId);
-
-				String fieldName = ddmField.getName();
-
-				Field existingDDMField = ddmFields.get(fieldName);
+					availableLanguageIds, ddmStructure, defaultLanguageId,
+					dynamicElementElement, ddmFormFieldName);
 
 				if (existingDDMField != null) {
 					for (Locale locale : ddmField.getAvailableLocales()) {
@@ -195,39 +237,22 @@ public class JournalConverterImpl implements JournalConverter {
 				}
 			}
 
-			_updateFieldsDisplay(
-				ddmFields, ddmFormField.getName(),
-				dynamicElementElement.attributeValue("instance-id"));
+			_populateFieldsDisplayValue(
+				ddmFormFieldName,
+				dynamicElementElement.attributeValue("instance-id"), sb);
 
 			_addNestedDDMFields(
 				availableLanguageIds, defaultLanguageId, ddmFields,
-				ddmFormField, ddmStructure, dynamicElementElement);
-		}
-	}
-
-	private void _addMissingFieldValues(
-		Field ddmField, String defaultLanguageId,
-		Set<String> missingLanguageIds) {
-
-		if (missingLanguageIds.isEmpty()) {
-			return;
-		}
-
-		Locale defaultLocale = LocaleUtil.fromLanguageId(defaultLanguageId);
-
-		Serializable fieldValue = ddmField.getValue(defaultLocale);
-
-		for (String missingLanguageId : missingLanguageIds) {
-			Locale missingLocale = LocaleUtil.fromLanguageId(missingLanguageId);
-
-			ddmField.setValue(missingLocale, fieldValue);
+				ddmFormField, ddmStructure, dynamicElementElement, sb,
+				rootElement);
 		}
 	}
 
 	private void _addNestedDDMFields(
 			String[] availableLanguageIds, String defaultLanguageId,
 			Fields ddmFields, DDMFormField ddmFormField,
-			DDMStructure ddmStructure, Element element)
+			DDMStructure ddmStructure, Element element, StringBundler sb,
+			Element rootElement)
 		throws PortalException {
 
 		for (DDMFormField nestedDDMFormField :
@@ -235,7 +260,7 @@ public class JournalConverterImpl implements JournalConverter {
 
 			_addDDMFields(
 				availableLanguageIds, defaultLanguageId, ddmFields,
-				nestedDDMFormField, ddmStructure, element);
+				nestedDDMFormField, ddmStructure, element, sb, rootElement);
 		}
 	}
 
@@ -294,11 +319,11 @@ public class JournalConverterImpl implements JournalConverter {
 
 		if (options.size() == 1) {
 			if (GetterUtil.getBoolean(dynamicContentElement.getText())) {
-				Set<Map.Entry<String, LocalizedValue>> entrySet =
+				Set<Map.Entry<String, LocalizedValue>> entries =
 					options.entrySet();
 
 				Iterator<Map.Entry<String, LocalizedValue>> iterator =
-					entrySet.iterator();
+					entries.iterator();
 
 				Map.Entry<String, LocalizedValue> entry = iterator.next();
 
@@ -369,8 +394,9 @@ public class JournalConverterImpl implements JournalConverter {
 	}
 
 	private Field _getField(
-			Element dynamicElementElement, DDMStructure ddmStructure,
-			String[] availableLanguageIds, String defaultLanguageId)
+			String[] availableLanguageIds, DDMStructure ddmStructure,
+			String defaultLanguageId, Element dynamicElementElement,
+			String fieldName)
 		throws PortalException {
 
 		Field ddmField = new Field();
@@ -388,17 +414,15 @@ public class JournalConverterImpl implements JournalConverter {
 
 		ddmField.setDefaultLocale(defaultLocale);
 
-		String name = dynamicElementElement.attributeValue("name");
-
 		if (!GetterUtil.getBoolean(
-				ddmStructure.getFieldProperty(name, "localizable"))) {
+				ddmStructure.getFieldProperty(fieldName, "localizable"))) {
 
 			availableLanguageIds = StringPool.EMPTY_ARRAY;
 		}
 
-		ddmField.setName(name);
+		ddmField.setName(fieldName);
 
-		DDMFormField ddmFormField = ddmStructure.getDDMFormField(name);
+		DDMFormField ddmFormField = ddmStructure.getDDMFormField(fieldName);
 
 		Set<String> missingLanguageIds = SetUtil.fromArray(
 			availableLanguageIds);
@@ -429,8 +453,6 @@ public class JournalConverterImpl implements JournalConverter {
 
 			ddmField.addValue(locale, serializable);
 		}
-
-		_addMissingFieldValues(ddmField, defaultLanguageId, missingLanguageIds);
 
 		return ddmField;
 	}
@@ -518,6 +540,22 @@ public class JournalConverterImpl implements JournalConverter {
 		return jsonArray.toString();
 	}
 
+	private void _populateFieldsDisplayValue(
+		String fieldName, String instanceId, StringBundler sb) {
+
+		if (Validator.isNull(instanceId)) {
+			instanceId = StringUtil.randomString();
+		}
+
+		if (sb.index() > 0) {
+			sb.append(StringPool.COMMA);
+		}
+
+		sb.append(fieldName);
+		sb.append(DDM.INSTANCE_SEPARATOR);
+		sb.append(instanceId);
+	}
+
 	private String[] _splitFieldsDisplayValue(Field fieldsDisplayField) {
 		String value = (String)fieldsDisplayField.getValue();
 
@@ -535,7 +573,11 @@ public class JournalConverterImpl implements JournalConverter {
 				fieldValue = field.getValue(field.getDefaultLocale(), count);
 			}
 
-			String valueString = String.valueOf(fieldValue);
+			String valueString = StringPool.BLANK;
+
+			if (fieldValue != null) {
+				valueString = String.valueOf(fieldValue);
+			}
 
 			if (StringUtil.equals(valueString, DDM.FIELD_EMPTY_VALUE)) {
 				continue;
@@ -563,6 +605,9 @@ public class JournalConverterImpl implements JournalConverter {
 				DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE, fieldType)) {
 
 			try {
+				JSONArray fieldValueJSONArray = _jsonFactory.createJSONArray(
+					fieldValue);
+
 				DDMFormFieldOptions ddmFormFieldOptions =
 					(DDMFormFieldOptions)ddmFormField.getProperty("options");
 
@@ -572,11 +617,20 @@ public class JournalConverterImpl implements JournalConverter {
 				if (options.size() > 1) {
 					dynamicContentElement.addCDATA(fieldValue);
 
+					for (int i = 0; i < fieldValueJSONArray.length(); i++) {
+						String selectedValue = fieldValueJSONArray.getString(i);
+
+						Element optionReferenceElement =
+							dynamicContentElement.addElement(
+								"option-reference");
+
+						optionReferenceElement.addCDATA(
+							ddmFormFieldOptions.getOptionReference(
+								selectedValue));
+					}
+
 					return;
 				}
-
-				JSONArray fieldValueJSONArray = _jsonFactory.createJSONArray(
-					fieldValue);
 
 				if (fieldValueJSONArray.length() == 1) {
 					fieldValue = Boolean.TRUE.toString();
@@ -595,6 +649,20 @@ public class JournalConverterImpl implements JournalConverter {
 			}
 
 			dynamicContentElement.addCDATA(fieldValue);
+		}
+		else if (Objects.equals(DDMFormFieldTypeConstants.RADIO, fieldType) &&
+				 Validator.isNotNull(fieldValue)) {
+
+			DDMFormFieldOptions ddmFormFieldOptions =
+				ddmFormField.getDDMFormFieldOptions();
+
+			dynamicContentElement.addCDATA(fieldValue);
+
+			Element optionReferenceElement = dynamicContentElement.addElement(
+				"option-reference");
+
+			optionReferenceElement.addCDATA(
+				ddmFormFieldOptions.getOptionReference(fieldValue));
 		}
 		else if (Objects.equals(DDMFormFieldTypeConstants.SELECT, fieldType) &&
 				 Validator.isNotNull(fieldValue)) {
@@ -618,10 +686,33 @@ public class JournalConverterImpl implements JournalConverter {
 						"option");
 
 					optionElement.addCDATA(jsonArray.getString(i));
+
+					Element optionReferenceElement =
+						dynamicContentElement.addElement("option-reference");
+
+					DDMFormFieldOptions ddmFormFieldOptions =
+						ddmFormField.getDDMFormFieldOptions();
+
+					optionReferenceElement.addCDATA(
+						ddmFormFieldOptions.getOptionReference(
+							jsonArray.getString(i)));
 				}
 			}
 			else {
-				dynamicContentElement.addCDATA(jsonArray.getString(0));
+				Element optionElement = dynamicContentElement.addElement(
+					"option");
+
+				optionElement.addCDATA(jsonArray.getString(0));
+
+				Element optionReferenceElement =
+					dynamicContentElement.addElement("option-reference");
+
+				DDMFormFieldOptions ddmFormFieldOptions =
+					ddmFormField.getDDMFormFieldOptions();
+
+				optionReferenceElement.addCDATA(
+					ddmFormFieldOptions.getOptionReference(
+						jsonArray.getString(0)));
 			}
 		}
 		else {
@@ -635,13 +726,13 @@ public class JournalConverterImpl implements JournalConverter {
 			int parentOffset)
 		throws Exception {
 
-		String fieldName = ddmFormField.getName();
+		String ddmFormFieldName = ddmFormField.getName();
 
-		int count = ddmFieldsCounter.get(fieldName);
+		int count = ddmFieldsCounter.get(ddmFormFieldName);
 
 		int repetitions = _countFieldRepetition(
-			ddmFields, fieldName, dynamicElementElement.attributeValue("name"),
-			parentOffset);
+			ddmFields, ddmFormFieldName,
+			dynamicElementElement.attributeValue("name"), parentOffset);
 
 		for (int i = 0; i < repetitions; i++) {
 			Element childDynamicElementElement =
@@ -654,16 +745,16 @@ public class JournalConverterImpl implements JournalConverter {
 
 			childDynamicElementElement.addAttribute(
 				"instance-id",
-				_getFieldInstanceId(ddmFields, fieldName, count + i));
+				_getFieldInstanceId(ddmFields, ddmFormFieldName, count + i));
 
-			childDynamicElementElement.addAttribute("name", fieldName);
+			childDynamicElementElement.addAttribute("name", ddmFormFieldName);
 			childDynamicElementElement.addAttribute(
 				"type", ddmFormField.getType());
 
 			List<DDMFormField> nestedDDMFormFields =
 				ddmFormField.getNestedDDMFormFields();
 
-			Field field = ddmFields.get(fieldName);
+			Field field = ddmFields.get(ddmFormFieldName);
 
 			if (!Objects.equals(
 					ddmFormField.getType(),
@@ -671,7 +762,7 @@ public class JournalConverterImpl implements JournalConverter {
 				!ddmFormField.isTransient() && (field != null)) {
 
 				_updateContentDynamicElement(
-					ddmFieldsCounter.get(fieldName), ddmFormField,
+					ddmFieldsCounter.get(ddmFormFieldName), ddmFormField,
 					childDynamicElementElement, field);
 			}
 			else if (ListUtil.isNotEmpty(nestedDDMFormFields)) {
@@ -682,29 +773,8 @@ public class JournalConverterImpl implements JournalConverter {
 				}
 			}
 
-			ddmFieldsCounter.incrementKey(fieldName);
+			ddmFieldsCounter.incrementKey(ddmFormFieldName);
 		}
-	}
-
-	private void _updateFieldsDisplay(
-		Fields ddmFields, String fieldName, String instanceId) {
-
-		if (Validator.isNull(instanceId)) {
-			instanceId = StringUtil.randomString();
-		}
-
-		String fieldsDisplayValue = StringBundler.concat(
-			fieldName, DDM.INSTANCE_SEPARATOR, instanceId);
-
-		Field fieldsDisplayField = ddmFields.get(DDM.FIELDS_DISPLAY_NAME);
-
-		String[] fieldsDisplayValues = StringUtil.split(
-			(String)fieldsDisplayField.getValue());
-
-		fieldsDisplayValues = ArrayUtil.append(
-			fieldsDisplayValues, fieldsDisplayValue);
-
-		fieldsDisplayField.setValue(StringUtil.merge(fieldsDisplayValues));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

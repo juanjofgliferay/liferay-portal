@@ -238,6 +238,14 @@ public class ContactLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.Map
+		<java.io.Serializable, com.liferay.portal.kernel.model.Contact>
+			fetchContacts(java.util.Set<java.io.Serializable> primaryKeys) {
+
+		return _contactLocalService.fetchContacts(primaryKeys);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -392,3 +400,4 @@ public class ContactLocalServiceWrapper
 	private ContactLocalService _contactLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1134206522

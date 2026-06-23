@@ -10,11 +10,18 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.vulcan.internal.test.util.URLConnectionUtil;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MediaType;
 
 import java.io.InputStream;
 
@@ -24,12 +31,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -76,7 +77,8 @@ public class XMLMessageBodyWriterTest {
 	@Test
 	public void testFieldsFilterRootJSONObject() throws Exception {
 		Document document = _getDocument(
-			"http://localhost:8080/o/test-vulcan/test-class?fields=string");
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/test-vulcan/test-class?fields=string");
 
 		Element testClassElement = document.getRootElement();
 
@@ -88,7 +90,8 @@ public class XMLMessageBodyWriterTest {
 	@Test
 	public void testIsListWrittenToXML() throws Exception {
 		Document document = _getDocument(
-			"http://localhost:8080/o/test-vulcan/test-classes");
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/test-vulcan/test-classes");
 
 		Element rootElement = document.getRootElement();
 
@@ -118,7 +121,8 @@ public class XMLMessageBodyWriterTest {
 	@Test
 	public void testIsWrittenToXML() throws Exception {
 		Document document = _getDocument(
-			"http://localhost:8080/o/test-vulcan/test-class");
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/test-vulcan/test-class");
 
 		Element testClassElement = document.getRootElement();
 

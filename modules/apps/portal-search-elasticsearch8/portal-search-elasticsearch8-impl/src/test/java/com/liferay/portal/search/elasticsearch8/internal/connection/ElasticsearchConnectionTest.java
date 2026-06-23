@@ -1,0 +1,100 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.portal.search.elasticsearch8.internal.connection;
+
+import co.elastic.clients.transport.rest_client.RestClientTransport;
+
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import java.util.List;
+
+import org.apache.http.HttpHost;
+
+import org.elasticsearch.client.Node;
+import org.elasticsearch.client.RestClient;
+
+import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+import org.mockito.Mockito;
+
+/**
+ * @author André de Oliveira
+ */
+public class ElasticsearchConnectionTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@Test
+	public void testConnectAndClose() {
+		Runnable postCloseRunnable = Mockito.mock(Runnable.class);
+		Runnable preConnectRunnable = Mockito.mock(Runnable.class);
+
+		_elasticsearchConnection = new ElasticsearchConnection.Builder(
+			() -> new String[] {"http://localhost:9200"}
+		).postCloseRunnable(
+			postCloseRunnable
+		).preConnectRunnable(
+			preConnectRunnable
+		).build();
+
+		Assert.assertFalse(_elasticsearchConnection.isConnected());
+
+		_elasticsearchConnection.connect();
+
+		Assert.assertTrue(_elasticsearchConnection.isConnected());
+
+		Mockito.verify(
+			preConnectRunnable
+		).run();
+
+		_assertNetworkHostAddress("localhost", 9200);
+
+		_elasticsearchConnection.close();
+
+		Assert.assertFalse(_elasticsearchConnection.isConnected());
+
+		Mockito.verify(
+			postCloseRunnable
+		).run();
+
+		_elasticsearchConnection = new ElasticsearchConnection.Builder(
+			() -> new String[] {"http://127.0.0.1:9999"}
+		).build();
+
+		_elasticsearchConnection.connect();
+
+		Assert.assertTrue(_elasticsearchConnection.isConnected());
+
+		_assertNetworkHostAddress("127.0.0.1", 9999);
+	}
+
+	private void _assertNetworkHostAddress(String hostString, int port) {
+		RestClientTransport restClientTransport =
+			_elasticsearchConnection.getRestClientTransport();
+
+		RestClient restClient = restClientTransport.restClient();
+
+		List<Node> nodes = restClient.getNodes();
+
+		Assert.assertEquals(nodes.toString(), 1, nodes.size());
+
+		Node node = nodes.get(0);
+
+		HttpHost httpHost = node.getHost();
+
+		Assert.assertEquals(hostString, httpHost.getHostName());
+		Assert.assertEquals(port, httpHost.getPort());
+	}
+
+	private ElasticsearchConnection _elasticsearchConnection;
+
+}

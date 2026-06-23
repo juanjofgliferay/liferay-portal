@@ -1,17 +1,6 @@
 definition {
 
 	@summary = "Default summary"
-	macro assertAvailableEntityTypes(entityTypes = null) {
-		Click(locator1 = "ImportExport#ENTITY_TYPE");
-
-		for (var entityType : list ${entityTypes}) {
-			AssertTextEquals(
-				locator1 = "ImportExport#ENTITY_TYPE",
-				value1 = ${entityType});
-		}
-	}
-
-	@summary = "Default summary"
 	macro assertDownloadedFileName() {
 		var downloadedFileName = TestCase.getDownloadedTempFileName(fileNamePattern = ${downloadedFile});
 
@@ -224,6 +213,11 @@ definition {
 
 	@summary = "Default summary"
 	macro configureExport(containsHeaders = null, templateName = null, entityType = null, scope = null, exportFields = null, exportFileFormat = null) {
+		Select(
+			key_selectFieldLabel = "Export File Format",
+			locator1 = "ImportExport#SELECT",
+			value1 = ${exportFileFormat});
+
 		if (isSet(entityType)) {
 			ImportExport.selectEntity(entityType = ${entityType});
 		}
@@ -233,11 +227,6 @@ definition {
 				locator1 = "Select#SCOPE_CONFIGURATION",
 				value1 = ${scope});
 		}
-
-		Select(
-			key_selectFieldLabel = "Export File Format",
-			locator1 = "ImportExport#SELECT",
-			value1 = ${exportFileFormat});
 
 		if (${containsHeaders} == "false") {
 			Uncheck.uncheckNotVisible(
@@ -256,7 +245,14 @@ definition {
 
 	@summary = "Default summary"
 	macro configureImport(containsHeaders = null, fileName = null, templateName = null, entityType = null, scope = null, importName = null, csvSeparator = null, fieldMappings = null, importStrategy = null, stopImportOnError = null) {
-		UploadDependencyFile.uploadFile(fileName = ${fileName});
+		if (isSet(tempFile)) {
+			UploadTempFile.uploadTempFileHiddenNoMouseOver(
+				locator1 = "TextInput#FILE",
+				value1 = ${tempFile});
+		}
+		else {
+			UploadDependencyFile.uploadFile(fileName = ${fileName});
+		}
 
 		if (isSet(importName)) {
 			Type(
@@ -280,6 +276,8 @@ definition {
 		ImportExport.selectEntity(entityType = ${entityType});
 
 		if (isSet(scope)) {
+			var scope = TestCase.getSiteName();
+
 			Select(
 				locator1 = "Select#SCOPE_CONFIGURATION",
 				value1 = ${scope});
@@ -289,6 +287,12 @@ definition {
 			Select(
 				locator1 = "ImportExport#IMPORT_STRATEGY",
 				value1 = ${importStrategy});
+		}
+
+		if (isSet(updateStrategy)) {
+			Select(
+				locator1 = "ImportExport#UPDATE_STRATEGY",
+				value1 = ${updateStrategy});
 		}
 
 		if (${stopImportOnError} == "false") {
@@ -361,6 +365,8 @@ definition {
 
 	@summary = "Default summary"
 	macro importFile(containsHeaders = null, fileName = null, templateName = null, entityType = null, scope = null, importName = null, csvSeparator = null, fieldMappings = null, importStrategy = null, stopImportOnError = null) {
+		ImportExport.openImportExportAdmin();
+
 		ImportExport.gotoImport();
 
 		ImportExport.configureImport(
@@ -373,6 +379,7 @@ definition {
 			importStrategy = ${importStrategy},
 			scope = ${scope},
 			stopImportOnError = ${stopImportOnError},
+			tempFile = ${tempFile},
 			templateName = ${templateName});
 
 		if (!(isSet(noImport))) {
@@ -428,7 +435,9 @@ definition {
 		Variables.assertDefined(parameterList = "${en_US_plural_label}, ${fileName}");
 
 		var filePath = TestCase.getDependenciesDirPath(fileName = ${fileName});
-		var response = ObjectDefinitionAPI.getObjectEntries(en_US_plural_label = ${en_US_plural_label});
+		var response = ObjectDefinitionAPI.getObjectEntries(
+			en_US_plural_label = ${en_US_plural_label},
+			scopeKey = ${scopeKey});
 
 		var attachmenId = JSONPathUtil.getProperty(
 			property = "$.items..diploma.id",
@@ -440,6 +449,17 @@ definition {
 		FileUtil.replaceStringInFile(${filePath}, 38589, ${attachmenId});
 
 		FileUtil.replaceStringInFile(${filePath}, "/documents/38586/38588/Document_1.jpg/b3a2213c-225f-fc83-fa10-4ea862e5005f?version=1.0&t=1701061267059", ${attachmenHref});
+	}
+
+	@summary = "Default summary"
+	macro resetDefaultValues() {
+		if (IsElementPresent(locator1 = "Icon#HISTORY_VERTICAL_ELLIPSIS")) {
+			Click(locator1 = "Icon#HISTORY_VERTICAL_ELLIPSIS");
+
+			MenuItem.clickNoError(menuItem = "Reset Default Values");
+
+			Alert.viewSuccessMessage();
+		}
 	}
 
 	@summary = "Default summary"
@@ -467,6 +487,10 @@ definition {
 		Select(
 			locator1 = "ImportExport#ENTITY_TYPE",
 			value1 = ${entityType});
+
+		WaitForElementPresent(
+			key_contentName = "Fields",
+			locator1 = "ImportExport#PREVIEW_ENTRY_CONTENT_FIELDS");
 	}
 
 	@summary = "Default summary"
@@ -482,9 +506,24 @@ definition {
 	macro startImportAndWaitForSuccess() {
 		Button.click(button = "Next");
 
+		WaitForElementPresent(
+			key_text = "Start Import",
+			locator1 = "Button#ANY");
+
 		Button.click(button = "Start Import");
 
 		WaitForElementPresent(locator1 = "ImportExport#EXECUTION_SUCCESS");
+	}
+
+	@summary = "Default summary"
+	macro tearDownSettingsConfigurations() {
+		StagingNavigator.openToConfigInInstanceSettings(portlet = "Export/Import, Staging");
+
+		ImportExport.resetDefaultValues();
+
+		StagingNavigator.openToConfigInSystemSettings(portlet = "Export/Import, Staging");
+
+		ImportExport.resetDefaultValues();
 	}
 
 	@summary = "Default summary"

@@ -3,12 +3,13 @@ import EventAttributeValuesQuery from 'event-analysis/queries/EventAttributeValu
 import Form, {validateRequired} from 'shared/components/form';
 import React from 'react';
 import {DataTypes, IFilterProps, Operators} from 'event-analysis/utils/types';
+import {getSafeDecodedURIComponent} from 'shared/util/util';
 import {
 	STRING_OPERATOR_LABELS_MAP,
 	STRING_OPTIONS
 } from 'event-analysis/utils/utils';
 import {useParams} from 'react-router-dom';
-import {useStatefulPagination} from 'shared/hooks';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 
 type EventAttributeValuesData = {
 	eventAttributeValues: EventAttributeValues;
@@ -93,14 +94,15 @@ const StringFilter: React.FC<IFilterProps> = ({
 										) => {
 											if (data) {
 												return {
-													data:
-														data
-															.eventAttributeValues
-															.eventAttributeValues,
-													total:
-														data
-															.eventAttributeValues
-															.total
+													data: data.eventAttributeValues.eventAttributeValues.map(
+														value =>
+															getSafeDecodedURIComponent(
+																value
+															)
+													),
+													total: data
+														.eventAttributeValues
+														.total
 												};
 											}
 
@@ -112,7 +114,8 @@ const StringFilter: React.FC<IFilterProps> = ({
 										query: EventAttributeValuesQuery,
 										variables: {
 											channelId,
-											eventAttributeDefinitionId: attributeId,
+											eventAttributeDefinitionId:
+												attributeId,
 											eventDefinitionId: eventId,
 											size: delta,
 											start: (page - 1) * delta
@@ -138,7 +141,7 @@ const StringFilter: React.FC<IFilterProps> = ({
 							displayType='primary'
 							type='submit'
 						>
-							{Liferay.Language.get('done')}
+							{Liferay.Language.get('apply')}
 						</ClayButton>
 					</div>
 				</Form.Form>

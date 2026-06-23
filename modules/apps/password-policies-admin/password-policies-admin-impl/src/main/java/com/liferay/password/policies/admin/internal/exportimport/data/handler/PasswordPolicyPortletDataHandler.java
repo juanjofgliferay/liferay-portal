@@ -5,6 +5,7 @@
 
 package com.liferay.password.policies.admin.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -19,9 +20,9 @@ import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.service.PasswordPolicyLocalService;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -31,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniela Zapata Riesco
  */
 @Component(
-	property = "javax.portlet.name=" + PasswordPoliciesAdminPortletKeys.PASSWORD_POLICIES_ADMIN,
+	property = "jakarta.portlet.name=" + PasswordPoliciesAdminPortletKeys.PASSWORD_POLICIES_ADMIN,
 	service = PortletDataHandler.class
 )
 public class PasswordPolicyPortletDataHandler extends BasePortletDataHandler {
@@ -46,6 +47,11 @@ public class PasswordPolicyPortletDataHandler extends BasePortletDataHandler {
 	}
 
 	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_USERS;
+	}
+
+	@Override
 	public boolean isSupportsDataStrategyCopyAsNew() {
 		return false;
 	}
@@ -55,11 +61,12 @@ public class PasswordPolicyPortletDataHandler extends BasePortletDataHandler {
 		setDataLevel(DataLevel.PORTAL);
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(PasswordPolicy.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "password-policies", true, true, null,
 				PasswordPolicy.class.getName()));
-		setStagingControls(getExportControls());
+		setStagingPortletDataHandlerControls(
+			getExportPortletDataHandlerControls());
 	}
 
 	@Override

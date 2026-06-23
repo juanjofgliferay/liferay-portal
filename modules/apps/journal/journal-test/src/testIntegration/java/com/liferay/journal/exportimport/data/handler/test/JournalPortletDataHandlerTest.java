@@ -22,7 +22,6 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortalPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -62,8 +61,6 @@ public class JournalPortletDataHandlerTest
 	public void setUp() throws Exception {
 		super.setUp();
 
-		CompanyThreadLocal.setCompanyId(TestPropsValues.getCompanyId());
-
 		PortalPreferences portalPreferences =
 			PortletPreferencesFactoryUtil.getPortalPreferences(
 				TestPropsValues.getUserId(), true);
@@ -80,9 +77,6 @@ public class JournalPortletDataHandlerTest
 		portalPreferences.setValue("", "folderIconCheckCountEnabled", "true");
 		portalPreferences.setValue(
 			"", "indexAllArticleVersionsEnabled", "true");
-		portalPreferences.setValue(
-			"", "databaseContentKeywordSearchEnabled", "true");
-		portalPreferences.setValue("", "journalArticleStorageType", "json");
 		portalPreferences.setValue(
 			"", "journalArticlePageBreakToken", "@page_break@");
 
@@ -174,7 +168,7 @@ public class JournalPortletDataHandlerTest
 		return JournalPortletKeys.JOURNAL;
 	}
 
-	@Inject(filter = "javax.portlet.name=" + JournalPortletKeys.JOURNAL)
+	@Inject(filter = "jakarta.portlet.name=" + JournalPortletKeys.JOURNAL)
 	private PortletDataHandler _journalPortletDataHandler;
 
 	private String _originalPortalPreferencesXML;

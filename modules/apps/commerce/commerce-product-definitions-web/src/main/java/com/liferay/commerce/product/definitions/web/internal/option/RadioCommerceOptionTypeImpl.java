@@ -8,8 +8,9 @@ package com.liferay.commerce.product.definitions.web.internal.option;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
+import com.liferay.commerce.frontend.helper.ProductHelper;
 import com.liferay.commerce.frontend.model.ProductSettingsModel;
-import com.liferay.commerce.frontend.util.ProductHelper;
+import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
@@ -17,7 +18,6 @@ import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.option.CommerceOptionType;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelLocalService;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductOption;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Sku;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.converter.SkuDTOConverterContext;
@@ -25,9 +25,11 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
@@ -35,14 +37,16 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.PrintWriter;
 
 import java.math.BigDecimal;
 
+import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,17 +57,15 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"commerce.option.type.display.order:Integer=300",
-		"commerce.option.type.key=" + RadioCommerceOptionTypeImpl.KEY
+		"commerce.option.type.key=" + CPConstants.PRODUCT_OPTION_RADIO_KEY
 	},
 	service = CommerceOptionType.class
 )
 public class RadioCommerceOptionTypeImpl implements CommerceOptionType {
 
-	public static final String KEY = "radio";
-
 	@Override
 	public String getKey() {
-		return KEY;
+		return CPConstants.PRODUCT_OPTION_RADIO_KEY;
 	}
 
 	@Override
@@ -74,6 +76,30 @@ public class RadioCommerceOptionTypeImpl implements CommerceOptionType {
 	@Override
 	public boolean hasValues() {
 		return true;
+	}
+
+	@Override
+	public boolean isValid(
+		CPDefinitionOptionRel cpDefinitionOptionRel, String[] values) {
+
+		if (ArrayUtil.isEmpty(values) || Validator.isBlank(values[0])) {
+			return true;
+		}
+
+		List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels =
+			cpDefinitionOptionRel.getCPDefinitionOptionValueRels();
+
+		for (CPDefinitionOptionValueRel cpDefinitionOptionValueRel :
+				cpDefinitionOptionValueRels) {
+
+			if (Objects.equals(
+					cpDefinitionOptionValueRel.getKey(), values[0])) {
+
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override
@@ -127,7 +153,7 @@ public class RadioCommerceOptionTypeImpl implements CommerceOptionType {
 
 			ProductSettingsModel productSettingsModel =
 				_productHelper.getProductSettingsModel(
-					cpDefinition.getCPDefinitionId());
+					cpDefinition.getCPDefinitionId(), commerceContext);
 
 			minQuantity = productSettingsModel.getMinQuantity();
 
@@ -150,7 +176,7 @@ public class RadioCommerceOptionTypeImpl implements CommerceOptionType {
 						commerceContext,
 						_portal.getCompanyId(httpServletRequest), cpDefinition,
 						_portal.getLocale(httpServletRequest), minQuantity,
-						defaultCPInstanceId, StringPool.BLANK, null,
+						defaultCPInstanceId, null, StringPool.BLANK, null,
 						_portal.getUser(httpServletRequest)));
 			}
 		}
@@ -159,12 +185,9 @@ public class RadioCommerceOptionTypeImpl implements CommerceOptionType {
 
 		printWriter.write("<div>");
 
-		String moduleName = _npmResolver.resolveModuleName(
-			"commerce-frontend-js");
-
 		_reactRenderer.renderReact(
 			new ComponentDescriptor(
-				moduleName + "/components/product_options/ProductOptionRadio"),
+				"{ProductOptionRadio} from commerce-frontend-js"),
 			HashMapBuilder.<String, Object>put(
 				"accountId",
 				(accountEntry == null) ? 0 : accountEntry.getAccountEntryId()
@@ -228,9 +251,6 @@ public class RadioCommerceOptionTypeImpl implements CommerceOptionType {
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

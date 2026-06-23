@@ -12,6 +12,7 @@ import com.liferay.adaptive.media.image.internal.util.RenderedImageUtil;
 import com.liferay.adaptive.media.image.internal.util.Tuple;
 import com.liferay.adaptive.media.image.scaler.AMImageScaledImage;
 import com.liferay.adaptive.media.image.scaler.AMImageScaler;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.process.CollectorOutputProcessor;
 import com.liferay.petra.process.ProcessException;
 import com.liferay.petra.process.ProcessUtil;
@@ -19,7 +20,6 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.GetterUtil;
 
@@ -43,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.adaptive.media.image.internal.configuration.AMImageConfiguration",
-	property = "supportedMimeTypes=image/gif", service = AMImageScaler.class
+	property = "mimeTypes=image/gif", service = AMImageScaler.class
 )
 public class AMGIFImageScaler implements AMImageScaler {
 
@@ -62,7 +62,7 @@ public class AMGIFImageScaler implements AMImageScaler {
 
 			Future<Map.Entry<byte[], byte[]>> collectorFuture =
 				ProcessUtil.execute(
-					CollectorOutputProcessor.INSTANCE, "gifsicle",
+					CollectorOutputProcessor.INSTANCE, "gifsicle", "--careful",
 					"--resize-fit",
 					_getResizeFitValues(amImageConfigurationEntry), "--output",
 					"-", file.getAbsolutePath());

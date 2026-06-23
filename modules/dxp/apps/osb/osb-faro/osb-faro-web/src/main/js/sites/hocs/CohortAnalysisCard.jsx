@@ -1,5 +1,6 @@
 import BasePage from 'shared/components/base-page';
 import Card from 'shared/components/Card';
+import ClayLink from '@clayui/link';
 import CohortAnalysis from 'sites/components/cohort-analysis';
 import CohortQuery from 'shared/queries/CohortQuery';
 import Form from 'shared/components/form';
@@ -7,50 +8,52 @@ import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React, {useContext, useState} from 'react';
 import URLConstants from 'shared/util/url-constants';
 import {compose} from 'shared/hoc';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {
 	DAY,
 	INTERVAL_OPTIONS,
 	VISITORS,
 	VISITORS_TYPE_OPTIONS
 } from 'sites/components/cohort-analysis/utils';
-import {graphql} from '@apollo/react-hoc';
+import {graphql} from '@apollo/client/react/hoc';
 import {mapPropsToOptions, mapResultToProps} from './mappers/cohort-query';
 import {Option, Picker} from '@clayui/core';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {withError, withLoading} from 'shared/hoc/util';
 
-const withEmpty = Component => ({empty, ...otherProps}) => {
-	if (empty) {
-		return (
-			<NoResultsDisplay
-				description={
-					<>
-						<span className='mr-1'>
-							{Liferay.Language.get(
-								'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources'
-							)}
-						</span>
+const withEmpty =
+	Component =>
+	({empty, ...otherProps}) => {
+		if (empty) {
+			return (
+				<NoResultsDisplay
+					description={
+						<>
+							<span className='mr-1'>
+								{Liferay.Language.get(
+									'check-back-later-to-verify-if-data-has-been-received-from-your-data-sources'
+								)}
+							</span>
 
-						<a
-							href={URLConstants.SitesDashboardCohortAnalysis}
-							key='DOCUMENTATION'
-							target='_blank'
-						>
-							{Liferay.Language.get(
-								'learn-more-about-cohort-analysis'
-							)}
-						</a>
-					</>
-				}
-				title={Liferay.Language.get(
-					'there-are-no-sessions-on-the-selected-period'
-				)}
-			/>
-		);
-	}
+							<ClayLink
+								href={URLConstants.SitesDashboardCohortAnalysis}
+								key='DOCUMENTATION'
+								target='_blank'
+							>
+								{Liferay.Language.get(
+									'learn-more-about-cohort-analysis'
+								)}
+							</ClayLink>
+						</>
+					}
+					title={Liferay.Language.get(
+						'there-are-no-sessions-on-the-selected-period'
+					)}
+				/>
+			);
+		}
 
-	return <Component {...otherProps} />;
-};
+		return <Component {...otherProps} />;
+	};
 
 const CohortAnalysisWithData = compose(
 	graphql(CohortQuery, {
@@ -75,7 +78,7 @@ const CohortAnalysisCard = () => {
 	return (
 		<Card
 			className='cohort-analysis-card-root'
-			id={Containers.CohortAnalysisCard}
+			reportContainer={ReportContainer.CohortAnalysisCard}
 		>
 			<Card.Header>
 				<Card.Title>

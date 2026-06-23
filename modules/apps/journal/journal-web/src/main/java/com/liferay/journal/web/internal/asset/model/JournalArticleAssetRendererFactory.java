@@ -25,7 +25,6 @@ import com.liferay.journal.model.JournalArticleResource;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalArticleResourceLocalService;
 import com.liferay.journal.util.JournalContent;
-import com.liferay.journal.util.JournalConverter;
 import com.liferay.journal.util.JournalHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -47,15 +46,15 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,7 +66,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	property = "javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+	property = "jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 	service = AssetRendererFactory.class
 )
 public class JournalArticleAssetRendererFactory
@@ -84,14 +83,12 @@ public class JournalArticleAssetRendererFactory
 	}
 
 	@Override
-	public AssetEntry getAssetEntry(JournalArticle journalArticle)
-		throws PortalException {
-
+	public long getAssetEntryClassPK(JournalArticle journalArticle) {
 		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
 			getClassName(), journalArticle.getId());
 
 		if (assetEntry != null) {
-			return assetEntry;
+			return assetEntry.getClassPK();
 		}
 
 		JournalArticle latestJournalArticle =
@@ -102,15 +99,21 @@ public class JournalArticleAssetRendererFactory
 					WorkflowConstants.STATUS_IN_TRASH
 				});
 
-		if ((latestJournalArticle == null) ||
-			Objects.equals(
+		if ((latestJournalArticle != null) &&
+			!Objects.equals(
 				journalArticle.getId(), latestJournalArticle.getId())) {
 
-			return _assetEntryLocalService.fetchEntry(
-				getClassName(), journalArticle.getResourcePrimKey());
+			return 0;
 		}
 
-		return null;
+		assetEntry = _assetEntryLocalService.fetchEntry(
+			getClassName(), journalArticle.getResourcePrimKey());
+
+		if (assetEntry == null) {
+			return 0;
+		}
+
+		return assetEntry.getClassPK();
 	}
 
 	@Override
@@ -142,6 +145,13 @@ public class JournalArticleAssetRendererFactory
 				article = _journalArticleLocalService.fetchDisplayArticle(
 					articleResource.getGroupId(),
 					articleResource.getArticleId());
+			}
+
+			if (article == null) {
+				article = _journalArticleLocalService.fetchLatestArticle(
+					articleResource.getGroupId(),
+					articleResource.getArticleId(),
+					WorkflowConstants.STATUS_PENDING);
 			}
 
 			if (article == null) {
@@ -295,8 +305,8 @@ public class JournalArticleAssetRendererFactory
 			_portal.getControlPanelPortletURL(
 				liferayPortletRequest, getGroup(liferayPortletRequest),
 				JournalPortletKeys.JOURNAL, 0, 0, PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/edit_article.jsp"
+		).setMVCRenderCommandName(
+			"/journal/edit_article"
 		).setParameter(
 			"ddmStructureId",
 			() -> {
@@ -410,9 +420,6 @@ public class JournalArticleAssetRendererFactory
 
 	@Reference
 	private JournalContent _journalContent;
-
-	@Reference
-	private JournalConverter _journalConverter;
 
 	@Reference
 	private JournalHelper _journalHelper;

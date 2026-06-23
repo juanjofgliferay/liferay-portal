@@ -34,7 +34,7 @@ public class LayoutReportsGooglePageSpeedConfigurationProvider {
 			layoutReportsGooglePageSpeedGroupConfiguration =
 				_configurationProvider.getGroupConfiguration(
 					LayoutReportsGooglePageSpeedGroupConfiguration.class,
-					group.getGroupId());
+					group.getCompanyId(), group.getGroupId());
 
 		return layoutReportsGooglePageSpeedGroupConfiguration.apiKey();
 	}
@@ -44,7 +44,7 @@ public class LayoutReportsGooglePageSpeedConfigurationProvider {
 			layoutReportsGooglePageSpeedGroupConfiguration =
 				_configurationProvider.getGroupConfiguration(
 					LayoutReportsGooglePageSpeedGroupConfiguration.class,
-					group.getGroupId());
+					group.getCompanyId(), group.getGroupId());
 
 		String strategy =
 			layoutReportsGooglePageSpeedGroupConfiguration.strategy();
@@ -69,7 +69,7 @@ public class LayoutReportsGooglePageSpeedConfigurationProvider {
 			layoutReportsGooglePageSpeedGroupConfiguration =
 				_configurationProvider.getGroupConfiguration(
 					LayoutReportsGooglePageSpeedGroupConfiguration.class,
-					group.getGroupId());
+					group.getCompanyId(), group.getGroupId());
 
 		return layoutReportsGooglePageSpeedGroupConfiguration.enabled();
 	}
@@ -85,11 +85,7 @@ public class LayoutReportsGooglePageSpeedConfigurationProvider {
 					LayoutReportsGooglePageSpeedCompanyConfiguration.class,
 					companyId);
 
-		if (!layoutReportsGooglePageSpeedCompanyConfiguration.enabled()) {
-			return false;
-		}
-
-		return true;
+		return layoutReportsGooglePageSpeedCompanyConfiguration.enabled();
 	}
 
 	@Activate

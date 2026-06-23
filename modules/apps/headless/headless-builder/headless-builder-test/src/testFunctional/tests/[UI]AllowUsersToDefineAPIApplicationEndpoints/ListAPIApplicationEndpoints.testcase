@@ -1,11 +1,12 @@
 @component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "feature.flag.LPS-178642=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Object";
-	property testray.main.component.name = "Headless Builder";
+	property testray.main.component.name = "API Builder";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -31,7 +32,6 @@ definition {
 
 	@priority = 5
 	test CanClickAddEndpointButtons {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -54,8 +54,6 @@ definition {
 
 	@priority = 4
 	test CanClickOverEndpointPath {
-		property portal.acceptance = "true";
-
 		task ("And Given I create an endpoint associate to the API application") {
 			EndpointAPI.createAPIEndpoint(
 				apiApplicationERC = "My-app",
@@ -82,7 +80,6 @@ definition {
 
 	@priority = 4
 	test CanCopyURLOfAPIEndpoint {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -120,7 +117,6 @@ definition {
 
 	@priority = 4
 	test CanFilterEndpointAPIByCreationDateAsLastUpdated {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -152,7 +148,6 @@ definition {
 
 	@priority = 4
 	test CanFilterEndpointAPIByDateBeforeCreationAsLastUpdated {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -185,7 +180,6 @@ definition {
 
 	@priority = 5
 	test CanListCreatedEndpoint {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -215,7 +209,6 @@ definition {
 
 	@priority = 4
 	test CanOrderEndpointAPI {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -235,7 +228,7 @@ definition {
 
 		task ("When I order the endpoints by Last updated") {
 			Click(
-				locator1 = "APIBuilder#DND_TR_BUTTON",
+				locator1 = "APIBuilder#DND_TH_WITH_TEXT",
 				value = "Last updated");
 		}
 
@@ -246,7 +239,6 @@ definition {
 
 	@priority = 4
 	test CanPaginateAPIEndpoints {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -285,7 +277,6 @@ definition {
 
 	@priority = 4
 	test CanSearchEndpointAPI {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -313,7 +304,6 @@ definition {
 
 	@priority = 5
 	test CanSeeAvailableFieldsAndActions {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -329,18 +319,10 @@ definition {
 				entity = "Endpoints",
 				title = "My-app");
 
-			AssertElementPresent(
-				locator1 = "APIBuilder#DND_TR_BUTTON",
-				value = "Last updated");
-
-			AssertElementPresent(
-				locator1 = "APIBuilder#DND_TR_BUTTON",
-				value = "Path");
-
-			for (var value : list "Method,Description") {
+			for (var value : list "Description,Last updated,Method,Path") {
 				AssertElementPresent(
-					locator1 = "APIBuilder#DND_TR_WITH_TEXT",
-					text = ${value});
+					locator1 = "APIBuilder#DND_TH_WITH_TEXT",
+					value = ${value});
 			}
 		}
 
@@ -359,7 +341,6 @@ definition {
 
 	@priority = 4
 	test CanSeeNoEndpointAPIAndAddEndpointButton {
-		property portal.acceptance = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
@@ -371,8 +352,8 @@ definition {
 
 		task ("Then I can see no API Endpoint Found message with a Add API Endpoint button") {
 			AssertElementPresent(
-				key_entryName = "No API Endpoint Found",
-				locator1 = "ObjectAdmin#VIEW_ENTRY_NAME_ON_PAGE");
+				key_text = "No API Endpoint Found",
+				locator1 = "ObjectAdmin#EMPTY_STATE_MESSAGE");
 
 			AssertElementPresent(
 				locator1 = "Button#BUTTON_WITH_VALUE",

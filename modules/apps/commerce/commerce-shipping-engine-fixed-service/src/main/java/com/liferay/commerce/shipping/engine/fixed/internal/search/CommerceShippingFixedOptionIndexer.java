@@ -8,7 +8,6 @@ package com.liferay.commerce.shipping.engine.fixed.internal.search;
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOption;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionLocalService;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
@@ -22,12 +21,11 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
-import com.liferay.portal.kernel.util.GetterUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,11 +58,11 @@ public class CommerceShippingFixedOptionIndexer
 			"commerceShippingMethodId");
 
 		if (commerceShippingMethodId != -1) {
-			TermFilter termFilter = new TermFilter(
-				"commerceShippingMethodId",
-				String.valueOf(commerceShippingMethodId));
-
-			contextBooleanFilter.add(termFilter, BooleanClauseOccur.MUST);
+			contextBooleanFilter.add(
+				new TermFilter(
+					"commerceShippingMethodId",
+					String.valueOf(commerceShippingMethodId)),
+				BooleanClauseOccur.MUST);
 		}
 	}
 
@@ -110,12 +108,14 @@ public class CommerceShippingFixedOptionIndexer
 			CLASS_NAME, commerceShippingFixedOption);
 
 		document.addKeyword(
-			Field.DESCRIPTION, commerceShippingFixedOption.getDescription());
-		document.addKeyword(Field.NAME, commerceShippingFixedOption.getName());
+			Field.DESCRIPTION, commerceShippingFixedOption.getDescription(),
+			true);
+		document.addKeyword(
+			Field.NAME, commerceShippingFixedOption.getName(), true);
 		document.addKeyword(
 			"commerceShippingMethodId",
 			commerceShippingFixedOption.getCommerceShippingMethodId());
-		document.addKeyword("key", commerceShippingFixedOption.getKey());
+		document.addKeyword("key", commerceShippingFixedOption.getKey(), true);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
@@ -153,10 +153,11 @@ public class CommerceShippingFixedOptionIndexer
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCommerceShippingFixedOptions(companyId);
+		return _commerceShippingFixedOptionLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	@Override
@@ -172,33 +173,6 @@ public class CommerceShippingFixedOptionIndexer
 		}
 
 		return super.isUseSearchResultPermissionFilter(searchContext);
-	}
-
-	private void _reindexCommerceShippingFixedOptions(long companyId)
-		throws Exception {
-
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_commerceShippingFixedOptionLocalService.
-				getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CommerceShippingFixedOption commerceShippingFixedOption) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(commerceShippingFixedOption));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce shipping fixed option " +
-								commerceShippingFixedOption,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

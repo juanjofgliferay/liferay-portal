@@ -29,6 +29,16 @@ public class NotificationRecipientLocalServiceWrapper
 		_notificationRecipientLocalService = notificationRecipientLocalService;
 	}
 
+	@Override
+	public com.liferay.notification.model.NotificationRecipient
+			addNotificationRecipient(
+				long userId, long classNameId, long classPK)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _notificationRecipientLocalService.addNotificationRecipient(
+			userId, classNameId, classPK);
+	}
+
 	/**
 	 * Adds the notification recipient to the database. Also notifies the appropriate model listeners.
 	 *
@@ -415,3 +425,4 @@ public class NotificationRecipientLocalServiceWrapper
 		_notificationRecipientLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2009132914

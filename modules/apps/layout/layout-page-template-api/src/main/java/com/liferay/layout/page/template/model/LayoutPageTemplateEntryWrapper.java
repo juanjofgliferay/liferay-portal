@@ -41,6 +41,7 @@ public class LayoutPageTemplateEntryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put(
 			"layoutPageTemplateEntryId", getLayoutPageTemplateEntryId());
 		attributes.put("groupId", getGroupId());
@@ -56,6 +57,7 @@ public class LayoutPageTemplateEntryWrapper
 			"layoutPageTemplateEntryKey", getLayoutPageTemplateEntryKey());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classTypeId", getClassTypeId());
+		attributes.put("classTypeKey", getClassTypeKey());
 		attributes.put("name", getName());
 		attributes.put("type", getType());
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
@@ -89,6 +91,13 @@ public class LayoutPageTemplateEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long layoutPageTemplateEntryId = (Long)attributes.get(
@@ -158,6 +167,12 @@ public class LayoutPageTemplateEntryWrapper
 
 		if (classTypeId != null) {
 			setClassTypeId(classTypeId);
+		}
+
+		String classTypeKey = (String)attributes.get("classTypeKey");
+
+		if (classTypeKey != null) {
+			setClassTypeKey(classTypeKey);
 		}
 
 		String name = (String)attributes.get("name");
@@ -263,6 +278,16 @@ public class LayoutPageTemplateEntryWrapper
 	}
 
 	/**
+	 * Returns the class type key of this layout page template entry.
+	 *
+	 * @return the class type key of this layout page template entry
+	 */
+	@Override
+	public String getClassTypeKey() {
+		return model.getClassTypeKey();
+	}
+
+	/**
 	 * Returns the company ID of this layout page template entry.
 	 *
 	 * @return the company ID of this layout page template entry
@@ -300,6 +325,16 @@ public class LayoutPageTemplateEntryWrapper
 	@Override
 	public boolean getDefaultTemplate() {
 		return model.getDefaultTemplate();
+	}
+
+	/**
+	 * Returns the external reference code of this layout page template entry.
+	 *
+	 * @return the external reference code of this layout page template entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -650,6 +685,16 @@ public class LayoutPageTemplateEntryWrapper
 	}
 
 	/**
+	 * Sets the class type key of this layout page template entry.
+	 *
+	 * @param classTypeKey the class type key of this layout page template entry
+	 */
+	@Override
+	public void setClassTypeKey(String classTypeKey) {
+		model.setClassTypeKey(classTypeKey);
+	}
+
+	/**
 	 * Sets the company ID of this layout page template entry.
 	 *
 	 * @param companyId the company ID of this layout page template entry
@@ -687,6 +732,16 @@ public class LayoutPageTemplateEntryWrapper
 	@Override
 	public void setDefaultTemplate(boolean defaultTemplate) {
 		model.setDefaultTemplate(defaultTemplate);
+	}
+
+	/**
+	 * Sets the external reference code of this layout page template entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this layout page template entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -945,3 +1000,4 @@ public class LayoutPageTemplateEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-953971290

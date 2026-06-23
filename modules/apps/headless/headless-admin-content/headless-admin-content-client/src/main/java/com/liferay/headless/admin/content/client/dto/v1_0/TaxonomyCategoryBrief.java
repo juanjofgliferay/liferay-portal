@@ -8,12 +8,12 @@ package com.liferay.headless.admin.content.client.dto.v1_0;
 import com.liferay.headless.admin.content.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.content.client.serdes.v1_0.TaxonomyCategoryBriefSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -48,6 +48,58 @@ public class TaxonomyCategoryBrief implements Cloneable, Serializable {
 	}
 
 	protected Object embeddedTaxonomyCategory;
+
+	public String getParentTaxonomyCategoryExternalReferenceCode() {
+		return parentTaxonomyCategoryExternalReferenceCode;
+	}
+
+	public void setParentTaxonomyCategoryExternalReferenceCode(
+		String parentTaxonomyCategoryExternalReferenceCode) {
+
+		this.parentTaxonomyCategoryExternalReferenceCode =
+			parentTaxonomyCategoryExternalReferenceCode;
+	}
+
+	public void setParentTaxonomyCategoryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			parentTaxonomyCategoryExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			parentTaxonomyCategoryExternalReferenceCode =
+				parentTaxonomyCategoryExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String parentTaxonomyCategoryExternalReferenceCode;
+
+	public String getParentVocabularyExternalReferenceCode() {
+		return parentVocabularyExternalReferenceCode;
+	}
+
+	public void setParentVocabularyExternalReferenceCode(
+		String parentVocabularyExternalReferenceCode) {
+
+		this.parentVocabularyExternalReferenceCode =
+			parentVocabularyExternalReferenceCode;
+	}
+
+	public void setParentVocabularyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			parentVocabularyExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			parentVocabularyExternalReferenceCode =
+				parentVocabularyExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String parentVocabularyExternalReferenceCode;
 
 	public Long getTaxonomyCategoryId() {
 		return taxonomyCategoryId;
@@ -174,3 +226,4 @@ public class TaxonomyCategoryBrief implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1871489837

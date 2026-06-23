@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {fireEvent, render, screen} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {act, fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -35,17 +35,13 @@ const renderLengthField = ({
 	);
 
 describe('LengthField', () => {
-	function openUnitDropdown() {
+	afterEach(() => {
+		jest.runOnlyPendingTimers();
+		jest.useRealTimers();
+	});
 
-		// Hackily work around:
-		//
-		//      "TypeError: Cannot read property '_defaultView' of undefined"
-		//
-		// Caused by: https://github.com/jsdom/jsdom/issues/2499
-
-		userEvent.click(screen.getByLabelText('select-a-unit'));
-
-		document.activeElement.blur = () => {};
+	async function openUnitDropdown(user = userEvent) {
+		await user.click(screen.getByTitle('select-a-unit'));
 	}
 
 	it('renders LengthField', () => {
@@ -58,58 +54,61 @@ describe('LengthField', () => {
 		renderLengthField();
 
 		expect(screen.getByLabelText('length-field')).toHaveValue(12);
-		expect(screen.getByLabelText('select-a-unit').textContent).toBe('PX');
+		expect(screen.getByTitle('select-a-unit').textContent).toBe('PX');
 	});
 
-	it('changes the number of the value', () => {
+	it('changes the number of the value', async () => {
 		renderLengthField();
 		const input = screen.getByLabelText('length-field');
 
-		userEvent.type(input, '20');
+		await userEvent.clear(input);
+		await userEvent.type(input, '20');
 
 		expect(input).toHaveValue(20);
 	});
 
-	it('saves the value', () => {
+	it('saves the value', async () => {
 		const onValueSelect = jest.fn();
 		renderLengthField({onValueSelect});
 		const input = screen.getByLabelText('length-field');
 
-		userEvent.type(input, '24');
+		await userEvent.clear(input);
+		await userEvent.type(input, '24');
 		fireEvent.blur(input);
 
 		expect(onValueSelect).toBeCalledWith(FIELD.name, '24px');
 	});
 
-	it('saves the value when the Enter button is pressed', () => {
+	it('saves the value when the Enter button is pressed', async () => {
 		const onValueSelect = jest.fn();
 		renderLengthField({onValueSelect});
 		const input = screen.getByLabelText('length-field');
 
-		userEvent.type(input, '30');
+		await userEvent.clear(input);
+		await userEvent.type(input, '30');
 		fireEvent.keyUp(input, {key: 'Enter'});
 
 		expect(onValueSelect).toBeCalledWith(FIELD.name, '30px');
 	});
 
-	it('changes the unit of the value', () => {
+	it('changes the unit of the value', async () => {
 		renderLengthField();
 
-		openUnitDropdown();
+		await openUnitDropdown();
 
-		userEvent.click(screen.getByText('%'));
+		await userEvent.click(screen.getByText('%'));
 
-		expect(screen.getByLabelText('select-a-unit').textContent).toBe('%');
+		expect(screen.getByTitle('select-a-unit').textContent).toBe('%');
 	});
 
-	it('keeps the empty input and the units when the value is cleared', () => {
+	it('keeps the empty input and the units when the value is cleared', async () => {
 		renderLengthField({value: '14vh'});
 		const input = screen.getByLabelText('length-field');
 
-		userEvent.type(input, '');
+		await userEvent.clear(input);
 
-		expect(input).toHaveValue();
-		expect(screen.getByLabelText('select-a-unit').textContent).toBe('VH');
+		expect(input).toHaveValue(null);
+		expect(screen.getByTitle('select-a-unit').textContent).toBe('VH');
 	});
 
 	it('renders an icon code in the button if custom option is selected', () => {
@@ -117,26 +116,39 @@ describe('LengthField', () => {
 
 		expect(
 			screen
-				.getByLabelText('select-a-unit')
+				.getByTitle('select-a-unit')
 				.querySelector('.lexicon-icon-code')
 		).toBeInTheDocument();
 	});
 
-	it('focuses the input when custom option is selected', () => {
+	it('focuses the input when custom option is selected', async () => {
+		jest.useFakeTimers();
+
+		const user = userEvent.setup({
+			advanceTimers: jest.advanceTimersByTime,
+		});
+
 		renderLengthField();
 
-		openUnitDropdown();
+		await openUnitDropdown(user);
 
-		userEvent.click(screen.getByText('CUSTOM'));
+		await user.click(screen.getByText('CUSTOM'));
+
+		act(() => {
+			jest.advanceTimersByTime(1000);
+		});
 
 		expect(screen.getByLabelText('length-field')).toHaveFocus();
+
+		jest.useRealTimers();
 	});
 
-	it('does not allow typing letters when a unit is selected', () => {
+	it('does not allow typing letters when a unit is selected', async () => {
 		renderLengthField();
 		const input = screen.getByLabelText('length-field');
 
-		userEvent.type(input, 'auto');
+		await userEvent.clear(input);
+		await userEvent.type(input, 'auto');
 
 		expect(input).toHaveValue(null);
 	});
@@ -151,13 +163,13 @@ describe('LengthField', () => {
 
 		renderLengthField({field});
 
-		const button = screen.getByLabelText('select-a-unit');
+		const button = screen.getByTitle('select-a-unit');
 
 		expect(button.textContent).toBe('%');
 		expect(button).toBeDisabled();
 	});
 
-	it('renders the restore button when a value is introduced', () => {
+	it('renders the restore button when a value is introduced', async () => {
 		renderLengthField({
 			field: {defaultValue: '', label: 'opacity', name: 'opacity'},
 			value: '',
@@ -166,16 +178,19 @@ describe('LengthField', () => {
 
 		expect(screen.queryByTitle('reset-to-x-value')).not.toBeInTheDocument();
 
-		userEvent.type(input, '100');
+		await userEvent.clear(input);
+		await userEvent.type(input, '100');
 		fireEvent.blur(input);
 
-		expect(screen.queryByTitle('reset-to-x-value')).toBeInTheDocument();
+		expect(
+			screen.queryByTitle('reset-to-initial-value')
+		).toBeInTheDocument();
 	});
 
-	it('clears the value when the restore button is clicked', () => {
+	it('clears the value when the restore button is clicked', async () => {
 		renderLengthField({field: {label: 'opacity', name: 'opacity'}});
 
-		userEvent.click(screen.getByTitle('reset-to-x-value'));
+		await userEvent.click(screen.getByTitle('reset-to-initial-value'));
 
 		expect(screen.getByLabelText('opacity').textContent).toBe('');
 	});
@@ -188,17 +203,29 @@ describe('LengthField', () => {
 			},
 		};
 
-		it('focuses the input when the currently option is custom and a other unit is selected', () => {
+		it('focuses the input when the currently option is custom and a other unit is selected', async () => {
+			jest.useFakeTimers();
+
+			const user = userEvent.setup({
+				advanceTimers: jest.advanceTimersByTime,
+			});
+
 			renderLengthField({field, value: 'calc(12px - 3px)'});
 
-			openUnitDropdown();
+			await openUnitDropdown(user);
 
-			userEvent.click(screen.getByText('%'));
+			await user.click(screen.getByText('%'));
+
+			act(() => {
+				jest.advanceTimersByTime(1000);
+			});
 
 			expect(screen.getByLabelText('length-field')).toHaveFocus();
+
+			jest.useRealTimers();
 		});
 
-		it('does not save the value and keeps the previous value when the input is cleared', () => {
+		it('does not save the value and keeps the previous value when the input is cleared', async () => {
 			const onValueSelect = jest.fn();
 			renderLengthField({
 				field,
@@ -207,7 +234,7 @@ describe('LengthField', () => {
 			});
 			const input = screen.getByLabelText('length-field');
 
-			userEvent.type(input, '');
+			await userEvent.clear(input);
 			fireEvent.blur(input);
 
 			expect(input).toHaveValue('initial');

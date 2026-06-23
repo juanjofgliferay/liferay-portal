@@ -9,7 +9,9 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.workflow.kaleo.model.KaleoLog;
+import com.liferay.portal.workflow.kaleo.service.KaleoLogLocalService;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -40,9 +42,15 @@ public class KaleoLogModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.workflow.kaleo.model.KaleoLog)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_kaleoLogLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private KaleoLogLocalService _kaleoLogLocalService;
+
 	private ModelIndexerWriterContributor<KaleoLog>
 		_modelIndexWriterContributor;
 

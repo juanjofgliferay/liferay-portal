@@ -1,37 +1,73 @@
-import Form from 'shared/components/form';
+import * as pedantic from 'test/pedantic';
+import Form from '../index';
+import mockStore from 'test/mock-store';
 import React from 'react';
 import TimeZonePicker from '../TimeZonePicker';
-import {render} from '@testing-library/react';
-import {TimeZone} from 'shared/util/records';
-import {waitForLoadingToBeRemoved} from 'test/helpers';
+import {cleanup, render} from '@testing-library/react';
+import {fromJS} from 'immutable';
+import {InMemoryCache} from '@apollo/client';
+import {MemoryRouter} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
+import {Provider} from 'react-redux';
 
 jest.unmock('react-dom');
 
-describe('TimeZonePicker', () => {
-	it('should render', async () => {
-		jest.useFakeTimers();
-
-		const {container} = render(
-			<Form
-				initialValues={{
-					timezone: ''
-				}}
+const DefaultComponent = props => (
+	<Provider
+		store={mockStore(
+			fromJS({
+				projects: {
+					23: {
+						data: {
+							timeZone: {
+								timeZoneId: 'UTC'
+							}
+						}
+					}
+				}
+			})
+		)}
+	>
+		<MemoryRouter>
+			<MockedProvider
+				cache={
+					new InMemoryCache({
+						addTypename: false
+					})
+				}
+				mocks={[]}
 			>
-				{({setFieldTouched, setFieldValue}) => (
-					<Form.Form>
-						<TimeZonePicker
-							fieldName='timezone'
-							initialTimeZone={new TimeZone()}
-							setFieldTouched={setFieldTouched}
-							setFieldValue={setFieldValue}
-						/>
-					</Form.Form>
-				)}
-			</Form>
-		);
+				<Form
+					initialValues={{
+						timeZoneId: 'UTC'
+					}}
+					onSubmit={jest.fn()}
+				>
+					<TimeZonePicker
+						fieldName='timeZoneId'
+						setFieldTouched={jest.fn()}
+						setFieldValue={jest.fn()}
+						{...props}
+					/>
+				</Form>
+			</MockedProvider>
+		</MemoryRouter>
+	</Provider>
+);
 
-		jest.runAllTimers();
-		await waitForLoadingToBeRemoved(container);
+describe('TimeZonePicker', () => {
+	beforeEach(() => {
+		pedantic.disable();
+	});
+
+	afterEach(() => {
+		pedantic.enable();
+		cleanup();
+	});
+
+	it('renders', () => {
+		const {container} = render(<DefaultComponent />);
+
 		expect(container).toMatchSnapshot();
 	});
 });

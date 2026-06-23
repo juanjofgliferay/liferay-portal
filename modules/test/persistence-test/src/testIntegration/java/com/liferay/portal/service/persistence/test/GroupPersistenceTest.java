@@ -799,12 +799,6 @@ public class GroupPersistenceTest {
 				"groupId"));
 
 		Assert.assertEquals(
-			Long.valueOf(group.getLiveGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				group, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"liveGroupId"));
-
-		Assert.assertEquals(
 			Long.valueOf(group.getCompanyId()),
 			ReflectionTestUtil.<Long>invoke(
 				group, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -954,3 +948,4 @@ public class GroupPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2007031751

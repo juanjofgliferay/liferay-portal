@@ -14,17 +14,24 @@
 		<liferay-ui:search-container-column-text
 			colspan="<%= 2 %>"
 		>
-			<h5>
+			<div class="h5">
 				<aui:a href="<%= (rowURL != null) ? rowURL.toString() : null %>"><%= userGroup.getName() %></aui:a>
-			</h5>
+			</div>
 
-			<h6 class="text-default">
+			<div class="h6 text-default">
 				<span><%= userGroup.getDescription() %></span>
-			</h6>
+			</div>
 
-			<h6 class="text-default">
+			<div class="h6 text-default">
 				<span><%= LanguageUtil.format(request, usersCount > 1 ? "x-users" : "x-user", usersCount, false) %></span>
-			</h6>
+			</div>
+
+			<div class="h6 text-default">
+				<clay:label
+					displayType="<%= WorkflowConstants.getStatusStyle(userGroup.getStatus()) %>"
+					label="<%= WorkflowConstants.getStatusLabel(userGroup.getStatus()) %>"
+				/>
+			</div>
 		</liferay-ui:search-container-column-text>
 
 		<liferay-ui:search-container-column-jsp
@@ -55,6 +62,16 @@
 			name="users"
 			value="<%= String.valueOf(usersCount) %>"
 		/>
+
+		<liferay-ui:search-container-column-text
+			cssClass="table-cell-expand-smallest table-cell-ws-nowrap table-column-text-center"
+			name="status"
+		>
+			<clay:label
+				displayType="<%= WorkflowConstants.getStatusStyle(userGroup.getStatus()) %>"
+				label="<%= WorkflowConstants.getStatusLabel(userGroup.getStatus()) %>"
+			/>
+		</liferay-ui:search-container-column-text>
 
 		<liferay-ui:search-container-column-jsp
 			path="/user_group_action.jsp"

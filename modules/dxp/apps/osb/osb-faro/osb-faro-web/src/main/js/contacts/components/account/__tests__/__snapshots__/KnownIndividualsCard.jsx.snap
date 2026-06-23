@@ -8,123 +8,127 @@ exports[`KnownIndividualsCard should render 1`] = `
     <div
       class="card-header"
     >
-      <h5
+      <div
         class="card-title"
       >
         Known Individuals
-      </h5>
+      </div>
     </div>
     <div
-      class="table-responsive table-root flex-grow-1"
+      class="flex-grow-1 mx-4 table-root"
     >
-      <table
-        class="table table-autofit table-hover table-heading-nowrap table-nowrap"
+      <div
+        class="table-responsive"
       >
-        <thead>
-          <tr>
-            <th
-              class="table-head-title name"
+        <table
+          class="table table-autofit table-list table-nowrap table-head-bordered table-hover table-striped"
+        >
+          <thead>
+            <tr>
+              <th
+                class="table-head-title name"
+              >
+                Individual
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              class=""
             >
-              Individual
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            class=""
-          >
-            <td
-              class="name-cell-root name"
-            >
-              <div
-                class="content-container"
+              <td
+                class="name-cell-root name"
               >
                 <div
-                  class="text-truncate"
+                  class="content-container"
                 >
                   <div
-                    class="table-title text-truncate"
+                    class="text-truncate"
                   >
-                    <a
-                      class="text-truncate"
-                      href="/workspace/23/123/contacts/individuals/known-individuals/0"
+                    <div
+                      class="table-title text-truncate"
                     >
-                      Foo Bar
-                    </a>
-                  </div>
-                  <div
-                    class="secondary-info text-truncate"
-                  >
-                    Developer
+                      <a
+                        class="text-truncate"
+                        href="/workspace/23/123/contacts/individuals/known-individuals/0"
+                      >
+                        Foo Bar
+                      </a>
+                    </div>
+                    <div
+                      class="secondary-info text-truncate"
+                    >
+                      Developer
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-          </tr>
-          <tr
-            class=""
-          >
-            <td
-              class="name-cell-root name"
+              </td>
+            </tr>
+            <tr
+              class=""
             >
-              <div
-                class="content-container"
+              <td
+                class="name-cell-root name"
               >
                 <div
-                  class="text-truncate"
+                  class="content-container"
                 >
                   <div
-                    class="table-title text-truncate"
+                    class="text-truncate"
                   >
-                    <a
-                      class="text-truncate"
-                      href="/workspace/23/123/contacts/individuals/known-individuals/1"
+                    <div
+                      class="table-title text-truncate"
                     >
-                      Foo Bar
-                    </a>
-                  </div>
-                  <div
-                    class="secondary-info text-truncate"
-                  >
-                    Developer
+                      <a
+                        class="text-truncate"
+                        href="/workspace/23/123/contacts/individuals/known-individuals/1"
+                      >
+                        Foo Bar
+                      </a>
+                    </div>
+                    <div
+                      class="secondary-info text-truncate"
+                    >
+                      Developer
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-          </tr>
-          <tr
-            class=""
-          >
-            <td
-              class="name-cell-root name"
+              </td>
+            </tr>
+            <tr
+              class=""
             >
-              <div
-                class="content-container"
+              <td
+                class="name-cell-root name"
               >
                 <div
-                  class="text-truncate"
+                  class="content-container"
                 >
                   <div
-                    class="table-title text-truncate"
+                    class="text-truncate"
                   >
-                    <a
-                      class="text-truncate"
-                      href="/workspace/23/123/contacts/individuals/known-individuals/2"
+                    <div
+                      class="table-title text-truncate"
                     >
-                      Foo Bar
-                    </a>
-                  </div>
-                  <div
-                    class="secondary-info text-truncate"
-                  >
-                    Developer
+                      <a
+                        class="text-truncate"
+                        href="/workspace/23/123/contacts/individuals/known-individuals/2"
+                      >
+                        Foo Bar
+                      </a>
+                    </div>
+                    <div
+                      class="secondary-info text-truncate"
+                    >
+                      Developer
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div
       class="card-footer"
@@ -156,11 +160,11 @@ exports[`KnownIndividualsCard should render w/ NoResultsDisplay 1`] = `
     <div
       class="card-header"
     >
-      <h5
+      <div
         class="card-title"
       >
         Known Individuals
-      </h5>
+      </div>
     </div>
     <div
       class="no-results-root flex-grow-1"
@@ -168,11 +172,11 @@ exports[`KnownIndividualsCard should render w/ NoResultsDisplay 1`] = `
       <div
         class="no-results-content spacer"
       >
-        <h4
-          class="no-results-title"
+        <div
+          class="h4 no-results-title"
         >
           There are no individuals found.
-        </h4>
+        </div>
         <div
           class="no-results-description"
         >
@@ -182,10 +186,17 @@ exports[`KnownIndividualsCard should render w/ NoResultsDisplay 1`] = `
             Check back later to verify if data has been received from your data sources.
           </span>
           <a
-            href="https://learn.liferay.com/analytics-cloud/latest/en/people/individuals/individuals-dashboard.html"
+            class=""
+            href="https://learn.liferay.com/w/dxp/personalization/analytics-cloud/people/individuals-analytics"
+            rel="noreferrer noopener"
             target="_blank"
           >
             Learn more about individuals.
+            <span
+              class="sr-only"
+            >
+              (Opens a new window)
+            </span>
           </a>
         </div>
       </div>

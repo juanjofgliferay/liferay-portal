@@ -6,11 +6,11 @@
 package com.liferay.portal.lpkg.deployer.internal;
 
 import com.liferay.osgi.util.bundle.BundleStartLevelUtil;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.file.install.FileInstaller;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -44,8 +44,6 @@ import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.url.URLConstants;
-import org.osgi.service.url.URLStreamHandlerService;
 
 /**
  * @author Shuyang Zhou
@@ -83,7 +81,8 @@ public class LPKGArtifactInstaller implements FileInstaller {
 		}
 
 		try (SafeCloseable safeCloseable =
-				LPKGBatchInstallThreadLocal.setBatchInstallInProcess(true)) {
+				LPKGBatchInstallThreadLocal.
+					setBatchInstallInProcessWithSafeCloseable(true)) {
 
 			_batchInstall(lpkgFiles);
 		}
@@ -347,8 +346,5 @@ public class LPKGArtifactInstaller implements FileInstaller {
 
 	@Reference
 	private LPKGDeployer _lpkgDeployer;
-
-	@Reference(target = "(" + URLConstants.URL_HANDLER_PROTOCOL + "=webbundle)")
-	private URLStreamHandlerService _urlStreamHandlerService;
 
 }

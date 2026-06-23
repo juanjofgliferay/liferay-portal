@@ -221,12 +221,28 @@ public class OrganizationServiceUtil {
 		return getService().fetchOrganization(organizationId);
 	}
 
+	public static Organization fetchOrganizationByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchOrganizationByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static List<Organization> getGtOrganizations(
 		long gtOrganizationId, long companyId, long parentOrganizationId,
 		int size) {
 
 		return getService().getGtOrganizations(
 			gtOrganizationId, companyId, parentOrganizationId, size);
+	}
+
+	public static Organization getOrAddEmptyOrganization(
+			String externalReferenceCode, String name)
+		throws PortalException {
+
+		return getService().getOrAddEmptyOrganization(
+			externalReferenceCode, name);
 	}
 
 	/**
@@ -242,11 +258,11 @@ public class OrganizationServiceUtil {
 	}
 
 	public static Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getOrganizationByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -520,3 +536,4 @@ public class OrganizationServiceUtil {
 	private static volatile OrganizationService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2092494010

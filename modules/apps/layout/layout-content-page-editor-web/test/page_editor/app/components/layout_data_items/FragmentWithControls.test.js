@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, queryByText, render} from '@testing-library/react';
 import React from 'react';
 import {DndProvider} from 'react-dnd';
@@ -55,7 +55,8 @@ const renderFragment = ({
 	};
 
 	const layoutData = {
-		items: {fragment},
+		deletedItems: [],
+		items: {[fragment.itemId]: fragment},
 	};
 
 	const AutoSelect = () => {
@@ -70,7 +71,8 @@ const renderFragment = ({
 				<StoreAPIContextProvider
 					getState={() => ({
 						fragmentEntryLinks: {
-							[fragmentEntryLink.fragmentEntryLinkId]: fragmentEntryLink,
+							[fragmentEntryLink.fragmentEntryLinkId]:
+								fragmentEntryLink,
 						},
 						layoutData,
 						permissions: {
@@ -134,9 +136,10 @@ describe('FragmentWithControls', () => {
 		await act(async () => {
 			renderFragment({
 				editableValues: {
-					['com.liferay.fragment.entry.processor.styles.StylesFragmentEntryProcessor']: {
-						hasCommonStyles: true,
-					},
+					['com.liferay.fragment.entry.processor.styles.StylesFragmentEntryProcessor']:
+						{
+							hasCommonStyles: true,
+						},
 				},
 			});
 		});

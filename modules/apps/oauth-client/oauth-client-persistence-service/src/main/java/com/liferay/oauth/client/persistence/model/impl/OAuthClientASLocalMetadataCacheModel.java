@@ -72,10 +72,14 @@ public class OAuthClientASLocalMetadataCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(31);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", uuid=");
+		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", oAuthClientASLocalMetadataId=");
 		sb.append(oAuthClientASLocalMetadataId);
 		sb.append(", companyId=");
@@ -88,10 +92,18 @@ public class OAuthClientASLocalMetadataCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", issuer=");
+		sb.append(issuer);
+		sb.append(", localWellKnownEnabled=");
+		sb.append(localWellKnownEnabled);
 		sb.append(", localWellKnownURI=");
 		sb.append(localWellKnownURI);
 		sb.append(", metadataJSON=");
 		sb.append(metadataJSON);
+		sb.append(", oAuthASLocalWellKnownURI=");
+		sb.append(oAuthASLocalWellKnownURI);
+		sb.append(", oAuthASMetadataJSON=");
+		sb.append(oAuthASMetadataJSON);
 		sb.append("}");
 
 		return sb.toString();
@@ -103,6 +115,22 @@ public class OAuthClientASLocalMetadataCacheModel
 			new OAuthClientASLocalMetadataImpl();
 
 		oAuthClientASLocalMetadataImpl.setMvccVersion(mvccVersion);
+
+		if (uuid == null) {
+			oAuthClientASLocalMetadataImpl.setUuid("");
+		}
+		else {
+			oAuthClientASLocalMetadataImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			oAuthClientASLocalMetadataImpl.setExternalReferenceCode("");
+		}
+		else {
+			oAuthClientASLocalMetadataImpl.setExternalReferenceCode(
+				externalReferenceCode);
+		}
+
 		oAuthClientASLocalMetadataImpl.setOAuthClientASLocalMetadataId(
 			oAuthClientASLocalMetadataId);
 		oAuthClientASLocalMetadataImpl.setCompanyId(companyId);
@@ -130,6 +158,16 @@ public class OAuthClientASLocalMetadataCacheModel
 				new Date(modifiedDate));
 		}
 
+		if (issuer == null) {
+			oAuthClientASLocalMetadataImpl.setIssuer("");
+		}
+		else {
+			oAuthClientASLocalMetadataImpl.setIssuer(issuer);
+		}
+
+		oAuthClientASLocalMetadataImpl.setLocalWellKnownEnabled(
+			localWellKnownEnabled);
+
 		if (localWellKnownURI == null) {
 			oAuthClientASLocalMetadataImpl.setLocalWellKnownURI("");
 		}
@@ -145,6 +183,22 @@ public class OAuthClientASLocalMetadataCacheModel
 			oAuthClientASLocalMetadataImpl.setMetadataJSON(metadataJSON);
 		}
 
+		if (oAuthASLocalWellKnownURI == null) {
+			oAuthClientASLocalMetadataImpl.setOAuthASLocalWellKnownURI("");
+		}
+		else {
+			oAuthClientASLocalMetadataImpl.setOAuthASLocalWellKnownURI(
+				oAuthASLocalWellKnownURI);
+		}
+
+		if (oAuthASMetadataJSON == null) {
+			oAuthClientASLocalMetadataImpl.setOAuthASMetadataJSON("");
+		}
+		else {
+			oAuthClientASLocalMetadataImpl.setOAuthASMetadataJSON(
+				oAuthASMetadataJSON);
+		}
+
 		oAuthClientASLocalMetadataImpl.resetOriginalValues();
 
 		return oAuthClientASLocalMetadataImpl;
@@ -155,6 +209,8 @@ public class OAuthClientASLocalMetadataCacheModel
 		throws ClassNotFoundException, IOException {
 
 		mvccVersion = objectInput.readLong();
+		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		oAuthClientASLocalMetadataId = objectInput.readLong();
 
@@ -164,13 +220,32 @@ public class OAuthClientASLocalMetadataCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+		issuer = objectInput.readUTF();
+
+		localWellKnownEnabled = objectInput.readBoolean();
 		localWellKnownURI = objectInput.readUTF();
 		metadataJSON = (String)objectInput.readObject();
+		oAuthASLocalWellKnownURI = objectInput.readUTF();
+		oAuthASMetadataJSON = (String)objectInput.readObject();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
 
 		objectOutput.writeLong(oAuthClientASLocalMetadataId);
 
@@ -188,6 +263,15 @@ public class OAuthClientASLocalMetadataCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
+		if (issuer == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(issuer);
+		}
+
+		objectOutput.writeBoolean(localWellKnownEnabled);
+
 		if (localWellKnownURI == null) {
 			objectOutput.writeUTF("");
 		}
@@ -201,16 +285,37 @@ public class OAuthClientASLocalMetadataCacheModel
 		else {
 			objectOutput.writeObject(metadataJSON);
 		}
+
+		if (oAuthASLocalWellKnownURI == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(oAuthASLocalWellKnownURI);
+		}
+
+		if (oAuthASMetadataJSON == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(oAuthASMetadataJSON);
+		}
 	}
 
 	public long mvccVersion;
+	public String uuid;
+	public String externalReferenceCode;
 	public long oAuthClientASLocalMetadataId;
 	public long companyId;
 	public long userId;
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public String issuer;
+	public boolean localWellKnownEnabled;
 	public String localWellKnownURI;
 	public String metadataJSON;
+	public String oAuthASLocalWellKnownURI;
+	public String oAuthASMetadataJSON;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1542087760

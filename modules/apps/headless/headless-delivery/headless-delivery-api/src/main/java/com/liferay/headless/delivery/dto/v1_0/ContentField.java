@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,14 +51,24 @@ public class ContentField implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ContentField.class, json);
 	}
 
-	@Schema(description = "The field's value.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The field's value."
+	)
 	@Valid
 	public ContentFieldValue getContentFieldValue() {
+		if (_contentFieldValueSupplier != null) {
+			contentFieldValue = _contentFieldValueSupplier.get();
+
+			_contentFieldValueSupplier = null;
+		}
+
 		return contentFieldValue;
 	}
 
 	public void setContentFieldValue(ContentFieldValue contentFieldValue) {
 		this.contentFieldValue = contentFieldValue;
+
+		_contentFieldValueSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,24 +76,37 @@ public class ContentField implements Serializable {
 		UnsafeSupplier<ContentFieldValue, Exception>
 			contentFieldValueUnsafeSupplier) {
 
-		try {
-			contentFieldValue = contentFieldValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentFieldValueSupplier = () -> {
+			try {
+				return contentFieldValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The field's value.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentFieldValue contentFieldValue;
 
-	@Schema(description = "The localized field's values.")
+	@JsonIgnore
+	private Supplier<ContentFieldValue> _contentFieldValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized field's values."
+	)
 	@Valid
 	public Map<String, ContentFieldValue> getContentFieldValue_i18n() {
+		if (_contentFieldValue_i18nSupplier != null) {
+			contentFieldValue_i18n = _contentFieldValue_i18nSupplier.get();
+
+			_contentFieldValue_i18nSupplier = null;
+		}
+
 		return contentFieldValue_i18n;
 	}
 
@@ -92,6 +114,8 @@ public class ContentField implements Serializable {
 		Map<String, ContentFieldValue> contentFieldValue_i18n) {
 
 		this.contentFieldValue_i18n = contentFieldValue_i18n;
+
+		_contentFieldValue_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -99,73 +123,149 @@ public class ContentField implements Serializable {
 		UnsafeSupplier<Map<String, ContentFieldValue>, Exception>
 			contentFieldValue_i18nUnsafeSupplier) {
 
-		try {
-			contentFieldValue_i18n = contentFieldValue_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentFieldValue_i18nSupplier = () -> {
+			try {
+				return contentFieldValue_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized field's values.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ContentFieldValue> contentFieldValue_i18n;
 
-	@Schema(description = "The field type (e.g., image, text, etc.).")
+	@JsonIgnore
+	private Supplier<Map<String, ContentFieldValue>>
+		_contentFieldValue_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The field type (e.g., image, text, etc.)."
+	)
 	public String getDataType() {
+		if (_dataTypeSupplier != null) {
+			dataType = _dataTypeSupplier.get();
+
+			_dataTypeSupplier = null;
+		}
+
 		return dataType;
 	}
 
 	public void setDataType(String dataType) {
 		this.dataType = dataType;
+
+		_dataTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDataType(
 		UnsafeSupplier<String, Exception> dataTypeUnsafeSupplier) {
 
-		try {
-			dataType = dataTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataTypeSupplier = () -> {
+			try {
+				return dataTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The field type (e.g., image, text, etc.).")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String dataType;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _dataTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The field's friendly reference name. This is used by developers when referencing the field in custom implementations."
+	)
+	public String getFieldReference() {
+		if (_fieldReferenceSupplier != null) {
+			fieldReference = _fieldReferenceSupplier.get();
+
+			_fieldReferenceSupplier = null;
+		}
+
+		return fieldReference;
+	}
+
+	public void setFieldReference(String fieldReference) {
+		this.fieldReference = fieldReference;
+
+		_fieldReferenceSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setFieldReference(
+		UnsafeSupplier<String, Exception> fieldReferenceUnsafeSupplier) {
+
+		_fieldReferenceSupplier = () -> {
+			try {
+				return fieldReferenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "The field's friendly reference name. This is used by developers when referencing the field in custom implementations."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String fieldReference;
+
+	@JsonIgnore
+	private Supplier<String> _fieldReferenceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The field's control type (e.g., text, text area, etc.)."
 	)
 	public String getInputControl() {
+		if (_inputControlSupplier != null) {
+			inputControl = _inputControlSupplier.get();
+
+			_inputControlSupplier = null;
+		}
+
 		return inputControl;
 	}
 
 	public void setInputControl(String inputControl) {
 		this.inputControl = inputControl;
+
+		_inputControlSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInputControl(
 		UnsafeSupplier<String, Exception> inputControlUnsafeSupplier) {
 
-		try {
-			inputControl = inputControlUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_inputControlSupplier = () -> {
+			try {
+				return inputControlUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -174,42 +274,70 @@ public class ContentField implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String inputControl;
 
-	@Schema(description = "The field's label.")
+	@JsonIgnore
+	private Supplier<String> _inputControlSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The field's label."
+	)
 	public String getLabel() {
+		if (_labelSupplier != null) {
+			label = _labelSupplier.get();
+
+			_labelSupplier = null;
+		}
+
 		return label;
 	}
 
 	public void setLabel(String label) {
 		this.label = label;
+
+		_labelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel(
 		UnsafeSupplier<String, Exception> labelUnsafeSupplier) {
 
-		try {
-			label = labelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_labelSupplier = () -> {
+			try {
+				return labelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The field's label.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String label;
 
-	@Schema(description = "The localized field's labels.")
+	@JsonIgnore
+	private Supplier<String> _labelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized field's labels."
+	)
 	@Valid
 	public Map<String, String> getLabel_i18n() {
+		if (_label_i18nSupplier != null) {
+			label_i18n = _label_i18nSupplier.get();
+
+			_label_i18nSupplier = null;
+		}
+
 		return label_i18n;
 	}
 
 	public void setLabel_i18n(Map<String, String> label_i18n) {
 		this.label_i18n = label_i18n;
+
+		_label_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -217,43 +345,58 @@ public class ContentField implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			label_i18nUnsafeSupplier) {
 
-		try {
-			label_i18n = label_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_label_i18nSupplier = () -> {
+			try {
+				return label_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized field's labels.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> label_i18n;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Map<String, String>> _label_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The field's internal name. This is valid for comparisons and unique in the structured content."
 	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -262,16 +405,27 @@ public class ContentField implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A list of child content fields that depend on this resource."
 	)
 	@Valid
 	public ContentField[] getNestedContentFields() {
+		if (_nestedContentFieldsSupplier != null) {
+			nestedContentFields = _nestedContentFieldsSupplier.get();
+
+			_nestedContentFieldsSupplier = null;
+		}
+
 		return nestedContentFields;
 	}
 
 	public void setNestedContentFields(ContentField[] nestedContentFields) {
 		this.nestedContentFields = nestedContentFields;
+
+		_nestedContentFieldsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -279,15 +433,17 @@ public class ContentField implements Serializable {
 		UnsafeSupplier<ContentField[], Exception>
 			nestedContentFieldsUnsafeSupplier) {
 
-		try {
-			nestedContentFields = nestedContentFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nestedContentFieldsSupplier = () -> {
+			try {
+				return nestedContentFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -296,30 +452,43 @@ public class ContentField implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ContentField[] nestedContentFields;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<ContentField[]> _nestedContentFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A flag that indicates whether this field can be rendered multiple times."
 	)
 	public Boolean getRepeatable() {
+		if (_repeatableSupplier != null) {
+			repeatable = _repeatableSupplier.get();
+
+			_repeatableSupplier = null;
+		}
+
 		return repeatable;
 	}
 
 	public void setRepeatable(Boolean repeatable) {
 		this.repeatable = repeatable;
+
+		_repeatableSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRepeatable(
 		UnsafeSupplier<Boolean, Exception> repeatableUnsafeSupplier) {
 
-		try {
-			repeatable = repeatableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_repeatableSupplier = () -> {
+			try {
+				return repeatableUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -327,6 +496,9 @@ public class ContentField implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Boolean repeatable;
+
+	@JsonIgnore
+	private Supplier<Boolean> _repeatableSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -355,6 +527,8 @@ public class ContentField implements Serializable {
 
 		sb.append("{");
 
+		ContentFieldValue contentFieldValue = getContentFieldValue();
+
 		if (contentFieldValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -365,6 +539,9 @@ public class ContentField implements Serializable {
 			sb.append(String.valueOf(contentFieldValue));
 		}
 
+		Map<String, ContentFieldValue> contentFieldValue_i18n =
+			getContentFieldValue_i18n();
+
 		if (contentFieldValue_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -374,6 +551,8 @@ public class ContentField implements Serializable {
 
 			sb.append(_toJSON(contentFieldValue_i18n));
 		}
+
+		String dataType = getDataType();
 
 		if (dataType != null) {
 			if (sb.length() > 1) {
@@ -389,6 +568,24 @@ public class ContentField implements Serializable {
 			sb.append("\"");
 		}
 
+		String fieldReference = getFieldReference();
+
+		if (fieldReference != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fieldReference\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(fieldReference));
+
+			sb.append("\"");
+		}
+
+		String inputControl = getInputControl();
+
 		if (inputControl != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -402,6 +599,8 @@ public class ContentField implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String label = getLabel();
 
 		if (label != null) {
 			if (sb.length() > 1) {
@@ -417,6 +616,8 @@ public class ContentField implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> label_i18n = getLabel_i18n();
+
 		if (label_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -426,6 +627,8 @@ public class ContentField implements Serializable {
 
 			sb.append(_toJSON(label_i18n));
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -440,6 +643,8 @@ public class ContentField implements Serializable {
 
 			sb.append("\"");
 		}
+
+		ContentField[] nestedContentFields = getNestedContentFields();
 
 		if (nestedContentFields != null) {
 			if (sb.length() > 1) {
@@ -461,6 +666,8 @@ public class ContentField implements Serializable {
 			sb.append("]");
 		}
 
+		Boolean repeatable = getRepeatable();
+
 		if (repeatable != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -476,8 +683,8 @@ public class ContentField implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ContentField",
 		name = "x-class-name"
 	)
@@ -523,7 +730,10 @@ public class ContentField implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -569,3 +779,4 @@ public class ContentField implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-223852192

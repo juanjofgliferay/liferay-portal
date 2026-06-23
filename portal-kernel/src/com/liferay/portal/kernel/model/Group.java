@@ -156,6 +156,8 @@ public interface Group extends GroupModel, PersistedModel, TreeModel {
 
 	public boolean hasStagingGroup();
 
+	public boolean isCMS();
+
 	public boolean isCompany();
 
 	public boolean isCompanyStagingGroup();
@@ -177,6 +179,8 @@ public interface Group extends GroupModel, PersistedModel, TreeModel {
 	public boolean isLayoutSetPrototype();
 
 	public boolean isLimitedToParentSiteMembers();
+
+	public boolean isMaintenanceMode();
 
 	public boolean isOrganization();
 
@@ -211,3 +215,4 @@ public interface Group extends GroupModel, PersistedModel, TreeModel {
 			typeSettingsUnicodeProperties);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-71914651

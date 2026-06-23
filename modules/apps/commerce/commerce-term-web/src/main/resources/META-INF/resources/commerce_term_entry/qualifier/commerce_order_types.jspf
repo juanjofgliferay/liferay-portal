@@ -15,12 +15,12 @@
 			).put(
 				"rootPortletId", portletDisplay.getRootPortletId()
 			).put(
-				"termExternalReferenceCode", HtmlUtil.escapeJS(commerceTermEntry.getExternalReferenceCode())
+				"termExternalReferenceCode", commerceTermEntry.getExternalReferenceCode()
 			).put(
 				"termId", commerceTermEntryId
 			).build()
 		%>'
-		module="js/commerce_order_types"
+		module="{commerceOrderTypes} from commerce-term-web"
 	/>
 
 	<commerce-ui:panel
@@ -32,7 +32,6 @@
 			fdsActionDropdownItems="<%= commerceTermEntryQualifiersDisplayContext.getCommerceOrderTypeFDSActionDropdownItems() %>"
 			formName="fm"
 			id="<%= CommerceTermEntryFDSNames.TERM_ENTRY_QUALIFIER_COMMERCE_ORDER_TYPES %>"
-			itemsPerPage="<%= 10 %>"
 		/>
 	</commerce-ui:panel>
 </c:if>

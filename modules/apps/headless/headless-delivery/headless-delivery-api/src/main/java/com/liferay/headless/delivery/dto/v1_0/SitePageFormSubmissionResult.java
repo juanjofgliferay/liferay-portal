@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,14 +53,24 @@ public class SitePageFormSubmissionResult implements Serializable {
 			SitePageFormSubmissionResult.class, json);
 	}
 
-	@Schema(description = "The localized submission of page type.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized submission of page type."
+	)
 	@Valid
 	public ClassFieldsReference getItemReference() {
+		if (_itemReferenceSupplier != null) {
+			itemReference = _itemReferenceSupplier.get();
+
+			_itemReferenceSupplier = null;
+		}
+
 		return itemReference;
 	}
 
 	public void setItemReference(ClassFieldsReference itemReference) {
 		this.itemReference = itemReference;
+
+		_itemReferenceSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,20 +78,118 @@ public class SitePageFormSubmissionResult implements Serializable {
 		UnsafeSupplier<ClassFieldsReference, Exception>
 			itemReferenceUnsafeSupplier) {
 
-		try {
-			itemReference = itemReferenceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemReferenceSupplier = () -> {
+			try {
+				return itemReferenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The localized submission of page type.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ClassFieldsReference itemReference;
+
+	@JsonIgnore
+	private Supplier<ClassFieldsReference> _itemReferenceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The localized site page form submission result's notification text."
+	)
+	@Valid
+	public FragmentInlineValue getNotificationTextFragmentInlineValue() {
+		if (_notificationTextFragmentInlineValueSupplier != null) {
+			notificationTextFragmentInlineValue =
+				_notificationTextFragmentInlineValueSupplier.get();
+
+			_notificationTextFragmentInlineValueSupplier = null;
+		}
+
+		return notificationTextFragmentInlineValue;
+	}
+
+	public void setNotificationTextFragmentInlineValue(
+		FragmentInlineValue notificationTextFragmentInlineValue) {
+
+		this.notificationTextFragmentInlineValue =
+			notificationTextFragmentInlineValue;
+
+		_notificationTextFragmentInlineValueSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setNotificationTextFragmentInlineValue(
+		UnsafeSupplier<FragmentInlineValue, Exception>
+			notificationTextFragmentInlineValueUnsafeSupplier) {
+
+		_notificationTextFragmentInlineValueSupplier = () -> {
+			try {
+				return notificationTextFragmentInlineValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "The localized site page form submission result's notification text."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected FragmentInlineValue notificationTextFragmentInlineValue;
+
+	@JsonIgnore
+	private Supplier<FragmentInlineValue>
+		_notificationTextFragmentInlineValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getShowNotification() {
+		if (_showNotificationSupplier != null) {
+			showNotification = _showNotificationSupplier.get();
+
+			_showNotificationSupplier = null;
+		}
+
+		return showNotification;
+	}
+
+	public void setShowNotification(Boolean showNotification) {
+		this.showNotification = showNotification;
+
+		_showNotificationSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setShowNotification(
+		UnsafeSupplier<Boolean, Exception> showNotificationUnsafeSupplier) {
+
+		_showNotificationSupplier = () -> {
+			try {
+				return showNotificationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean showNotification;
+
+	@JsonIgnore
+	private Supplier<Boolean> _showNotificationSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -113,6 +220,8 @@ public class SitePageFormSubmissionResult implements Serializable {
 
 		sb.append("{");
 
+		ClassFieldsReference itemReference = getItemReference();
+
 		if (itemReference != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -123,13 +232,38 @@ public class SitePageFormSubmissionResult implements Serializable {
 			sb.append(String.valueOf(itemReference));
 		}
 
+		FragmentInlineValue notificationTextFragmentInlineValue =
+			getNotificationTextFragmentInlineValue();
+
+		if (notificationTextFragmentInlineValue != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"notificationTextFragmentInlineValue\": ");
+
+			sb.append(String.valueOf(notificationTextFragmentInlineValue));
+		}
+
+		Boolean showNotification = getShowNotification();
+
+		if (showNotification != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"showNotification\": ");
+
+			sb.append(showNotification);
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.SitePageFormSubmissionResult",
 		name = "x-class-name"
 	)
@@ -175,7 +309,10 @@ public class SitePageFormSubmissionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -221,3 +358,4 @@ public class SitePageFormSubmissionResult implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-738473525

@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -39,11 +38,11 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName(description = "Represents a row viewport.", value = "RowViewport")
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@io.swagger.v3.oas.annotations.media.Schema(
 	description = "Represents a row viewport.",
 	requiredProperties = {"id", "rowViewportDefinition"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "RowViewport")
 public class RowViewport implements Serializable {
 
@@ -55,26 +54,38 @@ public class RowViewport implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(RowViewport.class, json);
 	}
 
-	@Schema(description = "The row viewport's ID.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The row viewport's ID."
+	)
 	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(String id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The row viewport's ID.")
@@ -82,9 +93,20 @@ public class RowViewport implements Serializable {
 	@NotEmpty
 	protected String id;
 
-	@Schema(description = "The definition of the row viewport.")
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The definition of the row viewport."
+	)
 	@Valid
 	public RowViewportDefinition getRowViewportDefinition() {
+		if (_rowViewportDefinitionSupplier != null) {
+			rowViewportDefinition = _rowViewportDefinitionSupplier.get();
+
+			_rowViewportDefinitionSupplier = null;
+		}
+
 		return rowViewportDefinition;
 	}
 
@@ -92,6 +114,8 @@ public class RowViewport implements Serializable {
 		RowViewportDefinition rowViewportDefinition) {
 
 		this.rowViewportDefinition = rowViewportDefinition;
+
+		_rowViewportDefinitionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -99,21 +123,26 @@ public class RowViewport implements Serializable {
 		UnsafeSupplier<RowViewportDefinition, Exception>
 			rowViewportDefinitionUnsafeSupplier) {
 
-		try {
-			rowViewportDefinition = rowViewportDefinitionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_rowViewportDefinitionSupplier = () -> {
+			try {
+				return rowViewportDefinitionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The definition of the row viewport.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected RowViewportDefinition rowViewportDefinition;
+
+	@JsonIgnore
+	private Supplier<RowViewportDefinition> _rowViewportDefinitionSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -142,6 +171,8 @@ public class RowViewport implements Serializable {
 
 		sb.append("{");
 
+		String id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -155,6 +186,9 @@ public class RowViewport implements Serializable {
 
 			sb.append("\"");
 		}
+
+		RowViewportDefinition rowViewportDefinition =
+			getRowViewportDefinition();
 
 		if (rowViewportDefinition != null) {
 			if (sb.length() > 1) {
@@ -171,8 +205,8 @@ public class RowViewport implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.RowViewport",
 		name = "x-class-name"
 	)
@@ -218,7 +252,10 @@ public class RowViewport implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -264,3 +301,4 @@ public class RowViewport implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1461376694

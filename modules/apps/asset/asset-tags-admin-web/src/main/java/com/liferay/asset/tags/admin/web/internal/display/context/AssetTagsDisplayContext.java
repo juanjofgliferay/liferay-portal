@@ -10,8 +10,10 @@ import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetTagServiceUtil;
 import com.liferay.asset.tags.constants.AssetTagsAdminPortletKeys;
+import com.liferay.change.tracking.spi.history.util.CTTimelineUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -35,13 +37,12 @@ import com.liferay.portlet.asset.util.comparator.AssetTagNameComparator;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
 
-import java.util.ArrayList;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Juergen Kappler
@@ -173,22 +174,19 @@ public class AssetTagsDisplayContext {
 			return _mergeTagNames;
 		}
 
-		long[] mergeTagIds = StringUtil.split(
-			ParamUtil.getString(_renderRequest, "mergeTagIds"), 0L);
+		_mergeTagNames = TransformUtil.transformToList(
+			StringUtil.split(
+				ParamUtil.getString(_renderRequest, "mergeTagIds"), 0L),
+			mergeTagId -> {
+				AssetTag tag = AssetTagLocalServiceUtil.fetchAssetTag(
+					mergeTagId);
 
-		List<String> mergeTagNames = new ArrayList<>();
+				if (tag == null) {
+					return null;
+				}
 
-		for (long mergeTagId : mergeTagIds) {
-			AssetTag tag = AssetTagLocalServiceUtil.fetchAssetTag(mergeTagId);
-
-			if (tag == null) {
-				continue;
-			}
-
-			mergeTagNames.add(tag.getName());
-		}
-
-		_mergeTagNames = mergeTagNames;
+				return tag.getName();
+			});
 
 		return _mergeTagNames;
 	}
@@ -241,6 +239,9 @@ public class AssetTagsDisplayContext {
 		}
 
 		_tagId = ParamUtil.getLong(_httpServletRequest, "tagId");
+
+		CTTimelineUtil.setCTTimelineKeys(
+			_httpServletRequest, AssetTag.class, _tagId);
 
 		return _tagId;
 	}
@@ -299,7 +300,7 @@ public class AssetTagsDisplayContext {
 				orderByComparator = new AssetTagNameComparator(orderByAsc);
 			}
 			else if (orderByCol.equals("usages")) {
-				orderByComparator = new AssetTagAssetCountComparator(
+				orderByComparator = AssetTagAssetCountComparator.getInstance(
 					orderByAsc);
 			}
 

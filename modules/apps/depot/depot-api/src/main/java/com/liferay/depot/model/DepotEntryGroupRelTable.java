@@ -28,6 +28,9 @@ public class DepotEntryGroupRelTable
 	public final Column<DepotEntryGroupRelTable, Long> mvccVersion =
 		createColumn(
 			"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
+	public final Column<DepotEntryGroupRelTable, Long> ctCollectionId =
+		createColumn(
+			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<DepotEntryGroupRelTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<DepotEntryGroupRelTable, Long> depotEntryGroupRelId =
@@ -61,6 +64,8 @@ public class DepotEntryGroupRelTable
 			"searchable", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<DepotEntryGroupRelTable, Long> toGroupId = createColumn(
 		"toGroupId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<DepotEntryGroupRelTable, Integer> type = createColumn(
+		"type_", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<DepotEntryGroupRelTable, Date> lastPublishDate =
 		createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,
@@ -71,3 +76,4 @@ public class DepotEntryGroupRelTable
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:295049549

@@ -6,10 +6,17 @@
 package com.liferay.portal.upgrade.internal.apache.logging.log4j.core;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.events.StartupHelperUtil;
+import com.liferay.portal.kernel.dao.db.DuplicateUniqueFinderRowsCleaner;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.data.cleanup.DataCleanupPreupgradeProcess;
+import com.liferay.portal.kernel.upgrade.data.cleanup.util.OrphanReferencesDataCleanupUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.upgrade.internal.recorder.UpgradeRecorder;
 import com.liferay.portal.upgrade.internal.report.UpgradeReport;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.Serializable;
 
@@ -49,9 +56,17 @@ public class UpgradeLogAppender implements Appender {
 
 		if (logEvent.getLevel() == Level.ERROR) {
 			_upgradeRecorder.recordErrorMessage(
-				logEvent.getLoggerName(), formattedMessage);
+				logEvent.getLoggerName(), formattedMessage,
+				logEvent.getThrown());
 		}
 		else if (logEvent.getLevel() == Level.INFO) {
+			if (_isDataCleanupMessage(logEvent.getLoggerName())) {
+				_upgradeRecorder.recordDataCleanupMessage(
+					logEvent.getLoggerName(), formattedMessage);
+
+				return;
+			}
+
 			if (Objects.equals(
 					logEvent.getLoggerName(), UpgradeProcess.class.getName()) &&
 				formattedMessage.startsWith("Completed upgrade process ")) {
@@ -115,7 +130,9 @@ public class UpgradeLogAppender implements Appender {
 
 		_upgradeRecorder.start();
 
-		if (PropsValues.UPGRADE_REPORT_ENABLED) {
+		if (PropsValues.UPGRADE_REPORT_ENABLED &&
+			!StartupHelperUtil.isDBNew()) {
+
 			_upgradeReport = new UpgradeReport();
 		}
 
@@ -127,7 +144,9 @@ public class UpgradeLogAppender implements Appender {
 		if (_started) {
 			_upgradeRecorder.stop();
 
-			if (_upgradeReport != null) {
+			if (PropsValues.UPGRADE_REPORT_ENABLED &&
+				!StartupHelperUtil.isDBNew()) {
+
 				_upgradeReport.generateReport(_upgradeRecorder);
 
 				_upgradeReport = null;
@@ -138,6 +157,35 @@ public class UpgradeLogAppender implements Appender {
 
 		_rootLogger.removeAppender(this);
 	}
+
+	private boolean _isDataCleanupMessage(String loggerName) {
+		if (loggerName.startsWith("com.liferay.data.cleanup.internal.verify")) {
+			return true;
+		}
+
+		try {
+			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
+
+			Class<?> clazz = classLoader.loadClass(loggerName);
+
+			if (clazz.equals(DuplicateUniqueFinderRowsCleaner.class) ||
+				clazz.equals(OrphanReferencesDataCleanupUtil.class) ||
+				DataCleanupPreupgradeProcess.class.isAssignableFrom(clazz)) {
+
+				return true;
+			}
+		}
+		catch (ClassNotFoundException classNotFoundException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(classNotFoundException);
+			}
+		}
+
+		return false;
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UpgradeLogAppender.class);
 
 	private static final Logger _rootLogger =
 		(Logger)LogManager.getRootLogger();

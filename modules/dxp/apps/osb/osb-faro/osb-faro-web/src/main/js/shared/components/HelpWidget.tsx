@@ -1,6 +1,7 @@
 import ClayButton from '@clayui/button';
 import ClayDropDown, {Align} from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
+import ClayLink from '@clayui/link';
 import React from 'react';
 import URLConstants from 'shared/util/url-constants';
 import {close, modalTypes, open} from 'shared/actions/modals';
@@ -34,21 +35,11 @@ const getDropdownItems = ({
 		: {
 				href: URLConstants.TicketPageLink,
 				label: Liferay.Language.get('report-an-issue'),
-				onClick: () => {
-					analytics.track('Clicked Paid Tier Ticket Link', {
-						currentUrl: window.location.href
-					});
-				},
 				target: '_blank'
 		  },
 	{
 		href: URLConstants.DocumentationLink,
 		label: Liferay.Language.get('help-center'),
-		onClick: () => {
-			analytics.track('Clicked Help Center Link', {
-				currentUrl: window.location.href
-			});
-		},
 		target: '_blank'
 	}
 ];
@@ -75,7 +66,8 @@ const HelpWidget: React.FC<IHelpWidgetProps> = ({
 	groupId,
 	open
 }) => {
-	const basicTier = faroSubscriptionIMap.get('name') === PLANS.basic.name;
+	const basicTier =
+		faroSubscriptionIMap.get('name') === (PLANS as any).basic.name;
 
 	return (
 		<div className='help-widget-root'>
@@ -94,7 +86,7 @@ const HelpWidget: React.FC<IHelpWidgetProps> = ({
 					>
 						<ClayIcon
 							className='icon-root'
-							symbol='ac-question-mark'
+							symbol='ac_question_mark'
 						/>
 					</ClayButton>
 				}
@@ -107,14 +99,14 @@ const HelpWidget: React.FC<IHelpWidgetProps> = ({
 				}).map(({href, label, onClick, target}, index) => (
 					<ClayDropDown.Item key={index}>
 						{href ? (
-							<a
+							<ClayLink
 								className='btn btn-unstyled w-100'
 								href={href}
 								onClick={onClick}
 								target={target}
 							>
 								{label}
-							</a>
+							</ClayLink>
 						) : (
 							<ClayButton
 								displayType='unstyled'

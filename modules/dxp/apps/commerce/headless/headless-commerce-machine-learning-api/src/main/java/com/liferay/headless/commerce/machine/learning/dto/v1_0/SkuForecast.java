@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,19 +32,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
  * @generated
  */
 @Generated("")
-@GraphQLName("SkuForecast")
+@GraphQLName(
+	description = "Monthly demand forecast point for one SKU, produced by the analytics training pipeline and downloaded back into the portal by the analytics download executor.",
+	value = "SkuForecast"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "SkuForecast")
 public class SkuForecast implements Serializable {
@@ -53,201 +55,327 @@ public class SkuForecast implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SkuForecast.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Observed demand in units for the period, aggregated from completed order lines by the analytics pipeline. Zero -- or the float marker 1.4E-45 -- for periods that lie in the forecast horizon and have not been observed yet.",
+		example = "230225"
+	)
 	@Valid
 	public Float getActual() {
+		if (_actualSupplier != null) {
+			actual = _actualSupplier.get();
+
+			_actualSupplier = null;
+		}
+
 		return actual;
 	}
 
 	public void setActual(Float actual) {
 		this.actual = actual;
+
+		_actualSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActual(
 		UnsafeSupplier<Float, Exception> actualUnsafeSupplier) {
 
-		try {
-			actual = actualUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actualSupplier = () -> {
+			try {
+				return actualUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Observed demand in units for the period, aggregated from completed order lines by the analytics pipeline. Zero -- or the float marker 1.4E-45 -- for periods that lie in the forecast horizon and have not been observed yet."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float actual;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _actualSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Point estimate of monthly demand in units for the period.",
+		example = "425982.1"
+	)
 	@Valid
 	public Float getForecast() {
+		if (_forecastSupplier != null) {
+			forecast = _forecastSupplier.get();
+
+			_forecastSupplier = null;
+		}
+
 		return forecast;
 	}
 
 	public void setForecast(Float forecast) {
 		this.forecast = forecast;
+
+		_forecastSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setForecast(
 		UnsafeSupplier<Float, Exception> forecastUnsafeSupplier) {
 
-		try {
-			forecast = forecastUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_forecastSupplier = () -> {
+			try {
+				return forecastUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Point estimate of monthly demand in units for the period."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float forecast;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _forecastSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Lower bound of the forecast confidence interval. Negative values occur when the model's confidence interval extends below zero; treat them as zero for display purposes.",
+		example = "-63249.176"
+	)
 	@Valid
 	public Float getForecastLowerBound() {
+		if (_forecastLowerBoundSupplier != null) {
+			forecastLowerBound = _forecastLowerBoundSupplier.get();
+
+			_forecastLowerBoundSupplier = null;
+		}
+
 		return forecastLowerBound;
 	}
 
 	public void setForecastLowerBound(Float forecastLowerBound) {
 		this.forecastLowerBound = forecastLowerBound;
+
+		_forecastLowerBoundSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setForecastLowerBound(
 		UnsafeSupplier<Float, Exception> forecastLowerBoundUnsafeSupplier) {
 
-		try {
-			forecastLowerBound = forecastLowerBoundUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_forecastLowerBoundSupplier = () -> {
+			try {
+				return forecastLowerBoundUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Lower bound of the forecast confidence interval. Negative values occur when the model's confidence interval extends below zero; treat them as zero for display purposes."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float forecastLowerBound;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _forecastLowerBoundSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Upper bound of the forecast confidence interval.",
+		example = "915213.4"
+	)
 	@Valid
 	public Float getForecastUpperBound() {
+		if (_forecastUpperBoundSupplier != null) {
+			forecastUpperBound = _forecastUpperBoundSupplier.get();
+
+			_forecastUpperBoundSupplier = null;
+		}
+
 		return forecastUpperBound;
 	}
 
 	public void setForecastUpperBound(Float forecastUpperBound) {
 		this.forecastUpperBound = forecastUpperBound;
+
+		_forecastUpperBoundSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setForecastUpperBound(
 		UnsafeSupplier<Float, Exception> forecastUpperBoundUnsafeSupplier) {
 
-		try {
-			forecastUpperBound = forecastUpperBoundUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_forecastUpperBoundSupplier = () -> {
+			try {
+				return forecastUpperBoundUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Upper bound of the forecast confidence interval."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Float forecastUpperBound;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Float> _forecastUpperBoundSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "SKU string identifying the variant the forecast point belongs to.",
+		example = "12341234"
+	)
 	public String getSku() {
+		if (_skuSupplier != null) {
+			sku = _skuSupplier.get();
+
+			_skuSupplier = null;
+		}
+
 		return sku;
 	}
 
 	public void setSku(String sku) {
 		this.sku = sku;
+
+		_skuSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSku(UnsafeSupplier<String, Exception> skuUnsafeSupplier) {
-		try {
-			sku = skuUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuSupplier = () -> {
+			try {
+				return skuUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "SKU string identifying the variant the forecast point belongs to."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String sku;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _skuSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Start instant of the monthly period the point covers, in ISO 8601 UTC with date-time precision.",
+		example = "2018-02-01"
+	)
 	public Date getTimestamp() {
+		if (_timestampSupplier != null) {
+			timestamp = _timestampSupplier.get();
+
+			_timestampSupplier = null;
+		}
+
 		return timestamp;
 	}
 
 	public void setTimestamp(Date timestamp) {
 		this.timestamp = timestamp;
+
+		_timestampSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTimestamp(
 		UnsafeSupplier<Date, Exception> timestampUnsafeSupplier) {
 
-		try {
-			timestamp = timestampUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_timestampSupplier = () -> {
+			try {
+				return timestampUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Start instant of the monthly period the point covers, in ISO 8601 UTC with date-time precision."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date timestamp;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _timestampSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Forecast target dimension. Always `quantity` for this schema.",
+		example = "quantity"
+	)
 	public String getUnit() {
+		if (_unitSupplier != null) {
+			unit = _unitSupplier.get();
+
+			_unitSupplier = null;
+		}
+
 		return unit;
 	}
 
 	public void setUnit(String unit) {
 		this.unit = unit;
+
+		_unitSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUnit(UnsafeSupplier<String, Exception> unitUnsafeSupplier) {
-		try {
-			unit = unitUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unitSupplier = () -> {
+			try {
+				return unitUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Forecast target dimension. Always `quantity` for this schema."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String unit;
+
+	@JsonIgnore
+	private Supplier<String> _unitSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -279,6 +407,8 @@ public class SkuForecast implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Float actual = getActual();
+
 		if (actual != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -288,6 +418,8 @@ public class SkuForecast implements Serializable {
 
 			sb.append(actual);
 		}
+
+		Float forecast = getForecast();
 
 		if (forecast != null) {
 			if (sb.length() > 1) {
@@ -299,6 +431,8 @@ public class SkuForecast implements Serializable {
 			sb.append(forecast);
 		}
 
+		Float forecastLowerBound = getForecastLowerBound();
+
 		if (forecastLowerBound != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -309,6 +443,8 @@ public class SkuForecast implements Serializable {
 			sb.append(forecastLowerBound);
 		}
 
+		Float forecastUpperBound = getForecastUpperBound();
+
 		if (forecastUpperBound != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -318,6 +454,8 @@ public class SkuForecast implements Serializable {
 
 			sb.append(forecastUpperBound);
 		}
+
+		String sku = getSku();
 
 		if (sku != null) {
 			if (sb.length() > 1) {
@@ -333,6 +471,8 @@ public class SkuForecast implements Serializable {
 			sb.append("\"");
 		}
 
+		Date timestamp = getTimestamp();
+
 		if (timestamp != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -346,6 +486,8 @@ public class SkuForecast implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String unit = getUnit();
 
 		if (unit != null) {
 			if (sb.length() > 1) {
@@ -366,8 +508,8 @@ public class SkuForecast implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.machine.learning.dto.v1_0.SkuForecast",
 		name = "x-class-name"
 	)
@@ -413,7 +555,10 @@ public class SkuForecast implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -459,3 +604,4 @@ public class SkuForecast implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:237795102

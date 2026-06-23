@@ -26,6 +26,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -44,7 +45,7 @@ public class OneToManyObjectFieldFilterStrategy
 	extends BaseObjectFieldFilterStrategy {
 
 	public OneToManyObjectFieldFilterStrategy(
-		Locale locale, ObjectDefinition objectDefinition1,
+		long groupId, Locale locale, ObjectDefinition objectDefinition1,
 		ObjectDefinitionLocalService objectDefinitionLocalService,
 		ObjectEntryLocalService objectEntryLocalService,
 		ObjectField objectField,
@@ -56,6 +57,7 @@ public class OneToManyObjectFieldFilterStrategy
 
 		super(locale, objectViewFilterColumn);
 
+		_groupId = groupId;
 		_objectDefinition1 = objectDefinition1;
 		_objectDefinitionLocalService = objectDefinitionLocalService;
 		_objectEntryLocalService = objectEntryLocalService;
@@ -106,8 +108,15 @@ public class OneToManyObjectFieldFilterStrategy
 			restContextPath = "/o" + objectDefinition1.getRESTContextPath();
 		}
 
+		if (_groupId != 0) {
+			restContextPath = StringBundler.concat(
+				restContextPath, "/scopes/", _groupId);
+		}
+
 		return new OneToManySelectionFDSFilter(
-			parse(), restContextPath, titleObjectField.getLabel(locale),
+			parse(), restContextPath,
+			_objectField.getLabel(locale) + StringPool.SPACE +
+				titleObjectField.getLabel(locale),
 			_objectField.getName(), titleObjectField.getName());
 	}
 
@@ -120,8 +129,25 @@ public class OneToManyObjectFieldFilterStrategy
 
 		JSONArray jsonArray = getJSONArray();
 
+		if (jsonArray == null) {
+			return selectionFDSFilterItems;
+		}
+
 		if (_objectDefinition1.isUnmodifiableSystemObject()) {
+			PersistedModelLocalService persistedModelLocalService =
+				PersistedModelLocalServiceRegistryUtil.
+					getPersistedModelLocalService(
+						_objectDefinition1.getClassName());
+
 			for (int i = 0; i < jsonArray.length(); i++) {
+				PersistedModel persistedModel =
+					persistedModelLocalService.fetchPersistedModel(
+						GetterUtil.getLong(jsonArray.get(i)));
+
+				if (persistedModel == null) {
+					continue;
+				}
+
 				selectionFDSFilterItems.add(
 					new SelectionFDSFilterItem(
 						_objectEntryLocalService.getTitleValue(
@@ -135,7 +161,7 @@ public class OneToManyObjectFieldFilterStrategy
 
 		for (int i = 0; i < jsonArray.length(); i++) {
 			ObjectEntry objectEntry = _objectEntryLocalService.fetchObjectEntry(
-				(String)jsonArray.get(i),
+				(String)jsonArray.get(i), _groupId,
 				_objectDefinition1.getObjectDefinitionId());
 
 			if (objectEntry == null) {
@@ -187,7 +213,7 @@ public class OneToManyObjectFieldFilterStrategy
 			for (int i = 0; i < jsonArray.length(); i++) {
 				if (Validator.isNull(
 						_objectEntryLocalService.fetchObjectEntry(
-							(String)jsonArray.get(i),
+							(String)jsonArray.get(i), _groupId,
 							_objectDefinition1.getObjectDefinitionId()))) {
 
 					throw new ObjectViewFilterColumnException(
@@ -200,6 +226,7 @@ public class OneToManyObjectFieldFilterStrategy
 		}
 	}
 
+	private final long _groupId;
 	private final ObjectDefinition _objectDefinition1;
 	private final ObjectDefinitionLocalService _objectDefinitionLocalService;
 	private final ObjectEntryLocalService _objectEntryLocalService;

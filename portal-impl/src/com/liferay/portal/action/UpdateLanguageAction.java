@@ -12,15 +12,17 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
+import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.portlet.LayoutFriendlyURLSeparatorComposite;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -32,13 +34,14 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
-import com.liferay.portlet.admin.util.AdminUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -67,25 +70,18 @@ public class UpdateLanguageAction implements Action {
 				httpServletRequest, "persistState", true);
 
 			if (themeDisplay.isSignedIn() && persistState) {
-				User user = themeDisplay.getUser();
-
-				Contact contact = user.getContact();
-
-				AdminUtil.updateUser(
-					httpServletRequest, user.getUserId(), user.getScreenName(),
-					user.getEmailAddress(), user.getFacebookId(),
-					user.getOpenId(), languageId, user.getTimeZoneId(),
-					user.getGreeting(), user.getComments(), contact.getSmsSn(),
-					contact.getFacebookSn(), contact.getJabberSn(),
-					contact.getSkypeSn(), contact.getTwitterSn());
+				UserServiceUtil.updateLanguageId(
+					themeDisplay.getUserId(), languageId);
 			}
 
-			HttpSession httpSession = httpServletRequest.getSession();
+			if (Validator.isNull(themeDisplay.getDoAsUserId())) {
+				HttpSession httpSession = httpServletRequest.getSession();
 
-			httpSession.setAttribute(WebKeys.LOCALE, locale);
+				httpSession.setAttribute(WebKeys.LOCALE, locale);
 
-			LanguageUtil.updateCookie(
-				httpServletRequest, httpServletResponse, locale);
+				LanguageUtil.updateCookie(
+					httpServletRequest, httpServletResponse, locale);
+			}
 		}
 
 		// Send redirect
@@ -112,11 +108,14 @@ public class UpdateLanguageAction implements Action {
 			Locale locale)
 		throws PortalException {
 
-		String redirect = PortalUtil.escapeRedirect(
-			ParamUtil.getString(httpServletRequest, "redirect"));
+		String redirect = ParamUtil.getString(httpServletRequest, "redirect");
 
-		if (Validator.isNull(redirect)) {
-			throw new IllegalArgumentException();
+		if (Validator.isNotNull(redirect)) {
+			redirect = PortalUtil.escapeRedirect(redirect);
+
+			if (Validator.isNull(redirect)) {
+				throw new IllegalArgumentException();
+			}
 		}
 
 		String contextPath = httpServletRequest.getContextPath();
@@ -197,6 +196,49 @@ public class UpdateLanguageAction implements Action {
 
 		Locale currentLocale = themeDisplay.getLocale();
 
+		String mappingPart = StringPool.BLANK;
+
+		String currentLayoutFriendlyURL = layout.getFriendlyURL(currentLocale);
+
+		int currentLayoutFriendlyURLIndex = -1;
+
+		if (Validator.isNotNull(currentLayoutFriendlyURL)) {
+			currentLayoutFriendlyURLIndex = layoutURL.indexOf(
+				currentLayoutFriendlyURL);
+		}
+
+		if (currentLayoutFriendlyURLIndex != -1) {
+			int fromIndex =
+				currentLayoutFriendlyURLIndex +
+					currentLayoutFriendlyURL.length();
+
+			List<FriendlyURLMapper> friendlyURLMappers =
+				PortletLocalServiceUtil.getFriendlyURLMappers();
+
+			for (FriendlyURLMapper friendlyURLMapper : friendlyURLMappers) {
+				if (friendlyURLMapper.isCheckMappingWithPrefix()) {
+					continue;
+				}
+
+				String mappingPath =
+					StringPool.SLASH + friendlyURLMapper.getMapping();
+
+				int mappingIndex = layoutURL.indexOf(mappingPath, fromIndex);
+
+				if (mappingIndex == -1) {
+					continue;
+				}
+
+				int mappingEndIndex = mappingIndex + mappingPath.length();
+
+				if ((mappingEndIndex == layoutURL.length()) ||
+					(layoutURL.charAt(mappingEndIndex) == CharPool.SLASH)) {
+
+					mappingPart = layoutURL.substring(mappingIndex);
+				}
+			}
+		}
+
 		if (themeDisplay.isI18n()) {
 			String i18nPath = themeDisplay.getI18nPath();
 
@@ -225,9 +267,8 @@ public class UpdateLanguageAction implements Action {
 
 			redirect = layoutURL + friendlyURLSeparatorPart;
 		}
-		else if (layoutURL.equals(StringPool.SLASH) ||
-				 isGroupFriendlyURL(
-					 layout.getGroup(), layout, layoutURL, currentLocale)) {
+		else if (isGroupFriendlyURL(
+					layout.getGroup(), layout, layoutURL, currentLocale)) {
 
 			if (localePrependFriendlyURLStyle == 0) {
 				redirect = layoutURL;
@@ -260,10 +301,21 @@ public class UpdateLanguageAction implements Action {
 			if (Validator.isNotNull(friendlyURLSeparatorPart)) {
 				redirect += friendlyURLSeparatorPart;
 			}
+
+			if (Validator.isNotNull(mappingPart)) {
+				redirect += mappingPart;
+			}
 		}
 
 		if (Validator.isNotNull(queryString)) {
 			redirect = redirect + queryString;
+		}
+
+		if (Validator.isNotNull(themeDisplay.getDoAsUserId())) {
+			return HttpComponentsUtil.setParameter(
+				PortalUtil.addPreservedParameters(
+					themeDisplay, layout, redirect, true),
+				"doAsUserLanguageId", LocaleUtil.toLanguageId(locale));
 		}
 
 		return redirect;
@@ -285,22 +337,33 @@ public class UpdateLanguageAction implements Action {
 	protected boolean isGroupFriendlyURL(
 		Group group, Layout layout, String layoutURL, Locale locale) {
 
-		if (Validator.isNull(layoutURL)) {
+		if (Validator.isNull(layoutURL) ||
+			Objects.equals(layoutURL, StringPool.SLASH)) {
+
 			return true;
 		}
 
-		int pos = layoutURL.lastIndexOf(CharPool.SLASH);
+		if ((layoutURL.length() > 1) && layoutURL.endsWith(StringPool.SLASH)) {
+			layoutURL = layoutURL.substring(0, layoutURL.length() - 1);
+		}
 
-		String layoutURLLanguageId = layoutURL.substring(pos + 1);
-
-		Locale layoutURLLocale = LocaleUtil.fromLanguageId(
-			layoutURLLanguageId, true, false);
-
-		if ((layoutURLLocale != null) ||
-			PortalUtil.isGroupFriendlyURL(
+		if (PortalUtil.isGroupFriendlyURL(
 				layoutURL, group.getFriendlyURL(),
 				layout.getFriendlyURL(locale))) {
 
+			return true;
+		}
+
+		int index = layoutURL.indexOf(StringPool.SLASH);
+
+		String string = layoutURL.substring(index + 1);
+
+		index = string.indexOf(CharPool.SLASH);
+
+		Locale layoutURLLocale = LocaleUtil.fromLanguageId(
+			string.substring(index + 1), true, false);
+
+		if (layoutURLLocale != null) {
 			return true;
 		}
 

@@ -97,6 +97,8 @@ public class UserNotificationEventModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table UserNotificationEvent";
 
+	public static final String ENTITY_ALIAS = "userNotificationEvent";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY userNotificationEvent.timestamp DESC";
 
@@ -161,29 +163,28 @@ public class UserNotificationEventModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 32L;
+	public static final long TIMESTAMP_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long USERID_COLUMN_BITMASK = 64L;
+	public static final long TYPE_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 128L;
+	public static final long USERID_COLUMN_BITMASK = 128L;
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *		#getColumnBitmask(String)}
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TIMESTAMP_COLUMN_BITMASK = 256L;
+	public static final long UUID_COLUMN_BITMASK = 256L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.UserNotificationEvent"));
 
 	public UserNotificationEventModelImpl() {
@@ -555,6 +556,16 @@ public class UserNotificationEventModelImpl
 		}
 
 		_timestamp = timestamp;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalTimestamp() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("timestamp"));
 	}
 
 	@JSON
@@ -1126,3 +1137,4 @@ public class UserNotificationEventModelImpl
 	private UserNotificationEvent _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-905995298

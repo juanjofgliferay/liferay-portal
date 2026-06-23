@@ -6,6 +6,7 @@
 package com.liferay.oauth.client.persistence.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.oauth.client.persistence.exception.DuplicateOAuthClientASLocalMetadataExternalReferenceCodeException;
 import com.liferay.oauth.client.persistence.exception.NoSuchOAuthClientASLocalMetadataException;
 import com.liferay.oauth.client.persistence.model.OAuthClientASLocalMetadata;
 import com.liferay.oauth.client.persistence.service.OAuthClientASLocalMetadataLocalServiceUtil;
@@ -123,6 +124,11 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 
 		newOAuthClientASLocalMetadata.setMvccVersion(RandomTestUtil.nextLong());
 
+		newOAuthClientASLocalMetadata.setUuid(RandomTestUtil.randomString());
+
+		newOAuthClientASLocalMetadata.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newOAuthClientASLocalMetadata.setCompanyId(RandomTestUtil.nextLong());
 
 		newOAuthClientASLocalMetadata.setUserId(RandomTestUtil.nextLong());
@@ -135,10 +141,21 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 		newOAuthClientASLocalMetadata.setModifiedDate(
 			RandomTestUtil.nextDate());
 
+		newOAuthClientASLocalMetadata.setIssuer(RandomTestUtil.randomString());
+
+		newOAuthClientASLocalMetadata.setLocalWellKnownEnabled(
+			RandomTestUtil.randomBoolean());
+
 		newOAuthClientASLocalMetadata.setLocalWellKnownURI(
 			RandomTestUtil.randomString());
 
 		newOAuthClientASLocalMetadata.setMetadataJSON(
+			RandomTestUtil.randomString());
+
+		newOAuthClientASLocalMetadata.setOAuthASLocalWellKnownURI(
+			RandomTestUtil.randomString());
+
+		newOAuthClientASLocalMetadata.setOAuthASMetadataJSON(
 			RandomTestUtil.randomString());
 
 		_oAuthClientASLocalMetadatas.add(
@@ -151,6 +168,12 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 		Assert.assertEquals(
 			existingOAuthClientASLocalMetadata.getMvccVersion(),
 			newOAuthClientASLocalMetadata.getMvccVersion());
+		Assert.assertEquals(
+			existingOAuthClientASLocalMetadata.getUuid(),
+			newOAuthClientASLocalMetadata.getUuid());
+		Assert.assertEquals(
+			existingOAuthClientASLocalMetadata.getExternalReferenceCode(),
+			newOAuthClientASLocalMetadata.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingOAuthClientASLocalMetadata.
 				getOAuthClientASLocalMetadataId(),
@@ -175,11 +198,67 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 			Time.getShortTimestamp(
 				newOAuthClientASLocalMetadata.getModifiedDate()));
 		Assert.assertEquals(
+			existingOAuthClientASLocalMetadata.getIssuer(),
+			newOAuthClientASLocalMetadata.getIssuer());
+		Assert.assertEquals(
+			existingOAuthClientASLocalMetadata.isLocalWellKnownEnabled(),
+			newOAuthClientASLocalMetadata.isLocalWellKnownEnabled());
+		Assert.assertEquals(
 			existingOAuthClientASLocalMetadata.getLocalWellKnownURI(),
 			newOAuthClientASLocalMetadata.getLocalWellKnownURI());
 		Assert.assertEquals(
 			existingOAuthClientASLocalMetadata.getMetadataJSON(),
 			newOAuthClientASLocalMetadata.getMetadataJSON());
+		Assert.assertEquals(
+			existingOAuthClientASLocalMetadata.getOAuthASLocalWellKnownURI(),
+			newOAuthClientASLocalMetadata.getOAuthASLocalWellKnownURI());
+		Assert.assertEquals(
+			existingOAuthClientASLocalMetadata.getOAuthASMetadataJSON(),
+			newOAuthClientASLocalMetadata.getOAuthASMetadataJSON());
+	}
+
+	@Test(
+		expected = DuplicateOAuthClientASLocalMetadataExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		OAuthClientASLocalMetadata oAuthClientASLocalMetadata =
+			addOAuthClientASLocalMetadata();
+
+		OAuthClientASLocalMetadata newOAuthClientASLocalMetadata =
+			addOAuthClientASLocalMetadata();
+
+		newOAuthClientASLocalMetadata.setCompanyId(
+			oAuthClientASLocalMetadata.getCompanyId());
+
+		newOAuthClientASLocalMetadata = _persistence.update(
+			newOAuthClientASLocalMetadata);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newOAuthClientASLocalMetadata);
+
+		newOAuthClientASLocalMetadata.setExternalReferenceCode(
+			oAuthClientASLocalMetadata.getExternalReferenceCode());
+
+		_persistence.update(newOAuthClientASLocalMetadata);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
 	}
 
 	@Test
@@ -197,12 +276,47 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 	}
 
 	@Test
-	public void testCountByLocalWellKnownURI() throws Exception {
-		_persistence.countByLocalWellKnownURI("");
+	public void testCountByC_I() throws Exception {
+		_persistence.countByC_I(RandomTestUtil.nextLong(), "");
 
-		_persistence.countByLocalWellKnownURI("null");
+		_persistence.countByC_I(0L, "null");
 
-		_persistence.countByLocalWellKnownURI((String)null);
+		_persistence.countByC_I(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByC_L() throws Exception {
+		_persistence.countByC_L(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByC_L(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByC_LWKURI() throws Exception {
+		_persistence.countByC_LWKURI(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_LWKURI(0L, "null");
+
+		_persistence.countByC_LWKURI(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByC_O() throws Exception {
+		_persistence.countByC_O(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_O(0L, "null");
+
+		_persistence.countByC_O(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -235,10 +349,11 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"OAuthClientASLocalMetadata", "mvccVersion", true,
-			"oAuthClientASLocalMetadataId", true, "companyId", true, "userId",
-			true, "userName", true, "createDate", true, "modifiedDate", true,
-			"localWellKnownURI", true);
+			"OAuthClientASLocalMetadata", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "oAuthClientASLocalMetadataId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "issuer", true, "localWellKnownEnabled",
+			true, "localWellKnownURI", true, "oAuthASLocalWellKnownURI", true);
 	}
 
 	@Test
@@ -545,10 +660,48 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 		OAuthClientASLocalMetadata oAuthClientASLocalMetadata) {
 
 		Assert.assertEquals(
+			Long.valueOf(oAuthClientASLocalMetadata.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+		Assert.assertEquals(
+			oAuthClientASLocalMetadata.getIssuer(),
+			ReflectionTestUtil.invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "issuer"));
+
+		Assert.assertEquals(
+			Long.valueOf(oAuthClientASLocalMetadata.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+		Assert.assertEquals(
 			oAuthClientASLocalMetadata.getLocalWellKnownURI(),
 			ReflectionTestUtil.invoke(
 				oAuthClientASLocalMetadata, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "localWellKnownURI"));
+
+		Assert.assertEquals(
+			Long.valueOf(oAuthClientASLocalMetadata.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+		Assert.assertEquals(
+			oAuthClientASLocalMetadata.getOAuthASLocalWellKnownURI(),
+			ReflectionTestUtil.invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "oAuthASLocalWellKnownURI"));
+
+		Assert.assertEquals(
+			oAuthClientASLocalMetadata.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(oAuthClientASLocalMetadata.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				oAuthClientASLocalMetadata, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected OAuthClientASLocalMetadata addOAuthClientASLocalMetadata()
@@ -561,6 +714,11 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 
 		oAuthClientASLocalMetadata.setMvccVersion(RandomTestUtil.nextLong());
 
+		oAuthClientASLocalMetadata.setUuid(RandomTestUtil.randomString());
+
+		oAuthClientASLocalMetadata.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		oAuthClientASLocalMetadata.setCompanyId(RandomTestUtil.nextLong());
 
 		oAuthClientASLocalMetadata.setUserId(RandomTestUtil.nextLong());
@@ -571,10 +729,21 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 
 		oAuthClientASLocalMetadata.setModifiedDate(RandomTestUtil.nextDate());
 
+		oAuthClientASLocalMetadata.setIssuer(RandomTestUtil.randomString());
+
+		oAuthClientASLocalMetadata.setLocalWellKnownEnabled(
+			RandomTestUtil.randomBoolean());
+
 		oAuthClientASLocalMetadata.setLocalWellKnownURI(
 			RandomTestUtil.randomString());
 
 		oAuthClientASLocalMetadata.setMetadataJSON(
+			RandomTestUtil.randomString());
+
+		oAuthClientASLocalMetadata.setOAuthASLocalWellKnownURI(
+			RandomTestUtil.randomString());
+
+		oAuthClientASLocalMetadata.setOAuthASMetadataJSON(
 			RandomTestUtil.randomString());
 
 		_oAuthClientASLocalMetadatas.add(
@@ -589,3 +758,4 @@ public class OAuthClientASLocalMetadataPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:265863961

@@ -73,26 +73,26 @@ public class LayoutModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"plid", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"parentPlid", Types.BIGINT}, {"privateLayout", Types.BOOLEAN},
-		{"layoutId", Types.BIGINT}, {"parentLayoutId", Types.BIGINT},
-		{"classNameId", Types.BIGINT}, {"classPK", Types.BIGINT},
-		{"name", Types.VARCHAR}, {"title", Types.CLOB},
-		{"description", Types.CLOB}, {"keywords", Types.VARCHAR},
-		{"robots", Types.VARCHAR}, {"type_", Types.VARCHAR},
-		{"typeSettings", Types.CLOB}, {"hidden_", Types.BOOLEAN},
-		{"system_", Types.BOOLEAN}, {"friendlyURL", Types.VARCHAR},
-		{"iconImageId", Types.BIGINT}, {"themeId", Types.VARCHAR},
-		{"colorSchemeId", Types.VARCHAR}, {"styleBookEntryId", Types.BIGINT},
-		{"css", Types.CLOB}, {"priority", Types.INTEGER},
-		{"faviconFileEntryId", Types.BIGINT},
-		{"masterLayoutPlid", Types.BIGINT},
-		{"layoutPrototypeUuid", Types.VARCHAR},
-		{"layoutPrototypeLinkEnabled", Types.BOOLEAN},
-		{"sourcePrototypeLayoutUuid", Types.VARCHAR},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"plid", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"parentPlid", Types.BIGINT},
+		{"privateLayout", Types.BOOLEAN}, {"layoutId", Types.BIGINT},
+		{"parentLayoutId", Types.BIGINT}, {"classNameId", Types.BIGINT},
+		{"classPK", Types.BIGINT}, {"name", Types.VARCHAR},
+		{"title", Types.CLOB}, {"description", Types.CLOB},
+		{"keywords", Types.VARCHAR}, {"robots", Types.VARCHAR},
+		{"type_", Types.VARCHAR}, {"typeSettings", Types.CLOB},
+		{"hidden_", Types.BOOLEAN}, {"system_", Types.BOOLEAN},
+		{"friendlyURL", Types.VARCHAR}, {"iconImageId", Types.BIGINT},
+		{"themeId", Types.VARCHAR}, {"colorSchemeId", Types.VARCHAR},
+		{"styleBookEntryERC", Types.VARCHAR}, {"css", Types.CLOB},
+		{"priority", Types.INTEGER}, {"faviconFileEntryERC", Types.VARCHAR},
+		{"faviconFileEntryScopeERC", Types.VARCHAR},
+		{"masterLPTEERC", Types.VARCHAR}, {"portletLPTEERC", Types.VARCHAR},
+		{"portletLPTESERC", Types.VARCHAR}, {"portletLPTELE", Types.BOOLEAN},
+		{"layoutSetPrototypeLayoutERC", Types.VARCHAR},
 		{"publishDate", Types.TIMESTAMP}, {"lastPublishDate", Types.TIMESTAMP},
 		{"status", Types.INTEGER}, {"statusByUserId", Types.BIGINT},
 		{"statusByUserName", Types.VARCHAR}, {"statusDate", Types.TIMESTAMP}
@@ -105,6 +105,7 @@ public class LayoutModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("plid", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -131,14 +132,16 @@ public class LayoutModelImpl
 		TABLE_COLUMNS_MAP.put("iconImageId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("themeId", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("colorSchemeId", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("styleBookEntryId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("styleBookEntryERC", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("css", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("priority", Types.INTEGER);
-		TABLE_COLUMNS_MAP.put("faviconFileEntryId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("masterLayoutPlid", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("layoutPrototypeUuid", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("layoutPrototypeLinkEnabled", Types.BOOLEAN);
-		TABLE_COLUMNS_MAP.put("sourcePrototypeLayoutUuid", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("faviconFileEntryERC", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("faviconFileEntryScopeERC", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("masterLPTEERC", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("portletLPTEERC", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("portletLPTESERC", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("portletLPTELE", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("layoutSetPrototypeLayoutERC", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("publishDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
@@ -148,15 +151,22 @@ public class LayoutModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table Layout (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,plid LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentPlid LONG,privateLayout BOOLEAN,layoutId LONG,parentLayoutId LONG,classNameId LONG,classPK LONG,name STRING null,title TEXT null,description TEXT null,keywords STRING null,robots STRING null,type_ VARCHAR(75) null,typeSettings TEXT null,hidden_ BOOLEAN,system_ BOOLEAN,friendlyURL VARCHAR(255) null,iconImageId LONG,themeId VARCHAR(75) null,colorSchemeId VARCHAR(75) null,styleBookEntryId LONG,css TEXT null,priority INTEGER,faviconFileEntryId LONG,masterLayoutPlid LONG,layoutPrototypeUuid VARCHAR(75) null,layoutPrototypeLinkEnabled BOOLEAN,sourcePrototypeLayoutUuid VARCHAR(75) null,publishDate DATE null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (plid, ctCollectionId))";
+		"create table Layout (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,plid LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentPlid LONG,privateLayout BOOLEAN,layoutId LONG,parentLayoutId LONG,classNameId LONG,classPK LONG,name STRING null,title TEXT null,description TEXT null,keywords STRING null,robots STRING null,type_ VARCHAR(75) null,typeSettings TEXT null,hidden_ BOOLEAN,system_ BOOLEAN,friendlyURL VARCHAR(255) null,iconImageId LONG,themeId VARCHAR(75) null,colorSchemeId VARCHAR(75) null,styleBookEntryERC VARCHAR(75) null,css TEXT null,priority INTEGER,faviconFileEntryERC VARCHAR(75) null,faviconFileEntryScopeERC VARCHAR(75) null,masterLPTEERC VARCHAR(75) null,portletLPTEERC VARCHAR(75) null,portletLPTESERC VARCHAR(75) null,portletLPTELE BOOLEAN,layoutSetPrototypeLayoutERC VARCHAR(75) null,publishDate DATE null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (plid, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table Layout";
+
+	public static final String ENTITY_ALIAS = "layout";
+
+	public static final String FILTER_PK_COLUMN_NAME = "plid";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY layout.parentLayoutId ASC, layout.priority ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY Layout.parentLayoutId ASC, Layout.priority ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY layout.parentLayoutId ASC, layout.priority ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -204,100 +214,115 @@ public class LayoutModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FRIENDLYURL_COLUMN_BITMASK = 8L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 16L;
+	public static final long FRIENDLYURL_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long HIDDEN_COLUMN_BITMASK = 32L;
+	public static final long GROUPID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long ICONIMAGEID_COLUMN_BITMASK = 64L;
+	public static final long HIDDEN_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LAYOUTID_COLUMN_BITMASK = 128L;
+	public static final long ICONIMAGEID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LAYOUTPROTOTYPEUUID_COLUMN_BITMASK = 256L;
+	public static final long LAYOUTID_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long MASTERLAYOUTPLID_COLUMN_BITMASK = 512L;
+	public static final long LAYOUTSETPROTOTYPELAYOUTERC_COLUMN_BITMASK = 512L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PARENTLAYOUTID_COLUMN_BITMASK = 1024L;
+	public static final long MASTERLAYOUTPAGETEMPLATEENTRYERC_COLUMN_BITMASK =
+		1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PARENTPLID_COLUMN_BITMASK = 2048L;
+	public static final long PARENTLAYOUTID_COLUMN_BITMASK = 2048L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 4096L;
+	public static final long PARENTPLID_COLUMN_BITMASK = 4096L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIVATELAYOUT_COLUMN_BITMASK = 8192L;
+	public static final long PORTLETLAYOUTPAGETEMPLATEENTRYERC_COLUMN_BITMASK =
+		8192L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SOURCEPROTOTYPELAYOUTUUID_COLUMN_BITMASK = 16384L;
+	public static final long
+		PORTLETLAYOUTPAGETEMPLATEENTRYSCOPEERC_COLUMN_BITMASK = 16384L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 32768L;
+	public static final long PRIORITY_COLUMN_BITMASK = 32768L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SYSTEM_COLUMN_BITMASK = 65536L;
+	public static final long PRIVATELAYOUT_COLUMN_BITMASK = 65536L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 131072L;
+	public static final long STATUS_COLUMN_BITMASK = 131072L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 262144L;
+	public static final long SYSTEM_COLUMN_BITMASK = 262144L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long TYPE_COLUMN_BITMASK = 524288L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 1048576L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.Layout"));
 
 	public LayoutModelImpl() {
@@ -394,6 +419,8 @@ public class LayoutModelImpl
 			attributeGetterFunctions.put(
 				"ctCollectionId", Layout::getCtCollectionId);
 			attributeGetterFunctions.put("uuid", Layout::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", Layout::getExternalReferenceCode);
 			attributeGetterFunctions.put("plid", Layout::getPlid);
 			attributeGetterFunctions.put("groupId", Layout::getGroupId);
 			attributeGetterFunctions.put("companyId", Layout::getCompanyId);
@@ -426,21 +453,29 @@ public class LayoutModelImpl
 			attributeGetterFunctions.put(
 				"colorSchemeId", Layout::getColorSchemeId);
 			attributeGetterFunctions.put(
-				"styleBookEntryId", Layout::getStyleBookEntryId);
+				"styleBookEntryERC", Layout::getStyleBookEntryERC);
 			attributeGetterFunctions.put("css", Layout::getCss);
 			attributeGetterFunctions.put("priority", Layout::getPriority);
 			attributeGetterFunctions.put(
-				"faviconFileEntryId", Layout::getFaviconFileEntryId);
+				"faviconFileEntryERC", Layout::getFaviconFileEntryERC);
 			attributeGetterFunctions.put(
-				"masterLayoutPlid", Layout::getMasterLayoutPlid);
+				"faviconFileEntryScopeERC",
+				Layout::getFaviconFileEntryScopeERC);
 			attributeGetterFunctions.put(
-				"layoutPrototypeUuid", Layout::getLayoutPrototypeUuid);
+				"masterLayoutPageTemplateEntryERC",
+				Layout::getMasterLayoutPageTemplateEntryERC);
 			attributeGetterFunctions.put(
-				"layoutPrototypeLinkEnabled",
-				Layout::getLayoutPrototypeLinkEnabled);
+				"portletLayoutPageTemplateEntryERC",
+				Layout::getPortletLayoutPageTemplateEntryERC);
 			attributeGetterFunctions.put(
-				"sourcePrototypeLayoutUuid",
-				Layout::getSourcePrototypeLayoutUuid);
+				"portletLayoutPageTemplateEntryScopeERC",
+				Layout::getPortletLayoutPageTemplateEntryScopeERC);
+			attributeGetterFunctions.put(
+				"portletLayoutPageTemplateEntryLinkEnabled",
+				Layout::getPortletLayoutPageTemplateEntryLinkEnabled);
+			attributeGetterFunctions.put(
+				"layoutSetPrototypeLayoutERC",
+				Layout::getLayoutSetPrototypeLayoutERC);
 			attributeGetterFunctions.put("publishDate", Layout::getPublishDate);
 			attributeGetterFunctions.put(
 				"lastPublishDate", Layout::getLastPublishDate);
@@ -474,6 +509,9 @@ public class LayoutModelImpl
 				(BiConsumer<Layout, Long>)Layout::setCtCollectionId);
 			attributeSetterBiConsumers.put(
 				"uuid", (BiConsumer<Layout, String>)Layout::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<Layout, String>)Layout::setExternalReferenceCode);
 			attributeSetterBiConsumers.put(
 				"plid", (BiConsumer<Layout, Long>)Layout::setPlid);
 			attributeSetterBiConsumers.put(
@@ -536,29 +574,39 @@ public class LayoutModelImpl
 				"colorSchemeId",
 				(BiConsumer<Layout, String>)Layout::setColorSchemeId);
 			attributeSetterBiConsumers.put(
-				"styleBookEntryId",
-				(BiConsumer<Layout, Long>)Layout::setStyleBookEntryId);
+				"styleBookEntryERC",
+				(BiConsumer<Layout, String>)Layout::setStyleBookEntryERC);
 			attributeSetterBiConsumers.put(
 				"css", (BiConsumer<Layout, String>)Layout::setCss);
 			attributeSetterBiConsumers.put(
 				"priority", (BiConsumer<Layout, Integer>)Layout::setPriority);
 			attributeSetterBiConsumers.put(
-				"faviconFileEntryId",
-				(BiConsumer<Layout, Long>)Layout::setFaviconFileEntryId);
+				"faviconFileEntryERC",
+				(BiConsumer<Layout, String>)Layout::setFaviconFileEntryERC);
 			attributeSetterBiConsumers.put(
-				"masterLayoutPlid",
-				(BiConsumer<Layout, Long>)Layout::setMasterLayoutPlid);
-			attributeSetterBiConsumers.put(
-				"layoutPrototypeUuid",
-				(BiConsumer<Layout, String>)Layout::setLayoutPrototypeUuid);
-			attributeSetterBiConsumers.put(
-				"layoutPrototypeLinkEnabled",
-				(BiConsumer<Layout, Boolean>)
-					Layout::setLayoutPrototypeLinkEnabled);
-			attributeSetterBiConsumers.put(
-				"sourcePrototypeLayoutUuid",
+				"faviconFileEntryScopeERC",
 				(BiConsumer<Layout, String>)
-					Layout::setSourcePrototypeLayoutUuid);
+					Layout::setFaviconFileEntryScopeERC);
+			attributeSetterBiConsumers.put(
+				"masterLayoutPageTemplateEntryERC",
+				(BiConsumer<Layout, String>)
+					Layout::setMasterLayoutPageTemplateEntryERC);
+			attributeSetterBiConsumers.put(
+				"portletLayoutPageTemplateEntryERC",
+				(BiConsumer<Layout, String>)
+					Layout::setPortletLayoutPageTemplateEntryERC);
+			attributeSetterBiConsumers.put(
+				"portletLayoutPageTemplateEntryScopeERC",
+				(BiConsumer<Layout, String>)
+					Layout::setPortletLayoutPageTemplateEntryScopeERC);
+			attributeSetterBiConsumers.put(
+				"portletLayoutPageTemplateEntryLinkEnabled",
+				(BiConsumer<Layout, Boolean>)
+					Layout::setPortletLayoutPageTemplateEntryLinkEnabled);
+			attributeSetterBiConsumers.put(
+				"layoutSetPrototypeLayoutERC",
+				(BiConsumer<Layout, String>)
+					Layout::setLayoutSetPrototypeLayoutERC);
 			attributeSetterBiConsumers.put(
 				"publishDate",
 				(BiConsumer<Layout, Date>)Layout::setPublishDate);
@@ -639,6 +687,35 @@ public class LayoutModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -1724,17 +1801,22 @@ public class LayoutModelImpl
 
 	@JSON
 	@Override
-	public long getStyleBookEntryId() {
-		return _styleBookEntryId;
+	public String getStyleBookEntryERC() {
+		if (_styleBookEntryERC == null) {
+			return "";
+		}
+		else {
+			return _styleBookEntryERC;
+		}
 	}
 
 	@Override
-	public void setStyleBookEntryId(long styleBookEntryId) {
+	public void setStyleBookEntryERC(String styleBookEntryERC) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_styleBookEntryId = styleBookEntryId;
+		_styleBookEntryERC = styleBookEntryERC;
 	}
 
 	@JSON
@@ -1784,114 +1866,64 @@ public class LayoutModelImpl
 
 	@JSON
 	@Override
-	public long getFaviconFileEntryId() {
-		return _faviconFileEntryId;
-	}
-
-	@Override
-	public void setFaviconFileEntryId(long faviconFileEntryId) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_faviconFileEntryId = faviconFileEntryId;
-	}
-
-	@JSON
-	@Override
-	public long getMasterLayoutPlid() {
-		return _masterLayoutPlid;
-	}
-
-	@Override
-	public void setMasterLayoutPlid(long masterLayoutPlid) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_masterLayoutPlid = masterLayoutPlid;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public long getOriginalMasterLayoutPlid() {
-		return GetterUtil.getLong(
-			this.<Long>getColumnOriginalValue("masterLayoutPlid"));
-	}
-
-	@JSON
-	@Override
-	public String getLayoutPrototypeUuid() {
-		if (_layoutPrototypeUuid == null) {
+	public String getFaviconFileEntryERC() {
+		if (_faviconFileEntryERC == null) {
 			return "";
 		}
 		else {
-			return _layoutPrototypeUuid;
+			return _faviconFileEntryERC;
 		}
 	}
 
 	@Override
-	public void setLayoutPrototypeUuid(String layoutPrototypeUuid) {
+	public void setFaviconFileEntryERC(String faviconFileEntryERC) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_layoutPrototypeUuid = layoutPrototypeUuid;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalLayoutPrototypeUuid() {
-		return getColumnOriginalValue("layoutPrototypeUuid");
+		_faviconFileEntryERC = faviconFileEntryERC;
 	}
 
 	@JSON
 	@Override
-	public boolean getLayoutPrototypeLinkEnabled() {
-		return _layoutPrototypeLinkEnabled;
-	}
-
-	@JSON
-	@Override
-	public boolean isLayoutPrototypeLinkEnabled() {
-		return _layoutPrototypeLinkEnabled;
-	}
-
-	@Override
-	public void setLayoutPrototypeLinkEnabled(
-		boolean layoutPrototypeLinkEnabled) {
-
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_layoutPrototypeLinkEnabled = layoutPrototypeLinkEnabled;
-	}
-
-	@JSON
-	@Override
-	public String getSourcePrototypeLayoutUuid() {
-		if (_sourcePrototypeLayoutUuid == null) {
+	public String getFaviconFileEntryScopeERC() {
+		if (_faviconFileEntryScopeERC == null) {
 			return "";
 		}
 		else {
-			return _sourcePrototypeLayoutUuid;
+			return _faviconFileEntryScopeERC;
 		}
 	}
 
 	@Override
-	public void setSourcePrototypeLayoutUuid(String sourcePrototypeLayoutUuid) {
+	public void setFaviconFileEntryScopeERC(String faviconFileEntryScopeERC) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_sourcePrototypeLayoutUuid = sourcePrototypeLayoutUuid;
+		_faviconFileEntryScopeERC = faviconFileEntryScopeERC;
+	}
+
+	@JSON
+	@Override
+	public String getMasterLayoutPageTemplateEntryERC() {
+		if (_masterLayoutPageTemplateEntryERC == null) {
+			return "";
+		}
+		else {
+			return _masterLayoutPageTemplateEntryERC;
+		}
+	}
+
+	@Override
+	public void setMasterLayoutPageTemplateEntryERC(
+		String masterLayoutPageTemplateEntryERC) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_masterLayoutPageTemplateEntryERC = masterLayoutPageTemplateEntryERC;
 	}
 
 	/**
@@ -1899,8 +1931,126 @@ public class LayoutModelImpl
 	 *             #getColumnOriginalValue(String)}
 	 */
 	@Deprecated
-	public String getOriginalSourcePrototypeLayoutUuid() {
-		return getColumnOriginalValue("sourcePrototypeLayoutUuid");
+	public String getOriginalMasterLayoutPageTemplateEntryERC() {
+		return getColumnOriginalValue("masterLPTEERC");
+	}
+
+	@JSON
+	@Override
+	public String getPortletLayoutPageTemplateEntryERC() {
+		if (_portletLayoutPageTemplateEntryERC == null) {
+			return "";
+		}
+		else {
+			return _portletLayoutPageTemplateEntryERC;
+		}
+	}
+
+	@Override
+	public void setPortletLayoutPageTemplateEntryERC(
+		String portletLayoutPageTemplateEntryERC) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_portletLayoutPageTemplateEntryERC = portletLayoutPageTemplateEntryERC;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalPortletLayoutPageTemplateEntryERC() {
+		return getColumnOriginalValue("portletLPTEERC");
+	}
+
+	@JSON
+	@Override
+	public String getPortletLayoutPageTemplateEntryScopeERC() {
+		if (_portletLayoutPageTemplateEntryScopeERC == null) {
+			return "";
+		}
+		else {
+			return _portletLayoutPageTemplateEntryScopeERC;
+		}
+	}
+
+	@Override
+	public void setPortletLayoutPageTemplateEntryScopeERC(
+		String portletLayoutPageTemplateEntryScopeERC) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_portletLayoutPageTemplateEntryScopeERC =
+			portletLayoutPageTemplateEntryScopeERC;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalPortletLayoutPageTemplateEntryScopeERC() {
+		return getColumnOriginalValue("portletLPTESERC");
+	}
+
+	@JSON
+	@Override
+	public boolean getPortletLayoutPageTemplateEntryLinkEnabled() {
+		return _portletLayoutPageTemplateEntryLinkEnabled;
+	}
+
+	@JSON
+	@Override
+	public boolean isPortletLayoutPageTemplateEntryLinkEnabled() {
+		return _portletLayoutPageTemplateEntryLinkEnabled;
+	}
+
+	@Override
+	public void setPortletLayoutPageTemplateEntryLinkEnabled(
+		boolean portletLayoutPageTemplateEntryLinkEnabled) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_portletLayoutPageTemplateEntryLinkEnabled =
+			portletLayoutPageTemplateEntryLinkEnabled;
+	}
+
+	@JSON
+	@Override
+	public String getLayoutSetPrototypeLayoutERC() {
+		if (_layoutSetPrototypeLayoutERC == null) {
+			return "";
+		}
+		else {
+			return _layoutSetPrototypeLayoutERC;
+		}
+	}
+
+	@Override
+	public void setLayoutSetPrototypeLayoutERC(
+		String layoutSetPrototypeLayoutERC) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_layoutSetPrototypeLayoutERC = layoutSetPrototypeLayoutERC;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalLayoutSetPrototypeLayoutERC() {
+		return getColumnOriginalValue("layoutSetPrototypeLayoutERC");
 	}
 
 	@JSON
@@ -2319,6 +2469,7 @@ public class LayoutModelImpl
 		layoutImpl.setMvccVersion(getMvccVersion());
 		layoutImpl.setCtCollectionId(getCtCollectionId());
 		layoutImpl.setUuid(getUuid());
+		layoutImpl.setExternalReferenceCode(getExternalReferenceCode());
 		layoutImpl.setPlid(getPlid());
 		layoutImpl.setGroupId(getGroupId());
 		layoutImpl.setCompanyId(getCompanyId());
@@ -2345,15 +2496,21 @@ public class LayoutModelImpl
 		layoutImpl.setIconImageId(getIconImageId());
 		layoutImpl.setThemeId(getThemeId());
 		layoutImpl.setColorSchemeId(getColorSchemeId());
-		layoutImpl.setStyleBookEntryId(getStyleBookEntryId());
+		layoutImpl.setStyleBookEntryERC(getStyleBookEntryERC());
 		layoutImpl.setCss(getCss());
 		layoutImpl.setPriority(getPriority());
-		layoutImpl.setFaviconFileEntryId(getFaviconFileEntryId());
-		layoutImpl.setMasterLayoutPlid(getMasterLayoutPlid());
-		layoutImpl.setLayoutPrototypeUuid(getLayoutPrototypeUuid());
-		layoutImpl.setLayoutPrototypeLinkEnabled(
-			isLayoutPrototypeLinkEnabled());
-		layoutImpl.setSourcePrototypeLayoutUuid(getSourcePrototypeLayoutUuid());
+		layoutImpl.setFaviconFileEntryERC(getFaviconFileEntryERC());
+		layoutImpl.setFaviconFileEntryScopeERC(getFaviconFileEntryScopeERC());
+		layoutImpl.setMasterLayoutPageTemplateEntryERC(
+			getMasterLayoutPageTemplateEntryERC());
+		layoutImpl.setPortletLayoutPageTemplateEntryERC(
+			getPortletLayoutPageTemplateEntryERC());
+		layoutImpl.setPortletLayoutPageTemplateEntryScopeERC(
+			getPortletLayoutPageTemplateEntryScopeERC());
+		layoutImpl.setPortletLayoutPageTemplateEntryLinkEnabled(
+			isPortletLayoutPageTemplateEntryLinkEnabled());
+		layoutImpl.setLayoutSetPrototypeLayoutERC(
+			getLayoutSetPrototypeLayoutERC());
 		layoutImpl.setPublishDate(getPublishDate());
 		layoutImpl.setLastPublishDate(getLastPublishDate());
 		layoutImpl.setStatus(getStatus());
@@ -2375,6 +2532,8 @@ public class LayoutModelImpl
 		layoutImpl.setCtCollectionId(
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		layoutImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		layoutImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		layoutImpl.setPlid(this.<Long>getColumnOriginalValue("plid"));
 		layoutImpl.setGroupId(this.<Long>getColumnOriginalValue("groupId"));
 		layoutImpl.setCompanyId(this.<Long>getColumnOriginalValue("companyId"));
@@ -2412,21 +2571,25 @@ public class LayoutModelImpl
 		layoutImpl.setThemeId(this.<String>getColumnOriginalValue("themeId"));
 		layoutImpl.setColorSchemeId(
 			this.<String>getColumnOriginalValue("colorSchemeId"));
-		layoutImpl.setStyleBookEntryId(
-			this.<Long>getColumnOriginalValue("styleBookEntryId"));
+		layoutImpl.setStyleBookEntryERC(
+			this.<String>getColumnOriginalValue("styleBookEntryERC"));
 		layoutImpl.setCss(this.<String>getColumnOriginalValue("css"));
 		layoutImpl.setPriority(
 			this.<Integer>getColumnOriginalValue("priority"));
-		layoutImpl.setFaviconFileEntryId(
-			this.<Long>getColumnOriginalValue("faviconFileEntryId"));
-		layoutImpl.setMasterLayoutPlid(
-			this.<Long>getColumnOriginalValue("masterLayoutPlid"));
-		layoutImpl.setLayoutPrototypeUuid(
-			this.<String>getColumnOriginalValue("layoutPrototypeUuid"));
-		layoutImpl.setLayoutPrototypeLinkEnabled(
-			this.<Boolean>getColumnOriginalValue("layoutPrototypeLinkEnabled"));
-		layoutImpl.setSourcePrototypeLayoutUuid(
-			this.<String>getColumnOriginalValue("sourcePrototypeLayoutUuid"));
+		layoutImpl.setFaviconFileEntryERC(
+			this.<String>getColumnOriginalValue("faviconFileEntryERC"));
+		layoutImpl.setFaviconFileEntryScopeERC(
+			this.<String>getColumnOriginalValue("faviconFileEntryScopeERC"));
+		layoutImpl.setMasterLayoutPageTemplateEntryERC(
+			this.<String>getColumnOriginalValue("masterLPTEERC"));
+		layoutImpl.setPortletLayoutPageTemplateEntryERC(
+			this.<String>getColumnOriginalValue("portletLPTEERC"));
+		layoutImpl.setPortletLayoutPageTemplateEntryScopeERC(
+			this.<String>getColumnOriginalValue("portletLPTESERC"));
+		layoutImpl.setPortletLayoutPageTemplateEntryLinkEnabled(
+			this.<Boolean>getColumnOriginalValue("portletLPTELE"));
+		layoutImpl.setLayoutSetPrototypeLayoutERC(
+			this.<String>getColumnOriginalValue("layoutSetPrototypeLayoutERC"));
 		layoutImpl.setPublishDate(
 			this.<Date>getColumnOriginalValue("publishDate"));
 		layoutImpl.setLastPublishDate(
@@ -2545,6 +2708,16 @@ public class LayoutModelImpl
 
 		if ((uuid != null) && (uuid.length() == 0)) {
 			layoutCacheModel.uuid = null;
+		}
+
+		layoutCacheModel.externalReferenceCode = getExternalReferenceCode();
+
+		String externalReferenceCode = layoutCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			layoutCacheModel.externalReferenceCode = null;
 		}
 
 		layoutCacheModel.plid = getPlid();
@@ -2679,7 +2852,13 @@ public class LayoutModelImpl
 			layoutCacheModel.colorSchemeId = null;
 		}
 
-		layoutCacheModel.styleBookEntryId = getStyleBookEntryId();
+		layoutCacheModel.styleBookEntryERC = getStyleBookEntryERC();
+
+		String styleBookEntryERC = layoutCacheModel.styleBookEntryERC;
+
+		if ((styleBookEntryERC != null) && (styleBookEntryERC.length() == 0)) {
+			layoutCacheModel.styleBookEntryERC = null;
+		}
 
 		layoutCacheModel.css = getCss();
 
@@ -2691,33 +2870,77 @@ public class LayoutModelImpl
 
 		layoutCacheModel.priority = getPriority();
 
-		layoutCacheModel.faviconFileEntryId = getFaviconFileEntryId();
+		layoutCacheModel.faviconFileEntryERC = getFaviconFileEntryERC();
 
-		layoutCacheModel.masterLayoutPlid = getMasterLayoutPlid();
+		String faviconFileEntryERC = layoutCacheModel.faviconFileEntryERC;
 
-		layoutCacheModel.layoutPrototypeUuid = getLayoutPrototypeUuid();
+		if ((faviconFileEntryERC != null) &&
+			(faviconFileEntryERC.length() == 0)) {
 
-		String layoutPrototypeUuid = layoutCacheModel.layoutPrototypeUuid;
-
-		if ((layoutPrototypeUuid != null) &&
-			(layoutPrototypeUuid.length() == 0)) {
-
-			layoutCacheModel.layoutPrototypeUuid = null;
+			layoutCacheModel.faviconFileEntryERC = null;
 		}
 
-		layoutCacheModel.layoutPrototypeLinkEnabled =
-			isLayoutPrototypeLinkEnabled();
+		layoutCacheModel.faviconFileEntryScopeERC =
+			getFaviconFileEntryScopeERC();
 
-		layoutCacheModel.sourcePrototypeLayoutUuid =
-			getSourcePrototypeLayoutUuid();
+		String faviconFileEntryScopeERC =
+			layoutCacheModel.faviconFileEntryScopeERC;
 
-		String sourcePrototypeLayoutUuid =
-			layoutCacheModel.sourcePrototypeLayoutUuid;
+		if ((faviconFileEntryScopeERC != null) &&
+			(faviconFileEntryScopeERC.length() == 0)) {
 
-		if ((sourcePrototypeLayoutUuid != null) &&
-			(sourcePrototypeLayoutUuid.length() == 0)) {
+			layoutCacheModel.faviconFileEntryScopeERC = null;
+		}
 
-			layoutCacheModel.sourcePrototypeLayoutUuid = null;
+		layoutCacheModel.masterLayoutPageTemplateEntryERC =
+			getMasterLayoutPageTemplateEntryERC();
+
+		String masterLayoutPageTemplateEntryERC =
+			layoutCacheModel.masterLayoutPageTemplateEntryERC;
+
+		if ((masterLayoutPageTemplateEntryERC != null) &&
+			(masterLayoutPageTemplateEntryERC.length() == 0)) {
+
+			layoutCacheModel.masterLayoutPageTemplateEntryERC = null;
+		}
+
+		layoutCacheModel.portletLayoutPageTemplateEntryERC =
+			getPortletLayoutPageTemplateEntryERC();
+
+		String portletLayoutPageTemplateEntryERC =
+			layoutCacheModel.portletLayoutPageTemplateEntryERC;
+
+		if ((portletLayoutPageTemplateEntryERC != null) &&
+			(portletLayoutPageTemplateEntryERC.length() == 0)) {
+
+			layoutCacheModel.portletLayoutPageTemplateEntryERC = null;
+		}
+
+		layoutCacheModel.portletLayoutPageTemplateEntryScopeERC =
+			getPortletLayoutPageTemplateEntryScopeERC();
+
+		String portletLayoutPageTemplateEntryScopeERC =
+			layoutCacheModel.portletLayoutPageTemplateEntryScopeERC;
+
+		if ((portletLayoutPageTemplateEntryScopeERC != null) &&
+			(portletLayoutPageTemplateEntryScopeERC.length() == 0)) {
+
+			layoutCacheModel.portletLayoutPageTemplateEntryScopeERC = null;
+		}
+
+		layoutCacheModel.portletLayoutPageTemplateEntryLinkEnabled =
+			isPortletLayoutPageTemplateEntryLinkEnabled();
+
+		layoutCacheModel.layoutSetPrototypeLayoutERC =
+			getLayoutSetPrototypeLayoutERC();
+
+		String layoutSetPrototypeLayoutERC =
+			layoutCacheModel.layoutSetPrototypeLayoutERC;
+
+		if ((layoutSetPrototypeLayoutERC != null) &&
+			(layoutSetPrototypeLayoutERC.length() == 0)) {
+
+			layoutCacheModel.layoutSetPrototypeLayoutERC = null;
 		}
 
 		Date publishDate = getPublishDate();
@@ -2822,6 +3045,7 @@ public class LayoutModelImpl
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _plid;
 	private long _groupId;
 	private long _companyId;
@@ -2854,14 +3078,16 @@ public class LayoutModelImpl
 	private long _iconImageId;
 	private String _themeId;
 	private String _colorSchemeId;
-	private long _styleBookEntryId;
+	private String _styleBookEntryERC;
 	private String _css;
 	private int _priority;
-	private long _faviconFileEntryId;
-	private long _masterLayoutPlid;
-	private String _layoutPrototypeUuid;
-	private boolean _layoutPrototypeLinkEnabled;
-	private String _sourcePrototypeLayoutUuid;
+	private String _faviconFileEntryERC;
+	private String _faviconFileEntryScopeERC;
+	private String _masterLayoutPageTemplateEntryERC;
+	private String _portletLayoutPageTemplateEntryERC;
+	private String _portletLayoutPageTemplateEntryScopeERC;
+	private boolean _portletLayoutPageTemplateEntryLinkEnabled;
+	private String _layoutSetPrototypeLayoutERC;
 	private Date _publishDate;
 	private Date _lastPublishDate;
 	private int _status;
@@ -2902,6 +3128,8 @@ public class LayoutModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("plid", _plid);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -2928,16 +3156,22 @@ public class LayoutModelImpl
 		_columnOriginalValues.put("iconImageId", _iconImageId);
 		_columnOriginalValues.put("themeId", _themeId);
 		_columnOriginalValues.put("colorSchemeId", _colorSchemeId);
-		_columnOriginalValues.put("styleBookEntryId", _styleBookEntryId);
+		_columnOriginalValues.put("styleBookEntryERC", _styleBookEntryERC);
 		_columnOriginalValues.put("css", _css);
 		_columnOriginalValues.put("priority", _priority);
-		_columnOriginalValues.put("faviconFileEntryId", _faviconFileEntryId);
-		_columnOriginalValues.put("masterLayoutPlid", _masterLayoutPlid);
-		_columnOriginalValues.put("layoutPrototypeUuid", _layoutPrototypeUuid);
+		_columnOriginalValues.put("faviconFileEntryERC", _faviconFileEntryERC);
 		_columnOriginalValues.put(
-			"layoutPrototypeLinkEnabled", _layoutPrototypeLinkEnabled);
+			"faviconFileEntryScopeERC", _faviconFileEntryScopeERC);
 		_columnOriginalValues.put(
-			"sourcePrototypeLayoutUuid", _sourcePrototypeLayoutUuid);
+			"masterLPTEERC", _masterLayoutPageTemplateEntryERC);
+		_columnOriginalValues.put(
+			"portletLPTEERC", _portletLayoutPageTemplateEntryERC);
+		_columnOriginalValues.put(
+			"portletLPTESERC", _portletLayoutPageTemplateEntryScopeERC);
+		_columnOriginalValues.put(
+			"portletLPTELE", _portletLayoutPageTemplateEntryLinkEnabled);
+		_columnOriginalValues.put(
+			"layoutSetPrototypeLayoutERC", _layoutSetPrototypeLayoutERC);
 		_columnOriginalValues.put("publishDate", _publishDate);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 		_columnOriginalValues.put("status", _status);
@@ -2955,6 +3189,13 @@ public class LayoutModelImpl
 		attributeNames.put("type_", "type");
 		attributeNames.put("hidden_", "hidden");
 		attributeNames.put("system_", "system");
+		attributeNames.put("masterLPTEERC", "masterLayoutPageTemplateEntryERC");
+		attributeNames.put(
+			"portletLPTEERC", "portletLayoutPageTemplateEntryERC");
+		attributeNames.put(
+			"portletLPTESERC", "portletLayoutPageTemplateEntryScopeERC");
+		attributeNames.put(
+			"portletLPTELE", "portletLayoutPageTemplateEntryLinkEnabled");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -2976,85 +3217,91 @@ public class LayoutModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("plid", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("groupId", 16L);
+		columnBitmasks.put("plid", 16L);
 
-		columnBitmasks.put("companyId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userId", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("userName", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("createDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("modifiedDate", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("parentPlid", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("privateLayout", 2048L);
+		columnBitmasks.put("parentPlid", 2048L);
 
-		columnBitmasks.put("layoutId", 4096L);
+		columnBitmasks.put("privateLayout", 4096L);
 
-		columnBitmasks.put("parentLayoutId", 8192L);
+		columnBitmasks.put("layoutId", 8192L);
 
-		columnBitmasks.put("classNameId", 16384L);
+		columnBitmasks.put("parentLayoutId", 16384L);
 
-		columnBitmasks.put("classPK", 32768L);
+		columnBitmasks.put("classNameId", 32768L);
 
-		columnBitmasks.put("name", 65536L);
+		columnBitmasks.put("classPK", 65536L);
 
-		columnBitmasks.put("title", 131072L);
+		columnBitmasks.put("name", 131072L);
 
-		columnBitmasks.put("description", 262144L);
+		columnBitmasks.put("title", 262144L);
 
-		columnBitmasks.put("keywords", 524288L);
+		columnBitmasks.put("description", 524288L);
 
-		columnBitmasks.put("robots", 1048576L);
+		columnBitmasks.put("keywords", 1048576L);
 
-		columnBitmasks.put("type_", 2097152L);
+		columnBitmasks.put("robots", 2097152L);
 
-		columnBitmasks.put("typeSettings", 4194304L);
+		columnBitmasks.put("type_", 4194304L);
 
-		columnBitmasks.put("hidden_", 8388608L);
+		columnBitmasks.put("typeSettings", 8388608L);
 
-		columnBitmasks.put("system_", 16777216L);
+		columnBitmasks.put("hidden_", 16777216L);
 
-		columnBitmasks.put("friendlyURL", 33554432L);
+		columnBitmasks.put("system_", 33554432L);
 
-		columnBitmasks.put("iconImageId", 67108864L);
+		columnBitmasks.put("friendlyURL", 67108864L);
 
-		columnBitmasks.put("themeId", 134217728L);
+		columnBitmasks.put("iconImageId", 134217728L);
 
-		columnBitmasks.put("colorSchemeId", 268435456L);
+		columnBitmasks.put("themeId", 268435456L);
 
-		columnBitmasks.put("styleBookEntryId", 536870912L);
+		columnBitmasks.put("colorSchemeId", 536870912L);
 
-		columnBitmasks.put("css", 1073741824L);
+		columnBitmasks.put("styleBookEntryERC", 1073741824L);
 
-		columnBitmasks.put("priority", 2147483648L);
+		columnBitmasks.put("css", 2147483648L);
 
-		columnBitmasks.put("faviconFileEntryId", 4294967296L);
+		columnBitmasks.put("priority", 4294967296L);
 
-		columnBitmasks.put("masterLayoutPlid", 8589934592L);
+		columnBitmasks.put("faviconFileEntryERC", 8589934592L);
 
-		columnBitmasks.put("layoutPrototypeUuid", 17179869184L);
+		columnBitmasks.put("faviconFileEntryScopeERC", 17179869184L);
 
-		columnBitmasks.put("layoutPrototypeLinkEnabled", 34359738368L);
+		columnBitmasks.put("masterLPTEERC", 34359738368L);
 
-		columnBitmasks.put("sourcePrototypeLayoutUuid", 68719476736L);
+		columnBitmasks.put("portletLPTEERC", 68719476736L);
 
-		columnBitmasks.put("publishDate", 137438953472L);
+		columnBitmasks.put("portletLPTESERC", 137438953472L);
 
-		columnBitmasks.put("lastPublishDate", 274877906944L);
+		columnBitmasks.put("portletLPTELE", 274877906944L);
 
-		columnBitmasks.put("status", 549755813888L);
+		columnBitmasks.put("layoutSetPrototypeLayoutERC", 549755813888L);
 
-		columnBitmasks.put("statusByUserId", 1099511627776L);
+		columnBitmasks.put("publishDate", 1099511627776L);
 
-		columnBitmasks.put("statusByUserName", 2199023255552L);
+		columnBitmasks.put("lastPublishDate", 2199023255552L);
 
-		columnBitmasks.put("statusDate", 4398046511104L);
+		columnBitmasks.put("status", 4398046511104L);
+
+		columnBitmasks.put("statusByUserId", 8796093022208L);
+
+		columnBitmasks.put("statusByUserName", 17592186044416L);
+
+		columnBitmasks.put("statusDate", 35184372088832L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}
@@ -3063,3 +3310,4 @@ public class LayoutModelImpl
 	private Layout _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-648258715

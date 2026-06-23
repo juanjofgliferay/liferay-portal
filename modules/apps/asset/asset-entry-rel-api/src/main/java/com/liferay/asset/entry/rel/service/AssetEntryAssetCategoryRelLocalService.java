@@ -6,6 +6,7 @@
 package com.liferay.asset.entry.rel.service;
 
 import com.liferay.asset.entry.rel.model.AssetEntryAssetCategoryRel;
+import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.change.tracking.CTAware;
@@ -130,6 +131,9 @@ public interface AssetEntryAssetCategoryRelLocalService
 
 	public void deleteAssetEntryAssetCategoryRelByAssetCategoryId(
 		long assetCategoryId);
+
+	public void deleteAssetEntryAssetCategoryRelByAssetEntry(
+		AssetEntry assetEntry);
 
 	public void deleteAssetEntryAssetCategoryRelByAssetEntryId(
 		long assetEntryId);
@@ -300,6 +304,10 @@ public interface AssetEntryAssetCategoryRelLocalService
 		long assetCategoryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getAssetEntryAssetCategoryRelsCountByClassNameId(
+		long assetCategoryId, long classNameId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long[] getAssetEntryPrimaryKeys(long assetCategoryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -350,3 +358,4 @@ public interface AssetEntryAssetCategoryRelLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1180767433

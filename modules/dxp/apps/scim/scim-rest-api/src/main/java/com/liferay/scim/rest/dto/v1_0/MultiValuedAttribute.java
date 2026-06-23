@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Olivér Kecskeméty
@@ -51,28 +50,38 @@ public class MultiValuedAttribute implements Serializable {
 			MultiValuedAttribute.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The reference URI of a target resource, if the attribute is a reference."
 	)
 	public String get$ref() {
+		if (_$refSupplier != null) {
+			$ref = _$refSupplier.get();
+
+			_$refSupplier = null;
+		}
+
 		return $ref;
 	}
 
 	public void set$ref(String $ref) {
 		this.$ref = $ref;
+
+		_$refSupplier = null;
 	}
 
 	@JsonIgnore
 	public void set$ref(UnsafeSupplier<String, Exception> $refUnsafeSupplier) {
-		try {
-			$ref = $refUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_$refSupplier = () -> {
+			try {
+				return $refUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -81,30 +90,43 @@ public class MultiValuedAttribute implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String $ref;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _$refSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A human-readable name, primarily used for display purposes and having a mutability of \"immutable\"."
 	)
 	public String getDisplay() {
+		if (_displaySupplier != null) {
+			display = _displaySupplier.get();
+
+			_displaySupplier = null;
+		}
+
 		return display;
 	}
 
 	public void setDisplay(String display) {
 		this.display = display;
+
+		_displaySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDisplay(
 		UnsafeSupplier<String, Exception> displayUnsafeSupplier) {
 
-		try {
-			display = displayUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_displaySupplier = () -> {
+			try {
+				return displayUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -113,30 +135,43 @@ public class MultiValuedAttribute implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String display;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _displaySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Boolean value indicating the 'primary' or preferred attribute value for this attribute, e.g., the preferred mailing address or the primary email address."
 	)
 	public Boolean getPrimary() {
+		if (_primarySupplier != null) {
+			primary = _primarySupplier.get();
+
+			_primarySupplier = null;
+		}
+
 		return primary;
 	}
 
 	public void setPrimary(Boolean primary) {
 		this.primary = primary;
+
+		_primarySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrimary(
 		UnsafeSupplier<Boolean, Exception> primaryUnsafeSupplier) {
 
-		try {
-			primary = primaryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_primarySupplier = () -> {
+			try {
+				return primaryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -145,28 +180,41 @@ public class MultiValuedAttribute implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean primary;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Boolean> _primarySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "A label indicating the attribute's function, e.g., \"work\" or \"home\"."
 	)
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -175,30 +223,43 @@ public class MultiValuedAttribute implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String type;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The attribute's significant value, e.g., email address, phone number."
 	)
 	public String getValue() {
+		if (_valueSupplier != null) {
+			value = _valueSupplier.get();
+
+			_valueSupplier = null;
+		}
+
 		return value;
 	}
 
 	public void setValue(String value) {
 		this.value = value;
+
+		_valueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setValue(
 		UnsafeSupplier<String, Exception> valueUnsafeSupplier) {
 
-		try {
-			value = valueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_valueSupplier = () -> {
+			try {
+				return valueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -206,6 +267,9 @@ public class MultiValuedAttribute implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String value;
+
+	@JsonIgnore
+	private Supplier<String> _valueSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -235,6 +299,8 @@ public class MultiValuedAttribute implements Serializable {
 
 		sb.append("{");
 
+		String $ref = get$ref();
+
 		if ($ref != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -248,6 +314,8 @@ public class MultiValuedAttribute implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String display = getDisplay();
 
 		if (display != null) {
 			if (sb.length() > 1) {
@@ -263,6 +331,8 @@ public class MultiValuedAttribute implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean primary = getPrimary();
+
 		if (primary != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -272,6 +342,8 @@ public class MultiValuedAttribute implements Serializable {
 
 			sb.append(primary);
 		}
+
+		String type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -286,6 +358,8 @@ public class MultiValuedAttribute implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String value = getValue();
 
 		if (value != null) {
 			if (sb.length() > 1) {
@@ -306,8 +380,8 @@ public class MultiValuedAttribute implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.scim.rest.dto.v1_0.MultiValuedAttribute",
 		name = "x-class-name"
 	)
@@ -353,7 +427,10 @@ public class MultiValuedAttribute implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -399,3 +476,4 @@ public class MultiValuedAttribute implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-2103876577

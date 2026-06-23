@@ -5,7 +5,7 @@
 
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, fireEvent, render} from '@testing-library/react';
 import fetch from 'jest-fetch-mock';
 
@@ -21,9 +21,9 @@ describe('DefaultPage', () => {
 	});
 
 	it('renders DefaultPage component without crashing ', () => {
-		const {getByText} = render(<DefaultPage />);
+		const {getByRole} = render(<DefaultPage />);
 
-		const menu = getByText('Menu');
+		const menu = getByRole('menubar');
 
 		expect(menu).toBeInTheDocument();
 	});

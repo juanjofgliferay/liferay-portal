@@ -1,18 +1,42 @@
 assemble:
-    - fromTask: bootJar
-liferay-marketplace-etc-spring-boot-koroneiki-product-purchase:
-    name: Liferay Marketplace Etc Spring Boot Koroneiki Product Purchase
-    oAuth2ApplicationExternalReferenceCode: liferay-marketplace-etc-spring-boot-oauth-application-user-agent
-    resourcePath: /koroneiki/product-purchase
-    type: objectAction
-liferay-marketplace-etc-spring-boot-oauth-application-user-agent:
+    -   fromTask: bootJar
+liferay-marketplace-etc-spring-boot-oahs:
+    .serviceAddress: localhost:58081
+    .serviceScheme: http
+    name: Liferay Marketplace Etc Spring Boot OAuth Application Headless Server
+    scopes:
+        -   Liferay.Headless.Admin.Address.everything
+        -   Liferay.Headless.Admin.User.everything
+        -   Liferay.Headless.Admin.Workflow.everything
+        -   Liferay.Headless.Commerce.Admin.Catalog.everything
+        -   Liferay.Headless.Commerce.Admin.Channel.everything
+        -   Liferay.Headless.Commerce.Admin.Order.everything
+        -   Liferay.Headless.Commerce.Delivery.Catalog.everything
+        -   Liferay.Headless.Delivery.everything
+        -   Liferay.Notification.REST.everything
+        -   c_publisherassetattachment.everything
+        -   c_publisherassets.everything
+        -   c_trialextensionrequest.everything
+    type: oAuthApplicationHeadlessServer
+liferay-marketplace-etc-spring-boot-oaua:
     .serviceAddress: localhost:58081
     .serviceScheme: http
     name: Liferay Marketplace Etc Spring Boot OAuth Application User Agent
     scopes:
-        - Liferay.Headless.Admin.User.everything
-        - Liferay.Headless.Admin.Workflow.everything
-        - Liferay.Headless.Commerce.Admin.Catalog.everything
-        - Liferay.Headless.Commerce.Admin.Order.everything
-        - Liferay.Headless.Commerce.Delivery.Catalog.everything
+        -   Liferay.Headless.Admin.User.everything
     type: oAuthApplicationUserAgent
+liferay-marketplace-etc-spring-boot-object-action-ai-hub-provisioning:
+    name: Liferay Marketplace Etc Spring Boot Object Action AI Hub Provisioning
+    oAuth2ApplicationExternalReferenceCode: liferay-marketplace-etc-spring-boot-oaua
+    resourcePath: /object/action/ai/hub/provisioning
+    type: objectAction
+liferay-marketplace-etc-spring-boot-object-action-email-dispatch:
+    name: Liferay Marketplace Etc Spring Boot Object Action Email Dispatch
+    oAuth2ApplicationExternalReferenceCode: liferay-marketplace-etc-spring-boot-oaua
+    resourcePath: /object/action/email/dispatch
+    type: objectAction
+liferay-marketplace-etc-spring-boot-object-action-product-purchase:
+    name: Liferay Marketplace Etc Spring Boot Object Action Product Purchase
+    oAuth2ApplicationExternalReferenceCode: liferay-marketplace-etc-spring-boot-oaua
+    resourcePath: /object/action/product/purchase
+    type: objectAction

@@ -5,13 +5,14 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
 <%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
 taglib uri="http://liferay.com/tld/clay" prefix="clay" %><%@
 taglib uri="http://liferay.com/tld/ddm" prefix="liferay-ddm" %><%@
+taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
 <%@ page import="com.liferay.petra.string.StringPool" %><%@
@@ -37,11 +38,11 @@ TagFacetPortletInstanceConfiguration tagFacetPortletInstanceConfiguration = asse
 
 <c:choose>
 	<c:when test="<%= assetTagsSearchFacetDisplayContext.isRenderNothing() %>">
-		<aui:input autocomplete="off" name="<%= HtmlUtil.escapeAttribute(assetTagsSearchFacetDisplayContext.getParameterName()) %>" type="hidden" value="<%= assetTagsSearchFacetDisplayContext.getParameterValue() %>" />
+		<aui:input name="<%= HtmlUtil.escapeAttribute(assetTagsSearchFacetDisplayContext.getParameterName()) %>" type="hidden" value="<%= assetTagsSearchFacetDisplayContext.getParameterValue() %>" />
 	</c:when>
 	<c:otherwise>
-		<aui:form action="#" method="post" name="fm">
-			<aui:input autocomplete="off" name="<%= HtmlUtil.escapeAttribute(assetTagsSearchFacetDisplayContext.getParameterName()) %>" type="hidden" value="<%= assetTagsSearchFacetDisplayContext.getParameterValue() %>" />
+		<aui:form action="#" autocomplete="off" method="post" name="fm">
+			<aui:input name="<%= HtmlUtil.escapeAttribute(assetTagsSearchFacetDisplayContext.getParameterName()) %>" type="hidden" value="<%= assetTagsSearchFacetDisplayContext.getParameterValue() %>" />
 			<aui:input cssClass="facet-parameter-name" name="facet-parameter-name" type="hidden" value="<%= assetTagsSearchFacetDisplayContext.getParameterName() %>" />
 			<aui:input cssClass="start-parameter-name" name="start-parameter-name" type="hidden" value="<%= assetTagsSearchFacetDisplayContext.getPaginationStartParameterName() %>" />
 
@@ -80,6 +81,10 @@ TagFacetPortletInstanceConfiguration tagFacetPortletInstanceConfiguration = asse
 								onClick="Liferay.Search.FacetUtil.clearSelections(event);"
 							>
 								<strong><liferay-ui:message key="clear" /></strong>
+
+								<span class="sr-only">
+									<liferay-ui:message arguments="tag-facet-portlet-instance-configuration-name" key="x-filter" />
+								</span>
 							</clay:button>
 						</c:if>
 
@@ -95,17 +100,18 @@ TagFacetPortletInstanceConfiguration tagFacetPortletInstanceConfiguration = asse
 								<li class="facet-value">
 									<div class="custom-checkbox custom-control">
 										<label class="facet-checkbox-label" for="<portlet:namespace />term_<%= i %>">
-											<input
-												autocomplete="off"
-												<%= bucketDisplayContext.isSelected() ? "checked" : StringPool.BLANK %>
-												class="custom-control-input facet-term"
-												data-term-id="<%= HtmlUtil.escapeAttribute(bucketDisplayContext.getFilterValue()) %>"
-												disabled
-												id="<portlet:namespace />term_<%= i %>"
-												name="<portlet:namespace />term_<%= i %>"
-												onChange="Liferay.Search.FacetUtil.changeSelection(event);"
-												type="checkbox"
-											/>
+											<liferay-ui:csp>
+												<input
+													<%= bucketDisplayContext.isSelected() ? "checked" : StringPool.BLANK %>
+													class="custom-control-input facet-term"
+													data-term-id="<%= HtmlUtil.escapeAttribute(bucketDisplayContext.getFilterValue()) %>"
+													disabled
+													id="<portlet:namespace />term_<%= i %>"
+													name="<portlet:namespace />term_<%= i %>"
+													onChange="Liferay.Search.FacetUtil.changeSelection(event);"
+													type="checkbox"
+												/>
+											</liferay-ui:csp>
 
 											<span class="custom-control-label term-name <%= bucketDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>">
 												<span class="custom-control-label-text">
@@ -141,8 +147,11 @@ TagFacetPortletInstanceConfiguration tagFacetPortletInstanceConfiguration = asse
 	</c:otherwise>
 </c:choose>
 
-<aui:script use="liferay-search-facet-util">
-	Liferay.Search.FacetUtil.enableInputs(
-		document.querySelectorAll('#<portlet:namespace />fm .facet-term')
-	);
-</aui:script>
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"namespace", liferayPortletResponse.getNamespace()
+		).build()
+	%>'
+	module="{FacetUtil} from portal-search-web"
+/>

@@ -9,6 +9,7 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.source.formatter.check.util.JavaSourceUtil;
+import com.liferay.source.formatter.check.util.SourceUtil;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -44,8 +45,18 @@ public class JavaAssertEqualsCheck extends BaseFileCheck {
 			}
 
 			String actualParameter = parametersList.get(1);
+			String expectedParameter = parametersList.get(0);
 
-			String strippedQuotesActualParameter = stripQuotes(actualParameter);
+			if ((actualParameter.startsWith("expected") ||
+				 actualParameter.startsWith("\"expected")) &&
+				(expectedParameter.startsWith("expected") ||
+				 expectedParameter.startsWith("\"expected"))) {
+
+				continue;
+			}
+
+			String strippedQuotesActualParameter = SourceUtil.stripQuotes(
+				actualParameter);
 
 			if (!actualParameter.startsWith("expected") &&
 				!Validator.isDigit(actualParameter) &&
@@ -55,7 +66,6 @@ public class JavaAssertEqualsCheck extends BaseFileCheck {
 			}
 
 			String assertEquals = matcher.group();
-			String expectedParameter = parametersList.get(0);
 
 			String newAssertEquals = StringUtil.replaceFirst(
 				assertEquals, expectedParameter, actualParameter,

@@ -93,10 +93,10 @@ public class ObjectEntryInfoItemPermissionProvider
 					_objectDefinition, null);
 
 			if (objectEntry != null) {
-				hasPermission(
+				return hasPermission(
 					permissionChecker,
 					ObjectEntryUtil.toObjectEntry(
-						_objectDefinition.getObjectDefinitionId(), objectEntry),
+						_objectDefinition, objectEntry),
 					actionId);
 			}
 		}

@@ -47,6 +47,7 @@ public class AccountGroupWrapper
 		attributes.put("description", getDescription());
 		attributes.put("name", getName());
 		attributes.put("type", getType());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -131,6 +132,12 @@ public class AccountGroupWrapper
 
 		if (type != null) {
 			setType(type);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -237,6 +244,16 @@ public class AccountGroupWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
+	}
+
+	/**
+	 * Returns the status of this account group.
+	 *
+	 * @return the status of this account group
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
 	}
 
 	/**
@@ -405,6 +422,16 @@ public class AccountGroupWrapper
 	}
 
 	/**
+	 * Sets the status of this account group.
+	 *
+	 * @param status the status of this account group
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets the type of this account group.
 	 *
 	 * @param type the type of this account group
@@ -470,3 +497,4 @@ public class AccountGroupWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1121002861

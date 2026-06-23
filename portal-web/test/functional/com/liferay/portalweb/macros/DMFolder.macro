@@ -309,7 +309,7 @@ definition {
 		else {
 			AssertClick(
 				key_dmFolderName = ${targetFolderName},
-				locator1 = "DocumentsAndMedia#SELECT_FOLDER_BUTTON",
+				locator1 = "DocumentsAndMedia#SELECT_RESOURCE_BUTTON",
 				value1 = "Select");
 		}
 
@@ -464,7 +464,9 @@ definition {
 	macro gotoPGViaMG(mgFolderName = null) {
 		var key_mgFolderName = ${mgFolderName};
 
-		DMFolder.gotoEntry(dmFolderName = ${mgFolderName});
+		Click(
+			key_text = ${mgFolderName},
+			locator1 = "Link#ANY");
 
 		AssertTextEquals(
 			locator1 = "MediaGallery#BREADCRUMB",
@@ -487,11 +489,15 @@ definition {
 
 		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
 
+		var siteName = TestCase.getSiteName();
+
+		echo("## * siteName: ${siteName}");
+
 		if (${moveSubfolder} == "true") {
 			AssertClick(
-				key_breadcrumbName = "Home",
+				key_breadcrumbName = ${siteName},
 				locator1 = "BreadcrumbPortlet#BREADCRUMB_FOLDER",
-				value1 = "Home");
+				value1 = ${siteName});
 
 			AssertClick(
 				key_text = "Select This Folder",
@@ -739,7 +745,9 @@ definition {
 	macro viewPGViaMG(mgFolderName = null) {
 		var key_mgFolderName = ${mgFolderName};
 
-		DMFolder.gotoEntry(dmFolderName = ${mgFolderName});
+		Click(
+			key_text = ${mgFolderName},
+			locator1 = "Link#ANY");
 
 		AssertTextEquals(
 			locator1 = "MediaGallery#FOLDER_HEADER_TITLE",

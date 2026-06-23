@@ -20,12 +20,13 @@ import com.liferay.saml.opensaml.integration.processor.SamlSpIdpConnectionProces
 import com.liferay.saml.opensaml.integration.processor.factory.SamlSpIdpConnectionProcessorFactory;
 import com.liferay.saml.persistence.model.SamlSpIdpConnection;
 import com.liferay.saml.persistence.service.SamlSpIdpConnectionLocalService;
+import com.liferay.saml.web.internal.util.SamlPermissionUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
 		"mvc.command.name=/admin/update_identity_provider_connection"
 	},
 	service = MVCActionCommand.class
@@ -64,6 +65,9 @@ public class UpdateIdentityProviderConnectionMVCActionCommand
 			samlSpIdpConnection =
 				_samlSpIdpConnectionLocalService.fetchSamlSpIdpConnection(
 					samlSpIdpConnectionId);
+
+			SamlPermissionUtil.checkPermission(
+				_portal.getCompanyId(actionRequest), samlSpIdpConnection);
 		}
 
 		SamlSpIdpConnectionProcessor samlSpIdpConnectionProcessor =

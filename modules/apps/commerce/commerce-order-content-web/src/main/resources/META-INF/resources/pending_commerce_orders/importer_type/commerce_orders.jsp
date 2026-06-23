@@ -11,10 +11,11 @@
 	contextParams='<%=
 		HashMapBuilder.<String, String>put(
 			"commerceOrderId", String.valueOf(commerceOrderContentDisplayContext.getCommerceOrderId())
+		).put(
+			"orderDetailURL", ParamUtil.getString(request, "orderDetailURL")
 		).build()
 	%>'
 	dataProviderKey="<%= CommerceOrderFDSNames.IMPORT_ORDERS %>"
 	id="<%= CommerceOrderFDSNames.IMPORT_ORDERS %>"
-	itemsPerPage="<%= 10 %>"
 	style="fluid"
 />

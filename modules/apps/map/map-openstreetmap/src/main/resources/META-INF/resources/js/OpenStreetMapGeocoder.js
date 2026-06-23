@@ -58,10 +58,11 @@ export default class OpenStreetMapGeocoder {
 	 * @review
 	 */
 	forward(query, callback) {
-		const forwardURL = OpenStreetMapGeocoder.TPL_FORWARD_GEOCODING_URL.replace(
-			'{query}',
-			query
-		);
+		const forwardURL =
+			OpenStreetMapGeocoder.TPL_FORWARD_GEOCODING_URL.replace(
+				'{query}',
+				query
+			);
 
 		fetch(forwardURL)
 			.then((response) => response.json())
@@ -75,14 +76,21 @@ export default class OpenStreetMapGeocoder {
 	 * @review
 	 */
 	reverse(location, callback) {
-		const reverseURL = OpenStreetMapGeocoder.TPL_REVERSE_GEOCODING_URL.replace(
-			'{lat}',
-			location.lat
-		).replace('{lng}', location.lng);
+		const reverseURL =
+			OpenStreetMapGeocoder.TPL_REVERSE_GEOCODING_URL.replace(
+				'{lat}',
+				location.lat
+			).replace('{lng}', location.lng);
 
 		fetch(reverseURL)
 			.then((response) => response.json())
-			.then((response) => this._handleReverse(response, callback));
+			.catch(() => ({error: true}))
+			.then((response) =>
+				this._handleReverse(
+					response.error ? location : response,
+					callback
+				)
+			);
 	}
 }
 

@@ -1,6 +1,7 @@
-@component-name = "portal-lima"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property test.liferay.virtual.instance = "false";
@@ -11,6 +12,10 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
 	}
 
 	tearDown {
@@ -317,13 +322,13 @@ definition {
 		Comments.configureCommentEditable(commentEditable = "true");
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
 		JSONUser.addUser(
 			creatorEmailAddress = "test@www.able.com",
-			creatorPassword = "test",
+			creatorPassword = PropsUtil.get("default.admin.password"),
 			portalInstanceName = "www.able.com",
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "userea@www.able.com",
@@ -335,7 +340,7 @@ definition {
 
 		UserNavigator.gotoUser(userScreenName = "usersn");
 
-		User.editPassword(newPassword = "test");
+		User.editPassword(newPassword = PropsUtil.get("default.admin.password"));
 
 		Navigator.openURL(baseURL = "http://www.able.com:8080");
 
@@ -365,7 +370,7 @@ definition {
 		User.logoutPG(specificURL = "http://www.able.com:8080");
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "userea@www.able.com");
 

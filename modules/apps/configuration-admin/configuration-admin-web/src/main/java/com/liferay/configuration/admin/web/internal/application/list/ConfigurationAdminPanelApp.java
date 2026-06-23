@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class ConfigurationAdminPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "hdd";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class ConfigurationAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS + ")"
+		target = "(jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS + ")"
 	)
 	private Portlet _portlet;
 

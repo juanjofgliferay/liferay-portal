@@ -26,6 +26,7 @@ renderResponse.setTitle((kbTemplate == null) ? LanguageUtil.get(request, "new-te
 
 <clay:container-fluid
 	cssClass="container-form-lg"
+	size="lg"
 >
 	<aui:form action="<%= updateKBTemplateURL %>" method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "updateKBTemplate();" %>'>
 		<aui:input name="mvcPath" type="hidden" value="/admin/common/edit_kb_template.jsp" />
@@ -74,7 +75,7 @@ renderResponse.setTitle((kbTemplate == null) ? LanguageUtil.get(request, "new-te
 	</aui:form>
 </clay:container-fluid>
 
-<script>
+<aui:script>
 	function <portlet:namespace />updateKBTemplate() {
 		Liferay.Util.postForm(document.<portlet:namespace />fm, {
 			data: {
@@ -85,4 +86,4 @@ renderResponse.setTitle((kbTemplate == null) ? LanguageUtil.get(request, "new-te
 			},
 		});
 	}
-</script>
+</aui:script>

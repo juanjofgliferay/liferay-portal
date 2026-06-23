@@ -57,7 +57,15 @@ public interface CommerceVirtualOrderItem
 	public com.liferay.commerce.model.CommerceOrderItem getCommerceOrderItem()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public com.liferay.portal.kernel.repository.model.FileEntry getFileEntry()
+	public java.util.List<CommerceVirtualOrderItemFileEntry>
+		getCommerceVirtualOrderItemFileEntries();
+
+	public int getCommerceVirtualOrderItemFileEntriesCount();
+
+	public CommerceVirtualOrderItemFileEntry
+			getCommerceVirtualOrderItemFileEntry(
+				long commerceVirtualOrderItemFileEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2056594551

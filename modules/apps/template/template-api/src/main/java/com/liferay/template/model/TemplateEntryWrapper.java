@@ -39,6 +39,7 @@ public class TemplateEntryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("templateEntryId", getTemplateEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -73,6 +74,13 @@ public class TemplateEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long templateEntryId = (Long)attributes.get("templateEntryId");
@@ -186,6 +194,16 @@ public class TemplateEntryWrapper
 	@Override
 	public long getDDMTemplateId() {
 		return model.getDDMTemplateId();
+	}
+
+	/**
+	 * Returns the external reference code of this template entry.
+	 *
+	 * @return the external reference code of this template entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -354,6 +372,16 @@ public class TemplateEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this template entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this template entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this template entry.
 	 *
 	 * @param groupId the group ID of this template entry
@@ -503,3 +531,4 @@ public class TemplateEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1244923000

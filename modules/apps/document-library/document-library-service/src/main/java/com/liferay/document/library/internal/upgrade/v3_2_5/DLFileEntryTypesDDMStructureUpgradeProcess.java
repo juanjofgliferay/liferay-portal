@@ -44,14 +44,14 @@ public class DLFileEntryTypesDDMStructureUpgradeProcess extends UpgradeProcess {
 			_ddmPermissionSupport.getStructureModelResourceName(
 				DLFileEntryMetadata.class.getName());
 
-		List<ResourceAction> dlFileEntryMetadataResourceAction =
+		List<ResourceAction> dlFileEntryMetadataResourceActions =
 			_resourceActionLocalService.getResourceActions(
 				dlFileEntryMetadataResourceName);
 
 		Set<String> dlFileEntryMetadataActionIds = new HashSet<>();
 
 		for (ResourceAction resourceAction :
-				dlFileEntryMetadataResourceAction) {
+				dlFileEntryMetadataResourceActions) {
 
 			dlFileEntryMetadataActionIds.add(resourceAction.getActionId());
 		}
@@ -59,6 +59,7 @@ public class DLFileEntryTypesDDMStructureUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select companyId, fileEntryTypeId, dataDefinitionId from " +
 					"DLFileEntryType");
+
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {

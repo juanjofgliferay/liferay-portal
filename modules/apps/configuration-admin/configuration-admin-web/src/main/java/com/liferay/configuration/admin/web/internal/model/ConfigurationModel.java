@@ -145,8 +145,9 @@ public class ConfigurationModel implements ExtendedObjectClassDefinition {
 	}
 
 	public String[] getDescriptionArguments() {
-		return StringUtil.split(
-			_extensionAttributes.get("description-arguments"));
+		return _split(
+			_extensionAttributes.get("description-arguments"),
+			_extensionAttributes.get("arguments-delimiter"));
 	}
 
 	public ExtendedAttributeDefinition getExtendedAttributeDefinition(
@@ -197,7 +198,7 @@ public class ConfigurationModel implements ExtendedObjectClassDefinition {
 	}
 
 	public String getFeatureFlagKey() {
-		return _extensionAttributes.get("featureFlagKey");
+		return _extensionAttributes.get("feature.flag.key");
 	}
 
 	public Map<String, String> getHintAttributes() {
@@ -248,7 +249,9 @@ public class ConfigurationModel implements ExtendedObjectClassDefinition {
 	}
 
 	public String[] getNameArguments() {
-		return StringUtil.split(_extensionAttributes.get("name-arguments"));
+		return _split(
+			_extensionAttributes.get("name-arguments"),
+			_extensionAttributes.get("arguments-delimiter"));
 	}
 
 	public String getScope() {
@@ -338,6 +341,10 @@ public class ConfigurationModel implements ExtendedObjectClassDefinition {
 		return _isScope(Scope.COMPANY);
 	}
 
+	public boolean isDeprecated() {
+		return GetterUtil.getBoolean(_extensionAttributes.get("deprecated"));
+	}
+
 	public boolean isFactory() {
 		return _factory;
 	}
@@ -363,13 +370,8 @@ public class ConfigurationModel implements ExtendedObjectClassDefinition {
 		Set<Configuration.ConfigurationAttribute> configurationAttributes =
 			_configuration.getAttributes();
 
-		if (configurationAttributes.contains(
-				Configuration.ConfigurationAttribute.READ_ONLY)) {
-
-			return true;
-		}
-
-		return false;
+		return configurationAttributes.contains(
+			Configuration.ConfigurationAttribute.READ_ONLY);
 	}
 
 	public boolean isStrictScope() {
@@ -409,6 +411,18 @@ public class ConfigurationModel implements ExtendedObjectClassDefinition {
 
 	private boolean _isScope(Scope scope) {
 		return scope.equals(getScope());
+	}
+
+	private String[] _split(String argument, String delimiter) {
+		if (Validator.isBlank(delimiter)) {
+			if (Validator.isBlank(argument)) {
+				return new String[0];
+			}
+
+			return new String[] {argument};
+		}
+
+		return StringUtil.split(argument, delimiter);
 	}
 
 	private final String _bundleLocation;

@@ -1,0 +1,117 @@
+[
+	{
+		"externalReferenceCode": "ERC-001",
+		"name": "Omni Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-002",
+		"name": "SaaS Experience Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-003",
+		"name": "PaaS Experience Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-004",
+		"name": "Cloud Native Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-005",
+		"name": "Business Plan Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-006",
+		"name": "Pro Plan Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-007",
+		"name": "Enterprise Plan Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-008",
+		"name": "Self-Hosted Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-009",
+		"name": "Commerce Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-010",
+		"name": "Analytics Cloud Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-011",
+		"name": "Enterprise Search Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-012",
+		"name": "Portal Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-013",
+		"name": "Other Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-014",
+		"name": "Partnership Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-015",
+		"name": "7.3 Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-016",
+		"name": "7.2 Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-017",
+		"name": "7.1 Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-018",
+		"name": "7.0 Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-019",
+		"name": "SLA Missing Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-020",
+		"name": "SLA Expired Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-021",
+		"name": "SLA Future Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-022",
+		"name": "Legacy SaaS Test Account",
+		"type": "business"
+	},
+	{
+		"externalReferenceCode": "ERC-023",
+		"name": "AI Hub Test Account",
+		"type": "business"
+	}
+]

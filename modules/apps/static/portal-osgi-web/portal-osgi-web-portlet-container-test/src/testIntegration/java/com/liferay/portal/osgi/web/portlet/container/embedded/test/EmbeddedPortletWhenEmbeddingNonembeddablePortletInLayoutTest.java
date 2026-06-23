@@ -16,11 +16,11 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.osgi.web.portlet.container.test.BasePortletContainerTestCase;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -150,7 +150,7 @@ public class EmbeddedPortletWhenEmbeddingNonembeddablePortletInLayoutTest
 		PortletPreferences embeddedPortletPreferences = portletPreferences.get(
 			0);
 
-		javax.portlet.PortletPreferences jxPortletPreferences =
+		jakarta.portlet.PortletPreferences jxPortletPreferences =
 			_portletPreferenceValueLocalService.getPreferences(
 				embeddedPortletPreferences);
 
@@ -159,15 +159,14 @@ public class EmbeddedPortletWhenEmbeddingNonembeddablePortletInLayoutTest
 			jxPortletPreferences.getValues("testName", null));
 	}
 
-	private static String[] _layoutStaticPortletsAll;
-	private static LayoutTypePortlet _layoutTypePortlet;
+	private String[] _layoutStaticPortletsAll;
+	private LayoutTypePortlet _layoutTypePortlet;
 
 	@Inject
-	private static PortletPreferencesLocalService
-		_portletPreferencesLocalService;
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Inject
-	private static PortletPreferenceValueLocalService
+	private PortletPreferenceValueLocalService
 		_portletPreferenceValueLocalService;
 
 	private TestNonembeddedPortlet _testNonembeddedPortlet;

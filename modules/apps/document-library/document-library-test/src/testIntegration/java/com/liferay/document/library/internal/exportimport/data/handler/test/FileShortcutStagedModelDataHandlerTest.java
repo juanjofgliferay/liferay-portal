@@ -17,6 +17,7 @@ import com.liferay.document.library.kernel.service.DLFileShortcutLocalServiceUti
 import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
@@ -77,12 +78,12 @@ public class FileShortcutStagedModelDataHandlerTest
 		StagedModelDataHandlerUtil.exportStagedModel(
 			portletDataContext, fileShortcut);
 
-		initImport();
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			FileShortcut exportedFileShortcut =
+				(FileShortcut)readExportedStagedModel(fileShortcut);
 
-		FileShortcut exportedFileShortcut =
-			(FileShortcut)readExportedStagedModel(fileShortcut);
-
-		Assert.assertNull(exportedFileShortcut);
+			Assert.assertNull(exportedFileShortcut);
+		}
 	}
 
 	@Override
@@ -110,7 +111,8 @@ public class FileShortcutStagedModelDataHandlerTest
 			null, TestPropsValues.getUserId(), group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + ".txt", ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
 
 		addDependentStagedModel(
 			dependentStagedModelsMap, DLFileEntry.class, fileEntry);
@@ -135,7 +137,7 @@ public class FileShortcutStagedModelDataHandlerTest
 		FileEntry fileEntry = (FileEntry)fileEntryDependentStagedModels.get(0);
 
 		return DLAppLocalServiceUtil.addFileShortcut(
-			TestPropsValues.getUserId(), group.getGroupId(),
+			null, TestPropsValues.getUserId(), group.getGroupId(),
 			folder.getFolderId(), fileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext(
 				group.getGroupId(), TestPropsValues.getUserId()));

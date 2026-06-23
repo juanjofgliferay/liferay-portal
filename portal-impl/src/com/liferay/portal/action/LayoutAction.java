@@ -12,8 +12,10 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.User;
@@ -31,6 +33,7 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.sso.SSOUtil;
@@ -38,26 +41,25 @@ import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.constants.ActionConstants;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.LiferayPortletUtil;
 import com.liferay.portlet.RenderParametersPool;
 import com.liferay.portlet.internal.RenderData;
 import com.liferay.portlet.internal.RenderStateUtil;
+
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.PrintWriter;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.ResourceRequest;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -83,7 +85,20 @@ public class LayoutAction implements Action {
 			Layout requestedLayout = (Layout)httpServletRequest.getAttribute(
 				WebKeys.REQUESTED_LAYOUT);
 
-			if (requestedLayout != null) {
+			if ((requestedLayout == null) ||
+				!AuthLoginGroupSettingsUtil.isPromptEnabled(
+					requestedLayout.getGroupId())) {
+
+				String redirect = PortalUtil.getLayoutURL(
+					themeDisplay.getLayout(), themeDisplay);
+
+				if (_log.isDebugEnabled()) {
+					_log.debug("Redirect default layout to " + redirect);
+				}
+
+				httpServletResponse.sendRedirect(redirect);
+			}
+			else {
 				String redirectParam = "redirect";
 
 				if (Validator.isNotNull(PropsValues.AUTH_LOGIN_PORTLET_NAME)) {
@@ -133,16 +148,6 @@ public class LayoutAction implements Action {
 				}
 
 				httpServletResponse.sendRedirect(authLoginURL);
-			}
-			else {
-				String redirect = PortalUtil.getLayoutURL(
-					themeDisplay.getLayout(), themeDisplay);
-
-				if (_log.isDebugEnabled()) {
-					_log.debug("Redirect default layout to " + redirect);
-				}
-
-				httpServletResponse.sendRedirect(redirect);
 			}
 
 			return null;
@@ -318,11 +323,11 @@ public class LayoutAction implements Action {
 					}
 
 					AuditMessage auditMessage = new AuditMessage(
-						ActionKeys.VIEW, realUser.getCompanyId(),
-						layout.getGroupId(), realUser.getUserId(),
-						realUser.getFullName(), Layout.class.getName(),
-						String.valueOf(layout.getPlid()), null, null,
-						additionalInfoJSONObject);
+						layout.getGroupId(), realUser.getCompanyId(),
+						realUser.getUserId(), realUser.getFullName(), null,
+						additionalInfoJSONObject, Layout.class.getName(),
+						String.valueOf(layout.getPlid()), ActionKeys.VIEW,
+						null);
 
 					AuditRouterUtil.route(auditMessage);
 				}
@@ -421,8 +426,19 @@ public class LayoutAction implements Action {
 				// Include layout content before the page loads because portlets
 				// on the page can set the page title and page subtitle
 
-				PortletContainerUtil.processPublicRenderParameters(
-					httpServletRequest, layout, portlet);
+				LayoutType layoutType = layout.getLayoutType();
+
+				if (layoutType instanceof LayoutTypePortlet) {
+					LayoutTypePortlet layoutTypePortlet =
+						(LayoutTypePortlet)layoutType;
+
+					List<Portlet> portlets = layoutTypePortlet.getPortlets();
+
+					portlets.remove(portlet);
+
+					PortletContainerUtil.processPublicRenderParameters(
+						httpServletRequest, layout, portlets);
+				}
 
 				if (layout.includeLayoutContent(
 						httpServletRequest, httpServletResponse)) {
@@ -442,7 +458,7 @@ public class LayoutAction implements Action {
 		finally {
 			PortletRequest portletRequest =
 				(PortletRequest)httpServletRequest.getAttribute(
-					JavaConstants.JAVAX_PORTLET_REQUEST);
+					JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 			if (portletRequest != null) {
 				LiferayPortletRequest liferayPortletRequest =

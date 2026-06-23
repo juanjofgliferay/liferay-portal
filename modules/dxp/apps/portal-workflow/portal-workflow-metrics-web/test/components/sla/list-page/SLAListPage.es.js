@@ -6,13 +6,18 @@
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 import {SLAContext} from '../../../../src/main/resources/META-INF/resources/js/components/sla/SLAContainer.es';
 import SLAListPage from '../../../../src/main/resources/META-INF/resources/js/components/sla/list-page/SLAListPage.es';
 import ToasterProvider from '../../../../src/main/resources/META-INF/resources/js/shared/components/toaster/ToasterProvider.es';
 import {MockRouter} from '../../../mock/MockRouter.es';
 import FetchMock, {fetchMockResponse} from '../../../mock/fetch.es';
+
+const mockProps = {
+	initialPath: '/sla/36001/list/20/1',
+	path: '/sla/:processId/list/:pageSize/:page',
+};
 
 describe('The SLAListPage component should', () => {
 	describe('Be rendered correctly with no items', () => {
@@ -26,14 +31,10 @@ describe('The SLAListPage component should', () => {
 			}));
 
 			const renderResult = render(
-				<MockRouter>
+				<MockRouter {...mockProps}>
 					<ToasterProvider>
 						<SLAContext.Provider value={{}}>
-							<SLAListPage
-								page="1"
-								pageSize="1"
-								processId="36001"
-							/>
+							<SLAListPage />
 						</SLAContext.Provider>
 					</ToasterProvider>
 				</MockRouter>
@@ -43,7 +44,7 @@ describe('The SLAListPage component should', () => {
 			getByTitle = renderResult.getByTitle;
 
 			await act(async () => {
-				jest.runAllTimers();
+				jest.advanceTimersByTime(100);
 			});
 		});
 
@@ -102,14 +103,10 @@ describe('The SLAListPage component should', () => {
 			});
 
 			const renderResult = render(
-				<MockRouter>
+				<MockRouter {...mockProps}>
 					<ToasterProvider>
 						<SLAContext.Provider value={contextMock}>
-							<SLAListPage
-								page="1"
-								pageSize="1"
-								processId="36001"
-							/>
+							<SLAListPage />
 						</SLAContext.Provider>
 					</ToasterProvider>
 				</MockRouter>
@@ -119,7 +116,7 @@ describe('The SLAListPage component should', () => {
 			getByText = renderResult.getByText;
 
 			await act(async () => {
-				jest.runAllTimers();
+				jest.advanceTimersByTime(100);
 			});
 		});
 
@@ -169,7 +166,7 @@ describe('The SLAListPage component should', () => {
 			fireEvent.click(dropDownItems[1]);
 
 			await act(async () => {
-				jest.runAllTimers();
+				jest.advanceTimersByTime(100);
 			});
 		});
 
@@ -187,7 +184,7 @@ describe('The SLAListPage component should', () => {
 			fireEvent.click(deleteButton);
 
 			await act(async () => {
-				jest.runAllTimers();
+				jest.advanceTimersByTime(100);
 			});
 		});
 
@@ -209,7 +206,7 @@ describe('The SLAListPage component should', () => {
 			fireEvent.click(deleteButton);
 
 			await act(async () => {
-				jest.runAllTimers();
+				jest.advanceTimersByTime(100);
 			});
 		});
 
@@ -312,14 +309,10 @@ describe('The SLAListPage component should', () => {
 			}));
 
 			const renderResult = render(
-				<MockRouter>
+				<MockRouter {...mockProps}>
 					<ToasterProvider>
 						<SLAContext.Provider value={{}}>
-							<SLAListPage
-								page="1"
-								pageSize="1"
-								processId="36001"
-							/>
+							<SLAListPage />
 						</SLAContext.Provider>
 					</ToasterProvider>
 				</MockRouter>
@@ -329,7 +322,7 @@ describe('The SLAListPage component should', () => {
 			getByText = renderResult.getByText;
 
 			await act(async () => {
-				jest.runAllTimers();
+				jest.advanceTimersByTime(100);
 			});
 		});
 

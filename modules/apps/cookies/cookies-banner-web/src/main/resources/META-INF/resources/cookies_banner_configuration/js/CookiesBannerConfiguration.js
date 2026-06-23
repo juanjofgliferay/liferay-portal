@@ -9,17 +9,44 @@ import {
 	acceptAllCookies,
 	declineAllCookies,
 	getCookie,
+	hasPreviouslyStoredConsent,
 	setCookie,
 	setUserConfigCookie,
 	userConfigCookieName,
 } from '../../js/CookiesUtil';
 
 export default function ({
+	consentRenewalPeriod,
+	consentRenewalPeriodTimeUnit,
+	dissentRenewalPeriod,
+	dissentRenewalPeriodTimeUnit,
 	namespace,
 	optionalConsentCookieTypeNames,
 	requiredConsentCookieTypeNames,
 	showButtons,
 }) {
+	const storeConsentCheckbox = document.getElementById(
+		`${namespace}storeConsent`
+	);
+
+	if (storeConsentCheckbox !== null) {
+		const notifyStoreConsentPreferenceUpdate = () =>
+			getOpener().Liferay.fire('storeCookiesConsentPreferenceUpdate', {
+				value: storeConsentCheckbox.checked,
+			});
+
+		storeConsentCheckbox.addEventListener(
+			'change',
+			notifyStoreConsentPreferenceUpdate
+		);
+
+		storeConsentCheckbox.removeAttribute('disabled');
+
+		hasPreviouslyStoredConsent().then((storeConsent) => {
+			storeConsentCheckbox.checked = storeConsent;
+		});
+	}
+
 	const toggleSwitches = Array.from(
 		document.querySelectorAll(
 			`#${namespace}cookiesBannerConfigurationForm [data-cookie-key]`
@@ -37,12 +64,15 @@ export default function ({
 
 		toggleSwitch.addEventListener('click', notifyCookiePreferenceUpdate);
 
-		if (getCookie(userConfigCookieName)) {
-			toggleSwitch.checked = getCookie(cookieKey) === 'true';
-		}
-		else {
-			toggleSwitch.checked = toggleSwitch.dataset.prechecked === 'true';
-		}
+		toggleSwitch.checked = toggleSwitch.dataset.prechecked === 'true';
+
+		getCookie(userConfigCookieName).then((cookie) => {
+			if (cookie) {
+				getCookie(cookieKey).then((cookie) => {
+					toggleSwitch.checked = cookie === 'true';
+				});
+			}
+		});
 
 		notifyCookiePreferenceUpdate();
 
@@ -53,50 +83,92 @@ export default function ({
 		const acceptAllButton = document.getElementById(
 			`${namespace}acceptAllButton`
 		);
-		const confirmButton = document.getElementById(
-			`${namespace}confirmButton`
+		const acceptSelectedButton = document.getElementById(
+			`${namespace}acceptSelectedButton`
 		);
-		const declineAllButton = document.getElementById(
-			`${namespace}declineAllButton`
+		const useNecessaryCookiesOnlyButton = document.getElementById(
+			`${namespace}useNecessaryCookiesOnlyButton`
 		);
+
+		if (dissentRenewalPeriod === 0) {
+			dissentRenewalPeriod = consentRenewalPeriod;
+			dissentRenewalPeriodTimeUnit = consentRenewalPeriodTimeUnit;
+		}
 
 		acceptAllButton.addEventListener('click', () => {
 			acceptAllCookies(
+				consentRenewalPeriod,
 				optionalConsentCookieTypeNames,
-				requiredConsentCookieTypeNames
+				requiredConsentCookieTypeNames,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
 			);
 
-			setUserConfigCookie();
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 
 			window.location.reload();
 		});
 
-		confirmButton.addEventListener('click', () => {
+		acceptSelectedButton.addEventListener('click', () => {
 			toggleSwitches.forEach((toggleSwitch) => {
+				let renewalPeriod = consentRenewalPeriod;
+				let timeUnit = consentRenewalPeriodTimeUnit;
+
+				if (!toggleSwitch.checked) {
+					renewalPeriod = dissentRenewalPeriod;
+					timeUnit = dissentRenewalPeriodTimeUnit;
+				}
+
 				setCookie(
+					renewalPeriod,
 					toggleSwitch.dataset.cookieKey,
+					storeConsentCheckbox?.checked,
+					timeUnit,
 					toggleSwitch.checked ? 'true' : 'false'
 				);
 			});
 
 			requiredConsentCookieTypeNames.forEach(
 				(requiredConsentCookieTypeName) => {
-					setCookie(requiredConsentCookieTypeName, 'true');
+					setCookie(
+						consentRenewalPeriod,
+						requiredConsentCookieTypeName,
+						storeConsentCheckbox?.checked,
+						consentRenewalPeriodTimeUnit,
+						'true'
+					);
 				}
 			);
 
-			setUserConfigCookie();
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 
 			window.location.reload();
 		});
 
-		declineAllButton.addEventListener('click', () => {
+		useNecessaryCookiesOnlyButton.addEventListener('click', () => {
 			declineAllCookies(
+				consentRenewalPeriod,
+				consentRenewalPeriodTimeUnit,
+				dissentRenewalPeriod,
+				dissentRenewalPeriodTimeUnit,
 				optionalConsentCookieTypeNames,
-				requiredConsentCookieTypeNames
+				requiredConsentCookieTypeNames,
+				storeConsentCheckbox?.checked
 			);
 
-			setUserConfigCookie();
+			setUserConfigCookie(
+				consentRenewalPeriod,
+				storeConsentCheckbox?.checked,
+				consentRenewalPeriodTimeUnit
+			);
 
 			window.location.reload();
 		});

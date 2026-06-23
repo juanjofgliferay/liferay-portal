@@ -15,9 +15,9 @@ import com.liferay.portal.kernel.servlet.filters.invoker.InvokerFilterChain;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 
-import javax.servlet.Filter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,9 +61,9 @@ public class LoginPostAction extends Action {
 		invokerFilterChain.doFilter(httpServletRequest, httpServletResponse);
 
 		AuditMessage auditMessage = new AuditMessage(
-			EventTypes.LOGIN, user.getCompanyId(), user.getUserId(),
-			user.getFullName(), User.class.getName(),
-			String.valueOf(user.getUserId()));
+			user.getCompanyId(), user.getUserId(), user.getFullName(),
+			User.class.getName(), String.valueOf(user.getUserId()),
+			EventTypes.LOGIN);
 
 		_auditRouter.route(auditMessage);
 	}

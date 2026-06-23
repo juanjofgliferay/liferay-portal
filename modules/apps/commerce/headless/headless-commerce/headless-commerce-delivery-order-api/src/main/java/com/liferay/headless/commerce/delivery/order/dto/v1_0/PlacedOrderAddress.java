@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,17 +26,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
  * @generated
  */
 @Generated("")
-@GraphQLName("PlacedOrderAddress")
+@GraphQLName(
+	description = "Buyer-facing projection of the address snapshotted onto a placed order. Returned by the placed-order billing-address and shipping-address endpoints. Read-only.",
+	value = "PlacedOrderAddress"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "PlacedOrderAddress")
 public class PlacedOrderAddress implements Serializable {
@@ -47,499 +49,904 @@ public class PlacedOrderAddress implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PlacedOrderAddress.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "City portion of the address. Read-only.",
+		example = "Diamond Bar"
+	)
 	public String getCity() {
+		if (_citySupplier != null) {
+			city = _citySupplier.get();
+
+			_citySupplier = null;
+		}
+
 		return city;
 	}
 
 	public void setCity(String city) {
 		this.city = city;
+
+		_citySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCity(UnsafeSupplier<String, Exception> cityUnsafeSupplier) {
-		try {
-			city = cityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_citySupplier = () -> {
+			try {
+				return cityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "City portion of the address. Read-only.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String city;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _citySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized country name resolved from the underlying Country in the request locale. Read-only.",
+		example = "United States"
+	)
 	public String getCountry() {
+		if (_countrySupplier != null) {
+			country = _countrySupplier.get();
+
+			_countrySupplier = null;
+		}
+
 		return country;
 	}
 
 	public void setCountry(String country) {
 		this.country = country;
+
+		_countrySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCountry(
 		UnsafeSupplier<String, Exception> countryUnsafeSupplier) {
 
-		try {
-			country = countryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_countrySupplier = () -> {
+			try {
+				return countryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized country name resolved from the underlying Country in the request locale. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String country;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _countrySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "ISO 3166-1 alpha-2 country code. Read-only.",
+		example = "US"
+	)
 	public String getCountryISOCode() {
+		if (_countryISOCodeSupplier != null) {
+			countryISOCode = _countryISOCodeSupplier.get();
+
+			_countryISOCodeSupplier = null;
+		}
+
 		return countryISOCode;
 	}
 
 	public void setCountryISOCode(String countryISOCode) {
 		this.countryISOCode = countryISOCode;
+
+		_countryISOCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCountryISOCode(
 		UnsafeSupplier<String, Exception> countryISOCodeUnsafeSupplier) {
 
-		try {
-			countryISOCode = countryISOCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_countryISOCodeSupplier = () -> {
+			try {
+				return countryISOCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "ISO 3166-1 alpha-2 country code. Read-only.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String countryISOCode;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _countryISOCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Free-form description annotated on the address (for example, delivery instructions). Read-only.",
+		example = "right stairs, first room on the left"
+	)
 	public String getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(String description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDescription(
 		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Free-form description annotated on the address (for example, delivery instructions). Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String description;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the underlying commerce address. Read-only.",
+		example = "AB-34098-789-N"
+	)
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "External reference code of the underlying commerce address. Read-only."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the underlying commerce address. Read-only.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the underlying commerce address. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Geographic latitude of the address. Read-only.",
+		example = "33.9976884"
+	)
 	public Double getLatitude() {
+		if (_latitudeSupplier != null) {
+			latitude = _latitudeSupplier.get();
+
+			_latitudeSupplier = null;
+		}
+
 		return latitude;
 	}
 
 	public void setLatitude(Double latitude) {
 		this.latitude = latitude;
+
+		_latitudeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLatitude(
 		UnsafeSupplier<Double, Exception> latitudeUnsafeSupplier) {
 
-		try {
-			latitude = latitudeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_latitudeSupplier = () -> {
+			try {
+				return latitudeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Geographic latitude of the address. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Double latitude;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _latitudeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Geographic longitude of the address. Read-only.",
+		example = "-117.8144595"
+	)
 	public Double getLongitude() {
+		if (_longitudeSupplier != null) {
+			longitude = _longitudeSupplier.get();
+
+			_longitudeSupplier = null;
+		}
+
 		return longitude;
 	}
 
 	public void setLongitude(Double longitude) {
 		this.longitude = longitude;
+
+		_longitudeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLongitude(
 		UnsafeSupplier<Double, Exception> longitudeUnsafeSupplier) {
 
-		try {
-			longitude = longitudeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_longitudeSupplier = () -> {
+			try {
+				return longitudeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Geographic longitude of the address. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Double longitude;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _longitudeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Recipient name on the address. Read-only.",
+		example = "Alessio Antonio Rendina"
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Recipient name on the address. Read-only.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Contact phone number associated with the address. Read-only.",
+		example = "(123) 456 7890"
+	)
 	public String getPhoneNumber() {
+		if (_phoneNumberSupplier != null) {
+			phoneNumber = _phoneNumberSupplier.get();
+
+			_phoneNumberSupplier = null;
+		}
+
 		return phoneNumber;
 	}
 
 	public void setPhoneNumber(String phoneNumber) {
 		this.phoneNumber = phoneNumber;
+
+		_phoneNumberSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPhoneNumber(
 		UnsafeSupplier<String, Exception> phoneNumberUnsafeSupplier) {
 
-		try {
-			phoneNumber = phoneNumberUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_phoneNumberSupplier = () -> {
+			try {
+				return phoneNumberUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Contact phone number associated with the address. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String phoneNumber;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _phoneNumberSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Display name of the region (state, province) resolved from the underlying Region. Read-only.",
+		example = "California"
+	)
 	public String getRegion() {
+		if (_regionSupplier != null) {
+			region = _regionSupplier.get();
+
+			_regionSupplier = null;
+		}
+
 		return region;
 	}
 
 	public void setRegion(String region) {
 		this.region = region;
+
+		_regionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRegion(
 		UnsafeSupplier<String, Exception> regionUnsafeSupplier) {
 
-		try {
-			region = regionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_regionSupplier = () -> {
+			try {
+				return regionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Display name of the region (state, province) resolved from the underlying Region. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String region;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _regionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "ISO 3166-2 subdivision code of the region. Empty when no region is set. Read-only.",
+		example = "CA"
+	)
 	public String getRegionISOCode() {
+		if (_regionISOCodeSupplier != null) {
+			regionISOCode = _regionISOCodeSupplier.get();
+
+			_regionISOCodeSupplier = null;
+		}
+
 		return regionISOCode;
 	}
 
 	public void setRegionISOCode(String regionISOCode) {
 		this.regionISOCode = regionISOCode;
+
+		_regionISOCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRegionISOCode(
 		UnsafeSupplier<String, Exception> regionISOCodeUnsafeSupplier) {
 
-		try {
-			regionISOCode = regionISOCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_regionISOCodeSupplier = () -> {
+			try {
+				return regionISOCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "ISO 3166-2 subdivision code of the region. Empty when no region is set. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String regionISOCode;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _regionISOCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "First line of the street address. Read-only.",
+		example = "1400 Montefino Ave"
+	)
 	public String getStreet1() {
+		if (_street1Supplier != null) {
+			street1 = _street1Supplier.get();
+
+			_street1Supplier = null;
+		}
+
 		return street1;
 	}
 
 	public void setStreet1(String street1) {
 		this.street1 = street1;
+
+		_street1Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setStreet1(
 		UnsafeSupplier<String, Exception> street1UnsafeSupplier) {
 
-		try {
-			street1 = street1UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_street1Supplier = () -> {
+			try {
+				return street1UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "First line of the street address. Read-only.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String street1;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _street1Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Second line of the street address (for example, floor, suite). Read-only.",
+		example = "1st floor"
+	)
 	public String getStreet2() {
+		if (_street2Supplier != null) {
+			street2 = _street2Supplier.get();
+
+			_street2Supplier = null;
+		}
+
 		return street2;
 	}
 
 	public void setStreet2(String street2) {
 		this.street2 = street2;
+
+		_street2Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setStreet2(
 		UnsafeSupplier<String, Exception> street2UnsafeSupplier) {
 
-		try {
-			street2 = street2UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_street2Supplier = () -> {
+			try {
+				return street2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Second line of the street address (for example, floor, suite). Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String street2;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _street2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Third line of the street address (for example, building, landmark). Read-only.",
+		example = "suite 200"
+	)
 	public String getStreet3() {
+		if (_street3Supplier != null) {
+			street3 = _street3Supplier.get();
+
+			_street3Supplier = null;
+		}
+
 		return street3;
 	}
 
 	public void setStreet3(String street3) {
 		this.street3 = street3;
+
+		_street3Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setStreet3(
 		UnsafeSupplier<String, Exception> street3UnsafeSupplier) {
 
-		try {
-			street3 = street3UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_street3Supplier = () -> {
+			try {
+				return street3UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Third line of the street address (for example, building, landmark). Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String street3;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _street3Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Free-form subtype label drawn from the configured address subtype list (for example, home, office). Read-only.",
+		example = "office"
+	)
+	public String getSubtype() {
+		if (_subtypeSupplier != null) {
+			subtype = _subtypeSupplier.get();
+
+			_subtypeSupplier = null;
+		}
+
+		return subtype;
+	}
+
+	public void setSubtype(String subtype) {
+		this.subtype = subtype;
+
+		_subtypeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setSubtype(
+		UnsafeSupplier<String, Exception> subtypeUnsafeSupplier) {
+
+		_subtypeSupplier = () -> {
+			try {
+				return subtypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "Free-form subtype label drawn from the configured address subtype list (for example, home, office). Read-only."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String subtype;
+
+	@JsonIgnore
+	private Supplier<String> _subtypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized label of the address type (billing, shipping, billing-and-shipping). Read-only.",
+		example = "shipping"
+	)
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized label of the address type (billing, shipping, billing-and-shipping). Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String type;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Integer type code of the address. Mapping -- 1=Billing, 2=Shipping, 3=Billing And Shipping. Read-only.",
+		example = "2"
+	)
 	public Integer getTypeId() {
+		if (_typeIdSupplier != null) {
+			typeId = _typeIdSupplier.get();
+
+			_typeIdSupplier = null;
+		}
+
 		return typeId;
 	}
 
 	public void setTypeId(Integer typeId) {
 		this.typeId = typeId;
+
+		_typeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTypeId(
 		UnsafeSupplier<Integer, Exception> typeIdUnsafeSupplier) {
 
-		try {
-			typeId = typeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeIdSupplier = () -> {
+			try {
+				return typeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Integer type code of the address. Mapping -- 1=Billing, 2=Shipping, 3=Billing And Shipping. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer typeId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _typeIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "VAT identifier captured on the underlying address. Read-only.",
+		example = "IT12345678901"
+	)
 	public String getVatNumber() {
+		if (_vatNumberSupplier != null) {
+			vatNumber = _vatNumberSupplier.get();
+
+			_vatNumberSupplier = null;
+		}
+
 		return vatNumber;
 	}
 
 	public void setVatNumber(String vatNumber) {
 		this.vatNumber = vatNumber;
+
+		_vatNumberSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setVatNumber(
 		UnsafeSupplier<String, Exception> vatNumberUnsafeSupplier) {
 
-		try {
-			vatNumber = vatNumberUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_vatNumberSupplier = () -> {
+			try {
+				return vatNumberUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "VAT identifier captured on the underlying address. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String vatNumber;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _vatNumberSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Postal or ZIP code. Read-only.", example = "91765"
+	)
 	public String getZip() {
+		if (_zipSupplier != null) {
+			zip = _zipSupplier.get();
+
+			_zipSupplier = null;
+		}
+
 		return zip;
 	}
 
 	public void setZip(String zip) {
 		this.zip = zip;
+
+		_zipSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setZip(UnsafeSupplier<String, Exception> zipUnsafeSupplier) {
-		try {
-			zip = zipUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_zipSupplier = () -> {
+			try {
+				return zipUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Postal or ZIP code. Read-only.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String zip;
+
+	@JsonIgnore
+	private Supplier<String> _zipSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -568,6 +975,8 @@ public class PlacedOrderAddress implements Serializable {
 
 		sb.append("{");
 
+		String city = getCity();
+
 		if (city != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -581,6 +990,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String country = getCountry();
 
 		if (country != null) {
 			if (sb.length() > 1) {
@@ -596,6 +1007,8 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		String countryISOCode = getCountryISOCode();
+
 		if (countryISOCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -609,6 +1022,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String description = getDescription();
 
 		if (description != null) {
 			if (sb.length() > 1) {
@@ -624,6 +1039,24 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -633,6 +1066,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append(id);
 		}
+
+		Double latitude = getLatitude();
 
 		if (latitude != null) {
 			if (sb.length() > 1) {
@@ -644,6 +1079,8 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append(latitude);
 		}
 
+		Double longitude = getLongitude();
+
 		if (longitude != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -653,6 +1090,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append(longitude);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -668,6 +1107,8 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		String phoneNumber = getPhoneNumber();
+
 		if (phoneNumber != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -681,6 +1122,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String region = getRegion();
 
 		if (region != null) {
 			if (sb.length() > 1) {
@@ -696,6 +1139,8 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		String regionISOCode = getRegionISOCode();
+
 		if (regionISOCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -709,6 +1154,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String street1 = getStreet1();
 
 		if (street1 != null) {
 			if (sb.length() > 1) {
@@ -724,6 +1171,8 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		String street2 = getStreet2();
+
 		if (street2 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -737,6 +1186,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String street3 = getStreet3();
 
 		if (street3 != null) {
 			if (sb.length() > 1) {
@@ -752,6 +1203,24 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		String subtype = getSubtype();
+
+		if (subtype != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"subtype\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(subtype));
+
+			sb.append("\"");
+		}
+
+		String type = getType();
+
 		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -766,6 +1235,8 @@ public class PlacedOrderAddress implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer typeId = getTypeId();
+
 		if (typeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -775,6 +1246,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append(typeId);
 		}
+
+		String vatNumber = getVatNumber();
 
 		if (vatNumber != null) {
 			if (sb.length() > 1) {
@@ -789,6 +1262,8 @@ public class PlacedOrderAddress implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String zip = getZip();
 
 		if (zip != null) {
 			if (sb.length() > 1) {
@@ -809,8 +1284,8 @@ public class PlacedOrderAddress implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.order.dto.v1_0.PlacedOrderAddress",
 		name = "x-class-name"
 	)
@@ -856,7 +1331,10 @@ public class PlacedOrderAddress implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -902,3 +1380,4 @@ public class PlacedOrderAddress implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-2041702129

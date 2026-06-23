@@ -119,6 +119,8 @@ public class AnnouncementsDeliveryPersistenceTest {
 
 		newAnnouncementsDelivery.setMvccVersion(RandomTestUtil.nextLong());
 
+		newAnnouncementsDelivery.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newAnnouncementsDelivery.setCompanyId(RandomTestUtil.nextLong());
 
 		newAnnouncementsDelivery.setUserId(RandomTestUtil.nextLong());
@@ -141,6 +143,9 @@ public class AnnouncementsDeliveryPersistenceTest {
 		Assert.assertEquals(
 			existingAnnouncementsDelivery.getMvccVersion(),
 			newAnnouncementsDelivery.getMvccVersion());
+		Assert.assertEquals(
+			existingAnnouncementsDelivery.getCtCollectionId(),
+			newAnnouncementsDelivery.getCtCollectionId());
 		Assert.assertEquals(
 			existingAnnouncementsDelivery.getDeliveryId(),
 			newAnnouncementsDelivery.getDeliveryId());
@@ -215,9 +220,9 @@ public class AnnouncementsDeliveryPersistenceTest {
 
 	protected OrderByComparator<AnnouncementsDelivery> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"AnnouncementsDelivery", "mvccVersion", true, "deliveryId", true,
-			"companyId", true, "userId", true, "type", true, "email", true,
-			"sms", true, "website", true);
+			"AnnouncementsDelivery", "mvccVersion", true, "ctCollectionId",
+			true, "deliveryId", true, "companyId", true, "userId", true, "type",
+			true, "email", true, "sms", true, "website", true);
 	}
 
 	@Test
@@ -528,6 +533,8 @@ public class AnnouncementsDeliveryPersistenceTest {
 
 		announcementsDelivery.setMvccVersion(RandomTestUtil.nextLong());
 
+		announcementsDelivery.setCtCollectionId(RandomTestUtil.nextLong());
+
 		announcementsDelivery.setCompanyId(RandomTestUtil.nextLong());
 
 		announcementsDelivery.setUserId(RandomTestUtil.nextLong());
@@ -552,3 +559,4 @@ public class AnnouncementsDeliveryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1762445978

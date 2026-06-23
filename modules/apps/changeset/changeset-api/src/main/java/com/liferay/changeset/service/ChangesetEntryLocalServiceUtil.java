@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -60,6 +61,16 @@ public class ChangesetEntryLocalServiceUtil {
 
 		return getService().addChangesetEntry(
 			userId, changesetCollectionId, classNameId, classPK);
+	}
+
+	public static ChangesetEntry addChangesetEntry(
+			long userId, long changesetCollectionId,
+			String classExternalReferenceCode, long classNameId, long classPK)
+		throws PortalException {
+
+		return getService().addChangesetEntry(
+			userId, changesetCollectionId, classExternalReferenceCode,
+			classNameId, classPK);
 	}
 
 	/**
@@ -235,12 +246,30 @@ public class ChangesetEntryLocalServiceUtil {
 			changesetCollectionId, classNameId, classPK);
 	}
 
+	public static ChangesetEntry fetchChangesetEntry(
+		long changesetCollectionId, String classExternalReferenceCode,
+		long classNameId) {
+
+		return getService().fetchChangesetEntry(
+			changesetCollectionId, classExternalReferenceCode, classNameId);
+	}
+
 	public static ChangesetEntry fetchOrAddChangesetEntry(
 			long changesetCollectionId, long classNameId, long classPK)
 		throws PortalException {
 
 		return getService().fetchOrAddChangesetEntry(
 			changesetCollectionId, classNameId, classPK);
+	}
+
+	public static ChangesetEntry fetchOrAddChangesetEntry(
+			long changesetCollectionId, String classExternalReferenceCode,
+			long classNameId, long classPK)
+		throws PortalException {
+
+		return getService().fetchOrAddChangesetEntry(
+			changesetCollectionId, classExternalReferenceCode, classNameId,
+			classPK);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -361,13 +390,13 @@ public class ChangesetEntryLocalServiceUtil {
 	}
 
 	public static ChangesetEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(ChangesetEntryLocalService service) {
-		_service = service;
-	}
-
-	private static volatile ChangesetEntryLocalService _service;
+	private static final Snapshot<ChangesetEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			ChangesetEntryLocalServiceUtil.class,
+			ChangesetEntryLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:811917661

@@ -3,25 +3,44 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 import {
 	DEFAULT_ORDER_DETAILS_PORTLET_ID,
-	ORDER_DETAILS_ENDPOINT,
 	ORDER_UUID_PARAMETER,
 } from '../../../../src/main/resources/META-INF/resources/components/mini_cart/util/constants';
 import {
+	filterOptions,
 	hasErrors,
 	parseOptions,
-	regenerateOrderDetailURL,
 	summaryDataMapper,
 } from '../../../../src/main/resources/META-INF/resources/components/mini_cart/util/index';
+import {regenerateOrderDetailURL} from '../../../../src/main/resources/META-INF/resources/utilities/regenerateOrderDetailURL';
 
 jest.mock(
 	'../../../../src/main/resources/META-INF/resources/ServiceProvider/index'
 );
 
 describe('MiniCart tests_utilities', () => {
+	describe('filterOptions', () => {
+		it('parses the options JSON string and keeps only options with a truthy value', () => {
+			const OPTIONS_JSON = JSON.stringify([
+				{key: 'size', value: ['L']},
+				{key: 'empty', value: []},
+				{key: 'blank', value: ['']},
+			]);
+
+			expect(filterOptions(OPTIONS_JSON)).toEqual([
+				{key: 'size', value: ['L']},
+			]);
+		});
+
+		it('returns an empty array when the input is not valid options JSON', () => {
+			expect(filterOptions('/fail]')).toEqual([]);
+			expect(filterOptions(null)).toEqual([]);
+		});
+	});
+
 	describe('hasErrors', () => {
 		it('returns true if at least one cart item contains error messages', () => {
 			const CART_ITEMS = [
@@ -41,56 +60,89 @@ describe('MiniCart tests_utilities', () => {
 	});
 
 	describe('parseOptions', () => {
-		it('parses and formats a JSON string input to an options list string', () => {
-			const VALID_JSON_INPUT = `[
-				{
-					"key": "package-quantity", 
-					"value": "24"
-				},
-				{
-					"key": "size", 
-					"value": "L"
-				}
-			]`;
+		it('parses and formats an array of {value} entries to a comma-separated options list string', () => {
+			const PARSED_OPTIONS = [
+				{key: 'package-quantity', value: '24'},
+				{key: 'size', value: 'L'},
+			];
 
-			expect(parseOptions(VALID_JSON_INPUT)).toEqual('24, L');
+			expect(parseOptions(PARSED_OPTIONS)).toEqual('24, L');
 		});
 
-		it('returns an empty string when input is neither valid JSON nor a JSON-parsed array', () => {
-			expect(parseOptions(null)).toEqual('');
-			expect(parseOptions('/fail]')).toEqual('');
+		it('passes a non-array input through unchanged (graceful fall-through)', () => {
+			expect(parseOptions(null)).toBeNull();
+			expect(parseOptions('/fail]')).toEqual('/fail]');
 		});
 	});
 
 	describe('regenerateOrderDetailURL', () => {
+		const VALID_BASE_ORDER_DETAIL_PORTLET_URL = `http://localhost:3333/group/name/?p_p_id=${DEFAULT_ORDER_DETAILS_PORTLET_ID}`;
+		const VALID_BASE_ORDER_DETAIL_URL = 'http://localhost:3333/group/name/';
 		const VALID_ORDER_UUID = '00000-00000-22222-213jd-qwerty';
-		const VALID_SITE_DEFAULT_URL = 'http://localhost:3333/group/name';
 
 		const errorMessage = (argName) =>
 			`Cannot generate a new Order Detail URL. Invalid "${argName}"`;
 
+		it('returns a new valid Order Detail Portlet URL string', () => {
+			expect(
+				regenerateOrderDetailURL(
+					VALID_BASE_ORDER_DETAIL_PORTLET_URL,
+					12345,
+					VALID_ORDER_UUID
+				)
+			).toEqual(
+				`${VALID_BASE_ORDER_DETAIL_PORTLET_URL}&_${DEFAULT_ORDER_DETAILS_PORTLET_ID}_${ORDER_UUID_PARAMETER}=${VALID_ORDER_UUID}`
+			);
+		});
+
 		it('returns a new valid Order Detail URL string', () => {
 			expect(
 				regenerateOrderDetailURL(
-					VALID_ORDER_UUID,
-					VALID_SITE_DEFAULT_URL
+					VALID_BASE_ORDER_DETAIL_URL,
+					12345,
+					VALID_ORDER_UUID
 				)
-			).toEqual(
-				`${VALID_SITE_DEFAULT_URL}${ORDER_DETAILS_ENDPOINT}` +
-					`?p_p_id=${DEFAULT_ORDER_DETAILS_PORTLET_ID}` +
-					`&p_p_lifecycle=0` +
-					`&_${DEFAULT_ORDER_DETAILS_PORTLET_ID}_mvcRenderCommandName=%2Fcommerce_open_order_content%2Fedit_commerce_order` +
-					`&_${DEFAULT_ORDER_DETAILS_PORTLET_ID}_${ORDER_UUID_PARAMETER}=${VALID_ORDER_UUID}`
-			);
+			).toEqual(VALID_BASE_ORDER_DETAIL_URL + 12345);
+		});
+
+		it('throws if the "orderId" string argument is empty or null', () => {
+			try {
+				expect(
+					regenerateOrderDetailURL(
+						VALID_BASE_ORDER_DETAIL_URL,
+						'',
+						VALID_ORDER_UUID
+					)
+				).toThrow();
+				expect(
+					regenerateOrderDetailURL(
+						VALID_BASE_ORDER_DETAIL_URL,
+						null,
+						VALID_ORDER_UUID
+					)
+				).toThrow();
+			}
+			catch (error) {
+				expect(error.message).toEqual(errorMessage`orderId`);
+			}
 		});
 
 		it('throws if the "orderUUID" string argument is empty or null', () => {
 			try {
 				expect(
-					regenerateOrderDetailURL('', VALID_SITE_DEFAULT_URL)
+					regenerateOrderDetailURL(
+						VALID_BASE_ORDER_DETAIL_PORTLET_URL,
+						12345,
+						''
+					)
 				).toThrow();
+
 				expect(
-					regenerateOrderDetailURL(null, VALID_SITE_DEFAULT_URL)
+					regenerateOrderDetailURL(
+						VALID_BASE_ORDER_DETAIL_PORTLET_URL,
+						12345,
+						null
+					)
 				).toThrow();
 			}
 			catch (error) {
@@ -98,33 +150,26 @@ describe('MiniCart tests_utilities', () => {
 			}
 		});
 
-		it('throws if the "siteDefaultURL" string argument is empty or null', () => {
+		it('throws if the "baseOrderDetailURL" string argument is empty or null', () => {
 			try {
 				expect(
-					regenerateOrderDetailURL(VALID_ORDER_UUID, '')
+					regenerateOrderDetailURL('', 12345, VALID_ORDER_UUID)
 				).toThrow();
+
 				expect(
-					regenerateOrderDetailURL(VALID_ORDER_UUID, null)
+					regenerateOrderDetailURL(null, 12345, VALID_ORDER_UUID)
+				).toThrow();
+
+				expect(
+					regenerateOrderDetailURL('', 12345, VALID_ORDER_UUID)
+				).toThrow();
+
+				expect(
+					regenerateOrderDetailURL(null, 12345, VALID_ORDER_UUID)
 				).toThrow();
 			}
 			catch (error) {
-				expect(error.message).toEqual(errorMessage`siteDefaultURL`);
-			}
-		});
-
-		it('throws if the "siteDefaultURL" string argument is a malformed URL', () => {
-			const MALFORMED_SITE_DEFAULT_URL = 'malformed';
-
-			try {
-				expect(
-					regenerateOrderDetailURL(
-						VALID_ORDER_UUID,
-						MALFORMED_SITE_DEFAULT_URL
-					)
-				).toThrow(TypeError);
-			}
-			catch (error) {
-				expect(error.message.includes('Invalid URL')).toBe(true);
+				expect(error.message).toEqual(errorMessage`baseOrderDetailURL`);
 			}
 		});
 	});
@@ -162,6 +207,44 @@ describe('MiniCart tests_utilities', () => {
 				{label: 'order-discount', value: '$ 0.00'},
 				{label: 'total', style: 'big', value: '$ 1,858.50'},
 			]);
+		});
+
+		describe('discount-to-subtotal and discount-to-total rows', () => {
+			it('surfaces the subtotal discount value in the subtotal-discount row', () => {
+				const rows = summaryDataMapper({
+					...SUMMARY_SAMPLE,
+					subtotalDiscountValue: 25.0,
+					subtotalDiscountValueFormatted: '$ 25.00',
+					total: 1833.5,
+					totalFormatted: '$ 1,833.50',
+				});
+
+				const subtotalDiscountRow = rows.find(
+					(row) => row.label === 'subtotal-discount'
+				);
+				const totalRow = rows.find((row) => row.label === 'total');
+
+				expect(subtotalDiscountRow.value).toBe('$ 25.00');
+				expect(totalRow.value).toBe('$ 1,833.50');
+			});
+
+			it('surfaces the order-level discount value in the order-discount row', () => {
+				const rows = summaryDataMapper({
+					...SUMMARY_SAMPLE,
+					total: 1758.5,
+					totalDiscountValue: 100.0,
+					totalDiscountValueFormatted: '$ 100.00',
+					totalFormatted: '$ 1,758.50',
+				});
+
+				const orderDiscountRow = rows.find(
+					(row) => row.label === 'order-discount'
+				);
+				const totalRow = rows.find((row) => row.label === 'total');
+
+				expect(orderDiscountRow.value).toBe('$ 100.00');
+				expect(totalRow.value).toBe('$ 1,758.50');
+			});
 		});
 	});
 });

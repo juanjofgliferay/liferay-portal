@@ -22,7 +22,7 @@ import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.workflow.metrics.internal.background.task.WorkflowMetricsSLAProcessBackgroundTaskHelper;
 import com.liferay.portal.workflow.metrics.internal.search.index.SLAInstanceResultWorkflowMetricsIndexer;
 import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
@@ -34,12 +34,14 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(
-	property = "workflow.metrics.index.entity.name=sla-instance-result",
-	service = WorkflowMetricsReindexer.class
-)
+@Component(service = WorkflowMetricsReindexer.class)
 public class SLAInstanceResultWorkflowMetricsReindexer
 	implements WorkflowMetricsReindexer {
+
+	@Override
+	public String getKey() {
+		return "sla-instance-result";
+	}
 
 	@Override
 	public void reindex(long companyId) throws PortalException {
@@ -73,11 +75,11 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 			_indexNameBuilder.getIndexName(companyId) +
 				WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		booleanQuery.addFilterQueryClauses(
-			_queries.term("companyId", companyId),
-			_queries.term("deleted", Boolean.FALSE));
+			QueriesUtil.term("companyId", companyId),
+			QueriesUtil.term("deleted", Boolean.FALSE));
 
 		searchSearchRequest.setQuery(booleanQuery);
 
@@ -134,9 +136,6 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 
 	@Reference
 	private IndexNameBuilder _indexNameBuilder;
-
-	@Reference
-	private Queries _queries;
 
 	@Reference
 	private SearchCapabilities _searchCapabilities;

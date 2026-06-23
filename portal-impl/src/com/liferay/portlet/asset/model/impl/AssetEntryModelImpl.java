@@ -125,6 +125,8 @@ public class AssetEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table AssetEntry";
 
+	public static final String ENTITY_ALIAS = "assetEntry";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY assetEntry.entryId ASC";
 
@@ -236,7 +238,7 @@ public class AssetEntryModelImpl
 		true;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.asset.kernel.model.AssetEntry"));
 
 	public AssetEntryModelImpl() {
@@ -2043,3 +2045,4 @@ public class AssetEntryModelImpl
 	private AssetEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-291685379

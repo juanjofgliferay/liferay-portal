@@ -115,6 +115,8 @@ public class LayoutSetPrototypePersistenceTest {
 
 		newLayoutSetPrototype.setMvccVersion(RandomTestUtil.nextLong());
 
+		newLayoutSetPrototype.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newLayoutSetPrototype.setUuid(RandomTestUtil.randomString());
 
 		newLayoutSetPrototype.setCompanyId(RandomTestUtil.nextLong());
@@ -144,6 +146,9 @@ public class LayoutSetPrototypePersistenceTest {
 		Assert.assertEquals(
 			existingLayoutSetPrototype.getMvccVersion(),
 			newLayoutSetPrototype.getMvccVersion());
+		Assert.assertEquals(
+			existingLayoutSetPrototype.getCtCollectionId(),
+			newLayoutSetPrototype.getCtCollectionId());
 		Assert.assertEquals(
 			existingLayoutSetPrototype.getUuid(),
 			newLayoutSetPrototype.getUuid());
@@ -239,10 +244,10 @@ public class LayoutSetPrototypePersistenceTest {
 
 	protected OrderByComparator<LayoutSetPrototype> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"LayoutSetPrototype", "mvccVersion", true, "uuid", true,
-			"layoutSetPrototypeId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"settings", true, "active", true);
+			"LayoutSetPrototype", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "layoutSetPrototypeId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "settings", true, "active", true);
 	}
 
 	@Test
@@ -475,6 +480,8 @@ public class LayoutSetPrototypePersistenceTest {
 
 		layoutSetPrototype.setMvccVersion(RandomTestUtil.nextLong());
 
+		layoutSetPrototype.setCtCollectionId(RandomTestUtil.nextLong());
+
 		layoutSetPrototype.setUuid(RandomTestUtil.randomString());
 
 		layoutSetPrototype.setCompanyId(RandomTestUtil.nextLong());
@@ -506,3 +513,4 @@ public class LayoutSetPrototypePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-601550633

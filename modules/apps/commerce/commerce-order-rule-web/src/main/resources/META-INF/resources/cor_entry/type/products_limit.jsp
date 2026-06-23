@@ -39,7 +39,7 @@ COREntryDisplayContext corEntryDisplayContext = (COREntryDisplayContext)request.
 								"workflowAction", WorkflowConstants.ACTION_PUBLISH
 							).build()
 						%>'
-						module="js/products_limit"
+						module="{productsLimit} from commerce-order-rule-web"
 					/>
 				</div>
 
@@ -57,7 +57,6 @@ COREntryDisplayContext corEntryDisplayContext = (COREntryDisplayContext)request.
 							dataProviderKey="<%= COREntryFDSNames.COR_ENTRY_PRODUCTS_LIMITS %>"
 							formName="fm"
 							id="<%= COREntryFDSNames.COR_ENTRY_PRODUCTS_LIMITS %>"
-							itemsPerPage="<%= 10 %>"
 							showSearch="<%= false %>"
 						/>
 					</commerce-ui:panel>

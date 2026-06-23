@@ -7,6 +7,7 @@ package com.liferay.account.service;
 
 import com.liferay.account.model.AccountEntryUserRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 
@@ -73,6 +74,18 @@ public class AccountEntryUserRelServiceUtil {
 			accountEntryId, creatorUserId, screenName, emailAddress, locale,
 			firstName, middleName, lastName, prefixListTypeId, suffixListTypeId,
 			jobTitle, serviceContext);
+	}
+
+	public static com.liferay.portal.kernel.model.Ticket
+			addUserInvitationTicket(
+				long accountEntryId, long[] accountRoleIds, String emailAddress,
+				com.liferay.portal.kernel.model.User inviter,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addUserInvitationTicket(
+			accountEntryId, accountRoleIds, emailAddress, inviter,
+			serviceContext);
 	}
 
 	public static void deleteAccountEntryUserRelByEmailAddress(
@@ -174,13 +187,13 @@ public class AccountEntryUserRelServiceUtil {
 	}
 
 	public static AccountEntryUserRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AccountEntryUserRelService service) {
-		_service = service;
-	}
-
-	private static volatile AccountEntryUserRelService _service;
+	private static final Snapshot<AccountEntryUserRelService> _serviceSnapshot =
+		new Snapshot<>(
+			AccountEntryUserRelServiceUtil.class,
+			AccountEntryUserRelService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1463414066

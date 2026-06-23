@@ -11,7 +11,7 @@ import {
 	RelationalOperators
 } from '../utils/constants';
 import {activityAssetsListColumns} from 'shared/util/table-columns';
-import {AssetNames} from 'shared/util/constants';
+import {AssetNames, SegmentTypes} from 'shared/util/constants';
 import {COUNT, createOrderIOMap} from 'shared/util/pagination';
 import {Criterion, ISegmentEditorCustomInputBase} from '../utils/types';
 import {CustomValue} from 'shared/util/records';
@@ -27,9 +27,10 @@ import {
 	getPropertyValue,
 	setPropertyValue
 } from '../utils/custom-inputs';
+import {getSafeDecodedURIComponent} from 'shared/util/util';
 import {isBoolean, isNil, isNull} from 'lodash';
 import {Modal} from 'shared/types/Modal';
-import {parseActivityKey} from '../utils/utils';
+import {parseActivityKey, parseReferencedEntityId} from '../utils/utils';
 
 export const AssetItem: React.FC<{
 	dataSourceAssetPK?: string;
@@ -42,10 +43,10 @@ export const AssetItem: React.FC<{
 			<div
 				data-tooltip
 				data-tooltip-align='top'
-				title={dataSourceAssetPK}
+				title={getSafeDecodedURIComponent(dataSourceAssetPK)}
 			>
 				<div className='asset-url text-secondary text-truncate'>
-					{dataSourceAssetPK}
+					{getSafeDecodedURIComponent(dataSourceAssetPK)}
 				</div>
 			</div>
 		)}
@@ -89,19 +90,20 @@ interface IBehaviorInputProps extends ISegmentEditorCustomInputBase {
 	channelId: string;
 	close: Modal.close;
 	open: Modal.open;
+	segmentType: SegmentTypes;
 	touched: Touched;
 	valid: Valid;
 }
 
 export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 	static contextType = ReferencedObjectsContext;
+	declare context: React.ContextType<typeof ReferencedObjectsContext>;
 
 	_completedAnalytics = false;
 
 	componentDidUpdate() {
 		const {
 			id,
-			property: {entityName, type},
 			valid: {asset, dateFilter, occurenceCount}
 		} = this.props;
 
@@ -111,16 +113,11 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 
 		if (!id && valid && !this._completedAnalytics) {
 			this._completedAnalytics = true;
-
-			analytics.track('Dynamic Segment Creation - Completed Attribute', {
-				entityName,
-				type
-			});
 		}
 	}
 
 	@autobind
-	assetsDataFn({delta, orderIOMap, page, query}) {
+	assetsDataFn({delta, orderIOMap, page, query}: {[key: string]: any}) {
 		const {
 			channelId,
 			groupId,
@@ -139,7 +136,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 		});
 	}
 
-	createActivityKey(asset) {
+	createActivityKey(asset: {id: string}) {
 		const {property} = this.props;
 
 		return `${property.entityType}#${property.name}#${asset.id}`;
@@ -150,9 +147,14 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 			context: {referencedEntities}
 		} = this;
 
-		const id = this.getAssetId();
-
-		const reference = referencedEntities.getIn([EntityType.Assets, id]);
+		const reference = referencedEntities.getIn([
+			EntityType.Assets,
+			parseReferencedEntityId(
+				this.getAssetId(),
+				referencedEntities,
+				EntityType.Assets
+			)
+		]);
 
 		return reference && reference.toJS();
 	}
@@ -169,7 +171,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 		return id;
 	}
 
-	getConjunctionDateFilterIMap(value) {
+	getConjunctionDateFilterIMap(value: CustomValue) {
 		const conjunctionDateFilterIndex = getIndexFromPropertyName(
 			value,
 			'day'
@@ -181,7 +183,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 	}
 
 	@autobind
-	handleAssetSelect(items) {
+	handleAssetSelect(items: import('immutable').OrderedMap<string, any>) {
 		const {
 			context: {addEntities, addEntity},
 			props: {onChange, touched, valid, value}
@@ -192,7 +194,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 		const propertyIndex = getIndexFromPropertyName(value, ACTIVITY_KEY);
 
 		if (items.size === 1) {
-			addEntity({entityType: EntityType.Assets, payload: Map(asset)});
+			addEntity?.({entityType: EntityType.Assets, payload: Map(asset)});
 
 			onChange({
 				valid: {...valid, asset: true},
@@ -204,7 +206,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 				)
 			});
 		} else {
-			addEntities({
+			addEntities?.({
 				entityType: EntityType.Assets,
 				payload: items.map(Map).valueSeq().toArray()
 			});
@@ -212,7 +214,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 			onChange(
 				items
 					.valueSeq()
-					.map(assetItem => ({
+					.map((assetItem: any) => ({
 						touched,
 						valid: {...valid, asset: true},
 						value: setPropertyValue(
@@ -228,7 +230,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 	}
 
 	@autobind
-	handleDateFilterConjunctionChange(criterion) {
+	handleDateFilterConjunctionChange(criterion: Criterion | null) {
 		const {onChange, touched, valid, value} = this.props;
 
 		onChange({
@@ -318,6 +320,7 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 			groupId,
 			operatorRenderer: OperatorDropdown,
 			property,
+			segmentType,
 			touched,
 			valid,
 			value
@@ -355,7 +358,11 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 							activityAssetsListColumns.nameUrl,
 							...columns
 						]}
-						dataSourceFn={this.assetsDataFn}
+						dataSourceFn={
+							this.assetsDataFn as (params: {
+								[key: string]: any;
+							}) => Promise<any>
+						}
 						entity={this.getAssetFromContext()}
 						error={touched.asset && !valid.asset}
 						groupId={groupId}
@@ -375,23 +382,25 @@ export class BehaviorInput extends React.Component<IBehaviorInputProps> {
 					/>
 				</Form.Group>
 
-				<Form.Group autoFit>
-					<OccurenceConjunctionInput
-						onChange={this.handleOccurenceConjunctionChange}
-						operatorName={
-							value.get('operator') as FunctionalOperators &
-								RelationalOperators
-						}
-						touched={touched.occurenceCount}
-						valid={valid.occurenceCount}
-						value={value.get('value')}
-					/>
+				{segmentType === SegmentTypes.Batch && (
+					<Form.Group autoFit>
+						<OccurenceConjunctionInput
+							onChange={this.handleOccurenceConjunctionChange}
+							operatorName={
+								value.get('operator') as FunctionalOperators &
+									RelationalOperators
+							}
+							touched={touched.occurenceCount}
+							valid={valid.occurenceCount}
+							value={value.get('value')}
+						/>
 
-					<DateFilterConjunctionInput
-						conjunctionCriterion={conjunctionCriterion}
-						onChange={this.handleDateFilterConjunctionChange}
-					/>
-				</Form.Group>
+						<DateFilterConjunctionInput
+							conjunctionCriterion={conjunctionCriterion}
+							onChange={this.handleDateFilterConjunctionChange}
+						/>
+					</Form.Group>
+				)}
 			</div>
 		);
 	}

@@ -8,6 +8,7 @@ package com.liferay.layout.util;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.User;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -20,7 +21,15 @@ public interface LayoutServiceContextHelper {
 	public AutoCloseable getServiceContextAutoCloseable(Company company)
 		throws PortalException;
 
+	public AutoCloseable getServiceContextAutoCloseable(
+			Company company, User user)
+		throws PortalException;
+
 	public AutoCloseable getServiceContextAutoCloseable(Layout layout)
+		throws PortalException;
+
+	public AutoCloseable getServiceContextAutoCloseable(
+			Layout layout, User user)
 		throws PortalException;
 
 }

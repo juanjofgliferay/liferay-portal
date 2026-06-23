@@ -5,13 +5,12 @@
 
 package com.liferay.headless.commerce.admin.account.internal.resource.v1_0;
 
-import com.liferay.account.exception.NoSuchEntryException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryService;
-import com.liferay.commerce.util.CommerceAccountHelper;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.headless.commerce.admin.account.dto.v1_0.User;
 import com.liferay.headless.commerce.admin.account.resource.v1_0.UserResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -34,11 +33,13 @@ import org.osgi.service.component.annotations.ServiceScope;
 
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v1_0/user.properties",
 	scope = ServiceScope.PROTOTYPE, service = UserResource.class
 )
+@Deprecated
 public class UserResourceImpl extends BaseUserResourceImpl {
 
 	@Override
@@ -47,14 +48,8 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 		throws Exception {
 
 		AccountEntry accountEntry =
-			_accountEntryService.fetchAccountEntryByExternalReferenceCode(
-				contextCompany.getCompanyId(), externalReferenceCode);
-
-		if (accountEntry == null) {
-			throw new NoSuchEntryException(
-				"Unable to find account with external reference code " +
-					externalReferenceCode);
-		}
+			_accountEntryService.getAccountEntryByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 
 		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
 			accountEntry.getAccountEntryGroupId());
@@ -82,7 +77,7 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 		else {
 			Date birthday = invitedUser.getBirthday();
 
-			Calendar birthdayCalendar = CalendarFactoryUtil.getCalendar(
+			Calendar calendar = CalendarFactoryUtil.getCalendar(
 				birthday.getTime(), invitedUser.getTimeZone());
 
 			invitedUser = _userService.updateUser(
@@ -99,10 +94,9 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 					user.getMiddleName(), invitedUser.getMiddleName()),
 				user.getLastName(), 0L, 0L,
 				GetterUtil.get(user.getMale(), invitedUser.isMale()),
-				birthdayCalendar.get(Calendar.MONTH),
-				birthdayCalendar.get(Calendar.DAY_OF_MONTH),
-				birthdayCalendar.get(Calendar.YEAR), null, null, null, null,
-				null,
+				calendar.get(Calendar.MONTH),
+				calendar.get(Calendar.DAY_OF_MONTH),
+				calendar.get(Calendar.YEAR), null, null, null, null, null,
 				GetterUtil.get(user.getJobTitle(), invitedUser.getJobTitle()),
 				invitedUser.getGroupIds(), invitedUser.getOrganizationIds(),
 				invitedUser.getRoleIds(), null, invitedUser.getUserGroupIds(),

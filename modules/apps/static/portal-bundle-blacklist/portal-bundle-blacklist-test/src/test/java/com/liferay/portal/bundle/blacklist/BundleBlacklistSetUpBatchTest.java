@@ -5,9 +5,9 @@
 
 package com.liferay.portal.bundle.blacklist;
 
+import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.StreamUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.lpkg.deployer.test.util.LPKGTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -46,7 +46,7 @@ public class BundleBlacklistSetUpBatchTest {
 
 		try (OutputStream outputStream = new FileOutputStream(
 				StringBundler.concat(
-					liferayHome, "/osgi/portal/", _JAR_BUNDLE_SYMBOLIC_NAME,
+					liferayHome, "/deploy/", _JAR_BUNDLE_SYMBOLIC_NAME,
 					".jar"))) {
 
 			StreamUtil.transfer(
@@ -56,7 +56,7 @@ public class BundleBlacklistSetUpBatchTest {
 
 		try (OutputStream outputStream = new FileOutputStream(
 				StringBundler.concat(
-					liferayHome, "/osgi/war/", _WAR_BUNDLE_SYMBOLIC_NAME,
+					liferayHome, "/deploy/", _WAR_BUNDLE_SYMBOLIC_NAME,
 					".war"))) {
 
 			StreamUtil.transfer(

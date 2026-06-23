@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class CommerceAvalaraPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "plug";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class CommerceAvalaraPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + CommerceAvalaraPortletKeys.COMMERCE_AVALARA + ")"
+		target = "(jakarta.portlet.name=" + CommerceAvalaraPortletKeys.COMMERCE_AVALARA + ")"
 	)
 	private Portlet _portlet;
 

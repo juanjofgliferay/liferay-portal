@@ -98,11 +98,18 @@ public class KBTemplateModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table KBTemplate";
 
+	public static final String ENTITY_ALIAS = "kbTemplate";
+
+	public static final String FILTER_PK_COLUMN_NAME = "kbTemplateId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY kbTemplate.modifiedDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY KBTemplate.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY kbTemplate.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1016,3 +1023,4 @@ public class KBTemplateModelImpl
 	private KBTemplate _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-857851218

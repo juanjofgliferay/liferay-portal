@@ -12,10 +12,11 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.style.book.exception.DuplicateStyleBookEntryNameException;
 import com.liferay.style.book.exception.StyleBookEntryNameException;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 /**
  * @author Eudaldo Alonso
@@ -33,7 +34,13 @@ public class StyleBookEntryExceptionRequestHandlerUtil {
 		String errorMessage = LanguageUtil.get(
 			themeDisplay.getRequest(), "an-unexpected-error-occurred");
 
-		if (portalException instanceof StyleBookEntryNameException) {
+		if (portalException instanceof DuplicateStyleBookEntryNameException) {
+			errorMessage = LanguageUtil.get(
+				themeDisplay.getRequest(),
+				"a-style-book-with-this-name-already-exists.-please-enter-a-" +
+					"different-name");
+		}
+		else if (portalException instanceof StyleBookEntryNameException) {
 			errorMessage = LanguageUtil.get(
 				themeDisplay.getRequest(), "please-enter-a-valid-name");
 		}

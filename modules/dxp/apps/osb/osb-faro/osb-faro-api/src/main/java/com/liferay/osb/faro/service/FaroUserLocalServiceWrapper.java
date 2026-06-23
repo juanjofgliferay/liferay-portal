@@ -125,6 +125,13 @@ public class FaroUserLocalServiceWrapper
 		_faroUserLocalService.deleteFaroUsers(groupId);
 	}
 
+	@Override
+	public void deleteFaroUsersByLiveUserId(long liveUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_faroUserLocalService.deleteFaroUsersByLiveUserId(liveUserId);
+	}
+
 	/**
 	 * @throws PortalException
 	 */
@@ -455,3 +462,4 @@ public class FaroUserLocalServiceWrapper
 	private FaroUserLocalService _faroUserLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:789172158

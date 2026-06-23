@@ -24,8 +24,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateCommerceAccountGroupRel
+ * @deprecated
  * @generated
  */
+@Deprecated
 @ProviderType
 public interface CommerceNotificationTemplateCommerceAccountGroupRelModel
 	extends BaseModel<CommerceNotificationTemplateCommerceAccountGroupRel>,
@@ -233,3 +235,4 @@ public interface CommerceNotificationTemplateCommerceAccountGroupRelModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1602318420

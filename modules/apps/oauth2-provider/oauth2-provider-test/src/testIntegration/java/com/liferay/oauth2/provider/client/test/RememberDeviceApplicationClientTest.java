@@ -13,19 +13,21 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -51,12 +53,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String applicationClientId = "oauthTestApplicationCode";
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -73,7 +77,7 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String applicationClientId = "oauthTestApplicationCodePKCE";
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
@@ -83,7 +87,9 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 				).queryParam(
 					"response_type", "code"
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				),
 				_getExtraParameters(), false));
 
@@ -100,12 +106,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String cookieName = _COOKIE_NAME_PREFIX.concat(applicationClientId);
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -137,12 +145,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 			this::parseTokenString);
 
 		response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -168,7 +178,7 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String codeVerifierString = RandomTestUtil.randomString();
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
@@ -177,7 +187,9 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 				).queryParam(
 					"response_type", "code"
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				),
 				_getExtraParameters(), false));
 
@@ -207,7 +219,7 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 			this::parseTokenString);
 
 		response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
@@ -216,7 +228,9 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 				).queryParam(
 					"response_type", "code"
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				),
 				true),
 			invocationBuilder -> invocationBuilder.cookie(
@@ -238,12 +252,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String cookieName = _COOKIE_NAME_PREFIX.concat(applicationClientId);
 
 		Response response1 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -271,12 +287,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNotNull(token);
 
 		Response response2 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -313,14 +331,16 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String codeVerifierString = RandomTestUtil.randomString();
 
 		Response response1 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
 					"code_challenge", generateCodeChallenge(codeVerifierString)
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -348,14 +368,16 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNotNull(token);
 
 		Response response2 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
 					"code_challenge", generateCodeChallenge(codeVerifierString)
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -392,12 +414,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String cookieName = _COOKIE_NAME_PREFIX.concat(applicationClientId);
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -407,7 +431,7 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 
 		NewCookie newCookie = newCookies.get(cookieName);
 
-		_revokeOAuth2AuthorizationByAccessToken(
+		revokeOAuth2AuthorizationByAccessToken(
 			getToken(
 				applicationClientId, null,
 				(clientId, tokenInvocationBuilder) -> {
@@ -427,12 +451,15 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNull(
 			parseAuthorizationCodeString(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", applicationClientId
 						).queryParam(
-							"redirect_uri", "http://redirecturi:8080"
+							"redirect_uri",
+							"http://redirecturi:" +
+								PortalUtil.getPortalServerPort(false)
 						).queryParam(
 							"response_type", "code"
 						),
@@ -452,14 +479,16 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String codeVerifierString = RandomTestUtil.randomString();
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
 					"code_challenge", generateCodeChallenge(codeVerifierString)
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -469,7 +498,7 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 
 		NewCookie newCookie = newCookies.get(cookieName);
 
-		_revokeOAuth2AuthorizationByAccessToken(
+		revokeOAuth2AuthorizationByAccessToken(
 			getToken(
 				applicationClientId, null,
 				(clientId, tokenInvocationBuilder) -> {
@@ -489,7 +518,8 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNull(
 			parseAuthorizationCodeString(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", applicationClientId
@@ -497,7 +527,9 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 							"code_challenge",
 							generateCodeChallenge(codeVerifierString)
 						).queryParam(
-							"redirect_uri", "http://redirecturi:8080"
+							"redirect_uri",
+							"http://redirecturi:" +
+								PortalUtil.getPortalServerPort(false)
 						).queryParam(
 							"response_type", "code"
 						),
@@ -513,12 +545,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String cookieName = _COOKIE_NAME_PREFIX.concat(applicationClientId);
 
 		Response response1 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget1 -> webTarget1.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -544,12 +578,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 			this::parseTokenString);
 
 		Response response2 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -577,12 +613,15 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNull(
 			parseAuthorizationCodeString(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", applicationClientId
 						).queryParam(
-							"redirect_uri", "http://redirecturi:8080"
+							"redirect_uri",
+							"http://redirecturi:" +
+								PortalUtil.getPortalServerPort(false)
 						).queryParam(
 							"response_type", "code"
 						),
@@ -600,14 +639,16 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String codeVerifierString = RandomTestUtil.randomString();
 
 		Response response1 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget1 -> webTarget1.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
 					"code_challenge", generateCodeChallenge(codeVerifierString)
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -633,14 +674,16 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 			this::parseTokenString);
 
 		Response response2 = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
 					"code_challenge", codeVerifierString
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -672,14 +715,17 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNull(
 			parseAuthorizationCodeString(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", applicationClientId
 						).queryParam(
 							"code_challenge", codeVerifierString
 						).queryParam(
-							"redirect_uri", "http://redirecturi:8080"
+							"redirect_uri",
+							"http://redirecturi:" +
+								PortalUtil.getPortalServerPort(false)
 						).queryParam(
 							"response_type", "code"
 						),
@@ -695,12 +741,14 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		String cookieName = _COOKIE_NAME_PREFIX.concat(applicationClientId);
 
 		Response response = getCodeResponse(
-			"test@liferay.com", "test", null,
+			_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD, null,
 			getCodeFunction(
 				webTarget -> webTarget.queryParam(
 					"client_id", applicationClientId
 				).queryParam(
-					"redirect_uri", "http://redirecturi:8080"
+					"redirect_uri",
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)
 				).queryParam(
 					"response_type", "code"
 				),
@@ -732,7 +780,8 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		Assert.assertNull(
 			parseAuthorizationCodeString(
 				getCodeResponse(
-					"test@liferay.com", "test", null,
+					_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+					null,
 					getCodeFunction(
 						webTarget -> webTarget.queryParam(
 							"client_id", applicationClientIdPKCE
@@ -741,42 +790,13 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 						).queryParam(
 							"response_type", "code"
 						).queryParam(
-							"redirect_uri", "http://redirecturi:8080"
+							"redirect_uri",
+							"http://redirecturi:" +
+								PortalUtil.getPortalServerPort(false)
 						),
 						true),
 					invocationBuilder -> invocationBuilder.cookie(
 						cookieName, newCookie.getValue()))));
-	}
-
-	public static class RememberApplicationClientTestPreparatorBundleActivator
-		extends BaseTestPreparatorBundleActivator {
-
-		@Override
-		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
-
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
-
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCode",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE), false,
-				Collections.singletonList("everything"), false);
-			createOAuth2ApplicationWithNone(
-				defaultCompanyId, user, "oauthTestApplicationCodePKCE",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"), false,
-				Collections.singletonList("everything"), false);
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestRememberApplicationCode",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE), true,
-				Collections.singletonList("everything"), false);
-			createOAuth2ApplicationWithNone(
-				defaultCompanyId, user, "oauthTestRememberApplicationCodePKCE",
-				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"), true,
-				Collections.singletonList("everything"), false);
-		}
-
 	}
 
 	@Override
@@ -796,17 +816,46 @@ public class RememberDeviceApplicationClientTest extends BaseClientTestCase {
 		return multivaluedMap;
 	}
 
-	private void _revokeOAuth2AuthorizationByAccessToken(String token)
-		throws PortalException {
-
-		_oAuth2AuthorizationLocalService.deleteOAuth2Authorization(
-			_oAuth2AuthorizationLocalService.
-				getOAuth2AuthorizationByAccessTokenContent(token));
-	}
-
 	private static final String _COOKIE_NAME_PREFIX = "OAUTH2_REMEMBER_DEVICE_";
 
 	@Inject
 	private OAuth2AuthorizationLocalService _oAuth2AuthorizationLocalService;
+
+	private User _user;
+
+	private class RememberApplicationClientTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
+
+		@Override
+		protected void prepareTest() throws Exception {
+			long companyId = TestPropsValues.getCompanyId();
+
+			_user = UserTestUtil.getAdminUser(companyId);
+
+			createOAuth2Application(
+				companyId, _user, "oauthTestApplicationCode",
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE), false,
+				Collections.singletonList("everything"), false);
+			createOAuth2ApplicationWithNone(
+				companyId, _user, "oauthTestApplicationCodePKCE",
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
+				Collections.singletonList(
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)),
+				false, Collections.singletonList("everything"), false);
+			createOAuth2Application(
+				companyId, _user, "oauthTestRememberApplicationCode",
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE), true,
+				Collections.singletonList("everything"), false);
+			createOAuth2ApplicationWithNone(
+				companyId, _user, "oauthTestRememberApplicationCodePKCE",
+				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
+				Collections.singletonList(
+					"http://redirecturi:" +
+						PortalUtil.getPortalServerPort(false)),
+				true, Collections.singletonList("everything"), false);
+		}
+
+	}
 
 }

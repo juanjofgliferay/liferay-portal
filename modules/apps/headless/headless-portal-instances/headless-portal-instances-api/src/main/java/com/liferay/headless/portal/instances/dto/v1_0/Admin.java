@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alberto Chaparro
@@ -47,89 +46,134 @@ public class Admin implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Admin.class, json);
 	}
 
-	@Schema(description = "Administrator's email address.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Administrator's email address."
+	)
 	public String getEmailAddress() {
+		if (_emailAddressSupplier != null) {
+			emailAddress = _emailAddressSupplier.get();
+
+			_emailAddressSupplier = null;
+		}
+
 		return emailAddress;
 	}
 
 	public void setEmailAddress(String emailAddress) {
 		this.emailAddress = emailAddress;
+
+		_emailAddressSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEmailAddress(
 		UnsafeSupplier<String, Exception> emailAddressUnsafeSupplier) {
 
-		try {
-			emailAddress = emailAddressUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_emailAddressSupplier = () -> {
+			try {
+				return emailAddressUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "Administrator's email address.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String emailAddress;
 
-	@Schema(description = "The admin's surname (last name).")
+	@JsonIgnore
+	private Supplier<String> _emailAddressSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's surname (last name)."
+	)
 	public String getFamilyName() {
+		if (_familyNameSupplier != null) {
+			familyName = _familyNameSupplier.get();
+
+			_familyNameSupplier = null;
+		}
+
 		return familyName;
 	}
 
 	public void setFamilyName(String familyName) {
 		this.familyName = familyName;
+
+		_familyNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFamilyName(
 		UnsafeSupplier<String, Exception> familyNameUnsafeSupplier) {
 
-		try {
-			familyName = familyNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_familyNameSupplier = () -> {
+			try {
+				return familyNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The admin's surname (last name).")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String familyName;
 
-	@Schema(description = "The admin's first name.")
+	@JsonIgnore
+	private Supplier<String> _familyNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The admin's first name."
+	)
 	public String getGivenName() {
+		if (_givenNameSupplier != null) {
+			givenName = _givenNameSupplier.get();
+
+			_givenNameSupplier = null;
+		}
+
 		return givenName;
 	}
 
 	public void setGivenName(String givenName) {
 		this.givenName = givenName;
+
+		_givenNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setGivenName(
 		UnsafeSupplier<String, Exception> givenNameUnsafeSupplier) {
 
-		try {
-			givenName = givenNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_givenNameSupplier = () -> {
+			try {
+				return givenNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The admin's first name.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String givenName;
+
+	@JsonIgnore
+	private Supplier<String> _givenNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -158,6 +202,8 @@ public class Admin implements Serializable {
 
 		sb.append("{");
 
+		String emailAddress = getEmailAddress();
+
 		if (emailAddress != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -172,6 +218,8 @@ public class Admin implements Serializable {
 			sb.append("\"");
 		}
 
+		String familyName = getFamilyName();
+
 		if (familyName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -185,6 +233,8 @@ public class Admin implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String givenName = getGivenName();
 
 		if (givenName != null) {
 			if (sb.length() > 1) {
@@ -205,8 +255,8 @@ public class Admin implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.portal.instances.dto.v1_0.Admin",
 		name = "x-class-name"
 	)
@@ -252,7 +302,10 @@ public class Admin implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -298,3 +351,4 @@ public class Admin implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:863631075

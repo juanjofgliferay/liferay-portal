@@ -9,6 +9,10 @@ import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.portal.kernel.exception.PortalException;
 
+import jakarta.portlet.ActionRequest;
+
+import java.math.BigDecimal;
+
 import java.util.Locale;
 
 /**
@@ -20,5 +24,15 @@ public interface CommerceOrderItemQuantityFormatter {
 			CommerceOrderItem commerceOrderItem,
 			CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure, Locale locale)
 		throws PortalException;
+
+	public String format(CommerceOrderItem commerceOrderItem, Locale locale)
+		throws PortalException;
+
+	public BigDecimal parse(
+			ActionRequest actionRequest, String className, String param)
+		throws Exception;
+
+	public BigDecimal parse(String className, String quantity, Locale locale)
+		throws Exception;
 
 }

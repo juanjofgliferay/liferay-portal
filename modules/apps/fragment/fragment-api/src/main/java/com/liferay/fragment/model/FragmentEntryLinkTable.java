@@ -33,6 +33,10 @@ public class FragmentEntryLinkTable extends BaseTable<FragmentEntryLinkTable> {
 			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<FragmentEntryLinkTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<FragmentEntryLinkTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryLinkTable, Long> fragmentEntryLinkId =
 		createColumn(
 			"fragmentEntryLinkId", Long.class, Types.BIGINT,
@@ -50,13 +54,18 @@ public class FragmentEntryLinkTable extends BaseTable<FragmentEntryLinkTable> {
 	public final Column<FragmentEntryLinkTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
-	public final Column<FragmentEntryLinkTable, Long>
-		originalFragmentEntryLinkId = createColumn(
-			"originalFragmentEntryLinkId", Long.class, Types.BIGINT,
+	public final Column<FragmentEntryLinkTable, String>
+		originalFragmentEntryLinkERC = createColumn(
+			"originalFragmentEntryLinkERC", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
-	public final Column<FragmentEntryLinkTable, Long> fragmentEntryId =
+	public final Column<FragmentEntryLinkTable, String> fragmentEntryERC =
 		createColumn(
-			"fragmentEntryId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+			"fragmentEntryERC", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<FragmentEntryLinkTable, String> fragmentEntryScopeERC =
+		createColumn(
+			"fragmentEntryScopeERC", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryLinkTable, Long> segmentsExperienceId =
 		createColumn(
 			"segmentsExperienceId", Long.class, Types.BIGINT,
@@ -107,3 +116,4 @@ public class FragmentEntryLinkTable extends BaseTable<FragmentEntryLinkTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1024051345

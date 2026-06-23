@@ -5,9 +5,7 @@
 
 package com.liferay.adaptive.media.image.content.transformer.test;
 
-import com.liferay.adaptive.media.content.transformer.ContentTransformer;
 import com.liferay.adaptive.media.content.transformer.ContentTransformerHandler;
-import com.liferay.adaptive.media.content.transformer.constants.ContentTransformerContentTypes;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
@@ -31,6 +29,10 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -49,7 +51,9 @@ public class AMImageContentTransformerTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -78,24 +82,33 @@ public class AMImageContentTransformerTest {
 			ServiceContextTestUtil.getServiceContext(
 				_group, TestPropsValues.getUserId()));
 
-		String rawHTML = String.format(
-			"<img data-fileentryid=\"%s\" src=\"%s\" />",
-			fileEntry.getFileEntryId(),
-			_dlURLHelper.getPreviewURL(
-				fileEntry, fileEntry.getFileVersion(), null, StringPool.BLANK,
-				false, false));
+		String transformedHTML = _contentTransformerHandler.transform(
+			_getRawHTML(fileEntry, 1));
 
-		String regex = StringBundler.concat(
-			"<picture data-fileentryid=\".+\">",
-			"<source media=\"\\(max-width:.+px\\)\" srcset=\".+\" \\/>",
-			"<source media=\"\\(max-width:.+px\\) and \\(min-width:.+px\\)\" ",
-			"srcset=\".+\" \\/><img data-fileentryid=\".+\" src=\".+\" \\/>",
-			"<\\/picture>");
+		String regex = _getRegex();
+
+		Assert.assertTrue(transformedHTML, transformedHTML.matches(regex));
+
+		_assertMatcher(1, regex, transformedHTML);
+	}
+
+	@Test
+	public void testTransformASingleImageMultipleTimes() throws Exception {
+		int fileEntriesCount = 5;
+
+		FileEntry fileEntry = _addImageFileEntry(
+			ServiceContextTestUtil.getServiceContext(
+				_group, TestPropsValues.getUserId()));
 
 		String transformedHTML = _contentTransformerHandler.transform(
-			ContentTransformerContentTypes.HTML, rawHTML);
+			_contentTransformerHandler.transform(
+				_getRawHTML(fileEntry, fileEntriesCount)));
 
-		Assert.assertTrue(transformedHTML.matches(regex));
+		String regex = _getRegex();
+
+		Assert.assertTrue(transformedHTML, transformedHTML.matches(regex));
+
+		_assertMatcher(fileEntriesCount, regex, transformedHTML);
 	}
 
 	private FileEntry _addImageFileEntry(ServiceContext serviceContext)
@@ -107,7 +120,50 @@ public class AMImageContentTransformerTest {
 			RandomTestUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(
 				AMImageContentTransformerTest.class, "dependencies/image.jpg"),
-			null, null, serviceContext);
+			null, null, null, serviceContext);
+	}
+
+	private void _assertMatcher(
+		int fileEntriesCount, String regex, String transformedHTML) {
+
+		Pattern pattern = Pattern.compile(regex);
+
+		Matcher matcher = pattern.matcher(transformedHTML);
+
+		int count = 0;
+
+		while (matcher.find()) {
+			count++;
+		}
+
+		Assert.assertEquals(fileEntriesCount, count);
+	}
+
+	private String _getRawHTML(FileEntry fileEntry, int imageCount)
+		throws Exception {
+
+		StringBuilder sb = new StringBuilder(imageCount);
+
+		for (int i = 0; i < imageCount; i++) {
+			sb.append(
+				String.format(
+					"<img data-fileentryid=\"%s\" src=\"%s\" />",
+					fileEntry.getFileEntryId(),
+					_dlURLHelper.getPreviewURL(
+						fileEntry, fileEntry.getFileVersion(), null,
+						StringPool.BLANK, false, false)));
+		}
+
+		return sb.toString();
+	}
+
+	private String _getRegex() {
+		return StringBundler.concat(
+			"<picture data-fileentryid=\".+?\"><source ",
+			"media=\"\\(max-width:.+?px\\)\" srcset=\".+?\" \\/><source ",
+			"media=\"\\(max-width:.+?px\\) and \\(min-width:.+?px\\)\" ",
+			"srcset=\".+?\" \\/><img data-fileentryid=\".+?\" src=\".+?\" ",
+			"\\/><\\/picture>");
 	}
 
 	private AMImageConfigurationEntry _amImageConfigurationEntry;
@@ -126,12 +182,5 @@ public class AMImageContentTransformerTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
-
-	// See LPS-202810
-
-	@Inject(
-		filter = "component.name=com.liferay.adaptive.media.image.content.transformer.internal.HtmlContentTransformerImpl"
-	)
-	private ContentTransformer<String> _htmlContentTransformer;
 
 }

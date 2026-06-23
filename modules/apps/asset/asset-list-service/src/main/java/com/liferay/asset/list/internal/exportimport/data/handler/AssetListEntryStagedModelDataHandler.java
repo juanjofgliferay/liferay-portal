@@ -152,15 +152,6 @@ public class AssetListEntryStagedModelDataHandler
 				portletDataContext, importedAssetListEntry);
 		}
 
-		importedAssetListEntry.setAssetEntrySubtype(
-			_getAssetEntrySubtype(assetListEntry, portletDataContext));
-		importedAssetListEntry.setAssetEntryType(
-			assetListEntry.getAssetEntryType());
-
-		importedAssetListEntry =
-			_assetListEntryLocalService.updateAssetListEntry(
-				importedAssetListEntry);
-
 		portletDataContext.importClassedModel(
 			assetListEntry, importedAssetListEntry);
 
@@ -181,6 +172,16 @@ public class AssetListEntryStagedModelDataHandler
 
 		_importAssetEntryListAssetEntryRelElements(
 			portletDataContext, assetListEntry);
+
+		importedAssetListEntry.setModifiedDate(
+			assetListEntry.getModifiedDate());
+		importedAssetListEntry.setAssetEntrySubtype(
+			_getAssetEntrySubtype(assetListEntry, portletDataContext));
+		importedAssetListEntry.setAssetEntryType(
+			assetListEntry.getAssetEntryType());
+
+		_assetListEntryLocalService.updateAssetListEntry(
+			importedAssetListEntry);
 	}
 
 	@Override

@@ -14,13 +14,12 @@ WidgetTemplatesManagementToolbarDisplayContext widgetTemplatesManagementToolbarD
 %>
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems="<%= widgetTemplatesTemplateDisplayContext.getNavigationItems() %>"
 />
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= widgetTemplatesManagementToolbarDisplayContext %>"
-	propsTransformer="js/WidgetTemplatesManagementToolbarPropsTransformer"
+	propsTransformer="{WidgetTemplatesManagementToolbarPropsTransformer} from template-web"
 />
 
 <portlet:actionURL name="/template/delete_ddm_template" var="deleteDDMTemplateURL">
@@ -91,7 +90,7 @@ WidgetTemplatesManagementToolbarDisplayContext widgetTemplatesManagementToolbarD
 					<clay:dropdown-actions
 						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= widgetTemplatesTemplateDisplayContext.getDDMTemplateActionDropdownItems(ddmTemplate) %>"
-						propsTransformer="js/WidgetTemplatesDropdownPropsTransformer"
+						propsTransformer="{WidgetTemplatesDropdownPropsTransformer} from template-web"
 					/>
 				</liferay-ui:search-container-column-text>
 			</liferay-ui:search-container-row>

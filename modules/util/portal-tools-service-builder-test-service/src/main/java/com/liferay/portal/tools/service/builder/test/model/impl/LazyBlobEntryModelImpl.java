@@ -80,6 +80,8 @@ public class LazyBlobEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table LazyBlobEntry";
 
+	public static final String ENTITY_ALIAS = "lazyBlobEntry";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY lazyBlobEntry.lazyBlobEntryId ASC";
 
@@ -618,8 +620,8 @@ public class LazyBlobEntryModelImpl
 	private String _uuid;
 	private long _lazyBlobEntryId;
 	private long _groupId;
-	private LazyBlobEntryBlob1BlobModel _blob1BlobModel;
-	private LazyBlobEntryBlob2BlobModel _blob2BlobModel;
+	private transient LazyBlobEntryBlob1BlobModel _blob1BlobModel;
+	private transient LazyBlobEntryBlob2BlobModel _blob2BlobModel;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
@@ -694,3 +696,4 @@ public class LazyBlobEntryModelImpl
 	private LazyBlobEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1639051513

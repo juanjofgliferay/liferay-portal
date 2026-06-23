@@ -1,11 +1,10 @@
-@component-name = "portal-wcm"
+@component-name = "portal-content-management"
 definition {
 
 	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Echo Accessibility";
-	property testray.main.component.name = "Web Content Administration";
+	property testray.main.component.name = "Web Content";
 
 	setUp {
 		task ("Set up virtual instance") {
@@ -75,11 +74,166 @@ definition {
 		}
 	}
 
+	@description = "This is a test for LPS-197159. Check the accessibility when filtering categories and tags filter for Web Content."
+	@priority = 3
+	test ViewAccessibilityOfFilterWebContentsByCategoriesAndTags {
+		task ("Given a site administrator has web contents") {
+			JSONCategory.addVocabulary(
+				groupName = "Test Site Name",
+				title = "Projects");
+
+			var categoryId = JSONCategory.addCategory(
+				groupName = "Test Site Name",
+				title = "Commerce",
+				vocabularyName = "Projects");
+
+			JSONAssettag.addTag(
+				groupName = "Test Site Name",
+				tagName = "Echo");
+
+			JSONAssettag.addTag(
+				groupName = "Test Site Name",
+				tagName = "Lima");
+
+			JSONWebcontent.addWebContent(
+				content = "Liferay DXP",
+				groupName = "Test Site Name",
+				title = "Liferay DXP");
+
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = ${categoryId},
+				content = "Liferay Commerce",
+				groupName = "Test Site Name",
+				title = "Liferay Commerce");
+
+			JSONWebcontent.addWebContent(
+				assetTagNames = "Echo",
+				content = "Liferay LXC",
+				groupName = "Test Site Name",
+				title = "Liferay LXC");
+		}
+
+		task ("When the site administrator filters web content by categories") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			ManagementBar.setFilterAndOrder(filterBy = "Categories");
+
+			AssetCategorization.selectCategories(categoryNameList = "Commerce");
+
+			WaitForElementPresent(locator1 = "Search#SEARCH_INFO");
+		}
+
+		task ("Then the Search Results should have correct accessibility") {
+			AssertAccessible();
+		}
+
+		task ("When the site administrator filters web content by tags") {
+			Search.clearSearchResult();
+
+			ManagementBar.setFilterAndOrder(filterBy = "Tags");
+
+			AssetCategorization.selectTags(tagNameList = "Echo");
+
+			WaitForElementPresent(locator1 = "Search#SEARCH_INFO");
+		}
+
+		task ("Then the Search Results should have correct accessibility") {
+			AssertAccessible();
+		}
+	}
+
+	@description = "This is a test for LPS-196819. The Highlighted Structures should comply with WCAG 2.1 AA standard."
+	@priority = 3
+	test ViewAccessibilityOfHighlightedStructures {
+		task ("Given a site administrator has web contents") {
+			JSONWebcontent.addWebContent(
+				content = "EMEA Guild",
+				groupName = "Test Site Name",
+				title = "EMEA Guild");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addField(fieldName = "Text");
+
+			WebContentStructures.saveCP();
+
+			NavItem.click(navItem = "Web Content");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(
+				webContentText = "LXC",
+				webContentTitle = "LXC");
+
+			WebContent.publishWithPermissions();
+		}
+
+		task ("When the site administrator navigates to the configuration page") {
+			Click.waitForMenuToggleJSClick(locator1 = "Icon#HEADER_VERTICAL_ELLIPSIS");
+
+			MenuItem.click(menuItem = "Configuration");
+
+			MenuBar.viewActive(menuBar = "Structures");
+		}
+
+		task ("Then the Structures sheet should have correct accessibility") {
+			AssertAccessible();
+		}
+
+		task ("When the site administrator opens the Select Structures modal") {
+			Click(
+				ariaLabel = "Select Highlighted Structures",
+				locator1 = "Button#ANY_WITH_ARIA_LABEL");
+		}
+
+		task ("Then the Select Structures modal should have correct accessibility") {
+			AssertElementAccessible(locator1 = "Modal#MODAL_CONTENT");
+		}
+
+		task ("When the site administrator select the new structure as highlighted structure") {
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			LexiconTable.checkTableCheckbox(tableEntry = "WC Structure Name");
+
+			SelectFrameTop();
+
+			Click(
+				key_text = "Add",
+				locator1 = "Modal#MODAL_FOOTER_BUTTON");
+
+			PortletEntry.save();
+		}
+
+		task ("Then the Structures sheet should have correct accessibility") {
+			AssertAccessible();
+		}
+
+		task ("When the site administrator navigates to the Content Library sheet") {
+			Navigator.gotoBack();
+
+			MenuBar.viewActive(menuBar = "Content Library");
+		}
+
+		task ("Then the Content Library sheet should have correct accessibility") {
+			AssertAccessible();
+		}
+
+		task ("When the site administrator navigates to the highlighted structure sheet") {
+			MenuBar.click(menuBar = "WC Structure Name");
+		}
+
+		task ("Then the highlighted structure sheet should have correct accessibility") {
+			AssertAccessible();
+		}
+	}
+
 	@description = "This is a test for LPS-197694. The configuration page of Web Content admin should comply with WCAG 2.1 AA standard"
 	@priority = 4
 	test ViewAccessibilityOfNotificationsConfiguration {
-		property custom.properties = "feature.flag.LPS-197692=true";
-
 		task ("Given a user accesses to the web content admin") {
 			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 		}

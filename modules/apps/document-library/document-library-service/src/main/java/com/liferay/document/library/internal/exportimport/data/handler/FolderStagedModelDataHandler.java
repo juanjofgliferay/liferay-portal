@@ -20,6 +20,7 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelModifiedDateComparator;
 import com.liferay.exportimport.portlet.data.handler.util.ExportImportGroupedModelUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -77,6 +78,21 @@ public class FolderStagedModelDataHandler
 	}
 
 	@Override
+	public Folder fetchStagedModelByExternalReferenceCodeAndGroupId(
+		String externalReferenceCode, long groupId) {
+
+		DLFolder dlFolder =
+			_dlFolderLocalService.fetchDLFolderByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (dlFolder != null) {
+			return new LiferayFolder(dlFolder);
+		}
+
+		return null;
+	}
+
+	@Override
 	public Folder fetchStagedModelByUuidAndGroupId(String uuid, long groupId) {
 		DLFolder dlFolder = _dlFolderLocalService.fetchFolder(uuid, groupId);
 
@@ -91,18 +107,11 @@ public class FolderStagedModelDataHandler
 	public List<Folder> fetchStagedModelsByUuidAndCompanyId(
 		String uuid, long companyId) {
 
-		List<DLFolder> dlFolders =
+		return TransformUtil.transform(
 			_dlFolderLocalService.getDLFoldersByUuidAndCompanyId(
 				uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				new StagedModelModifiedDateComparator<>());
-
-		List<Folder> folders = new ArrayList<>();
-
-		for (DLFolder dlFolder : dlFolders) {
-			folders.add(new LiferayFolder(dlFolder));
-		}
-
-		return folders;
+				new StagedModelModifiedDateComparator<>()),
+			dlFolder -> new LiferayFolder(dlFolder));
 	}
 
 	@Override
@@ -233,7 +242,8 @@ public class FolderStagedModelDataHandler
 				Folder.class);
 
 		long parentFolderId = MapUtil.getLong(
-			folderIds, folder.getParentFolderId(), folder.getParentFolderId());
+			folderIds, folder.getParentFolderId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 		ServiceContext serviceContext = portletDataContext.createServiceContext(
 			folder, DLFolder.class);
@@ -255,8 +265,8 @@ public class FolderStagedModelDataHandler
 				repository.getDlFolderId());
 		}
 		else {
-			Folder existingFolder = fetchStagedModelByUuidAndGroupId(
-				folder.getUuid(), portletDataContext.getScopeGroupId());
+			Folder existingFolder = fetchExistingStagedModel(
+				folder, portletDataContext.getScopeGroupId());
 
 			if ((existingFolder == null) ||
 				!portletDataContext.isDataStrategyMirror()) {
@@ -286,6 +296,13 @@ public class FolderStagedModelDataHandler
 				importedFolder = _dlAppLocalService.updateFolder(
 					existingFolder.getFolderId(), parentFolderId, name,
 					folder.getDescription(), serviceContext);
+
+				DLFolder importedDLFolder = _dlFolderLocalService.fetchDLFolder(
+					importedFolder.getFolderId());
+
+				importedDLFolder.setUuid(folder.getUuid());
+
+				_dlFolderLocalService.updateDLFolder(importedDLFolder);
 			}
 		}
 

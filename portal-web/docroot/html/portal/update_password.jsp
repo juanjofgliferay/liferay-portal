@@ -31,7 +31,7 @@ if (Validator.isNull(titlePage)) {
 }
 %>
 
-<div class="sheet sheet-lg">
+<div class="mt-4 sheet sheet-lg">
 	<div class="sheet-header">
 		<div class="autofit-padded-no-gutters-x autofit-row">
 			<div class="autofit-col autofit-col-expand">
@@ -48,7 +48,7 @@ if (Validator.isNull(titlePage)) {
 
 	<div class="sheet-text">
 		<c:choose>
-			<c:when test="<%= !themeDisplay.isSignedIn() && (ticket == null) %>">
+			<c:when test="<%= ticket == null %>">
 				<div class="alert alert-warning">
 					<c:choose>
 						<c:when test="<%= (ticket == null) && (ticketKey != null) && Validator.isNull(ticketId) %>">

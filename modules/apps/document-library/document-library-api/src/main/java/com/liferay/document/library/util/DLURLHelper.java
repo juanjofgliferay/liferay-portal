@@ -11,7 +11,7 @@ import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -56,6 +56,9 @@ public interface DLURLHelper {
 	public String getPreviewURL(
 		FileEntry fileEntry, FileVersion fileVersion, ThemeDisplay themeDisplay,
 		String queryString, boolean appendVersion, boolean absoluteURL);
+
+	public String getPreviewURL(
+		String fileEntryFriendlyURL, String groupFriendlyURL);
 
 	public String getThumbnailSrc(
 			FileEntry fileEntry, FileVersion fileVersion,

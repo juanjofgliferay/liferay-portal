@@ -6,11 +6,13 @@
 package com.liferay.analytics.batch.exportimport.internal.engine;
 
 import com.liferay.analytics.batch.exportimport.internal.dto.v1_0.converter.constants.DTOConverterConstants;
+import com.liferay.analytics.batch.exportimport.internal.engine.util.DTOConverterUtil;
 import com.liferay.analytics.dxp.entity.rest.dto.v1_0.DXPEntity;
+import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.pagination.Page;
 import com.liferay.batch.engine.pagination.Pagination;
-import com.liferay.expando.kernel.model.ExpandoColumn;
 import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.expando.kernel.model.ExpandoTableConstants;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
@@ -29,9 +31,7 @@ import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 
 import java.io.Serializable;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -53,6 +53,15 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 			Map<String, Serializable> parameters, String search)
 		throws Exception {
 
+		if (!_analyticsSettingsManager.syncedContactSettingsEnabled(
+				contextCompany.getCompanyId())) {
+
+			return Page.of(
+				Collections.emptyList(),
+				Pagination.of(pagination.getPage(), pagination.getPageSize()),
+				0);
+		}
+
 		DynamicQuery dynamicQuery = _buildDynamicQuery(
 			contextCompany.getCompanyId(), parameters);
 
@@ -60,24 +69,19 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 			return Page.of(Collections.emptyList(), pagination, 0);
 		}
 
-		List<DXPEntity> dxpEntities = new ArrayList<>();
-
-		List<ExpandoColumn> expandoColumns =
-			_expandoColumnLocalService.dynamicQuery(
-				dynamicQuery, pagination.getStartPosition(),
-				pagination.getEndPosition());
-
-		for (ExpandoColumn expandoColumn : expandoColumns) {
-			dxpEntities.add(_dxpEntityDTOConverter.toDTO(expandoColumn));
-		}
-
 		return Page.of(
-			dxpEntities, pagination,
+			DTOConverterUtil.toDTOs(
+				_expandoColumnLocalService.dynamicQuery(
+					dynamicQuery, pagination.getStartPosition(),
+					pagination.getEndPosition()),
+				_dxpEntityDTOConverter),
+			pagination,
 			_expandoColumnLocalService.dynamicQueryCount(dynamicQuery));
 	}
 
 	private DynamicQuery _buildDynamicQuery(
-		long companyId, Map<String, Serializable> parameters) {
+			long companyId, Map<String, Serializable> parameters)
+		throws Exception {
 
 		ExpandoTable organizationExpandoTable =
 			_expandoTableLocalService.fetchTable(
@@ -96,13 +100,19 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 
 		DynamicQuery dynamicQuery = _expandoColumnLocalService.dynamicQuery();
 
+		AnalyticsConfiguration analyticsConfiguration =
+			_analyticsSettingsManager.getAnalyticsConfiguration(companyId);
+		Property nameProperty = PropertyFactoryUtil.forName("name");
 		Property tableIdProperty = PropertyFactoryUtil.forName("tableId");
 
 		if ((organizationExpandoTable != null) && (userExpandoTable != null)) {
 			dynamicQuery.add(
 				RestrictionsFactoryUtil.or(
 					tableIdProperty.eq(organizationExpandoTable.getTableId()),
-					tableIdProperty.eq(userExpandoTable.getTableId())));
+					RestrictionsFactoryUtil.and(
+						tableIdProperty.eq(userExpandoTable.getTableId()),
+						nameProperty.in(
+							analyticsConfiguration.syncedUserFieldNames()))));
 		}
 		else if (organizationExpandoTable != null) {
 			dynamicQuery.add(
@@ -110,10 +120,15 @@ public class ExpandoColumnAnalyticsDXPEntityBatchEngineTaskItemDelegate
 		}
 		else {
 			dynamicQuery.add(tableIdProperty.eq(userExpandoTable.getTableId()));
+			dynamicQuery.add(
+				nameProperty.in(analyticsConfiguration.syncedUserFieldNames()));
 		}
 
 		return buildDynamicQuery(companyId, dynamicQuery, parameters);
 	}
+
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;

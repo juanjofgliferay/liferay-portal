@@ -43,18 +43,18 @@ import com.liferay.portal.security.sso.facebook.connect.constants.FacebookConnec
 import com.liferay.portal.security.sso.facebook.connect.exception.MustVerifyEmailAddressException;
 import com.liferay.portal.security.sso.facebook.connect.exception.StrangersNotAllowedException;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -431,13 +431,9 @@ public class FacebookConnectStrutsAction implements StrutsAction {
 
 		Contact contact = user.getContact();
 
-		Calendar birthdayCal = CalendarFactoryUtil.getCalendar();
+		Calendar calendar = CalendarFactoryUtil.getCalendar();
 
-		birthdayCal.setTime(contact.getBirthday());
-
-		int birthdayMonth = birthdayCal.get(Calendar.MONTH);
-		int birthdayDay = birthdayCal.get(Calendar.DAY_OF_MONTH);
-		int birthdayYear = birthdayCal.get(Calendar.YEAR);
+		calendar.setTime(contact.getBirthday());
 
 		long[] groupIds = null;
 		long[] organizationIds = null;
@@ -461,11 +457,12 @@ public class FacebookConnectStrutsAction implements StrutsAction {
 			true, null, user.getLanguageId(), user.getTimeZoneId(),
 			user.getGreeting(), user.getComments(), firstName,
 			user.getMiddleName(), lastName, contact.getPrefixListTypeId(),
-			contact.getSuffixListTypeId(), male, birthdayMonth, birthdayDay,
-			birthdayYear, contact.getSmsSn(), contact.getFacebookSn(),
-			contact.getJabberSn(), contact.getSkypeSn(), contact.getTwitterSn(),
-			contact.getJobTitle(), groupIds, organizationIds, roleIds,
-			userGroupRoles, userGroupIds, serviceContext);
+			contact.getSuffixListTypeId(), male, calendar.get(Calendar.MONTH),
+			calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.YEAR),
+			contact.getSmsSn(), contact.getFacebookSn(), contact.getJabberSn(),
+			contact.getSkypeSn(), contact.getTwitterSn(), contact.getJobTitle(),
+			groupIds, organizationIds, roleIds, userGroupRoles, userGroupIds,
+			serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

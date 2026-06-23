@@ -83,6 +83,8 @@ public class PluginSettingModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table PluginSetting";
 
+	public static final String ENTITY_ALIAS = "pluginSetting";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY pluginSetting.pluginSettingId ASC";
 
@@ -139,7 +141,7 @@ public class PluginSettingModelImpl
 	public static final long PLUGINSETTINGID_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PluginSetting"));
 
 	public PluginSettingModelImpl() {
@@ -796,3 +798,4 @@ public class PluginSettingModelImpl
 	private PluginSetting _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1647079354

@@ -11,7 +11,7 @@ import {
 	NotificationTypes
 } from 'shared/util/records/Notification';
 import {Routes, toRoute} from 'shared/util/router';
-import {useRequest} from 'shared/hooks';
+import {useRequest} from 'shared/hooks/useRequest';
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
@@ -30,17 +30,16 @@ interface INotificationAlertListProps extends PropsFromRedux {
 
 type NotificationStrategyParams = {
 	groupId: string;
-	modifiedTime?: number;
+	modifiedTime: number;
 	notificationId: string;
 	onClose: (id: string) => void;
-	stripe?: boolean;
+	stripe: boolean;
 };
 
 const notificationStrategies = new Map<string, Function>([
 	[
 		NotificationSubtypes.TimeZoneChanged,
 		({
-			groupId,
 			modifiedTime,
 			notificationId,
 			onClose,
@@ -48,7 +47,6 @@ const notificationStrategies = new Map<string, Function>([
 		}: NotificationStrategyParams) => ({
 			customComponent: () => (
 				<TimeZoneAlert
-					groupId={groupId}
 					key={notificationId}
 					modifiedTime={modifiedTime}
 					onClose={() => onClose(notificationId)}
@@ -100,7 +98,8 @@ const connector = connect(null, {addAlert});
 
 export const useNotificationsAPI = (groupId: string) => {
 	const response = useRequest({
-		dataSourceFn: API.notifications.fetchNotifications,
+		dataSourceFn: ({groupId, type}) =>
+			API.notifications.fetchNotifications({groupId, type}),
 		variables: {
 			groupId,
 			type: NotificationTypes.Alert
@@ -119,7 +118,7 @@ const NotificationAlertList: React.FC<INotificationAlertListProps> = ({
 	stripe = false,
 	subtypes = [NotificationSubtypes.TimeZoneChanged]
 }) => {
-	if (loading || !data.length) return null;
+	if (loading || !data?.length) return null;
 
 	const removeNotification = (notificationId: string) => {
 		API.notifications
@@ -137,15 +136,24 @@ const NotificationAlertList: React.FC<INotificationAlertListProps> = ({
 			});
 	};
 
-	const filterSubtypes = ({subtype}) => subtypes.includes(subtype);
+	const filterSubtypes = ({subtype}: {subtype: NotificationSubtypes}) =>
+		subtypes.includes(subtype);
 
-	const transformData = ({id, modifiedTime, subtype}) => {
+	const transformData = ({
+		id,
+		modifiedTime,
+		subtype
+	}: {
+		id: string;
+		modifiedTime: string;
+		subtype: NotificationSubtypes;
+	}) => {
 		const transformer = notificationStrategies.get(subtype);
 
 		if (transformer) {
 			return transformer({
 				groupId,
-				modifiedTime,
+				modifiedTime: Number(modifiedTime),
 				notificationId: id,
 				onClose: removeNotification,
 				stripe

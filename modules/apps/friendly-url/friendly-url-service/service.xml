@@ -22,6 +22,7 @@
 		<!-- Other fields -->
 
 		<column name="classNameId" type="long" />
+		<column name="parentClassPK" type="long" />
 		<column name="classPK" type="long" />
 
 		<!-- Localized entity -->
@@ -29,15 +30,23 @@
 		<localized-entity>
 			<column name="groupId" type="long" />
 			<column name="classNameId" type="long" />
+			<column name="parentClassPK" type="long" />
 			<column name="classPK" type="long" />
 			<localized-column name="urlTitle" />
 
 			<!-- Finder methods -->
 
-			<finder name="G_C_U" return-type="Collection">
+			<finder name="G_C_P_U" return-type="Collection">
 				<finder-column name="groupId" />
 				<finder-column name="classNameId" />
+				<finder-column name="parentClassPK" />
 				<finder-column name="urlTitle" />
+			</finder>
+			<finder name="C_C_U_C" return-type="Collection">
+				<finder-column name="companyId" />
+				<finder-column name="classNameId" />
+				<finder-column name="urlTitle" />
+				<finder-column name="ctCollectionId" />
 			</finder>
 			<finder name="G_C_C_L" return-type="Collection">
 				<finder-column name="groupId" />
@@ -45,15 +54,17 @@
 				<finder-column name="classPK" />
 				<finder-column name="languageId" />
 			</finder>
-			<finder name="G_C_L_U" return-type="FriendlyURLEntryLocalization" unique="true">
+			<finder name="G_C_P_L_U" return-type="FriendlyURLEntryLocalization" unique="true">
 				<finder-column name="groupId" />
 				<finder-column name="classNameId" />
+				<finder-column name="parentClassPK" />
 				<finder-column name="languageId" />
 				<finder-column name="urlTitle" />
 			</finder>
-			<finder name="G_C_NotL_U" return-type="Collection">
+			<finder name="G_C_P_NotL_U" return-type="Collection">
 				<finder-column name="groupId" />
 				<finder-column name="classNameId" />
+				<finder-column name="parentClassPK" />
 				<finder-column comparator="!=" name="languageId" />
 				<finder-column name="urlTitle" />
 			</finder>
@@ -61,6 +72,14 @@
 
 		<!-- Finder methods -->
 
+		<finder name="G_C" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="classNameId" />
+		</finder>
+		<finder name="C_C" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+		</finder>
 		<finder name="G_C_C" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
@@ -81,7 +100,7 @@
 
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
-		<column change-tracking-resolution-type="merge" name="friendlyURLEntryId" type="long" />
+		<column name="friendlyURLEntryId" type="long" />
 
 		<!-- Finder methods -->
 
@@ -92,6 +111,8 @@
 	</entity>
 	<exceptions>
 		<exception>DuplicateFriendlyURLEntry</exception>
+		<exception>FriendlyURLCategory</exception>
 		<exception>FriendlyURLLength</exception>
+		<exception>FriendlyURLLocalizationUrlTitle</exception>
 	</exceptions>
 </service-builder>

@@ -10,7 +10,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
-import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -48,14 +47,16 @@ public interface CommerceInventoryWarehouseItemService extends BaseService {
 	 */
 	public CommerceInventoryWarehouseItem addCommerceInventoryWarehouseItem(
 			String externalReferenceCode, long commerceInventoryWarehouseId,
-			BigDecimal quantity, String sku, String unitOfMeasureKey)
+			BigDecimal quantity, BigDecimal reservedQuantity, String sku,
+			String unitOfMeasureKey)
 		throws PortalException;
 
 	public CommerceInventoryWarehouseItem
 			addOrUpdateCommerceInventoryWarehouseItem(
 				String externalReferenceCode, long companyId,
 				long commerceInventoryWarehouseId, BigDecimal quantity,
-				String sku, String unitOfMeasureKey)
+				BigDecimal reservedQuantity, String sku,
+				String unitOfMeasureKey)
 		throws PortalException;
 
 	public void deleteCommerceInventoryWarehouseItem(
@@ -103,10 +104,9 @@ public interface CommerceInventoryWarehouseItemService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceInventoryWarehouseItem>
-			getCommerceInventoryWarehouseItemsByCompanyIdSkuAndUnitOfMeasureKey(
-				long companyId, String sku, String unitOfMeasureKey, int start,
-				int end)
-		throws PrincipalException;
+		getCommerceInventoryWarehouseItemsByCompanyIdSkuAndUnitOfMeasureKey(
+			long companyId, String sku, String unitOfMeasureKey, int start,
+			int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceInventoryWarehouseItemsCount(
@@ -115,7 +115,8 @@ public interface CommerceInventoryWarehouseItemService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceInventoryWarehouseItemsCount(
-			long companyId, long groupId, String sku, String unitOfMeasureKey)
+			long companyId, long accountEntryId, long groupId, String sku,
+			String unitOfMeasureKey)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -131,14 +132,14 @@ public interface CommerceInventoryWarehouseItemService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceInventoryWarehouseItemsCountByModifiedDate(
 			long companyId, Date startDate, Date endDate)
-		throws PrincipalException;
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceInventoryWarehouseItem>
 			getCommerceInventoryWarehouseItemsCountByModifiedDate(
 				long companyId, Date startDate, Date endDate, int start,
 				int end)
-		throws PrincipalException;
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -149,7 +150,8 @@ public interface CommerceInventoryWarehouseItemService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BigDecimal getStockQuantity(
-		long companyId, long groupId, String sku, String unitOfMeasureKey);
+		long companyId, long accountEntryId, long groupId, String sku,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BigDecimal getStockQuantity(
@@ -168,12 +170,9 @@ public interface CommerceInventoryWarehouseItemService extends BaseService {
 
 	public CommerceInventoryWarehouseItem updateCommerceInventoryWarehouseItem(
 			long commerceInventoryWarehouseItemId, BigDecimal quantity,
-			BigDecimal reservedQuantity, long mvccVersion)
-		throws PortalException;
-
-	public CommerceInventoryWarehouseItem updateCommerceInventoryWarehouseItem(
-			long commerceInventoryWarehouseItemId, long mvccVersion,
-			BigDecimal quantity, String unitOfMeasureKey)
+			BigDecimal reservedQuantity, String unitOfMeasureKey,
+			long mvccVersion)
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:810902318

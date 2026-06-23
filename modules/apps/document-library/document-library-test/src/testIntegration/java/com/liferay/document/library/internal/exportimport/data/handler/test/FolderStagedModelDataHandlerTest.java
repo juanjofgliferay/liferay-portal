@@ -11,6 +11,8 @@ import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
@@ -22,6 +24,7 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
@@ -37,6 +40,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFolder;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Collections;
@@ -75,16 +79,71 @@ public class FolderStagedModelDataHandlerTest
 		StagedModelDataHandlerUtil.exportStagedModel(
 			portletDataContext, stagedModel);
 
-		initImport();
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				stagedModel);
 
-		StagedModel exportedStagedModel = readExportedStagedModel(stagedModel);
+			Assert.assertNotNull(exportedStagedModel);
 
-		Assert.assertNotNull(exportedStagedModel);
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, exportedStagedModel);
 
-		StagedModelDataHandlerUtil.importStagedModel(
-			portletDataContext, exportedStagedModel);
+			validateCompanyDependenciesImport(
+				dependentStagedModelsMap, liveGroup);
+		}
+	}
 
-		validateCompanyDependenciesImport(dependentStagedModelsMap, liveGroup);
+	@Test
+	public void testFolderWithoutParentFolder() throws Exception {
+		initExport();
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(stagingGroup.getGroupId());
+
+		Folder parentFolder = _dlAppLocalService.addFolder(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			serviceContext);
+
+		Folder childFolder = _dlAppLocalService.addFolder(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			parentFolder.getFolderId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), serviceContext);
+
+		StagedModelDataHandlerUtil.exportStagedModel(
+			portletDataContext, childFolder);
+
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			Folder exportedChildFolder = (Folder)readExportedStagedModel(
+				childFolder);
+
+			Assert.assertNotNull(exportedChildFolder);
+
+			Folder exportedParentFolder = (Folder)readExportedStagedModel(
+				parentFolder);
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, exportedParentFolder);
+
+			Map<Long, Long> folderIds =
+				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+					Folder.class);
+
+			folderIds.remove(parentFolder.getFolderId());
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, exportedChildFolder);
+
+			Folder importedFolder =
+				_dlAppLocalService.getFolderByExternalReferenceCode(
+					childFolder.getExternalReferenceCode(),
+					liveGroup.getGroupId());
+
+			Assert.assertEquals(
+				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+				importedFolder.getParentFolderId());
+		}
 	}
 
 	protected Map<String, List<StagedModel>> addCompanyDependencies()
@@ -166,7 +225,8 @@ public class FolderStagedModelDataHandlerTest
 
 		DLFileEntryType dlFileEntryType =
 			DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-				TestPropsValues.getUserId(), groupId, ddmStructureId, null,
+				null, TestPropsValues.getUserId(), groupId, ddmStructureId,
+				null,
 				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
 				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
 				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
@@ -223,6 +283,20 @@ public class FolderStagedModelDataHandlerTest
 			dlFileEntryType.getFileEntryTypeId(), serviceContext);
 
 		return folder;
+	}
+
+	@Override
+	protected StagedModel addStagedModelWithExternalReferenceCode(
+			Group group, String externalReferenceCode,
+			Map<String, List<StagedModel>> dependentStagedModelsMap)
+		throws Exception {
+
+		return DLAppLocalServiceUtil.addFolder(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Override
@@ -370,5 +444,8 @@ public class FolderStagedModelDataHandlerTest
 		Assert.assertEquals(
 			folder.getDescription(), importedFolder.getDescription());
 	}
+
+	@Inject
+	private DLAppLocalService _dlAppLocalService;
 
 }

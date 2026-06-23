@@ -14,14 +14,18 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Serializable;
 
-import java.util.HashMap;
+import java.nio.charset.StandardCharsets;
+
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.input.BOMInputStream;
 
 /**
  * @author Ivica Cardic
@@ -42,7 +46,19 @@ public class CSVBatchEngineImportTaskItemReaderImpl
 			"enclosingCharacter", StringPool.QUOTE);
 
 		_csvParser = CSVParser.parse(
-			new UnsyncBufferedReader(new InputStreamReader(inputStream)),
+			new UnsyncBufferedReader(
+				new InputStreamReader(
+					BOMInputStream.builder(
+					).setByteOrderMarks(
+						ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE,
+						ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE,
+						ByteOrderMark.UTF_32BE
+					).setInputStream(
+						inputStream
+					).setInclude(
+						false
+					).get(),
+					StandardCharsets.UTF_8)),
 			CSVFormat.Builder.create(
 			).setDelimiter(
 				_delimiter
@@ -72,7 +88,7 @@ public class CSVBatchEngineImportTaskItemReaderImpl
 			return null;
 		}
 
-		Map<String, Object> fieldNameValueMap = new HashMap<>();
+		Map<String, Object> fieldNameValueMap = new LinkedHashMap<>();
 
 		CSVRecord csvRecord = _iterator.next();
 
@@ -104,9 +120,9 @@ public class CSVBatchEngineImportTaskItemReaderImpl
 		if (containsHeaders) {
 			CSVRecord csvRecord = csvRecordIterator.next();
 
-			List<String> fieldNamesList = csvRecord.toList();
+			List<String> fieldNames = csvRecord.toList();
 
-			return fieldNamesList.toArray(new String[0]);
+			return fieldNames.toArray(new String[0]);
 		}
 
 		String[] fieldNames = new String[100];

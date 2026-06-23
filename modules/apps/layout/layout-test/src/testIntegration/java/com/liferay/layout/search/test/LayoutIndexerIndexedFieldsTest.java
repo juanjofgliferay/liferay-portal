@@ -6,6 +6,7 @@
 package com.liferay.layout.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -17,12 +18,12 @@ import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
@@ -95,7 +96,10 @@ public class LayoutIndexerIndexedFieldsTest {
 		_postProcessDocument(document, layout);
 
 		FieldValuesAssert.assertFieldValues(
-			_expectedFieldValues(layout), document, searchTerm);
+			document, _expectedFieldValues(layout),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	protected void setTestLocale(Locale locale) throws Exception {
@@ -106,8 +110,7 @@ public class LayoutIndexerIndexedFieldsTest {
 
 	protected void setUpIndexedFieldsFixture() {
 		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, searchEngineHelper, uidFactory,
-			documentBuilderFactory);
+			resourcePermissionLocalService, searchEngineHelper, uidFactory);
 	}
 
 	protected void setUpLayoutFixture() {
@@ -133,10 +136,6 @@ public class LayoutIndexerIndexedFieldsTest {
 	}
 
 	protected Locale defaultLocale;
-
-	@Inject
-	protected DocumentBuilderFactory documentBuilderFactory;
-
 	protected IndexedFieldsFixture indexedFieldsFixture;
 	protected LayoutFixture layoutFixture;
 	protected IndexerFixture<Layout> layoutIndexerFixture;
@@ -155,6 +154,8 @@ public class LayoutIndexerIndexedFieldsTest {
 	private Map<String, String> _expectedFieldValues(Layout layout)
 		throws Exception {
 
+		User user = TestPropsValues.getUser();
+
 		Map<String, String> map = HashMapBuilder.put(
 			Field.CLASS_NAME_ID, String.valueOf(layout.getClassNameId())
 		).put(
@@ -170,6 +171,10 @@ public class LayoutIndexerIndexedFieldsTest {
 		).put(
 			Field.GROUP_ID, String.valueOf(layout.getGroupId())
 		).put(
+			Field.PRIORITY, "0.0"
+		).put(
+			Field.PRIORITY + "_Number_sortable", "0"
+		).put(
 			Field.SCOPE_GROUP_ID, String.valueOf(layout.getGroupId())
 		).put(
 			Field.STAGING_GROUP, "false"
@@ -182,11 +187,23 @@ public class LayoutIndexerIndexedFieldsTest {
 		).put(
 			Field.USER_NAME, StringUtil.toLowerCase(layout.getUserName())
 		).put(
+			"externalReferenceCode", layout.getExternalReferenceCode()
+		).put(
+			"groupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
 			"privateLayout", "false"
+		).put(
+			"scopeGroupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
+			"statusByUserExternalReferenceCode", user.getExternalReferenceCode()
 		).put(
 			"statusByUserId", String.valueOf(layout.getStatusByUserId())
 		).put(
+			"systemLayout", String.valueOf(layout.isSystem())
+		).put(
 			"title_ja_JP", layout.getName(LocaleUtil.JAPAN)
+		).put(
+			"userExternalReferenceCode", user.getExternalReferenceCode()
 		).build();
 
 		indexedFieldsFixture.populateUID(layout, map);

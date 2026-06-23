@@ -1,9 +1,9 @@
-import useQueryParams from './useQueryParams';
 import {createOrderIOMap, paginationDefaults} from 'shared/util/pagination';
 import {FilterByType, Pagination} from 'shared/types';
 import {Map, OrderedMap, Set} from 'immutable';
 import {OrderParams} from 'shared/util/records';
 import {pick} from 'lodash';
+import {useQueryParams} from 'shared/hooks/useQueryParams';
 
 const {
 	delta: defaultDelta,
@@ -21,7 +21,7 @@ type QueryPaginationParams = {
 	initialQuery?: string;
 };
 
-const useQueryPagination = ({
+export const useQueryPagination = ({
 	filterFields,
 	initialDelta = defaultDelta,
 	initialFilterBy = defaultFilterBy,
@@ -39,22 +39,25 @@ const useQueryPagination = ({
 	} = useQueryParams();
 
 	const getFilterByFromFields = (): FilterByType => {
-		const filterProps = pick(otherParams, filterFields);
+		const filterProps = pick(otherParams, filterFields as string[]);
 
 		return Map(
-			Object.keys(filterProps).reduce((acc, currentKey) => {
-				const filterValues = filterProps[currentKey] as string;
+			Object.keys(filterProps).reduce<{[key: string]: Set<string>}>(
+				(acc, currentKey) => {
+					const filterValues = filterProps[currentKey] as string;
 
-				acc[currentKey] = filterValues
-					? Set(filterValues.split(','))
-					: Set();
+					acc[currentKey] = filterValues
+						? Set(filterValues.split(','))
+						: Set();
 
-				return acc;
-			}, {})
+					return acc;
+				},
+				{}
+			)
 		);
 	};
 
-	let orderIOMap = initialOrderIOMap;
+	let orderIOMap = initialOrderIOMap ?? OrderedMap<string, OrderParams>();
 
 	if (field && sortOrder) {
 		orderIOMap = createOrderIOMap(field, sortOrder);
@@ -74,5 +77,3 @@ const useQueryPagination = ({
 		query: query as string
 	};
 };
-
-export default useQueryPagination;

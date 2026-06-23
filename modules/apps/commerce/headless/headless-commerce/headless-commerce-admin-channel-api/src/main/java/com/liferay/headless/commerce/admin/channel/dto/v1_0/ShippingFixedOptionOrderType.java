@@ -16,7 +16,13 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,23 +30,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
  * @generated
  */
 @Generated("")
-@GraphQLName("ShippingFixedOptionOrderType")
+@GraphQLName(
+	description = "Binding that restricts a fixed-rate shipping option to a specific OrderType; the option appears only when the order matches that type. Created on POST and removed on DELETE; no update operation.",
+	value = "ShippingFixedOptionOrderType"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Binding that restricts a fixed-rate shipping option to a specific OrderType; the option appears only when the order matches that type. Created on POST and removed on DELETE; no update operation.",
+	requiredProperties = {"shippingFixedOptionId", "orderTypeId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"shippingFixedOptionId", "orderTypeId"})
 @XmlRootElement(name = "ShippingFixedOptionOrderType")
 public class ShippingFixedOptionOrderType implements Serializable {
 
@@ -54,14 +59,24 @@ public class ShippingFixedOptionOrderType implements Serializable {
 			ShippingFixedOptionOrderType.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Map of HATEOAS actions available to the current user, keyed by action name. Each value carries the href template and HTTP method, computed dynamically from user permissions. Read-only."
+	)
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,52 +84,86 @@ public class ShippingFixedOptionOrderType implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Map of HATEOAS actions available to the current user, keyed by action name. Each value carries the href template and HTTP method, computed dynamically from user permissions. Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Embedded snapshot of the linked OrderType; read-only."
+	)
 	@Valid
 	public OrderType getOrderType() {
+		if (_orderTypeSupplier != null) {
+			orderType = _orderTypeSupplier.get();
+
+			_orderTypeSupplier = null;
+		}
+
 		return orderType;
 	}
 
 	public void setOrderType(OrderType orderType) {
 		this.orderType = orderType;
+
+		_orderTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderType(
 		UnsafeSupplier<OrderType, Exception> orderTypeUnsafeSupplier) {
 
-		try {
-			orderType = orderTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeSupplier = () -> {
+			try {
+				return orderTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Embedded snapshot of the linked OrderType; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected OrderType orderType;
 
-	@Schema(example = "DAB-34098-789-N")
+	@JsonIgnore
+	private Supplier<OrderType> _orderTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the OrderType by its external reference code (FK alternate key).",
+		example = "AB-34098-789-N"
+	)
 	public String getOrderTypeExternalReferenceCode() {
+		if (_orderTypeExternalReferenceCodeSupplier != null) {
+			orderTypeExternalReferenceCode =
+				_orderTypeExternalReferenceCodeSupplier.get();
+
+			_orderTypeExternalReferenceCodeSupplier = null;
+		}
+
 		return orderTypeExternalReferenceCode;
 	}
 
@@ -122,6 +171,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 		String orderTypeExternalReferenceCode) {
 
 		this.orderTypeExternalReferenceCode = orderTypeExternalReferenceCode;
+
+		_orderTypeExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -129,114 +180,182 @@ public class ShippingFixedOptionOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderTypeExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderTypeExternalReferenceCode =
-				orderTypeExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderTypeExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the OrderType by its external reference code (FK alternate key)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderTypeExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderTypeExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30324")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the OrderType (FK identifier).",
+		example = "30130"
+	)
 	public Long getOrderTypeId() {
+		if (_orderTypeIdSupplier != null) {
+			orderTypeId = _orderTypeIdSupplier.get();
+
+			_orderTypeIdSupplier = null;
+		}
+
 		return orderTypeId;
 	}
 
 	public void setOrderTypeId(Long orderTypeId) {
 		this.orderTypeId = orderTypeId;
+
+		_orderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderTypeId(
 		UnsafeSupplier<Long, Exception> orderTypeIdUnsafeSupplier) {
 
-		try {
-			orderTypeId = orderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeIdSupplier = () -> {
+			try {
+				return orderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Reference to the OrderType (FK identifier).")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long orderTypeId;
 
+	@JsonIgnore
+	private Supplier<Long> _orderTypeIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reserved for future use; the converter does not currently populate this field and the runtime returns null.",
+		example = "1"
+	)
 	public Integer getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Integer priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Integer, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	@GraphQLField(
+		description = "Reserved for future use; the converter does not currently populate this field and the runtime returns null."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer priority;
 
+	@JsonIgnore
+	private Supplier<Integer> _prioritySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the ShippingFixedOption (FK identifier).",
+		example = "30130"
+	)
 	public Long getShippingFixedOptionId() {
+		if (_shippingFixedOptionIdSupplier != null) {
+			shippingFixedOptionId = _shippingFixedOptionIdSupplier.get();
+
+			_shippingFixedOptionIdSupplier = null;
+		}
+
 		return shippingFixedOptionId;
 	}
 
 	public void setShippingFixedOptionId(Long shippingFixedOptionId) {
 		this.shippingFixedOptionId = shippingFixedOptionId;
+
+		_shippingFixedOptionIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setShippingFixedOptionId(
 		UnsafeSupplier<Long, Exception> shippingFixedOptionIdUnsafeSupplier) {
 
-		try {
-			shippingFixedOptionId = shippingFixedOptionIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_shippingFixedOptionIdSupplier = () -> {
+			try {
+				return shippingFixedOptionIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the ShippingFixedOption (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long shippingFixedOptionId;
 
+	@JsonIgnore
+	private Supplier<Long> _shippingFixedOptionIdSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30643")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Internal long ID of the ShippingFixedOptionOrderType record; read-only.",
+		example = "30643"
+	)
 	public Long getShippingFixedOptionOrderTypeId() {
+		if (_shippingFixedOptionOrderTypeIdSupplier != null) {
+			shippingFixedOptionOrderTypeId =
+				_shippingFixedOptionOrderTypeIdSupplier.get();
+
+			_shippingFixedOptionOrderTypeIdSupplier = null;
+		}
+
 		return shippingFixedOptionOrderTypeId;
 	}
 
@@ -244,6 +363,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 		Long shippingFixedOptionOrderTypeId) {
 
 		this.shippingFixedOptionOrderTypeId = shippingFixedOptionOrderTypeId;
+
+		_shippingFixedOptionOrderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
@@ -251,21 +372,27 @@ public class ShippingFixedOptionOrderType implements Serializable {
 		UnsafeSupplier<Long, Exception>
 			shippingFixedOptionOrderTypeIdUnsafeSupplier) {
 
-		try {
-			shippingFixedOptionOrderTypeId =
-				shippingFixedOptionOrderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_shippingFixedOptionOrderTypeIdSupplier = () -> {
+			try {
+				return shippingFixedOptionOrderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Internal long ID of the ShippingFixedOptionOrderType record; read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long shippingFixedOptionOrderTypeId;
+
+	@JsonIgnore
+	private Supplier<Long> _shippingFixedOptionOrderTypeIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -296,6 +423,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -306,6 +435,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 			sb.append(_toJSON(actions));
 		}
 
+		OrderType orderType = getOrderType();
+
 		if (orderType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -315,6 +446,9 @@ public class ShippingFixedOptionOrderType implements Serializable {
 
 			sb.append(String.valueOf(orderType));
 		}
+
+		String orderTypeExternalReferenceCode =
+			getOrderTypeExternalReferenceCode();
 
 		if (orderTypeExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -330,6 +464,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long orderTypeId = getOrderTypeId();
+
 		if (orderTypeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -339,6 +475,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 
 			sb.append(orderTypeId);
 		}
+
+		Integer priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -350,6 +488,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 			sb.append(priority);
 		}
 
+		Long shippingFixedOptionId = getShippingFixedOptionId();
+
 		if (shippingFixedOptionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -359,6 +499,9 @@ public class ShippingFixedOptionOrderType implements Serializable {
 
 			sb.append(shippingFixedOptionId);
 		}
+
+		Long shippingFixedOptionOrderTypeId =
+			getShippingFixedOptionOrderTypeId();
 
 		if (shippingFixedOptionOrderTypeId != null) {
 			if (sb.length() > 1) {
@@ -375,8 +518,8 @@ public class ShippingFixedOptionOrderType implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.channel.dto.v1_0.ShippingFixedOptionOrderType",
 		name = "x-class-name"
 	)
@@ -422,7 +565,10 @@ public class ShippingFixedOptionOrderType implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -468,3 +614,4 @@ public class ShippingFixedOptionOrderType implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1062287231

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,14 +53,24 @@ public class SitePageActionExecutionResult implements Serializable {
 			SitePageActionExecutionResult.class, json);
 	}
 
-	@Schema(description = "The reference to a page.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The reference to a page."
+	)
 	@Valid
 	public ClassFieldsReference getItemReference() {
+		if (_itemReferenceSupplier != null) {
+			itemReference = _itemReferenceSupplier.get();
+
+			_itemReferenceSupplier = null;
+		}
+
 		return itemReference;
 	}
 
 	public void setItemReference(ClassFieldsReference itemReference) {
 		this.itemReference = itemReference;
+
+		_itemReferenceSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,20 +78,25 @@ public class SitePageActionExecutionResult implements Serializable {
 		UnsafeSupplier<ClassFieldsReference, Exception>
 			itemReferenceUnsafeSupplier) {
 
-		try {
-			itemReference = itemReferenceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemReferenceSupplier = () -> {
+			try {
+				return itemReferenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The reference to a page.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ClassFieldsReference itemReference;
+
+	@JsonIgnore
+	private Supplier<ClassFieldsReference> _itemReferenceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -113,6 +127,8 @@ public class SitePageActionExecutionResult implements Serializable {
 
 		sb.append("{");
 
+		ClassFieldsReference itemReference = getItemReference();
+
 		if (itemReference != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -128,8 +144,8 @@ public class SitePageActionExecutionResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.SitePageActionExecutionResult",
 		name = "x-class-name"
 	)
@@ -175,7 +191,10 @@ public class SitePageActionExecutionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -221,3 +240,4 @@ public class SitePageActionExecutionResult implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-871595363

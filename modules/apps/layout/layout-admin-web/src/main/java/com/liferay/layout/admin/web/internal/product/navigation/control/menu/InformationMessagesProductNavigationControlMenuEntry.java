@@ -15,7 +15,6 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.impl.VirtualLayout;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
@@ -24,13 +23,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.product.navigation.control.menu.BaseJSPProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
-import com.liferay.sites.kernel.util.Sites;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,25 +50,9 @@ public class InformationMessagesProductNavigationControlMenuEntry
 	public static final String INFORMATION_MESSAGES_LINKED_LAYOUT =
 		"INFORMATION_MESSAGES_LINKED_LAYOUT";
 
-	public static final String INFORMATION_MESSAGES_MODIFIED_LAYOUT =
-		"INFORMATION_MESSAGES_MODIFIED_LAYOUT";
-
 	@Override
 	public String getIconJspPath() {
 		return "/dynamic_include/information_messages.jsp";
-	}
-
-	public boolean hasUpdateLayoutPermission(ThemeDisplay themeDisplay)
-		throws PortalException {
-
-		if (LayoutPermissionUtil.contains(
-				themeDisplay.getPermissionChecker(), themeDisplay.getLayout(),
-				ActionKeys.UPDATE)) {
-
-			return true;
-		}
-
-		return false;
 	}
 
 	@Override
@@ -87,9 +69,6 @@ public class InformationMessagesProductNavigationControlMenuEntry
 			httpServletRequest.setAttribute(
 				INFORMATION_MESSAGES_LINKED_LAYOUT,
 				_isLinkedLayout(themeDisplay));
-			httpServletRequest.setAttribute(
-				INFORMATION_MESSAGES_MODIFIED_LAYOUT,
-				_isModifiedLayout(themeDisplay));
 		}
 		catch (PortalException portalException) {
 			_log.error(portalException);
@@ -140,8 +119,7 @@ public class InformationMessagesProductNavigationControlMenuEntry
 				fetchLayoutUtilityPageEntryByPlid(layout.getClassPK());
 
 		if ((layoutUtilityPageEntry != null) ||
-			(!_isLinkedLayout(themeDisplay) &&
-			 !_isModifiedLayout(themeDisplay))) {
+			!_isLinkedLayout(themeDisplay)) {
 
 			return false;
 		}
@@ -162,37 +140,15 @@ public class InformationMessagesProductNavigationControlMenuEntry
 		Group group = layout.getGroup();
 
 		if ((layout instanceof VirtualLayout) || !layout.isLayoutUpdateable() ||
-			(layout.isLayoutPrototypeLinkActive() &&
+			(layout.isPortletLayoutPageTemplateEntryLinkActive() &&
 			 !group.hasStagingGroup())) {
 
-			if (!LayoutPermissionUtil.containsWithoutViewableGroup(
-					themeDisplay.getPermissionChecker(), layout, false,
-					ActionKeys.UPDATE)) {
-
-				return false;
-			}
-
-			return true;
+			return LayoutPermissionUtil.containsWithoutViewableGroup(
+				themeDisplay.getPermissionChecker(), layout, false,
+				ActionKeys.UPDATE);
 		}
 
 		return false;
-	}
-
-	private boolean _isModifiedLayout(ThemeDisplay themeDisplay)
-		throws PortalException {
-
-		Layout layout = themeDisplay.getLayout();
-
-		LayoutSet layoutSet = layout.getLayoutSet();
-
-		if (!layoutSet.isLayoutSetPrototypeLinkActive() ||
-			!_sites.isLayoutModifiedSinceLastMerge(layout) ||
-			!hasUpdateLayoutPermission(themeDisplay)) {
-
-			return false;
-		}
-
-		return true;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -208,8 +164,5 @@ public class InformationMessagesProductNavigationControlMenuEntry
 
 	@Reference(target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)")
 	private ServletContext _servletContext;
-
-	@Reference
-	private Sites _sites;
 
 }

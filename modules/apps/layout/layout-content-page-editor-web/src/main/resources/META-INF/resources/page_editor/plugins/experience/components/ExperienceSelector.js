@@ -15,8 +15,8 @@ import {
 	useEventListener,
 	useIsMounted,
 } from '@liferay/frontend-js-react-web';
-import {useId, useSessionState} from 'frontend-js-components-web';
-import {COOKIE_TYPES, navigate, openToast} from 'frontend-js-web';
+import {openToast, useId, useSessionState} from 'frontend-js-components-web';
+import {COOKIE_TYPES, navigate} from 'frontend-js-web';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {config} from '../../../app/config/index';
@@ -231,12 +231,20 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 
 	const onExperienceCreation = ({
 		name,
+		segmentsEntryERC,
 		segmentsEntryId,
+		segmentsEntryScopeERC,
 		segmentsExperienceId,
 	}) => {
 		if (segmentsExperienceId) {
 			return dispatch(
-				updateExperience({name, segmentsEntryId, segmentsExperienceId})
+				updateExperience({
+					name,
+					segmentsEntryERC,
+					segmentsEntryId,
+					segmentsEntryScopeERC,
+					segmentsExperienceId,
+				})
 			)
 				.then(() => {
 					if (isMounted()) {
@@ -266,7 +274,8 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 			return dispatch(
 				createExperience({
 					name,
-					segmentsEntryId,
+					segmentsEntryERC,
+					segmentsEntryScopeERC,
 				})
 			)
 				.then(() => {
@@ -301,14 +310,22 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 	};
 
 	const onEditExperience = (experienceData) => {
-		const {name, segmentsEntryId, segmentsExperienceId} = experienceData;
+		const {
+			name,
+			segmentsEntryERC,
+			segmentsEntryId,
+			segmentsEntryScopeERC,
+			segmentsExperienceId,
+		} = experienceData;
 
 		setOpenModal(true);
 		debouncedSetOpen(false);
 
 		setEditingExperience({
 			name,
+			segmentsEntryERC,
 			segmentsEntryId,
+			segmentsEntryScopeERC,
 			segmentsExperienceId,
 		});
 	};
@@ -334,9 +351,8 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 			) {
 				event.preventDefault();
 
-				const allFocusableElements = getKeyboardFocusableElements(
-					document
-				);
+				const allFocusableElements =
+					getKeyboardFocusableElements(document);
 
 				const index = allFocusableElements.indexOf(buttonRef.current);
 
@@ -423,7 +439,7 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 				aria-label={`${Liferay.Language.get('experience')}: ${
 					selectedExperience.name
 				}`}
-				className="form-control-select pr-4 text-left text-truncate"
+				className="form-control-select page-editor__experience-selector pr-4 text-left text-truncate"
 				disabled={!canUpdateExperiences}
 				displayType="secondary"
 				onClick={() => debouncedSetOpen(!open)}
@@ -512,6 +528,10 @@ const ExperienceSelector = ({experiences, segments, selectedExperience}) => {
 					onSubmit={onExperienceCreation}
 					segmentId={editingExperience.segmentsEntryId}
 					segments={segments}
+					segmentsEntryERC={editingExperience.segmentsEntryERC}
+					segmentsEntryScopeERC={
+						editingExperience.segmentsEntryScopeERC
+					}
 				/>
 			)}
 		</>
@@ -555,6 +575,7 @@ const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
 						)} `}
 
 						<a
+							className="text-decoration-underline"
 							href={config.contentPagePersonalizationLearnURL}
 							target="_blank"
 						>
@@ -567,7 +588,7 @@ const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
 				</>
 			)}
 
-			{!config.isSegmentationEnabled && !dismissAlert ? (
+			{!config.isSegmentationEnabled && !dismissAlert && (
 				<ClayAlert
 					className="mx-0 segmentation-disabled-alert"
 					displayType="warning"
@@ -589,16 +610,6 @@ const ExperiencesSelectorHeader = ({canCreateExperiences, onNewExperience}) => {
 						Liferay.Language.get(
 							'contact-your-system-administrator-to-enable-it'
 						)
-					)}
-				</ClayAlert>
-			) : (
-				<ClayAlert
-					className="mx-0"
-					displayType="warning"
-					title={Liferay.Language.get('warning')}
-				>
-					{Liferay.Language.get(
-						'changes-to-experiences-are-applied-immediately'
 					)}
 				</ClayAlert>
 			)}

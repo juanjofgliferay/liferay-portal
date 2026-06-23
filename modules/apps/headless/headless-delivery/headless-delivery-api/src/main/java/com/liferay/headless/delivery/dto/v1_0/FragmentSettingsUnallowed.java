@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,14 +53,22 @@ public class FragmentSettingsUnallowed implements Serializable {
 			FragmentSettingsUnallowed.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Fragment[] getUnallowedFragments() {
+		if (_unallowedFragmentsSupplier != null) {
+			unallowedFragments = _unallowedFragmentsSupplier.get();
+
+			_unallowedFragmentsSupplier = null;
+		}
+
 		return unallowedFragments;
 	}
 
 	public void setUnallowedFragments(Fragment[] unallowedFragments) {
 		this.unallowedFragments = unallowedFragments;
+
+		_unallowedFragmentsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -69,20 +76,25 @@ public class FragmentSettingsUnallowed implements Serializable {
 		UnsafeSupplier<Fragment[], Exception>
 			unallowedFragmentsUnsafeSupplier) {
 
-		try {
-			unallowedFragments = unallowedFragmentsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_unallowedFragmentsSupplier = () -> {
+			try {
+				return unallowedFragmentsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Fragment[] unallowedFragments;
+
+	@JsonIgnore
+	private Supplier<Fragment[]> _unallowedFragmentsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -112,6 +124,8 @@ public class FragmentSettingsUnallowed implements Serializable {
 
 		sb.append("{");
 
+		Fragment[] unallowedFragments = getUnallowedFragments();
+
 		if (unallowedFragments != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -137,8 +151,8 @@ public class FragmentSettingsUnallowed implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.FragmentSettingsUnallowed",
 		name = "x-class-name"
 	)
@@ -184,7 +198,10 @@ public class FragmentSettingsUnallowed implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -230,3 +247,4 @@ public class FragmentSettingsUnallowed implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1978394399

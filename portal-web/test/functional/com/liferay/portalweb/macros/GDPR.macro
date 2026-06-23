@@ -69,7 +69,7 @@ definition {
 
 		PortletEntry.selectAll();
 
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Anonymize");
 
@@ -95,7 +95,7 @@ definition {
 		if (isSet(allApplications)) {
 			PortletEntry.selectAll();
 
-			Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+			Click(locator1 = "ManagementBar#ELLIPSIS");
 
 			MenuItem.clickNoError(menuItem = "Anonymize");
 
@@ -121,7 +121,7 @@ definition {
 			LexiconEntry.selectEntry(rowEntry = ${rowEntry});
 		}
 
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Anonymize");
 
@@ -175,7 +175,7 @@ definition {
 	macro deleteAllEntriesCP() {
 		PortletEntry.selectAll();
 
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Delete");
 
@@ -235,7 +235,7 @@ definition {
 			LexiconEntry.selectEntry(rowEntry = ${rowEntry});
 		}
 
-		Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+		Click(locator1 = "ManagementBar#ELLIPSIS");
 
 		MenuItem.clickNoError(menuItem = "Delete");
 
@@ -295,7 +295,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro filterByApplications(totalItemsCount = null, webContent = null, applicationItemsCount = null, applications = null) {
+	macro filterByApplications(totalItemsCount = null, customObject = null, webContent = null, applicationItemsCount = null, applications = null) {
 		Click.clickNoWaitForVisible(
 			key_selectData = ${applications},
 			locator1 = "DataErasure#REVIEW_DATA_SELECT");
@@ -303,6 +303,12 @@ definition {
 		if (isSet(webContent)) {
 			Click.clickNoWaitForVisible(
 				key_selectData = ${webContent},
+				locator1 = "DataErasure#REVIEW_DATA_SELECT");
+		}
+
+		if (isSet(customObject)) {
+			Click.clickNoWaitForVisible(
+				key_selectData = ${customObject},
 				locator1 = "DataErasure#REVIEW_DATA_SELECT");
 		}
 

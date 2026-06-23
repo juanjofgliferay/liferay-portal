@@ -5,22 +5,21 @@
 
 import ClayButton from '@clayui/button';
 import ClayForm from '@clayui/form';
+import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
 import {ReactNode} from 'react';
 
-import arrowDown from '../assets/icons/arrow_down_icon.svg';
-import asteriskIcon from '../assets/icons/asterisk_icon.svg';
+import {Tooltip} from './Tooltip/Tooltip';
 
 import './FieldBase.scss';
-import {Tooltip} from './Tooltip/Tooltip';
 
 export function RequiredMask() {
 	return (
 		<>
 			<span className="field-base-required-asterisk">
-				<img
-					className="field-base-required-asterisk-icon"
-					src={asteriskIcon}
+				<ClayIcon
+					className="field-base-required-asterisk-icon ml-1 text-danger"
+					symbol="asterisk"
 				/>
 			</span>
 
@@ -32,13 +31,14 @@ export function RequiredMask() {
 interface FieldBaseProps {
 	children?: ReactNode;
 	className?: string;
-	description?: string;
+	description?: ReactNode | string;
 	disabled?: boolean;
 	errorMessage?: string;
 	helpMessage?: string;
 	hideFeedback?: boolean;
 	id?: string;
-	label?: string;
+	label?: ReactNode;
+	labelClassName?: string;
 	localized?: boolean;
 	localizedTooltipText?: string;
 	required?: boolean;
@@ -57,6 +57,7 @@ export function FieldBase({
 	hideFeedback,
 	id,
 	label,
+	labelClassName,
 	localized,
 	localizedTooltipText,
 	required,
@@ -72,17 +73,26 @@ export function FieldBase({
 			})}
 		>
 			<div className="field-base-container">
-				<div className="field-base-container_label">
-					{label && (
-						<label className={classNames({disabled})} htmlFor={id}>
+				<div
+					className={classNames('field-base-container_label', {
+						'w-100': !localized,
+					})}
+				>
+					{typeof label === 'string' ? (
+						<label
+							className={classNames(labelClassName, {disabled})}
+							htmlFor={id}
+						>
 							{label}
 
 							{required && <RequiredMask />}
 						</label>
+					) : (
+						label
 					)}
 
 					{tooltip && (
-						<div className="field-base-tooltip">
+						<div className="field-base-tooltip mb-2 ml-3">
 							<Tooltip
 								tooltip={tooltip}
 								tooltipText={tooltipText}
@@ -95,7 +105,10 @@ export function FieldBase({
 					<div className="field-base-localized-field">
 						<ClayButton displayType={null}>
 							English (US)
-							<img className="arrow-down-icon" src={arrowDown} />
+							<ClayIcon
+								className="arrow-down-icon"
+								symbol="caret-bottom"
+							/>
 						</ClayButton>
 
 						<>
@@ -116,6 +129,12 @@ export function FieldBase({
 			)}
 
 			{children}
+
+			{errorMessage && (
+				<div className="field-base-feedback text-danger">
+					{errorMessage}
+				</div>
+			)}
 
 			{!hideFeedback && helpMessage && (
 				<div className="field-base-feedback">{helpMessage}</div>

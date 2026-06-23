@@ -21,10 +21,12 @@ import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
@@ -35,15 +37,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.UserFirstNameComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.List;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -59,15 +61,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.header-portlet-css=/invite_members/css/main.css",
 		"com.liferay.portlet.icon=/icons/invite_members.png",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Invite Members",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/invite_members/view.jsp",
-		"javax.portlet.name=" + InviteMembersPortletKeys.INVITE_MEMBERS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user",
-		"javax.portlet.supported-public-render-parameter=invitedMembersCount",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=Invite Members",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/invite_members/view.jsp",
+		"jakarta.portlet.name=" + InviteMembersPortletKeys.INVITE_MEMBERS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.supported-public-render-parameter=invitedMembersCount",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -177,6 +179,14 @@ public class InviteMembersPortlet extends MVCPortlet {
 			_memberRequestLocalService.updateMemberRequest(
 				themeDisplay.getUserId(), memberRequestId, status);
 
+			long userNotificationEventId = ParamUtil.getLong(
+				actionRequest, "userNotificationEventId");
+
+			if (userNotificationEventId != 0) {
+				_updateArchived(
+					themeDisplay.getUserId(), userNotificationEventId);
+			}
+
 			jsonObject.put("success", Boolean.TRUE);
 		}
 		catch (Exception exception) {
@@ -205,7 +215,7 @@ public class InviteMembersPortlet extends MVCPortlet {
 							"filterByUsersGroupsGroupId"),
 					groupId)
 			).build(),
-			start, end, new UserFirstNameComparator(true));
+			start, end, UserFirstNameComparator.getInstance(true));
 	}
 
 	private int _getAvailableUsersCount(
@@ -291,6 +301,27 @@ public class InviteMembersPortlet extends MVCPortlet {
 			invitedRoleId, invitedTeamId, serviceContext);
 	}
 
+	private void _updateArchived(long userId, long userNotificationEventId)
+		throws Exception {
+
+		UserNotificationEvent userNotificationEvent =
+			_userNotificationEventLocalService.fetchUserNotificationEvent(
+				userNotificationEventId);
+
+		if (userNotificationEvent == null) {
+			return;
+		}
+
+		if (userNotificationEvent.getUserId() != userId) {
+			throw new PrincipalException();
+		}
+
+		userNotificationEvent.setArchived(true);
+
+		_userNotificationEventLocalService.updateUserNotificationEvent(
+			userNotificationEvent);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		InviteMembersPortlet.class);
 
@@ -316,5 +347,9 @@ public class InviteMembersPortlet extends MVCPortlet {
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
+	private UserNotificationEventLocalService
+		_userNotificationEventLocalService;
 
 }

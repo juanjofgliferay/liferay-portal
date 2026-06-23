@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -51,32 +50,45 @@ public class AggregationConfiguration implements Serializable {
 			AggregationConfiguration.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Object getAggs() {
+		if (_aggsSupplier != null) {
+			aggs = _aggsSupplier.get();
+
+			_aggsSupplier = null;
+		}
+
 		return aggs;
 	}
 
 	public void setAggs(Object aggs) {
 		this.aggs = aggs;
+
+		_aggsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAggs(UnsafeSupplier<Object, Exception> aggsUnsafeSupplier) {
-		try {
-			aggs = aggsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_aggsSupplier = () -> {
+			try {
+				return aggsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object aggs;
+
+	@JsonIgnore
+	private Supplier<Object> _aggsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -106,6 +118,8 @@ public class AggregationConfiguration implements Serializable {
 
 		sb.append("{");
 
+		Object aggs = getAggs();
+
 		if (aggs != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -131,8 +145,8 @@ public class AggregationConfiguration implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.AggregationConfiguration",
 		name = "x-class-name"
 	)
@@ -178,7 +192,10 @@ public class AggregationConfiguration implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -224,3 +241,4 @@ public class AggregationConfiguration implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1946414607

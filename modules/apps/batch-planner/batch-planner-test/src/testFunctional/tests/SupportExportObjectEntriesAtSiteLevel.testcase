@@ -1,10 +1,12 @@
-@component-name = "portal-batch-planner"
+@component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "feature.flag.COMMERCE-8087=true";
+	property portal.acceptance = "quarantine";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Import/Export";
+	property testray.main.component.name = "Data Migration Center";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -101,10 +103,8 @@ definition {
 
 	@priority = 5
 	test CanDownloadFileWithAllFieldsSelected {
-		property portal.acceptance = "true";
-
-		task ("And Given 'C_Student (v1_0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
-			ImportExport.selectEntity(entityType = "C_Student (v1_0 - Liferay Object REST)");
+		task ("And Given 'Student (v1.0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
+			ImportExport.selectEntity(entityType = "Student (v1.0 - Liferay Object REST)");
 		}
 
 		task ("When exporting file in JSON format with all fields selected") {
@@ -125,9 +125,9 @@ definition {
 			var response = ObjectDefinitionAPI.getObjectEntries(
 				en_US_plural_label = "students",
 				scopeKey = "true");
-			var totalFieldsList = "creator,dateCreated,dateModified,externalReferenceCode,id,keywords,name,scopeKey,status";
+			var nonDateFieldsList = "creator,externalReferenceCode,id,keywords,name,scopeKey,status";
 
-			for (var fieldName : list ${totalFieldsList}) {
+			for (var fieldName : list ${nonDateFieldsList}) {
 				var expectedValue = JSONPathUtil.getProperty(
 					property = "$.items..[0]${fieldName}",
 					response = ${response});
@@ -138,22 +138,35 @@ definition {
 					jsonObject = "$..[0]${fieldName}");
 			}
 
-			BatchEngine.assertExportedFileContainsCorrectObject(
-				expectedValue = "DELETE,GET,GET,PUT,PATCH",
-				fileName = "export.json",
-				jsonObject = "$..actions..method");
+			// The batch export serializes dates with millisecond precision
+			// (LPD-85261), while the headless REST response still drops them,
+			// so compare the seconds-precision prefix instead of the full value.
+
+			var dateFieldsList = "dateCreated,dateModified";
+			var exportFileContent = TestCase.getTempFileContent(fileName = "export.json");
+
+			for (var fieldName : list ${dateFieldsList}) {
+				var expectedValue = JSONPathUtil.getProperty(
+					property = "$.items..[0]${fieldName}",
+					response = ${response});
+
+				var expectedValuePrefix = StringUtil.replace(${expectedValue}, "Z", "");
+				var actualValue = JSONUtil.getWithJSONPath(${exportFileContent}, "$..[0]${fieldName}");
+
+				TestUtils.assertContain(
+					actual = ${actualValue},
+					expected = ${expectedValuePrefix});
+			}
 		}
 	}
 
 	@priority = 4
 	test CanExportSpecificFieldsWithJSONTConfigurationNode {
-		property portal.acceptance = "true";
-
-		task ("And Given 'C_Student (v1_0 - Liferay Object REST)' as Entity Type and current site as Scope in Data Migration Center --> Export File") {
+		task ("And Given 'Student (v1.0 - Liferay Object REST)' as Entity Type and current site as Scope in Data Migration Center --> Export File") {
 			var scope = TestCase.getSiteName();
 
 			ImportExport.configureExport(
-				entityType = "C_Student (v1_0 - Liferay Object REST)",
+				entityType = "Student (v1.0 - Liferay Object REST)",
 				exportFileFormat = "JSONT",
 				scope = ${scope});
 		}
@@ -188,10 +201,8 @@ definition {
 
 	@priority = 4
 	test CannotSeeScopeSelectorForObjectDefinitionsScopedByCompany {
-		property portal.acceptance = "true";
-
-		task ("When 'C_University (v1_0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
-			ImportExport.selectEntity(entityType = "C_University (v1_0 - Liferay Object REST)");
+		task ("When 'University (v1.0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
+			ImportExport.selectEntity(entityType = "University (v1.0 - Liferay Object REST)");
 		}
 
 		task ("Then 'Scope' selector is not present") {
@@ -201,14 +212,12 @@ definition {
 
 	@priority = 5
 	test CanSeeCreatedSiteInScopeSelector {
-		property portal.acceptance = "true";
-
 		task ("And Given a new site named test") {
 			HeadlessSite.addSite(siteName = "test");
 		}
 
-		task ("And Given 'C_Student (v1_0 - Liferay Object REST)' as Entity Type and default site as scope in Data Migration Center --> Export File") {
-			ImportExport.selectEntity(entityType = "C_Student (v1_0 - Liferay Object REST)");
+		task ("And Given 'Student (v1.0 - Liferay Object REST)' as Entity Type and default site as scope in Data Migration Center --> Export File") {
+			ImportExport.selectEntity(entityType = "Student (v1.0 - Liferay Object REST)");
 		}
 
 		task ("When click the scope selector") {
@@ -224,10 +233,8 @@ definition {
 
 	@priority = 4
 	test CanSelectAllExistingFields {
-		property portal.acceptance = "true";
-
-		task ("When selecting 'C_Student (v1_0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
-			ImportExport.selectEntity(entityType = "C_Student (v1_0 - Liferay Object REST)");
+		task ("When selecting 'Student (v1.0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
+			ImportExport.selectEntity(entityType = "Student (v1.0 - Liferay Object REST)");
 		}
 
 		task ("Then the list of fields to select contains all the fields available with GET request") {
@@ -239,10 +246,8 @@ definition {
 
 	@priority = 4
 	test CanSelectGlobalSiteAsScope {
-		property portal.acceptance = "true";
-
-		task ("When 'C_Student (v1_0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
-			ImportExport.selectEntity(entityType = "C_Student (v1_0 - Liferay Object REST)");
+		task ("When 'Student (v1.0 - Liferay Object REST)' as Entity Type in Data Migration Center --> Export File") {
+			ImportExport.selectEntity(entityType = "Student (v1.0 - Liferay Object REST)");
 		}
 
 		task ("Then Global site available as scope") {

@@ -2,7 +2,7 @@ import {ACCOUNTS, Routes, SEGMENTS, toRoute} from 'shared/util/router';
 
 type IBasicRouteArgs = {
 	groupId: string;
-	label?: string;
+	label?: string | null;
 };
 
 type IBasicSidebarRouteArgs = IBasicRouteArgs & {
@@ -11,7 +11,7 @@ type IBasicSidebarRouteArgs = IBasicRouteArgs & {
 
 export type IBreadcrumbArgs = {
 	active?: boolean;
-	href?: string;
+	href?: string | null;
 	groupId?: string;
 	id?: string;
 	label: string;
@@ -54,15 +54,21 @@ export const getAccounts = ({channelId, groupId}: IBasicSidebarRouteArgs) => ({
 	label: Liferay.Language.get('accounts')
 });
 
-export const getKnownIndividuals = ({
+export const getIndividuals = ({
+	LDPEnabled,
 	channelId,
 	groupId
-}: IBasicSidebarRouteArgs) => ({
-	href: toRoute(Routes.CONTACTS_INDIVIDUALS_KNOWN_INDIVIDUALS, {
-		channelId,
-		groupId
-	}),
-	label: Liferay.Language.get('known-individuals')
+}: IBasicSidebarRouteArgs & {LDPEnabled: boolean}) => ({
+	href: toRoute(
+		LDPEnabled
+			? Routes.CONTACTS_INDIVIDUALS
+			: Routes.CONTACTS_INDIVIDUALS_KNOWN_INDIVIDUALS,
+		{
+			channelId,
+			groupId
+		}
+	),
+	label: Liferay.Language.get('individuals')
 });
 
 export const getSegments = ({channelId, groupId}: IBasicSidebarRouteArgs) => ({
@@ -218,6 +224,17 @@ export const getRecommendations = ({groupId}: IBasicRouteArgs) => ({
 export const getEvents = ({groupId}: IBasicRouteArgs) => ({
 	href: toRoute(Routes.SETTINGS_DEFINITIONS_EVENTS_DEFAULT, {groupId}),
 	label: Liferay.Language.get('events')
+});
+
+export const getEventAnalysis = ({
+	channelId,
+	groupId
+}: IBasicSidebarRouteArgs) => ({
+	href: toRoute(Routes.EVENT_ANALYSIS, {
+		channelId,
+		groupId
+	}),
+	label: Liferay.Language.get('event-analysis')
 });
 
 export const getEventAttributes = ({groupId}: IBasicRouteArgs) => ({

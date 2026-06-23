@@ -5,6 +5,7 @@
 
 package com.liferay.headless.delivery.internal.dto.v1_0.util;
 
+import com.liferay.headless.delivery.dto.v1_0.Options;
 import com.liferay.headless.delivery.dto.v1_0.PageRule;
 import com.liferay.headless.delivery.dto.v1_0.PageRuleAction;
 import com.liferay.headless.delivery.dto.v1_0.PageRuleCondition;
@@ -18,6 +19,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Lourdes Fernández Besada
@@ -27,10 +29,9 @@ public class PageRulesUtil {
 	public static PageRuleAction toPageRuleAction(JSONObject jsonObject) {
 		return new PageRuleAction() {
 			{
-				action = jsonObject.getString("action");
-				id = jsonObject.getString("id");
-				itemId = jsonObject.getString("itemId");
-				type = jsonObject.getString("type");
+				setId(() -> jsonObject.getString("id"));
+				setItemId(() -> jsonObject.getString("itemId"));
+				setType(() -> jsonObject.getString("type"));
 			}
 		};
 	}
@@ -38,10 +39,33 @@ public class PageRulesUtil {
 	public static PageRuleCondition toPageRuleCondition(JSONObject jsonObject) {
 		return new PageRuleCondition() {
 			{
-				condition = jsonObject.getString("condition");
-				id = jsonObject.getString("id");
-				type = jsonObject.getString("type");
-				value = jsonObject.getString("value");
+				setField(() -> jsonObject.getString("field"));
+				setId(() -> jsonObject.getString("id"));
+				setOptions(
+					() -> {
+						JSONObject optionsJSONObject = jsonObject.getJSONObject(
+							"options");
+
+						return new Options() {
+							{
+								setType(
+									() -> {
+										if (Objects.equals(
+												optionsJSONObject.getString(
+													"type"),
+												"equal")) {
+
+											return Options.Type.EQUAL;
+										}
+
+										return Type.NOT_EQUAL;
+									});
+								setValue(
+									() -> optionsJSONObject.getString("value"));
+							}
+						};
+					});
+				setType(() -> jsonObject.getString("type"));
 			}
 		};
 	}
@@ -57,29 +81,32 @@ public class PageRulesUtil {
 			layoutStructureRules,
 			layoutStructureRule -> new PageRule() {
 				{
-					conditionType = ConditionType.create(
-						ConditionTypeConverter.convertToExternalValue(
-							layoutStructureRule.getConditionType()));
-					id = layoutStructureRule.getId();
-					name = layoutStructureRule.getName();
-					pageRuleActions = JSONUtil.toArray(
-						layoutStructureRule.getActionsJSONArray(),
-						jsonObject -> toPageRuleAction(jsonObject),
-						exception -> {
-							if (_log.isWarnEnabled()) {
-								_log.warn(exception);
-							}
-						},
-						PageRuleAction.class);
-					pageRuleConditions = JSONUtil.toArray(
-						layoutStructureRule.getConditionsJSONArray(),
-						jsonObject -> toPageRuleCondition(jsonObject),
-						exception -> {
-							if (_log.isWarnEnabled()) {
-								_log.warn(exception);
-							}
-						},
-						PageRuleCondition.class);
+					setConditionType(
+						() -> ConditionType.create(
+							ConditionTypeConverter.convertToExternalValue(
+								layoutStructureRule.getConditionType())));
+					setId(layoutStructureRule::getId);
+					setName(layoutStructureRule::getName);
+					setPageRuleActions(
+						() -> JSONUtil.toArray(
+							layoutStructureRule.getActionsJSONArray(),
+							jsonObject -> toPageRuleAction(jsonObject),
+							exception -> {
+								if (_log.isWarnEnabled()) {
+									_log.warn(exception);
+								}
+							},
+							PageRuleAction.class));
+					setPageRuleConditions(
+						() -> JSONUtil.toArray(
+							layoutStructureRule.getConditionsJSONArray(),
+							jsonObject -> toPageRuleCondition(jsonObject),
+							exception -> {
+								if (_log.isWarnEnabled()) {
+									_log.warn(exception);
+								}
+							},
+							PageRuleCondition.class));
 				}
 			},
 			PageRule.class);

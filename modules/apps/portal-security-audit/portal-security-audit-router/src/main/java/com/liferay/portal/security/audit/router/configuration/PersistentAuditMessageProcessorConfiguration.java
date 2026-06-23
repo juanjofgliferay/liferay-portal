@@ -20,7 +20,16 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface PersistentAuditMessageProcessorConfiguration {
 
+	@Meta.AD(deflt = "2000", name = "buffer-size", required = false)
+	public int bufferSize();
+
 	@Meta.AD(deflt = "true", name = "enabled", required = false)
 	public boolean enabled();
+
+	@Meta.AD(
+		deflt = "60000", name = "flush-interval-in-milliseconds",
+		required = false
+	)
+	public long flushInterval();
 
 }

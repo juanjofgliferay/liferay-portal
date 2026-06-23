@@ -264,14 +264,6 @@ public class CPOptionValueLocalServiceWrapper
 	}
 
 	@Override
-	public CPOptionValue fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return _cpOptionValueLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPOptionValue fetchCPOptionValue(long CPOptionValueId) {
 		return _cpOptionValueLocalService.fetchCPOptionValue(CPOptionValueId);
 	}
@@ -536,3 +528,4 @@ public class CPOptionValueLocalServiceWrapper
 	private CPOptionValueLocalService _cpOptionValueLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:395728273

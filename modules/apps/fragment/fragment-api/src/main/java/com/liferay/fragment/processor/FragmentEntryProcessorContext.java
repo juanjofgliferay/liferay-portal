@@ -7,11 +7,17 @@ package com.liferay.fragment.processor;
 
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.Serializable;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -20,6 +26,21 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface FragmentEntryProcessorContext {
+
+	public Serializable getAttribute(String name);
+
+	public Map<String, Serializable> getAttributes();
+
+	public default long getCompanyId() {
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return 0;
+		}
+
+		return serviceContext.getCompanyId();
+	}
 
 	public InfoItemReference getContextInfoItemReference();
 
@@ -43,11 +64,38 @@ public interface FragmentEntryProcessorContext {
 
 	public String getPreviewVersion();
 
+	public default long getScopeGroupId() {
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return 0;
+		}
+
+		long groupId = serviceContext.getScopeGroupId();
+
+		if (groupId > 0) {
+			return groupId;
+		}
+
+		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+		if (themeDisplay == null) {
+			return 0;
+		}
+
+		return themeDisplay.getScopeGroupId();
+	}
+
 	public long[] getSegmentsEntryIds();
+
+	public boolean isDisablePortletRender();
 
 	public boolean isEditMode();
 
 	public boolean isIndexMode();
+
+	public boolean isPreviewMode();
 
 	public boolean isViewMode();
 

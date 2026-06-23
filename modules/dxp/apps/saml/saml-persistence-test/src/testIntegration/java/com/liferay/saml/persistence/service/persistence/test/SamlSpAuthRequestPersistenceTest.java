@@ -122,6 +122,8 @@ public class SamlSpAuthRequestPersistenceTest {
 
 		newSamlSpAuthRequest.setSamlIdpEntityId(RandomTestUtil.randomString());
 
+		newSamlSpAuthRequest.setSamlRelayState(RandomTestUtil.randomString());
+
 		newSamlSpAuthRequest.setSamlSpAuthRequestKey(
 			RandomTestUtil.randomString());
 
@@ -142,6 +144,9 @@ public class SamlSpAuthRequestPersistenceTest {
 		Assert.assertEquals(
 			existingSamlSpAuthRequest.getSamlIdpEntityId(),
 			newSamlSpAuthRequest.getSamlIdpEntityId());
+		Assert.assertEquals(
+			existingSamlSpAuthRequest.getSamlRelayState(),
+			newSamlSpAuthRequest.getSamlRelayState());
 		Assert.assertEquals(
 			existingSamlSpAuthRequest.getSamlSpAuthRequestKey(),
 			newSamlSpAuthRequest.getSamlSpAuthRequestKey());
@@ -189,8 +194,8 @@ public class SamlSpAuthRequestPersistenceTest {
 	protected OrderByComparator<SamlSpAuthRequest> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"SamlSpAuthRequest", "samlSpAuthnRequestId", true, "companyId",
-			true, "createDate", true, "samlIdpEntityId", true,
-			"samlSpAuthRequestKey", true);
+			true, "createDate", true, "samlIdpEntityId", true, "samlRelayState",
+			true, "samlSpAuthRequestKey", true);
 	}
 
 	@Test
@@ -490,6 +495,8 @@ public class SamlSpAuthRequestPersistenceTest {
 
 		samlSpAuthRequest.setSamlIdpEntityId(RandomTestUtil.randomString());
 
+		samlSpAuthRequest.setSamlRelayState(RandomTestUtil.randomString());
+
 		samlSpAuthRequest.setSamlSpAuthRequestKey(
 			RandomTestUtil.randomString());
 
@@ -504,3 +511,4 @@ public class SamlSpAuthRequestPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1878784493

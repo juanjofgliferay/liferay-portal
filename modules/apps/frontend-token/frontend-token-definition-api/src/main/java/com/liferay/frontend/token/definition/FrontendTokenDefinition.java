@@ -28,4 +28,12 @@ public interface FrontendTokenDefinition {
 
 	public JSONObject getJSONObject(Locale locale);
 
+	public int getPriority();
+
+	public String getThemeId();
+
+	public String getThemeName(Locale locale);
+
+	public String getThemeType();
+
 }

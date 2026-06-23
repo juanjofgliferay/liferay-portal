@@ -8,7 +8,7 @@ import React, {cloneElement, useState} from 'react';
 
 import {AutocompleteMultiSelect} from '../../../../src/main/resources/META-INF/resources/js/shared/components/autocomplete/AutocompleteMultiSelect.es';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 const items = [
 	{id: 1, name: '1test test1'},
@@ -59,9 +59,8 @@ describe('The AutocompleteMultiSelect component should', () => {
 
 		fireEvent.mouseDown(dropDownListItems[0]);
 
-		const multiSelectItems = container.querySelectorAll(
-			'.label-dismissible'
-		);
+		const multiSelectItems =
+			container.querySelectorAll('.label-dismissible');
 
 		expect(multiSelectItems[0]).toHaveTextContent('1test test1');
 		expect(multiSelectItems[1]).toHaveTextContent('2test test2');
@@ -70,9 +69,8 @@ describe('The AutocompleteMultiSelect component should', () => {
 
 		expect(dropDownEmpty).toBeTruthy();
 
-		const multiSelectItemsRemove = container.querySelectorAll(
-			'button.close'
-		);
+		const multiSelectItemsRemove =
+			container.querySelectorAll('button.close');
 
 		fireEvent.click(multiSelectItemsRemove[1]);
 
@@ -119,9 +117,8 @@ describe('The AutocompleteMultiSelect component should', () => {
 
 		fireEvent.keyDown(multiSelectInput, {keyCode: 13});
 
-		const multiSelectItems = container.querySelectorAll(
-			'.label-dismissible'
-		);
+		const multiSelectItems =
+			container.querySelectorAll('.label-dismissible');
 
 		expect(multiSelectItems[0]).toHaveTextContent('2test test2');
 	});

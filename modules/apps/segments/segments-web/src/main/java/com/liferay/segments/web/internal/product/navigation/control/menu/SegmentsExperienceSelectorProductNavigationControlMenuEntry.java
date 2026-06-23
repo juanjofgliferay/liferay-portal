@@ -5,7 +5,6 @@
 
 package com.liferay.segments.web.internal.product.navigation.control.menu;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorWebKeys;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.security.permission.resource.LayoutContentModelResourcePermission;
@@ -38,14 +37,14 @@ import com.liferay.segments.service.SegmentsExperimentLocalService;
 import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 import com.liferay.segments.web.internal.display.context.SegmentsExperienceSelectorDisplayContext;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -94,12 +93,10 @@ public class SegmentsExperienceSelectorProductNavigationControlMenuEntry
 			PrintWriter printWriter = httpServletResponse.getWriter();
 
 			printWriter.write("<div class=\"border-left border-secondary ");
-			printWriter.write("control-menu-nav-item c-ml-3 c-pl-md-3\">");
+			printWriter.write("control-menu-nav-item\">");
 
 			_reactRenderer.renderReact(
-				new ComponentDescriptor(
-					_npmResolver.resolveModuleName("segments-web") +
-						"/js/components/ExperiencePicker"),
+				new ComponentDescriptor("{ExperiencePicker} from segments-web"),
 				segmentsExperienceSelectorDisplayContext.getData(),
 				httpServletRequest, printWriter);
 
@@ -204,9 +201,6 @@ public class SegmentsExperienceSelectorProductNavigationControlMenuEntry
 
 	@Reference
 	private LayoutContentModelResourcePermission _modelResourcePermission;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private Portal _portal;

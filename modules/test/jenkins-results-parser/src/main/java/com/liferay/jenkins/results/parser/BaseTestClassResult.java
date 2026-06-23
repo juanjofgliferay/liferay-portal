@@ -5,12 +5,14 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.history.TestClassHistory;
 import com.liferay.jenkins.results.parser.test.clazz.JUnitTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
 
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
+import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,19 +70,24 @@ public abstract class BaseTestClassResult implements TestClassResult {
 			Dom4JUtil.getNewAnchorElement(
 				getTestClassReportURL(), getClassName()));
 
-		TestHistory testHistory = getTestHistory();
+		TestClassHistory testClassHistory = getTestClassHistory();
 
-		if (testHistory != null) {
-			summaryElement.addText(" - ");
+		if (testClassHistory != null) {
+			URL testrayCaseURL = testClassHistory.getTestrayCaseURL();
 
-			summaryElement.add(
-				Dom4JUtil.getNewAnchorElement(
-					testHistory.getTestrayCaseResultURL(),
-					JenkinsResultsParserUtil.combine(
-						"Failed ",
-						String.valueOf(testHistory.getFailureCount()),
-						" of last ",
-						String.valueOf(testHistory.getTestCount()))));
+			String summaryContent = JenkinsResultsParserUtil.combine(
+				"Failed ", String.valueOf(testClassHistory.getFailureCount()),
+				" of last ", String.valueOf(testClassHistory.getTestCount()));
+
+			if (testrayCaseURL != null) {
+				Dom4JUtil.addToElement(
+					downstreamBuildListItemElement, " - ",
+					Dom4JUtil.getNewAnchorElement(
+						String.valueOf(testrayCaseURL), summaryContent));
+			}
+			else {
+				downstreamBuildListItemElement.addText(" - " + summaryContent);
+			}
 		}
 
 		List<Element> failureElements = new ArrayList<>();
@@ -197,6 +204,17 @@ public abstract class BaseTestClassResult implements TestClassResult {
 	}
 
 	@Override
+	public TestClassHistory getTestClassHistory() {
+		TestClass testClass = getTestClass();
+
+		if (testClass == null) {
+			return null;
+		}
+
+		return testClass.getTestClassHistory();
+	}
+
+	@Override
 	public String getTestClassReportURL() {
 		StringBuilder sb = new StringBuilder();
 
@@ -205,7 +223,11 @@ public abstract class BaseTestClassResult implements TestClassResult {
 		sb.append(build.getBuildURL());
 
 		sb.append("testReport/");
-		sb.append(getPackageName());
+
+		String packageName = getPackageName();
+
+		sb.append(packageName.replaceAll("/", "_"));
+
 		sb.append("/");
 		sb.append(getSimpleClassName());
 
@@ -222,17 +244,6 @@ public abstract class BaseTestClassResult implements TestClassResult {
 		}
 
 		return testClassReportURL;
-	}
-
-	@Override
-	public TestHistory getTestHistory() {
-		TestClass testClass = getTestClass();
-
-		if (testClass == null) {
-			return null;
-		}
-
-		return testClass.getTestHistory();
 	}
 
 	@Override
@@ -256,6 +267,17 @@ public abstract class BaseTestClassResult implements TestClassResult {
 		}
 
 		return true;
+	}
+
+	@Override
+	public boolean isSkipped() {
+		Status status = Status.valueOf(getStatus());
+
+		if (status == Status.SKIPPED) {
+			return true;
+		}
+
+		return false;
 	}
 
 	protected BaseTestClassResult(Build build, JSONObject suiteJSONObject) {

@@ -117,6 +117,8 @@ public class BatchEngineImportTaskModelImpl
 	public static final String TABLE_SQL_DROP =
 		"drop table BatchEngineImportTask";
 
+	public static final String ENTITY_ALIAS = "batchEngineImportTask";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY batchEngineImportTask.batchEngineImportTaskId ASC";
 
@@ -1428,7 +1430,7 @@ public class BatchEngineImportTaskModelImpl
 	private long _batchSize;
 	private String _callbackURL;
 	private String _className;
-	private BatchEngineImportTaskContentBlobModel _contentBlobModel;
+	private transient BatchEngineImportTaskContentBlobModel _contentBlobModel;
 	private String _contentType;
 	private Date _endTime;
 	private String _errorMessage;
@@ -1576,3 +1578,4 @@ public class BatchEngineImportTaskModelImpl
 	private BatchEngineImportTask _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1596919131

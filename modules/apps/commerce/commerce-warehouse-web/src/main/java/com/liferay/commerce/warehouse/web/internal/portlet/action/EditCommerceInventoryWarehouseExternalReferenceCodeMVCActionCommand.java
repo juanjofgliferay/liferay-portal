@@ -5,6 +5,7 @@
 
 package com.liferay.commerce.warehouse.web.internal.portlet.action;
 
+import com.liferay.commerce.inventory.exception.DuplicateCommerceInventoryWarehouseExternalReferenceCodeException;
 import com.liferay.commerce.inventory.exception.NoSuchInventoryWarehouseException;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseService;
@@ -16,8 +17,8 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY_WAREHOUSE,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_INVENTORY_WAREHOUSE,
 		"mvc.command.name=/commerce_inventory_warehouse/edit_commerce_inventory_warehouse_external_reference_code"
 	},
 	service = MVCActionCommand.class
@@ -58,7 +59,10 @@ public class EditCommerceInventoryWarehouseExternalReferenceCodeMVCActionCommand
 						getCommerceInventoryWarehouseId());
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchInventoryWarehouseException) {
+			if (exception instanceof
+					DuplicateCommerceInventoryWarehouseExternalReferenceCodeException ||
+				exception instanceof NoSuchInventoryWarehouseException) {
+
 				SessionErrors.add(actionRequest, exception.getClass());
 
 				actionResponse.setRenderParameter("mvcPath", "/error.jsp");

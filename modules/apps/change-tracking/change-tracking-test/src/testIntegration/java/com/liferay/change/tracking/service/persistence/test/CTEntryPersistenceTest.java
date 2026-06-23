@@ -216,6 +216,13 @@ public class CTEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByUserId() throws Exception {
+		_persistence.countByUserId(RandomTestUtil.nextLong());
+
+		_persistence.countByUserId(0L);
+	}
+
+	@Test
 	public void testCountByCtCollectionId() throws Exception {
 		_persistence.countByCtCollectionId(RandomTestUtil.nextLong());
 
@@ -615,3 +622,4 @@ public class CTEntryPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:108882708

@@ -8,11 +8,11 @@ package com.liferay.osb.testray.rest.client.dto.v1_0;
 import com.liferay.osb.testray.rest.client.function.UnsafeSupplier;
 import com.liferay.osb.testray.rest.client.serdes.v1_0.CompareRunsSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author José Abelenda
@@ -99,3 +99,4 @@ public class CompareRuns implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1627983297

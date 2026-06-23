@@ -1,14 +1,16 @@
+@import 'atlas-custom-properties/_variables';
+
 hr {
 	margin: 6px;
 }
 
 .lfr-objects__model-builder-node-header {
 	&-container {
-		background: #f7f8f9;
+		background: $gray-100;
 		border-radius: 0.25rem 0.25rem 0 0;
 		height: 5.3rem;
+		min-width: 17.5rem;
 		padding: 1rem;
-		width: 17.5rem;
 	}
 
 	&-label-container {
@@ -22,8 +24,13 @@ hr {
 		font-weight: 600;
 		line-height: 1.3rem;
 		overflow: hidden;
+		padding-right: 4rem;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		width: 10rem;
+
+		&--danger {
+			color: $danger;
+		}
 	}
 }

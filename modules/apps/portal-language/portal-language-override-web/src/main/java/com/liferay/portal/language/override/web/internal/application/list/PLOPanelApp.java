@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class PLOPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "automatic-translate";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class PLOPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + PLOPortletKeys.PORTAL_LANGUAGE_OVERRIDE + ")"
+		target = "(jakarta.portlet.name=" + PLOPortletKeys.PORTAL_LANGUAGE_OVERRIDE + ")"
 	)
 	private Portlet _portlet;
 

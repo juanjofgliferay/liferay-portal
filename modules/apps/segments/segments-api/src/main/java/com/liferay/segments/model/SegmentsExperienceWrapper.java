@@ -39,6 +39,7 @@ public class SegmentsExperienceWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("segmentsExperienceId", getSegmentsExperienceId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -46,7 +47,8 @@ public class SegmentsExperienceWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
-		attributes.put("segmentsEntryId", getSegmentsEntryId());
+		attributes.put("segmentsEntryERC", getSegmentsEntryERC());
+		attributes.put("segmentsEntryScopeERC", getSegmentsEntryScopeERC());
 		attributes.put("segmentsExperienceKey", getSegmentsExperienceKey());
 		attributes.put("plid", getPlid());
 		attributes.put("name", getName());
@@ -76,6 +78,13 @@ public class SegmentsExperienceWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long segmentsExperienceId = (Long)attributes.get(
@@ -121,10 +130,17 @@ public class SegmentsExperienceWrapper
 			setModifiedDate(modifiedDate);
 		}
 
-		Long segmentsEntryId = (Long)attributes.get("segmentsEntryId");
+		String segmentsEntryERC = (String)attributes.get("segmentsEntryERC");
 
-		if (segmentsEntryId != null) {
-			setSegmentsEntryId(segmentsEntryId);
+		if (segmentsEntryERC != null) {
+			setSegmentsEntryERC(segmentsEntryERC);
+		}
+
+		String segmentsEntryScopeERC = (String)attributes.get(
+			"segmentsEntryScopeERC");
+
+		if (segmentsEntryScopeERC != null) {
+			setSegmentsEntryScopeERC(segmentsEntryScopeERC);
 		}
 
 		String segmentsExperienceKey = (String)attributes.get(
@@ -224,6 +240,16 @@ public class SegmentsExperienceWrapper
 	@Override
 	public String getDefaultLanguageId() {
 		return model.getDefaultLanguageId();
+	}
+
+	/**
+	 * Returns the external reference code of this segments experience.
+	 *
+	 * @return the external reference code of this segments experience
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -373,13 +399,33 @@ public class SegmentsExperienceWrapper
 	}
 
 	/**
-	 * Returns the segments entry ID of this segments experience.
+	 * Returns the segments entry erc of this segments experience.
 	 *
-	 * @return the segments entry ID of this segments experience
+	 * @return the segments entry erc of this segments experience
 	 */
+	@Override
+	public String getSegmentsEntryERC() {
+		return model.getSegmentsEntryERC();
+	}
+
 	@Override
 	public long getSegmentsEntryId() {
 		return model.getSegmentsEntryId();
+	}
+
+	@Override
+	public String getSegmentsEntryName(java.util.Locale locale) {
+		return model.getSegmentsEntryName(locale);
+	}
+
+	/**
+	 * Returns the segments entry scope erc of this segments experience.
+	 *
+	 * @return the segments entry scope erc of this segments experience
+	 */
+	@Override
+	public String getSegmentsEntryScopeERC() {
+		return model.getSegmentsEntryScopeERC();
 	}
 
 	/**
@@ -460,6 +506,11 @@ public class SegmentsExperienceWrapper
 	}
 
 	@Override
+	public boolean hasDefaultSegmentsEntry() {
+		return model.hasDefaultSegmentsEntry();
+	}
+
+	@Override
 	public boolean hasSegmentsExperiment() {
 		return model.hasSegmentsExperiment();
 	}
@@ -472,6 +523,11 @@ public class SegmentsExperienceWrapper
 	@Override
 	public boolean isActive() {
 		return model.isActive();
+	}
+
+	@Override
+	public boolean isDefault() {
+		return model.isDefault();
 	}
 
 	@Override
@@ -532,6 +588,16 @@ public class SegmentsExperienceWrapper
 	@Override
 	public void setCtCollectionId(long ctCollectionId) {
 		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
+	 * Sets the external reference code of this segments experience.
+	 *
+	 * @param externalReferenceCode the external reference code of this segments experience
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
 	}
 
 	/**
@@ -668,13 +734,23 @@ public class SegmentsExperienceWrapper
 	}
 
 	/**
-	 * Sets the segments entry ID of this segments experience.
+	 * Sets the segments entry erc of this segments experience.
 	 *
-	 * @param segmentsEntryId the segments entry ID of this segments experience
+	 * @param segmentsEntryERC the segments entry erc of this segments experience
 	 */
 	@Override
-	public void setSegmentsEntryId(long segmentsEntryId) {
-		model.setSegmentsEntryId(segmentsEntryId);
+	public void setSegmentsEntryERC(String segmentsEntryERC) {
+		model.setSegmentsEntryERC(segmentsEntryERC);
+	}
+
+	/**
+	 * Sets the segments entry scope erc of this segments experience.
+	 *
+	 * @param segmentsEntryScopeERC the segments entry scope erc of this segments experience
+	 */
+	@Override
+	public void setSegmentsEntryScopeERC(String segmentsEntryScopeERC) {
+		model.setSegmentsEntryScopeERC(segmentsEntryScopeERC);
 	}
 
 	/**
@@ -787,3 +863,4 @@ public class SegmentsExperienceWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1969423120

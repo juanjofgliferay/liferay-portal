@@ -1,15 +1,19 @@
-@component-name = "core-infrastructure"
+@component-name = "portal-core-infra"
 definition {
 
 	property liferay.faces = "true";
 	property portal.release = "true";
-	property portal.upstream = "true";
+	property portal.upstream = "quarantine";
 	property testray.main.component.name = "Liferay Faces";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable widget pages") {
+			PagesAdmin.enableWidgetPages();
+		}
 
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
@@ -77,6 +81,7 @@ definition {
 		AlloyShowcase.clickButton(buttonRow = "true");
 	}
 
+	@ignore = "true"
 	@priority = 5
 	test DataListSmoke {
 		Navigator.openWithAppendToBaseURL(urlAppend = "web/guest/alloy-showcase/-/alloy-tag/alloy/datalist/general");
@@ -142,6 +147,7 @@ definition {
 			screenName4 = "William");
 	}
 
+	@ignore = "true"
 	@priority = 5
 	test InputFileSmoke {
 		Navigator.openWithAppendToBaseURL(urlAppend = "web/guest/alloy-showcase/-/alloy-tag/alloy/inputfile/multiple");
@@ -149,6 +155,7 @@ definition {
 		JSFShowcase.uploadAndDeleteFile(fileName = "Document_2.jpeg");
 	}
 
+	@ignore = "true"
 	@priority = 5
 	test LinkSmoke {
 

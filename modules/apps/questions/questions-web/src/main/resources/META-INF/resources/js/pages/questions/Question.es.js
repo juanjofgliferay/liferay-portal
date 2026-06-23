@@ -22,7 +22,6 @@ import React, {
 	useState,
 } from 'react';
 import {Helmet} from 'react-helmet';
-import {withRouter} from 'react-router-dom';
 
 import {AppContext} from '../../AppContext.es';
 import Alert from '../../components/Alert.es';
@@ -39,14 +38,15 @@ import Rating from '../../components/Rating.es';
 import SectionLabel from '../../components/SectionLabel.es';
 import SubscritionCheckbox from '../../components/SubscribeCheckbox.es';
 import TagList from '../../components/TagList.es';
+import {withRouter} from '../../hooks/withRouter.es';
 import {
 	createAnswerQuery,
 	getMessages,
 	getSubscriptionsQuery,
 	getThread,
 	getUserActivityQuery,
-	markAsAnswerMessageBoardMessageQuery,
 	subscribeQuery,
+	unMarkAsAnswerMessageBoardMessageQuery,
 } from '../../utils/client.es';
 import {ALL_SECTIONS_ID} from '../../utils/contants.es';
 import lang from '../../utils/lang.es';
@@ -81,6 +81,7 @@ const Question = ({
 	history,
 	questionId,
 	sectionTitle,
+	url,
 }) => {
 	const sectionRef = useRef(null);
 
@@ -188,7 +189,7 @@ const Question = ({
 		sectionTitle || sectionTitle === ALL_SECTIONS_ID
 			? sectionTitle
 			: question.messageBoardSection &&
-			  question.messageBoardSection.title;
+				question.messageBoardSection.title;
 
 	useEffect(() => {
 		document.title = (question && question.title) || questionId;
@@ -255,7 +256,7 @@ const Question = ({
 		try {
 			const {error} = await createAnswer({
 				fetchOptionsOverrides: getContextLink(
-					`${sectionTitle}/${questionId}`
+					url || `${sectionTitle}/${questionId}`
 				),
 				variables: {
 					articleBody: editorRef.current.getContent(),
@@ -306,8 +307,8 @@ const Question = ({
 		[answers]
 	);
 
-	const [markAsAnswerMessageBoardMessage] = useMutation(
-		markAsAnswerMessageBoardMessageQuery
+	const [unMarkAsAnswerMessageBoardMessage] = useMutation(
+		unMarkAsAnswerMessageBoardMessageQuery
 	);
 
 	const answerChange = useCallback(
@@ -317,17 +318,16 @@ const Question = ({
 			);
 
 			if (answer) {
-				markAsAnswerMessageBoardMessage({
+				unMarkAsAnswerMessageBoardMessage({
 					variables: {
 						messageBoardMessageId: answer.id,
-						showAsAnswer: false,
 					},
 				}).then(() => {
 					fetchMessages();
 				});
 			}
 		},
-		[markAsAnswerMessageBoardMessage, answers.items, fetchMessages]
+		[unMarkAsAnswerMessageBoardMessage, answers.items, fetchMessages]
 	);
 
 	useEffect(() => {
@@ -388,6 +388,7 @@ const Question = ({
 				<ClayAlert.ToastContainer>
 					<ClayAlert
 						autoClose={6000}
+						closeButtonAriaLabel={Liferay.Language.get('close')}
 						displayType="warning"
 						onClose={() => setIsModerate(false)}
 						title={Liferay.Language.get(
@@ -449,13 +450,15 @@ const Question = ({
 								className={classNames({
 									'align-items-top flex-column-reverse flex-md-row justify-content-between':
 										display.styled,
-									'align-items-top flex-column-reverse flex-md-row row': !display.styled,
+									'align-items-top flex-column-reverse flex-md-row row':
+										!display.styled,
 								})}
 							>
 								<div
 									className={classNames({
 										'c-mt-2 c-mt-md-0': display.styled,
-										'c-mt-4 c-mt-md-0 w-100': !display.styled,
+										'c-mt-4 c-mt-md-0 w-100':
+											!display.styled,
 									})}
 								>
 									{!!question.messageBoardSection &&
@@ -578,10 +581,10 @@ const Question = ({
 								{loadingAnswer
 									? `${Liferay.Language.get(
 											'loading-answers'
-									  )}`
+										)}`
 									: `${
 											answers.totalCount
-									  } ${Liferay.Language.get('answers')}`}
+										} ${Liferay.Language.get('answers')}`}
 							</h3>
 
 							<ClayTabs
@@ -700,10 +703,10 @@ const Question = ({
 														{context.trustedUser
 															? Liferay.Language.get(
 																	'post-answer'
-															  )
+																)
 															: Liferay.Language.get(
 																	'submit-for-workflow'
-															  )}
+																)}
 													</ClayButton>
 												)}
 										</div>
@@ -741,13 +744,16 @@ const Question = ({
 					<title>{question.headline}</title>
 
 					<link
-						href={`${getFullPath(
-							context.historyRouterBasePath || 'questions'
-						)}${
-							context.historyRouterBasePath
-								? context.historyRouterBasePath
-								: '#'
-						}/questions/${sectionTitle}/${questionId}`}
+						href={
+							url ||
+							`${getFullPath(
+								context.historyRouterBasePath || 'questions'
+							)}${
+								context.historyRouterBasePath
+									? context.historyRouterBasePath
+									: '#'
+							}/questions/${sectionTitle}/${questionId}`
+						}
 						rel="canonical"
 					/>
 				</Helmet>
@@ -763,13 +769,7 @@ const Question = ({
 };
 
 export default withRouter(
-	({
-		history,
-		match: {
-			params: {questionId, sectionTitle},
-			url,
-		},
-	}) => (
+	({history, params: {questionId, sectionTitle, url}}) => (
 		<Question
 			history={history}
 			questionId={questionId}

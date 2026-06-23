@@ -10,6 +10,7 @@ import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
+import com.liferay.portal.kernel.exception.LayoutSetJavaScriptException;
 import com.liferay.portal.kernel.exception.LayoutSetVirtualHostException;
 import com.liferay.portal.kernel.exception.NoSuchImageException;
 import com.liferay.portal.kernel.exception.NoSuchVirtualHostException;
@@ -39,13 +40,13 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.impl.LayoutSetImpl;
 import com.liferay.portal.service.base.LayoutSetLocalServiceBaseImpl;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.ThemeFactoryUtil;
 import com.liferay.sites.kernel.util.Sites;
 
@@ -174,10 +175,25 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 	}
 
 	@Override
-	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId)
-		throws PortalException {
+	public LayoutSet fetchLayoutSetByLogoId(
+		boolean privateLayout, long logoId) {
 
-		return layoutSetPersistence.fetchByP_L(privateLayout, logoId);
+		if (logoId <= 0) {
+			return null;
+		}
+
+		List<LayoutSet> layoutSets = layoutSetPersistence.findByP_L(
+			privateLayout, logoId);
+
+		if (layoutSets.isEmpty()) {
+			return null;
+		}
+
+		if ((layoutSets.size() > 1) && _log.isWarnEnabled()) {
+			_log.error("More than one layout set uses logo ID " + logoId);
+		}
+
+		return layoutSets.get(layoutSets.size() - 1);
 	}
 
 	@Override
@@ -230,7 +246,7 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 
 	@Override
 	public int getPageCount(long groupId, boolean privateLayout) {
-		return _layoutPersistence.countByG_P(groupId, privateLayout);
+		return _layoutPersistence.countByG_P_S(groupId, privateLayout, false);
 	}
 
 	@Override
@@ -274,11 +290,12 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 				layoutSetPrototypeUuid = layoutSet.getLayoutSetPrototypeUuid();
 			}
 
+			layoutSet.setLayoutSetPrototypeUuid(layoutSetPrototypeUuid);
+
 			if (Validator.isNull(layoutSetPrototypeUuid)) {
 				layoutSetPrototypeLinkEnabled = false;
 			}
 
-			layoutSet.setLayoutSetPrototypeUuid(layoutSetPrototypeUuid);
 			layoutSet.setLayoutSetPrototypeLinkEnabled(
 				layoutSetPrototypeLinkEnabled);
 
@@ -303,6 +320,16 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 				layoutSetPrototypeLinkEnabled);
 
 			_layoutSetBranchPersistence.update(layoutSetBranch);
+		}
+
+		String previousLayoutSetPrototypeUuid =
+			layoutSet.getLayoutSetPrototypeUuid();
+
+		if (!layoutSetPrototypeLinkEnabled ||
+			Validator.isNotNull(previousLayoutSetPrototypeUuid) ||
+			Validator.isNull(layoutSetPrototypeUuid)) {
+
+			return;
 		}
 
 		try {
@@ -333,18 +360,28 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 		LayoutSetBranch layoutSetBranch = _getLayoutSetBranch(layoutSet);
 
 		if (layoutSetBranch == null) {
-			layoutSet.setModifiedDate(new Date());
-
 			PortalUtil.updateImageId(
 				layoutSet, hasLogo, bytes, "logoId", 0, 0, 0);
+
+			long logoId = layoutSet.getLogoId();
+
+			layoutSet = layoutSetPersistence.findByG_P(groupId, privateLayout);
+
+			layoutSet.setModifiedDate(new Date());
+			layoutSet.setLogoId(logoId);
 
 			return layoutSetPersistence.update(layoutSet);
 		}
 
-		layoutSetBranch.setModifiedDate(new Date());
-
 		PortalUtil.updateImageId(
 			layoutSetBranch, hasLogo, bytes, "logoId", 0, 0, 0);
+
+		long logoId = layoutSetBranch.getLogoId();
+
+		layoutSetBranch = _getLayoutSetBranch(layoutSet);
+
+		layoutSetBranch.setModifiedDate(new Date());
+		layoutSetBranch.setLogoId(logoId);
 
 		_layoutSetBranchPersistence.update(layoutSetBranch);
 
@@ -605,14 +642,26 @@ public class LayoutSetLocalServiceImpl extends LayoutSetLocalServiceBaseImpl {
 	}
 
 	protected void validateSettings(
-		UnicodeProperties oldSettingsUnicodeProperties,
-		UnicodeProperties newSettingsUnicodeProperties) {
+			UnicodeProperties oldSettingsUnicodeProperties,
+			UnicodeProperties newSettingsUnicodeProperties)
+		throws PortalException {
 
 		boolean enableJavaScript =
 			PropsValues.
 				FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_LAYOUTSET_JAVASCRIPT;
 
-		if (!enableJavaScript) {
+		if (enableJavaScript) {
+			String javaScript = newSettingsUnicodeProperties.getProperty(
+				"javascript");
+
+			if (Validator.isNotNull(javaScript) &&
+				(javaScript.contains("<script") ||
+				 javaScript.contains("</script>"))) {
+
+				throw new LayoutSetJavaScriptException();
+			}
+		}
+		else {
 			String javaScript = oldSettingsUnicodeProperties.getProperty(
 				"javascript");
 

@@ -801,6 +801,15 @@ public class UserNotificationEventLocalServiceWrapper
 			userId, start, end, orderByComparator);
 	}
 
+	@Override
+	public java.util.List<com.liferay.portal.kernel.model.UserNotificationEvent>
+		getUserNotificationEvents(
+			long userId, String type, long timestamp, boolean delivered) {
+
+		return _userNotificationEventLocalService.getUserNotificationEvents(
+			userId, type, timestamp, delivered);
+	}
+
 	/**
 	 * Returns the number of user notification events.
 	 *
@@ -961,3 +970,4 @@ public class UserNotificationEventLocalServiceWrapper
 		_userNotificationEventLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:802442837

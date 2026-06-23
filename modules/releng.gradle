@@ -56,7 +56,7 @@ buildscript {
 	apply from: file("build-buildscript.gradle"), to: buildscript
 
 	dependencies {
-		classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "2.0.4"
+		classpath group: "com.github.johnrengelman", name: "shadow", version: "8.1.1"
 		classpath group: "de.undercouch", name: "gradle-download-task", version: "5.4.0"
 		classpath group: "org.ajoberstar", name: "gradle-git", version: "1.6.0"
 	}
@@ -214,11 +214,11 @@ portalArtifactsJar {
 		relengProjectDirs = null
 	}
 
-	baseName = "portal"
-	classifier = null
+	archiveBaseName = "portal"
+	archiveClassifier = null
+	archiveVersion = _getReleaseInfoVersion()
 	duplicatesStrategy = "exclude"
 	includeEmptyDirs = false
-	version = _getReleaseInfoVersion()
 	zip64 = true
 
 	doFirst {
@@ -257,7 +257,6 @@ portalJavadoc {
 	destinationDir = new File(buildDir, "releng/portalJavadoc")
 	options.addStringOption("Xdoclint:none", "-quiet")
 	options.encoding = "ISO-8859-1"
-	options.stylesheetFile = file("../tools/styles/javadoc.css")
 	source {
 		zipTree(portalSourcesJar.archivePath).matching {
 			exclude "module-info.java"
@@ -297,11 +296,11 @@ portalJavadoc {
 portalJavadocJar {
 	dependsOn portalJavadoc
 
-	baseName = "portal"
-	classifier = "javadoc"
+	archiveBaseName = "portal"
+	archiveClassifier = "javadoc"
+	archiveVersion = _getReleaseInfoVersion()
 	from portalJavadoc
 	includeEmptyDirs = false
-	version = _getReleaseInfoVersion()
 
 	doLast {
 		println "Created jar " + archivePath
@@ -319,11 +318,11 @@ portalJavadocJar {
 portalSourcesJar {
 	dependsOn portalArtifactsJar
 
-	baseName = "portal"
-	classifier = "sources"
+	archiveBaseName = "portal"
+	archiveClassifier = "sources"
+	archiveVersion = _getReleaseInfoVersion()
 	duplicatesStrategy = "exclude"
 	includeEmptyDirs = false
-	version = _getReleaseInfoVersion()
 
 	doFirst {
 		ConfigurationContainer configurationContainer = project.getConfigurations()
@@ -1271,8 +1270,6 @@ private List<Dependency> _getPortalArtifactsDependencies(List<File> relengProjec
 			for (String artifact : enforceVersionArtifacts.split(",")) {
 				if (!artifact.startsWith("com.fasterxml") &&
 					!artifact.startsWith("com.liferay:biz.aQute.bnd.annotation:") &&
-					!artifact.startsWith("com.liferay.alloy-taglibs:alloy-taglib:") &&
-					!artifact.startsWith("com.liferay.portletmvc4spring:com.liferay.portletmvc4spring.test:") &&
 					!artifact.startsWith("io.swagger") &&
 					!artifact.startsWith("javax") &&
 					!artifact.startsWith("org.jsoup") &&
@@ -1484,7 +1481,6 @@ private List<File> _getPortalSourcesDependencies(List<File> relengProjectDirs) {
 			for (String artifact : enforceVersionArtifacts.split(",")) {
 				if (!artifact.startsWith("com.fasterxml") &&
 					!artifact.startsWith("com.liferay:biz.aQute.bnd.annotation:") &&
-					!artifact.startsWith("com.liferay.portletmvc4spring:com.liferay.portletmvc4spring.test:") &&
 					!artifact.startsWith("io.swagger") &&
 					!artifact.startsWith("javax") &&
 					!artifact.startsWith("org.jsoup") &&

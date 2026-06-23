@@ -5,23 +5,30 @@
 
 package com.liferay.fragment.entry.processor.editable;
 
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.entry.processor.editable.mapper.EditableElementMapper;
 import com.liferay.fragment.entry.processor.editable.parser.EditableElementParser;
 import com.liferay.fragment.entry.processor.helper.FragmentEntryProcessorHelper;
+import com.liferay.fragment.entry.processor.util.AnalyticsAttributesUtil;
 import com.liferay.fragment.entry.processor.util.EditableFragmentEntryProcessorUtil;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.processor.DocumentFragmentEntryProcessor;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.HashMap;
@@ -30,6 +37,9 @@ import java.util.Objects;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Collector;
+import org.jsoup.select.Elements;
+import org.jsoup.select.Evaluator;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -49,26 +59,61 @@ public class EditableDocumentFragmentEntryProcessor
 
 	@Override
 	public void processFragmentEntryLinkHTML(
-			FragmentEntryLink fragmentEntryLink, Document document,
+			Document document, FragmentEntryLink fragmentEntryLink,
 			FragmentEntryProcessorContext fragmentEntryProcessorContext)
 		throws PortalException {
 
-		JSONObject jsonObject = _jsonFactory.createJSONObject(
-			fragmentEntryLink.getEditableValues());
+		processFragmentEntryLinkHTML(
+			document, fragmentEntryLink.getEditableValuesJSONObject(),
+			fragmentEntryLink, fragmentEntryProcessorContext);
+	}
 
-		if (jsonObject.length() == 0) {
-			Class<?> clazz = getClass();
+	@Override
+	public void processFragmentEntryLinkHTML(
+			Document document, JSONObject editableValuesJSONObject,
+			FragmentEntryLink fragmentEntryLink,
+			FragmentEntryProcessorContext fragmentEntryProcessorContext)
+		throws PortalException {
 
-			jsonObject.put(
-				clazz.getName(), _getDefaultEditableValuesJSONObject(document));
+		if (editableValuesJSONObject.length() == 0) {
+			editableValuesJSONObject.put(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+				_getDefaultEditableValuesJSONObject(document));
+		}
+
+		JSONObject jsonObject = editableValuesJSONObject.getJSONObject(
+			FragmentEntryProcessorConstants.
+				KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (jsonObject == null) {
+			return;
 		}
 
 		Map<InfoItemReference, InfoItemFieldValues> infoDisplaysFieldValues =
 			new HashMap<>();
 
-		for (Element element :
-				document.select("lfr-editable,*[data-lfr-editable-id]")) {
+		boolean analyticsEnabled = _isAnalyticsEnabled(
+			fragmentEntryLink.getCompanyId());
 
+		Elements elements = Collector.collect(
+			new Evaluator() {
+
+				@Override
+				public boolean matches(Element root, Element element) {
+					if (element.hasAttr("data-lfr-editable-id") ||
+						Objects.equals(element.normalName(), "lfr-editable")) {
+
+						return true;
+					}
+
+					return false;
+				}
+
+			},
+			document.body());
+
+		for (Element element : elements) {
 			EditableElementParser editableElementParser =
 				_getEditableElementParser(element);
 
@@ -79,18 +124,11 @@ public class EditableDocumentFragmentEntryProcessor
 			String id = EditableFragmentEntryProcessorUtil.getElementId(
 				element);
 
-			JSONObject editableValuesJSONObject = jsonObject.getJSONObject(
-				FragmentEntryProcessorConstants.
-					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
-
-			if ((editableValuesJSONObject == null) ||
-				!editableValuesJSONObject.has(id)) {
-
+			if (!jsonObject.has(id)) {
 				continue;
 			}
 
-			JSONObject editableValueJSONObject =
-				editableValuesJSONObject.getJSONObject(id);
+			JSONObject editableValueJSONObject = jsonObject.getJSONObject(id);
 
 			String value = null;
 
@@ -177,10 +215,11 @@ public class EditableDocumentFragmentEntryProcessor
 						fragmentEntryProcessorContext);
 				}
 			}
-		}
 
-		if (fragmentEntryProcessorContext.isViewMode()) {
-			for (Element element : document.select("lfr-editable")) {
+			if ((fragmentEntryProcessorContext.isPreviewMode() ||
+				 fragmentEntryProcessorContext.isViewMode()) &&
+				Objects.equals(element.tagName(), "lfr-editable")) {
+
 				element.removeAttr("id");
 				element.removeAttr("type");
 
@@ -194,18 +233,37 @@ public class EditableDocumentFragmentEntryProcessor
 
 				element.removeAttr("view-tag-name");
 			}
+
+			if (analyticsEnabled &&
+				fragmentEntryProcessorContext.isViewMode()) {
+
+				_setAnalyticsAttributes(
+					element,
+					AnalyticsAttributesUtil.getAnalyticsAttributes(
+						editableValueJSONObject, fragmentEntryProcessorContext,
+						_fragmentEntryProcessorHelper, infoDisplaysFieldValues,
+						_infoItemServiceRegistry));
+			}
 		}
 
-		if (infoDisplaysFieldValues.containsKey(
-				fragmentEntryProcessorContext.getPreviewClassPK())) {
+		if ((fragmentEntryProcessorContext.getPreviewClassNameId() > 0) &&
+			(fragmentEntryProcessorContext.getPreviewClassPK() > 0)) {
 
-			Element previewElement = new Element("div");
+			InfoItemReference infoItemReference = new InfoItemReference(
+				_portal.getClassName(
+					fragmentEntryProcessorContext.getPreviewClassNameId()),
+				new ClassPKInfoItemIdentifier(
+					fragmentEntryProcessorContext.getPreviewClassPK()));
 
-			previewElement.attr("style", "border: 1px solid #0B5FFF");
+			if (infoDisplaysFieldValues.containsKey(infoItemReference)) {
+				Element previewElement = new Element("div");
 
-			Element bodyElement = document.body();
+				previewElement.attr("style", "border: 1px solid #0B5FFF");
 
-			previewElement.html(bodyElement.html());
+				Element bodyElement = document.body();
+
+				previewElement.html(bodyElement.html());
+			}
 		}
 	}
 
@@ -260,6 +318,45 @@ public class EditableDocumentFragmentEntryProcessor
 		return _editableElementParserServiceTrackerMap.getService(type);
 	}
 
+	private boolean _isAnalyticsEnabled(long companyId) {
+		try {
+			return _analyticsSettingsManager.isAnalyticsEnabled(companyId);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			return false;
+		}
+	}
+
+	private void _setAnalyticsAttributes(
+		Element element, Map<String, Object> analyticsAttributes) {
+
+		for (Map.Entry<String, Object> entry : analyticsAttributes.entrySet()) {
+			Object value = entry.getValue();
+
+			if (value == null) {
+				continue;
+			}
+
+			String stringValue = String.valueOf(value);
+
+			if (Validator.isNull(stringValue)) {
+				continue;
+			}
+
+			element.attr("data-" + entry.getKey(), stringValue);
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		EditableDocumentFragmentEntryProcessor.class);
+
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
+
 	private ServiceTrackerMap<String, EditableElementMapper>
 		_editableElementMapperServiceTrackerMap;
 	private ServiceTrackerMap<String, EditableElementParser>
@@ -269,6 +366,12 @@ public class EditableDocumentFragmentEntryProcessor
 	private FragmentEntryProcessorHelper _fragmentEntryProcessorHelper;
 
 	@Reference
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
+
+	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Portal _portal;
 
 }

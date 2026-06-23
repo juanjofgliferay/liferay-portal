@@ -105,6 +105,7 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 			companyId, sku, unitOfMeasureKey);
 	}
 
+	@Override
 	public CommerceInventoryReplenishmentItem
 		fetchCommerceInventoryReplenishmentItem(
 			long companyId, String sku, String unitOfMeasureKey,
@@ -125,6 +126,7 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 				commerceInventoryWarehouseId, start, end);
 	}
 
+	@Override
 	public List<CommerceInventoryReplenishmentItem>
 		getCommerceInventoryReplenishmentItemsByCompanyIdSkuAndUnitOfMeasureKey(
 			long companyId, String sku, String unitOfMeasureKey, int start,
@@ -144,7 +146,14 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 			CommerceInventoryReplenishmentItemTable.INSTANCE.companyId.eq(
 				companyId
 			).and(
-				CommerceInventoryReplenishmentItemTable.INSTANCE.sku.eq(sku)
+				() -> {
+					if (Validator.isNull(sku)) {
+						return null;
+					}
+
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.sku.
+						eq(sku);
+				}
 			).and(
 				() -> {
 					if (Validator.isNull(unitOfMeasureKey)) {
@@ -227,6 +236,48 @@ public class CommerceInventoryReplenishmentItemLocalServiceImpl
 
 		return commerceInventoryReplenishmentItemPersistence.countByC_S_U(
 			companyId, sku, unitOfMeasureKey);
+	}
+
+	@Override
+	public List<Long> getCommerceInventoryWarehouseIds(
+		long companyId, String sku, String unitOfMeasureKey) {
+
+		DSLQuery dslQuery = DSLQueryFactoryUtil.selectDistinct(
+			CommerceInventoryReplenishmentItemTable.INSTANCE.
+				commerceInventoryWarehouseId
+		).from(
+			CommerceInventoryReplenishmentItemTable.INSTANCE
+		).leftJoinOn(
+			CommerceInventoryWarehouseTable.INSTANCE,
+			CommerceInventoryReplenishmentItemTable.INSTANCE.
+				commerceInventoryWarehouseId.eq(
+					CommerceInventoryWarehouseTable.INSTANCE.
+						commerceInventoryWarehouseId)
+		).where(
+			CommerceInventoryReplenishmentItemTable.INSTANCE.companyId.eq(
+				companyId
+			).and(
+				() -> {
+					if (Validator.isNull(sku)) {
+						return null;
+					}
+
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.sku.
+						eq(sku);
+				}
+			).and(
+				() -> {
+					if (Validator.isNull(unitOfMeasureKey)) {
+						return null;
+					}
+
+					return CommerceInventoryReplenishmentItemTable.INSTANCE.
+						unitOfMeasureKey.eq(unitOfMeasureKey);
+				}
+			)
+		);
+
+		return dslQuery(dslQuery);
 	}
 
 	@Override

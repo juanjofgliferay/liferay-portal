@@ -74,6 +74,8 @@ public interface CPInstance extends CPInstanceModel, PersistedModel {
 	public com.liferay.portal.kernel.util.UnicodeProperties
 		getSubscriptionTypeSettingsUnicodeProperties();
 
+	public boolean hasCPInstanceUnitOfMeasures();
+
 	public void setDeliverySubscriptionTypeSettingsUnicodeProperties(
 		com.liferay.portal.kernel.util.UnicodeProperties
 			deliverySubscriptionTypeSettingsUnicodeProperties);
@@ -83,3 +85,4 @@ public interface CPInstance extends CPInstanceModel, PersistedModel {
 			subscriptionTypeSettingsUnicodeProperties);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1311629681

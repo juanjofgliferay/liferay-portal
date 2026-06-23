@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
+import {State} from '@liferay/frontend-js-state-web';
 import {act, fireEvent, getByLabelText, render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -13,6 +14,7 @@ import {EDITABLE_TYPES} from '../../../../../../../../../src/main/resources/META
 import {StoreAPIContextProvider} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/contexts/StoreContext';
 import serviceFetch from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/services/serviceFetch';
 import updateEditableValues from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/thunks/updateEditableValues';
+import {pageContentsAtom} from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/utils/usePageContents';
 import EditableLinkPanel from '../../../../../../../../../src/main/resources/META-INF/resources/page_editor/plugins/browser/components/page_structure/components/item_configuration_panels/EditableLinkPanel';
 
 jest.mock(
@@ -23,6 +25,31 @@ jest.mock(
 jest.mock(
 	'../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/thunks/updateEditableValues',
 	() => jest.fn()
+);
+
+jest.mock(
+	'../../../../../../../../../src/main/resources/META-INF/resources/page_editor/app/config/index',
+	() => ({
+		config: {
+			availableLanguages: {
+				en_US: {
+					default: false,
+					displayName: 'English (United States)',
+					languageIcon: 'en-us',
+					languageId: 'en_US',
+					w3cLanguageId: 'en-US',
+				},
+			},
+			selectedMappingTypes: {
+				subtype: {
+					id: 'subtype',
+				},
+				type: {
+					id: 'type',
+				},
+			},
+		},
+	})
 );
 
 const getEditableConfig = (editableValues) => {
@@ -45,7 +72,6 @@ function getStateWithConfig(config = {}) {
 		},
 		languageId: 'en_US',
 		mappingFields: [],
-		pageContents: [],
 		segmentsExperienceId: 0,
 	};
 }
@@ -72,6 +98,13 @@ function renderLinkPanel(
 }
 
 describe('EditableLinkPanel', () => {
+	beforeAll(() => {
+		State.writeAtom(pageContentsAtom, {
+			data: [],
+			status: 'saved',
+		});
+	});
+
 	afterEach(() => {
 		serviceFetch.mockClear();
 		updateEditableValues.mockClear();
@@ -235,7 +268,8 @@ describe('EditableLinkPanel', () => {
 
 		const hrefInput = getByLabelText('url');
 
-		userEvent.type(hrefInput, 'http://google.com');
+		await userEvent.clear(hrefInput);
+		await userEvent.type(hrefInput, 'http://google.com');
 
 		fireEvent.blur(hrefInput);
 
@@ -261,7 +295,8 @@ describe('EditableLinkPanel', () => {
 
 		const hrefInput = getByLabelText('url');
 
-		userEvent.type(hrefInput, 'http://google.com');
+		await userEvent.clear(hrefInput);
+		await userEvent.type(hrefInput, 'http://google.com');
 
 		fireEvent.blur(hrefInput);
 

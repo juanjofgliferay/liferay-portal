@@ -1,16 +1,17 @@
 import ClayButton from '@clayui/button';
+import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
 import getCN from 'classnames';
 import Input from './Input';
 import Loading from 'shared/components/Loading';
-import Overlay from './Overlay';
 import React, {useEffect, useImperativeHandle, useRef, useState} from 'react';
 import {ARROW_DOWN, ARROW_UP, ENTER} from '../util/key-constants';
-import {DocumentNode} from 'graphql';
+import {DocumentNode, useQuery} from '@apollo/client';
+
 import {identity, noop} from 'lodash';
-import {useDebounce} from 'shared/hooks';
-import {useQuery} from '@apollo/react-hooks';
-import {useRequest} from 'shared/hooks';
+import {useDebounce} from 'shared/hooks/useDebounce';
+
+import {useRequest} from 'shared/hooks/useRequest';
 
 const DEBOUNCE_DELAY = 250;
 const SELECT_KEYS = [ARROW_DOWN, ARROW_UP, ENTER];
@@ -57,6 +58,7 @@ export const Item: React.FC<IItemProps> = ({
 );
 
 interface IBaseSelectProps extends React.HTMLAttributes<HTMLInputElement> {
+	placeholder?: string;
 	alwaysFetchOnFocus?: boolean;
 	className?: string;
 	containerClass?: string;
@@ -101,8 +103,7 @@ const BaseSelect: React.FC<IBaseSelectProps> = ({
 	onInputValueChange = noop,
 	onSelect = noop,
 	placeholder = '',
-	selectedItem,
-	...otherProps
+	selectedItem
 }) => {
 	useImperativeHandle(forwardedRef, () => ({
 		focus: () => {
@@ -142,7 +143,7 @@ const BaseSelect: React.FC<IBaseSelectProps> = ({
 		};
 	} else {
 		response = useRequest({
-			dataSourceFn: ({value}) => dataSourceFn(value),
+			dataSourceFn: ({value}) => dataSourceFn?.(value),
 			debounceDelay: DEBOUNCE_DELAY,
 			initialState: {
 				data: [],
@@ -211,7 +212,7 @@ const BaseSelect: React.FC<IBaseSelectProps> = ({
 		setActive(false);
 	};
 
-	const handleSelect = item => {
+	const handleSelect = (item: any) => {
 		handleOutsideClick();
 
 		onSelect(item);
@@ -224,85 +225,85 @@ const BaseSelect: React.FC<IBaseSelectProps> = ({
 	};
 
 	return (
-		<Overlay
-			{...otherProps}
-			active={active}
-			alignment='bottomLeft'
-			containerClass={getCN('base-select-container', containerClass)}
-			onOutsideClick={handleOutsideClick}
-			usePortal={false}
-		>
-			<Input.Group
-				className={getCN(
-					'base-select-input-root select-input-root',
-					className,
-					{inset}
-				)}
-				onClick={disabled ? null : handleFocus}
-			>
-				<Input.GroupItem>
-					<Input
-						autoComplete='off'
-						disabled={disabled}
-						id={id}
-						inset='after'
-						name={inputName}
-						onBlur={handleBlur}
-						onChange={(
-							event: React.ChangeEvent<HTMLInputElement>
-						) => {
-							onInputValueChange(event.target.value);
-						}}
-						onFocus={handleFocus}
-						onKeyDown={handleKeyDown}
-						placeholder={placeholder}
-						ref={_inputRef}
-						size={inputSize}
-						value={
-							active || !emptyInputOnInactive ? inputValue : ''
-						}
-					/>
-
-					<Input.Inset position='after'>
-						{loading ? (
-							<Loading />
-						) : (
-							<ClayIcon
-								className='icon-root'
-								symbol='caret-bottom'
-							/>
-						)}
-					</Input.Inset>
-				</Input.GroupItem>
-
-				{!active && selectedItem && itemRenderer && (
-					<div className='selected-item-container'>
-						{itemRenderer(selectedItem)}
-					</div>
-				)}
-			</Input.Group>
-
-			{!!items?.length && (
-				<div className='dropdown-root'>
-					<ul className='base-select-menu dropdown-menu show'>
-						{!!menuTitle && (
-							<li className='dropdown-header'>{menuTitle}</li>
-						)}
-
-						{items.map((item, i) => (
-							<Item
-								active={i === focusIndex}
-								disabled={loading}
-								item={item}
-								itemRenderer={itemRenderer || identity}
-								key={i}
-								onSelect={handleSelect}
-							/>
-						))}
-					</ul>
-				</div>
+		<ClayDropDown
+			className={getCN(
+				'dropdown-root',
+				'base-select-container',
+				containerClass
 			)}
-		</Overlay>
+			closeOnClick
+			trigger={
+				<div>
+					<Input.Group
+						className={getCN(
+							'base-select-input-root select-input-root',
+							className,
+							{inset}
+						)}
+						onClick={disabled ? null : handleFocus}
+					>
+						<Input.GroupItem>
+							<Input
+								autoComplete='off'
+								disabled={disabled}
+								id={id}
+								inset='after'
+								name={inputName}
+								onBlur={handleBlur}
+								onChange={(
+									event: React.ChangeEvent<HTMLInputElement>
+								) => {
+									onInputValueChange(event.target.value);
+								}}
+								onFocus={handleFocus}
+								onKeyDown={handleKeyDown}
+								placeholder={placeholder}
+								ref={_inputRef}
+								size={inputSize}
+								value={
+									active || !emptyInputOnInactive
+										? inputValue
+										: ''
+								}
+							/>
+
+							<Input.Inset position='after'>
+								{loading ? (
+									<Loading />
+								) : (
+									<ClayIcon
+										className='icon-root'
+										symbol='caret-bottom'
+									/>
+								)}
+							</Input.Inset>
+						</Input.GroupItem>
+
+						{!active && selectedItem && itemRenderer && (
+							<div className='selected-item-container'>
+								{itemRenderer(selectedItem)}
+							</div>
+						)}
+					</Input.Group>
+				</div>
+			}
+		>
+			{!!menuTitle && (
+				<ClayDropDown.Caption>{menuTitle}</ClayDropDown.Caption>
+			)}
+
+			{items.map((item: any, i: number) => (
+				<ClayDropDown.Item
+					active={i === focusIndex}
+					className={className}
+					disabled={loading}
+					key={i}
+					onClick={() => handleSelect(item)}
+				>
+					{itemRenderer ? itemRenderer(item) : identity(item)}
+				</ClayDropDown.Item>
+			))}
+		</ClayDropDown>
 	);
 };
 

@@ -9,7 +9,7 @@ import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.PortalGitWorkingDirectory;
 import com.liferay.jenkins.results.parser.PortalTestClassJob;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
-import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassBalancedListSplitter;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.PathMatcher;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -40,6 +41,57 @@ public class CompileModulesBatchTestClassGroup
 	}
 
 	@Override
+	protected void setAxisTestClassGroups() {
+		if (!containsTestClasses()) {
+			return;
+		}
+
+		int axisCount = getAxisCount();
+
+		if (axisCount == 0) {
+			return;
+		}
+
+		List<TestClass> testClasses = getTestClasses();
+
+		long totalWeight = 0;
+
+		for (TestClass testClass : testClasses) {
+			totalWeight += testClass.getWeight();
+		}
+
+		long maxListWeight = (totalWeight + axisCount - 1) / axisCount;
+
+		Collections.sort(
+			testClasses,
+			new Comparator<TestClass>() {
+
+				@Override
+				public int compare(TestClass testClass1, TestClass testClass2) {
+					return Long.compare(
+						testClass2.getWeight(), testClass1.getWeight());
+				}
+
+			});
+
+		TestClassBalancedListSplitter testClassBalancedListSplitter =
+			new TestClassBalancedListSplitter(maxListWeight);
+
+		for (List<TestClass> axisTestClasses :
+				testClassBalancedListSplitter.split(testClasses)) {
+
+			AxisTestClassGroup axisTestClassGroup =
+				TestClassGroupFactory.newAxisTestClassGroup(this);
+
+			for (TestClass testClass : axisTestClasses) {
+				axisTestClassGroup.addTestClass(testClass);
+			}
+
+			axisTestClassGroups.add(axisTestClassGroup);
+		}
+	}
+
+	@Override
 	protected void setTestClasses() throws IOException {
 		PortalGitWorkingDirectory portalGitWorkingDirectory =
 			getPortalGitWorkingDirectory();
@@ -48,9 +100,7 @@ public class CompileModulesBatchTestClassGroup
 			getExcludesJobProperties());
 		List<PathMatcher> includesPathMatchers = getIncludesPathMatchers();
 
-		if (testRelevantChanges &&
-			!(includeStableTestSuite && isStableTestSuiteBatch())) {
-
+		if (testRelevantChanges) {
 			List<File> modifiedModuleDirsList =
 				portalGitWorkingDirectory.getModifiedModuleDirsList(
 					excludesPathMatchers, includesPathMatchers);
@@ -71,18 +121,7 @@ public class CompileModulesBatchTestClassGroup
 					excludesPathMatchers, includesPathMatchers));
 		}
 
-		for (File moduleDir : moduleDirsList) {
-			TestClass testClass = TestClassFactory.newTestClass(
-				this, moduleDir);
-
-			if (!testClass.hasTestClassMethods()) {
-				continue;
-			}
-
-			testClasses.add(testClass);
-		}
-
-		Collections.sort(testClasses);
+		addTestClasses(moduleDirsList);
 	}
 
 }

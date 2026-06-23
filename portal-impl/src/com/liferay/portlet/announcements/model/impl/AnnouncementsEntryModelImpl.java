@@ -109,11 +109,18 @@ public class AnnouncementsEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table AnnouncementsEntry";
 
+	public static final String ENTITY_ALIAS = "announcementsEntry";
+
+	public static final String FILTER_PK_COLUMN_NAME = "entryId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY announcementsEntry.priority ASC, announcementsEntry.modifiedDate ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY AnnouncementsEntry.priority ASC, AnnouncementsEntry.modifiedDate ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY announcementsEntry.priority ASC, announcementsEntry.modifiedDate ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -190,7 +197,7 @@ public class AnnouncementsEntryModelImpl
 	public static final long MODIFIEDDATE_COLUMN_BITMASK = 128L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.announcements.kernel.model.AnnouncementsEntry"));
 
 	public AnnouncementsEntryModelImpl() {
@@ -1371,3 +1378,4 @@ public class AnnouncementsEntryModelImpl
 	private AnnouncementsEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1052921415

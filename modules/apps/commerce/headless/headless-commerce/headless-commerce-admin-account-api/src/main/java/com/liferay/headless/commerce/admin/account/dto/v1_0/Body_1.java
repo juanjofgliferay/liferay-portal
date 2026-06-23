@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,17 +26,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
  * @generated
  */
 @Generated("")
-@GraphQLName("Body_1")
+@GraphQLName(
+	description = "Multipart upload envelope for an account logo addressed by external reference code. Contains a single binary file field named `logo` that replaces the current account logo.",
+	value = "Body_1"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Body_1")
 public class Body_1 implements Serializable {
@@ -47,31 +49,48 @@ public class Body_1 implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Body_1.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Binary image file uploaded as the account logo. Standard image formats (PNG, JPEG, GIF) are accepted; the uploaded bytes replace the existing logo when supplied."
+	)
 	public String getLogo() {
+		if (_logoSupplier != null) {
+			logo = _logoSupplier.get();
+
+			_logoSupplier = null;
+		}
+
 		return logo;
 	}
 
 	public void setLogo(String logo) {
 		this.logo = logo;
+
+		_logoSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLogo(UnsafeSupplier<String, Exception> logoUnsafeSupplier) {
-		try {
-			logo = logoUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_logoSupplier = () -> {
+			try {
+				return logoUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Binary image file uploaded as the account logo. Standard image formats (PNG, JPEG, GIF) are accepted; the uploaded bytes replace the existing logo when supplied."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String logo;
+
+	@JsonIgnore
+	private Supplier<String> _logoSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -100,6 +119,8 @@ public class Body_1 implements Serializable {
 
 		sb.append("{");
 
+		String logo = getLogo();
+
 		if (logo != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -119,8 +140,8 @@ public class Body_1 implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.account.dto.v1_0.Body_1",
 		name = "x-class-name"
 	)
@@ -166,7 +187,10 @@ public class Body_1 implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -212,3 +236,4 @@ public class Body_1 implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:22265242

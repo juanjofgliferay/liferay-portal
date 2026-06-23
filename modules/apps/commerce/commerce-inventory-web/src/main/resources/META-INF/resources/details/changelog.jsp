@@ -12,7 +12,7 @@ CommerceInventoryDisplayContext commerceInventoryDisplayContext = (CommerceInven
 %>
 
 <commerce-ui:panel
-	title='<%= LanguageUtil.get(request, "change-logs") %>'
+	title='<%= LanguageUtil.get(request, "logs") %>'
 >
 	<frontend-data-set:classic-display
 		contextParams='<%=
@@ -24,7 +24,6 @@ CommerceInventoryDisplayContext commerceInventoryDisplayContext = (CommerceInven
 		%>'
 		dataProviderKey="<%= CommerceInventoryFDSNames.INVENTORY_AUDIT %>"
 		id="<%= CommerceInventoryFDSNames.INVENTORY_AUDIT %>"
-		itemsPerPage="<%= 10 %>"
 		showManagementBar="<%= false %>"
 	/>
 </commerce-ui:panel>

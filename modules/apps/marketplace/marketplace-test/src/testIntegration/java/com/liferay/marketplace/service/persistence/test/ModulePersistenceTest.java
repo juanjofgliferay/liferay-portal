@@ -492,17 +492,6 @@ public class ModulePersistenceTest {
 				module, "getColumnOriginalValue", new Class<?>[] {String.class},
 				"appId"));
 		Assert.assertEquals(
-			module.getContextName(),
-			ReflectionTestUtil.invoke(
-				module, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"contextName"));
-
-		Assert.assertEquals(
-			Long.valueOf(module.getAppId()),
-			ReflectionTestUtil.<Long>invoke(
-				module, "getColumnOriginalValue", new Class<?>[] {String.class},
-				"appId"));
-		Assert.assertEquals(
 			module.getBundleSymbolicName(),
 			ReflectionTestUtil.invoke(
 				module, "getColumnOriginalValue", new Class<?>[] {String.class},
@@ -541,3 +530,4 @@ public class ModulePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1040776441

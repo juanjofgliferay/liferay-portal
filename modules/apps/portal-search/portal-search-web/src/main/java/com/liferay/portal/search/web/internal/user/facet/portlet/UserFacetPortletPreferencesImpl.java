@@ -6,8 +6,9 @@
 package com.liferay.portal.search.web.internal.user.facet.portlet;
 
 import com.liferay.portal.search.web.internal.portlet.preferences.BasePortletPreferences;
+import com.liferay.portal.search.web.internal.seo.SEOPortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * @author Lino Alves
@@ -46,9 +47,21 @@ public class UserFacetPortletPreferencesImpl
 	}
 
 	@Override
+	public String getSEOParameterName() {
+		return getParameterName();
+	}
+
+	@Override
 	public boolean isFrequenciesVisible() {
 		return getBoolean(
 			UserFacetPortletPreferences.PREFERENCE_KEY_FREQUENCIES_VISIBLE,
+			true);
+	}
+
+	@Override
+	public boolean isWebCrawlerIndexingEnabled() {
+		return getBoolean(
+			SEOPortletPreferences.PREFERENCE_KEY_WEB_CRAWLER_INDEXING_ENABLED,
 			true);
 	}
 

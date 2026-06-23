@@ -3,14 +3,14 @@ import IndividualMetricsQuery from 'shared/queries/IndividualMetricsQuery';
 import React from 'react';
 import TypeTrend from '../components/TypeTrend';
 import {compose} from 'redux';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
-import {graphql} from '@apollo/react-hoc';
+import {graphql, OperationOption} from '@apollo/client/react/hoc';
 import {INTERVAL_KEY_MAP} from 'shared/util/time';
 import {
 	mapPropsToOptions,
 	mapResultToProps
 } from '../hocs/mappers/individual-metrics-query';
 import {RangeKeyTimeRanges} from 'shared/util/constants';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {useParams} from 'react-router-dom';
 import {withError, withLoading} from 'shared/hoc';
 
@@ -18,7 +18,7 @@ const TypeTrendWithData = compose<any>(
 	graphql(IndividualMetricsQuery, {
 		options: mapPropsToOptions,
 		props: mapResultToProps
-	}),
+	} as OperationOption<object, object>),
 	withLoading(),
 	withError({page: false})
 )(TypeTrend);
@@ -29,7 +29,7 @@ const TypeTrendCard: React.FC<React.HTMLAttributes<HTMLElement>> = () => {
 	return (
 		<Card
 			className='type-trend-card-root text-secondary'
-			id={Containers.CurrentTotalsCard}
+			reportContainer={ReportContainer.CurrentTotalsCard}
 		>
 			<Card.Body>
 				<TypeTrendWithData

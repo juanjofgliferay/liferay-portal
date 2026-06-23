@@ -7,10 +7,17 @@ package com.liferay.users.admin.internal.search;
 
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.IndexWriterHelper;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.Localization;
+import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
+import com.liferay.users.admin.internal.search.spi.model.index.contributor.UserModelIndexerWriterContributor;
+import com.liferay.users.admin.internal.search.spi.model.result.contributor.UserModelSummaryContributor;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -52,14 +59,29 @@ public class UserModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.kernel.model.User)"
-	)
-	private ModelIndexerWriterContributor<User> _modelIndexWriterContributor;
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new UserModelIndexerWriterContributor(
+			_indexerDocumentBuilder, _indexWriterHelper, _userLocalService);
+		_modelSummaryContributor = new UserModelSummaryContributor(
+			_localization);
+	}
 
 	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.kernel.model.User)"
+		target = "(indexer.class.name=com.liferay.portal.kernel.model.Contact)"
 	)
+	private IndexerDocumentBuilder _indexerDocumentBuilder;
+
+	@Reference
+	private IndexWriterHelper _indexWriterHelper;
+
+	@Reference
+	private Localization _localization;
+
+	private ModelIndexerWriterContributor<User> _modelIndexWriterContributor;
 	private ModelSummaryContributor _modelSummaryContributor;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

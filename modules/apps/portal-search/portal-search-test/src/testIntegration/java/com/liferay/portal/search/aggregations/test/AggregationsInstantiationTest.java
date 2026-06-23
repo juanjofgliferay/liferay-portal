@@ -57,7 +57,7 @@ import com.liferay.portal.search.aggregation.pipeline.SumBucketPipelineAggregati
 import com.liferay.portal.search.geolocation.GeoLocationPoint;
 import com.liferay.portal.search.query.Query;
 import com.liferay.portal.search.script.Script;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -456,6 +456,6 @@ public class AggregationsInstantiationTest {
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	@Inject
-	private static Aggregations _aggregations;
+	private Aggregations _aggregations;
 
 }

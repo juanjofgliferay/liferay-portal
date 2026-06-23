@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -26,20 +31,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
  * @generated
  */
 @Generated("")
-@GraphQLName("SkuUnitOfMeasure")
+@GraphQLName(
+	description = "Unit of measure available for a SKU, including its conversion rate to the SKU's primary unit, its decimal precision, and its own pricing.",
+	value = "SkuUnitOfMeasure"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "SkuUnitOfMeasure")
 public class SkuUnitOfMeasure implements Serializable {
@@ -53,9 +55,18 @@ public class SkuUnitOfMeasure implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "1.5")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Order-quantity step (in base units) that order lines must respect when using this unit of measure. Defaults to 1.",
+		example = "1.5"
+	)
 	@Valid
 	public BigDecimal getIncrementalOrderQuantity() {
+		if (_incrementalOrderQuantitySupplier != null) {
+			incrementalOrderQuantity = _incrementalOrderQuantitySupplier.get();
+
+			_incrementalOrderQuantitySupplier = null;
+		}
+
 		return incrementalOrderQuantity;
 	}
 
@@ -63,6 +74,8 @@ public class SkuUnitOfMeasure implements Serializable {
 		BigDecimal incrementalOrderQuantity) {
 
 		this.incrementalOrderQuantity = incrementalOrderQuantity;
+
+		_incrementalOrderQuantitySupplier = null;
 	}
 
 	@JsonIgnore
@@ -70,244 +83,385 @@ public class SkuUnitOfMeasure implements Serializable {
 		UnsafeSupplier<BigDecimal, Exception>
 			incrementalOrderQuantityUnsafeSupplier) {
 
-		try {
-			incrementalOrderQuantity =
-				incrementalOrderQuantityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_incrementalOrderQuantitySupplier = () -> {
+			try {
+				return incrementalOrderQuantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Order-quantity step (in base units) that order lines must respect when using this unit of measure. Defaults to 1."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal incrementalOrderQuantity;
 
-	@Schema(example = "pl")
+	@JsonIgnore
+	private Supplier<BigDecimal> _incrementalOrderQuantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Stable key identifying the unit of measure within the SKU.",
+		example = "pl"
+	)
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Stable key identifying the unit of measure within the SKU."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String key;
 
-	@Schema(example = "Pallet")
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Display name of the unit of measure.", example = "Pallet"
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "Display name of the unit of measure.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema(example = "3")
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Number of decimal places accepted when quantities are entered in this unit.",
+		example = "3"
+	)
 	public Integer getPrecision() {
+		if (_precisionSupplier != null) {
+			precision = _precisionSupplier.get();
+
+			_precisionSupplier = null;
+		}
+
 		return precision;
 	}
 
 	public void setPrecision(Integer precision) {
 		this.precision = precision;
+
+		_precisionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrecision(
 		UnsafeSupplier<Integer, Exception> precisionUnsafeSupplier) {
 
-		try {
-			precision = precisionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_precisionSupplier = () -> {
+			try {
+				return precisionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Number of decimal places accepted when quantities are entered in this unit."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer precision;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _precisionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Price getPrice() {
+		if (_priceSupplier != null) {
+			price = _priceSupplier.get();
+
+			_priceSupplier = null;
+		}
+
 		return price;
 	}
 
 	public void setPrice(Price price) {
 		this.price = price;
+
+		_priceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrice(UnsafeSupplier<Price, Exception> priceUnsafeSupplier) {
-		try {
-			price = priceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceSupplier = () -> {
+			try {
+				return priceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Price price;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<Price> _priceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "When true, this is the SKU's primary (base) unit of measure. At most one unit of measure per SKU is primary.",
+		example = "true"
+	)
 	public Boolean getPrimary() {
+		if (_primarySupplier != null) {
+			primary = _primarySupplier.get();
+
+			_primarySupplier = null;
+		}
+
 		return primary;
 	}
 
 	public void setPrimary(Boolean primary) {
 		this.primary = primary;
+
+		_primarySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrimary(
 		UnsafeSupplier<Boolean, Exception> primaryUnsafeSupplier) {
 
-		try {
-			primary = primaryUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_primarySupplier = () -> {
+			try {
+				return primaryUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "When true, this is the SKU's primary (base) unit of measure. At most one unit of measure per SKU is primary."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean primary;
 
+	@JsonIgnore
+	private Supplier<Boolean> _primarySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "1.1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Sort priority among the SKU's units of measure; lower values sort first.",
+		example = "1.1"
+	)
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Sort priority among the SKU's units of measure; lower values sort first."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "202.1")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Conversion factor from this unit to the SKU's primary unit. The primary unit itself always carries the rate 1.",
+		example = "202.1"
+	)
 	@Valid
 	public BigDecimal getRate() {
+		if (_rateSupplier != null) {
+			rate = _rateSupplier.get();
+
+			_rateSupplier = null;
+		}
+
 		return rate;
 	}
 
 	public void setRate(BigDecimal rate) {
 		this.rate = rate;
+
+		_rateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRate(
 		UnsafeSupplier<BigDecimal, Exception> rateUnsafeSupplier) {
 
-		try {
-			rate = rateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_rateSupplier = () -> {
+			try {
+				return rateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Conversion factor from this unit to the SKU's primary unit. The primary unit itself always carries the rate 1."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected BigDecimal rate;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<BigDecimal> _rateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Tier-pricing breakpoints applied when buying in this unit of measure."
+	)
 	@Valid
 	public TierPrice[] getTierPrices() {
+		if (_tierPricesSupplier != null) {
+			tierPrices = _tierPricesSupplier.get();
+
+			_tierPricesSupplier = null;
+		}
+
 		return tierPrices;
 	}
 
 	public void setTierPrices(TierPrice[] tierPrices) {
 		this.tierPrices = tierPrices;
+
+		_tierPricesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTierPrices(
 		UnsafeSupplier<TierPrice[], Exception> tierPricesUnsafeSupplier) {
 
-		try {
-			tierPrices = tierPricesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_tierPricesSupplier = () -> {
+			try {
+				return tierPricesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Tier-pricing breakpoints applied when buying in this unit of measure."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected TierPrice[] tierPrices;
+
+	@JsonIgnore
+	private Supplier<TierPrice[]> _tierPricesSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -336,6 +490,8 @@ public class SkuUnitOfMeasure implements Serializable {
 
 		sb.append("{");
 
+		BigDecimal incrementalOrderQuantity = getIncrementalOrderQuantity();
+
 		if (incrementalOrderQuantity != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -345,6 +501,8 @@ public class SkuUnitOfMeasure implements Serializable {
 
 			sb.append(incrementalOrderQuantity);
 		}
+
+		String key = getKey();
 
 		if (key != null) {
 			if (sb.length() > 1) {
@@ -360,6 +518,8 @@ public class SkuUnitOfMeasure implements Serializable {
 			sb.append("\"");
 		}
 
+		String name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -374,6 +534,8 @@ public class SkuUnitOfMeasure implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer precision = getPrecision();
+
 		if (precision != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -383,6 +545,8 @@ public class SkuUnitOfMeasure implements Serializable {
 
 			sb.append(precision);
 		}
+
+		Price price = getPrice();
 
 		if (price != null) {
 			if (sb.length() > 1) {
@@ -394,6 +558,8 @@ public class SkuUnitOfMeasure implements Serializable {
 			sb.append(String.valueOf(price));
 		}
 
+		Boolean primary = getPrimary();
+
 		if (primary != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -403,6 +569,8 @@ public class SkuUnitOfMeasure implements Serializable {
 
 			sb.append(primary);
 		}
+
+		Double priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -414,6 +582,8 @@ public class SkuUnitOfMeasure implements Serializable {
 			sb.append(priority);
 		}
 
+		BigDecimal rate = getRate();
+
 		if (rate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -423,6 +593,8 @@ public class SkuUnitOfMeasure implements Serializable {
 
 			sb.append(rate);
 		}
+
+		TierPrice[] tierPrices = getTierPrices();
 
 		if (tierPrices != null) {
 			if (sb.length() > 1) {
@@ -449,8 +621,8 @@ public class SkuUnitOfMeasure implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.catalog.dto.v1_0.SkuUnitOfMeasure",
 		name = "x-class-name"
 	)
@@ -496,7 +668,10 @@ public class SkuUnitOfMeasure implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -542,3 +717,4 @@ public class SkuUnitOfMeasure implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:987455443

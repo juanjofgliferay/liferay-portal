@@ -5,13 +5,13 @@
 
 package com.liferay.layout.utility.page.kernel;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Locale;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Eudaldo Alonso
@@ -22,9 +22,14 @@ public interface LayoutUtilityPageEntryViewRenderer {
 
 	public String getType();
 
-	public void renderHTML(
+	public default boolean isEnabled() {
+		return true;
+	}
+
+	public default void renderHTML(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
-		throws IOException, ServletException;
+		throws IOException, ServletException {
+	}
 
 }

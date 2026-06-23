@@ -5,6 +5,7 @@
 
 package com.liferay.jenkins.results.parser;
 
+import com.liferay.jenkins.results.parser.history.TestClassHistory;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 
 import java.io.IOException;
@@ -38,6 +39,17 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	@Override
+	public TestClassHistory getTestClassHistory() {
+		TestClass testClass = getTestClass();
+
+		if (testClass == null) {
+			return null;
+		}
+
+		return testClass.getTestClassHistory();
+	}
+
+	@Override
 	public TestClassResult getTestClassResult() {
 		List<TestClassResult> testClassResults = _build.getTestClassResults();
 
@@ -61,33 +73,45 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	@Override
-	public TestHistory getTestHistory() {
-		TestClass testClass = getTestClass();
+	public JSONObject getTestReportJSONObject() {
+		JSONObject testResultJSONObject = new JSONObject();
 
-		if (testClass == null) {
-			return null;
+		testResultJSONObject.put("duration", getDuration());
+
+		String errorDetails = getErrorDetails();
+
+		if (errorDetails != null) {
+			if (errorDetails.contains("\n")) {
+				int index = errorDetails.indexOf("\n");
+
+				errorDetails = errorDetails.substring(0, index);
+			}
+
+			if (errorDetails.length() > 200) {
+				errorDetails = errorDetails.substring(0, 200);
+			}
+
+			testResultJSONObject.put("errorDetails", errorDetails);
 		}
 
-		return testClass.getTestHistory();
+		if (isFailing()) {
+			testResultJSONObject.put("errorStackTrace", getErrorStackTrace());
+		}
+
+		testResultJSONObject.put(
+			"name", getDisplayName()
+		).put(
+			"status", getStatus()
+		).put(
+			"testTaskName", getTestTaskName()
+		);
+
+		return testResultJSONObject;
 	}
 
 	@Override
 	public boolean isFailing() {
 		String status = getStatus();
-
-		Build build = getBuild();
-
-		if (status.equals("PASSED") && build.isFailing()) {
-			JSONObject testReportJSONObject = build.getTestReportJSONObject(
-				false);
-
-			int failCount = testReportJSONObject.getInt("failCount");
-			int passCount = testReportJSONObject.getInt("passCount");
-
-			if ((failCount == 0) && (passCount == 1)) {
-				return true;
-			}
-		}
 
 		if (status.equals("FIXED") || status.equals("PASSED") ||
 			status.equals("SKIPPED")) {
@@ -96,6 +120,13 @@ public abstract class BaseTestResult implements TestResult {
 		}
 
 		return true;
+	}
+
+	@Override
+	public boolean isSkipped() {
+		String status = getStatus();
+
+		return status.equals("SKIPPED");
 	}
 
 	@Override
@@ -140,12 +171,7 @@ public abstract class BaseTestResult implements TestResult {
 	protected String getAxisNumber() {
 		Build build = getBuild();
 
-		if (build instanceof AxisBuild) {
-			AxisBuild axisBuild = (AxisBuild)build;
-
-			return axisBuild.getAxisNumber();
-		}
-		else if (build instanceof DownstreamBuild) {
+		if (build instanceof DownstreamBuild) {
 			DownstreamBuild downstreamBuild = (DownstreamBuild)build;
 
 			return downstreamBuild.getAxisVariable();
@@ -211,6 +237,10 @@ public abstract class BaseTestResult implements TestResult {
 			build.getJobVariant(), "/", getAxisNumber());
 	}
 
+	protected String getTestTaskName() {
+		return null;
+	}
+
 	protected boolean hasLiferayLog() {
 		String liferayLog = null;
 
@@ -226,7 +256,7 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	private static final String _URL_BASE_LOGS_DEFAULT =
-		"https://testray.liferay.com/reports/production/logs";
+		"https://storage.cloud.google.com/testray-results";
 
 	private final Build _build;
 	private TestClassResult _testClassResult;

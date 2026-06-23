@@ -27,13 +27,12 @@ public class CTCollectionServiceWrapper
 
 	@Override
 	public com.liferay.change.tracking.model.CTCollection addCTCollection(
-			String externalReferenceCode, long companyId, long userId,
-			long ctRemoteId, String name, String description)
+			String externalReferenceCode, long ctRemoteId, String name,
+			String description)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _ctCollectionService.addCTCollection(
-			externalReferenceCode, companyId, userId, ctRemoteId, name,
-			description);
+			externalReferenceCode, ctRemoteId, name, description);
 	}
 
 	@Override
@@ -53,6 +52,15 @@ public class CTCollectionServiceWrapper
 
 	@Override
 	public void discardCTEntry(
+			long ctCollectionId,
+			java.util.List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_ctCollectionService.discardCTEntry(ctCollectionId, ctEntries);
+	}
+
+	@Override
+	public void discardCTEntry(
 			long ctCollectionId, long modelClassNameId, long modelClassPK)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -62,34 +70,35 @@ public class CTCollectionServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.change.tracking.model.CTCollection>
-		getCTCollections(
-			long companyId, int[] statuses, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.change.tracking.model.CTCollection>
-					orderByComparator) {
+			getCTCollections(
+				int[] statuses, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<com.liferay.change.tracking.model.CTCollection>
+						orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _ctCollectionService.getCTCollections(
-			companyId, statuses, start, end, orderByComparator);
+			statuses, start, end, orderByComparator);
 	}
 
 	@Override
 	public java.util.List<com.liferay.change.tracking.model.CTCollection>
-		getCTCollections(
-			long companyId, int[] statuses, String keywords, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.change.tracking.model.CTCollection>
-					orderByComparator) {
+			getCTCollections(
+				int[] statuses, String keywords, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<com.liferay.change.tracking.model.CTCollection>
+						orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _ctCollectionService.getCTCollections(
-			companyId, statuses, keywords, start, end, orderByComparator);
+			statuses, keywords, start, end, orderByComparator);
 	}
 
 	@Override
-	public int getCTCollectionsCount(
-		long companyId, int[] statuses, String keywords) {
+	public int getCTCollectionsCount(int[] statuses, String keywords)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _ctCollectionService.getCTCollectionsCount(
-			companyId, statuses, keywords);
+		return _ctCollectionService.getCTCollectionsCount(statuses, keywords);
 	}
 
 	/**
@@ -100,6 +109,16 @@ public class CTCollectionServiceWrapper
 	@Override
 	public String getOSGiServiceIdentifier() {
 		return _ctCollectionService.getOSGiServiceIdentifier();
+	}
+
+	@Override
+	public void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			java.util.List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_ctCollectionService.moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
 	}
 
 	@Override
@@ -151,3 +170,4 @@ public class CTCollectionServiceWrapper
 	private CTCollectionService _ctCollectionService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1710582083

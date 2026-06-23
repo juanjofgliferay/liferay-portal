@@ -77,7 +77,7 @@ public interface CProductLocalService
 	public CProduct addCProduct(CProduct cProduct);
 
 	public CProduct addCProduct(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -363,3 +363,4 @@ public interface CProductLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-591142694

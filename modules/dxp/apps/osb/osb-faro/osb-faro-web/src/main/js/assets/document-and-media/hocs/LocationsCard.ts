@@ -2,11 +2,18 @@ import getLocationsMapper, {
 	getLocationsMapperCountries
 } from 'cerebro-shared/hocs/mappers/locations';
 import URLConstants from 'shared/util/url-constants';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {GEOLOCATION_FRAGMENT} from 'shared/queries/fragments';
-import {gql} from 'apollo-boost';
-import {graphql} from '@apollo/react-hoc';
+import {gql} from '@apollo/client';
+import {graphql} from '@apollo/client/react/hoc';
+import {OperationOption} from '@apollo/client/react/hoc';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {withLocationsCard} from 'cerebro-shared/hocs/LocationsCard';
+
+type DocumentMetricResult = {
+	document: {
+		downloadsMetric: unknown;
+	};
+};
 
 const GEOLOCATION_QUERY = gql`
 	query DocumentsAndMediaMetrics(
@@ -49,7 +56,9 @@ const GEOLOCATION_QUERY = gql`
 const withBlogsLocations = () =>
 	graphql(
 		GEOLOCATION_QUERY,
-		getLocationsMapper(result => result.document.downloadsMetric)
+		getLocationsMapper(
+			(result: DocumentMetricResult) => result.document.downloadsMetric
+		) as OperationOption<object, object>
 	);
 
 /**
@@ -59,7 +68,9 @@ const withBlogsLocations = () =>
 const withBlogsLocationsCountries = () =>
 	graphql(
 		GEOLOCATION_QUERY,
-		getLocationsMapperCountries(result => result.document.downloadsMetric)
+		getLocationsMapperCountries(
+			(result: DocumentMetricResult) => result.document.downloadsMetric
+		) as OperationOption<object, object>
 	);
 
 export default withLocationsCard(
@@ -71,7 +82,7 @@ export default withLocationsCard(
 		),
 		documentationUrl:
 			URLConstants.SitesDashboardDocumentsAndMediaDownloadByLocation,
-		id: Containers.DownloadsByLocationCard,
+		reportContainer: ReportContainer.DownloadsByLocationCard,
 		title: Liferay.Language.get(
 			'there-are-no-downloads-on-the-selected-period'
 		)

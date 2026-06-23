@@ -7,10 +7,16 @@ package com.liferay.portal.kernel.dao.orm;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * @author Brian Wing Shun Chan
@@ -40,11 +46,42 @@ public class FinderPath {
 		String cacheName, String methodName, String[] params,
 		String[] columnNames, boolean baseModelResult) {
 
+		this(
+			cacheName, methodName, params, columnNames, 0, 0, baseModelResult,
+			null);
+	}
+
+	public FinderPath(
+		String cacheName, String methodName, String[] params,
+		String[] columnNames, int caseInsensitiveBitmask,
+		int convertNullBitmask, boolean baseModelResult,
+		Function<Object, Object[]> argsExtractorFunction) {
+
 		_cacheName = cacheName;
 		_columnNames = columnNames;
+		_caseInsensitiveBitmask = caseInsensitiveBitmask;
+		_convertNullBitmask = convertNullBitmask;
 		_baseModelResult = baseModelResult;
 
+		if (argsExtractorFunction == null) {
+			_argsExtractorFunction = _EMPTY_ARGS_EXTRACTOR_FUNCTION;
+		}
+		else {
+			_argsExtractorFunction = argsExtractorFunction;
+		}
+
 		_initCacheKeyPrefix(methodName, params);
+
+		if (_cacheName.contains(".List") || methodName.equals("dslQuery")) {
+			_singleResult = false;
+		}
+		else {
+			_singleResult = true;
+		}
+	}
+
+	public Object[] extractArgs(BaseModel<?> baseModel) {
+		return _argsExtractorFunction.apply(baseModel);
 	}
 
 	public String getCacheKeyPrefix() {
@@ -61,6 +98,38 @@ public class FinderPath {
 
 	public boolean isBaseModelResult() {
 		return _baseModelResult;
+	}
+
+	public boolean isTouched() {
+		if (_singleResult &&
+			((System.nanoTime() - _timestamp) >= _COOL_DOWN_PERIOD)) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	public Object normalizeArgument(int columnIndex, Object value) {
+		if (value instanceof Date date) {
+			return date.getTime();
+		}
+
+		if (_isCaseInsensitive(columnIndex)) {
+			value = StringUtil.toLowerCase((String)value);
+		}
+
+		if (_isConvertNull(columnIndex)) {
+			value = Objects.toString(value, "");
+		}
+
+		return value;
+	}
+
+	public void touch() {
+		if (_singleResult) {
+			_timestamp = System.nanoTime();
+		}
 	}
 
 	private static Map<String, String> _getEncodedTypes() {
@@ -101,7 +170,31 @@ public class FinderPath {
 		_cacheKeyPrefix = sb.toString();
 	}
 
+	private boolean _isCaseInsensitive(int columnIndex) {
+		if ((_caseInsensitiveBitmask & (1 << columnIndex)) != 0) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private boolean _isConvertNull(int columnIndex) {
+		if ((_convertNullBitmask & (1 << columnIndex)) != 0) {
+			return true;
+		}
+
+		return false;
+	}
+
 	private static final String _ARGS_SEPARATOR = "_A_";
+
+	private static final long _COOL_DOWN_PERIOD = GetterUtil.getLong(
+		PropsUtil.get(
+			"value.object.finder.cache.single.result.cool.down.period"),
+		600_000_000_000L);
+
+	private static final Function<Object, Object[]>
+		_EMPTY_ARGS_EXTRACTOR_FUNCTION = baseModel -> new Object[0];
 
 	private static final String _PARAMS_SEPARATOR = "_P_";
 
@@ -109,9 +202,14 @@ public class FinderPath {
 
 	private static final Map<String, String> _encodedTypes = _getEncodedTypes();
 
+	private final Function<Object, Object[]> _argsExtractorFunction;
 	private final boolean _baseModelResult;
 	private String _cacheKeyPrefix;
 	private final String _cacheName;
+	private final int _caseInsensitiveBitmask;
 	private final String[] _columnNames;
+	private final int _convertNullBitmask;
+	private final boolean _singleResult;
+	private volatile long _timestamp;
 
 }

@@ -1,14 +1,12 @@
 import * as API from 'shared/api';
 import BasePage from 'shared/components/base-page';
-import ClayLink from '@clayui/link';
+import ClayButton from '@clayui/button';
 import Constants, {Sizes} from 'shared/util/constants';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
 import React from 'react';
 import {close, modalTypes, open} from 'shared/actions/modals';
 import {compose} from 'redux';
 import {connect} from 'react-redux';
-import {Routes, toRoute} from 'shared/util/router';
-import {setBackURL} from 'shared/actions/settings';
 import {User} from 'shared/util/records';
 import {withRequest} from 'shared/hoc';
 
@@ -23,7 +21,6 @@ interface INoPropertiesAvailableProps
 	dataSources: boolean;
 	groupId: string;
 	open: (modalType: string, config: object) => void;
-	setBackURL: (url: string) => void;
 }
 
 const NoPropertiesAvailable: React.FC<INoPropertiesAvailableProps> = ({
@@ -31,8 +28,7 @@ const NoPropertiesAvailable: React.FC<INoPropertiesAvailableProps> = ({
 	currentUser,
 	dataSources,
 	groupId,
-	open,
-	setBackURL
+	open
 }) => {
 	const admin = currentUser.isAdmin();
 
@@ -72,47 +68,18 @@ const NoPropertiesAvailable: React.FC<INoPropertiesAvailableProps> = ({
 							</p>
 
 							{admin && (
-								<ClayLink
-									button
+								<ClayButton
 									className='button-root'
 									displayType='primary'
-									href={
-										dataSources
-											? toRoute(
-													Routes.SETTINGS_CHANNELS,
-													{
-														groupId
-													}
-											  )
-											: null
-									}
-									onClick={
-										dataSources
-											? () =>
-													setBackURL(
-														toRoute(
-															Routes.WORKSPACE_WITH_ID,
-															{
-																groupId
-															}
-														)
-													)
-											: () =>
-													open(
-														modalTypes.ONBOARDING_MODAL,
-														{
-															groupId,
-															onClose: close
-														}
-													)
+									onClick={() =>
+										open(modalTypes.ONBOARDING_MODAL, {
+											groupId,
+											onClose: close
+										})
 									}
 								>
-									{dataSources
-										? Liferay.Language.get(
-												'create-property'
-										  )
-										: Liferay.Language.get('start')}
-								</ClayLink>
+									{Liferay.Language.get('start')}
+								</ClayButton>
 							)}
 						</>
 					}
@@ -120,7 +87,7 @@ const NoPropertiesAvailable: React.FC<INoPropertiesAvailableProps> = ({
 					icon={{
 						border: false,
 						size: Sizes.XXXLarge,
-						symbol: 'ac-satellite'
+						symbol: 'ac_satellite'
 					}}
 					spacer
 					title={
@@ -136,16 +103,16 @@ const NoPropertiesAvailable: React.FC<INoPropertiesAvailableProps> = ({
 
 export default compose<any>(
 	withRequest(
-		({groupId}) =>
+		({groupId}: {groupId: string}) =>
 			API.dataSource.search({
 				delta: 1,
 				groupId,
 				page: defaultPage,
 				query: ''
 			}),
-		({total}) => ({
+		({total}: {total: number}) => ({
 			dataSources: !!total
 		})
 	),
-	connect(null, {close, open, setBackURL})
+	connect(null, {close, open})
 )(NoPropertiesAvailable);

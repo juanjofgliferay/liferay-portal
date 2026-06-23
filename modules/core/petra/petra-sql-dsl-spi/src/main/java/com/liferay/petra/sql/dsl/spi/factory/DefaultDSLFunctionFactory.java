@@ -114,6 +114,21 @@ public class DefaultDSLFunctionFactory implements DSLFunctionFactory {
 	}
 
 	@Override
+	public <N extends Number> Expression<Float> floatDivide(
+		Expression<N> expression1, Expression<N> expression2) {
+
+		return new DSLFunction<>(
+			DSLFunctionType.FLOAT_DIVISION, expression1, expression2);
+	}
+
+	@Override
+	public <N extends Number> Expression<Float> floatDivide(
+		Expression<N> expression, N value) {
+
+		return floatDivide(expression, new Scalar<>(value));
+	}
+
+	@Override
 	public Expression<String> lower(Expression<String> expression) {
 		return new DSLFunction<>(DSLFunctionType.LOWER, expression);
 	}
@@ -145,6 +160,23 @@ public class DefaultDSLFunctionFactory implements DSLFunctionFactory {
 		Expression<N> expression, N value) {
 
 		return multiply(expression, new Scalar<>(value));
+	}
+
+	@Override
+	public Expression<String> replace(
+		Expression<String> expression1, Expression<String> expression2,
+		Expression<String> expression3) {
+
+		return new DSLFunction<>(
+			DSLFunctionType.REPLACE, expression1, expression2, expression3);
+	}
+
+	@Override
+	public Expression<String> replace(
+		Expression<String> expression, String target, String replacement) {
+
+		return replace(
+			expression, new Scalar<>(target), new Scalar<>(replacement));
 	}
 
 	@Override

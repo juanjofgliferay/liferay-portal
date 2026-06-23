@@ -5,10 +5,10 @@
 
 package com.liferay.source.formatter.check;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.NaturalOrderStringComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 
@@ -36,7 +36,7 @@ public class PropertiesLanguageKeysOrderCheck extends BaseFileCheck {
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(content))) {
 
-			Map<String, String> messagesMap = new TreeMap<>(
+			Map<String, String> map = new TreeMap<>(
 				new NaturalOrderStringComparator(true, true));
 
 			String line = null;
@@ -45,39 +45,40 @@ public class PropertiesLanguageKeysOrderCheck extends BaseFileCheck {
 				String[] array = line.split("=", 2);
 
 				if (array.length > 1) {
-					messagesMap.put(array[0], array[1]);
+					map.put(array[0], array[1]);
 
 					continue;
 				}
 
-				for (Map.Entry<String, String> entry : messagesMap.entrySet()) {
-					sb.append(entry.getKey());
-					sb.append(StringPool.EQUAL);
-					sb.append(entry.getValue());
-					sb.append("\n");
-				}
-
-				if (!messagesMap.isEmpty()) {
-					messagesMap.clear();
-				}
-
+				sb.append(_merge(map));
 				sb.append(line);
 				sb.append("\n");
 			}
 
-			for (Map.Entry<String, String> entry : messagesMap.entrySet()) {
-				sb.append(entry.getKey());
-				sb.append(StringPool.EQUAL);
-				sb.append(entry.getValue());
-				sb.append("\n");
-			}
-
-			if (!messagesMap.isEmpty()) {
-				messagesMap.clear();
-			}
+			sb.append(_merge(map));
 		}
 
 		return StringUtil.trim(sb.toString());
+	}
+
+	private String _merge(Map<String, String> map) {
+		StringBundler sb = new StringBundler(map.size() * 4);
+
+		for (Map.Entry<String, String> entry : map.entrySet()) {
+			sb.append(
+				StringUtil.replace(
+					entry.getKey(), new String[] {"–", "—"},
+					new String[] {"-", "-"}));
+			sb.append(StringPool.EQUAL);
+			sb.append(entry.getValue());
+			sb.append("\n");
+		}
+
+		if (!map.isEmpty()) {
+			map.clear();
+		}
+
+		return sb.toString();
 	}
 
 }

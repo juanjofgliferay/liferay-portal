@@ -31,6 +31,11 @@ import org.osgi.service.component.annotations.Reference;
 public class ControlPanelWorkflowMetricsPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "polls";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -52,7 +57,7 @@ public class ControlPanelWorkflowMetricsPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + WorkflowMetricsPortletKeys.WORKFLOW_METRICS + ")"
+		target = "(jakarta.portlet.name=" + WorkflowMetricsPortletKeys.WORKFLOW_METRICS + ")"
 	)
 	private Portlet _portlet;
 

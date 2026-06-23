@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Olivér Kecskeméty
@@ -47,173 +46,251 @@ public class Name implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Name.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFamilyName() {
+		if (_familyNameSupplier != null) {
+			familyName = _familyNameSupplier.get();
+
+			_familyNameSupplier = null;
+		}
+
 		return familyName;
 	}
 
 	public void setFamilyName(String familyName) {
 		this.familyName = familyName;
+
+		_familyNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFamilyName(
 		UnsafeSupplier<String, Exception> familyNameUnsafeSupplier) {
 
-		try {
-			familyName = familyNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_familyNameSupplier = () -> {
+			try {
+				return familyNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String familyName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _familyNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFormatted() {
+		if (_formattedSupplier != null) {
+			formatted = _formattedSupplier.get();
+
+			_formattedSupplier = null;
+		}
+
 		return formatted;
 	}
 
 	public void setFormatted(String formatted) {
 		this.formatted = formatted;
+
+		_formattedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFormatted(
 		UnsafeSupplier<String, Exception> formattedUnsafeSupplier) {
 
-		try {
-			formatted = formattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formattedSupplier = () -> {
+			try {
+				return formattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String formatted;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _formattedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getGivenName() {
+		if (_givenNameSupplier != null) {
+			givenName = _givenNameSupplier.get();
+
+			_givenNameSupplier = null;
+		}
+
 		return givenName;
 	}
 
 	public void setGivenName(String givenName) {
 		this.givenName = givenName;
+
+		_givenNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setGivenName(
 		UnsafeSupplier<String, Exception> givenNameUnsafeSupplier) {
 
-		try {
-			givenName = givenNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_givenNameSupplier = () -> {
+			try {
+				return givenNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String givenName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _givenNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getHonorificPrefix() {
+		if (_honorificPrefixSupplier != null) {
+			honorificPrefix = _honorificPrefixSupplier.get();
+
+			_honorificPrefixSupplier = null;
+		}
+
 		return honorificPrefix;
 	}
 
 	public void setHonorificPrefix(String honorificPrefix) {
 		this.honorificPrefix = honorificPrefix;
+
+		_honorificPrefixSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHonorificPrefix(
 		UnsafeSupplier<String, Exception> honorificPrefixUnsafeSupplier) {
 
-		try {
-			honorificPrefix = honorificPrefixUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_honorificPrefixSupplier = () -> {
+			try {
+				return honorificPrefixUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String honorificPrefix;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _honorificPrefixSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getHonorificSuffix() {
+		if (_honorificSuffixSupplier != null) {
+			honorificSuffix = _honorificSuffixSupplier.get();
+
+			_honorificSuffixSupplier = null;
+		}
+
 		return honorificSuffix;
 	}
 
 	public void setHonorificSuffix(String honorificSuffix) {
 		this.honorificSuffix = honorificSuffix;
+
+		_honorificSuffixSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHonorificSuffix(
 		UnsafeSupplier<String, Exception> honorificSuffixUnsafeSupplier) {
 
-		try {
-			honorificSuffix = honorificSuffixUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_honorificSuffixSupplier = () -> {
+			try {
+				return honorificSuffixUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String honorificSuffix;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _honorificSuffixSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getMiddleName() {
+		if (_middleNameSupplier != null) {
+			middleName = _middleNameSupplier.get();
+
+			_middleNameSupplier = null;
+		}
+
 		return middleName;
 	}
 
 	public void setMiddleName(String middleName) {
 		this.middleName = middleName;
+
+		_middleNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setMiddleName(
 		UnsafeSupplier<String, Exception> middleNameUnsafeSupplier) {
 
-		try {
-			middleName = middleNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_middleNameSupplier = () -> {
+			try {
+				return middleNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String middleName;
+
+	@JsonIgnore
+	private Supplier<String> _middleNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -242,6 +319,8 @@ public class Name implements Serializable {
 
 		sb.append("{");
 
+		String familyName = getFamilyName();
+
 		if (familyName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -255,6 +334,8 @@ public class Name implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String formatted = getFormatted();
 
 		if (formatted != null) {
 			if (sb.length() > 1) {
@@ -270,6 +351,8 @@ public class Name implements Serializable {
 			sb.append("\"");
 		}
 
+		String givenName = getGivenName();
+
 		if (givenName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -283,6 +366,8 @@ public class Name implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String honorificPrefix = getHonorificPrefix();
 
 		if (honorificPrefix != null) {
 			if (sb.length() > 1) {
@@ -298,6 +383,8 @@ public class Name implements Serializable {
 			sb.append("\"");
 		}
 
+		String honorificSuffix = getHonorificSuffix();
+
 		if (honorificSuffix != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -311,6 +398,8 @@ public class Name implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String middleName = getMiddleName();
 
 		if (middleName != null) {
 			if (sb.length() > 1) {
@@ -331,8 +420,8 @@ public class Name implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.scim.rest.dto.v1_0.Name",
 		name = "x-class-name"
 	)
@@ -378,7 +467,10 @@ public class Name implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -424,3 +516,4 @@ public class Name implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:2042668105

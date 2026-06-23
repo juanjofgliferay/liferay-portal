@@ -72,7 +72,7 @@ definition {
 	macro getSearchEngineVendor() {
 		var liferayHome = PropsUtil.get("liferay.home.dir.name");
 
-		var solrDirExists = FileUtil.exists("${liferayHome}/solr-8.11.1");
+		var solrDirExists = FileUtil.exists("${liferayHome}/solr-8.11.3");
 
 		if (${solrDirExists} == "true") {
 			return "Solr";
@@ -116,6 +116,10 @@ definition {
 
 	@summary = "Default summary"
 	macro startReindex(action = null) {
+		while ((IsElementNotPresent(locator1 = "SearchAdmin#EXECUTE_REINDEX_BUTTON")) && (maxIterations = "50")) {
+			TestUtils.hardRefresh();
+		}
+
 		Click(
 			key_action = ${action},
 			locator1 = "SearchAdmin#EXECUTE_REINDEX_BUTTON");

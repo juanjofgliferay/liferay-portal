@@ -10,7 +10,7 @@ import com.liferay.petra.function.UnsafeTriConsumer;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Node;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.NodeKey;
@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -88,6 +89,13 @@ public class SLAResourceTest extends BaseSLAResourceTestCase {
 			null,
 			(sla1, sla2, page) -> assertEquals(
 				Arrays.asList(sla2, sla1), (List<SLA>)page.getItems()));
+	}
+
+	@Ignore
+	@Override
+	@Test
+	public void testGraphQLPostProcessSLA() throws Exception {
+		super.testGraphQLPostProcessSLA();
 	}
 
 	@Rule

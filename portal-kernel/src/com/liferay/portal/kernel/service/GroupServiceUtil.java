@@ -32,32 +32,19 @@ public class GroupServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.GroupServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static Group addGroup(
-			long parentGroupId, long liveGroupId,
+			String externalReferenceCode, long parentGroupId, long liveGroupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean inheritContent,
-			boolean active, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addGroup(
-			parentGroupId, liveGroupId, nameMap, descriptionMap, type,
-			manualMembership, membershipRestriction, friendlyURL, site,
-			inheritContent, active, serviceContext);
-	}
-
-	public static Group addGroup(
-			long parentGroupId, long liveGroupId,
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean site, boolean active,
+			String typeSettings, boolean manualMembership,
+			int membershipRestriction, String friendlyURL, boolean site,
+			boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addGroup(
-			parentGroupId, liveGroupId, nameMap, descriptionMap, type,
-			manualMembership, membershipRestriction, friendlyURL, site, active,
+			externalReferenceCode, parentGroupId, liveGroupId, nameMap,
+			descriptionMap, type, typeSettings, manualMembership,
+			membershipRestriction, friendlyURL, site, inheritContent, active,
 			serviceContext);
 	}
 
@@ -169,6 +156,14 @@ public class GroupServiceUtil {
 		throws PortalException {
 
 		return getService().getGroup(companyId, groupKey);
+	}
+
+	public static Group getGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -645,13 +640,14 @@ public class GroupServiceUtil {
 			long groupId, long parentGroupId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, int type,
-			boolean manualMembership, int membershipRestriction,
-			String friendlyURL, boolean inheritContent, boolean active,
+			String typeSettings, boolean manualMembership,
+			int membershipRestriction, String friendlyURL,
+			boolean inheritContent, boolean active,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateGroup(
-			groupId, parentGroupId, nameMap, descriptionMap, type,
+			groupId, parentGroupId, nameMap, descriptionMap, type, typeSettings,
 			manualMembership, membershipRestriction, friendlyURL,
 			inheritContent, active, serviceContext);
 	}
@@ -689,3 +685,4 @@ public class GroupServiceUtil {
 	private static volatile GroupService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:545048214

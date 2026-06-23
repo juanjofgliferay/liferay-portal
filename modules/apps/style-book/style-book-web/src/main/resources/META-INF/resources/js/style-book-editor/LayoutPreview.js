@@ -8,6 +8,7 @@ import ClayLoadingIndicator from '@clayui/loading-indicator';
 import classNames from 'classnames';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 
+import {config} from './config';
 import {LAYOUT_TYPES} from './constants/layoutTypes';
 import {
 	useLoading,
@@ -34,14 +35,12 @@ export default React.memo(function LayoutPreview() {
 			if (root) {
 				root.removeAttribute('style');
 
-				Object.values(frontendTokensValues).forEach(
-					({cssVariableMapping, value}) => {
-						root.style.setProperty(
-							`--${cssVariableMapping}`,
-							value
-						);
-					}
-				);
+				for (const {
+					cssVariableMapping,
+					value,
+				} of config.sortFrontendTokenValues(frontendTokensValues)) {
+					root.style.setProperty(`--${cssVariableMapping}`, value);
+				}
 
 				setLoading(false);
 			}
@@ -92,7 +91,7 @@ export default React.memo(function LayoutPreview() {
 						description={Liferay.Language.get(
 							'you-cannot-preview-the-style-book-because-your-site-is-empty'
 						)}
-						imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.gif`}
+						imgSrc={`${themeDisplay.getPathThemeImages()}/states/empty_state.svg`}
 						title={Liferay.Language.get('no-results-found')}
 					/>
 				)}
@@ -126,6 +125,8 @@ function loadOverlay(iframeRef, previewLayoutType) {
 
 		if (iframeRef.current) {
 			const overlay = document.createElement('div');
+
+			overlay.setAttribute('data-qa-id', 'styleBookPreviewOverlay');
 
 			Object.keys(style).forEach((key) => {
 				overlay.style[key] = style[key];

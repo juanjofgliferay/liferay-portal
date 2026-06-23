@@ -2,7 +2,7 @@ import * as data from 'test/data';
 import OutputVersionsCard from '../OutputVersionsCard';
 import React from 'react';
 import {JobRunFrequencies, JobRunStatuses} from 'shared/util/constants';
-import {MockedProvider} from '@apollo/react-testing';
+import {MockedProvider} from '@apollo/client/testing';
 import {mockRecommendationJobRunsReq} from 'test/graphql-data';
 import {render} from '@testing-library/react';
 import {waitForLoading} from 'test/helpers';
@@ -29,8 +29,8 @@ describe('OutputVersionsCard', () => {
 				]}
 			>
 				<OutputVersionsCard
+					jobId='321'
 					nextRunDate={new Date()}
-					router={{params: {jobId: '321'}}}
 					runFrequency={JobRunFrequencies.Every14Days}
 				/>
 			</MockedProvider>
@@ -62,7 +62,6 @@ describe('OutputVersionsCard', () => {
 				]}
 			>
 				<OutputVersionsCard
-					router={{params: {jobId: '321'}}}
 					runFrequency={JobRunFrequencies.Every14Days}
 				/>
 			</MockedProvider>

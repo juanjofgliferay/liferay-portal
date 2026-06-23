@@ -1,14 +1,19 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		JSONDepot.addDepot(
 			depotDescription = "This is the description of a depot",
@@ -50,414 +55,6 @@ definition {
 		}
 	}
 
-	@description = "This ensures that the image in depot can be removed and republished in Blogs cover image when enabling local staging."
-	@priority = 4
-	@refactordone
-	test CanDeleteBlogCoverImage {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Blogs.addEntryWithCoverImageFromDepot(
-			depotName = "Test Depot Name",
-			entryContent = "Blogs Entry Content",
-			entrySubtitle = "Blogs Entry Subtitle",
-			entryTitle = "Blogs Entry Title",
-			imageFileName = "Document_2.jpg",
-			siteURLKey = "site-name-staging");
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewCoverImage(uploadFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.deleteCP(dmDocumentTitle = "Document_2.jpg");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_2.jpg",
-			assetType = "Document");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewCoverImage(uploadFileName = "Document_2.jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewCoverImage(uploadFileName = "Document_2.jpg");
-	}
-
-	@description = "This ensures that the image in depot can be removed and republished in Blogs inline image when enabling local staging."
-	@priority = 4
-	@refactordone
-	test CanDeleteBlogInlineImage {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		BlogsNavigator.openToAddEntry(siteURLKey = "site-name-staging");
-
-		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addContentWithInlineImage(
-			depotName = "Test Depot Name",
-			entryContent = "Blogs Entry Content",
-			imageFileName = "Document_2.jpg",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_2-jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.deleteCP(dmDocumentTitle = "Document_2.jpg");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_2.jpg",
-			assetType = "Document");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name-staging");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_2-jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_2-jpg");
-	}
-
-	@description = "This ensures that the blog small image from a depot can be removed and republished when enabling local staging."
-	@priority = 4
-	@refactordone
-	test CanDeleteBlogSmallImage {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_1.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_1.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToAddEntry(siteURLKey = "site-name-staging");
-
-		BlogsEntry.addEntryContent(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addSmallImage(
-			depotName = "Test Depot Name",
-			imageFileName = "Document_1.jpg",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_1.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.deleteCP(dmDocumentTitle = "Document_1.jpg");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_1.jpg",
-			assetType = "Document");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_1.jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_1.jpg");
-	}
-
-	@description = "This ensures that image in depot can be removed and republished in AP through widget config manual selection when enabling local staging. Skip the instance for performance improvement."
-	@e2e
-	@priority = 5
-	@refactordone
-	test CanDeleteDMImage {
-		property portal.acceptance = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Asset Publisher");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.configureManualAssetSelectionPG(
-			assetTitle = "Document_2.jpg",
-			assetType = "Basic Document",
-			depotName = "Test Depot Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.deleteCP(dmDocumentTitle = "Document_2.jpg");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_2.jpg",
-			assetType = "Document");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetNotPresentPG(assetTitle = "Document_2.jpg");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-	}
-
-	@description = "This ensures that a document in depot can be removed and republished in AP through widget config manual selection when enabling local staging. Skip the instance for performance improvement."
-	@priority = 5
-	@refactordone
-	test CanDeleteDocument {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_1.doc",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Asset Publisher");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.configureManualAssetSelectionPG(
-			assetTitle = "Document_1.doc",
-			assetType = "Basic Document",
-			depotName = "Test Depot Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_1.doc");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.deleteCP(dmDocumentTitle = "Document_1.doc");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_1.doc",
-			assetType = "Document");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetNotPresentPG(assetTitle = "Document_1.doc");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetNotPresentPG(assetTitle = "Document_1.doc");
-	}
-
 	@description = "This ensures that custom field in document from depot can be deleted and republished in the site when enabling local staging. Skip the instance for performance improvement."
 	@priority = 4
 	@refactordone
@@ -465,10 +62,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -637,15 +231,23 @@ definition {
 		OpenGraph.viewNoPreviewImage(imageName = "Document_2.jpg");
 	}
 
-	@description = "This ensures that video shortcut in depot can be deleted and republished in Blogs when enabling local staging."
-	@priority = 4
+	@description = "This ensures that an image in depot can be replaced or removed and republished in AP through widget config manual selection when enabling local staging. Skip the instance for performance improvement."
+	@e2e
+	@priority = 5
 	@refactordone
-	test CanDeleteVideoShortcut {
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
+	test CanEditAndDeleteDMImage {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		VideoShortcut.addCP(
-			videoShortcutTitle = "Test YouTube Video",
-			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Document_2.jpg",
+			groupName = "Test Depot Name-staging",
+			mimeType = "image/jpeg",
+			sourceFileName = "Document_2.jpg");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
 
 		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
 
@@ -655,95 +257,104 @@ definition {
 			groupName = "Site Name (Staging)",
 			layoutName = "Test Page",
 			site = "false",
-			widgetName = "Blogs");
+			widgetName = "Asset Publisher");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Test Page",
 			siteName = "Site Name");
 
-		Blogs.addEntry(
-			depotName = "Test Depot Name",
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title",
-			navTab = "Documents and Media",
-			videoShortcutTitle = "Test YouTube Video");
+		AssetPublisherPortlet.configureManualAssetSelectionPG(
+			assetTitle = "Document_2.jpg",
+			assetType = "Basic Document",
+			depotName = "Test Depot Name");
 
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name-staging");
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
 
-		BlogsEntry.viewEntryPG(
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title");
+		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.jpg");
 
 		Staging.gotoPublishToLive();
 
 		Staging.publishToLive();
 
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
+		Navigator.openSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
 
-		BlogsEntry.viewEntryPG(
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title");
+		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.jpg");
 
 		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
 
-		DMDocument.deleteCP(dmDocumentTitle = "Test YouTube Video");
+		DMDocument.editCP(
+			dmDocumentFileEdit = "Document_1.jpg",
+			dmDocumentTitle = "Document_2.jpg",
+			dmDocumentTitleEdit = "Document_1.jpg");
+
+		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
+
+		Staging.publishToLive();
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_1.jpg");
+
+		Navigator.openSiteURL(siteName = "Site Name");
+
+		Navigator.gotoStagedView();
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		Navigator.openSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_1.jpg");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
+
+		DMDocument.deleteCP(dmDocumentTitle = "Document_1.jpg");
 
 		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
 
 		RecycleBin.deleteCP(
-			assetName = "Test YouTube Video",
+			assetName = "Document_1.jpg",
 			assetType = "Document");
 
 		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
 
 		Staging.publishToLive();
 
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name-staging");
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
 
-		BlogsEntry.viewEntryPG(
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title");
+		AssetPublisherPortlet.viewAssetNotPresentPG(assetTitle = "Document_1.jpg");
 
-		Staging.gotoPublishToLive();
+		Navigator.openSiteURL(siteName = "Site Name");
 
-		Staging.publishToLive();
-
-		WaitForPageLoad();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewEntryPG(
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title");
+		Navigator.gotoStagedView();
 	}
 
-	@description = "This ensures that the image in depot can be removed and republished in web content when enabling local staging."
+	@description = "This ensures that the image in depot can be replaced or removed and republished in web content when enabling local staging. Skip the instance for performance improvement."
 	@priority = 5
 	@refactordone
-	test CanDeleteWCImage {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_1.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_1.jpg");
+	test CanEditAndDeleteWCImage {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		for (var num : list "1,2") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentTitle = "Document_${num}.jpg",
+				groupName = "Test Depot Name-staging",
+				mimeType = "image/jpeg",
+				sourceFileName = "Document_${num}.jpg");
+		}
 
 		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
 
@@ -775,7 +386,7 @@ definition {
 			webContentImage = "Document_1.jpg",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "Site Name (Staging)",
@@ -803,14 +414,45 @@ definition {
 			imageFileName = "Document_1.jpg",
 			webContentTitle = "Web Content Title");
 
+		WebContentNavigator.openToEditWCInSite(
+			groupName = "Site Name (Staging)",
+			site = "false",
+			siteURLKey = "site-name",
+			staging = "true",
+			webContentTitle = "Web Content Title");
+
+		WebContent.editCP(
+			depotName = "Test Depot Name",
+			imageFileName = "Document_2.jpg",
+			navTab = "Documents and Media",
+			webContentImage = "Document_2.jpg",
+			webContentTitle = "Web Content Title",
+			webContentTitleEdit = "Web Content Title");
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		WebContentDisplayPortlet.viewContent(
+			imageFileName = "Document_2.jpg",
+			webContentTitle = "Web Content Title");
+
 		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
 
-		DMDocument.deleteCP(dmDocumentTitle = "Document_1.jpg");
+		DMDocument.deleteCP(dmDocumentTitle = "Document_2.jpg");
 
 		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
 
 		RecycleBin.deleteCP(
-			assetName = "Document_1.jpg",
+			assetName = "Document_2.jpg",
 			assetType = "Document");
 
 		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
@@ -832,7 +474,7 @@ definition {
 			siteName = "Site Name");
 
 		AssertElementNotPresent(
-			key_imageFileName = "Document_1.jpg",
+			key_imageFileName = "Document_2.jpg",
 			key_webContentTitle = "Web Content Title",
 			locator1 = "WCD#WEB_CONTENT_IMAGE");
 	}
@@ -931,738 +573,6 @@ definition {
 			siteName = "Site Name");
 
 		BlogsEntry.viewCoverImage(uploadFileName = "Document_1.jpg");
-	}
-
-	@description = "This ensures that the blog inline image from a depot can be edited and republished when enabling local staging."
-	@priority = 4
-	@refactordone
-	test CanEditBlogInlineImage {
-		for (var num : list "1,2") {
-			JSONDocument.addFileWithUploadedFile(
-				dmDocumentDescription = "DM Document Description",
-				dmDocumentTitle = "Document_${num}.jpg",
-				groupName = "Test Depot Name-staging",
-				mimeType = "image/jpeg",
-				sourceFileName = "Document_${num}.jpg");
-		}
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		BlogsNavigator.openToAddEntry(siteURLKey = "site-name-staging");
-
-		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addContentWithInlineImage(
-			depotName = "Test Depot Name",
-			entryContent = "Blogs Entry Content",
-			imageFileName = "Document_2.jpg",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name-staging");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_2-jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_2-jpg");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Portlet.mouseOverPortletTitle(portletTitleName = "Blogs");
-
-		Blogs.clickEllipsisItemPG(
-			entryTitle = "Blogs Entry Title",
-			item = "Edit");
-
-		ItemSelector.gotoItemSelectorViaAlloyEditor();
-
-		ItemSelector.selectRepositoryImage(
-			depotName = "Test Depot Name",
-			imageFileName = "Document_1.jpg",
-			navTab = "Documents and Media");
-
-		Button.clickPublish();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name-staging");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_1-jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "document_1-jpg");
-	}
-
-	@description = "This ensures that the blog small image from a depot can be edited and republished when enabling local staging."
-	@priority = 4
-	@refactordone
-	test CanEditBlogSmallImage {
-		for (var num : list "1,2") {
-			JSONDocument.addFileWithUploadedFile(
-				dmDocumentDescription = "DM Document Description",
-				dmDocumentTitle = "Document_${num}.jpg",
-				groupName = "Test Depot Name-staging",
-				mimeType = "image/jpeg",
-				sourceFileName = "Document_${num}.jpg");
-		}
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		BlogsNavigator.openToAddEntry(siteURLKey = "site-name-staging");
-
-		BlogsEntry.addEntryContent(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addSmallImage(
-			depotName = "Test Depot Name",
-			imageFileName = "Document_1.jpg",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_1.jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_1.jpg");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsNavigator.gotoEditPG(entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addSmallImage(
-			browseImage = "true",
-			depotName = "Test Depot Name",
-			imageFileName = "Document_2.jpg",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_2.jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_2.jpg");
-	}
-
-	@description = "This ensures that an image in depot can be replaced and republished in AP through widget config manual selection when enabling local staging. Skip the instance for performance improvement."
-	@priority = 4
-	@refactordone
-	test CanEditDMImage {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Asset Publisher");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.configureManualAssetSelectionPG(
-			assetTitle = "Document_2.jpg",
-			assetType = "Basic Document",
-			depotName = "Test Depot Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.jpg");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_1.jpg",
-			dmDocumentTitle = "Document_2.jpg",
-			dmDocumentTitleEdit = "Document_1.jpg");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_1.jpg");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_1.jpg");
-	}
-
-	@description = "This ensures that document in depot can be replaced and republished in AP through widget config manual selection when enabling local staging. Skip the instance for performance improvement."
-	@priority = 5
-	@refactordone
-	test CanEditDocument {
-		property portal.acceptance = "true";
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_2.doc",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_2.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Asset Publisher");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.configureManualAssetSelectionPG(
-			assetTitle = "Document_2.doc",
-			assetType = "Basic Document",
-			depotName = "Test Depot Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.doc");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_2.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_3.doc",
-			dmDocumentTitle = "Document_2.doc",
-			dmDocumentTitleEdit = "Document_3.doc");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_3.doc");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.viewAssetPG(assetTitle = "Document_3.doc");
-	}
-
-	@description = "This ensures that the custom field in document from depot can be edited and republished in the site when enabling local staging. Skip the instance for performance improvement."
-	@priority = 4
-	@refactordone
-	test CanEditDocumentWithCustomField {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
-
-		CustomFields.addCP(
-			customFieldName = "Text Field",
-			customFieldType = "Input Field",
-			customInputDataType = "Text",
-			resourceName = "Document");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.addCP(
-			customFieldText = "This is my document",
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentFile = "Document_1.doc",
-			dmDocumentTitle = "DM Document Title");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Asset Publisher");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.configureManualAssetSelectionPG(
-			assetTitle = "DM Document Title",
-			assetType = "Basic Document",
-			depotName = "Test Depot Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPGViaAP(
-			customFieldName = "Text Field",
-			customFieldValue = "This is my document",
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "DM Document Title");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.editCP(
-			customFieldTextEdit = "This is my document edit",
-			dmDocumentDescriptionEdit = "DM Document Description Edit",
-			dmDocumentTitle = "DM Document Title",
-			dmDocumentTitleEdit = "DM Document Title Edit");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPGViaAP(
-			customFieldName = "Text Field",
-			customFieldValue = "This is my document edit",
-			dmDocumentDescription = "DM Document Description Edit",
-			dmDocumentTitle = "DM Document Title Edit");
-	}
-
-	@description = "This ensures that an edited internal video in depot can be republished on a connected staging site with enabling FFmpeg."
-	@priority = 4
-	@refactordone
-	test CanEditInternalVideo {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		DMNavigator.openToConfigInSystemSettings(portlet = "FFMPEG Video Converter");
-
-		FormFields.enableCheckbox(fieldName = "enabled");
-
-		SystemSettings.saveConfiguration();
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "DM Video Title In Depot",
-			groupName = "Test Depot Name-staging",
-			mimeType = "video/mp4",
-			sourceFileName = "Document_1.mp4");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Asset Publisher");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		AssetPublisherPortlet.configureManualAssetSelectionPG(
-			assetTitle = "DM Video Title In Depot",
-			assetType = "Basic Document",
-			depotName = "Test Depot Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		while (IsElementNotPresent(key_thumbnailName = "Document_1.mp4", locator1 = "AP#ASSET_ABSTRACT_DETAIL_EXTERNAL_VIDEO_THUMBNAIL")) {
-			Refresh();
-		}
-
-		AssetPublisherPortlet.viewVideoThumbnail(thumbnailName = "Document_1.mp4");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		while (IsElementNotPresent(key_thumbnailName = "Document_1.mp4", locator1 = "AP#ASSET_ABSTRACT_DETAIL_EXTERNAL_VIDEO_THUMBNAIL")) {
-			Refresh();
-		}
-
-		AssetPublisherPortlet.viewVideoThumbnail(thumbnailName = "Document_1.mp4");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_2.mp4",
-			dmDocumentFileNameEdit = "Document_2.mp4",
-			dmDocumentTitle = "DM Video Title In Depot",
-			dmDocumentTitleEdit = "DM Video Title In Depot Edit");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		while (IsElementNotPresent(key_thumbnailName = "Document_2.mp4", locator1 = "AP#ASSET_ABSTRACT_DETAIL_EXTERNAL_VIDEO_THUMBNAIL")) {
-			Refresh();
-		}
-
-		AssetPublisherPortlet.viewVideoThumbnail(thumbnailName = "Document_2.mp4");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		Navigator.gotoStagedView();
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		while (IsElementNotPresent(key_thumbnailName = "Document_2.mp4", locator1 = "AP#ASSET_ABSTRACT_DETAIL_EXTERNAL_VIDEO_THUMBNAIL")) {
-			Refresh();
-		}
-
-		AssetPublisherPortlet.viewVideoThumbnail(thumbnailName = "Document_2.mp4");
-	}
-
-	@description = "This ensures that the open graph image from a depot can be edited and republished when enabling local staging."
-	@priority = 4
-	@refactordone
-	test CanEditOpenGraphImage {
-		for (var num : list "1,2") {
-			JSONDocument.addFileWithUploadedFile(
-				dmDocumentDescription = "DM Document Description",
-				dmDocumentTitle = "Document_${num}.jpg",
-				groupName = "Test Depot Name-staging",
-				mimeType = "image/jpeg",
-				sourceFileName = "Document_${num}.jpg");
-		}
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.openToGroupPagesPortlet(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			portlet = "Open Graph",
-			site = "false",
-			siteURLKey = "site-name-staging");
-
-		OpenGraph.configureOpenGraph(
-			customImage = "true",
-			depotName = "Test Depot Name",
-			uploadFileName = "Document_1.jpg");
-
-		OpenGraph.viewPreviewImage(imageName = "Document_1.jpg");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openToGroupPagesPortlet(
-			groupName = "Site Name",
-			layoutName = "Test Page",
-			portlet = "Open Graph",
-			siteURLKey = "site-name");
-
-		OpenGraph.viewPreviewImage(imageName = "Document_1.jpg");
-
-		Navigator.openToGroupPagesPortlet(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			portlet = "Open Graph",
-			site = "false",
-			siteURLKey = "site-name-staging");
-
-		OpenGraph.configureOpenGraph(
-			customImage = "true",
-			depotName = "Test Depot Name",
-			navTab = "Documents and Media",
-			uploadFileName = "Document_2.jpg");
-
-		OpenGraph.viewPreviewImage(imageName = "Document_2.jpg");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openToGroupPagesPortlet(
-			groupName = "Site Name",
-			layoutName = "Test Page",
-			portlet = "Open Graph",
-			siteURLKey = "site-name");
-
-		OpenGraph.viewPreviewImage(imageName = "Document_2.jpg");
-	}
-
-	@description = "This ensures that the image in depot can be replaced and republished in web content when enabling local staging. Skip the instance for performance improvement."
-	@priority = 4
-	@refactordone
-	test CanEditWCImage {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		for (var num : list "1,2") {
-			JSONDocument.addFileWithUploadedFile(
-				dmDocumentDescription = "DM Document Description",
-				dmDocumentTitle = "Document_${num}.jpg",
-				groupName = "Test Depot Name-staging",
-				mimeType = "image/jpeg",
-				sourceFileName = "Document_${num}.jpg");
-		}
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
-
-		NavItem.gotoStructures();
-
-		WebContentStructures.addCP(structureName = "WC Structure Name");
-
-		DataEngine.addField(
-			fieldFieldLabel = "Image",
-			fieldName = "Image");
-
-		WebContentStructures.saveCP(structureName = "WC Structure Name");
-
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
-
-		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
-
-		WebContent.addWithStructureCP(
-			depotName = "Test Depot Name",
-			imageFileName = "Document_1.jpg",
-			navTab = "Documents and Media",
-			structureName = "WC Structure Name",
-			webContentImage = "Document_1.jpg",
-			webContentTitle = "Web Content Title");
-
-		PortletEntry.publish();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Web Content Display");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		WebContentDisplayPortlet.selectWebContent(webContentTitle = "Web Content Title");
-
-		IFrame.closeFrame();
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		WebContentDisplayPortlet.viewContent(
-			imageFileName = "Document_1.jpg",
-			webContentTitle = "Web Content Title");
-
-		WebContentNavigator.openToEditWCInSite(
-			groupName = "Site Name (Staging)",
-			site = "false",
-			siteURLKey = "site-name",
-			staging = "true",
-			webContentTitle = "Web Content Title");
-
-		WebContent.editCP(
-			depotName = "Test Depot Name",
-			imageFileName = "Document_2.jpg",
-			navTab = "Documents and Media",
-			webContentImage = "Document_2.jpg",
-			webContentTitle = "Web Content Title",
-			webContentTitleEdit = "Web Content Title");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		WebContentDisplayPortlet.viewContent(
-			imageFileName = "Document_2.jpg",
-			webContentTitle = "Web Content Title");
 	}
 
 	@description = "This ensures that a document pending review cannot be searched for in a staged site when enabling local staging."
@@ -1891,88 +801,6 @@ definition {
 		DMDocument.viewPG(dmDocumentTitle = "DM Document Title");
 	}
 
-	@description = "This ensures that a document stored in a DM folder of asset library can be deleted and republished in DM widget when local staging is enabled."
-	@priority = 4
-	test CanPublishDeletedDocumentFromFolderViaWidget {
-		JSONFolder.addFolder(
-			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "Document_1.doc",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			dmRootFolderName = "Depot Folder Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		JSONDocument.moveToRecycleBin(
-			dmDocumentTitle = "Document_1.doc",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name (Staging)",
-			site = "false",
-			stagingDepotName = "Test Depot Name");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_1.doc",
-			assetType = "Document");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewDefault();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewDefault();
-	}
-
 	@description = "This ensures that a document stored in an asset library can be deleted and republished in DM widget when local staging is enabled."
 	@priority = 4
 	test CanPublishDeletedDocumentViaWidget {
@@ -2020,162 +848,6 @@ definition {
 
 		RecycleBin.deleteCP(
 			assetName = "Document_1.doc",
-			assetType = "Document");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewDefault();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewDefault();
-	}
-
-	@description = "This ensures that an image stored in a DM folder of asset library can be deleted and republished in DM widget when local staging is enabled."
-	@priority = 4
-	test CanPublishDeletedImageFromFolderViaWidget {
-		JSONFolder.addFolder(
-			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "Document_2.jpg",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			dmRootFolderName = "Depot Folder Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		JSONDocument.moveToRecycleBin(
-			dmDocumentTitle = "Document_2.jpg",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name (Staging)",
-			site = "false",
-			stagingDepotName = "Test Depot Name");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_2.jpg",
-			assetType = "Document");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewDefault();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewDefault();
-	}
-
-	@description = "This ensures that an image stored in an asset library can be deleted and republished in DM widget when local staging is enabled."
-	@priority = 4
-	test CanPublishDeletedImageViaWidget {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			selectRootFolder = "true");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		JSONDocument.moveToRecycleBin(
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name (Staging)",
-			site = "false");
-
-		DepotNavigator.openDepotRecycleBinAdminStaging(depotName = "Test Depot Name");
-
-		RecycleBin.deleteCP(
-			assetName = "Document_2.jpg",
 			assetType = "Document");
 
 		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
@@ -2360,421 +1032,6 @@ definition {
 		AssetPublisherPortlet.viewAssetDetailsPG(
 			assetContent = "1 Document",
 			assetTitle = "DM Folder Name");
-	}
-
-	@description = "This ensures that a document stored in a DM folder of asset library can be published in DM widget when local staging is enabled."
-	@priority = 4
-	test CanPublishDocumentFromFolderViaWidget {
-		JSONFolder.addFolder(
-			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "DM Document Title",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			dmRootFolderName = "Depot Folder Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "DM Document Title");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "DM Document Title");
-	}
-
-	@description = "This ensures that a document stored in an asset library can be published in DM widget when local staging is enabled."
-	@priority = 5
-	test CanPublishDocumentViaWidget {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			selectRootFolder = "true");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "DM Document Title");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "DM Document Title");
-	}
-
-	@description = "This ensures that a document stored in a DM folder of asset library can be edited and republished in DM widget when local staging is enabled. Skip the instance for performance improvement."
-	@priority = 4
-	test CanPublishEditedDocumentFromFolderViaWidget {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONFolder.addFolder(
-			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "Document_1.doc",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			dmRootFolderName = "Depot Folder Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openToDMFolder(
-			depotName = "Test Depot Name",
-			folderName = "Depot Folder Name",
-			staging = "true");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_2.doc",
-			dmDocumentFileNameEdit = "Document_2.doc",
-			dmDocumentTitle = "Document_1.doc",
-			dmDocumentTitleEdit = "Document_2.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_2.doc");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_2.doc");
-	}
-
-	@description = "This ensures that a document stored in an asset library can be edited and republished in DM widget when local staging is enabled. Skip the instance for performance improvement."
-	@priority = 4
-	test CanPublishEditedDocumentViaWidget {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Description",
-			dmDocumentTitle = "Document_1.doc",
-			groupName = "Test Depot Name-staging",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			selectRootFolder = "true");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_2.doc",
-			dmDocumentFileNameEdit = "Document_2.doc",
-			dmDocumentTitle = "Document_1.doc",
-			dmDocumentTitleEdit = "Document_2.doc");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_2.doc");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_2.doc");
-	}
-
-	@description = "This ensures that an image stored in a DM folder of asset library can be edited and republished in DM widget when local staging is enabled. Skip the instance for performance improvement."
-	@priority = 4
-	test CanPublishEditedImageFromFolderViaWidget {
-		property test.liferay.virtual.instance = "false";
-		property test.run.type = "single";
-
-		JSONFolder.addFolder(
-			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging");
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Image Description",
-			dmDocumentTitle = "Document_2.jpg",
-			folderName = "Depot Folder Name",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			dmRootFolderName = "Depot Folder Name");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openToDMFolder(
-			depotName = "Test Depot Name",
-			folderName = "Depot Folder Name",
-			staging = "true");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_1.jpeg",
-			dmDocumentFileNameEdit = "Document_1.jpeg",
-			dmDocumentTitle = "Document_2.jpg",
-			dmDocumentTitleEdit = "Document_1.jpeg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_1.jpeg");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_1.jpeg");
-	}
-
-	@description = "This ensures that a image stored in an asset library can be edited and republished in DM widget when local staging is enabled."
-	@priority = 4
-	test CanPublishEditedImageViaWidget {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Image Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Documents and Media");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.setRootFolder(
-			depotName = "Test Depot Name",
-			selectRootFolder = "true");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DMDocument.editCP(
-			dmDocumentFileEdit = "Document_1.png",
-			dmDocumentFileNameEdit = "Document_1.png",
-			dmDocumentTitle = "Document_2.jpg",
-			dmDocumentTitleEdit = "Document_1.png");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_1.png");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		DMDocument.viewPG(dmDocumentTitle = "Document_1.png");
 	}
 
 	@description = "This ensures that the folders stored in different asset libraries can be changed and republished in DM widget when local staging is enabled. Skip the instance for performance improvement."
@@ -3063,10 +1320,7 @@ definition {
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -3207,72 +1461,6 @@ definition {
 			key_assetTitle = "Document_2.jpg",
 			locator1 = "AP#ASSET_ABSTRACT_DESCRIPTION",
 			value1 = "This is an edit DM Document Description");
-	}
-
-	@description = "This ensures that the latest version of an image in a depot can be published in blogs when local staging is enabled."
-	@priority = 5
-	@refactordone
-	test CanPublishImageWithLatestVersionInBlogs {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "Document_2.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Staging");
-
-		DepotNavigator.gotoPortlet(portlet = "Documents and Media");
-
-		DMDocument.editCP(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentDescriptionEdit = "Edit DM Document Description",
-			dmDocumentTitle = "Document_2.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Staging");
-
-		DepotNavigator.gotoPortlet(portlet = "Documents and Media");
-
-		DMDocument.editCP(
-			dmDocumentDescription = "Edit DM Document Description",
-			dmDocumentDescriptionEdit = "This is an edit DM Document Description",
-			dmDocumentTitle = "Document_2.jpg");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Blogs.addEntryWithCoverImageFromDepot(
-			depotName = "Test Depot Name",
-			entryContent = "Blogs Entry Content",
-			entrySubtitle = "Blogs Entry Subtitle",
-			entryTitle = "Blogs Entry Title",
-			imageFileName = "Document_2.jpg",
-			siteURLKey = "site-name-staging");
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.openSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewCoverImage(uploadFileName = "Document_2.jpg");
 	}
 
 	@description = "This ensures that the thumbnail of a video shortcut in depot can be published through AP when enabling local staging. Skip the instance for performance improvement."
@@ -3479,152 +1667,6 @@ definition {
 		BlogsEntry.viewCoverImage(uploadFileName = "Document_1.jpg");
 	}
 
-	@description = "This test covers LPS-154421. It ensures that an image with a custom friendlyURL can be correctly rendered in the Blogs small image field on a site after its friendlyURL is edited and published from an asset library."
-	@priority = 3
-	test CanViewBlogsSmallImageAfterFriendlyURLIsUpdated {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Image Description",
-			dmDocumentTitle = "Document_1.jpg",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_1.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsNavigator.openToAddEntry(siteURLKey = "site-name-staging");
-
-		BlogsEntry.addEntryContent(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addSmallImage(
-			depotName = "Test Depot Name",
-			imageFileName = "Document_1.jpg",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openToEditDMEntryInDepot(
-			depotName = "Test Depot Name",
-			dmDocumentTitle = "Document_1.jpg",
-			staging = "true");
-
-		DMDocument.editFriendlyURL(friendlyURLEdit = "new-custom-url");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		Navigator.gotoSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		BlogsEntry.viewSmallImage(uploadFileName = "Document_1.jpg");
-	}
-
-	@description = "This test covers LPS-154419. It validates that an external video with a custom friendlyURL can be correctly rendered in the Blog content field on a site after its friendlyURL is edited and published from an asset library"
-	@priority = 5
-	test CanViewExternalVideoFromBlogsContentFieldAfterFriendlyURLIsUpdated {
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		VideoShortcut.addCP(
-			videoShortcutTitle = "Test YouTube Video",
-			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Blogs.addEntry(
-			depotName = "Test Depot Name",
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title",
-			navTab = "Documents and Media",
-			videoShortcutTitle = "Test YouTube Video");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openToEditDMEntryInDepot(
-			depotName = "Test Depot Name",
-			dmDocumentTitle = "Test YouTube Video",
-			staging = "true");
-
-		DMDocument.editFriendlyURL(
-			dmDocumentTitle = "Test YouTube Video",
-			friendlyURLEdit = "document_1_edit");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewEntryPG(
-			embedVideo = "true",
-			entryContent = "video",
-			entryTitle = "Blogs Entry Title");
-	}
-
 	@description = "This test covers LPS-154426. This ensures that an external video with a custom friendlyURL added to the Web content field can be rendered properly on a site after its friendlyURL is edited and published from an asset library"
 	@priority = 4
 	test CanViewExternalVideotInWCAfterFriendlyURLIsUpdated {
@@ -3657,7 +1699,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Test Page",
@@ -3691,61 +1733,6 @@ definition {
 		WebContent.viewVideoPreview(service = "youtube");
 	}
 
-	@description = "This test covers LPS-154401. This ensures that an external video with a custom friendlyURL can be published from an asset library and rendered correctly in the Web content field on a site."
-	@priority = 4
-	test CanViewExternalVideotInWCAfterPublish {
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		VideoShortcut.addCP(
-			videoShortcutTitle = "Test YouTube Video",
-			videoURL = "https://www.youtube.com/watch?v=HOdbzGCI5ME");
-
-		DepotNavigator.openToEditDMEntryInDepot(
-			depotName = "Test Depot Name",
-			dmDocumentTitle = "Test YouTube Video",
-			staging = "true");
-
-		DMDocument.editFriendlyURL(
-			dmDocumentTitle = "Test YouTube Video",
-			friendlyURLEdit = "custom-url");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		WebContentNavigator.openToAddBasicArticle(
-			groupName = "Site Name (Staging)",
-			site = "false",
-			siteURLKey = "site-name-staging");
-
-		WebContent.addCP(
-			depotName = "Test Depot Name",
-			embedVideo = "true",
-			navTab = "Documents and Media",
-			videoShortcutTitle = "Test YouTube Video",
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
-
-		PortletEntry.publish();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
-
-		WebContent.viewVideoPreview(
-			liveSite = "true",
-			service = "https://www.youtube.com",
-			webContentTitle = "WC WebContent Title");
-	}
-
 	@description = "This ensures that a depot image can be displayed in the Blog's item selector after scoped everywhere filter when enabling local staging, also covers LPS-122243."
 	@priority = 4
 	@refactordone
@@ -3770,77 +1757,6 @@ definition {
 		ItemSelector.viewEverywhereFilterResults(
 			imageFileName = "Document_2.jpg",
 			navTab = "Documents and Media");
-	}
-
-	@description = "This test covers LPS-154418. It validates that an image with a custom friendlyURL can be correctly rendered in the Blog content field on a site after its friendlyURL is edited and published from an asset library"
-	@priority = 4
-	test CanViewImageFromBlogsContentFieldAfterFriendlyURLIsUpdated {
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Test Depot Name-staging",
-			mimeType = "image/jpeg",
-			sourceFileName = "Document_1.jpg");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name (Staging)",
-			layoutName = "Test Page",
-			site = "false",
-			widgetName = "Blogs");
-
-		BlogsNavigator.openToAddEntry(siteURLKey = "site-name-staging");
-
-		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
-
-		BlogsEntry.addContentWithInlineImage(
-			depotName = "Test Depot Name",
-			entryContent = "Blogs Entry Content",
-			imageFileName = "DM Document Title",
-			navTab = "Documents and Media");
-
-		PortletEntry.publish();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		DepotNavigator.openToEditDMEntryInDepot(
-			depotName = "Test Depot Name",
-			dmDocumentTitle = "DM Document Title",
-			staging = "true");
-
-		DMDocument.editFriendlyURL(friendlyURLEdit = "document_1_edit");
-
-		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
-
-		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
-
-		Staging.publishToLive();
-
-		Navigator.gotoStagedSitePage(
-			pageName = "Test Page",
-			siteName = "Site Name");
-
-		Staging.gotoPublishToLive();
-
-		Staging.publishToLive();
-
-		BlogsNavigator.openToBlogEntry(
-			entryTitle = "Blogs Entry Title",
-			layoutName = "Test Page",
-			siteURLKey = "site-name");
-
-		BlogsEntry.viewInlineImage(uploadFileName = "dm-document-title");
 	}
 
 	@description = "This test covers LPS-154422. It ensures that an image with a custom friendlyURL added to a dynamic collection displayed in an Asset Publisher can be rendered properly on a site after its friendlyURL is edited and published from an asset library."
@@ -3950,7 +1866,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Test Page",

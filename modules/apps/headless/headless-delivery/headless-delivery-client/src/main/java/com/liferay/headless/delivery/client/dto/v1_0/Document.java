@@ -8,13 +8,13 @@ package com.liferay.headless.delivery.client.dto.v1_0;
 import com.liferay.headless.delivery.client.function.UnsafeSupplier;
 import com.liferay.headless.delivery.client.serdes.v1_0.DocumentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -176,16 +176,23 @@ public class Document implements Cloneable, Serializable {
 
 	protected Creator creator;
 
-	public CustomField[] getCustomFields() {
+	public com.liferay.headless.delivery.client.custom.field.CustomField[]
+		getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.headless.delivery.client.custom.field.CustomField[]
+			customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.delivery.client.custom.field.CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -195,7 +202,8 @@ public class Document implements Cloneable, Serializable {
 		}
 	}
 
-	protected CustomField[] customFields;
+	protected com.liferay.headless.delivery.client.custom.field.CustomField[]
+		customFields;
 
 	public Date getDateCreated() {
 		return dateCreated;
@@ -218,6 +226,27 @@ public class Document implements Cloneable, Serializable {
 
 	protected Date dateCreated;
 
+	public Date getDateExpired() {
+		return dateExpired;
+	}
+
+	public void setDateExpired(Date dateExpired) {
+		this.dateExpired = dateExpired;
+	}
+
+	public void setDateExpired(
+		UnsafeSupplier<Date, Exception> dateExpiredUnsafeSupplier) {
+
+		try {
+			dateExpired = dateExpiredUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date dateExpired;
+
 	public Date getDateModified() {
 		return dateModified;
 	}
@@ -239,6 +268,27 @@ public class Document implements Cloneable, Serializable {
 
 	protected Date dateModified;
 
+	public Date getDatePublished() {
+		return datePublished;
+	}
+
+	public void setDatePublished(Date datePublished) {
+		this.datePublished = datePublished;
+	}
+
+	public void setDatePublished(
+		UnsafeSupplier<Date, Exception> datePublishedUnsafeSupplier) {
+
+		try {
+			datePublished = datePublishedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date datePublished;
+
 	public String getDescription() {
 		return description;
 	}
@@ -259,6 +309,32 @@ public class Document implements Cloneable, Serializable {
 	}
 
 	protected String description;
+
+	public String getDocumentFolderExternalReferenceCode() {
+		return documentFolderExternalReferenceCode;
+	}
+
+	public void setDocumentFolderExternalReferenceCode(
+		String documentFolderExternalReferenceCode) {
+
+		this.documentFolderExternalReferenceCode =
+			documentFolderExternalReferenceCode;
+	}
+
+	public void setDocumentFolderExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			documentFolderExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			documentFolderExternalReferenceCode =
+				documentFolderExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String documentFolderExternalReferenceCode;
 
 	public Long getDocumentFolderId() {
 		return documentFolderId;
@@ -386,6 +462,27 @@ public class Document implements Cloneable, Serializable {
 
 	protected String fileName;
 
+	public String getFriendlyUrlPath() {
+		return friendlyUrlPath;
+	}
+
+	public void setFriendlyUrlPath(String friendlyUrlPath) {
+		this.friendlyUrlPath = friendlyUrlPath;
+	}
+
+	public void setFriendlyUrlPath(
+		UnsafeSupplier<String, Exception> friendlyUrlPathUnsafeSupplier) {
+
+		try {
+			friendlyUrlPath = friendlyUrlPathUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String friendlyUrlPath;
+
 	public Long getId() {
 		return id;
 	}
@@ -446,6 +543,35 @@ public class Document implements Cloneable, Serializable {
 	}
 
 	protected Integer numberOfComments;
+
+	public com.liferay.headless.delivery.client.permission.Permission[]
+		getPermissions() {
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.headless.delivery.client.permission.Permission[]
+			permissions) {
+
+		this.permissions = permissions;
+	}
+
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.headless.delivery.client.permission.Permission[],
+			 Exception> permissionsUnsafeSupplier) {
+
+		try {
+			permissions = permissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected com.liferay.headless.delivery.client.permission.Permission[]
+		permissions;
 
 	public RelatedContent[] getRelatedContents() {
 		return relatedContents;
@@ -693,3 +819,4 @@ public class Document implements Cloneable, Serializable {
 	}
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1638839127

@@ -16,18 +16,21 @@ const INSET_POSITIONS = ['after', 'before'];
 type AppendPositions = 'append' | 'prepend';
 type InsetPositions = 'after' | 'before';
 
-const getOptionalProps = propsConfig => {
-	const validProps = pickBy(propsConfig, ({test, value}) =>
+type PropConfig = {test?: (value: any) => boolean; value: any};
+
+const getOptionalProps = (propsConfig: {[key: string]: PropConfig}) => {
+	const validProps = pickBy(propsConfig, ({test, value}: PropConfig) =>
 		test ? test(value) : value
 	);
 
-	return mapValues(validProps, ({value}) => value);
+	return mapValues(validProps, ({value}: PropConfig) => value);
 };
 
 interface IFormInputProps
 	extends FieldProps,
 		React.HTMLAttributes<HTMLInputElement> {
 	contentAfter: React.ReactNode;
+	contentAfterEnableMagnet?: boolean;
 	inline: boolean;
 	inset: {
 		content: React.ReactNode;
@@ -35,7 +38,7 @@ interface IFormInputProps
 	};
 	label: string;
 	mask: any;
-	onChange: (event) => void;
+	onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 	popover?: {
 		content: React.ReactNode;
 		title: React.ReactNode;
@@ -62,6 +65,7 @@ export default class FormInput extends React.Component<IFormInputProps> {
 
 	static propTypes = {
 		contentAfter: PropTypes.node,
+		contentAfterEnableMagnet: PropTypes.bool,
 		field: PropTypes.shape({
 			name: PropTypes.string,
 			onBlur: PropTypes.func,
@@ -103,7 +107,7 @@ export default class FormInput extends React.Component<IFormInputProps> {
 	};
 
 	@autobind
-	handleChange(event) {
+	handleChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const {
 			field: {name},
 			form: {setFieldValue},
@@ -127,7 +131,7 @@ export default class FormInput extends React.Component<IFormInputProps> {
 			.replace(/\[/g, '.')
 			.replace(/]/g, '')
 			.split('.')
-			.reduce(
+			.reduce<any>(
 				(currentObjectValue, propToAcess) =>
 					currentObjectValue
 						? currentObjectValue[propToAcess]
@@ -136,8 +140,9 @@ export default class FormInput extends React.Component<IFormInputProps> {
 			);
 	}
 
-	renderInput(inputProps) {
-		const {contentAfter, inset, mask, text} = this.props;
+	renderInput(inputProps: {[key: string]: any}) {
+		const {contentAfter, contentAfterEnableMagnet, inset, mask, text} =
+			this.props;
 
 		const ComponentFn = mask ? MaskedInput : Input;
 
@@ -184,9 +189,18 @@ export default class FormInput extends React.Component<IFormInputProps> {
 		} else if (contentAfter) {
 			return (
 				<Input.Group className='content-after'>
-					<Input.GroupItem>{inputComponent}</Input.GroupItem>
+					<Input.GroupItem
+						position={contentAfterEnableMagnet && 'prepend'}
+					>
+						{inputComponent}
+					</Input.GroupItem>
 
-					<Input.GroupItem shrink>{contentAfter}</Input.GroupItem>
+					<Input.GroupItem
+						position={contentAfterEnableMagnet && 'append'}
+						shrink
+					>
+						{contentAfter}
+					</Input.GroupItem>
 				</Input.Group>
 			);
 		} else {

@@ -6,8 +6,10 @@
 import ClayForm, {ClayInput, ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import PropTypes from 'prop-types';
-import React, {useEffect} from 'react';
+import React, {useContext, useEffect} from 'react';
 
+import {DefinitionBuilderContext} from '../../../../../DefinitionBuilderContext';
+import {filterScriptOption} from '../../../../util/filterScriptOption';
 import {sortElements} from '../utils';
 
 const BaseActionsInfo = ({
@@ -36,6 +38,11 @@ const BaseActionsInfo = ({
 	statuses,
 	updateActionInfo,
 }) => {
+	const {
+		allowScriptContentToBeExecutedOrIncluded,
+		hadGroovyOrJavaScriptBefore,
+	} = useContext(DefinitionBuilderContext);
+
 	useEffect(() => {
 		if (executionTypeOptions) {
 			sortElements(executionTypeOptions, 'value');
@@ -48,8 +55,15 @@ const BaseActionsInfo = ({
 				);
 			};
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	const filteredActionTypes = filterScriptOption(
+		allowScriptContentToBeExecutedOrIncluded,
+		hadGroovyOrJavaScriptBefore,
+		actionTypes
+	);
 
 	return (
 		<>
@@ -127,6 +141,7 @@ const BaseActionsInfo = ({
 							)
 						);
 						setScript('');
+						setStatus('');
 					}}
 					onClickCapture={() =>
 						updateActionInfo({
@@ -136,6 +151,7 @@ const BaseActionsInfo = ({
 							priority,
 							script,
 							scriptLanguage,
+							status,
 						})
 					}
 				>
@@ -147,7 +163,7 @@ const BaseActionsInfo = ({
 					/>
 
 					{actionTypes &&
-						actionTypes.map((item, index) => (
+						filteredActionTypes.map((item, index) => (
 							<ClaySelect.Option
 								className="select-options"
 								key={index + 1}

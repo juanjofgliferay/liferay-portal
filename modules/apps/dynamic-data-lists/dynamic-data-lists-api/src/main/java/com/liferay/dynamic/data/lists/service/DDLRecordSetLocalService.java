@@ -508,8 +508,7 @@ public interface DDLRecordSetLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMFormValues getRecordSetSettingsDDMFormValues(
-			DDLRecordSet recordSet)
-		throws PortalException;
+		DDLRecordSet recordSet);
 
 	/**
 	 * Returns the record set's settings.
@@ -759,3 +758,4 @@ public interface DDLRecordSetLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1474641038

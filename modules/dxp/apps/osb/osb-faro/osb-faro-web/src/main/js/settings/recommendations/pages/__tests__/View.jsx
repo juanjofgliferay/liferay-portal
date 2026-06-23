@@ -1,55 +1,59 @@
 import * as data from 'test/data';
-import client from 'shared/apollo/client';
 import mockStore from 'test/mock-store';
 import React from 'react';
 import View from '../View';
-import {ApolloProvider} from '@apollo/react-components';
-import {MockedProvider} from '@apollo/react-testing';
+import {MemoryRouter, Route} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
 import {
 	mockRecommendationJobRunsReq,
 	mockRecommendationReq
 } from 'test/graphql-data';
 import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
-import {StaticRouter} from 'react-router-dom';
-import {waitForLoading} from 'test/helpers';
+import {Routes} from 'shared/util/router';
+import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
-const defaultProps = {
-	router: {params: {groupId: '23'}, query: {delta: '10', page: '1'}}
-};
+jest.mock('shared/hooks/useTimeZone', () => ({
+	useTimeZone: () => ({
+		timeZoneId: 'UTC'
+	})
+}));
 
 const DefaultComponent = props => (
-	<ApolloProvider client={client}>
-		<Provider store={mockStore()}>
-			<StaticRouter>
+	<Provider store={mockStore()}>
+		<MemoryRouter
+			initialEntries={['/workspace/123/settings/recommendations/321']}
+		>
+			<Route path={Routes.SETTINGS_RECOMMENDATION_MODEL_VIEW}>
 				<MockedProvider
 					mocks={[
 						mockRecommendationJobRunsReq([
 							data.mockRecommendationJobRun(0)
 						]),
-						mockRecommendationReq(data.mockRecommendationJob('321'))
+						mockRecommendationReq(
+							data.mockRecommendationJob('321', {
+								nextRunDate: new Date().getTime()
+							})
+						)
 					]}
 				>
 					<View
-						{...defaultProps}
-						{...props}
 						router={{params: {groupId: '123', jobId: '321'}}}
+						{...props}
 					/>
 				</MockedProvider>
-			</StaticRouter>
-		</Provider>
-	</ApolloProvider>
+			</Route>
+		</MemoryRouter>
+	</Provider>
 );
 
 describe('View', () => {
 	it('should render', async () => {
 		const {container} = render(<DefaultComponent />);
 
-		await waitForLoading(container);
-
-		jest.runAllTimers();
+		await waitForLoadingToBeRemoved(container);
 
 		expect(container).toMatchSnapshot();
 	});

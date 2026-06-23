@@ -475,6 +475,10 @@ public interface UserNotificationEventLocalService
 		long userId, int start, int end,
 		OrderByComparator<UserNotificationEvent> orderByComparator);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<UserNotificationEvent> getUserNotificationEvents(
+		long userId, String type, long timestamp, boolean delivered);
+
 	/**
 	 * Returns the number of user notification events.
 	 *
@@ -543,3 +547,4 @@ public interface UserNotificationEventLocalService
 		Collection<String> uuids, long companyId, boolean archive);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1346917629

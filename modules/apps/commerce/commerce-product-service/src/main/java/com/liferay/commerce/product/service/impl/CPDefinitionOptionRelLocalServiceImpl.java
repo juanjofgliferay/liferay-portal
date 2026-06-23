@@ -65,6 +65,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.math.BigDecimal;
@@ -76,8 +78,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -661,6 +661,14 @@ public class CPDefinitionOptionRelLocalServiceImpl
 					cpInstanceOptionValueRel.getCPDefinitionOptionValueRelId());
 
 			cpDefinitionOptionValueRelKeys.add(
+				cpDefinitionOptionRel.getName(
+					cpDefinitionOptionRel.getDefaultLanguageId()));
+
+			cpDefinitionOptionValueRelKeys.add(
+				cpDefinitionOptionValueRel.getName(
+					cpDefinitionOptionRel.getDefaultLanguageId()));
+
+			cpDefinitionOptionValueRelKeys.add(
 				cpDefinitionOptionValueRel.getKey());
 		}
 
@@ -712,6 +720,18 @@ public class CPDefinitionOptionRelLocalServiceImpl
 
 		return cpDefinitionOptionRelPersistence.countByC_SC(
 			cpDefinitionId, skuContributor);
+	}
+
+	@Override
+	public List<CPDefinitionOptionRel> getCPOptionCPDefinitionOptionRels(
+		long cpOptionId) {
+
+		return cpDefinitionOptionRelPersistence.findByCPOptionId(cpOptionId);
+	}
+
+	@Override
+	public int getCPOptionCPDefinitionOptionRelsCount(long cpOptionId) {
+		return cpDefinitionOptionRelPersistence.countByCPOptionId(cpOptionId);
 	}
 
 	@Override
@@ -1061,22 +1081,22 @@ public class CPDefinitionOptionRelLocalServiceImpl
 	}
 
 	private void _updateCPDefinitionIgnoreSKUCombinations(
-			long cpDefintionId, ServiceContext serviceContext)
+			long cpDefinitionId, ServiceContext serviceContext)
 		throws PortalException {
 
 		if (_hasCPDefinitionSKUContributorCPDefinitionOptionRel(
-				cpDefintionId)) {
+				cpDefinitionId)) {
 
 			CPDefinitionLocalServiceCircularDependencyUtil.
 				updateCPDefinitionIgnoreSKUCombinations(
-					cpDefintionId, false, serviceContext);
+					cpDefinitionId, false, serviceContext);
 
 			return;
 		}
 
 		CPDefinitionLocalServiceCircularDependencyUtil.
 			updateCPDefinitionIgnoreSKUCombinations(
-				cpDefintionId, true, serviceContext);
+				cpDefinitionId, true, serviceContext);
 	}
 
 	private void _updateCPDefinitionOptionValueRels(

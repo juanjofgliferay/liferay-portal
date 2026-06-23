@@ -8,6 +8,17 @@
 <%@ include file="/init.jsp" %>
 
 <%
+InvitedAccountUserDisplayContext invitedAccountUserDisplayContext = (InvitedAccountUserDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+
+if (invitedAccountUserDisplayContext == null) {
+%>
+
+	<liferay-util:include page="/account_user_registration/error.jsp" servletContext="<%= application %>" />
+
+<%
+	return;
+}
+
 String backURL = ParamUtil.getString(request, "backURL", themeDisplay.getURLHome());
 
 String redirect = ParamUtil.getString(request, "redirect");
@@ -41,14 +52,10 @@ portletDisplay.setURLBack(backURL);
 	<liferay-frontend:edit-form-body>
 		<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 
-		<%
-		InvitedAccountUserDisplayContext invitedAccountUserDisplayContext = (InvitedAccountUserDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
-		%>
-
 		<aui:input name="ticketKey" type="hidden" value="<%= invitedAccountUserDisplayContext.getTicketKey() %>" />
 
 		<h2 class="sheet-title">
-			<liferay-ui:message key="create-account" />
+			<liferay-ui:message key="<%= invitedAccountUserDisplayContext.getTitle() %>" />
 		</h2>
 
 		<clay:sheet-section>
@@ -63,6 +70,16 @@ portletDisplay.setURLBack(backURL);
 				<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeReserved.class %>" focusField="screenName" message="the-screen-name-you-requested-is-reserved" />
 				<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeReservedForAnonymous.class %>" focusField="screenName" message="the-screen-name-you-requested-is-reserved-for-the-anonymous-user" />
 				<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeUsedByGroup.class %>" focusField="screenName" message="the-screen-name-you-requested-is-already-taken-by-a-site" />
+
+				<liferay-ui:error exception="<%= UserScreenNameException.MustNotExceedMaximumLength.class %>" focusField="screenName">
+
+					<%
+					int screenNameMaxLength = ModelHintsUtil.getMaxLength(User.class.getName(), "screenName");
+					%>
+
+					<liferay-ui:message arguments="<%= String.valueOf(screenNameMaxLength) %>" key="please-enter-a-screen-name-with-fewer-than-x-characters" />
+				</liferay-ui:error>
+
 				<liferay-ui:error exception="<%= UserScreenNameException.MustProduceValidFriendlyURL.class %>" focusField="screenName" message="the-screen-name-you-requested-must-produce-a-valid-friendly-url" />
 
 				<liferay-ui:error exception="<%= UserScreenNameException.MustValidate.class %>" focusField="screenName">
@@ -80,6 +97,7 @@ portletDisplay.setURLBack(backURL);
 					currentLogoURL='<%= themeDisplay.getPathImage() + "/user_portrait?img_id=0" %>'
 					defaultLogoURL='<%= themeDisplay.getPathImage() + "/user_portrait?img_id=0" %>'
 					label='<%= LanguageUtil.get(request, "image") %>'
+					type="user_portrait"
 				/>
 
 				<aui:input name="screenName">

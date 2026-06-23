@@ -330,7 +330,7 @@ public class PortletPreferenceValueLocalServiceWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		com.liferay.portal.kernel.model.PortletPreferences portletPreferences) {
 
 		return _portletPreferenceValueLocalService.getPreferences(
@@ -397,3 +397,4 @@ public class PortletPreferenceValueLocalServiceWrapper
 		_portletPreferenceValueLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1849666114

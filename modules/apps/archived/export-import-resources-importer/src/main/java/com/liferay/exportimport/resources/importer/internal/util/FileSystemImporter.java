@@ -33,7 +33,6 @@ import com.liferay.dynamic.data.mapping.util.DDMUtil;
 import com.liferay.dynamic.data.mapping.util.DDMXML;
 import com.liferay.exportimport.resources.importer.internal.constants.ResourcesImporterConstants;
 import com.liferay.exportimport.resources.importer.portlet.preferences.PortletPreferencesTranslator;
-import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
@@ -43,7 +42,6 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -95,6 +93,8 @@ import com.liferay.portal.kernel.xml.SAXReader;
 import com.liferay.portal.search.index.IndexStatusManager;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -112,8 +112,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Ryan Park
@@ -217,7 +215,7 @@ public class FileSystemImporter extends BaseImporter {
 		try {
 			if (!updateModeEnabled || (ddmTemplate == null)) {
 				ddmTemplateLocalService.addTemplate(
-					userId, groupId, classNameId, 0,
+					null, userId, groupId, classNameId, 0,
 					portal.getClassNameId(PortletDisplayTemplate.class),
 					_getKey(fileName), getMap(name), null,
 					DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY,
@@ -387,7 +385,7 @@ public class FileSystemImporter extends BaseImporter {
 
 			if (!updateModeEnabled || (ddmStructure == null)) {
 				ddmStructure = ddmStructureLocalService.addStructure(
-					userId, groupId,
+					null, userId, groupId,
 					DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
 					portal.getClassNameId(DDLRecordSet.class),
 					_getKey(fileName), getMap(name), null, ddmForm,
@@ -492,16 +490,11 @@ public class FileSystemImporter extends BaseImporter {
 
 		try {
 			if (!updateModeEnabled || (ddmStructure == null)) {
-				JournalServiceConfiguration journalServiceConfiguration =
-					ConfigurationProviderUtil.getCompanyConfiguration(
-						JournalServiceConfiguration.class, companyId);
-
 				ddmStructure = ddmStructureLocalService.addStructure(
 					userId, groupId, parentDDMStructureKey,
 					portal.getClassNameId(JournalArticle.class),
 					_getKey(fileName), getMap(name), null, ddmForm,
-					ddmFormLayout,
-					journalServiceConfiguration.journalArticleStorageType(),
+					ddmFormLayout, StorageType.DEFAULT.toString(),
 					DDMStructureConstants.TYPE_DEFAULT, serviceContext);
 			}
 			else {
@@ -580,7 +573,7 @@ public class FileSystemImporter extends BaseImporter {
 		try {
 			if (!updateModeEnabled || (ddmTemplate == null)) {
 				ddmTemplateLocalService.addTemplate(
-					userId, templateGroupId,
+					null, userId, templateGroupId,
 					portal.getClassNameId(DDMStructure.class), ddmStructureId,
 					portal.getClassNameId(JournalArticle.class),
 					_getKey(fileName), getMap(name), null, type, mode, language,
@@ -669,7 +662,8 @@ public class FileSystemImporter extends BaseImporter {
 		try {
 			if (!updateModeEnabled || (ddmTemplate == null)) {
 				ddmTemplate = ddmTemplateLocalService.addTemplate(
-					userId, groupId, portal.getClassNameId(DDMStructure.class),
+					null, userId, groupId,
+					portal.getClassNameId(DDMStructure.class),
 					ddmStructure.getStructureId(),
 					portal.getClassNameId(JournalArticle.class),
 					_getKey(fileName), getMap(name), null,
@@ -752,7 +746,7 @@ public class FileSystemImporter extends BaseImporter {
 					null, userId, groupId, parentFolderId, fileName,
 					mimeTypes.getContentType(fileName), fileName,
 					StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
-					inputStream, length, null, null, serviceContext);
+					inputStream, length, null, null, null, serviceContext);
 			}
 			catch (DuplicateFileEntryException duplicateFileEntryException) {
 
@@ -772,8 +766,8 @@ public class FileSystemImporter extends BaseImporter {
 					mimeTypes.getContentType(fileName), fileName,
 					StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
 					DLVersionNumberIncrease.MAJOR, inputStream, length,
-					fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
-					serviceContext);
+					fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+					fileEntry.getReviewDate(), serviceContext);
 
 				dlFileEntryLocalService.deleteFileVersion(
 					fileEntry.getUserId(), fileEntry.getFileEntryId(),
@@ -1046,7 +1040,7 @@ public class FileSystemImporter extends BaseImporter {
 		_addLayoutColumns(
 			layout, LayoutTypePortletConstants.COLUMN_PREFIX, columnsJSONArray);
 
-		layoutLocalService.updateLayout(
+		layoutLocalService.updateTypeSettings(
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
 			layout.getTypeSettings());
 	}
@@ -1344,33 +1338,6 @@ public class FileSystemImporter extends BaseImporter {
 		ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
 		try {
-			String layoutPrototypeName = layoutJSONObject.getString(
-				"layoutPrototypeName");
-
-			String layoutPrototypeUuid = null;
-
-			if (Validator.isNotNull(layoutPrototypeName)) {
-				LayoutPrototype layoutPrototype = getLayoutPrototype(
-					companyId, layoutPrototypeName);
-
-				layoutPrototypeUuid = layoutPrototype.getUuid();
-			}
-			else {
-				layoutPrototypeUuid = layoutJSONObject.getString(
-					"layoutPrototypeUuid");
-			}
-
-			if (Validator.isNotNull(layoutPrototypeUuid)) {
-				boolean layoutPrototypeLinkEnabled = GetterUtil.getBoolean(
-					layoutJSONObject.getString("layoutPrototypeLinkEnabled"));
-
-				serviceContext.setAttribute(
-					"layoutPrototypeLinkEnabled", layoutPrototypeLinkEnabled);
-
-				serviceContext.setAttribute(
-					"layoutPrototypeUuid", layoutPrototypeUuid);
-			}
-
 			Layout layout = layoutLocalService.fetchLayoutByFriendlyURL(
 				groupId, privateLayout, friendlyURL);
 
@@ -1392,9 +1359,9 @@ public class FileSystemImporter extends BaseImporter {
 
 			if (!updateModeEnabled || (layout == null)) {
 				layout = layoutLocalService.addLayout(
-					userId, groupId, privateLayout, parentLayoutId, nameMap,
-					titleMap, null, null, null, type, typeSettings, hidden,
-					friendlyURLMap, serviceContext);
+					null, userId, groupId, privateLayout, parentLayoutId,
+					nameMap, titleMap, null, null, null, type, typeSettings,
+					hidden, friendlyURLMap, serviceContext);
 			}
 			else {
 				_resetLayoutColumns(layout);
@@ -1404,7 +1371,8 @@ public class FileSystemImporter extends BaseImporter {
 					parentLayoutId, nameMap, titleMap,
 					layout.getDescriptionMap(), layout.getKeywordsMap(),
 					layout.getRobotsMap(), type, hidden, friendlyURLMap,
-					layout.getIconImage(), null, 0, 0, 0, serviceContext);
+					layout.getIconImage(), null, null, null, null, null,
+					serviceContext);
 			}
 
 			if (Validator.isNotNull(themeId) ||
@@ -1437,7 +1405,7 @@ public class FileSystemImporter extends BaseImporter {
 				layout, LayoutTypePortletConstants.COLUMN_PREFIX,
 				columnsJSONArray);
 
-			layoutLocalService.updateLayout(
+			layoutLocalService.updateTypeSettings(
 				groupId, layout.isPrivateLayout(), layout.getLayoutId(),
 				layout.getTypeSettings());
 
@@ -1520,7 +1488,7 @@ public class FileSystemImporter extends BaseImporter {
 		}
 
 		if (portletPreferencesTranslator != null) {
-			PortletPreferences portletSetup =
+			PortletPreferences portletPreferences =
 				PortletPreferencesLocalServiceUtil.getPreferences(
 					PortletPreferencesFactoryUtil.getPortletPreferencesIds(
 						layout.getGroupId(), 0, layout, portletId, false));
@@ -1531,10 +1499,10 @@ public class FileSystemImporter extends BaseImporter {
 				String key = iterator.next();
 
 				portletPreferencesTranslator.translate(
-					portletPreferencesJSONObject, key, portletSetup);
+					portletPreferencesJSONObject, key, portletPreferences);
 			}
 
-			portletSetup.store();
+			portletPreferences.store();
 		}
 
 		if (rootPortletId.equals(PortletKeys.NESTED_PORTLETS)) {
@@ -1697,21 +1665,21 @@ public class FileSystemImporter extends BaseImporter {
 	}
 
 	private File[] _listFiles(File dir) {
-		File[] files = dir.listFiles();
+		File[] files1 = dir.listFiles();
 
-		if (files == null) {
+		if (files1 == null) {
 			return new File[0];
 		}
 
-		List<File> filesList = new ArrayList<>();
+		List<File> files2 = new ArrayList<>();
 
-		for (File file : files) {
+		for (File file : files1) {
 			if (file.isFile()) {
-				filesList.add(file);
+				files2.add(file);
 			}
 		}
 
-		return filesList.toArray(new File[0]);
+		return files2.toArray(new File[0]);
 	}
 
 	private String _replaceFileEntryURL(String content) throws Exception {
@@ -1754,9 +1722,9 @@ public class FileSystemImporter extends BaseImporter {
 		UnicodeProperties unicodeProperties =
 			layout.getTypeSettingsProperties();
 
-		Set<Map.Entry<String, String>> set = unicodeProperties.entrySet();
+		Set<Map.Entry<String, String>> entries = unicodeProperties.entrySet();
 
-		Iterator<Map.Entry<String, String>> iterator = set.iterator();
+		Iterator<Map.Entry<String, String>> iterator = entries.iterator();
 
 		while (iterator.hasNext()) {
 			Map.Entry<String, String> entry = iterator.next();

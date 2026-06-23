@@ -14,25 +14,24 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerPostProcessor;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
-import com.liferay.portal.kernel.search.ParseException;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.RelatedEntryIndexer;
 import com.liferay.portal.kernel.search.RelatedEntryIndexerRegistry;
 import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.TermQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.indexer.IndexerQueryBuilder;
 import com.liferay.portal.search.internal.expando.helper.ExpandoQueryContributorHelper;
 import com.liferay.portal.search.internal.indexer.helper.AddSearchKeywordsQueryContributorHelper;
 import com.liferay.portal.search.internal.indexer.helper.PreFilterContributorHelper;
-import com.liferay.portal.search.internal.util.SearchStringUtil;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
 import com.liferay.portal.search.spi.model.query.contributor.SearchContextContributor;
 import com.liferay.portal.search.spi.model.query.contributor.helper.KeywordQueryContributorHelper;
 import com.liferay.portal.search.spi.model.query.contributor.helper.SearchContextContributorHelper;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
+import com.liferay.portal.search.util.SearchStringUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -124,16 +123,31 @@ public class IndexerQueryBuilderImpl<T extends BaseModel<?>>
 			return;
 		}
 
-		contribute(
-			_modelKeywordQueryContributorsRegistry.
-				filterKeywordQueryContributors(
-					_getStrings(
-						"search.full.query.clause.contributors.excludes",
-						searchContext),
-					_getStrings(
-						"search.full.query.clause.contributors.includes",
-						searchContext)),
-			booleanQuery, searchContext);
+		if (searchContext.isIncludeAttachments() ||
+			searchContext.isIncludeDiscussions()) {
+
+			_contributeClauses(booleanQuery, searchContext);
+
+			return;
+		}
+
+		BooleanQuery keywordsBooleanQuery = new BooleanQuery();
+
+		_contributeClauses(keywordsBooleanQuery, searchContext);
+
+		if (!keywordsBooleanQuery.hasClauses()) {
+			return;
+		}
+
+		BooleanQuery modelBooleanQuery = new BooleanQuery();
+
+		modelBooleanQuery.add(
+			new TermQuery(
+				"entryClassName", _modelSearchSettings.getClassName()),
+			BooleanClauseOccur.MUST);
+		modelBooleanQuery.add(keywordsBooleanQuery, BooleanClauseOccur.MUST);
+
+		booleanQuery.add(modelBooleanQuery, BooleanClauseOccur.SHOULD);
 	}
 
 	protected void contribute(
@@ -170,12 +184,7 @@ public class IndexerQueryBuilderImpl<T extends BaseModel<?>>
 		BooleanQuery booleanQuery, Query query,
 		BooleanClauseOccur booleanClauseOccur) {
 
-		try {
-			booleanQuery.add(query, booleanClauseOccur);
-		}
-		catch (ParseException parseException) {
-			throw new SystemException(parseException);
-		}
+		booleanQuery.add(query, booleanClauseOccur);
 	}
 
 	private void _addPreFilters(
@@ -228,6 +237,21 @@ public class IndexerQueryBuilderImpl<T extends BaseModel<?>>
 			});
 	}
 
+	private void _contributeClauses(
+		BooleanQuery booleanQuery, SearchContext searchContext) {
+
+		contribute(
+			_modelKeywordQueryContributorsRegistry.
+				filterKeywordQueryContributors(
+					_getStrings(
+						"search.full.query.clause.contributors.excludes",
+						searchContext),
+					_getStrings(
+						"search.full.query.clause.contributors.includes",
+						searchContext)),
+			booleanQuery, searchContext);
+	}
+
 	private void _contributeSearchContext(SearchContext searchContext) {
 		SearchContextContributorHelper searchContextContributorHelper =
 			_modelSearchSettings::getSearchClassNames;
@@ -245,7 +269,7 @@ public class IndexerQueryBuilderImpl<T extends BaseModel<?>>
 	private BooleanQuery _createFullQuery(
 		BooleanFilter fullQueryBooleanFilter, SearchContext searchContext) {
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
 		if (fullQueryBooleanFilter.hasClauses()) {
 			booleanQuery.setPreBooleanFilter(fullQueryBooleanFilter);
@@ -277,7 +301,7 @@ public class IndexerQueryBuilderImpl<T extends BaseModel<?>>
 	private BooleanQuery _createKeywordQuery(
 		BooleanFilter fullQueryBooleanFilter, SearchContext searchContext) {
 
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
 		_addSearchKeywords(
 			booleanQuery,

@@ -22,6 +22,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceAddressLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Region;
@@ -116,8 +117,8 @@ public class CommerceCheckoutStepHttpHelperTest {
 		CommerceOrder commerceOrder =
 			_commerceOrderLocalService.addCommerceOrder(
 				_user.getUserId(), commerceChannelGroupId,
-				accountEntry.getAccountEntryId(),
-				_commerceCurrency.getCommerceCurrencyId(), 0);
+				accountEntry.getAccountEntryId(), _commerceCurrency.getCode(),
+				0);
 
 		CommerceAddress commerceAddress = _addCommerceAddress(
 			accountEntry.getAccountEntryId());
@@ -154,13 +155,15 @@ public class CommerceCheckoutStepHttpHelperTest {
 
 		if (_country == null) {
 			_country = _countryLocalService.addCountry(
-				"ZZ", "ZZZ", true, true, null, RandomTestUtil.randomString(),
-				"000", RandomTestUtil.randomDouble(), true, false, false,
+				null, "ZZ", "ZZZ", true, true, null,
+				RandomTestUtil.randomString(), "000",
+				RandomTestUtil.randomDouble(), true, false, false,
 				_serviceContext);
 
 			_region = _regionLocalService.addRegion(
-				_country.getCountryId(), true, RandomTestUtil.randomString(),
-				RandomTestUtil.randomDouble(), "ZZ", _serviceContext);
+				null, _country.getCountryId(), true,
+				RandomTestUtil.randomString(), RandomTestUtil.randomDouble(),
+				"ZZ", _serviceContext);
 		}
 		else {
 			_region = _regionLocalService.getRegion(
@@ -168,14 +171,14 @@ public class CommerceCheckoutStepHttpHelperTest {
 		}
 
 		return _commerceAddressLocalService.addCommerceAddress(
-			AccountEntry.class.getName(), commerceAccountId,
+			StringPool.BLANK, AccountEntry.class.getName(), commerceAccountId,
+			_country.getCountryId(), _region.getRegionId(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			String.valueOf(30133), _region.getRegionId(),
-			_country.getCountryId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), StringPool.BLANK,
 			CommerceAddressConstants.ADDRESS_TYPE_BILLING_AND_SHIPPING,
-			_serviceContext);
+			String.valueOf(30133), _serviceContext);
 	}
 
 	@Inject

@@ -5,6 +5,7 @@
 
 package com.liferay.fragment.service.persistence.impl;
 
+import com.liferay.fragment.exception.DuplicateFragmentCollectionExternalReferenceCodeException;
 import com.liferay.fragment.exception.NoSuchCollectionException;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentCollectionTable;
@@ -19,26 +20,31 @@ import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
-import com.liferay.portal.kernel.dao.orm.Query;
-import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
+import com.liferay.portal.kernel.service.persistence.impl.ArrayableFinderColumn;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.service.persistence.impl.CollectionPersistenceFinder;
+import com.liferay.portal.kernel.service.persistence.impl.FinderColumn;
+import com.liferay.portal.kernel.service.persistence.impl.UniquePersistenceFinder;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
@@ -52,7 +58,6 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,7 +82,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = FragmentCollectionPersistence.class)
 public class FragmentCollectionPersistenceImpl
-	extends BasePersistenceImpl<FragmentCollection>
+	extends BasePersistenceImpl<FragmentCollection, NoSuchCollectionException>
 	implements FragmentCollectionPersistence {
 
 	/*
@@ -94,63 +99,9 @@ public class FragmentCollectionPersistenceImpl
 	public static final String FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION =
 		FINDER_CLASS_NAME_ENTITY + ".List2";
 
-	private FinderPath _finderPathWithPaginationFindAll;
-	private FinderPath _finderPathWithoutPaginationFindAll;
-	private FinderPath _finderPathCountAll;
-	private FinderPath _finderPathWithPaginationFindByUuid;
-	private FinderPath _finderPathWithoutPaginationFindByUuid;
-	private FinderPath _finderPathCountByUuid;
-
-	/**
-	 * Returns all the fragment collections where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @return the matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByUuid(String uuid) {
-		return findByUuid(uuid, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the fragment collections where uuid = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @return the range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByUuid(
-		String uuid, int start, int end) {
-
-		return findByUuid(uuid, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the fragment collections where uuid = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByUuid(
-		String uuid, int start, int end,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		return findByUuid(uuid, start, end, orderByComparator, true);
-	}
+	private CollectionPersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_collectionPersistenceFinderByUuid;
 
 	/**
 	 * Returns an ordered range of all the fragment collections where uuid = &#63;.
@@ -172,109 +123,9 @@ public class FragmentCollectionPersistenceImpl
 		OrderByComparator<FragmentCollection> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentCollection fragmentCollection : list) {
-					if (!uuid.equals(fragmentCollection.getUuid())) {
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
+		return _collectionPersistenceFinderByUuid.find(
+			finderCache, new Object[] {uuid}, start, end, orderByComparator,
+			useFinderCache);
 	}
 
 	/**
@@ -291,23 +142,8 @@ public class FragmentCollectionPersistenceImpl
 			OrderByComparator<FragmentCollection> orderByComparator)
 		throws NoSuchCollectionException {
 
-		FragmentCollection fragmentCollection = fetchByUuid_First(
-			uuid, orderByComparator);
-
-		if (fragmentCollection != null) {
-			return fragmentCollection;
-		}
-
-		StringBundler sb = new StringBundler(4);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("uuid=");
-		sb.append(uuid);
-
-		sb.append("}");
-
-		throw new NoSuchCollectionException(sb.toString());
+		return _collectionPersistenceFinderByUuid.findFirst(
+			finderCache, new Object[] {uuid}, orderByComparator);
 	}
 
 	/**
@@ -321,240 +157,8 @@ public class FragmentCollectionPersistenceImpl
 	public FragmentCollection fetchByUuid_First(
 		String uuid, OrderByComparator<FragmentCollection> orderByComparator) {
 
-		List<FragmentCollection> list = findByUuid(
-			uuid, 0, 1, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection
-	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection findByUuid_Last(
-			String uuid,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		FragmentCollection fragmentCollection = fetchByUuid_Last(
-			uuid, orderByComparator);
-
-		if (fragmentCollection != null) {
-			return fragmentCollection;
-		}
-
-		StringBundler sb = new StringBundler(4);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("uuid=");
-		sb.append(uuid);
-
-		sb.append("}");
-
-		throw new NoSuchCollectionException(sb.toString());
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where uuid = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection fetchByUuid_Last(
-		String uuid, OrderByComparator<FragmentCollection> orderByComparator) {
-
-		int count = countByUuid(uuid);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<FragmentCollection> list = findByUuid(
-			uuid, count - 1, count, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the fragment collections before and after the current fragment collection in the ordered set where uuid = &#63;.
-	 *
-	 * @param fragmentCollectionId the primary key of the current fragment collection
-	 * @param uuid the uuid
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next fragment collection
-	 * @throws NoSuchCollectionException if a fragment collection with the primary key could not be found
-	 */
-	@Override
-	public FragmentCollection[] findByUuid_PrevAndNext(
-			long fragmentCollectionId, String uuid,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		uuid = Objects.toString(uuid, "");
-
-		FragmentCollection fragmentCollection = findByPrimaryKey(
-			fragmentCollectionId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			FragmentCollection[] array = new FragmentCollectionImpl[3];
-
-			array[0] = getByUuid_PrevAndNext(
-				session, fragmentCollection, uuid, orderByComparator, true);
-
-			array[1] = fragmentCollection;
-
-			array[2] = getByUuid_PrevAndNext(
-				session, fragmentCollection, uuid, orderByComparator, false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected FragmentCollection getByUuid_PrevAndNext(
-		Session session, FragmentCollection fragmentCollection, String uuid,
-		OrderByComparator<FragmentCollection> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				4 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(3);
-		}
-
-		sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-		boolean bindUuid = false;
-
-		if (uuid.isEmpty()) {
-			sb.append(_FINDER_COLUMN_UUID_UUID_3);
-		}
-		else {
-			bindUuid = true;
-
-			sb.append(_FINDER_COLUMN_UUID_UUID_2);
-		}
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		if (bindUuid) {
-			queryPos.add(uuid);
-		}
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						fragmentCollection)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<FragmentCollection> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
+		return _collectionPersistenceFinderByUuid.fetchFirst(
+			finderCache, new Object[] {uuid}, orderByComparator);
 	}
 
 	/**
@@ -564,11 +168,8 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public void removeByUuid(String uuid) {
-		for (FragmentCollection fragmentCollection :
-				findByUuid(uuid, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
-
-			remove(fragmentCollection);
-		}
+		_collectionPersistenceFinderByUuid.remove(
+			finderCache, new Object[] {uuid});
 	}
 
 	/**
@@ -579,80 +180,13 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid;
-
-			finderArgs = new Object[] {uuid};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByUuid.count(
+			finderCache, new Object[] {uuid});
 	}
 
-	private static final String _FINDER_COLUMN_UUID_UUID_2 =
-		"fragmentCollection.uuid = ?";
-
-	private static final String _FINDER_COLUMN_UUID_UUID_3 =
-		"(fragmentCollection.uuid IS NULL OR fragmentCollection.uuid = '')";
-
-	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
+	private UniquePersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_uniquePersistenceFinderByUUID_G;
 
 	/**
 	 * Returns the fragment collection where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchCollectionException</code> if it could not be found.
@@ -666,41 +200,8 @@ public class FragmentCollectionPersistenceImpl
 	public FragmentCollection findByUUID_G(String uuid, long groupId)
 		throws NoSuchCollectionException {
 
-		FragmentCollection fragmentCollection = fetchByUUID_G(uuid, groupId);
-
-		if (fragmentCollection == null) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("uuid=");
-			sb.append(uuid);
-
-			sb.append(", groupId=");
-			sb.append(groupId);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchCollectionException(sb.toString());
-		}
-
-		return fragmentCollection;
-	}
-
-	/**
-	 * Returns the fragment collection where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param uuid the uuid
-	 * @param groupId the group ID
-	 * @return the matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection fetchByUUID_G(String uuid, long groupId) {
-		return fetchByUUID_G(uuid, groupId, true);
+		return _uniquePersistenceFinderByUUID_G.find(
+			finderCache, new Object[] {uuid, groupId});
 	}
 
 	/**
@@ -715,108 +216,8 @@ public class FragmentCollectionPersistenceImpl
 	public FragmentCollection fetchByUUID_G(
 		String uuid, long groupId, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
-
-		Object[] finderArgs = null;
-
-		if (useFinderCache) {
-			finderArgs = new Object[] {uuid, groupId};
-		}
-
-		Object result = null;
-
-		if (useFinderCache) {
-			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs, this);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		if (result instanceof FragmentCollection) {
-			FragmentCollection fragmentCollection = (FragmentCollection)result;
-
-			if (!Objects.equals(uuid, fragmentCollection.getUuid()) ||
-				(groupId != fragmentCollection.getGroupId())) {
-
-				result = null;
-			}
-			else if (!ctPersistenceHelper.isProductionMode(
-						FragmentCollection.class,
-						fragmentCollection.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				List<FragmentCollection> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByUUID_G, finderArgs, list);
-					}
-				}
-				else {
-					FragmentCollection fragmentCollection = list.get(0);
-
-					result = fragmentCollection;
-
-					cacheResult(fragmentCollection);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (FragmentCollection)result;
-		}
+		return _uniquePersistenceFinderByUUID_G.fetch(
+			finderCache, new Object[] {uuid, groupId}, useFinderCache);
 	}
 
 	/**
@@ -844,144 +245,13 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByUUID_G;
-
-			finderArgs = new Object[] {uuid, groupId};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _uniquePersistenceFinderByUUID_G.count(
+			finderCache, new Object[] {uuid, groupId});
 	}
 
-	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
-		"fragmentCollection.uuid = ? AND ";
-
-	private static final String _FINDER_COLUMN_UUID_G_UUID_3 =
-		"(fragmentCollection.uuid IS NULL OR fragmentCollection.uuid = '') AND ";
-
-	private static final String _FINDER_COLUMN_UUID_G_GROUPID_2 =
-		"fragmentCollection.groupId = ?";
-
-	private FinderPath _finderPathWithPaginationFindByUuid_C;
-	private FinderPath _finderPathWithoutPaginationFindByUuid_C;
-	private FinderPath _finderPathCountByUuid_C;
-
-	/**
-	 * Returns all the fragment collections where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @return the matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByUuid_C(String uuid, long companyId) {
-		return findByUuid_C(
-			uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the fragment collections where uuid = &#63; and companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @return the range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByUuid_C(
-		String uuid, long companyId, int start, int end) {
-
-		return findByUuid_C(uuid, companyId, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the fragment collections where uuid = &#63; and companyId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByUuid_C(
-		String uuid, long companyId, int start, int end,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		return findByUuid_C(
-			uuid, companyId, start, end, orderByComparator, true);
-	}
+	private CollectionPersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_collectionPersistenceFinderByUuid_C;
 
 	/**
 	 * Returns an ordered range of all the fragment collections where uuid = &#63; and companyId = &#63;.
@@ -1004,117 +274,9 @@ public class FragmentCollectionPersistenceImpl
 		OrderByComparator<FragmentCollection> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentCollection fragmentCollection : list) {
-					if (!uuid.equals(fragmentCollection.getUuid()) ||
-						(companyId != fragmentCollection.getCompanyId())) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(companyId);
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
+		return _collectionPersistenceFinderByUuid_C.find(
+			finderCache, new Object[] {uuid, companyId}, start, end,
+			orderByComparator, useFinderCache);
 	}
 
 	/**
@@ -1132,26 +294,8 @@ public class FragmentCollectionPersistenceImpl
 			OrderByComparator<FragmentCollection> orderByComparator)
 		throws NoSuchCollectionException {
 
-		FragmentCollection fragmentCollection = fetchByUuid_C_First(
-			uuid, companyId, orderByComparator);
-
-		if (fragmentCollection != null) {
-			return fragmentCollection;
-		}
-
-		StringBundler sb = new StringBundler(6);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("uuid=");
-		sb.append(uuid);
-
-		sb.append(", companyId=");
-		sb.append(companyId);
-
-		sb.append("}");
-
-		throw new NoSuchCollectionException(sb.toString());
+		return _collectionPersistenceFinderByUuid_C.findFirst(
+			finderCache, new Object[] {uuid, companyId}, orderByComparator);
 	}
 
 	/**
@@ -1167,253 +311,8 @@ public class FragmentCollectionPersistenceImpl
 		String uuid, long companyId,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		List<FragmentCollection> list = findByUuid_C(
-			uuid, companyId, 0, 1, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection
-	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection findByUuid_C_Last(
-			String uuid, long companyId,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		FragmentCollection fragmentCollection = fetchByUuid_C_Last(
-			uuid, companyId, orderByComparator);
-
-		if (fragmentCollection != null) {
-			return fragmentCollection;
-		}
-
-		StringBundler sb = new StringBundler(6);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("uuid=");
-		sb.append(uuid);
-
-		sb.append(", companyId=");
-		sb.append(companyId);
-
-		sb.append("}");
-
-		throw new NoSuchCollectionException(sb.toString());
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection fetchByUuid_C_Last(
-		String uuid, long companyId,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		int count = countByUuid_C(uuid, companyId);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<FragmentCollection> list = findByUuid_C(
-			uuid, companyId, count - 1, count, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the fragment collections before and after the current fragment collection in the ordered set where uuid = &#63; and companyId = &#63;.
-	 *
-	 * @param fragmentCollectionId the primary key of the current fragment collection
-	 * @param uuid the uuid
-	 * @param companyId the company ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next fragment collection
-	 * @throws NoSuchCollectionException if a fragment collection with the primary key could not be found
-	 */
-	@Override
-	public FragmentCollection[] findByUuid_C_PrevAndNext(
-			long fragmentCollectionId, String uuid, long companyId,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		uuid = Objects.toString(uuid, "");
-
-		FragmentCollection fragmentCollection = findByPrimaryKey(
-			fragmentCollectionId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			FragmentCollection[] array = new FragmentCollectionImpl[3];
-
-			array[0] = getByUuid_C_PrevAndNext(
-				session, fragmentCollection, uuid, companyId, orderByComparator,
-				true);
-
-			array[1] = fragmentCollection;
-
-			array[2] = getByUuid_C_PrevAndNext(
-				session, fragmentCollection, uuid, companyId, orderByComparator,
-				false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected FragmentCollection getByUuid_C_PrevAndNext(
-		Session session, FragmentCollection fragmentCollection, String uuid,
-		long companyId, OrderByComparator<FragmentCollection> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(4);
-		}
-
-		sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-		boolean bindUuid = false;
-
-		if (uuid.isEmpty()) {
-			sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-		}
-		else {
-			bindUuid = true;
-
-			sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-		}
-
-		sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		if (bindUuid) {
-			queryPos.add(uuid);
-		}
-
-		queryPos.add(companyId);
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						fragmentCollection)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<FragmentCollection> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
+		return _collectionPersistenceFinderByUuid_C.fetchFirst(
+			finderCache, new Object[] {uuid, companyId}, orderByComparator);
 	}
 
 	/**
@@ -1424,13 +323,8 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public void removeByUuid_C(String uuid, long companyId) {
-		for (FragmentCollection fragmentCollection :
-				findByUuid_C(
-					uuid, companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					null)) {
-
-			remove(fragmentCollection);
-		}
+		_collectionPersistenceFinderByUuid_C.remove(
+			finderCache, new Object[] {uuid, companyId});
 	}
 
 	/**
@@ -1442,141 +336,13 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C;
-
-			finderArgs = new Object[] {uuid, companyId};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByUuid_C.count(
+			finderCache, new Object[] {uuid, companyId});
 	}
 
-	private static final String _FINDER_COLUMN_UUID_C_UUID_2 =
-		"fragmentCollection.uuid = ? AND ";
-
-	private static final String _FINDER_COLUMN_UUID_C_UUID_3 =
-		"(fragmentCollection.uuid IS NULL OR fragmentCollection.uuid = '') AND ";
-
-	private static final String _FINDER_COLUMN_UUID_C_COMPANYID_2 =
-		"fragmentCollection.companyId = ?";
-
-	private FinderPath _finderPathWithPaginationFindByGroupId;
-	private FinderPath _finderPathWithoutPaginationFindByGroupId;
-	private FinderPath _finderPathCountByGroupId;
-	private FinderPath _finderPathWithPaginationCountByGroupId;
-
-	/**
-	 * Returns all the fragment collections where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @return the matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByGroupId(long groupId) {
-		return findByGroupId(
-			groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the fragment collections where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @return the range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByGroupId(
-		long groupId, int start, int end) {
-
-		return findByGroupId(groupId, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the fragment collections where groupId = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByGroupId(
-		long groupId, int start, int end,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		return findByGroupId(groupId, start, end, orderByComparator, true);
-	}
+	private CollectionPersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_collectionPersistenceFinderByGroupId;
 
 	/**
 	 * Returns an ordered range of all the fragment collections where groupId = &#63;.
@@ -1598,96 +364,9 @@ public class FragmentCollectionPersistenceImpl
 		OrderByComparator<FragmentCollection> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByGroupId;
-				finderArgs = new Object[] {groupId};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByGroupId;
-			finderArgs = new Object[] {groupId, start, end, orderByComparator};
-		}
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentCollection fragmentCollection : list) {
-					if (groupId != fragmentCollection.getGroupId()) {
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
+		return _collectionPersistenceFinderByGroupId.find(
+			finderCache, new Object[] {new long[] {groupId}}, start, end,
+			orderByComparator, useFinderCache);
 	}
 
 	/**
@@ -1734,283 +413,9 @@ public class FragmentCollectionPersistenceImpl
 	public FragmentCollection fetchByGroupId_First(
 		long groupId, OrderByComparator<FragmentCollection> orderByComparator) {
 
-		List<FragmentCollection> list = findByGroupId(
-			groupId, 0, 1, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection
-	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection findByGroupId_Last(
-			long groupId,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		FragmentCollection fragmentCollection = fetchByGroupId_Last(
-			groupId, orderByComparator);
-
-		if (fragmentCollection != null) {
-			return fragmentCollection;
-		}
-
-		StringBundler sb = new StringBundler(4);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("groupId=");
-		sb.append(groupId);
-
-		sb.append("}");
-
-		throw new NoSuchCollectionException(sb.toString());
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where groupId = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection fetchByGroupId_Last(
-		long groupId, OrderByComparator<FragmentCollection> orderByComparator) {
-
-		int count = countByGroupId(groupId);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<FragmentCollection> list = findByGroupId(
-			groupId, count - 1, count, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the fragment collections before and after the current fragment collection in the ordered set where groupId = &#63;.
-	 *
-	 * @param fragmentCollectionId the primary key of the current fragment collection
-	 * @param groupId the group ID
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next fragment collection
-	 * @throws NoSuchCollectionException if a fragment collection with the primary key could not be found
-	 */
-	@Override
-	public FragmentCollection[] findByGroupId_PrevAndNext(
-			long fragmentCollectionId, long groupId,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		FragmentCollection fragmentCollection = findByPrimaryKey(
-			fragmentCollectionId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			FragmentCollection[] array = new FragmentCollectionImpl[3];
-
-			array[0] = getByGroupId_PrevAndNext(
-				session, fragmentCollection, groupId, orderByComparator, true);
-
-			array[1] = fragmentCollection;
-
-			array[2] = getByGroupId_PrevAndNext(
-				session, fragmentCollection, groupId, orderByComparator, false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected FragmentCollection getByGroupId_PrevAndNext(
-		Session session, FragmentCollection fragmentCollection, long groupId,
-		OrderByComparator<FragmentCollection> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				4 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(3);
-		}
-
-		sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-		sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		queryPos.add(groupId);
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						fragmentCollection)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<FragmentCollection> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
-	}
-
-	/**
-	 * Returns all the fragment collections where groupId = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @return the matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByGroupId(long[] groupIds) {
-		return findByGroupId(
-			groupIds, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the fragment collections where groupId = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @return the range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByGroupId(
-		long[] groupIds, int start, int end) {
-
-		return findByGroupId(groupIds, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the fragment collections where groupId = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupIds the group IDs
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findByGroupId(
-		long[] groupIds, int start, int end,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		return findByGroupId(groupIds, start, end, orderByComparator, true);
+		return _collectionPersistenceFinderByGroupId.fetchFirst(
+			finderCache, new Object[] {new long[] {groupId}},
+			orderByComparator);
 	}
 
 	/**
@@ -2033,111 +438,9 @@ public class FragmentCollectionPersistenceImpl
 		OrderByComparator<FragmentCollection> orderByComparator,
 		boolean useFinderCache) {
 
-		if (groupIds == null) {
-			groupIds = new long[0];
-		}
-		else if (groupIds.length > 1) {
-			groupIds = ArrayUtil.sortedUnique(groupIds);
-		}
-
-		if (groupIds.length == 1) {
-			return findByGroupId(groupIds[0], start, end, orderByComparator);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderArgs = new Object[] {StringUtil.merge(groupIds)};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				StringUtil.merge(groupIds), start, end, orderByComparator
-			};
-		}
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				_finderPathWithPaginationFindByGroupId, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentCollection fragmentCollection : list) {
-					if (!ArrayUtil.contains(
-							groupIds, fragmentCollection.getGroupId())) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			if (groupIds.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_7);
-
-				sb.append(StringUtil.merge(groupIds));
-
-				sb.append(")");
-
-				sb.append(")");
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(
-						_finderPathWithPaginationFindByGroupId, finderArgs,
-						list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
+		return _collectionPersistenceFinderByGroupId.find(
+			finderCache, new Object[] {ArrayUtil.sortedUnique(groupIds)}, start,
+			end, orderByComparator, useFinderCache);
 	}
 
 	/**
@@ -2147,12 +450,8 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public void removeByGroupId(long groupId) {
-		for (FragmentCollection fragmentCollection :
-				findByGroupId(
-					groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
-
-			remove(fragmentCollection);
-		}
+		_collectionPersistenceFinderByGroupId.remove(
+			finderCache, new Object[] {new long[] {groupId}});
 	}
 
 	/**
@@ -2163,57 +462,8 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId(long groupId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByGroupId;
-
-			finderArgs = new Object[] {groupId};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByGroupId.count(
+			finderCache, new Object[] {new long[] {groupId}});
 	}
 
 	/**
@@ -2224,83 +474,13 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId(long[] groupIds) {
-		if (groupIds == null) {
-			groupIds = new long[0];
-		}
-		else if (groupIds.length > 1) {
-			groupIds = ArrayUtil.sortedUnique(groupIds);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderArgs = new Object[] {StringUtil.merge(groupIds)};
-
-			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByGroupId, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			if (groupIds.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_7);
-
-				sb.append(StringUtil.merge(groupIds));
-
-				sb.append(")");
-
-				sb.append(")");
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(
-						_finderPathWithPaginationCountByGroupId, finderArgs,
-						count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByGroupId.count(
+			finderCache, new Object[] {ArrayUtil.sortedUnique(groupIds)});
 	}
 
-	private static final String _FINDER_COLUMN_GROUPID_GROUPID_2 =
-		"fragmentCollection.groupId = ?";
-
-	private static final String _FINDER_COLUMN_GROUPID_GROUPID_7 =
-		"fragmentCollection.groupId IN (";
-
-	private FinderPath _finderPathFetchByG_FCK;
-	private FinderPath _finderPathCountByG_FCK;
+	private UniquePersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_uniquePersistenceFinderByG_FCK;
 
 	/**
 	 * Returns the fragment collection where groupId = &#63; and fragmentCollectionKey = &#63; or throws a <code>NoSuchCollectionException</code> if it could not be found.
@@ -2315,44 +495,8 @@ public class FragmentCollectionPersistenceImpl
 			long groupId, String fragmentCollectionKey)
 		throws NoSuchCollectionException {
 
-		FragmentCollection fragmentCollection = fetchByG_FCK(
-			groupId, fragmentCollectionKey);
-
-		if (fragmentCollection == null) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("groupId=");
-			sb.append(groupId);
-
-			sb.append(", fragmentCollectionKey=");
-			sb.append(fragmentCollectionKey);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchCollectionException(sb.toString());
-		}
-
-		return fragmentCollection;
-	}
-
-	/**
-	 * Returns the fragment collection where groupId = &#63; and fragmentCollectionKey = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param groupId the group ID
-	 * @param fragmentCollectionKey the fragment collection key
-	 * @return the matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection fetchByG_FCK(
-		long groupId, String fragmentCollectionKey) {
-
-		return fetchByG_FCK(groupId, fragmentCollectionKey, true);
+		return _uniquePersistenceFinderByG_FCK.find(
+			finderCache, new Object[] {groupId, fragmentCollectionKey});
 	}
 
 	/**
@@ -2367,110 +511,9 @@ public class FragmentCollectionPersistenceImpl
 	public FragmentCollection fetchByG_FCK(
 		long groupId, String fragmentCollectionKey, boolean useFinderCache) {
 
-		fragmentCollectionKey = Objects.toString(fragmentCollectionKey, "");
-
-		Object[] finderArgs = null;
-
-		if (useFinderCache) {
-			finderArgs = new Object[] {groupId, fragmentCollectionKey};
-		}
-
-		Object result = null;
-
-		if (useFinderCache) {
-			result = finderCache.getResult(
-				_finderPathFetchByG_FCK, finderArgs, this);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		if (result instanceof FragmentCollection) {
-			FragmentCollection fragmentCollection = (FragmentCollection)result;
-
-			if ((groupId != fragmentCollection.getGroupId()) ||
-				!Objects.equals(
-					fragmentCollectionKey,
-					fragmentCollection.getFragmentCollectionKey())) {
-
-				result = null;
-			}
-			else if (!ctPersistenceHelper.isProductionMode(
-						FragmentCollection.class,
-						fragmentCollection.getPrimaryKey())) {
-
-				result = null;
-			}
-		}
-		else if (!productionMode && (result instanceof List<?>)) {
-			result = null;
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FCK_GROUPID_2);
-
-			boolean bindFragmentCollectionKey = false;
-
-			if (fragmentCollectionKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCK_FRAGMENTCOLLECTIONKEY_3);
-			}
-			else {
-				bindFragmentCollectionKey = true;
-
-				sb.append(_FINDER_COLUMN_G_FCK_FRAGMENTCOLLECTIONKEY_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindFragmentCollectionKey) {
-					queryPos.add(fragmentCollectionKey);
-				}
-
-				List<FragmentCollection> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByG_FCK, finderArgs, list);
-					}
-				}
-				else {
-					FragmentCollection fragmentCollection = list.get(0);
-
-					result = fragmentCollection;
-
-					cacheResult(fragmentCollection);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (FragmentCollection)result;
-		}
+		return _uniquePersistenceFinderByG_FCK.fetch(
+			finderCache, new Object[] {groupId, fragmentCollectionKey},
+			useFinderCache);
 	}
 
 	/**
@@ -2500,87 +543,13 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByG_FCK(long groupId, String fragmentCollectionKey) {
-		fragmentCollectionKey = Objects.toString(fragmentCollectionKey, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_FCK;
-
-			finderArgs = new Object[] {groupId, fragmentCollectionKey};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_FCK_GROUPID_2);
-
-			boolean bindFragmentCollectionKey = false;
-
-			if (fragmentCollectionKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_FCK_FRAGMENTCOLLECTIONKEY_3);
-			}
-			else {
-				bindFragmentCollectionKey = true;
-
-				sb.append(_FINDER_COLUMN_G_FCK_FRAGMENTCOLLECTIONKEY_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindFragmentCollectionKey) {
-					queryPos.add(fragmentCollectionKey);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _uniquePersistenceFinderByG_FCK.count(
+			finderCache, new Object[] {groupId, fragmentCollectionKey});
 	}
 
-	private static final String _FINDER_COLUMN_G_FCK_GROUPID_2 =
-		"fragmentCollection.groupId = ? AND ";
-
-	private static final String _FINDER_COLUMN_G_FCK_FRAGMENTCOLLECTIONKEY_2 =
-		"fragmentCollection.fragmentCollectionKey = ?";
-
-	private static final String _FINDER_COLUMN_G_FCK_FRAGMENTCOLLECTIONKEY_3 =
-		"(fragmentCollection.fragmentCollectionKey IS NULL OR fragmentCollection.fragmentCollectionKey = '')";
-
-	private FinderPath _finderPathWithPaginationFindByG_LikeN;
-	private FinderPath _finderPathWithPaginationCountByG_LikeN;
+	private CollectionPersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_collectionPersistenceFinderByG_LikeN;
 
 	/**
 	 * Returns all the fragment collections where groupId = &#63; and name LIKE &#63;.
@@ -2659,109 +628,9 @@ public class FragmentCollectionPersistenceImpl
 		OrderByComparator<FragmentCollection> orderByComparator,
 		boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		finderPath = _finderPathWithPaginationFindByG_LikeN;
-		finderArgs = new Object[] {
-			groupId, name, start, end, orderByComparator
-		};
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				finderPath, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentCollection fragmentCollection : list) {
-					if ((groupId != fragmentCollection.getGroupId()) ||
-						!StringUtil.wildcardMatches(
-							fragmentCollection.getName(), name, '_', '%', '\\',
-							true)) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_LIKEN_GROUPID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
+		return _collectionPersistenceFinderByG_LikeN.find(
+			finderCache, new Object[] {new long[] {groupId}, name}, start, end,
+			orderByComparator, useFinderCache);
 	}
 
 	/**
@@ -2814,253 +683,9 @@ public class FragmentCollectionPersistenceImpl
 		long groupId, String name,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		List<FragmentCollection> list = findByG_LikeN(
-			groupId, name, 0, 1, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where groupId = &#63; and name LIKE &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param name the name
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection
-	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection findByG_LikeN_Last(
-			long groupId, String name,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		FragmentCollection fragmentCollection = fetchByG_LikeN_Last(
-			groupId, name, orderByComparator);
-
-		if (fragmentCollection != null) {
-			return fragmentCollection;
-		}
-
-		StringBundler sb = new StringBundler(6);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("groupId=");
-		sb.append(groupId);
-
-		sb.append(", nameLIKE");
-		sb.append(name);
-
-		sb.append("}");
-
-		throw new NoSuchCollectionException(sb.toString());
-	}
-
-	/**
-	 * Returns the last fragment collection in the ordered set where groupId = &#63; and name LIKE &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param name the name
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
-	 */
-	@Override
-	public FragmentCollection fetchByG_LikeN_Last(
-		long groupId, String name,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		int count = countByG_LikeN(groupId, name);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<FragmentCollection> list = findByG_LikeN(
-			groupId, name, count - 1, count, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the fragment collections before and after the current fragment collection in the ordered set where groupId = &#63; and name LIKE &#63;.
-	 *
-	 * @param fragmentCollectionId the primary key of the current fragment collection
-	 * @param groupId the group ID
-	 * @param name the name
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next fragment collection
-	 * @throws NoSuchCollectionException if a fragment collection with the primary key could not be found
-	 */
-	@Override
-	public FragmentCollection[] findByG_LikeN_PrevAndNext(
-			long fragmentCollectionId, long groupId, String name,
-			OrderByComparator<FragmentCollection> orderByComparator)
-		throws NoSuchCollectionException {
-
-		name = Objects.toString(name, "");
-
-		FragmentCollection fragmentCollection = findByPrimaryKey(
-			fragmentCollectionId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			FragmentCollection[] array = new FragmentCollectionImpl[3];
-
-			array[0] = getByG_LikeN_PrevAndNext(
-				session, fragmentCollection, groupId, name, orderByComparator,
-				true);
-
-			array[1] = fragmentCollection;
-
-			array[2] = getByG_LikeN_PrevAndNext(
-				session, fragmentCollection, groupId, name, orderByComparator,
-				false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected FragmentCollection getByG_LikeN_PrevAndNext(
-		Session session, FragmentCollection fragmentCollection, long groupId,
-		String name, OrderByComparator<FragmentCollection> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(4);
-		}
-
-		sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-		sb.append(_FINDER_COLUMN_G_LIKEN_GROUPID_2);
-
-		boolean bindName = false;
-
-		if (name.isEmpty()) {
-			sb.append(_FINDER_COLUMN_G_LIKEN_NAME_3);
-		}
-		else {
-			bindName = true;
-
-			sb.append(_FINDER_COLUMN_G_LIKEN_NAME_2);
-		}
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		queryPos.add(groupId);
-
-		if (bindName) {
-			queryPos.add(name);
-		}
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						fragmentCollection)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<FragmentCollection> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
+		return _collectionPersistenceFinderByG_LikeN.fetchFirst(
+			finderCache, new Object[] {new long[] {groupId}, name},
+			orderByComparator);
 	}
 
 	/**
@@ -3146,136 +771,9 @@ public class FragmentCollectionPersistenceImpl
 		OrderByComparator<FragmentCollection> orderByComparator,
 		boolean useFinderCache) {
 
-		if (groupIds == null) {
-			groupIds = new long[0];
-		}
-		else if (groupIds.length > 1) {
-			groupIds = ArrayUtil.sortedUnique(groupIds);
-		}
-
-		name = Objects.toString(name, "");
-
-		if (groupIds.length == 1) {
-			return findByG_LikeN(
-				groupIds[0], name, start, end, orderByComparator);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderArgs = new Object[] {StringUtil.merge(groupIds), name};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				StringUtil.merge(groupIds), name, start, end, orderByComparator
-			};
-		}
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				_finderPathWithPaginationFindByG_LikeN, finderArgs, this);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (FragmentCollection fragmentCollection : list) {
-					if (!ArrayUtil.contains(
-							groupIds, fragmentCollection.getGroupId()) ||
-						!StringUtil.wildcardMatches(
-							fragmentCollection.getName(), name, '_', '%', '\\',
-							true)) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_SELECT_FRAGMENTCOLLECTION_WHERE);
-
-			if (groupIds.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_G_LIKEN_GROUPID_7);
-
-				sb.append(StringUtil.merge(groupIds));
-
-				sb.append(")");
-
-				sb.append(")");
-
-				sb.append(WHERE_AND);
-			}
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_2);
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(
-						_finderPathWithPaginationFindByG_LikeN, finderArgs,
-						list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
+		return _collectionPersistenceFinderByG_LikeN.find(
+			finderCache, new Object[] {ArrayUtil.sortedUnique(groupIds), name},
+			start, end, orderByComparator, useFinderCache);
 	}
 
 	/**
@@ -3286,13 +784,8 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public void removeByG_LikeN(long groupId, String name) {
-		for (FragmentCollection fragmentCollection :
-				findByG_LikeN(
-					groupId, name, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-					null)) {
-
-			remove(fragmentCollection);
-		}
+		_collectionPersistenceFinderByG_LikeN.remove(
+			finderCache, new Object[] {new long[] {groupId}, name});
 	}
 
 	/**
@@ -3304,74 +797,8 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByG_LikeN(long groupId, String name) {
-		name = Objects.toString(name, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByG_LikeN;
-
-			finderArgs = new Object[] {groupId, name};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_LIKEN_GROUPID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByG_LikeN.count(
+			finderCache, new Object[] {new long[] {groupId}, name});
 	}
 
 	/**
@@ -3383,107 +810,526 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Override
 	public int countByG_LikeN(long[] groupIds, String name) {
-		if (groupIds == null) {
-			groupIds = new long[0];
-		}
-		else if (groupIds.length > 1) {
-			groupIds = ArrayUtil.sortedUnique(groupIds);
-		}
-
-		name = Objects.toString(name, "");
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderArgs = new Object[] {StringUtil.merge(groupIds), name};
-
-			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByG_LikeN, finderArgs, this);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_COUNT_FRAGMENTCOLLECTION_WHERE);
-
-			if (groupIds.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_G_LIKEN_GROUPID_7);
-
-				sb.append(StringUtil.merge(groupIds));
-
-				sb.append(")");
-
-				sb.append(")");
-
-				sb.append(WHERE_AND);
-			}
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_LIKEN_NAME_2);
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(
-						_finderPathWithPaginationCountByG_LikeN, finderArgs,
-						count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return _collectionPersistenceFinderByG_LikeN.count(
+			finderCache, new Object[] {ArrayUtil.sortedUnique(groupIds), name});
 	}
 
-	private static final String _FINDER_COLUMN_G_LIKEN_GROUPID_2 =
-		"fragmentCollection.groupId = ? AND ";
+	private CollectionPersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_collectionPersistenceFinderByG_M;
 
-	private static final String _FINDER_COLUMN_G_LIKEN_GROUPID_7 =
-		"fragmentCollection.groupId IN (";
+	/**
+	 * Returns an ordered range of all the fragment collections where groupId = &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_M(
+		long groupId, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator,
+		boolean useFinderCache) {
 
-	private static final String _FINDER_COLUMN_G_LIKEN_NAME_2 =
-		"fragmentCollection.name LIKE ?";
+		return _collectionPersistenceFinderByG_M.find(
+			finderCache, new Object[] {new long[] {groupId}, marketplace},
+			start, end, orderByComparator, useFinderCache);
+	}
 
-	private static final String _FINDER_COLUMN_G_LIKEN_NAME_3 =
-		"(fragmentCollection.name IS NULL OR fragmentCollection.name LIKE '')";
+	/**
+	 * Returns the first fragment collection in the ordered set where groupId = &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param marketplace the marketplace
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment collection
+	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
+	 */
+	@Override
+	public FragmentCollection findByG_M_First(
+			long groupId, boolean marketplace,
+			OrderByComparator<FragmentCollection> orderByComparator)
+		throws NoSuchCollectionException {
+
+		FragmentCollection fragmentCollection = fetchByG_M_First(
+			groupId, marketplace, orderByComparator);
+
+		if (fragmentCollection != null) {
+			return fragmentCollection;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("groupId=");
+		sb.append(groupId);
+
+		sb.append(", marketplace=");
+		sb.append(marketplace);
+
+		sb.append("}");
+
+		throw new NoSuchCollectionException(sb.toString());
+	}
+
+	/**
+	 * Returns the first fragment collection in the ordered set where groupId = &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param marketplace the marketplace
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
+	 */
+	@Override
+	public FragmentCollection fetchByG_M_First(
+		long groupId, boolean marketplace,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return _collectionPersistenceFinderByG_M.fetchFirst(
+			finderCache, new Object[] {new long[] {groupId}, marketplace},
+			orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment collections where groupId = &#63; and marketplace = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupIds the group IDs
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_M(
+		long[] groupIds, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator,
+		boolean useFinderCache) {
+
+		return _collectionPersistenceFinderByG_M.find(
+			finderCache,
+			new Object[] {ArrayUtil.sortedUnique(groupIds), marketplace}, start,
+			end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Removes all the fragment collections where groupId = &#63; and marketplace = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param marketplace the marketplace
+	 */
+	@Override
+	public void removeByG_M(long groupId, boolean marketplace) {
+		_collectionPersistenceFinderByG_M.remove(
+			finderCache, new Object[] {new long[] {groupId}, marketplace});
+	}
+
+	/**
+	 * Returns the number of fragment collections where groupId = &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param marketplace the marketplace
+	 * @return the number of matching fragment collections
+	 */
+	@Override
+	public int countByG_M(long groupId, boolean marketplace) {
+		return _collectionPersistenceFinderByG_M.count(
+			finderCache, new Object[] {new long[] {groupId}, marketplace});
+	}
+
+	/**
+	 * Returns the number of fragment collections where groupId = any &#63; and marketplace = &#63;.
+	 *
+	 * @param groupIds the group IDs
+	 * @param marketplace the marketplace
+	 * @return the number of matching fragment collections
+	 */
+	@Override
+	public int countByG_M(long[] groupIds, boolean marketplace) {
+		return _collectionPersistenceFinderByG_M.count(
+			finderCache,
+			new Object[] {ArrayUtil.sortedUnique(groupIds), marketplace});
+	}
+
+	private CollectionPersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_collectionPersistenceFinderByG_LikeN_M;
+
+	/**
+	 * Returns all the fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @return the matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long groupId, String name, boolean marketplace) {
+
+		return findByG_LikeN_M(
+			groupId, name, marketplace, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			null);
+	}
+
+	/**
+	 * Returns a range of all the fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @return the range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long groupId, String name, boolean marketplace, int start, int end) {
+
+		return findByG_LikeN_M(groupId, name, marketplace, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long groupId, String name, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return findByG_LikeN_M(
+			groupId, name, marketplace, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long groupId, String name, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator,
+		boolean useFinderCache) {
+
+		return _collectionPersistenceFinderByG_LikeN_M.find(
+			finderCache, new Object[] {new long[] {groupId}, name, marketplace},
+			start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment collection in the ordered set where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment collection
+	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
+	 */
+	@Override
+	public FragmentCollection findByG_LikeN_M_First(
+			long groupId, String name, boolean marketplace,
+			OrderByComparator<FragmentCollection> orderByComparator)
+		throws NoSuchCollectionException {
+
+		FragmentCollection fragmentCollection = fetchByG_LikeN_M_First(
+			groupId, name, marketplace, orderByComparator);
+
+		if (fragmentCollection != null) {
+			return fragmentCollection;
+		}
+
+		StringBundler sb = new StringBundler(8);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("groupId=");
+		sb.append(groupId);
+
+		sb.append(", nameLIKE");
+		sb.append(name);
+
+		sb.append(", marketplace=");
+		sb.append(marketplace);
+
+		sb.append("}");
+
+		throw new NoSuchCollectionException(sb.toString());
+	}
+
+	/**
+	 * Returns the first fragment collection in the ordered set where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
+	 */
+	@Override
+	public FragmentCollection fetchByG_LikeN_M_First(
+		long groupId, String name, boolean marketplace,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return _collectionPersistenceFinderByG_LikeN_M.fetchFirst(
+			finderCache, new Object[] {new long[] {groupId}, name, marketplace},
+			orderByComparator);
+	}
+
+	/**
+	 * Returns all the fragment collections where groupId = any &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupIds the group IDs
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @return the matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long[] groupIds, String name, boolean marketplace) {
+
+		return findByG_LikeN_M(
+			groupIds, name, marketplace, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			null);
+	}
+
+	/**
+	 * Returns a range of all the fragment collections where groupId = any &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupIds the group IDs
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @return the range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long[] groupIds, String name, boolean marketplace, int start, int end) {
+
+		return findByG_LikeN_M(groupIds, name, marketplace, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment collections where groupId = any &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupIds the group IDs
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long[] groupIds, String name, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return findByG_LikeN_M(
+			groupIds, name, marketplace, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupIds the group IDs
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @param start the lower bound of the range of fragment collections
+	 * @param end the upper bound of the range of fragment collections (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment collections
+	 */
+	@Override
+	public List<FragmentCollection> findByG_LikeN_M(
+		long[] groupIds, String name, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator,
+		boolean useFinderCache) {
+
+		return _collectionPersistenceFinderByG_LikeN_M.find(
+			finderCache,
+			new Object[] {ArrayUtil.sortedUnique(groupIds), name, marketplace},
+			start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Removes all the fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 */
+	@Override
+	public void removeByG_LikeN_M(
+		long groupId, String name, boolean marketplace) {
+
+		_collectionPersistenceFinderByG_LikeN_M.remove(
+			finderCache,
+			new Object[] {new long[] {groupId}, name, marketplace});
+	}
+
+	/**
+	 * Returns the number of fragment collections where groupId = &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @return the number of matching fragment collections
+	 */
+	@Override
+	public int countByG_LikeN_M(
+		long groupId, String name, boolean marketplace) {
+
+		return _collectionPersistenceFinderByG_LikeN_M.count(
+			finderCache,
+			new Object[] {new long[] {groupId}, name, marketplace});
+	}
+
+	/**
+	 * Returns the number of fragment collections where groupId = any &#63; and name LIKE &#63; and marketplace = &#63;.
+	 *
+	 * @param groupIds the group IDs
+	 * @param name the name
+	 * @param marketplace the marketplace
+	 * @return the number of matching fragment collections
+	 */
+	@Override
+	public int countByG_LikeN_M(
+		long[] groupIds, String name, boolean marketplace) {
+
+		return _collectionPersistenceFinderByG_LikeN_M.count(
+			finderCache,
+			new Object[] {ArrayUtil.sortedUnique(groupIds), name, marketplace});
+	}
+
+	private UniquePersistenceFinder
+		<FragmentCollection, NoSuchCollectionException>
+			_uniquePersistenceFinderByERC_G;
+
+	/**
+	 * Returns the fragment collection where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchCollectionException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching fragment collection
+	 * @throws NoSuchCollectionException if a matching fragment collection could not be found
+	 */
+	@Override
+	public FragmentCollection findByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchCollectionException {
+
+		return _uniquePersistenceFinderByERC_G.find(
+			finderCache, new Object[] {externalReferenceCode, groupId});
+	}
+
+	/**
+	 * Returns the fragment collection where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching fragment collection, or <code>null</code> if a matching fragment collection could not be found
+	 */
+	@Override
+	public FragmentCollection fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		return _uniquePersistenceFinderByERC_G.fetch(
+			finderCache, new Object[] {externalReferenceCode, groupId},
+			useFinderCache);
+	}
+
+	/**
+	 * Removes the fragment collection where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the fragment collection that was removed
+	 */
+	@Override
+	public FragmentCollection removeByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchCollectionException {
+
+		FragmentCollection fragmentCollection = findByERC_G(
+			externalReferenceCode, groupId);
+
+		return remove(fragmentCollection);
+	}
+
+	/**
+	 * Returns the number of fragment collections where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching fragment collections
+	 */
+	@Override
+	public int countByERC_G(String externalReferenceCode, long groupId) {
+		return _uniquePersistenceFinderByERC_G.count(
+			finderCache, new Object[] {externalReferenceCode, groupId});
+	}
 
 	public FragmentCollectionPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
@@ -3498,134 +1344,6 @@ public class FragmentCollectionPersistenceImpl
 		setModelPKClass(long.class);
 
 		setTable(FragmentCollectionTable.INSTANCE);
-	}
-
-	/**
-	 * Caches the fragment collection in the entity cache if it is enabled.
-	 *
-	 * @param fragmentCollection the fragment collection
-	 */
-	@Override
-	public void cacheResult(FragmentCollection fragmentCollection) {
-		if (fragmentCollection.getCtCollectionId() != 0) {
-			return;
-		}
-
-		entityCache.putResult(
-			FragmentCollectionImpl.class, fragmentCollection.getPrimaryKey(),
-			fragmentCollection);
-
-		finderCache.putResult(
-			_finderPathFetchByUUID_G,
-			new Object[] {
-				fragmentCollection.getUuid(), fragmentCollection.getGroupId()
-			},
-			fragmentCollection);
-
-		finderCache.putResult(
-			_finderPathFetchByG_FCK,
-			new Object[] {
-				fragmentCollection.getGroupId(),
-				fragmentCollection.getFragmentCollectionKey()
-			},
-			fragmentCollection);
-	}
-
-	private int _valueObjectFinderCacheListThreshold;
-
-	/**
-	 * Caches the fragment collections in the entity cache if it is enabled.
-	 *
-	 * @param fragmentCollections the fragment collections
-	 */
-	@Override
-	public void cacheResult(List<FragmentCollection> fragmentCollections) {
-		if ((_valueObjectFinderCacheListThreshold == 0) ||
-			((_valueObjectFinderCacheListThreshold > 0) &&
-			 (fragmentCollections.size() >
-				 _valueObjectFinderCacheListThreshold))) {
-
-			return;
-		}
-
-		for (FragmentCollection fragmentCollection : fragmentCollections) {
-			if (fragmentCollection.getCtCollectionId() != 0) {
-				continue;
-			}
-
-			if (entityCache.getResult(
-					FragmentCollectionImpl.class,
-					fragmentCollection.getPrimaryKey()) == null) {
-
-				cacheResult(fragmentCollection);
-			}
-		}
-	}
-
-	/**
-	 * Clears the cache for all fragment collections.
-	 *
-	 * <p>
-	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
-	 * </p>
-	 */
-	@Override
-	public void clearCache() {
-		entityCache.clearCache(FragmentCollectionImpl.class);
-
-		finderCache.clearCache(FragmentCollectionImpl.class);
-	}
-
-	/**
-	 * Clears the cache for the fragment collection.
-	 *
-	 * <p>
-	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
-	 * </p>
-	 */
-	@Override
-	public void clearCache(FragmentCollection fragmentCollection) {
-		entityCache.removeResult(
-			FragmentCollectionImpl.class, fragmentCollection);
-	}
-
-	@Override
-	public void clearCache(List<FragmentCollection> fragmentCollections) {
-		for (FragmentCollection fragmentCollection : fragmentCollections) {
-			entityCache.removeResult(
-				FragmentCollectionImpl.class, fragmentCollection);
-		}
-	}
-
-	@Override
-	public void clearCache(Set<Serializable> primaryKeys) {
-		finderCache.clearCache(FragmentCollectionImpl.class);
-
-		for (Serializable primaryKey : primaryKeys) {
-			entityCache.removeResult(FragmentCollectionImpl.class, primaryKey);
-		}
-	}
-
-	protected void cacheUniqueFindersCache(
-		FragmentCollectionModelImpl fragmentCollectionModelImpl) {
-
-		Object[] args = new Object[] {
-			fragmentCollectionModelImpl.getUuid(),
-			fragmentCollectionModelImpl.getGroupId()
-		};
-
-		finderCache.putResult(_finderPathCountByUUID_G, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByUUID_G, args, fragmentCollectionModelImpl);
-
-		args = new Object[] {
-			fragmentCollectionModelImpl.getGroupId(),
-			fragmentCollectionModelImpl.getFragmentCollectionKey()
-		};
-
-		finderCache.putResult(_finderPathCountByG_FCK, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByG_FCK, args, fragmentCollectionModelImpl);
 	}
 
 	/**
@@ -3662,48 +1380,6 @@ public class FragmentCollectionPersistenceImpl
 		throws NoSuchCollectionException {
 
 		return remove((Serializable)fragmentCollectionId);
-	}
-
-	/**
-	 * Removes the fragment collection with the primary key from the database. Also notifies the appropriate model listeners.
-	 *
-	 * @param primaryKey the primary key of the fragment collection
-	 * @return the fragment collection that was removed
-	 * @throws NoSuchCollectionException if a fragment collection with the primary key could not be found
-	 */
-	@Override
-	public FragmentCollection remove(Serializable primaryKey)
-		throws NoSuchCollectionException {
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			FragmentCollection fragmentCollection =
-				(FragmentCollection)session.get(
-					FragmentCollectionImpl.class, primaryKey);
-
-			if (fragmentCollection == null) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-				}
-
-				throw new NoSuchCollectionException(
-					_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-			}
-
-			return remove(fragmentCollection);
-		}
-		catch (NoSuchCollectionException noSuchEntityException) {
-			throw noSuchEntityException;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
 	}
 
 	@Override
@@ -3773,6 +1449,72 @@ public class FragmentCollectionPersistenceImpl
 			fragmentCollection.setUuid(uuid);
 		}
 
+		if (Validator.isNull(fragmentCollection.getExternalReferenceCode())) {
+			fragmentCollection.setExternalReferenceCode(
+				fragmentCollection.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					fragmentCollectionModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					fragmentCollection.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = fragmentCollection.getCompanyId();
+
+					long groupId = fragmentCollection.getGroupId();
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = fragmentCollection.getPrimaryKey();
+					}
+
+					try {
+						fragmentCollection.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								FragmentCollection.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								fragmentCollection.getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			FragmentCollection ercFragmentCollection = fetchByERC_G(
+				fragmentCollection.getExternalReferenceCode(),
+				fragmentCollection.getGroupId());
+
+			if (isNew) {
+				if (ercFragmentCollection != null) {
+					throw new DuplicateFragmentCollectionExternalReferenceCodeException(
+						"Duplicate fragment collection with external reference code " +
+							fragmentCollection.getExternalReferenceCode() +
+								" and group " +
+									fragmentCollection.getGroupId());
+				}
+			}
+			else {
+				if ((ercFragmentCollection != null) &&
+					(fragmentCollection.getFragmentCollectionId() !=
+						ercFragmentCollection.getFragmentCollectionId())) {
+
+					throw new DuplicateFragmentCollectionExternalReferenceCodeException(
+						"Duplicate fragment collection with external reference code " +
+							fragmentCollection.getExternalReferenceCode() +
+								" and group " +
+									fragmentCollection.getGroupId());
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -3824,52 +1566,13 @@ public class FragmentCollectionPersistenceImpl
 			closeSession(session);
 		}
 
-		if (fragmentCollection.getCtCollectionId() != 0) {
-			if (isNew) {
-				fragmentCollection.setNew(false);
-			}
-
-			fragmentCollection.resetOriginalValues();
-
-			return fragmentCollection;
-		}
-
-		entityCache.putResult(
-			FragmentCollectionImpl.class, fragmentCollectionModelImpl, false,
-			true);
-
-		cacheUniqueFindersCache(fragmentCollectionModelImpl);
+		cacheUniqueFindersResult(fragmentCollection, false);
 
 		if (isNew) {
 			fragmentCollection.setNew(false);
 		}
 
 		fragmentCollection.resetOriginalValues();
-
-		return fragmentCollection;
-	}
-
-	/**
-	 * Returns the fragment collection with the primary key or throws a <code>com.liferay.portal.kernel.exception.NoSuchModelException</code> if it could not be found.
-	 *
-	 * @param primaryKey the primary key of the fragment collection
-	 * @return the fragment collection
-	 * @throws NoSuchCollectionException if a fragment collection with the primary key could not be found
-	 */
-	@Override
-	public FragmentCollection findByPrimaryKey(Serializable primaryKey)
-		throws NoSuchCollectionException {
-
-		FragmentCollection fragmentCollection = fetchByPrimaryKey(primaryKey);
-
-		if (fragmentCollection == null) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-			}
-
-			throw new NoSuchCollectionException(
-				_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-		}
 
 		return fragmentCollection;
 	}
@@ -3888,42 +1591,9 @@ public class FragmentCollectionPersistenceImpl
 		return findByPrimaryKey((Serializable)fragmentCollectionId);
 	}
 
-	/**
-	 * Returns the fragment collection with the primary key or returns <code>null</code> if it could not be found.
-	 *
-	 * @param primaryKey the primary key of the fragment collection
-	 * @return the fragment collection, or <code>null</code> if a fragment collection with the primary key could not be found
-	 */
 	@Override
-	public FragmentCollection fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(
-				FragmentCollection.class, primaryKey)) {
-
-			return super.fetchByPrimaryKey(primaryKey);
-		}
-
-		FragmentCollection fragmentCollection = null;
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			fragmentCollection = (FragmentCollection)session.get(
-				FragmentCollectionImpl.class, primaryKey);
-
-			if (fragmentCollection != null) {
-				cacheResult(fragmentCollection);
-			}
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-
-		return fragmentCollection;
+	protected CTPersistenceHelper getCTPersistenceHelper() {
+		return ctPersistenceHelper;
 	}
 
 	/**
@@ -3935,295 +1605,6 @@ public class FragmentCollectionPersistenceImpl
 	@Override
 	public FragmentCollection fetchByPrimaryKey(long fragmentCollectionId) {
 		return fetchByPrimaryKey((Serializable)fragmentCollectionId);
-	}
-
-	@Override
-	public Map<Serializable, FragmentCollection> fetchByPrimaryKeys(
-		Set<Serializable> primaryKeys) {
-
-		if (ctPersistenceHelper.isProductionMode(FragmentCollection.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
-		}
-
-		if (primaryKeys.isEmpty()) {
-			return Collections.emptyMap();
-		}
-
-		Map<Serializable, FragmentCollection> map =
-			new HashMap<Serializable, FragmentCollection>();
-
-		if (primaryKeys.size() == 1) {
-			Iterator<Serializable> iterator = primaryKeys.iterator();
-
-			Serializable primaryKey = iterator.next();
-
-			FragmentCollection fragmentCollection = fetchByPrimaryKey(
-				primaryKey);
-
-			if (fragmentCollection != null) {
-				map.put(primaryKey, fragmentCollection);
-			}
-
-			return map;
-		}
-
-		if ((databaseInMaxParameters > 0) &&
-			(primaryKeys.size() > databaseInMaxParameters)) {
-
-			Iterator<Serializable> iterator = primaryKeys.iterator();
-
-			while (iterator.hasNext()) {
-				Set<Serializable> page = new HashSet<>();
-
-				for (int i = 0;
-					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
-
-					page.add(iterator.next());
-				}
-
-				map.putAll(fetchByPrimaryKeys(page));
-			}
-
-			return map;
-		}
-
-		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
-
-		sb.append(getSelectSQL());
-		sb.append(" WHERE ");
-		sb.append(getPKDBName());
-		sb.append(" IN (");
-
-		for (Serializable primaryKey : primaryKeys) {
-			sb.append((long)primaryKey);
-
-			sb.append(",");
-		}
-
-		sb.setIndex(sb.index() - 1);
-
-		sb.append(")");
-
-		String sql = sb.toString();
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			Query query = session.createQuery(sql);
-
-			for (FragmentCollection fragmentCollection :
-					(List<FragmentCollection>)query.list()) {
-
-				map.put(
-					fragmentCollection.getPrimaryKeyObj(), fragmentCollection);
-
-				cacheResult(fragmentCollection);
-			}
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-
-		return map;
-	}
-
-	/**
-	 * Returns all the fragment collections.
-	 *
-	 * @return the fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findAll() {
-		return findAll(QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the fragment collections.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @return the range of fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findAll(int start, int end) {
-		return findAll(start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the fragment collections.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findAll(
-		int start, int end,
-		OrderByComparator<FragmentCollection> orderByComparator) {
-
-		return findAll(start, end, orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the fragment collections.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentCollectionModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of fragment collections
-	 * @param end the upper bound of the range of fragment collections (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of fragment collections
-	 */
-	@Override
-	public List<FragmentCollection> findAll(
-		int start, int end,
-		OrderByComparator<FragmentCollection> orderByComparator,
-		boolean useFinderCache) {
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<FragmentCollection> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<FragmentCollection>)finderCache.getResult(
-				finderPath, finderArgs, this);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_FRAGMENTCOLLECTION);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_FRAGMENTCOLLECTION;
-
-				sql = sql.concat(FragmentCollectionModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<FragmentCollection>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
-	}
-
-	/**
-	 * Removes all the fragment collections from the database.
-	 *
-	 */
-	@Override
-	public void removeAll() {
-		for (FragmentCollection fragmentCollection : findAll()) {
-			remove(fragmentCollection);
-		}
-	}
-
-	/**
-	 * Returns the number of fragment collections.
-	 *
-	 * @return the number of fragment collections
-	 */
-	@Override
-	public int countAll() {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			FragmentCollection.class);
-
-		Long count = null;
-
-		if (productionMode) {
-			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
-		}
-
-		if (count == null) {
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(
-					_SQL_COUNT_FRAGMENTCOLLECTION);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(
-						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
 	}
 
 	@Override
@@ -4285,26 +1666,30 @@ public class FragmentCollectionPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("groupId");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("fragmentCollectionKey");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("description");
-		ctStrictColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("fragmentCollectionKey");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("description");
+		ctMergeColumnNames.add("marketplace");
+		ctMergeColumnNames.add("lastPublishDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("fragmentCollectionId"));
@@ -4315,6 +1700,9 @@ public class FragmentCollectionPersistenceImpl
 
 		_uniqueIndexColumnNames.add(
 			new String[] {"groupId", "fragmentCollectionKey"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "groupId"});
 	}
 
 	/**
@@ -4322,114 +1710,231 @@ public class FragmentCollectionPersistenceImpl
 	 */
 	@Activate
 	public void activate() {
-		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
-			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
+		_collectionPersistenceFinderByUuid = new CollectionPersistenceFinder<>(
+			this,
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid",
+				new String[] {
+					String.class.getName(), Integer.class.getName(),
+					Integer.class.getName(), OrderByComparator.class.getName()
+				},
+				new String[] {"uuid_"}, true),
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByUuid",
+				new String[] {String.class.getName()}, new String[] {"uuid_"},
+				0, 1, true, null),
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUuid",
+				new String[] {String.class.getName()}, new String[] {"uuid_"},
+				0, 1, false, null),
+			_SQL_SELECT_FRAGMENTCOLLECTION_WHERE,
+			_SQL_COUNT_FRAGMENTCOLLECTION_WHERE,
+			FragmentCollectionModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX, "",
+			new FinderColumn<>(
+				"fragmentCollection.", "uuid", "uuid_",
+				FinderColumn.Type.STRING, "=", true, true,
+				FragmentCollection::getUuid));
 
-		_finderPathWithPaginationFindAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findAll", new String[0],
-			new String[0], true);
+		_uniquePersistenceFinderByUUID_G = new UniquePersistenceFinder<>(
+			this,
+			createUniqueFinderPath(
+				FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
+				new String[] {String.class.getName(), Long.class.getName()},
+				new String[] {"uuid_", "groupId"}, 0, 1, false,
+				convertNullFunction(FragmentCollection::getUuid),
+				FragmentCollection::getGroupId),
+			_SQL_SELECT_FRAGMENTCOLLECTION_WHERE, "",
+			new FinderColumn<>(
+				"fragmentCollection.", "uuid", "uuid_",
+				FinderColumn.Type.STRING, "=", true, true,
+				FragmentCollection::getUuid),
+			new FinderColumn<>(
+				"fragmentCollection.", "groupId", FinderColumn.Type.LONG, "=",
+				true, true, FragmentCollection::getGroupId));
 
-		_finderPathWithoutPaginationFindAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findAll", new String[0],
-			new String[0], true);
+		_collectionPersistenceFinderByUuid_C =
+			new CollectionPersistenceFinder<>(
+				this,
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
+					new String[] {
+						String.class.getName(), Long.class.getName(),
+						Integer.class.getName(), Integer.class.getName(),
+						OrderByComparator.class.getName()
+					},
+					new String[] {"uuid_", "companyId"}, true),
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByUuid_C",
+					new String[] {String.class.getName(), Long.class.getName()},
+					new String[] {"uuid_", "companyId"}, 0, 1, true, null),
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUuid_C",
+					new String[] {String.class.getName(), Long.class.getName()},
+					new String[] {"uuid_", "companyId"}, 0, 1, false, null),
+				_SQL_SELECT_FRAGMENTCOLLECTION_WHERE,
+				_SQL_COUNT_FRAGMENTCOLLECTION_WHERE,
+				FragmentCollectionModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX,
+				"",
+				new FinderColumn<>(
+					"fragmentCollection.", "uuid", "uuid_",
+					FinderColumn.Type.STRING, "=", true, true,
+					FragmentCollection::getUuid),
+				new FinderColumn<>(
+					"fragmentCollection.", "companyId", FinderColumn.Type.LONG,
+					"=", true, true, FragmentCollection::getCompanyId));
 
-		_finderPathCountAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countAll",
-			new String[0], new String[0], false);
+		_collectionPersistenceFinderByGroupId =
+			new CollectionPersistenceFinder<>(
+				this,
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByGroupId",
+					new String[] {
+						Long.class.getName(), Integer.class.getName(),
+						Integer.class.getName(),
+						OrderByComparator.class.getName()
+					},
+					new String[] {"groupId"}, true),
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByGroupId",
+					new String[] {Long.class.getName()},
+					new String[] {"groupId"}, true),
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByGroupId",
+					new String[] {Long.class.getName()},
+					new String[] {"groupId"}, false),
+				_SQL_SELECT_FRAGMENTCOLLECTION_WHERE,
+				_SQL_COUNT_FRAGMENTCOLLECTION_WHERE,
+				FragmentCollectionModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX,
+				"",
+				new ArrayableFinderColumn<>(
+					"fragmentCollection.", "groupId", FinderColumn.Type.LONG,
+					"=", false, true, true, FragmentCollection::getGroupId));
 
-		_finderPathWithPaginationFindByUuid = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid",
-			new String[] {
-				String.class.getName(), Integer.class.getName(),
-				Integer.class.getName(), OrderByComparator.class.getName()
-			},
-			new String[] {"uuid_"}, true);
+		_uniquePersistenceFinderByG_FCK = new UniquePersistenceFinder<>(
+			this,
+			createUniqueFinderPath(
+				FINDER_CLASS_NAME_ENTITY, "fetchByG_FCK",
+				new String[] {Long.class.getName(), String.class.getName()},
+				new String[] {"groupId", "fragmentCollectionKey"}, 0, 2, false,
+				FragmentCollection::getGroupId,
+				convertNullFunction(
+					FragmentCollection::getFragmentCollectionKey)),
+			_SQL_SELECT_FRAGMENTCOLLECTION_WHERE, "",
+			new FinderColumn<>(
+				"fragmentCollection.", "groupId", FinderColumn.Type.LONG, "=",
+				true, true, FragmentCollection::getGroupId),
+			new FinderColumn<>(
+				"fragmentCollection.", "fragmentCollectionKey",
+				FinderColumn.Type.STRING, "=", true, true,
+				FragmentCollection::getFragmentCollectionKey));
 
-		_finderPathWithoutPaginationFindByUuid = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByUuid",
-			new String[] {String.class.getName()}, new String[] {"uuid_"},
-			true);
+		_collectionPersistenceFinderByG_LikeN =
+			new CollectionPersistenceFinder<>(
+				this,
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_LikeN",
+					new String[] {
+						Long.class.getName(), String.class.getName(),
+						Integer.class.getName(), Integer.class.getName(),
+						OrderByComparator.class.getName()
+					},
+					new String[] {"groupId", "name"}, true),
+				null,
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByG_LikeN",
+					new String[] {Long.class.getName(), String.class.getName()},
+					new String[] {"groupId", "name"}, false),
+				_SQL_SELECT_FRAGMENTCOLLECTION_WHERE,
+				_SQL_COUNT_FRAGMENTCOLLECTION_WHERE,
+				FragmentCollectionModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX,
+				"",
+				new ArrayableFinderColumn<>(
+					"fragmentCollection.", "groupId", FinderColumn.Type.LONG,
+					"=", false, true, true, FragmentCollection::getGroupId),
+				new FinderColumn<>(
+					"fragmentCollection.", "name", FinderColumn.Type.STRING,
+					"LIKE", true, true, FragmentCollection::getName));
 
-		_finderPathCountByUuid = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUuid",
-			new String[] {String.class.getName()}, new String[] {"uuid_"},
-			false);
+		_collectionPersistenceFinderByG_M = new CollectionPersistenceFinder<>(
+			this,
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_M",
+				new String[] {
+					Long.class.getName(), Boolean.class.getName(),
+					Integer.class.getName(), Integer.class.getName(),
+					OrderByComparator.class.getName()
+				},
+				new String[] {"groupId", "marketplace"}, true),
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByG_M",
+				new String[] {Long.class.getName(), Boolean.class.getName()},
+				new String[] {"groupId", "marketplace"}, true),
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByG_M",
+				new String[] {Long.class.getName(), Boolean.class.getName()},
+				new String[] {"groupId", "marketplace"}, false),
+			_SQL_SELECT_FRAGMENTCOLLECTION_WHERE,
+			_SQL_COUNT_FRAGMENTCOLLECTION_WHERE,
+			FragmentCollectionModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX, "",
+			new ArrayableFinderColumn<>(
+				"fragmentCollection.", "groupId", FinderColumn.Type.LONG, "=",
+				false, true, true, FragmentCollection::getGroupId),
+			new FinderColumn<>(
+				"fragmentCollection.", "marketplace", FinderColumn.Type.BOOLEAN,
+				"=", true, true, FragmentCollection::isMarketplace));
 
-		_finderPathFetchByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, true);
+		_collectionPersistenceFinderByG_LikeN_M =
+			new CollectionPersistenceFinder<>(
+				this,
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_LikeN_M",
+					new String[] {
+						Long.class.getName(), String.class.getName(),
+						Boolean.class.getName(), Integer.class.getName(),
+						Integer.class.getName(),
+						OrderByComparator.class.getName()
+					},
+					new String[] {"groupId", "name", "marketplace"}, true),
+				null,
+				new FinderPath(
+					FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByG_LikeN_M",
+					new String[] {
+						Long.class.getName(), String.class.getName(),
+						Boolean.class.getName()
+					},
+					new String[] {"groupId", "name", "marketplace"}, false),
+				_SQL_SELECT_FRAGMENTCOLLECTION_WHERE,
+				_SQL_COUNT_FRAGMENTCOLLECTION_WHERE,
+				FragmentCollectionModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX,
+				"",
+				new ArrayableFinderColumn<>(
+					"fragmentCollection.", "groupId", FinderColumn.Type.LONG,
+					"=", false, true, true, FragmentCollection::getGroupId),
+				new FinderColumn<>(
+					"fragmentCollection.", "name", FinderColumn.Type.STRING,
+					"LIKE", true, true, FragmentCollection::getName),
+				new FinderColumn<>(
+					"fragmentCollection.", "marketplace",
+					FinderColumn.Type.BOOLEAN, "=", true, true,
+					FragmentCollection::isMarketplace));
 
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
-
-		_finderPathWithPaginationFindByUuid_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
-			new String[] {
-				String.class.getName(), Long.class.getName(),
-				Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			},
-			new String[] {"uuid_", "companyId"}, true);
-
-		_finderPathWithoutPaginationFindByUuid_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByUuid_C",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "companyId"}, true);
-
-		_finderPathCountByUuid_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUuid_C",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "companyId"}, false);
-
-		_finderPathWithPaginationFindByGroupId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByGroupId",
-			new String[] {
-				Long.class.getName(), Integer.class.getName(),
-				Integer.class.getName(), OrderByComparator.class.getName()
-			},
-			new String[] {"groupId"}, true);
-
-		_finderPathWithoutPaginationFindByGroupId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByGroupId",
-			new String[] {Long.class.getName()}, new String[] {"groupId"},
-			true);
-
-		_finderPathCountByGroupId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByGroupId",
-			new String[] {Long.class.getName()}, new String[] {"groupId"},
-			false);
-
-		_finderPathWithPaginationCountByGroupId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByGroupId",
-			new String[] {Long.class.getName()}, new String[] {"groupId"},
-			false);
-
-		_finderPathFetchByG_FCK = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByG_FCK",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "fragmentCollectionKey"}, true);
-
-		_finderPathCountByG_FCK = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_FCK",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "fragmentCollectionKey"}, false);
-
-		_finderPathWithPaginationFindByG_LikeN = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_LikeN",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			},
-			new String[] {"groupId", "name"}, true);
-
-		_finderPathWithPaginationCountByG_LikeN = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByG_LikeN",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "name"}, false);
+		_uniquePersistenceFinderByERC_G = new UniquePersistenceFinder<>(
+			this,
+			createUniqueFinderPath(
+				FINDER_CLASS_NAME_ENTITY, "fetchByERC_G",
+				new String[] {String.class.getName(), Long.class.getName()},
+				new String[] {"externalReferenceCode", "groupId"}, 0, 1, false,
+				convertNullFunction(
+					FragmentCollection::getExternalReferenceCode),
+				FragmentCollection::getGroupId),
+			_SQL_SELECT_FRAGMENTCOLLECTION_WHERE, "",
+			new FinderColumn<>(
+				"fragmentCollection.", "externalReferenceCode",
+				FinderColumn.Type.STRING, "=", true, true,
+				FragmentCollection::getExternalReferenceCode),
+			new FinderColumn<>(
+				"fragmentCollection.", "groupId", FinderColumn.Type.LONG, "=",
+				true, true, FragmentCollection::getGroupId));
 
 		FragmentCollectionUtil.setPersistence(this);
 	}
@@ -4476,22 +1981,17 @@ public class FragmentCollectionPersistenceImpl
 	@Reference
 	protected FinderCache finderCache;
 
+	private static final String _ENTITY_ALIAS_PREFIX =
+		FragmentCollectionModelImpl.ENTITY_ALIAS + ".";
+
 	private static final String _SQL_SELECT_FRAGMENTCOLLECTION =
 		"SELECT fragmentCollection FROM FragmentCollection fragmentCollection";
 
 	private static final String _SQL_SELECT_FRAGMENTCOLLECTION_WHERE =
 		"SELECT fragmentCollection FROM FragmentCollection fragmentCollection WHERE ";
 
-	private static final String _SQL_COUNT_FRAGMENTCOLLECTION =
-		"SELECT COUNT(fragmentCollection) FROM FragmentCollection fragmentCollection";
-
 	private static final String _SQL_COUNT_FRAGMENTCOLLECTION_WHERE =
 		"SELECT COUNT(fragmentCollection) FROM FragmentCollection fragmentCollection WHERE ";
-
-	private static final String _ORDER_BY_ENTITY_ALIAS = "fragmentCollection.";
-
-	private static final String _NO_SUCH_ENTITY_WITH_PRIMARY_KEY =
-		"No FragmentCollection exists with the primary key ";
 
 	private static final String _NO_SUCH_ENTITY_WITH_KEY =
 		"No FragmentCollection exists with the key {";
@@ -4508,3 +2008,4 @@ public class FragmentCollectionPersistenceImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1614019896

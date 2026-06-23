@@ -10,8 +10,10 @@ import com.liferay.dynamic.data.mapping.model.DDMFormInstanceModel;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
@@ -31,6 +33,8 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -111,11 +115,18 @@ public class DDMFormInstanceModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table DDMFormInstance";
 
+	public static final String ENTITY_ALIAS = "ddmFormInstance";
+
+	public static final String FILTER_PK_COLUMN_NAME = "formInstanceId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY ddmFormInstance.formInstanceId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY DDMFormInstance.formInstanceId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY ddmFormInstance.formInstanceId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -139,14 +150,20 @@ public class DDMFormInstanceModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 4L;
+	public static final long STRUCTUREID_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FORMINSTANCEID_COLUMN_BITMASK = 8L;
+	public static final long FORMINSTANCEID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -659,6 +676,16 @@ public class DDMFormInstanceModelImpl
 		_structureId = structureId;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalStructureId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("structureId"));
+	}
+
 	@JSON
 	@Override
 	public String getVersion() {
@@ -934,12 +961,12 @@ public class DDMFormInstanceModelImpl
 	}
 
 	public com.liferay.dynamic.data.mapping.storage.DDMFormValues
-		getDDMFormValues() {
+		getSettingsDDMFormValues() {
 
 		return null;
 	}
 
-	public void setDDMFormValues(
+	public void setSettingsDDMFormValues(
 		com.liferay.dynamic.data.mapping.storage.DDMFormValues ddmFormValues) {
 	}
 
@@ -1177,6 +1204,14 @@ public class DDMFormInstanceModelImpl
 	}
 
 	@Override
+	public void copyCacheFields(DDMFormInstance source) {
+		DDMFormInstanceModelImpl sourceModelImpl =
+			(DDMFormInstanceModelImpl)source;
+
+		setSettingsDDMFormValues(sourceModelImpl.getSettingsDDMFormValues());
+	}
+
+	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -1227,7 +1262,7 @@ public class DDMFormInstanceModelImpl
 
 		_setModifiedDate = false;
 
-		setDDMFormValues(null);
+		setSettingsDDMFormValues(null);
 
 		_columnBitmask = 0;
 	}
@@ -1337,9 +1372,17 @@ public class DDMFormInstanceModelImpl
 			ddmFormInstanceCacheModel.lastPublishDate = Long.MIN_VALUE;
 		}
 
-		setDDMFormValues(null);
+		try {
+			setSettingsDDMFormValues(null);
 
-		ddmFormInstanceCacheModel._ddmFormValues = getDDMFormValues();
+			ddmFormInstanceCacheModel.ddmFormValues =
+				(com.liferay.dynamic.data.mapping.storage.DDMFormValues)
+					_ddmFormValuesMethodHandle.invokeExact(
+						(DDMFormInstanceImpl)this);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return ddmFormInstanceCacheModel;
 	}
@@ -1536,6 +1579,42 @@ public class DDMFormInstanceModelImpl
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer
+		<DDMFormInstance,
+		 com.liferay.dynamic.data.mapping.storage.DDMFormValues>
+			ddmFormValuesUpdateEntityCacheBiConsumer =
+				(ddmFormInstance, ddmFormValues) -> {
+					DDMFormInstanceCacheModel ddmFormInstanceCacheModel =
+						EntityCacheUtil.fetchCacheModel(
+							DDMFormInstanceImpl.class,
+							ddmFormInstance.getPrimaryKey(),
+							DDMFormInstanceCacheModel.class);
+
+					if ((ddmFormInstanceCacheModel != null) &&
+						(ddmFormInstanceCacheModel.getMvccVersion() ==
+							ddmFormInstance.getMvccVersion())) {
+
+						ddmFormInstanceCacheModel.ddmFormValues = ddmFormValues;
+					}
+				};
+
+	private static final MethodHandle _ddmFormValuesMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_ddmFormValuesMethodHandle = lookup.findGetter(
+				DDMFormInstanceImpl.class, "_ddmFormValues",
+				com.liferay.dynamic.data.mapping.storage.DDMFormValues.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private DDMFormInstance _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1368697225

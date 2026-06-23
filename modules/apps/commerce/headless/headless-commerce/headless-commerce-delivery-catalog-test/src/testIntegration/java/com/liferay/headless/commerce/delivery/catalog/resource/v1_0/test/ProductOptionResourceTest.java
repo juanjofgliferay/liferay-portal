@@ -9,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPOption;
+import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
@@ -69,13 +70,42 @@ public class ProductOptionResourceTest
 
 				setCatalogId(
 					() -> {
-						CommerceCatalog catalog =
+						CommerceCatalog commerceCatalog =
 							_cpDefinition.getCommerceCatalog();
 
-						return catalog.getCommerceCatalogId();
+						return commerceCatalog.getCommerceCatalogId();
 					});
 			}
 		};
+	}
+
+	@Override
+	protected ProductOption
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionsPage_addProductOption(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode,
+				ProductOption productOption)
+		throws Exception {
+
+		return _addCPDefinitionOptionRel();
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionsPage_getChannelExternalReferenceCode()
+		throws Exception {
+
+		return _commerceChannel.getExternalReferenceCode();
+	}
+
+	@Override
+	protected String
+			testGetChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionsPage_getProductExternalReferenceCode()
+		throws Exception {
+
+		CProduct cProduct = _cpDefinition.getCProduct();
+
+		return cProduct.getExternalReferenceCode();
 	}
 
 	@Override
@@ -99,13 +129,6 @@ public class ProductOptionResourceTest
 		throws Exception {
 
 		return _cpDefinition.getCProductId();
-	}
-
-	@Override
-	protected ProductOption testGraphQLProductOption_addProductOption()
-		throws Exception {
-
-		return _addCPDefinitionOptionRel();
 	}
 
 	private ProductOption _addCPDefinitionOptionRel() throws Exception {
@@ -136,10 +159,10 @@ public class ProductOptionResourceTest
 
 				setCatalogId(
 					() -> {
-						CommerceCatalog catalog =
+						CommerceCatalog commerceCatalog =
 							_cpDefinition.getCommerceCatalog();
 
-						return catalog.getCommerceCatalogId();
+						return commerceCatalog.getCommerceCatalogId();
 					});
 			}
 		};

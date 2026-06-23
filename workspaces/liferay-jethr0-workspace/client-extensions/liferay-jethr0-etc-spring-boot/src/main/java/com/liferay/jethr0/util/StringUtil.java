@@ -13,9 +13,12 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Michael Hashimoto
@@ -33,11 +36,7 @@ public class StringUtil {
 	}
 
 	public static boolean equals(URL url1, URL url2) {
-		if (Objects.equals(fixURL(url1), fixURL(url2))) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(fixURL(url1), fixURL(url2));
 	}
 
 	public static URL fixURL(URL url) {
@@ -57,11 +56,7 @@ public class StringUtil {
 
 		String trimmedString = string.trim();
 
-		if (trimmedString.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return trimmedString.isEmpty();
 	}
 
 	public static String join(String delimiter, Collection<String> strings) {
@@ -135,6 +130,16 @@ public class StringUtil {
 		}
 
 		return sb.toString();
+	}
+
+	public static Set<String> toSet(String string, String delimiter) {
+		Set<String> set = new HashSet<>();
+
+		if (!isNullOrEmpty(string)) {
+			Collections.addAll(set, string.split(delimiter));
+		}
+
+		return set;
 	}
 
 	public static String toString(Date date) {

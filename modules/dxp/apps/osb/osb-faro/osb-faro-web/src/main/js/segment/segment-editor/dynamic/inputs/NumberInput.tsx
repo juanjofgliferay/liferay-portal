@@ -14,25 +14,6 @@ interface INumberInputProps extends ISegmentEditorInputBase {
 }
 
 export default class NumberInput extends React.Component<INumberInputProps> {
-	_completedAnalytics = false;
-
-	componentDidUpdate() {
-		const {
-			id,
-			property: {entityName, type},
-			valid
-		} = this.props;
-
-		if (!id && valid && !this._completedAnalytics) {
-			this._completedAnalytics = true;
-
-			analytics.track('Dynamic Segment Creation - Completed Attribute', {
-				entityName,
-				type
-			});
-		}
-	}
-
 	@autobind
 	handleBlur() {
 		const {onChange, value} = this.props;
@@ -41,7 +22,7 @@ export default class NumberInput extends React.Component<INumberInputProps> {
 	}
 
 	@autobind
-	handleChange(event) {
+	handleChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const {value} = event.target;
 
 		const {onChange} = this.props;

@@ -8,7 +8,6 @@ package com.liferay.jenkins.results.parser.github.webhook;
 import com.liferay.jenkins.results.parser.GitCommit;
 import com.liferay.jenkins.results.parser.GitHubRemoteGitCommit;
 import com.liferay.jenkins.results.parser.GitHubRemoteGitRepository;
-import com.liferay.jenkins.results.parser.JenkinsMaster;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil.HttpRequestMethod;
 import com.liferay.jenkins.results.parser.JenkinsStopBuildUtil;
@@ -303,11 +302,7 @@ public class GitHubWebhookPayloadProcessor {
 	}
 
 	public boolean isValidAutopull(String repo) {
-		if (repo.startsWith("com-liferay-")) {
-			return true;
-		}
-
-		return false;
+		return repo.startsWith("com-liferay-");
 	}
 
 	public boolean isValidCIMergeFile(PullRequest pullRequest) {
@@ -707,21 +702,12 @@ public class GitHubWebhookPayloadProcessor {
 
 		string = string.trim();
 
-		if (string.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return string.isEmpty();
 	}
 
 	protected boolean isBotPush(PushEventPayload pushEventPayload) {
-		if (JenkinsResultsParserUtil.isNullOrEmpty(
-				getSubrepoPath(pushEventPayload))) {
-
-			return false;
-		}
-
-		return true;
+		return !JenkinsResultsParserUtil.isNullOrEmpty(
+			getSubrepoPath(pushEventPayload));
 	}
 
 	protected boolean isLiferayUser(String gitHubUsername) {
@@ -762,11 +748,7 @@ public class GitHubWebhookPayloadProcessor {
 	protected boolean isSynchronizeablePullRequest(PullRequest pullRequest) {
 		String receiverUsername = pullRequest.getReceiverUsername();
 
-		if (receiverUsername.equals("brianchandotcom")) {
-			return false;
-		}
-
-		return true;
+		return !receiverUsername.equals("brianchandotcom");
 	}
 
 	protected boolean isTestablePullRequest(PullRequest pullRequest) {
@@ -1058,11 +1040,7 @@ public class GitHubWebhookPayloadProcessor {
 
 		JSONObject commitJSONObject = new JSONObject(processURL(sb.toString()));
 
-		if (!commitJSONObject.has("sha")) {
-			return false;
-		}
-
-		return true;
+		return commitJSONObject.has("sha");
 	}
 
 	protected String join(String[] array) {
@@ -1650,8 +1628,7 @@ public class GitHubWebhookPayloadProcessor {
 				"http://test-1.liferay.com",
 				_jenkinsBuildProperties.getProperty(
 					"jenkins.load.balancer.blacklist", ""),
-				1, JenkinsMaster.getSlaveRAMMinimumDefault(),
-				JenkinsMaster.getSlavesPerHostDefault());
+				1);
 		}
 		catch (Exception exception) {
 			if (_log.isInfoEnabled()) {
@@ -2421,7 +2398,9 @@ public class GitHubWebhookPayloadProcessor {
 		"commit = ([0-9a-f]{40})");
 	private static Set<String> _passingTestSuites;
 	private static final Pattern _passingTestSuiteStatusDescriptionPattern =
-		Pattern.compile("\"ci:test:(?<testSuiteName>[^\"]+)\"\\s*has PASSED.");
+		Pattern.compile(
+			"\"ci:test:(?<testSuiteName>[^\"]+)\"" +
+				"(?:\\s* has PASSED.|\\s* was BYPASSED.)");
 	private static final Pattern _reevaluatePattern = Pattern.compile(
 		"ci:reevaluate:(?<buildID>[\\d]+_[\\d]+)");
 	private static final Pattern _testPattern = Pattern.compile(

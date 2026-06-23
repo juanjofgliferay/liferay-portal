@@ -1,4 +1,4 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import EVENT_DEFINITION_QUERY, {
 	EventDefinitionData,
 	EventDefinitionVariables,
@@ -12,7 +12,7 @@ import {Event} from 'event-analysis/utils/types';
 import {getDefinitions, getEvents} from 'shared/util/breadcrumbs';
 import {HasModal, Modal} from 'shared/types';
 import {SafeResults} from 'shared/hoc/util';
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery} from '@apollo/client';
 
 interface IViewProps extends React.HTMLAttributes<HTMLElement>, HasModal {
 	close: Modal.close;
@@ -60,7 +60,6 @@ const View: React.FC<IViewProps> = ({close, eventId, groupId, open}) => {
 						getEvents({groupId}),
 						{active: true, label: displayName || name}
 					]}
-					groupId={groupId}
 					pageActions={viewEventPageActions}
 					pageDescription={
 						description || Liferay.Language.get('no-description')
@@ -69,7 +68,7 @@ const View: React.FC<IViewProps> = ({close, eventId, groupId, open}) => {
 					subTitle={displayName}
 				>
 					<EventDetailsCard
-						eventAttributes={eventAttributeDefinitions}
+						eventAttributes={eventAttributeDefinitions ?? []}
 						eventName={name}
 						groupId={groupId}
 					/>

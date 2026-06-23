@@ -19,16 +19,21 @@ import com.liferay.frontend.js.loader.modules.extender.npm.ModuleNameUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.servlet.taglib.util.OutputData;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.CharArrayWriter;
 import java.io.IOException;
@@ -39,9 +44,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -60,19 +62,19 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 	}
 
 	@Override
-	public String getConfiguration(
+	public JSONObject getConfigurationJSONObject(
 		FragmentRendererContext fragmentRendererContext) {
 
 		FragmentEntryLink fragmentEntryLink =
 			fragmentRendererContext.getFragmentEntryLink();
 
-		return fragmentEntryLink.getConfiguration();
+		return fragmentEntryLink.getConfigurationJSONObject(true);
 	}
 
 	@Override
 	public String getKey() {
 		return FragmentRendererConstants.
-			FRAGMENT_ENTRY_FRAGMENT_RENDERER_KEY_REACT;
+			FRAGMENT_RENDERER_KEY_FRAGMENT_ENTRY_REACT;
 	}
 
 	@Override
@@ -102,8 +104,8 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 				configurationJSONObject =
 					_fragmentEntryConfigurationParser.
 						getConfigurationJSONObject(
-							fragmentEntryLink.getConfiguration(),
-							fragmentEntryLink.getEditableValues(),
+							fragmentEntryLink.getConfigurationJSONObject(),
+							fragmentEntryLink.getEditableValuesJSONObject(),
 							LocaleUtil.getMostRelevantLocale());
 			}
 
@@ -164,7 +166,7 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 			Map<String, Object> data, HttpServletRequest httpServletRequest)
 		throws IOException {
 
-		StringBundler sb = new StringBundler(9);
+		StringBundler sb = new StringBundler(11);
 
 		sb.append("<div id=\"");
 		sb.append(fragmentElementId);
@@ -191,13 +193,23 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 			if (fragmentRendererContext.isEditMode() ||
 				fragmentRendererContext.isIndexMode()) {
 
-				sb.append("<style>");
+				sb.append("<style");
+				sb.append(
+					ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+						httpServletRequest));
+				sb.append(StringPool.GREATER_THAN);
 				sb.append(fragmentEntryLink.getCss());
 				sb.append("</style>");
 			}
 			else {
-				String outputKey =
-					fragmentEntryLink.getFragmentEntryId() + "_CSS";
+				Long groupId = ScopeUtil.getItemGroupId(
+					fragmentEntryLink.getCompanyId(),
+					fragmentEntryLink.getFragmentEntryScopeERC(),
+					fragmentEntryLink.getGroupId());
+
+				String outputKey = StringBundler.concat(
+					fragmentEntryLink.getFragmentEntryERC(), "_", groupId,
+					"_CSS");
 
 				OutputData outputData =
 					(OutputData)httpServletRequest.getAttribute(
@@ -223,7 +235,11 @@ public class FragmentEntryFragmentRendererReact implements FragmentRenderer {
 				}
 
 				if (!cssLoaded) {
-					sb.append("<style>");
+					sb.append("<style");
+					sb.append(
+						ContentSecurityPolicyNonceProviderUtil.
+							getNonceAttribute(httpServletRequest));
+					sb.append(StringPool.GREATER_THAN);
 					sb.append(fragmentEntryLink.getCss());
 					sb.append("</style>");
 

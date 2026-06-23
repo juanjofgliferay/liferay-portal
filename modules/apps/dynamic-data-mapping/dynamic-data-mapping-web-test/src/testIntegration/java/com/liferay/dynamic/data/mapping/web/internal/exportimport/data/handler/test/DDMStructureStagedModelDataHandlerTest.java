@@ -27,6 +27,7 @@ import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -46,6 +47,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -110,6 +112,8 @@ public class DDMStructureStagedModelDataHandlerTest
 	@After
 	@Override
 	public void tearDown() throws Exception {
+		super.tearDown();
+
 		LanguageUtil.init();
 
 		CompanyTestUtil.resetCompanyLocales(
@@ -142,29 +146,32 @@ public class DDMStructureStagedModelDataHandlerTest
 
 		User targetGuestUser = _targetCompany.getGuestUser();
 
-		initImport(companyGroup, _targetCompany.getGroup());
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				companyGroup, _targetCompany.getGroup())) {
 
-		portletDataContext.setUserIdStrategy(
-			new TestUserIdStrategy(targetGuestUser));
+			portletDataContext.setUserIdStrategy(
+				new TestUserIdStrategy(targetGuestUser));
 
-		StagedModel exportedStagedModel = readExportedStagedModel(structure);
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				structure);
 
-		Assert.assertNotNull(exportedStagedModel);
+			Assert.assertNotNull(exportedStagedModel);
 
-		try {
-			ExportImportThreadLocal.setPortletImportInProcess(true);
+			try {
+				ExportImportThreadLocal.setPortletImportInProcess(true);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStagedModel);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStagedModel);
+			}
+			finally {
+				ExportImportThreadLocal.setPortletImportInProcess(false);
+			}
+
+			StagedModel importedStagedModel = getStagedModel(
+				exportedStagedModel.getUuid(), _targetCompany.getGroup());
+
+			Assert.assertNotNull(importedStagedModel);
 		}
-		finally {
-			ExportImportThreadLocal.setPortletImportInProcess(false);
-		}
-
-		StagedModel importedStagedModel = getStagedModel(
-			exportedStagedModel.getUuid(), _targetCompany.getGroup());
-
-		Assert.assertNotNull(importedStagedModel);
 	}
 
 	@Test
@@ -197,26 +204,27 @@ public class DDMStructureStagedModelDataHandlerTest
 			ExportImportThreadLocal.setPortletExportInProcess(false);
 		}
 
-		initImport();
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable()) {
+			StagedModel exportedStagedModel = readExportedStagedModel(
+				structure);
 
-		StagedModel exportedStagedModel = readExportedStagedModel(structure);
+			Assert.assertNotNull(exportedStagedModel);
 
-		Assert.assertNotNull(exportedStagedModel);
+			try {
+				ExportImportThreadLocal.setPortletImportInProcess(true);
 
-		try {
-			ExportImportThreadLocal.setPortletImportInProcess(true);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStagedModel);
+			}
+			finally {
+				ExportImportThreadLocal.setPortletImportInProcess(false);
+			}
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStagedModel);
+			StagedModel importedStagedModel = getStagedModel(
+				exportedStagedModel.getUuid(), liveGroup);
+
+			Assert.assertNotNull(importedStagedModel);
 		}
-		finally {
-			ExportImportThreadLocal.setPortletImportInProcess(false);
-		}
-
-		StagedModel importedStagedModel = getStagedModel(
-			exportedStagedModel.getUuid(), liveGroup);
-
-		Assert.assertNotNull(importedStagedModel);
 	}
 
 	@Test
@@ -433,31 +441,31 @@ public class DDMStructureStagedModelDataHandlerTest
 
 		// Data provider instance
 
-		List<DDMDataProviderInstanceLink> dataProviderInstanceLinks =
+		List<DDMDataProviderInstanceLink> ddmDataProviderInstanceLinks =
 			DDMDataProviderInstanceLinkLocalServiceUtil.
 				getDataProviderInstanceLinks(structure.getStructureId());
 
-		List<DDMDataProviderInstanceLink> importedDataProviderInstanceLinks =
+		List<DDMDataProviderInstanceLink> importedDDMDataProviderInstanceLinks =
 			DDMDataProviderInstanceLinkLocalServiceUtil.
 				getDataProviderInstanceLinks(
 					importedStructure.getStructureId());
 
 		Assert.assertEquals(
-			dataProviderInstanceLinks.toString(), 1,
-			dataProviderInstanceLinks.size());
+			ddmDataProviderInstanceLinks.toString(), 1,
+			ddmDataProviderInstanceLinks.size());
 		Assert.assertEquals(
-			importedDataProviderInstanceLinks.toString(), 1,
-			importedDataProviderInstanceLinks.size());
+			importedDDMDataProviderInstanceLinks.toString(), 1,
+			importedDDMDataProviderInstanceLinks.size());
 
 		DDMDataProviderInstanceLink dataProviderInstanceLink =
-			dataProviderInstanceLinks.get(0);
+			ddmDataProviderInstanceLinks.get(0);
 
 		DDMDataProviderInstance dataProviderInstance =
 			DDMDataProviderInstanceLocalServiceUtil.getDataProviderInstance(
 				dataProviderInstanceLink.getDataProviderInstanceId());
 
 		DDMDataProviderInstanceLink importedDataProviderInstanceLink =
-			importedDataProviderInstanceLinks.get(0);
+			importedDDMDataProviderInstanceLinks.get(0);
 
 		long importedDataProviderInstanceId =
 			importedDataProviderInstanceLink.getDataProviderInstanceId();
@@ -497,11 +505,12 @@ public class DDMStructureStagedModelDataHandlerTest
 				"key", "countryId"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
-				"password", "test"));
+				"password", TestPropsValues.USER_PASSWORD));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"url",
-				"http://localhost:8080/api/jsonws/country/get-countries"));
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/api/jsonws/country/get-countries"));
 		ddmFormValues.addDDMFormFieldValue(
 			DDMFormValuesTestUtil.createUnlocalizedDDMFormFieldValue(
 				"username", "test@liferay.com"));
@@ -537,28 +546,31 @@ public class DDMStructureStagedModelDataHandlerTest
 			Group exportGroup, Group importGroup, DDMStructure structure)
 		throws Exception {
 
-		initImport(exportGroup, importGroup);
+		try (SafeCloseable safeCloseable = initImportWithSafeCloseable(
+				exportGroup, importGroup)) {
 
-		if (Objects.nonNull(structure)) {
-			DDMStructure exportedStructure =
-				(DDMStructure)readExportedStagedModel(structure);
+			if (Objects.nonNull(structure)) {
+				DDMStructure exportedStructure =
+					(DDMStructure)readExportedStagedModel(structure);
 
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, exportedStructure);
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, exportedStructure);
+			}
 		}
 	}
 
 	private static final String _CLASS_NAME =
 		"com.liferay.dynamic.data.lists.model.DDLRecordSet";
 
-	private static Set<Locale> _availableLocales;
-	private static Locale _defaultLocale;
-
-	@Inject(filter = "ddm.form.values.deserializer.type=json")
-	private static DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;
+	private Set<Locale> _availableLocales;
 
 	@Inject(filter = "ddm.data.provider.type=rest")
 	private DDMDataProvider _ddmDataProvider;
+
+	private Locale _defaultLocale;
+
+	@Inject(filter = "ddm.form.values.deserializer.type=json")
+	private DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;
 
 	@DeleteAfterTestRun
 	private Company _targetCompany;

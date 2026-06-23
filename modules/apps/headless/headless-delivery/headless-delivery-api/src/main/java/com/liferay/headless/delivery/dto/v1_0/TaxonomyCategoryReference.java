@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -40,11 +39,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 	description = "A unique reference to a taxonomy category.",
 	value = "TaxonomyCategoryReference"
 )
-@JsonFilter("Liferay.Vulcan")
-@Schema(
+@io.swagger.v3.oas.annotations.media.Schema(
 	description = "A unique reference to a taxonomy category.",
 	requiredProperties = {"externalReferenceCode"}
 )
+@JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "TaxonomyCategoryReference")
 public class TaxonomyCategoryReference implements Serializable {
 
@@ -58,28 +57,40 @@ public class TaxonomyCategoryReference implements Serializable {
 			TaxonomyCategoryReference.class, json);
 	}
 
-	@Schema(description = "The taxonomy category's external reference code.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The taxonomy category's external reference code."
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -89,30 +100,43 @@ public class TaxonomyCategoryReference implements Serializable {
 	@NotEmpty
 	protected String externalReferenceCode;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The key of the site or asset library where the taxonomy category is located. It can be left out if the taxonomy category is in the same site as the page."
 	)
 	public String getSiteKey() {
+		if (_siteKeySupplier != null) {
+			siteKey = _siteKeySupplier.get();
+
+			_siteKeySupplier = null;
+		}
+
 		return siteKey;
 	}
 
 	public void setSiteKey(String siteKey) {
 		this.siteKey = siteKey;
+
+		_siteKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSiteKey(
 		UnsafeSupplier<String, Exception> siteKeyUnsafeSupplier) {
 
-		try {
-			siteKey = siteKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_siteKeySupplier = () -> {
+			try {
+				return siteKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -120,6 +144,9 @@ public class TaxonomyCategoryReference implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String siteKey;
+
+	@JsonIgnore
+	private Supplier<String> _siteKeySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -149,6 +176,8 @@ public class TaxonomyCategoryReference implements Serializable {
 
 		sb.append("{");
 
+		String externalReferenceCode = getExternalReferenceCode();
+
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -162,6 +191,8 @@ public class TaxonomyCategoryReference implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String siteKey = getSiteKey();
 
 		if (siteKey != null) {
 			if (sb.length() > 1) {
@@ -182,8 +213,8 @@ public class TaxonomyCategoryReference implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryReference",
 		name = "x-class-name"
 	)
@@ -229,7 +260,10 @@ public class TaxonomyCategoryReference implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -275,3 +309,4 @@ public class TaxonomyCategoryReference implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:372345421

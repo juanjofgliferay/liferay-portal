@@ -18,9 +18,9 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.OrganizationService;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.service.UserGroupService;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 import com.liferay.portal.security.audit.event.generators.util.Attribute;
@@ -79,8 +79,8 @@ public class RoleModelListener extends BaseModelListener<Role> {
 			if (!attributes.isEmpty()) {
 				AuditMessage auditMessage =
 					AuditMessageBuilder.buildAuditMessage(
-						EventTypes.UPDATE, Role.class.getName(),
-						role.getRoleId(), attributes);
+						Role.class.getName(), role.getRoleId(),
+						EventTypes.UPDATE, attributes);
 
 				_auditRouter.route(auditMessage);
 			}
@@ -95,7 +95,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 
 		try {
 			AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
-				eventType, Role.class.getName(), role.getRoleId(), null);
+				Role.class.getName(), role.getRoleId(), eventType, null);
 
 			_auditRouter.route(auditMessage);
 		}
@@ -118,7 +118,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 
 		try {
 			AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
-				eventType, associationClassName, (Long)associationClassPK,
+				associationClassName, (Long)associationClassPK, eventType,
 				null);
 
 			JSONObject additionalInfoJSONObject =
@@ -141,7 +141,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 						Organization.class.getName())) {
 
 					Organization organization =
-						_organizationService.getOrganization(
+						_organizationLocalService.getOrganization(
 							group.getClassPK());
 
 					additionalInfoJSONObject.put(
@@ -154,7 +154,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 							_classNameService.getClassNameId(
 								UserGroup.class.getName())) {
 
-					UserGroup userGroup = _userGroupService.getUserGroup(
+					UserGroup userGroup = _userGroupLocalService.getUserGroup(
 						group.getClassPK());
 
 					additionalInfoJSONObject.put(
@@ -214,13 +214,13 @@ public class RoleModelListener extends BaseModelListener<Role> {
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private OrganizationService _organizationService;
+	private OrganizationLocalService _organizationLocalService;
 
 	@Reference
 	private RoleLocalService _roleLocalService;
 
 	@Reference
-	private UserGroupService _userGroupService;
+	private UserGroupLocalService _userGroupLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

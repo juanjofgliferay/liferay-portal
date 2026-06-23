@@ -252,6 +252,26 @@ public class KaleoDefinitionValidationException extends WorkflowException {
 
 	}
 
+	public static class MustNotSetMultipleOutgoingTransitions
+		extends KaleoDefinitionValidationException {
+
+		public MustNotSetMultipleOutgoingTransitions(String node) {
+			super(
+				String.format(
+					"The %s node cannot have multiple outgoing transitions",
+					node));
+
+			_node = node;
+		}
+
+		public String getNode() {
+			return _node;
+		}
+
+		private final String _node;
+
+	}
+
 	public static class MustPairedForkAndJoinNodes
 		extends KaleoDefinitionValidationException {
 
@@ -481,6 +501,15 @@ public class KaleoDefinitionValidationException extends WorkflowException {
 
 		private final int _length;
 		private final String _node;
+
+	}
+
+	public static class NotAllowedScriptLanguage
+		extends KaleoDefinitionValidationException {
+
+		public NotAllowedScriptLanguage(String msg) {
+			super(msg);
+		}
 
 	}
 

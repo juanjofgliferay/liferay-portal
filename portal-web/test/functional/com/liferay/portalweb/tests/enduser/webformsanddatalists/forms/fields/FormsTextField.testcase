@@ -1,4 +1,4 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
 	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
@@ -55,7 +55,7 @@ definition {
 			outputParameterPath2 = "a2",
 			outputParameterType = "List",
 			outputParameterType2 = "List",
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			url = "${portalURL}/api/jsonws/country/get-countries",
 			username = "test@liferay.com");
 
@@ -187,6 +187,8 @@ definition {
 			key_rowNumber = 1,
 			locator1 = "FormFields#OPTIONS_OPTION_VALUE_FIELD",
 			value1 = "Option 1");
+
+		FormFields.clickAddOptionButton();
 
 		Type(
 			key_rowNumber = 2,
@@ -437,7 +439,6 @@ definition {
 	@description = "LPS-59997 - Verify that a Text Field can be set to Multiple Lines"
 	@priority = 3
 	test CanBeSetToMultipleLines {
-		property portal.acceptance = "true";
 		property portal.upstream = "true";
 		property test.liferay.virtual.instance = "false";
 		property test.run.type = "single";

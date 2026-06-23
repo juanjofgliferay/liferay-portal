@@ -5,6 +5,7 @@
 
 package com.liferay.site.navigation.service.impl;
 
+import com.liferay.batch.engine.thread.local.BatchEngineThreadLocal;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -14,15 +15,12 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
-import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.site.navigation.exception.InvalidSiteNavigationMenuItemOrderException;
 import com.liferay.site.navigation.exception.InvalidSiteNavigationMenuItemTypeException;
 import com.liferay.site.navigation.exception.SiteNavigationMenuItemNameException;
@@ -64,17 +62,11 @@ public class SiteNavigationMenuItemLocalServiceImpl
 
 		if (siteNavigationMenuItem == null) {
 			siteNavigationMenuItem = addSiteNavigationMenuItem(
-				userId, groupId, siteNavigationMenuId,
+				externalReferenceCode, userId, groupId, siteNavigationMenuId,
 				parentSiteNavigationMenuItemId, type,
 				siteNavigationMenuItemPersistence.countByS_P(
 					siteNavigationMenuId, parentSiteNavigationMenuItemId),
 				typeSettings, serviceContext);
-
-			siteNavigationMenuItem.setExternalReferenceCode(
-				externalReferenceCode);
-
-			siteNavigationMenuItem = siteNavigationMenuItemPersistence.update(
-				siteNavigationMenuItem);
 		}
 		else {
 			siteNavigationMenuItem = updateSiteNavigationMenuItem(
@@ -88,20 +80,37 @@ public class SiteNavigationMenuItemLocalServiceImpl
 
 	@Override
 	public SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type, int order,
-			String typeSettings, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, int order, String typeSettings,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		SiteNavigationMenuItemType siteNavigationMenuItemType =
 			_siteNavigationMenuItemTypeRegistry.getSiteNavigationMenuItemType(
 				type);
 
-		if (siteNavigationMenuItemType == null) {
+		if (!BatchEngineThreadLocal.isBatchImportInProcess() &&
+			(siteNavigationMenuItemType == null)) {
+
 			throw new InvalidSiteNavigationMenuItemTypeException(type);
 		}
 
-		String name = siteNavigationMenuItemType.getName(typeSettings);
+		String name = null;
+
+		if (BatchEngineThreadLocal.isBatchImportInProcess() &&
+			(siteNavigationMenuItemType == null)) {
+
+			UnicodeProperties typeSettingsUnicodeProperties =
+				UnicodePropertiesBuilder.fastLoad(
+					typeSettings
+				).build();
+
+			name = typeSettingsUnicodeProperties.getProperty("title");
+		}
+		else {
+			name = siteNavigationMenuItemType.getName(typeSettings);
+		}
 
 		_validateName(name);
 
@@ -113,6 +122,7 @@ public class SiteNavigationMenuItemLocalServiceImpl
 			siteNavigationMenuItemPersistence.create(siteNavigationMenuItemId);
 
 		siteNavigationMenuItem.setUuid(serviceContext.getUuid());
+		siteNavigationMenuItem.setExternalReferenceCode(externalReferenceCode);
 		siteNavigationMenuItem.setGroupId(groupId);
 		siteNavigationMenuItem.setCompanyId(user.getCompanyId());
 		siteNavigationMenuItem.setUserId(userId);
@@ -131,9 +141,9 @@ public class SiteNavigationMenuItemLocalServiceImpl
 
 	@Override
 	public SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type,
-			String typeSettings, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings, ServiceContext serviceContext)
 		throws PortalException {
 
 		int siteNavigationMenuItemCount =
@@ -141,7 +151,7 @@ public class SiteNavigationMenuItemLocalServiceImpl
 				siteNavigationMenuId, parentSiteNavigationMenuItemId);
 
 		return addSiteNavigationMenuItem(
-			userId, groupId, siteNavigationMenuId,
+			externalReferenceCode, userId, groupId, siteNavigationMenuId,
 			parentSiteNavigationMenuItemId, type, siteNavigationMenuItemCount,
 			typeSettings, serviceContext);
 	}
@@ -231,6 +241,18 @@ public class SiteNavigationMenuItemLocalServiceImpl
 	}
 
 	@Override
+	public SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		SiteNavigationMenuItem siteNavigationMenuItem =
+			siteNavigationMenuItemPersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		return deleteSiteNavigationMenuItem(siteNavigationMenuItem);
+	}
+
+	@Override
 	public void deleteSiteNavigationMenuItems(long siteNavigationMenuId) {
 		siteNavigationMenuItemPersistence.removeBySiteNavigationMenuId(
 			siteNavigationMenuId);
@@ -282,7 +304,7 @@ public class SiteNavigationMenuItemLocalServiceImpl
 		return siteNavigationMenuItemPersistence.findByS_P(
 			siteNavigationMenuId, parentSiteNavigationMenuItemId,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new SiteNavigationMenuItemOrderComparator());
+			SiteNavigationMenuItemOrderComparator.getInstance(true));
 	}
 
 	@Override
@@ -293,6 +315,13 @@ public class SiteNavigationMenuItemLocalServiceImpl
 		return siteNavigationMenuItemPersistence.findBySiteNavigationMenuId(
 			siteNavigationMenuId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 			orderByComparator);
+	}
+
+	@Override
+	public List<SiteNavigationMenuItem> getSiteNavigationMenuItems(
+		String type) {
+
+		return siteNavigationMenuItemPersistence.findByType(type);
 	}
 
 	@Override
@@ -422,8 +451,6 @@ public class SiteNavigationMenuItemLocalServiceImpl
 
 		_validateName(name);
 
-		_validateLayout(typeSettings);
-
 		siteNavigationMenuItem.setUserId(userId);
 		siteNavigationMenuItem.setUserName(user.getFullName());
 		siteNavigationMenuItem.setModifiedDate(
@@ -460,30 +487,6 @@ public class SiteNavigationMenuItemLocalServiceImpl
 		}
 	}
 
-	private void _validateLayout(String typeSettings) throws PortalException {
-		UnicodeProperties typeSettingsUnicodeProperties =
-			UnicodePropertiesBuilder.create(
-				true
-			).fastLoad(
-				typeSettings
-			).build();
-
-		String layoutUuid = typeSettingsUnicodeProperties.getProperty(
-			"layoutUuid");
-
-		if (Validator.isNull(layoutUuid)) {
-			return;
-		}
-
-		long groupId = GetterUtil.getLong(
-			typeSettingsUnicodeProperties.getProperty("groupId"));
-		boolean privateLayout = GetterUtil.getBoolean(
-			typeSettingsUnicodeProperties.getProperty("privateLayout"));
-
-		_layoutService.getLayoutByUuidAndGroupId(
-			layoutUuid, groupId, privateLayout);
-	}
-
 	private void _validateName(String name) throws PortalException {
 		if (name == null) {
 			return;
@@ -497,9 +500,6 @@ public class SiteNavigationMenuItemLocalServiceImpl
 				"Maximum length of name exceeded");
 		}
 	}
-
-	@Reference
-	private LayoutService _layoutService;
 
 	@Reference
 	private SiteNavigationMenuItemTypeRegistry

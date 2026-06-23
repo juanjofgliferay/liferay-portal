@@ -12,8 +12,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationTemplateService
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 public class CommerceNotificationTemplateServiceWrapper
 	implements CommerceNotificationTemplateService,
 			   ServiceWrapper<CommerceNotificationTemplateService> {
@@ -180,3 +182,4 @@ public class CommerceNotificationTemplateServiceWrapper
 		_commerceNotificationTemplateService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-351529764

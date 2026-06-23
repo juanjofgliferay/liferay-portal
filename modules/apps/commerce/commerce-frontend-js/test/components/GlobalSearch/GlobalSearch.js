@@ -5,7 +5,7 @@
 
 import '../../tests_utilities/polyfills';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {fireEvent, render} from '@testing-library/react';
 import fetchMock from 'fetch-mock';
 import React from 'react';
@@ -36,7 +36,7 @@ const productsEndpointRegexp = new RegExp(
 
 const query = 'test';
 
-describe.skip('Global Search', () => {
+describe('Global Search', () => {
 	describe('When responses are ok', () => {
 		let renderedComponent;
 
@@ -124,13 +124,13 @@ describe.skip('Global Search', () => {
 				});
 
 				it('must show a product list', () => {
-					const products = renderedComponent.baseElement.querySelectorAll(
-						'.product-item'
-					);
+					const products =
+						renderedComponent.baseElement.querySelectorAll(
+							'.product-item'
+						);
 					const firstProduct = products[0];
-					const firstProductThumbnail = firstProduct.querySelector(
-						'img'
-					);
+					const firstProductThumbnail =
+						firstProduct.querySelector('img');
 
 					expect(products.length).toBe(4);
 
@@ -150,14 +150,17 @@ describe.skip('Global Search', () => {
 				});
 
 				it('must show a orders list', () => {
-					const carts = renderedComponent.baseElement.querySelectorAll(
-						'.order-item'
-					);
+					const carts =
+						renderedComponent.baseElement.querySelectorAll(
+							'.order-item'
+						);
 					const firstCart = carts[0];
 
 					expect(carts.length).toBe(4);
 
-					expect(firstCart.text).toContain(orderTemplate.id);
+					expect(firstCart.text).toContain(
+						orderTemplate.id.toString()
+					);
 
 					expect(firstCart.href).toContain(
 						`/cart-page/${orderTemplate.id}`
@@ -165,13 +168,13 @@ describe.skip('Global Search', () => {
 				});
 
 				it('must show an account list', () => {
-					const accounts = renderedComponent.baseElement.querySelectorAll(
-						'.account-item'
-					);
+					const accounts =
+						renderedComponent.baseElement.querySelectorAll(
+							'.account-item'
+						);
 					const firstAccount = accounts[0];
-					const firstAccountThumbnail = firstAccount.querySelector(
-						'img'
-					);
+					const firstAccountThumbnail =
+						firstAccount.querySelector('img');
 
 					expect(accounts.length).toBe(4);
 

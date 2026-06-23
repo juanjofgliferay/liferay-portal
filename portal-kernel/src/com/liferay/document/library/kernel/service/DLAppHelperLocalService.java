@@ -92,6 +92,9 @@ public interface DLAppHelperLocalService extends BaseLocalService {
 		long groupId, long folderId, boolean active, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DLFileShortcut> getGroupFileShortcuts(long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FileEntry> getNoAssetFileEntries();
 
 	/**
@@ -207,3 +210,4 @@ public interface DLAppHelperLocalService extends BaseLocalService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1946046677

@@ -38,13 +38,14 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
 import com.liferay.site.memberships.web.internal.util.GroupUtil;
+import com.liferay.site.teams.item.selector.SiteTeamsItemSelectorCriterion;
 import com.liferay.users.admin.item.selector.UserSiteMembershipItemSelectorCriterion;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -176,6 +177,12 @@ public class UsersManagementToolbarDisplayContext
 				ActionKeys.ASSIGN_USER_ROLES)) {
 
 			availableActions.add("selectRole");
+
+			Role role = _usersDisplayContext.getRole();
+
+			if (role != null) {
+				availableActions.add("removeUserRole");
+			}
 		}
 
 		return StringUtil.merge(availableActions, StringPool.COMMA);
@@ -240,6 +247,8 @@ public class UsersManagementToolbarDisplayContext
 					PortletURLBuilder.create(
 						PortletURLUtil.clone(
 							currentURLObj, liferayPortletResponse)
+					).setNavigation(
+						"all"
 					).setParameter(
 						"roleId", "0"
 					).buildString());
@@ -255,6 +264,8 @@ public class UsersManagementToolbarDisplayContext
 					PortletURLBuilder.create(
 						PortletURLUtil.clone(
 							currentURLObj, liferayPortletResponse)
+					).setNavigation(
+						"all"
 					).setParameter(
 						"teamId", "0"
 					).buildString());
@@ -263,11 +274,6 @@ public class UsersManagementToolbarDisplayContext
 				labelItem.setLabel(team.getName());
 			}
 		).build();
-	}
-
-	@Override
-	public String getInfoPanelId() {
-		return "infoPanelId";
 	}
 
 	@Override
@@ -293,11 +299,6 @@ public class UsersManagementToolbarDisplayContext
 		}
 
 		return false;
-	}
-
-	@Override
-	public Boolean isShowInfoButton() {
-		return true;
 	}
 
 	@Override
@@ -355,8 +356,7 @@ public class UsersManagementToolbarDisplayContext
 		).add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "selectTeams");
-				dropdownItem.putData(
-					"selectTeamsURL", _getSelectorURL("/select_team.jsp"));
+				dropdownItem.putData("selectTeamsURL", _getSelectTeamsURL());
 				dropdownItem.putData(
 					"viewTeamURL",
 					PortletURLBuilder.createRenderURL(
@@ -407,6 +407,24 @@ public class UsersManagementToolbarDisplayContext
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
+	}
+
+	private String _getSelectTeamsURL() {
+		ItemSelector itemSelector =
+			(ItemSelector)httpServletRequest.getAttribute(
+				ItemSelector.class.getName());
+
+		SiteTeamsItemSelectorCriterion siteTeamsItemSelectorCriterion =
+			new SiteTeamsItemSelectorCriterion();
+
+		siteTeamsItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new UUIDItemSelectorReturnType());
+
+		return String.valueOf(
+			itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+				liferayPortletResponse.getNamespace() + "selectTeams",
+				siteTeamsItemSelectorCriterion));
 	}
 
 	private String _getSelectUsersURL() {

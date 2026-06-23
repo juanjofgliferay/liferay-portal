@@ -91,10 +91,10 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 					<%
 					PortletDataHandler portletDataHandler = selPortlet.getPortletDataHandlerInstance();
 
-					PortletDataHandlerControl[] configurationControls = portletDataHandler.getImportConfigurationControls(selPortlet, manifestSummary);
+					PortletDataHandlerControl[] importConfigurationPortletDataHandlerControls = portletDataHandler.getImportConfigurationPortletDataHandlerControls(selPortlet, manifestSummary);
 					%>
 
-					<c:if test="<%= ArrayUtil.isNotEmpty(configurationControls) %>">
+					<c:if test="<%= ArrayUtil.isNotEmpty(importConfigurationPortletDataHandlerControls) %>">
 						<aui:fieldset collapsible="<%= true %>" cssClass="options-group" label="application">
 							<ul class="lfr-tree list-unstyled select-options">
 								<li class="options">
@@ -108,16 +108,40 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 
 											<aui:input label="configuration" name="<%= rootControlId %>" type="checkbox" value="<%= true %>" />
 
-											<div class="hide" id="<portlet:namespace />configuration_<%= selPortlet.getRootPortletId() %>">
+											<ul id="<portlet:namespace />showChangeConfiguration_<%= selPortlet.getRootPortletId() %>">
+												<li>
+													<span class="selected-labels" id="<portlet:namespace />selectedConfiguration_<%= selPortlet.getRootPortletId() %>"></span>
+
+													<clay:button
+														cssClass="configuration-link modify-link pr-1"
+														data-portletid="<%= selPortlet.getRootPortletId() %>"
+														displayType="link"
+														label="change"
+													/>
+
+													<span id="<portlet:namespace />rightConfigurationArrow_<%= selPortlet.getRootPortletId() %>">
+														<clay:icon
+															symbol="angle-right-small"
+														/>
+													</span>
+													<span class="hide" id="<portlet:namespace />downConfigurationArrow_<%= selPortlet.getRootPortletId() %>">
+														<clay:icon
+															symbol="angle-down-small"
+														/>
+													</span>
+												</li>
+											</ul>
+
+											<div id="<portlet:namespace />configuration_<%= selPortlet.getRootPortletId() %>">
 												<ul class="lfr-tree list-unstyled">
 													<li class="tree-item">
-														<aui:fieldset cssClass="portlet-type-data-section" label="configuration">
+														<aui:fieldset cssClass="portlet-type-data-section" id="configuration">
 															<ul class="lfr-tree list-unstyled">
 
 																<%
 																request.setAttribute("render_controls.jsp-action", Constants.IMPORT);
 																request.setAttribute("render_controls.jsp-childControl", false);
-																request.setAttribute("render_controls.jsp-controls", configurationControls);
+																request.setAttribute("render_controls.jsp-controls", importConfigurationPortletDataHandlerControls);
 																request.setAttribute("render_controls.jsp-portletId", selPortlet.getRootPortletId());
 																request.setAttribute("render_controls.jsp-rootControlId", rootControlId);
 																%>
@@ -128,24 +152,6 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 													</li>
 												</ul>
 											</div>
-
-											<ul class="hide" id="<portlet:namespace />showChangeConfiguration_<%= selPortlet.getRootPortletId() %>">
-												<li>
-													<span class="selected-labels" id="<portlet:namespace />selectedConfiguration_<%= selPortlet.getRootPortletId() %>"></span>
-
-													<aui:a
-														cssClass="configuration-link modify-link"
-														data='<%=
-															HashMapBuilder.<String, Object>put(
-																"portletid", selPortlet.getRootPortletId()
-															).build()
-														%>'
-														href="javascript:void(0);"
-														label="change"
-														method="get"
-													/>
-												</li>
-											</ul>
 
 											<aui:script>
 												Liferay.Util.toggleBoxes(
@@ -190,22 +196,47 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 											<aui:input label='<%= LanguageUtil.get(request, "content") + badgeHTML %>' name="<%= rootControlId %>" type="checkbox" value="<%= true %>" />
 
 											<%
-											PortletDataHandlerControl[] importControls = portletDataHandler.getImportControls();
-											PortletDataHandlerControl[] metadataControls = portletDataHandler.getImportMetadataControls();
+											PortletDataHandlerControl[] importMetadataPortletDataHandlerControls = portletDataHandler.getImportMetadataPortletDataHandlerControls();
+											PortletDataHandlerControl[] importPortletDataHandlerControls = portletDataHandler.getImportPortletDataHandlerControls();
 											%>
 
-											<c:if test="<%= ArrayUtil.isNotEmpty(importControls) || ArrayUtil.isNotEmpty(metadataControls) %>">
-												<div class="hide" id="<portlet:namespace />content_<%= selPortlet.getRootPortletId() %>">
+											<c:if test="<%= ArrayUtil.isNotEmpty(importMetadataPortletDataHandlerControls) || ArrayUtil.isNotEmpty(importPortletDataHandlerControls) %>">
+												<ul id="<portlet:namespace />showChangeContent_<%= selPortlet.getRootPortletId() %>">
+													<li class="tree-item">
+														<span class="selected-labels" id="<portlet:namespace />selectedContent_<%= selPortlet.getRootPortletId() %>"></span>
+
+														<clay:button
+															cssClass="content-link modify-link pr-1"
+															data-portletid="<%= selPortlet.getRootPortletId() %>"
+															displayType="link"
+															id='<%= liferayPortletResponse.getNamespace() + "contentLink_" + selPortlet.getRootPortletId() %>'
+															label="change"
+														/>
+
+														<span id="<portlet:namespace />rightContentArrow_<%= selPortlet.getRootPortletId() %>">
+															<clay:icon
+																symbol="angle-right-small"
+															/>
+														</span>
+														<span class="hide" id="<portlet:namespace />downContentArrow_<%= selPortlet.getRootPortletId() %>">
+															<clay:icon
+																symbol="angle-down-small"
+															/>
+														</span>
+													</li>
+												</ul>
+
+												<div id="<portlet:namespace />content_<%= selPortlet.getRootPortletId() %>">
 													<ul class="lfr-tree list-unstyled">
 														<li class="tree-item">
 															<aui:fieldset cssClass="portlet-type-data-section" label="content">
-																<aui:field-wrapper label='<%= ArrayUtil.isNotEmpty(metadataControls) ? "content" : StringPool.BLANK %>'>
-																	<c:if test="<%= importControls != null %>">
+																<aui:field-wrapper label='<%= ArrayUtil.isNotEmpty(importMetadataPortletDataHandlerControls) ? "content" : StringPool.BLANK %>'>
+																	<c:if test="<%= importPortletDataHandlerControls != null %>">
 
 																		<%
 																		request.setAttribute("render_controls.jsp-action", Constants.IMPORT);
 																		request.setAttribute("render_controls.jsp-childControl", false);
-																		request.setAttribute("render_controls.jsp-controls", importControls);
+																		request.setAttribute("render_controls.jsp-controls", importPortletDataHandlerControls);
 																		request.setAttribute("render_controls.jsp-manifestSummary", manifestSummary);
 																		request.setAttribute("render_controls.jsp-portletDisabled", !portletDataHandler.isPublishToLiveByDefault());
 																		request.setAttribute("render_controls.jsp-rootControlId", rootControlId);
@@ -217,19 +248,17 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 																	</c:if>
 																</aui:field-wrapper>
 
-																<c:if test="<%= metadataControls != null %>">
+																<c:if test="<%= importMetadataPortletDataHandlerControls != null %>">
 
 																	<%
-																	for (PortletDataHandlerControl metadataControl : metadataControls) {
-																		PortletDataHandlerBoolean control = (PortletDataHandlerBoolean)metadataControl;
-
-																		PortletDataHandlerControl[] childrenControls = control.getChildren();
+																	for (PortletDataHandlerControl portletDataHandlerControl : importMetadataPortletDataHandlerControls) {
+																		PortletDataHandlerBoolean portletDataHandlerBoolean = (PortletDataHandlerBoolean)portletDataHandlerControl;
 																	%>
 
-																		<c:if test="<%= ArrayUtil.isNotEmpty(childrenControls) %>">
+																		<c:if test="<%= ArrayUtil.isNotEmpty(portletDataHandlerBoolean.getChildrenPortletDataHandlerControls()) %>">
 
 																			<%
-																			request.setAttribute("render_controls.jsp-controls", childrenControls);
+																			request.setAttribute("render_controls.jsp-controls", portletDataHandlerBoolean.getChildrenPortletDataHandlerControls());
 																			%>
 
 																			<aui:field-wrapper label="content-metadata">
@@ -249,25 +278,6 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 													</ul>
 												</div>
 
-												<ul id="<portlet:namespace />showChangeContent_<%= selPortlet.getRootPortletId() %>">
-													<li class="tree-item">
-														<span class="selected-labels" id="<portlet:namespace />selectedContent_<%= selPortlet.getRootPortletId() %>"></span>
-
-														<aui:a
-															cssClass="content-link modify-link"
-															data='<%=
-																HashMapBuilder.<String, Object>put(
-																	"portletid", selPortlet.getRootPortletId()
-																).build()
-															%>'
-															href="javascript:void(0);"
-															id='<%= "contentLink_" + selPortlet.getRootPortletId() %>'
-															label="change"
-															method="get"
-														/>
-													</li>
-												</ul>
-
 												<aui:script>
 													Liferay.Util.toggleBoxes(
 														'<portlet:namespace /><%= PortletDataHandlerKeys.PORTLET_DATA + StringPool.UNDERLINE + selPortlet.getRootPortletId() %>',
@@ -282,7 +292,23 @@ ManifestSummary manifestSummary = ExportImportHelperUtil.getManifestSummary(them
 										<aui:fieldset cssClass="comments-and-ratings" label="for-each-of-the-selected-content-types,-import-their">
 											<span class="selected-labels" id="<portlet:namespace />selectedContentOptions"></span>
 
-											<aui:a cssClass="modify-link" href="javascript:void(0);" id="contentOptionsLink" label="change" method="get" />
+											<clay:button
+												cssClass="pr-1"
+												displayType="link"
+												id='<%= liferayPortletResponse.getNamespace() + "contentOptionsLink" %>'
+												label="change"
+											/>
+
+											<span id="<portlet:namespace />rightContentOptionsArrow">
+												<clay:icon
+													symbol="angle-right-small"
+												/>
+											</span>
+											<span class="hide" id="<portlet:namespace />downContentOptionsArrow">
+												<clay:icon
+													symbol="angle-down-small"
+												/>
+											</span>
 
 											<div class="hide" id="<portlet:namespace />contentOptions">
 												<ul class="lfr-tree list-unstyled">

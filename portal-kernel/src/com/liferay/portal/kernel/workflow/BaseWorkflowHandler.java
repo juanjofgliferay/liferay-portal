@@ -12,28 +12,35 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
 import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalServiceUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.Serializable;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Bruno Farache
@@ -84,21 +91,45 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		throws PortalException {
 
 		try {
-			PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
-				serviceContext.getRequest(), serviceContext.getScopeGroup(),
-				PortletKeys.MY_WORKFLOW_TASK, 0, 0,
-				PortletRequest.RENDER_PHASE);
+			HttpServletRequest httpServletRequest = serviceContext.getRequest();
 
-			portletURL.setParameter("mvcPath", "/edit_workflow_task.jsp");
-			portletURL.setParameter(
-				"workflowTaskId", String.valueOf(workflowTaskId));
-			portletURL.setWindowState(WindowState.MAXIMIZED);
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
-			return portletURL.toString();
+			Layout layout = themeDisplay.getLayout();
+
+			if (!StringUtil.matches(layout.getFriendlyURL(), "/manage")) {
+				layout = LayoutLocalServiceUtil.fetchLayoutByFriendlyURL(
+					layout.getGroupId(), false, "/manage");
+			}
+
+			if (layout == null) {
+				layout = LayoutLocalServiceUtil.fetchLayout(
+					themeDisplay.getPlid());
+			}
+
+			return PortletURLBuilder.create(
+				PortletURLFactoryUtil.create(
+					serviceContext.getRequest(), PortletKeys.MY_WORKFLOW_TASK,
+					layout.getPlid(), PortletRequest.RENDER_PHASE)
+			).setMVCPath(
+				"/edit_workflow_task.jsp"
+			).setBackURL(
+				_getBackURL(httpServletRequest, themeDisplay.getURLCurrent())
+			).setParameter(
+				"workflowTaskId", String.valueOf(workflowTaskId)
+			).setWindowState(
+				WindowState.MAXIMIZED
+			).buildString();
 		}
-		catch (WindowStateException windowStateException) {
-			throw new PortalException(windowStateException);
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(exception);
+			}
 		}
+
+		return null;
 	}
 
 	@Override
@@ -268,6 +299,24 @@ public abstract class BaseWorkflowHandler<T> implements WorkflowHandler<T> {
 		WorkflowInstanceLinkLocalServiceUtil.startWorkflowInstance(
 			companyId, groupId, userId, getClassName(), classPK,
 			workflowContext);
+	}
+
+	private String _getBackURL(
+		HttpServletRequest httpServletRequest, String defaultValue) {
+
+		String backURL = ParamUtil.getString(httpServletRequest, "backURL");
+
+		if (Validator.isNotNull(backURL)) {
+			return backURL;
+		}
+
+		backURL = ParamUtil.getString(httpServletRequest, "redirect");
+
+		if (Validator.isNotNull(backURL)) {
+			return backURL;
+		}
+
+		return defaultValue;
 	}
 
 	private static final boolean _ASSET_TYPE_SEARCHABLE = true;

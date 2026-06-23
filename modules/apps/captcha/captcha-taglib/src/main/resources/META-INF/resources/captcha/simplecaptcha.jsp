@@ -8,8 +8,13 @@
 <%@ include file="/captcha/init.jsp" %>
 
 <%
+String captchaId = PortalUtil.generateRandomKey(request, "captchaId");
+String refreshCaptchaId = PortalUtil.generateRandomKey(request, "refreshCaptchaId");
+
 String errorMessage = (String)request.getAttribute("liferay-captcha:captcha:errorMessage");
 String url = (String)request.getAttribute("liferay-captcha:captcha:url");
+
+String namespace = portletDisplay.getNamespace();
 %>
 
 <c:if test="<%= captchaEnabled %>">
@@ -20,15 +25,18 @@ String url = (String)request.getAttribute("liferay-captcha:captcha:url");
 	if (Validator.isNotNull(errorMessage)) {
 		cssClass += " has-error";
 	}
+
+	url = HttpComponentsUtil.addParameter(url, "captchaId", captchaId);
+	url = HttpComponentsUtil.addParameter(url, "t", String.valueOf(System.currentTimeMillis()));
 	%>
 
 	<div class="<%= cssClass %>">
-		<img alt="<liferay-ui:message escapeAttribute="<%= true %>" key="text-to-identify" />" class="captcha d-inline-block mb-2" id="<portlet:namespace />captcha" src="<%= HtmlUtil.escapeAttribute(HttpComponentsUtil.addParameter(url, "t", String.valueOf(System.currentTimeMillis()))) %>" />
+		<img alt="<liferay-ui:message escapeAttribute="<%= true %>" key="text-to-identify" />" class="captcha d-inline-block mb-2" id="<portlet:namespace /><%= captchaId %>" src="<%= HtmlUtil.escapeAttribute(url) %>" />
 
 		<liferay-ui:icon
 			cssClass="align-top d-inline-block refresh"
 			icon="reload"
-			id="refreshCaptcha"
+			id="<%= refreshCaptchaId %>"
 			label="<%= false %>"
 			localizeMessage="<%= true %>"
 			markupView="lexicon"
@@ -36,37 +44,28 @@ String url = (String)request.getAttribute("liferay-captcha:captcha:url");
 			url="javascript:void(0);"
 		/>
 
-		<div class="form-group input-text-wrapper">
-			<label class="control-label" id="<portlet:namespace />captchaLabel">
-				<liferay-ui:message key="text-verification" />
-			</label>
+		<aui:input name="captchaId" type="hidden" value="<%= captchaId %>" />
+		<aui:input aria-describedby='<%= namespace + "captchaError" %>' class="form-control" ignoreRequestValue="<%= true %>" label="text-verification" name="captchaText" required="<%= true %>" size="10" type="text" value="" />
 
-			<input
-				aria-labelledby="<portlet:namespace />captchaLabel <portlet:namespace />captchaError" class="form-control" name="<portlet:namespace />captchaText" required="<%= true %>" size="10" type="text" value=""
-			/>
+		<c:if test="<%= Validator.isNotNull(errorMessage) %>">
+			<p class="font-weight-semi-bold mt-1 text-danger" id="<%= namespace %>captchaError">
+				<clay:icon
+					symbol="info-circle"
+				/>
 
-			<c:if test="<%= Validator.isNotNull(errorMessage) %>">
-				<p class="font-weight-semi-bold mt-1 text-danger" id="<portlet:namespace />captchaError">
-					<clay:icon
-						symbol="info-circle"
-					/>
-
-					<span><%= errorMessage %></span>
-				</p>
-			</c:if>
-		</div>
+				<span><%= errorMessage %></span>
+			</p>
+		</c:if>
 	</div>
 
 	<aui:script>
-		var hasEventAttached = false;
-
-		function attachEvent() {
+		function <%= captchaId %>attachEvent() {
 			var refreshCaptcha = document.getElementById(
-				'<portlet:namespace />refreshCaptcha'
+				'<portlet:namespace /><%= refreshCaptchaId %>'
 			);
 
-			if (refreshCaptcha && !hasEventAttached) {
-				hasEventAttached = true;
+			if (refreshCaptcha && !refreshCaptcha.hasEventAttached) {
+				refreshCaptcha.hasEventAttached = true;
 				refreshCaptcha.addEventListener('click', () => {
 					var url = Liferay.Util.addParams(
 						't=' + Date.now(),
@@ -74,7 +73,7 @@ String url = (String)request.getAttribute("liferay-captcha:captcha:url");
 					);
 
 					var captcha = document.getElementById(
-						'<portlet:namespace />captcha'
+						'<portlet:namespace /><%= captchaId %>'
 					);
 
 					if (captcha) {
@@ -84,8 +83,11 @@ String url = (String)request.getAttribute("liferay-captcha:captcha:url");
 			}
 		}
 
-		attachEvent();
+		<%= captchaId %>attachEvent();
 
-		Liferay.on('<portlet:namespace />simplecaptcha_attachEvent', attachEvent);
+		Liferay.on(
+			'<portlet:namespace />simplecaptcha_attachEvent',
+			<%= captchaId %>attachEvent
+		);
 	</aui:script>
 </c:if>

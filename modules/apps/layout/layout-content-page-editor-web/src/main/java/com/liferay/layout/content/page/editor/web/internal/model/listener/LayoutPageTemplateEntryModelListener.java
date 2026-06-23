@@ -12,18 +12,21 @@ import com.liferay.fragment.listener.FragmentEntryLinkListener;
 import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.fragment.service.FragmentEntryLinkService;
 import com.liferay.info.item.InfoItemFormVariation;
 import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormVariationsProvider;
 import com.liferay.info.permission.provider.InfoPermissionProvider;
 import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.layout.content.page.editor.web.internal.manager.FormItemManager;
+import com.liferay.layout.manager.FormManager;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.exception.RequiredLayoutPageTemplateEntryException;
 import com.liferay.layout.page.template.info.item.capability.EditPageInfoItemCapability;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
+import com.liferay.layout.page.template.util.LayoutPageTemplateEntryUtil;
 import com.liferay.layout.util.UpdateLayoutStatusThreadLocal;
 import com.liferay.layout.util.structure.FormStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
@@ -31,7 +34,6 @@ import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -45,7 +47,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.segments.model.SegmentsExperience;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 
@@ -110,9 +112,13 @@ public class LayoutPageTemplateEntryModelListener
 		if (!Objects.equals(
 				originalLayoutPageTemplateEntry.getClassNameId(),
 				layoutPageTemplateEntry.getClassNameId()) ||
-			!Objects.equals(
-				originalLayoutPageTemplateEntry.getClassTypeId(),
-				layoutPageTemplateEntry.getClassTypeId())) {
+			(Validator.isNotNull(
+				originalLayoutPageTemplateEntry.getClassTypeKey()) &&
+			 !Objects.equals(
+				 LayoutPageTemplateEntryUtil.getClassTypeId(
+					 originalLayoutPageTemplateEntry),
+				 LayoutPageTemplateEntryUtil.getClassTypeId(
+					 layoutPageTemplateEntry)))) {
 
 			return true;
 		}
@@ -121,6 +127,7 @@ public class LayoutPageTemplateEntryModelListener
 	}
 
 	private List<FragmentEntryLink> _processFormStyledLayoutStructureItem(
+		long classTypeId,
 		FormStyledLayoutStructureItem formStyledLayoutStructureItem,
 		Layout layout, LayoutPageTemplateEntry layoutPageTemplateEntry,
 		LayoutPageTemplateEntry originalLayoutPageTemplateEntry,
@@ -130,26 +137,22 @@ public class LayoutPageTemplateEntryModelListener
 				formStyledLayoutStructureItem.getClassNameId(),
 				originalLayoutPageTemplateEntry.getClassNameId()) ||
 			!Objects.equals(
-				formStyledLayoutStructureItem.getClassTypeId(),
-				originalLayoutPageTemplateEntry.getClassTypeId())) {
+				formStyledLayoutStructureItem.getClassTypeId(), classTypeId)) {
 
 			return Collections.emptyList();
 		}
 
-		_formItemManager.removeLayoutStructureItemsJSONArray(
-			formStyledLayoutStructureItem, layoutStructure);
+		_formItemManager.removeLayoutStructureItems(
+			formStyledLayoutStructureItem, layoutStructure, null);
 
 		formStyledLayoutStructureItem.setClassNameId(0);
 		formStyledLayoutStructureItem.setClassTypeId(0);
 
-		if (layoutPageTemplateEntry.getClassNameId() == 0) {
-			return Collections.emptyList();
-		}
-
 		String className = _infoSearchClassMapperRegistry.getClassName(
-			_portal.getClassName(layoutPageTemplateEntry.getClassNameId()));
+			layoutPageTemplateEntry.getClassName());
 
-		if (!ListUtil.exists(
+		if (Validator.isNull(className) ||
+			!ListUtil.exists(
 				_infoItemServiceRegistry.getInfoItemCapabilities(className),
 				infoItemCapability -> Objects.equals(
 					infoItemCapability.getKey(),
@@ -177,7 +180,9 @@ public class LayoutPageTemplateEntryModelListener
 			InfoItemFormVariation infoItemFormVariation =
 				infoItemFormVariationsProvider.getInfoItemFormVariation(
 					layout.getGroupId(),
-					String.valueOf(layoutPageTemplateEntry.getClassTypeId()));
+					LayoutPageTemplateEntryUtil.getClassTypeKey(
+						layoutPageTemplateEntry),
+					String.valueOf(classTypeId));
 
 			if ((infoItemFormVariation == null) ||
 				((infoPermissionProvider != null) &&
@@ -188,14 +193,13 @@ public class LayoutPageTemplateEntryModelListener
 				return Collections.emptyList();
 			}
 		}
-		else if (layoutPageTemplateEntry.getClassTypeId() != 0) {
+		else if (classTypeId != 0) {
 			return Collections.emptyList();
 		}
 
 		formStyledLayoutStructureItem.setClassNameId(
 			layoutPageTemplateEntry.getClassNameId());
-		formStyledLayoutStructureItem.setClassTypeId(
-			layoutPageTemplateEntry.getClassTypeId());
+		formStyledLayoutStructureItem.setClassTypeId(classTypeId);
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
@@ -205,12 +209,18 @@ public class LayoutPageTemplateEntryModelListener
 		}
 
 		try (SafeCloseable safeCloseable =
-				UpdateLayoutStatusThreadLocal.setWithSafeCloseable(false)) {
+				UpdateLayoutStatusThreadLocal.
+					setUpdateLayoutStatusWithSafeCloseable(false)) {
 
-			return _formItemManager.addFragmentEntryLinks(
-				_jsonFactory.createJSONObject(), formStyledLayoutStructureItem,
-				layout, layoutStructure, LocaleUtil.getMostRelevantLocale(),
-				segmentsExperienceId, serviceContext);
+			List<FragmentEntryLink> addedFragmentEntryLinks = new ArrayList<>();
+
+			_formManager.addFragmentEntryLinksLayoutStructureItems(
+				addedFragmentEntryLinks, _jsonFactory.createJSONObject(),
+				formStyledLayoutStructureItem, true, layout, layoutStructure,
+				LocaleUtil.getMostRelevantLocale(), false, segmentsExperienceId,
+				serviceContext, null);
+
+			return addedFragmentEntryLinks;
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
@@ -229,24 +239,14 @@ public class LayoutPageTemplateEntryModelListener
 		Layout layout = _layoutLocalService.getLayout(
 			layoutPageTemplateEntry.getPlid());
 
-		Layout draftLayout = layout.fetchDraftLayout();
-
 		for (SegmentsExperience segmentsExperience :
 				_segmentsExperienceLocalService.getSegmentsExperiences(
-					layoutPageTemplateEntry.getGroupId(),
-					layoutPageTemplateEntry.getPlid())) {
+					layout.getGroupId(), layout.getPlid())) {
 
 			_updateLayoutPageTemplateStructureData(
 				layout, layoutPageTemplateEntry,
 				originalLayoutPageTemplateEntry,
 				segmentsExperience.getSegmentsExperienceId());
-
-			if (draftLayout != null) {
-				_updateLayoutPageTemplateStructureData(
-					draftLayout, layoutPageTemplateEntry,
-					originalLayoutPageTemplateEntry,
-					segmentsExperience.getSegmentsExperienceId());
-			}
 		}
 
 		for (FragmentEntryLink fragmentEntryLink :
@@ -256,7 +256,19 @@ public class LayoutPageTemplateEntryModelListener
 			_updateFragmentEntryLinkEditableValues(fragmentEntryLink);
 		}
 
+		Layout draftLayout = layout.fetchDraftLayout();
+
 		if (draftLayout != null) {
+			for (SegmentsExperience segmentsExperience :
+					_segmentsExperienceLocalService.getSegmentsExperiences(
+						draftLayout.getGroupId(), draftLayout.getPlid())) {
+
+				_updateLayoutPageTemplateStructureData(
+					draftLayout, layoutPageTemplateEntry,
+					originalLayoutPageTemplateEntry,
+					segmentsExperience.getSegmentsExperienceId());
+			}
+
 			for (FragmentEntryLink fragmentEntryLink :
 					_fragmentEntryLinkLocalService.getFragmentEntryLinksByPlid(
 						draftLayout.getGroupId(), draftLayout.getPlid())) {
@@ -287,6 +299,9 @@ public class LayoutPageTemplateEntryModelListener
 
 		List<FragmentEntryLink> fragmentEntryLinks = new ArrayList<>();
 
+		long classTypeId = LayoutPageTemplateEntryUtil.getClassTypeId(
+			originalLayoutPageTemplateEntry);
+
 		for (LayoutStructureItem layoutStructureItem :
 				ListUtil.copy(layoutStructure.getLayoutStructureItems())) {
 
@@ -299,6 +314,7 @@ public class LayoutPageTemplateEntryModelListener
 			if (layoutStructureItem instanceof FormStyledLayoutStructureItem) {
 				fragmentEntryLinks.addAll(
 					_processFormStyledLayoutStructureItem(
+						classTypeId,
 						(FormStyledLayoutStructureItem)layoutStructureItem,
 						layout, layoutPageTemplateEntry,
 						originalLayoutPageTemplateEntry, layoutStructure,
@@ -323,35 +339,27 @@ public class LayoutPageTemplateEntryModelListener
 			return;
 		}
 
-		JSONObject editableValuesJSONObject = null;
-
-		try {
-			editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
-
-			JSONObject editableFragmentEntryProcessorJSONObject =
-				editableValuesJSONObject.getJSONObject(
-					FragmentEntryProcessorConstants.
-						KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
-
-			if (editableFragmentEntryProcessorJSONObject != null) {
-				_removeMappedFields(editableFragmentEntryProcessorJSONObject);
-			}
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
-			}
-		}
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
 
 		if (editableValuesJSONObject == null) {
 			return;
 		}
 
-		try (SafeCloseable safeCloseable =
-				UpdateLayoutStatusThreadLocal.setWithSafeCloseable(false)) {
+		JSONObject editableFragmentEntryProcessorJSONObject =
+			editableValuesJSONObject.getJSONObject(
+				FragmentEntryProcessorConstants.
+					KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
 
-			_fragmentEntryLinkLocalService.updateFragmentEntryLink(
+		if (editableFragmentEntryProcessorJSONObject != null) {
+			_removeMappedFields(editableFragmentEntryProcessorJSONObject);
+		}
+
+		try (SafeCloseable safeCloseable =
+				UpdateLayoutStatusThreadLocal.
+					setUpdateLayoutStatusWithSafeCloseable(false)) {
+
+			_fragmentEntryLinkService.updateFragmentEntryLink(
 				fragmentEntryLink.getFragmentEntryLinkId(),
 				editableValuesJSONObject.toString());
 		}
@@ -384,11 +392,13 @@ public class LayoutPageTemplateEntryModelListener
 			layoutStructure, segmentsExperienceId);
 
 		try (SafeCloseable safeCloseable =
-				UpdateLayoutStatusThreadLocal.setWithSafeCloseable(false)) {
+				UpdateLayoutStatusThreadLocal.
+					setUpdateLayoutStatusWithSafeCloseable(false)) {
 
 			_layoutPageTemplateStructureLocalService.
 				updateLayoutPageTemplateStructureData(
-					layout.getGroupId(), layout.getPlid(), segmentsExperienceId,
+					layoutPageTemplateEntry.getUserId(), layout.getGroupId(),
+					layout.getPlid(), segmentsExperienceId,
 					layoutStructure.toString());
 		}
 		catch (PortalException portalException) {
@@ -421,11 +431,17 @@ public class LayoutPageTemplateEntryModelListener
 	private FormItemManager _formItemManager;
 
 	@Reference
+	private FormManager _formManager;
+
+	@Reference
 	private FragmentEntryLinkListenerRegistry
 		_fragmentEntryLinkListenerRegistry;
 
 	@Reference
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
+	@Reference
+	private FragmentEntryLinkService _fragmentEntryLinkService;
 
 	@Reference
 	private InfoItemServiceRegistry _infoItemServiceRegistry;
@@ -442,9 +458,6 @@ public class LayoutPageTemplateEntryModelListener
 	@Reference
 	private LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;

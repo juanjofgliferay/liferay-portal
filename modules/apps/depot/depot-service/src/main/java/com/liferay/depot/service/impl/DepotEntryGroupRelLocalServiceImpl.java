@@ -5,9 +5,11 @@
 
 package com.liferay.depot.service.impl;
 
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.depot.service.base.DepotEntryGroupRelLocalServiceBaseImpl;
+import com.liferay.depot.service.persistence.DepotEntryPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -18,6 +20,7 @@ import com.liferay.portal.kernel.systemevent.SystemEvent;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -31,8 +34,9 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 	@Override
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
-		boolean searchable) {
+			boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
+			boolean searchable)
+		throws PortalException {
 
 		DepotEntryGroupRel depotEntryGroupRel =
 			depotEntryGroupRelPersistence.fetchByD_TGI(depotEntryId, toGroupId);
@@ -50,6 +54,11 @@ public class DepotEntryGroupRelLocalServiceImpl
 		depotEntryGroupRel.setSearchable(searchable);
 		depotEntryGroupRel.setToGroupId(toGroupId);
 
+		DepotEntry depotEntry = _depotEntryPersistence.findByPrimaryKey(
+			depotEntryId);
+
+		depotEntryGroupRel.setType(depotEntry.getType());
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -62,14 +71,16 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 	@Override
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId) {
+			long depotEntryId, long toGroupId)
+		throws PortalException {
 
 		return addDepotEntryGroupRel(depotEntryId, toGroupId, true);
 	}
 
 	@Override
 	public DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId, boolean searchable) {
+			long depotEntryId, long toGroupId, boolean searchable)
+		throws PortalException {
 
 		return addDepotEntryGroupRel(
 			false, depotEntryId, toGroupId, searchable);
@@ -78,9 +89,19 @@ public class DepotEntryGroupRelLocalServiceImpl
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public DepotEntryGroupRel deleteDepotEntryGroupRel(
-		DepotEntryGroupRel depotEntryGroupRel) {
+			DepotEntryGroupRel depotEntryGroupRel)
+		throws PortalException {
 
 		return super.deleteDepotEntryGroupRel(depotEntryGroupRel);
+	}
+
+	@Override
+	public DepotEntryGroupRel deleteDepotEntryGroupRel(
+			long depotEntryGroupRelId)
+		throws PortalException {
+
+		return depotEntryGroupRelLocalService.deleteDepotEntryGroupRel(
+			getDepotEntryGroupRel(depotEntryGroupRelId));
 	}
 
 	@Override
@@ -97,6 +118,15 @@ public class DepotEntryGroupRelLocalServiceImpl
 	}
 
 	@Override
+	public DepotEntryGroupRel getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			long depotEntryId, long toGroupId)
+		throws PortalException {
+
+		return depotEntryGroupRelPersistence.findByD_TGI(
+			depotEntryId, toGroupId);
+	}
+
+	@Override
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
 		DepotEntry depotEntry) {
 
@@ -106,10 +136,22 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 	@Override
 	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
-		long groupId, int start, int end) {
+		DepotEntry depotEntry, int start, int end) {
 
-		return depotEntryGroupRelPersistence.findByToGroupId(
-			groupId, start, end);
+		return depotEntryGroupRelPersistence.findByDepotEntryId(
+			depotEntry.getDepotEntryId(), start, end);
+	}
+
+	@Override
+	public List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		long groupId, int type, int start, int end) {
+
+		if (type == DepotConstants.TYPE_ANY) {
+			return depotEntryGroupRelPersistence.findByToGroupId(groupId);
+		}
+
+		return depotEntryGroupRelPersistence.findByTGI_T(
+			groupId, type, start, end);
 	}
 
 	@Override
@@ -119,8 +161,12 @@ public class DepotEntryGroupRelLocalServiceImpl
 	}
 
 	@Override
-	public int getDepotEntryGroupRelsCount(long groupId) {
-		return depotEntryGroupRelPersistence.countByToGroupId(groupId);
+	public int getDepotEntryGroupRelsCount(long groupId, int type) {
+		if (type == DepotConstants.TYPE_ANY) {
+			return depotEntryGroupRelPersistence.countByToGroupId(groupId);
+		}
+
+		return depotEntryGroupRelPersistence.countByTGI_T(groupId, type);
 	}
 
 	@Override
@@ -161,5 +207,8 @@ public class DepotEntryGroupRelLocalServiceImpl
 
 		return depotEntryGroupRelPersistence.update(depotEntryGroupRel);
 	}
+
+	@Reference
+	private DepotEntryPersistence _depotEntryPersistence;
 
 }

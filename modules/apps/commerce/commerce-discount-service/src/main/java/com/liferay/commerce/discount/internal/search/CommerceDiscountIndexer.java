@@ -30,7 +30,6 @@ import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFacto
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BaseIndexer;
@@ -43,7 +42,6 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.MissingFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
@@ -54,13 +52,13 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.filter.FilterBuilders;
 import com.liferay.portal.search.filter.TermsSetFilterBuilder;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -147,22 +145,17 @@ public class CommerceDiscountIndexer extends BaseIndexer<CommerceDiscount> {
 			termsSetFilterBuilder.setFieldName("commerceAccountGroupIds");
 			termsSetFilterBuilder.setMinimumShouldMatchField(
 				"commerceAccountGroupIds_required_matches");
-
-			List<String> values = new ArrayList<>(
-				commerceAccountGroupIds.length);
-
-			for (long commerceAccountGroupId : commerceAccountGroupIds) {
-				values.add(String.valueOf(commerceAccountGroupId));
-			}
-
-			termsSetFilterBuilder.setValues(values);
-
-			Filter termFilter = new TermFilter(
-				"commerceAccountGroupIds_required_matches", "0");
+			termsSetFilterBuilder.setValues(
+				TransformUtil.transformToList(
+					commerceAccountGroupIds,
+					commerceAccountGroupId -> String.valueOf(
+						commerceAccountGroupId)));
 
 			BooleanFilter fieldBooleanFilter = new BooleanFilter();
 
-			fieldBooleanFilter.add(termFilter, BooleanClauseOccur.SHOULD);
+			fieldBooleanFilter.add(
+				new TermFilter("commerceAccountGroupIds_required_matches", "0"),
+				BooleanClauseOccur.SHOULD);
 			fieldBooleanFilter.add(
 				termsSetFilterBuilder.build(), BooleanClauseOccur.SHOULD);
 
@@ -177,10 +170,9 @@ public class CommerceDiscountIndexer extends BaseIndexer<CommerceDiscount> {
 			BooleanFilter groupBooleanFilter = new BooleanFilter();
 
 			for (long groupId : groupIds) {
-				Filter termFilter = new TermFilter(
-					FIELD_GROUP_IDS, String.valueOf(groupId));
-
-				groupBooleanFilter.add(termFilter, BooleanClauseOccur.SHOULD);
+				groupBooleanFilter.add(
+					new TermFilter(FIELD_GROUP_IDS, String.valueOf(groupId)),
+					BooleanClauseOccur.SHOULD);
 			}
 
 			groupBooleanFilter.add(
@@ -373,6 +365,7 @@ public class CommerceDiscountIndexer extends BaseIndexer<CommerceDiscount> {
 			groupIdList.add(commerceChannel.getGroupId());
 		}
 
+		document.addNumber(FIELD_GROUP_IDS, ArrayUtil.toLongArray(groupIdList));
 		document.addNumber(
 			"commerceChannelId", ArrayUtil.toLongArray(channelIdList));
 		document.addNumber(
@@ -382,7 +375,6 @@ public class CommerceDiscountIndexer extends BaseIndexer<CommerceDiscount> {
 					getCommerceDiscountOrderTypeRels(
 						commerceDiscount.getCommerceDiscountId()),
 				CommerceDiscountOrderTypeRel::getCommerceOrderTypeId));
-		document.addNumber(FIELD_GROUP_IDS, ArrayUtil.toLongArray(groupIdList));
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
@@ -436,34 +428,11 @@ public class CommerceDiscountIndexer extends BaseIndexer<CommerceDiscount> {
 	}
 
 	@Override
-	protected void doReindex(String[] ids) throws Exception {
-		long companyId = GetterUtil.getLong(ids[0]);
+	protected IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
 
-		_reindexCommerceDiscounts(companyId);
-	}
-
-	private void _reindexCommerceDiscounts(long companyId) throws Exception {
-		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
-			_commerceDiscountLocalService.getIndexableActionableDynamicQuery();
-
-		indexableActionableDynamicQuery.setCompanyId(companyId);
-		indexableActionableDynamicQuery.setPerformActionMethod(
-			(CommerceDiscount commerceDiscount) -> {
-				try {
-					indexableActionableDynamicQuery.addDocuments(
-						getDocument(commerceDiscount));
-				}
-				catch (PortalException portalException) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to index commerce discount " +
-								commerceDiscount,
-							portalException);
-					}
-				}
-			});
-
-		indexableActionableDynamicQuery.performActions();
+		return _commerceDiscountLocalService.
+			getIndexableActionableDynamicQuery();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

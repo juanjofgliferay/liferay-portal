@@ -119,6 +119,7 @@ definition {
 			${portalURL}/api/jsonws/depot.depotentrygrouprel/get-depot-entry-group-rels \
 				-u ${userLoginInfo} \
 				-d groupId=${groupId} \
+				-d "type=0" \
 				-d "start=-1" \
 				-d "end=-1"
 		''';
@@ -241,7 +242,8 @@ definition {
 		if (isSet(noSelenium)) {
 			var companyId = JSONCompany.getCompanyIdNoSelenium(
 				portalInstanceName = ${portalInstanceName},
-				portalURL = ${portalURL});
+				portalURL = ${portalURL},
+				specificURL = ${specificURL});
 		}
 		else {
 			var companyId = JSONCompany.getCompanyId(
@@ -346,7 +348,7 @@ definition {
 		}
 
 		if (!(isSet(creatorPassword))) {
-			var creatorPassword = "test";
+			var creatorPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var companyId = JSONCompany.getCompanyId(
@@ -518,6 +520,10 @@ definition {
 			portalURL = ${portalURL},
 			token = ${token});
 		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		if (${groupName} == "Global") {
+			var groupName = ${companyId};
+		}
 
 		var curl = '''
 			${portalURL}/api/jsonws/group/get-group \

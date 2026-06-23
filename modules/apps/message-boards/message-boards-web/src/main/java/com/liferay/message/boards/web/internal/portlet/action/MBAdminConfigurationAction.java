@@ -22,15 +22,17 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,11 +41,16 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	property = "javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
+	property = "jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
 	service = ConfigurationAction.class
 )
 public class MBAdminConfigurationAction
 	extends BaseJSPSettingsConfigurationAction {
+
+	@Override
+	public String getJspPath(HttpServletRequest httpServletRequest) {
+		return "/message_boards_admin/configuration_browse.jsp";
+	}
 
 	@Override
 	public void processAction(
@@ -53,7 +60,6 @@ public class MBAdminConfigurationAction
 
 		validateEmail(actionRequest, "emailMessageAdded");
 		validateEmail(actionRequest, "emailMessageUpdated");
-		validateEmailFrom(actionRequest);
 
 		super.processAction(portletConfig, actionRequest, actionResponse);
 	}

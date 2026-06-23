@@ -36,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Drew Brokke
  */
 @Component(
-	property = "service.ranking:Integer=100",
+	property = "service.ranking:Integer=300",
 	service = PortalInstanceLifecycleListener.class
 )
 public class AddDefaultAccountRolesPortalInstanceLifecycleListener
@@ -99,6 +99,7 @@ public class AddDefaultAccountRolesPortalInstanceLifecycleListener
 		User guestUser = company.getGuestUser();
 
 		_accountRoleLocalService.addAccountRole(
+			RoleConstants.toSystemRoleExternalReferenceCode(roleName),
 			guestUser.getUserId(), AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
 			roleName, null,
 			AccountRoleConstants.roleDescriptionsMap.get(roleName));
@@ -149,6 +150,7 @@ public class AddDefaultAccountRolesPortalInstanceLifecycleListener
 			User guestUser = company.getGuestUser();
 
 			_roleLocalService.addRole(
+				RoleConstants.toSystemRoleExternalReferenceCode(roleName),
 				guestUser.getUserId(), null, 0,
 				AccountRoleConstants.REQUIRED_ROLE_NAME_ACCOUNT_MANAGER, null,
 				AccountRoleConstants.roleDescriptionsMap.get(
@@ -165,12 +167,14 @@ public class AddDefaultAccountRolesPortalInstanceLifecycleListener
 		_accountAdministratorResourceActionsMap = HashMapBuilder.put(
 			AccountEntry.class.getName(),
 			new String[] {
-				ActionKeys.UPDATE, ActionKeys.MANAGE_USERS,
+				AccountActionKeys.ADD_USER, AccountActionKeys.ASSIGN_USERS,
 				AccountActionKeys.MANAGE_ADDRESSES,
+				AccountActionKeys.UNASSIGN_USERS,
+				AccountActionKeys.UPDATE_USERS,
 				AccountActionKeys.VIEW_ADDRESSES,
 				AccountActionKeys.VIEW_ACCOUNT_ROLES,
 				AccountActionKeys.VIEW_ORGANIZATIONS,
-				AccountActionKeys.VIEW_USERS
+				AccountActionKeys.VIEW_USERS, ActionKeys.UPDATE
 			}
 		).put(
 			AccountRole.class.getName(), new String[] {ActionKeys.VIEW}
@@ -179,12 +183,14 @@ public class AddDefaultAccountRolesPortalInstanceLifecycleListener
 		_accountManagerResourceActionsMap = HashMapBuilder.put(
 			AccountEntry.class.getName(),
 			new String[] {
+				AccountActionKeys.ADD_USER, AccountActionKeys.ASSIGN_USERS,
 				AccountActionKeys.MANAGE_ADDRESSES,
+				AccountActionKeys.UNASSIGN_USERS,
+				AccountActionKeys.UPDATE_USERS,
 				AccountActionKeys.VIEW_ACCOUNT_ROLES,
 				AccountActionKeys.VIEW_ADDRESSES,
 				AccountActionKeys.VIEW_ORGANIZATIONS,
-				AccountActionKeys.VIEW_USERS, ActionKeys.MANAGE_USERS,
-				ActionKeys.UPDATE
+				AccountActionKeys.VIEW_USERS, ActionKeys.UPDATE
 			}
 		).put(
 			AccountRole.class.getName(), new String[] {ActionKeys.VIEW}

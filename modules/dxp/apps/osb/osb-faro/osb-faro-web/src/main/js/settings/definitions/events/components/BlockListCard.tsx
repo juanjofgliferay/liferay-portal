@@ -10,6 +10,7 @@ import BLOCKED_CUSTOM_EVENT_DEFINITIONS_QUERY, {
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
+import ClayLink from '@clayui/link';
 import CrossPageSelect from 'shared/hoc/CrossPageSelect';
 import Nav from 'shared/components/Nav';
 import NoResultsDisplay from 'shared/components/NoResultsDisplay';
@@ -40,16 +41,16 @@ import {RootState} from 'shared/store';
 import {Routes, setUriQueryValues, toRoute} from 'shared/util/router';
 import {Sizes} from 'shared/util/constants';
 import {sub} from 'shared/util/lang';
-import {useMutation, useQuery} from '@apollo/react-hooks';
-import {useQueryPagination} from 'shared/hooks';
-import {User} from 'shared/util/records';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useMutation, useQuery} from '@apollo/client';
+import {useQueryPagination} from 'shared/hooks/useQueryPagination';
 import {
 	useSelectionContext,
 	withSelectionProvider
 } from 'shared/context/selection';
-import {withCurrentUser} from 'shared/hoc';
 
-const EVENT_LIMIT_REACHED = /Processing request will exceed custom event definition limit/;
+const EVENT_LIMIT_REACHED =
+	/Processing request will exceed custom event definition limit/;
 
 const connector = connect(
 	(store: RootState, {groupId}: {groupId: string}) => ({
@@ -67,7 +68,6 @@ const connector = connect(
 type PropsFromRedux = ConnectedProps<typeof connector>;
 
 interface IBlockListCardProps extends PropsFromRedux {
-	currentUser: User;
 	groupId: string;
 	history: {push: (url: string) => void};
 	timeZoneId: string;
@@ -76,7 +76,6 @@ interface IBlockListCardProps extends PropsFromRedux {
 const BlockListCard: React.FC<IBlockListCardProps> = ({
 	addAlert,
 	close,
-	currentUser,
 	groupId,
 	history,
 	open,
@@ -98,7 +97,9 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 			keyword: query,
 			page: page - 1,
 			size: delta,
-			sort: getSortFromOrderIOMap(orderIOMap)
+			sort: getSortFromOrderIOMap(
+				orderIOMap
+			) as BlockedCustomEventDefinitionsVariables['sort']
 		}
 	});
 
@@ -117,7 +118,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 			hideBlockedEventDefinitions: BlockedCustomEvent[];
 		}) => {
 			if (!selectedItems.isEmpty()) {
-				selectionDispatch({
+				selectionDispatch?.({
 					payload: {
 						items: hideBlockedEventDefinitions
 					},
@@ -137,7 +138,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 			unhideBlockedEventDefinitions: BlockedCustomEvent[];
 		}) => {
 			if (!selectedItems.isEmpty()) {
-				selectionDispatch({
+				selectionDispatch?.({
 					payload: {
 						items: unhideBlockedEventDefinitions
 					},
@@ -146,6 +147,8 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 			}
 		}
 	});
+
+	const currentUser = useCurrentUser();
 
 	const handleHideEvents = (events: BlockedCustomEvent[] = []) => {
 		const visibleEvents = events.filter(({hidden}) => !hidden);
@@ -258,7 +261,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 			}
 		})
 			.then(() => {
-				selectionDispatch({
+				selectionDispatch?.({
 					type: 'clear-all'
 				});
 
@@ -309,7 +312,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 				removeAlert(LIMIT_REACHED_ALERT_ID);
 			})
 			.catch(err => {
-				let message = Liferay.Language.get(
+				let message: React.ReactNode = Liferay.Language.get(
 					'there-was-an-error-processing-your-request.-please-try-again'
 				);
 
@@ -319,13 +322,15 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 							'your-workspace-is-over-the-event-limit.-please-remove-some-events-from-the-allow-list-to-continue.-visit-our-x-to-learn-more'
 						),
 						[
-							<a
+							<ClayLink
 								href={URLConstants.DocumentationLink}
 								key='DOCUMENTATION_LINK'
 								target='_blank'
 							>
-								{Liferay.Language.get('documentation-fragment')}
-							</a>
+								{Liferay.Language.get(
+									'documentation'
+								).toLowerCase()}
+							</ClayLink>
 						],
 						false
 					);
@@ -354,7 +359,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 						}
 					},
 					{
-						iconSymbol: hidden ? 'view' : 'ac-hidden',
+						iconSymbol: hidden ? 'view' : 'ac_hidden',
 						label: hidden
 							? Liferay.Language.get('set-to-show')
 							: Liferay.Language.get('set-to-hide'),
@@ -374,7 +379,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 	const authorized = currentUser.isAdmin();
 
 	const hasUnhiddenEvent = (events: OrderedMap<string, BlockedCustomEvent>) =>
-		events.some(({hidden}) => !hidden);
+		events.some(event => !event?.hidden);
 
 	return (
 		<Card pageDisplay>
@@ -404,7 +409,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 									'to-block-events,-select-one-from-the-events-table'
 								)}
 
-								<a
+								<ClayLink
 									className='d-block mb-3'
 									href={
 										URLConstants.DefinitionsForEventsDocumentation
@@ -415,13 +420,13 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 									{Liferay.Language.get(
 										'access-our-documentation-to-learn-how-to-manage-custom-events'
 									)}
-								</a>
+								</ClayLink>
 							</>
 						}
 						icon={{
 							border: false,
 							size: Sizes.XXXLarge,
-							symbol: 'ac-satellite'
+							symbol: 'ac_satellite'
 						}}
 						title={Liferay.Language.get(
 							'there-are-no-events-blocked'
@@ -462,11 +467,12 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 											className='button-root nav-btn'
 											displayType='secondary'
 											onClick={() => {
-												const hideEventFn = hasUnhiddenEvent(
-													selectedItems
-												)
-													? handleHideEvents
-													: handleUnhideEvents;
+												const hideEventFn =
+													hasUnhiddenEvent(
+														selectedItems
+													)
+														? handleHideEvents
+														: handleUnhideEvents;
 
 												hideEventFn(
 													selectedItems.toArray()
@@ -479,7 +485,7 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 													hasUnhiddenEvent(
 														selectedItems
 													)
-														? 'ac-hidden'
+														? 'ac_hidden'
 														: 'view'
 												}
 											/>
@@ -504,8 +510,4 @@ const BlockListCard: React.FC<IBlockListCardProps> = ({
 	);
 };
 
-export default compose<any>(
-	withSelectionProvider,
-	withCurrentUser,
-	connector
-)(BlockListCard);
+export default compose<any>(withSelectionProvider, connector)(BlockListCard);

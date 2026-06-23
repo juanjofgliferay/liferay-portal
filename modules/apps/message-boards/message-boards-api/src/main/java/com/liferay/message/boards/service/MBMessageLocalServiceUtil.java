@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -789,6 +790,15 @@ public class MBMessageLocalServiceUtil {
 		return getService().getMessages(className, classPK, status);
 	}
 
+	public static MBMessage getOrAddEmptyDiscussionMessage(
+			String externalReferenceCode, long userId, long groupId,
+			String className, long classPK)
+		throws PortalException {
+
+		return getService().getOrAddEmptyDiscussionMessage(
+			externalReferenceCode, userId, groupId, className, classPK);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -1049,13 +1059,12 @@ public class MBMessageLocalServiceUtil {
 	}
 
 	public static MBMessageLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(MBMessageLocalService service) {
-		_service = service;
-	}
-
-	private static volatile MBMessageLocalService _service;
+	private static final Snapshot<MBMessageLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			MBMessageLocalServiceUtil.class, MBMessageLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-846832070

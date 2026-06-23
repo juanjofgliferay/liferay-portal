@@ -10,6 +10,10 @@ definition {
 			var organizationSite = "false";
 		}
 
+		if (!(isSet(externalReferenceCode))) {
+			var externalReferenceCode = "";
+		}
+
 		if (isSet(parentOrganizationId)) {
 			var parentOrganizationId = ${parentOrganizationId};
 		}
@@ -28,7 +32,7 @@ definition {
 			var countryId = JSONCountry.getCountryId(countryName = ${organizationCountry});
 		}
 		else {
-			var countryId = 0;
+			var countryId = JSONCountry.getCountryId(countryName = "united states");
 		}
 
 		if (isSet(organizationRegion)) {
@@ -37,7 +41,9 @@ definition {
 				regionName = ${organizationRegion});
 		}
 		else {
-			var regionId = 0;
+			var regionId = JSONCountry.getRegionId(
+				countryName = "united states",
+				regionName = "California");
 		}
 
 		var portalURL = JSONCompany.getPortalURL();
@@ -47,7 +53,7 @@ definition {
 		var curl = '''
 			${portalURL}/api/jsonws/organization/add-organization \
 				-u ${userLoginInfo} \
-				-d externalReferenceCode='' \
+				-d externalReferenceCode=${externalReferenceCode} \
 				-d parentOrganizationId=${parentOrganizationId} \
 				-d name=${organizationNameEncoded} \
 				-d type=${organizationType} \

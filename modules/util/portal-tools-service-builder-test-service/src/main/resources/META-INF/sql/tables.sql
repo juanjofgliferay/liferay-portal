@@ -1,3 +1,9 @@
+create table AutoEscapeEntry (
+	autoEscapeEntryId LONG not null primary key,
+	autoEscapeDisabledColumn VARCHAR(75) null,
+	autoEscapeEnabledColumn VARCHAR(75) null
+);
+
 create table BigDecimalEntries_LVEntries (
 	companyId LONG not null,
 	bigDecimalEntryId LONG not null,
@@ -29,6 +35,12 @@ create table CacheMissEntry (
 	primary key (cacheMissEntryId, ctCollectionId)
 );
 
+create table CacheReplicatorEntry (
+	cacheReplicatorEntryId LONG not null primary key,
+	companyId LONG,
+	name VARCHAR(75) null
+);
+
 create table DSLQueryEntry (
 	dslQueryEntryId LONG not null primary key,
 	name VARCHAR(75) null
@@ -50,17 +62,57 @@ create table DataLimitEntry (
 	modifiedDate DATE null
 );
 
+create table DefinedDefaultOrderEntry (
+	definedDefaultOrderEntryId LONG not null primary key,
+	modifiedDate DATE null,
+	name VARCHAR(75) null
+);
+
+create table DynamicQueryEntry (
+	dynamicQueryEntryId LONG not null primary key,
+	createDate DATE null,
+	modifiedDate DATE null,
+	amount LONG,
+	description VARCHAR(75) null,
+	name VARCHAR(75) null,
+	status INTEGER
+);
+
 create table ERCCompanyEntry (
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
 	ercCompanyEntryId LONG not null primary key,
-	companyId LONG
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	column1 INTEGER
 );
 
 create table ERCGroupEntry (
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
 	ercGroupEntryId LONG not null primary key,
+	groupId LONG,
+	companyId LONG
+);
+
+create table ERCVersionedEntry (
+	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
+	headId LONG,
+	head BOOLEAN,
+	ercVersionedEntryId LONG not null primary key,
+	groupId LONG,
+	companyId LONG
+);
+
+create table ERCVersionedEntryVersion (
+	ercVersionedEntryVersionId LONG not null primary key,
+	version INTEGER,
+	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
+	ercVersionedEntryId LONG,
 	groupId LONG,
 	companyId LONG
 );
@@ -78,6 +130,19 @@ create table FinderWhereClauseEntry (
 	nickname VARCHAR(75) null
 );
 
+create table IndexEntry (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	externalReferenceCode VARCHAR(75) null,
+	indexEntryId LONG not null,
+	companyId LONG,
+	ownerId LONG,
+	ownerType INTEGER,
+	plid LONG,
+	portletId VARCHAR(75) null,
+	primary key (indexEntryId, ctCollectionId)
+);
+
 create table LVEntries_BigDecimalEntries (
 	companyId LONG not null,
 	bigDecimalEntryId LONG not null,
@@ -92,8 +157,8 @@ create table LVEntry (
 	head BOOLEAN,
 	defaultLanguageId VARCHAR(75) null,
 	lvEntryId LONG not null primary key,
-	companyId LONG,
 	groupId LONG,
+	companyId LONG,
 	uniqueGroupKey VARCHAR(75) null
 );
 
@@ -126,8 +191,8 @@ create table LVEntryVersion (
 	uuid_ VARCHAR(75) null,
 	defaultLanguageId VARCHAR(75) null,
 	lvEntryId LONG,
-	companyId LONG,
 	groupId LONG,
+	companyId LONG,
 	uniqueGroupKey VARCHAR(75) null
 );
 
@@ -234,6 +299,16 @@ create table NullConvertibleEntry (
 	name VARCHAR(75) null
 );
 
+create table PermissionCheckFinderEntry (
+	permissionCheckFinderEntryId LONG not null primary key,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	integer_ INTEGER,
+	name VARCHAR(75) null,
+	type_ VARCHAR(75) null
+);
+
 create table RedundantIndexEntry (
 	redundantIndexEntryId LONG not null primary key,
 	companyId LONG,
@@ -253,6 +328,18 @@ create table UADPartialEntry (
 	message VARCHAR(75) null
 );
 
+create table UndefinedDefaultOrderEntry (
+	undefinedDefaultOrderEntryId LONG not null primary key,
+	modifiedDate DATE null,
+	name VARCHAR(75) null
+);
+
+create table UniqueFinderEntry (
+	uniqueFinderEntryId LONG not null primary key,
+	modifiedDate DATE null,
+	name VARCHAR(75) null
+);
+
 create table VersionedEntry (
 	mvccVersion LONG default 0 not null,
 	headId LONG,
@@ -266,4 +353,13 @@ create table VersionedEntryVersion (
 	version INTEGER,
 	versionedEntryId LONG,
 	groupId LONG
+);
+
+create table userId (
+	dataLimitEntryId LONG not null primary key,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null
 );

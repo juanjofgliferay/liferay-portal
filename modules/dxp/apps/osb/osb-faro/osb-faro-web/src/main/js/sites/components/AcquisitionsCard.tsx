@@ -2,10 +2,11 @@ import AcquisitionsQuery, {
 	AcquisitionsQueryData,
 	AcquisitionsQueryVariables
 } from 'shared/queries/AcquisitionsQuery';
+import BaseCard from 'shared/components/base-card';
 import BasePage from 'shared/components/base-page';
 import Card from 'shared/components/Card';
 import CardTabs from 'shared/components/CardTabs';
-import CardWithRangeKey from 'shared/hoc/CardWithRangeKey';
+import ClayLink from '@clayui/link';
 import ErrorDisplay from 'shared/components/ErrorDisplay';
 import React, {useContext, useState} from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
@@ -13,21 +14,25 @@ import Table from 'shared/components/table';
 import URLConstants from 'shared/util/url-constants';
 import {ACQUISITION_LABEL_MAP} from 'shared/util/lang';
 import {AcquisitionTypes, CompositionTypes} from 'shared/util/constants';
-import {ApolloError} from 'apollo-client';
+import {ApolloError, useQuery} from '@apollo/client';
+import {Column} from 'shared/components/table/Row';
+
 import {compositionListColumns} from 'shared/util/table-columns';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {getSafeRangeSelectors} from 'shared/util/util';
 import {RangeSelectors} from 'shared/types';
-import {useQuery} from '@apollo/react-hooks';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 
 const ROW_IDENTIFIER = 'name';
 
 const {Channel, Referrer, SourceMedium} = AcquisitionTypes;
 
-const getColumnsFn = acquisitionType => {
-	const label = ACQUISITION_LABEL_MAP[acquisitionType];
+const getColumnsFn = (acquisitionType: AcquisitionTypes) => {
+	const label =
+		ACQUISITION_LABEL_MAP[
+			acquisitionType as keyof typeof ACQUISITION_LABEL_MAP
+		];
 
-	return ({maxCount, totalCount}) => [
+	return ({maxCount, totalCount}: {maxCount: number; totalCount: number}) => [
 		compositionListColumns.getName({
 			label,
 			maxWidth: 200,
@@ -79,11 +84,11 @@ const AcquisitionsCard: React.FC<IAcquisitionsCardProps> = ({
 	label,
 	legacyDropdownRangeKey
 }) => (
-	<CardWithRangeKey
+	<BaseCard
 		className={className}
-		id={Containers.AcquisitionsCard}
 		label={label}
-		legacyDropdownRangeKey={legacyDropdownRangeKey}
+		legacyDropdownRangeKey={legacyDropdownRangeKey ?? true}
+		reportContainer={ReportContainer.AcquisitionsCard}
 	>
 		{({rangeSelectors}) => (
 			<AcquisitionsCardWithData
@@ -91,7 +96,7 @@ const AcquisitionsCard: React.FC<IAcquisitionsCardProps> = ({
 				rangeSelectors={rangeSelectors}
 			/>
 		)}
-	</CardWithRangeKey>
+	</BaseCard>
 );
 
 interface IAcquisitionsCard extends Partial<IAcquisitionsCardProps> {
@@ -121,12 +126,17 @@ const AcquisitionsCardWithData: React.FC<IAcquisitionsCard> = ({
 		}
 	});
 
-	const {getColumns, rowIdentifier} = tabs.find(
-		({tabId}) => tabId === activeTabId
-	);
+	const activeTab = tabs.find(({tabId}) => tabId === activeTabId) ?? tabs[0];
+	const {getColumns, rowIdentifier} = activeTab;
 
-	const {compositions = [], maxCount = 0, total = 0, totalCount = 0} =
-		data?.[compositionBagName] ?? {};
+	const {
+		compositions = [],
+		maxCount = 0,
+		total = 0,
+		totalCount = 0
+	} = (compositionBagName &&
+		(data as Record<string, any>)?.[compositionBagName]) ||
+	{};
 
 	return (
 		<Card.Body className='w-100 d-flex flex-column flex-grow-1' noPadding>
@@ -143,12 +153,14 @@ const AcquisitionsCardWithData: React.FC<IAcquisitionsCard> = ({
 			>
 				<Table
 					className='flex-grow-1 table-hover'
-					columns={getColumns({
-						items: compositions,
-						maxCount,
-						total,
-						totalCount
-					} as any)}
+					columns={
+						getColumns({
+							items: compositions,
+							maxCount,
+							total,
+							totalCount
+						} as any) as Column[]
+					}
 					items={compositions}
 					rowIdentifier={rowIdentifier}
 				/>
@@ -160,16 +172,13 @@ const AcquisitionsCardWithData: React.FC<IAcquisitionsCard> = ({
 interface IAcquisitionsCardWithStatesRendererProps
 	extends React.HTMLAttributes<HTMLElement> {
 	empty?: boolean;
-	error: ApolloError;
+	error?: ApolloError;
 	loading?: boolean;
 }
 
-const AcquisitionsCardWithStatesRenderer: React.FC<IAcquisitionsCardWithStatesRendererProps> = ({
-	children,
-	empty,
-	error,
-	loading
-}) => (
+const AcquisitionsCardWithStatesRenderer: React.FC<
+	IAcquisitionsCardWithStatesRendererProps
+> = ({children, empty, error, loading}) => (
 	<StatesRenderer empty={empty} error={!!error} loading={loading}>
 		<StatesRenderer.Loading />
 		<StatesRenderer.Empty
@@ -181,13 +190,13 @@ const AcquisitionsCardWithStatesRenderer: React.FC<IAcquisitionsCardWithStatesRe
 						)}
 					</span>
 
-					<a
+					<ClayLink
 						href={URLConstants.SitesDashboardAcquisitions}
 						key='DOCUMENTATION'
 						target='_blank'
 					>
 						{Liferay.Language.get('learn-more-about-acquisitions')}
-					</a>
+					</ClayLink>
 				</>
 			}
 			showIcon={false}

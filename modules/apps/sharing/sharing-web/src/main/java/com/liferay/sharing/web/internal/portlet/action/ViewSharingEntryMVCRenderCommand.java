@@ -24,11 +24,11 @@ import com.liferay.sharing.web.internal.constants.SharingPortletKeys;
 import com.liferay.sharing.web.internal.display.context.ViewSharedAssetsDisplayContext;
 import com.liferay.sharing.web.internal.display.context.ViewSharedAssetsDisplayContextFactory;
 
-import java.io.IOException;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + SharingPortletKeys.SHARED_ASSETS,
+		"jakarta.portlet.name=" + SharingPortletKeys.SHARED_ASSETS,
 		"mvc.command.name=/shared_assets/view_sharing_entry",
 		"mvc.command.name=/sharing/view_sharing_entry"
 	},
@@ -86,6 +86,10 @@ public class ViewSharingEntryMVCRenderCommand implements MVCRenderCommand {
 
 			SharingEntryViewRenderer sharingEntryViewRenderer =
 				sharingEntryInterpreter.getSharingEntryViewRenderer();
+
+			if (sharingEntryViewRenderer == null) {
+				return MVCRenderConstants.MVC_PATH_VALUE_SKIP_DISPATCH;
+			}
 
 			sharingEntryViewRenderer.render(
 				sharingEntry, _portal.getHttpServletRequest(renderRequest),

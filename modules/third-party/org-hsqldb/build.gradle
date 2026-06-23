@@ -54,27 +54,27 @@ jar {
 }
 
 jarPatched {
-	archiveName = jar.archiveName
-	destinationDir = jar.destinationDir
-	duplicatesStrategy = 'exclude'
-
+	archiveFileName = jar.archiveFileName
+	destinationDirectory = jar.destinationDirectory
+	duplicatesStrategy = "exclude"
 	exclude "module-info.class"
-
 	from sourceSets.main.output
 
 	from {
 		zipTree(configurations.compileOnly.singleFile)
 	}
+
+	mustRunAfter compileJava
+	mustRunAfter generatePomFileForMavenPublication
+	mustRunAfter processResources
 }
 
 unzip {
 	dependsOn downloadSrc
-	from zipTree(file("${tempDir}/hsqldb-${hsqldbVersion}-sources.jar"))
-	into file("${tempDir}/src")
-
-	File srcTmpDir = new File("${tempDir}/src/org")
 
 	doLast {
+		File srcTmpDir = new File("${tempDir}/src/org")
+
 		srcTmpDir.eachFileRecurse(FileType.FILES) {
 			if (it.toPath().toString().contains("cmdline") ) {
 				return
@@ -89,7 +89,11 @@ unzip {
 			}
 		}
 	}
+
 	ext {
 		autoClean = false
 	}
+
+	from zipTree(file("${tempDir}/hsqldb-${hsqldbVersion}-sources.jar"))
+	into file("${tempDir}/src")
 }

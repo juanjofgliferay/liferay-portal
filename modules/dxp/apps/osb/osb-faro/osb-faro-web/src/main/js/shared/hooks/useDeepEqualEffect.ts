@@ -1,8 +1,8 @@
 import React from 'react';
 import {isEqual} from 'lodash';
 
-function useUpdateValueOnChange(value) {
-	const ref = React.useRef();
+function useUpdateValueOnChange<T>(value: T): T | undefined {
+	const ref = React.useRef<T>();
 
 	if (!isEqual(value, ref.current)) {
 		ref.current = value;
@@ -11,8 +11,9 @@ function useUpdateValueOnChange(value) {
 	return ref.current;
 }
 
-function useDeepEqualEffect(callback, args) {
+export function useDeepEqualEffect(
+	callback: React.EffectCallback,
+	args: React.DependencyList
+) {
 	React.useEffect(callback, useUpdateValueOnChange(args));
 }
-
-export default useDeepEqualEffect;

@@ -7,9 +7,12 @@ package com.liferay.redirect.internal.search;
 
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
+import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 import com.liferay.redirect.model.RedirectNotFoundEntry;
+import com.liferay.redirect.service.RedirectNotFoundEntryLocalService;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -40,10 +43,19 @@ public class RedirectNotFoundEntryModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.redirect.model.RedirectNotFoundEntry)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			IndexerWriterMode.UPDATE,
+			_redirectNotFoundEntryLocalService::
+				getIndexableActionableDynamicQuery);
+	}
+
 	private ModelIndexerWriterContributor<RedirectNotFoundEntry>
 		_modelIndexWriterContributor;
+
+	@Reference
+	private RedirectNotFoundEntryLocalService
+		_redirectNotFoundEntryLocalService;
 
 }

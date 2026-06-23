@@ -5,12 +5,17 @@
 
 package com.liferay.commerce.product.service.impl;
 
+import com.liferay.commerce.product.exception.CPDefinitionSpecificationOptionValueKeyException;
 import com.liferay.commerce.product.internal.util.CPDefinitionLocalServiceCircularDependencyUtil;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
+import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValueTable;
+import com.liferay.commerce.product.model.CPSpecificationOptionTable;
 import com.liferay.commerce.product.service.base.CPDefinitionSpecificationOptionValueLocalServiceBaseImpl;
 import com.liferay.commerce.product.service.persistence.CPDefinitionPersistence;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -23,6 +28,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.List;
 import java.util.Locale;
@@ -45,22 +51,14 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 	@Override
 	public CPDefinitionSpecificationOptionValue
 			addCPDefinitionSpecificationOptionValue(
-				long cpDefinitionId, long cpSpecificationOptionId,
-				long cpOptionCategoryId, Map<Locale, String> valueMap,
-				double priority, ServiceContext serviceContext)
+				String externalReferenceCode, long cpDefinitionId,
+				long cpSpecificationOptionId, long cpOptionCategoryId,
+				double priority, Map<Locale, String> valueMap, boolean visible,
+				ServiceContext serviceContext)
 		throws PortalException {
 
 		CPDefinition cpDefinition = _cpDefinitionPersistence.findByPrimaryKey(
 			cpDefinitionId);
-		User user = _userLocalService.getUser(serviceContext.getUserId());
-
-		long cpDefinitionSpecificationOptionValueId =
-			counterLocalService.increment();
-
-		CPDefinitionSpecificationOptionValue
-			cpDefinitionSpecificationOptionValue =
-				cpDefinitionSpecificationOptionValuePersistence.create(
-					cpDefinitionSpecificationOptionValueId);
 
 		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
 				cpDefinitionId)) {
@@ -72,6 +70,18 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 			cpDefinitionId = cpDefinition.getCPDefinitionId();
 		}
 
+		User user = _userLocalService.getUser(serviceContext.getUserId());
+
+		long cpDefinitionSpecificationOptionValueId =
+			counterLocalService.increment();
+
+		CPDefinitionSpecificationOptionValue
+			cpDefinitionSpecificationOptionValue =
+				cpDefinitionSpecificationOptionValuePersistence.create(
+					cpDefinitionSpecificationOptionValueId);
+
+		cpDefinitionSpecificationOptionValue.setExternalReferenceCode(
+			externalReferenceCode);
 		cpDefinitionSpecificationOptionValue.setGroupId(
 			cpDefinition.getGroupId());
 		cpDefinitionSpecificationOptionValue.setCompanyId(user.getCompanyId());
@@ -83,8 +93,11 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 			cpSpecificationOptionId);
 		cpDefinitionSpecificationOptionValue.setCPOptionCategoryId(
 			cpOptionCategoryId);
-		cpDefinitionSpecificationOptionValue.setValueMap(valueMap);
+		cpDefinitionSpecificationOptionValue.setKey(
+			String.valueOf(cpDefinitionSpecificationOptionValueId));
 		cpDefinitionSpecificationOptionValue.setPriority(priority);
+		cpDefinitionSpecificationOptionValue.setValueMap(valueMap);
+		cpDefinitionSpecificationOptionValue.setVisible(visible);
 		cpDefinitionSpecificationOptionValue.setExpandoBridgeAttributes(
 			serviceContext);
 
@@ -185,6 +198,7 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 			deleteCPDefinitionSpecificationOptionValues(cpDefinitionId, true);
 	}
 
+	@Override
 	public void deleteCPDefinitionSpecificationOptionValues(
 			long cpDefinitionId, boolean makeCopy)
 		throws PortalException {
@@ -192,7 +206,8 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 		List<CPDefinitionSpecificationOptionValue>
 			cpDefinitionSpecificationOptionValues =
 				getCPDefinitionSpecificationOptionValues(
-					cpDefinitionId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+					cpDefinitionId, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					null);
 
 		// Commerce product definition specification option value
 
@@ -247,11 +262,53 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 	}
 
 	@Override
+	public CPDefinitionSpecificationOptionValue
+		fetchCPDefinitionSpecificationOptionValue(
+			long cpDefinitionId, String key) {
+
+		return cpDefinitionSpecificationOptionValuePersistence.fetchByC_K(
+			cpDefinitionId, key);
+	}
+
+	@Override
 	public List<CPDefinitionSpecificationOptionValue>
 		getCPDefinitionSpecificationOptionValues(long cpSpecificationOptionId) {
 
 		return cpDefinitionSpecificationOptionValuePersistence.
 			findByCPSpecificationOptionId(cpSpecificationOptionId);
+	}
+
+	@Override
+	public List<CPDefinitionSpecificationOptionValue>
+		getCPDefinitionSpecificationOptionValues(
+			long cpDefinitionId, Boolean visible, int start, int end,
+			OrderByComparator<CPDefinitionSpecificationOptionValue>
+				orderByComparator) {
+
+		if (visible == null) {
+			return cpDefinitionSpecificationOptionValuePersistence.
+				findByCPDefinitionId(
+					cpDefinitionId, start, end, orderByComparator);
+		}
+
+		return dslQuery(
+			DSLQueryFactoryUtil.select(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE
+			).from(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE
+			).innerJoinON(
+				CPSpecificationOptionTable.INSTANCE,
+				CPSpecificationOptionTable.INSTANCE.CPSpecificationOptionId.eq(
+					CPDefinitionSpecificationOptionValueTable.INSTANCE.
+						CPSpecificationOptionId)
+			).where(
+				_getPredicate(cpDefinitionId, visible)
+			).orderBy(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE,
+				orderByComparator
+			).limit(
+				start, end
+			));
 	}
 
 	@Override
@@ -266,21 +323,31 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 	@Override
 	public List<CPDefinitionSpecificationOptionValue>
 		getCPDefinitionSpecificationOptionValues(
-			long cpDefinitionId, int start, int end,
-			OrderByComparator<CPDefinitionSpecificationOptionValue>
-				orderByComparator) {
+			long cpDefinitionId, long cpOptionCategoryId, Boolean visible) {
 
-		return cpDefinitionSpecificationOptionValuePersistence.
-			findByCPDefinitionId(cpDefinitionId, start, end, orderByComparator);
-	}
+		if (visible == null) {
+			return cpDefinitionSpecificationOptionValuePersistence.findByC_COC(
+				cpDefinitionId, cpOptionCategoryId);
+		}
 
-	@Override
-	public List<CPDefinitionSpecificationOptionValue>
-		getCPDefinitionSpecificationOptionValues(
-			long cpDefinitionId, long cpOptionCategoryId) {
-
-		return cpDefinitionSpecificationOptionValuePersistence.findByC_COC(
-			cpDefinitionId, cpOptionCategoryId);
+		return dslQuery(
+			DSLQueryFactoryUtil.select(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE
+			).from(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE
+			).innerJoinON(
+				CPSpecificationOptionTable.INSTANCE,
+				CPSpecificationOptionTable.INSTANCE.CPSpecificationOptionId.eq(
+					CPDefinitionSpecificationOptionValueTable.INSTANCE.
+						CPSpecificationOptionId)
+			).where(
+				_getPredicate(
+					cpDefinitionId, visible
+				).and(
+					CPDefinitionSpecificationOptionValueTable.INSTANCE.
+						CPOptionCategoryId.eq(cpOptionCategoryId)
+				)
+			));
 	}
 
 	@Override
@@ -294,10 +361,27 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 
 	@Override
 	public int getCPDefinitionSpecificationOptionValuesCount(
-		long cpDefinitionId) {
+		long cpDefinitionId, Boolean visible) {
 
-		return cpDefinitionSpecificationOptionValuePersistence.
-			countByCPDefinitionId(cpDefinitionId);
+		if (visible == null) {
+			return cpDefinitionSpecificationOptionValuePersistence.
+				countByCPDefinitionId(cpDefinitionId);
+		}
+
+		return dslQueryCount(
+			DSLQueryFactoryUtil.countDistinct(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE.
+					CPDefinitionSpecificationOptionValueId
+			).from(
+				CPDefinitionSpecificationOptionValueTable.INSTANCE
+			).innerJoinON(
+				CPSpecificationOptionTable.INSTANCE,
+				CPSpecificationOptionTable.INSTANCE.CPSpecificationOptionId.eq(
+					CPDefinitionSpecificationOptionValueTable.INSTANCE.
+						CPSpecificationOptionId)
+			).where(
+				_getPredicate(cpDefinitionId, visible)
+			));
 	}
 
 	@Override
@@ -311,9 +395,11 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 	@Override
 	public CPDefinitionSpecificationOptionValue
 			updateCPDefinitionSpecificationOptionValue(
+				String externalReferenceCode,
 				long cpDefinitionSpecificationOptionValueId,
-				long cpOptionCategoryId, Map<Locale, String> valueMap,
-				double priority, ServiceContext serviceContext)
+				long cpOptionCategoryId, String key, double priority,
+				Map<Locale, String> valueMap, boolean visible,
+				ServiceContext serviceContext)
 		throws PortalException {
 
 		// Commerce product definition specification option value
@@ -322,6 +408,11 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 			cpDefinitionSpecificationOptionValue =
 				cpDefinitionSpecificationOptionValuePersistence.
 					findByPrimaryKey(cpDefinitionSpecificationOptionValueId);
+
+		_validateKey(
+			cpDefinitionSpecificationOptionValue.
+				getCPDefinitionSpecificationOptionValueId(),
+			cpDefinitionSpecificationOptionValue.getCPDefinitionId(), key);
 
 		if (CPDefinitionLocalServiceCircularDependencyUtil.isVersionable(
 				cpDefinitionSpecificationOptionValue.getCPDefinitionId())) {
@@ -337,10 +428,14 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 						getCPDefinitionSpecificationOptionValueId());
 		}
 
+		cpDefinitionSpecificationOptionValue.setExternalReferenceCode(
+			externalReferenceCode);
 		cpDefinitionSpecificationOptionValue.setCPOptionCategoryId(
 			cpOptionCategoryId);
-		cpDefinitionSpecificationOptionValue.setValueMap(valueMap);
+		cpDefinitionSpecificationOptionValue.setKey(key);
 		cpDefinitionSpecificationOptionValue.setPriority(priority);
+		cpDefinitionSpecificationOptionValue.setValueMap(valueMap);
+		cpDefinitionSpecificationOptionValue.setVisible(visible);
 		cpDefinitionSpecificationOptionValue.setExpandoBridgeAttributes(
 			serviceContext);
 
@@ -398,6 +493,33 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 		return cpDefinitionSpecificationOptionValue;
 	}
 
+	private Predicate _getPredicate(long cpDefinitionId, boolean visible) {
+		return CPDefinitionSpecificationOptionValueTable.INSTANCE.
+			CPDefinitionId.eq(
+				cpDefinitionId
+			).and(
+				() -> {
+					if (visible) {
+						return CPDefinitionSpecificationOptionValueTable.
+							INSTANCE.visible.eq(
+								true
+							).and(
+								CPSpecificationOptionTable.INSTANCE.visible.eq(
+									true)
+							);
+					}
+
+					return CPDefinitionSpecificationOptionValueTable.INSTANCE.
+						visible.eq(
+							false
+						).or(
+							CPSpecificationOptionTable.INSTANCE.visible.eq(
+								false)
+						);
+				}
+			);
+	}
+
 	private void _reindexCPDefinition(long cpDefinitionId)
 		throws PortalException {
 
@@ -405,6 +527,35 @@ public class CPDefinitionSpecificationOptionValueLocalServiceImpl
 			CPDefinition.class);
 
 		indexer.reindex(CPDefinition.class.getName(), cpDefinitionId);
+	}
+
+	private void _validateKey(
+			long cpDefinitionSpecificationOptionValueId, long cpDefinitionId,
+			String key)
+		throws PortalException {
+
+		if (Validator.isNull(key)) {
+			throw new CPDefinitionSpecificationOptionValueKeyException();
+		}
+
+		CPDefinitionSpecificationOptionValue
+			cpDefinitionSpecificationOptionValue =
+				cpDefinitionSpecificationOptionValuePersistence.fetchByC_K(
+					cpDefinitionId, key);
+
+		if (cpDefinitionSpecificationOptionValue == null) {
+			return;
+		}
+
+		long oldCPDefinitionSpecificationOptionValueId =
+			cpDefinitionSpecificationOptionValue.
+				getCPDefinitionSpecificationOptionValueId();
+
+		if (oldCPDefinitionSpecificationOptionValueId !=
+				cpDefinitionSpecificationOptionValueId) {
+
+			throw new CPDefinitionSpecificationOptionValueKeyException();
+		}
 	}
 
 	@Reference

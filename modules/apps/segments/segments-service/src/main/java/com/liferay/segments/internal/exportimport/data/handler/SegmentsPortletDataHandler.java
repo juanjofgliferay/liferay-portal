@@ -5,6 +5,7 @@
 
 package com.liferay.segments.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -22,9 +23,9 @@ import com.liferay.segments.constants.SegmentsConstants;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.model.SegmentsEntry;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -34,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	property = "javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
+	property = "jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
 	service = PortletDataHandler.class
 )
 public class SegmentsPortletDataHandler extends BasePortletDataHandler {
@@ -56,6 +57,11 @@ public class SegmentsPortletDataHandler extends BasePortletDataHandler {
 	}
 
 	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_SITE_BUILDER;
+	}
+
+	@Override
 	public String getServiceName() {
 		return SegmentsConstants.SERVICE_NAME;
 	}
@@ -70,11 +76,12 @@ public class SegmentsPortletDataHandler extends BasePortletDataHandler {
 	protected void activate() {
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(SegmentsEntry.class));
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "segments", true, false, null,
 				SegmentsEntry.class.getName()));
-		setStagingControls(getExportControls());
+		setStagingPortletDataHandlerControls(
+			getExportPortletDataHandlerControls());
 	}
 
 	@Override

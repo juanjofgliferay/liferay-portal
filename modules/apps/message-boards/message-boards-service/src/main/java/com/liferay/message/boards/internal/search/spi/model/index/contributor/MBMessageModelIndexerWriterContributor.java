@@ -11,6 +11,7 @@ import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -22,31 +23,32 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.batch.BatchIndexingActionable;
-import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
+import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
-import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Luan Maoski
  */
-@Component(
-	property = "indexer.class.name=com.liferay.message.boards.model.MBMessage",
-	service = ModelIndexerWriterContributor.class
-)
 public class MBMessageModelIndexerWriterContributor
-	implements ModelIndexerWriterContributor<MBMessage> {
+	extends ModelIndexerWriterContributor<MBMessage> {
+
+	public MBMessageModelIndexerWriterContributor(
+		MBMessageLocalService mbMessageLocalService,
+		MBThreadLocalService mbThreadLocalService) {
+
+		super(mbMessageLocalService::getIndexableActionableDynamicQuery);
+
+		_mbMessageLocalService = mbMessageLocalService;
+		_mbThreadLocalService = mbThreadLocalService;
+	}
 
 	@Override
 	public void customize(
-		BatchIndexingActionable batchIndexingActionable,
-		ModelIndexerWriterDocumentHelper modelIndexerWriterDocumentHelper) {
+		IndexableActionableDynamicQuery indexableActionableDynamicQuery,
+		IndexerDocumentBuilder indexerDocumentBuilder) {
 
-		batchIndexingActionable.setAddCriteriaMethod(
+		indexableActionableDynamicQuery.setAddCriteriaMethod(
 			dynamicQuery -> {
 				Property statusProperty = PropertyFactoryUtil.forName("status");
 
@@ -58,7 +60,7 @@ public class MBMessageModelIndexerWriterContributor
 							WorkflowConstants.STATUS_PENDING
 						}));
 			});
-		batchIndexingActionable.setPerformActionMethod(
+		indexableActionableDynamicQuery.setPerformActionMethod(
 			(MBMessage mbMessage) -> {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
@@ -69,24 +71,11 @@ public class MBMessageModelIndexerWriterContributor
 				}
 
 				if (mbMessage.isDiscussion() && mbMessage.isRoot()) {
-					return;
+					return null;
 				}
 
-				batchIndexingActionable.addDocuments(
-					modelIndexerWriterDocumentHelper.getDocument(mbMessage));
+				return indexerDocumentBuilder.getDocument(mbMessage);
 			});
-	}
-
-	@Override
-	public BatchIndexingActionable getBatchIndexingActionable() {
-		return _dynamicQueryBatchIndexingActionableFactory.
-			getBatchIndexingActionable(
-				_mbMessageLocalService.getIndexableActionableDynamicQuery());
-	}
-
-	@Override
-	public long getCompanyId(MBMessage mbMessage) {
-		return mbMessage.getCompanyId();
 	}
 
 	@Override
@@ -148,14 +137,7 @@ public class MBMessageModelIndexerWriterContributor
 	private static final Log _log = LogFactoryUtil.getLog(
 		MBMessageModelIndexerWriterContributor.class);
 
-	@Reference
-	private DynamicQueryBatchIndexingActionableFactory
-		_dynamicQueryBatchIndexingActionableFactory;
-
-	@Reference
-	private MBMessageLocalService _mbMessageLocalService;
-
-	@Reference
-	private MBThreadLocalService _mbThreadLocalService;
+	private final MBMessageLocalService _mbMessageLocalService;
+	private final MBThreadLocalService _mbThreadLocalService;
 
 }

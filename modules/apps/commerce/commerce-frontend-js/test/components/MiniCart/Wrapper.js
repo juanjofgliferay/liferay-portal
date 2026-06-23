@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
-import {cleanup, render} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import {render} from '@testing-library/react';
 import React from 'react';
 
 import MiniCartContext from '../../../src/main/resources/META-INF/resources/components/mini_cart/MiniCartContext';
@@ -21,15 +21,21 @@ describe('MiniCart Wrapper', () => {
 			[HEADER]: () => <div>{HEADER}</div>,
 			[ORDER_BUTTON]: () => <div>{ORDER_BUTTON}</div>,
 		},
+		actionURLs: {},
+		cartState: {
+			cartItems: [],
+			summary: {itemsCount: 0},
+		},
+		editedItem: null,
 		isOpen: false,
+		isUpdating: false,
+		requestQuoteEnabled: false,
 	};
 
 	const COMPONENT_SELECTOR = '.mini-cart-wrapper';
 
 	afterEach(() => {
 		jest.resetAllMocks();
-
-		cleanup();
 	});
 
 	describe('by default', () => {
@@ -81,9 +87,8 @@ describe('MiniCart Wrapper', () => {
 					</MiniCartContext.Provider>
 				);
 
-				const WrapperElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const WrapperElement =
+					container.querySelector(COMPONENT_SELECTOR);
 				const ItemsWrapperElement = WrapperElement.querySelector(
 					`${COMPONENT_SELECTOR}-items`
 				);

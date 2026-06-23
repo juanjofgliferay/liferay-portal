@@ -28,7 +28,7 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 		</clay:content-col>
 	</clay:content-row>
 
-	<div id="<portlet:namespace />defaultDeliveryCommerceTermEntries">
+	<div data-qa-id="defaultDeliveryCommerceTermEntries" id="<portlet:namespace />defaultDeliveryCommerceTermEntries">
 		<frontend-data-set:classic-display
 			contextParams='<%=
 				HashMapBuilder.<String, String>put(
@@ -40,7 +40,6 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 			creationMenu="<%= commerceChannelAccountEntryRelDisplayContext.getCreationMenu(CommerceChannelAccountEntryRelConstants.TYPE_DELIVERY_TERM) %>"
 			dataProviderKey="<%= CommerceTermEntryFDSNames.ACCOUNT_ENTRY_DELIVERY_TERM_ENTRIES %>"
 			id="<%= CommerceTermEntryFDSNames.ACCOUNT_ENTRY_DELIVERY_TERM_ENTRIES %>"
-			itemsPerPage="<%= 10 %>"
 			showSearch="<%= false %>"
 			style="fluid"
 		/>
@@ -58,7 +57,7 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 		</clay:content-col>
 	</clay:content-row>
 
-	<div id="<portlet:namespace />defaultPaymentCommerceTermEntries">
+	<div data-qa-id="defaultPaymentCommerceTermEntries" id="<portlet:namespace />defaultPaymentCommerceTermEntries">
 		<frontend-data-set:classic-display
 			contextParams='<%=
 				HashMapBuilder.<String, String>put(
@@ -70,7 +69,6 @@ AccountEntry accountEntry = commerceChannelAccountEntryRelDisplayContext.getAcco
 			creationMenu="<%= commerceChannelAccountEntryRelDisplayContext.getCreationMenu(CommerceChannelAccountEntryRelConstants.TYPE_PAYMENT_TERM) %>"
 			dataProviderKey="<%= CommerceTermEntryFDSNames.ACCOUNT_ENTRY_PAYMENT_TERM_ENTRIES %>"
 			id="<%= CommerceTermEntryFDSNames.ACCOUNT_ENTRY_PAYMENT_TERM_ENTRIES %>"
-			itemsPerPage="<%= 10 %>"
 			showSearch="<%= false %>"
 			style="fluid"
 		/>

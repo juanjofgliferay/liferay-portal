@@ -18,10 +18,8 @@ const ChainedRedirectionsModal = ({
 	redirectEntryChainCause,
 	saveButtonLabel,
 }) => {
-	const [
-		updateChainedRedirectEntries,
-		setUpdateChainedRedirectEntries,
-	] = useState(true);
+	const [updateChainedRedirectEntries, setUpdateChainedRedirectEntries] =
+		useState(true);
 
 	const handleSubmit = (event) => {
 		event.preventDefault();
@@ -35,7 +33,9 @@ const ChainedRedirectionsModal = ({
 			size="md"
 			status="warning"
 		>
-			<ClayModal.Header>
+			<ClayModal.Header
+				closeButtonAriaLabel={Liferay.Language.get('close')}
+			>
 				{Liferay.Language.get('redirect-chain')}
 			</ClayModal.Header>
 
@@ -46,10 +46,10 @@ const ChainedRedirectionsModal = ({
 							{redirectEntryChainCause === 'sourceURL'
 								? Liferay.Language.get(
 										'do-you-want-to-create-the-redirect-and-update-the-references'
-								  )
+									)
 								: Liferay.Language.get(
 										'do-you-want-to-create-this-redirect-and-update-it'
-								  )}
+									)}
 						</strong>
 					</p>
 
@@ -58,20 +58,20 @@ const ChainedRedirectionsModal = ({
 							{redirectEntryChainCause === 'sourceURL'
 								? Liferay.Language.get(
 										'there-are-other-redirects-pointing-to-the-source-url-of-this-redirect'
-								  )
+									)
 								: Liferay.Language.get(
 										'this-redirect-points-to-the-source-url-of-another-redirect'
-								  )}
+									)}
 						</p>
 
 						<p>
 							{redirectEntryChainCause === 'sourceURL'
 								? Liferay.Language.get(
 										'update-the-references-of-the-other-redirects-to-avoid-this-chain'
-								  )
+									)
 								: Liferay.Language.get(
 										'update-this-redirect-to-avoid-this-chain'
-								  )}
+									)}
 						</p>
 					</div>
 

@@ -30,9 +30,13 @@ import com.liferay.item.selector.ItemSelectorReturnTypeResolverHandler;
 import com.liferay.item.selector.criteria.file.criterion.CustomFileItemSelectorCriterion;
 import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
 import com.liferay.item.selector.taglib.servlet.taglib.util.RepositoryEntryBrowserTagUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
@@ -43,11 +47,9 @@ import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.repository.capabilities.FileEntryTypeCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchContextFactory;
-import com.liferay.portal.kernel.search.SearchResult;
 import com.liferay.portal.kernel.search.SearchResultUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -67,15 +69,14 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.RepositoryUtil;
 import com.liferay.staging.StagingGroupHelper;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Roberto Díaz
@@ -191,44 +192,37 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 		).setParameter(
 			"folderId", getFolderId()
 		).setParameter(
-			"selectedTab", getTitle()
+			"selectedTab", _getSelectedTab()
 		).buildPortletURL();
 	}
 
 	public List<Object> getRepositoryEntries() throws Exception {
 		if (_isSearch()) {
-			Hits hits = _getHits();
-
-			Document[] docs = hits.getDocs();
-
-			List<Object> repositoryEntries = new ArrayList<>(docs.length);
-
-			List<SearchResult> searchResults =
+			return TransformUtil.transform(
 				SearchResultUtil.getSearchResults(
-					hits, _themeDisplay.getLocale());
+					_getHits(), _themeDisplay.getLocale()),
+				searchResult -> {
+					String className = searchResult.getClassName();
 
-			for (SearchResult searchResult : searchResults) {
-				String className = searchResult.getClassName();
+					if (className.equals(DLFileEntryConstants.getClassName())) {
+						return DLAppServiceUtil.getFileEntry(
+							searchResult.getClassPK());
+					}
 
-				if (className.equals(DLFileEntryConstants.getClassName())) {
-					repositoryEntries.add(
-						DLAppServiceUtil.getFileEntry(
-							searchResult.getClassPK()));
-				}
-				else if (className.equals(
+					if (className.equals(
 							DLFileShortcutConstants.getClassName())) {
 
-					repositoryEntries.add(
-						DLAppServiceUtil.getFileShortcut(
-							searchResult.getClassPK()));
-				}
-				else if (className.equals(DLFolderConstants.getClassName())) {
-					repositoryEntries.add(
-						DLAppServiceUtil.getFolder(searchResult.getClassPK()));
-				}
-			}
+						return DLAppServiceUtil.getFileShortcut(
+							searchResult.getClassPK());
+					}
 
-			return repositoryEntries;
+					if (className.equals(DLFolderConstants.getClassName())) {
+						return DLAppServiceUtil.getFolder(
+							searchResult.getClassPK());
+					}
+
+					return null;
+				});
 		}
 
 		OrderByComparator<Object> repositoryModelOrderByComparator =
@@ -330,7 +324,8 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 
 			for (AssetVocabulary assetVocabulary : assetVocabularies) {
 				if (assetVocabulary.isRequired(
-						classNameId, defaultFileEntryTypeId)) {
+						classNameId, defaultFileEntryTypeId,
+						_themeDisplay.getScopeGroupId())) {
 
 					return null;
 				}
@@ -429,9 +424,35 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 		throws PortalException {
 
 		if (httpServletRequest.getParameter("folderId") != null) {
-			return ParamUtil.getLong(
+			long folderId = ParamUtil.getLong(
 				httpServletRequest, "folderId",
 				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+			if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+				try {
+					Folder folder = DLAppServiceUtil.getFolder(folderId);
+
+					Object model = folder.getModel();
+
+					if (model instanceof TrashedModel) {
+						TrashedModel trashedModel = (TrashedModel)model;
+
+						if (trashedModel.isInTrash()) {
+							folderId =
+								DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+						}
+					}
+				}
+				catch (PortalException portalException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(portalException);
+					}
+
+					folderId = DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+				}
+			}
+
+			return folderId;
 		}
 
 		long selectedFileEntryId = ParamUtil.getLong(
@@ -579,6 +600,16 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 		return _searchContext;
 	}
 
+	private String _getSelectedTab() {
+		if (_selectedTab != null) {
+			return _selectedTab;
+		}
+
+		_selectedTab = ParamUtil.getString(_httpServletRequest, "selectedTab");
+
+		return _selectedTab;
+	}
+
 	private long _getStagingAwareGroupId() {
 		if (_groupId != null) {
 			return _groupId;
@@ -608,14 +639,8 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 	}
 
 	private boolean _isEverywhereScopeFilter() {
-		if (Objects.equals(
-				ParamUtil.getString(_httpServletRequest, "scope"),
-				"everywhere")) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			ParamUtil.getString(_httpServletRequest, "scope"), "everywhere");
 	}
 
 	private boolean _isFilterByFileEntryType() {
@@ -651,6 +676,9 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 		return _search;
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		DLItemSelectorViewDisplayContext.class);
+
 	private final AssetVocabularyService _assetVocabularyService;
 	private final ClassNameLocalService _classNameLocalService;
 	private final DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
@@ -672,6 +700,7 @@ public class DLItemSelectorViewDisplayContext<T extends ItemSelectorCriterion> {
 	private Repository _repository;
 	private final boolean _search;
 	private SearchContext _searchContext;
+	private String _selectedTab;
 	private Boolean _showDragAndDropZone;
 	private final StagingGroupHelper _stagingGroupHelper;
 	private int[] _startAndEnd;

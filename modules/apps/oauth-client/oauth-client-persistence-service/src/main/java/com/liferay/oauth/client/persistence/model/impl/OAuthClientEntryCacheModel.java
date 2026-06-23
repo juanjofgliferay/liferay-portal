@@ -69,10 +69,14 @@ public class OAuthClientEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(27);
+		StringBundler sb = new StringBundler(37);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", uuid=");
+		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", oAuthClientEntryId=");
 		sb.append(oAuthClientEntryId);
 		sb.append(", companyId=");
@@ -91,8 +95,14 @@ public class OAuthClientEntryCacheModel
 		sb.append(authServerWellKnownURI);
 		sb.append(", clientId=");
 		sb.append(clientId);
+		sb.append(", customClaimsJSON=");
+		sb.append(customClaimsJSON);
 		sb.append(", infoJSON=");
 		sb.append(infoJSON);
+		sb.append(", matcherField=");
+		sb.append(matcherField);
+		sb.append(", metadataCacheTime=");
+		sb.append(metadataCacheTime);
 		sb.append(", oidcUserInfoMapperJSON=");
 		sb.append(oidcUserInfoMapperJSON);
 		sb.append(", tokenRequestParametersJSON=");
@@ -107,6 +117,22 @@ public class OAuthClientEntryCacheModel
 		OAuthClientEntryImpl oAuthClientEntryImpl = new OAuthClientEntryImpl();
 
 		oAuthClientEntryImpl.setMvccVersion(mvccVersion);
+
+		if (uuid == null) {
+			oAuthClientEntryImpl.setUuid("");
+		}
+		else {
+			oAuthClientEntryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			oAuthClientEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			oAuthClientEntryImpl.setExternalReferenceCode(
+				externalReferenceCode);
+		}
+
 		oAuthClientEntryImpl.setOAuthClientEntryId(oAuthClientEntryId);
 		oAuthClientEntryImpl.setCompanyId(companyId);
 		oAuthClientEntryImpl.setUserId(userId);
@@ -155,12 +181,28 @@ public class OAuthClientEntryCacheModel
 			oAuthClientEntryImpl.setClientId(clientId);
 		}
 
+		if (customClaimsJSON == null) {
+			oAuthClientEntryImpl.setCustomClaimsJSON("");
+		}
+		else {
+			oAuthClientEntryImpl.setCustomClaimsJSON(customClaimsJSON);
+		}
+
 		if (infoJSON == null) {
 			oAuthClientEntryImpl.setInfoJSON("");
 		}
 		else {
 			oAuthClientEntryImpl.setInfoJSON(infoJSON);
 		}
+
+		if (matcherField == null) {
+			oAuthClientEntryImpl.setMatcherField("");
+		}
+		else {
+			oAuthClientEntryImpl.setMatcherField(matcherField);
+		}
+
+		oAuthClientEntryImpl.setMetadataCacheTime(metadataCacheTime);
 
 		if (oidcUserInfoMapperJSON == null) {
 			oAuthClientEntryImpl.setOIDCUserInfoMapperJSON("");
@@ -188,6 +230,8 @@ public class OAuthClientEntryCacheModel
 		throws ClassNotFoundException, IOException {
 
 		mvccVersion = objectInput.readLong();
+		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		oAuthClientEntryId = objectInput.readLong();
 
@@ -200,7 +244,11 @@ public class OAuthClientEntryCacheModel
 		authRequestParametersJSON = objectInput.readUTF();
 		authServerWellKnownURI = objectInput.readUTF();
 		clientId = objectInput.readUTF();
+		customClaimsJSON = (String)objectInput.readObject();
 		infoJSON = (String)objectInput.readObject();
+		matcherField = objectInput.readUTF();
+
+		metadataCacheTime = objectInput.readLong();
 		oidcUserInfoMapperJSON = objectInput.readUTF();
 		tokenRequestParametersJSON = objectInput.readUTF();
 	}
@@ -208,6 +256,20 @@ public class OAuthClientEntryCacheModel
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
 
 		objectOutput.writeLong(oAuthClientEntryId);
 
@@ -246,12 +308,28 @@ public class OAuthClientEntryCacheModel
 			objectOutput.writeUTF(clientId);
 		}
 
+		if (customClaimsJSON == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(customClaimsJSON);
+		}
+
 		if (infoJSON == null) {
 			objectOutput.writeObject("");
 		}
 		else {
 			objectOutput.writeObject(infoJSON);
 		}
+
+		if (matcherField == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(matcherField);
+		}
+
+		objectOutput.writeLong(metadataCacheTime);
 
 		if (oidcUserInfoMapperJSON == null) {
 			objectOutput.writeUTF("");
@@ -269,6 +347,8 @@ public class OAuthClientEntryCacheModel
 	}
 
 	public long mvccVersion;
+	public String uuid;
+	public String externalReferenceCode;
 	public long oAuthClientEntryId;
 	public long companyId;
 	public long userId;
@@ -278,8 +358,12 @@ public class OAuthClientEntryCacheModel
 	public String authRequestParametersJSON;
 	public String authServerWellKnownURI;
 	public String clientId;
+	public String customClaimsJSON;
 	public String infoJSON;
+	public String matcherField;
+	public long metadataCacheTime;
 	public String oidcUserInfoMapperJSON;
 	public String tokenRequestParametersJSON;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:269235767

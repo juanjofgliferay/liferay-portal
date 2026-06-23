@@ -24,6 +24,8 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.vulcan.resource.OpenAPIResource;
 
+import jakarta.ws.rs.core.Application;
+
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -32,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.ws.rs.core.Application;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -58,8 +58,19 @@ public class APIApplicationPublisherImpl
 
 	@Clusterable
 	@Override
+	public void publish(long companyId) throws Exception {
+		for (APIApplication apiApplication :
+				_apiApplicationProvider.getPublishedAPIApplications(
+					companyId)) {
+
+			publish(apiApplication.getBaseURL(), apiApplication.getCompanyId());
+		}
+	}
+
+	@Clusterable
+	@Override
 	public void publish(String baseURL, long companyId) throws Exception {
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-178642")) {
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPS-178642")) {
 			throw new UnsupportedOperationException(
 				"APIApplicationPublisher not available");
 		}
@@ -123,7 +134,7 @@ public class APIApplicationPublisherImpl
 	@Clusterable
 	@Override
 	public void unpublish(String baseURL, long companyId) {
-		if (!FeatureFlagManagerUtil.isEnabled("LPS-178642")) {
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPS-178642")) {
 			throw new UnsupportedOperationException(
 				"APIApplicationPublisher not available");
 		}
@@ -187,6 +198,8 @@ public class APIApplicationPublisherImpl
 			"liferay.headless.builder.application", true
 		).put(
 			"liferay.jackson", false
+		).put(
+			"liferay.objects.exception.mapper", true
 		).put(
 			"osgi.jaxrs.application.base",
 			HeadlessBuilderConstants.BASE_PATH_SUFFIX + baseURL

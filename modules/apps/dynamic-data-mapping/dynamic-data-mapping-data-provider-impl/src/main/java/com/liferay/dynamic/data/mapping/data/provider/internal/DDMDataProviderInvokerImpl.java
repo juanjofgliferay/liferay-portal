@@ -19,6 +19,8 @@ import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -145,11 +147,11 @@ public class DDMDataProviderInvokerImpl implements DDMDataProviderInvoker {
 
 		DDMDataProviderInvokeCommand ddmDataProviderInvokeCommand =
 			new DDMDataProviderInvokeCommand(
-				ddmDataProviderInstance.getNameCurrentValue(), ddmDataProvider,
-				ddmDataProviderRequest,
+				new CompanyInheritableThreadLocalCallable<>(
+					() -> ddmDataProvider.getData(ddmDataProviderRequest)),
 				ddmDataProviderInstanceSettings.getSettings(
-					ddmDataProviderInstance,
-					DDMRESTDataProviderSettings.class));
+					ddmDataProviderInstance, DDMRESTDataProviderSettings.class),
+				ddmDataProviderInstance.getNameCurrentValue());
 
 		return ddmDataProviderInvokeCommand.execute();
 	}
@@ -157,6 +159,9 @@ public class DDMDataProviderInvokerImpl implements DDMDataProviderInvoker {
 	protected DDMDataProviderInstance fetchDDMDataProviderInstance(
 			String ddmDataProviderInstanceId)
 		throws PortalException {
+
+		DDMDataProviderInstanceService ddmDataProviderInstanceService =
+			ddmDataProviderInstanceServiceSnapshot.get();
 
 		DDMDataProviderInstance ddmDataProviderInstance =
 			ddmDataProviderInstanceService.fetchDataProviderInstanceByUuid(
@@ -195,8 +200,10 @@ public class DDMDataProviderInvokerImpl implements DDMDataProviderInvoker {
 		return hystrixRuntimeException.getFailureType();
 	}
 
-	@Reference
-	protected DDMDataProviderInstanceService ddmDataProviderInstanceService;
+	protected static final Snapshot<DDMDataProviderInstanceService>
+		ddmDataProviderInstanceServiceSnapshot = new Snapshot<>(
+			DDMDataProviderInvokerImpl.class,
+			DDMDataProviderInstanceService.class, null, true);
 
 	@Reference
 	protected DDMDataProviderInstanceSettings ddmDataProviderInstanceSettings;

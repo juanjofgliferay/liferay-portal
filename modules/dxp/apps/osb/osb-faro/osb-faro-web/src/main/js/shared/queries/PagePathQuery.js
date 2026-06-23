@@ -1,4 +1,4 @@
-import {gql} from 'apollo-boost';
+import {gql} from '@apollo/client';
 
 export default gql`
 	query PagePath(
@@ -22,11 +22,13 @@ export default gql`
 			canonicalUrl
 			followingPagePathNodes {
 				canonicalUrl
+				external
 				views
 				title
 			}
 			previousPagePathNodes {
 				canonicalUrl
+				external
 				views
 				title
 			}

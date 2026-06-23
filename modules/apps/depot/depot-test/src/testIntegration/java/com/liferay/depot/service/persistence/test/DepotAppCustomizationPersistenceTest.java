@@ -120,6 +120,8 @@ public class DepotAppCustomizationPersistenceTest {
 
 		newDepotAppCustomization.setMvccVersion(RandomTestUtil.nextLong());
 
+		newDepotAppCustomization.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newDepotAppCustomization.setCompanyId(RandomTestUtil.nextLong());
 
 		newDepotAppCustomization.setDepotEntryId(RandomTestUtil.nextLong());
@@ -138,6 +140,9 @@ public class DepotAppCustomizationPersistenceTest {
 		Assert.assertEquals(
 			existingDepotAppCustomization.getMvccVersion(),
 			newDepotAppCustomization.getMvccVersion());
+		Assert.assertEquals(
+			existingDepotAppCustomization.getCtCollectionId(),
+			newDepotAppCustomization.getCtCollectionId());
 		Assert.assertEquals(
 			existingDepotAppCustomization.getDepotAppCustomizationId(),
 			newDepotAppCustomization.getDepotAppCustomizationId());
@@ -207,9 +212,9 @@ public class DepotAppCustomizationPersistenceTest {
 
 	protected OrderByComparator<DepotAppCustomization> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"DepotAppCustomization", "mvccVersion", true,
-			"depotAppCustomizationId", true, "companyId", true, "depotEntryId",
-			true, "enabled", true, "portletId", true);
+			"DepotAppCustomization", "mvccVersion", true, "ctCollectionId",
+			true, "depotAppCustomizationId", true, "companyId", true,
+			"depotEntryId", true, "enabled", true, "portletId", true);
 	}
 
 	@Test
@@ -537,6 +542,8 @@ public class DepotAppCustomizationPersistenceTest {
 
 		depotAppCustomization.setMvccVersion(RandomTestUtil.nextLong());
 
+		depotAppCustomization.setCtCollectionId(RandomTestUtil.nextLong());
+
 		depotAppCustomization.setCompanyId(RandomTestUtil.nextLong());
 
 		depotAppCustomization.setDepotEntryId(RandomTestUtil.nextLong());
@@ -556,3 +563,4 @@ public class DepotAppCustomizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1310808763

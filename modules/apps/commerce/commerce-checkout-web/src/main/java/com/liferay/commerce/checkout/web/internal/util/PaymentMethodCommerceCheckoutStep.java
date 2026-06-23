@@ -9,8 +9,6 @@ import com.liferay.commerce.checkout.helper.CommerceCheckoutStepHttpHelper;
 import com.liferay.commerce.checkout.web.internal.display.context.PaymentMethodCheckoutStepDisplayContext;
 import com.liferay.commerce.constants.CommerceCheckoutWebKeys;
 import com.liferay.commerce.constants.CommerceOrderActionKeys;
-import com.liferay.commerce.constants.CommerceWebKeys;
-import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.exception.CommerceOrderPaymentMethodException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.payment.engine.CommercePaymentEngine;
@@ -19,7 +17,6 @@ import com.liferay.commerce.payment.method.CommercePaymentMethodRegistry;
 import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelLocalService;
 import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelQualifierLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
-import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.util.BaseCommerceCheckoutStep;
 import com.liferay.commerce.util.CommerceCheckoutStep;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
@@ -29,11 +26,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,14 +66,9 @@ public class PaymentMethodCommerceCheckoutStep
 			(CommerceOrder)httpServletRequest.getAttribute(
 				CommerceCheckoutWebKeys.COMMERCE_ORDER);
 
-		if (!_commerceCheckoutStepHttpHelper.
-				isActivePaymentMethodCommerceCheckoutStep(
-					httpServletRequest, commerceOrder)) {
-
-			return false;
-		}
-
-		return true;
+		return _commerceCheckoutStepHttpHelper.
+			isActivePaymentMethodCommerceCheckoutStep(
+				httpServletRequest, commerceOrder);
 	}
 
 	@Override
@@ -144,22 +136,18 @@ public class PaymentMethodCommerceCheckoutStep
 			return;
 		}
 
-		CommerceContext commerceContext =
-			(CommerceContext)actionRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
 		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
 			null, commerceOrder.getCommerceOrderId(),
 			commerceOrder.getBillingAddressId(),
 			commerceOrder.getCommerceShippingMethodId(),
 			commerceOrder.getShippingAddressId(),
-			commerceOrder.getAdvanceStatus(), commercePaymentMethodKey,
+			commerceOrder.getAdvanceStatus(), commercePaymentMethodKey, null,
 			commerceOrder.getPurchaseOrderNumber(),
 			commerceOrder.getShippingAmount(),
 			commerceOrder.getShippingOptionName(), commerceOrder.getSubtotal(),
-			commerceOrder.getTotal(), commerceContext);
+			commerceOrder.getTotal());
 
-		_commerceOrderLocalService.resetTermsAndConditions(
+		commerceOrder = _commerceOrderLocalService.resetTermsAndConditions(
 			commerceOrder.getCommerceOrderId(), false, true);
 
 		actionRequest.setAttribute(
@@ -177,9 +165,6 @@ public class PaymentMethodCommerceCheckoutStep
 	)
 	private ModelResourcePermission<CommerceOrder>
 		_commerceOrderModelResourcePermission;
-
-	@Reference
-	private CommerceOrderService _commerceOrderService;
 
 	@Reference
 	private CommercePaymentEngine _commercePaymentEngine;

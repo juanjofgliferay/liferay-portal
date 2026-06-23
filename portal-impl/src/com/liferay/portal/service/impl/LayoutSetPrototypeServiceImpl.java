@@ -5,6 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
@@ -19,7 +20,6 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.service.base.LayoutSetPrototypeServiceBaseImpl;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -30,23 +30,6 @@ import java.util.Map;
  */
 public class LayoutSetPrototypeServiceImpl
 	extends LayoutSetPrototypeServiceBaseImpl {
-
-	@Override
-	public LayoutSetPrototype addLayoutSetPrototype(
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			boolean active, boolean layoutsUpdateable,
-			boolean readyForPropagation, ServiceContext serviceContext)
-		throws PortalException {
-
-		PortalPermissionUtil.check(
-			getPermissionChecker(), ActionKeys.ADD_LAYOUT_SET_PROTOTYPE);
-
-		User user = getUser();
-
-		return layoutSetPrototypeLocalService.addLayoutSetPrototype(
-			user.getUserId(), user.getCompanyId(), nameMap, descriptionMap,
-			active, layoutsUpdateable, readyForPropagation, serviceContext);
-	}
 
 	@Override
 	public LayoutSetPrototype addLayoutSetPrototype(
@@ -68,8 +51,7 @@ public class LayoutSetPrototypeServiceImpl
 	@Override
 	public LayoutSetPrototype addLayoutSetPrototype(
 			String name, String description, boolean active,
-			boolean layoutsUpdateable, boolean readyForPropagation,
-			ServiceContext serviceContext)
+			boolean layoutsUpdateable, ServiceContext serviceContext)
 		throws PortalException {
 
 		PortalPermissionUtil.check(
@@ -87,7 +69,7 @@ public class LayoutSetPrototypeServiceImpl
 			HashMapBuilder.put(
 				locale, description
 			).build(),
-			active, layoutsUpdateable, readyForPropagation, serviceContext);
+			active, layoutsUpdateable, serviceContext);
 	}
 
 	@Override
@@ -146,6 +128,20 @@ public class LayoutSetPrototypeServiceImpl
 
 	@Override
 	public List<LayoutSetPrototype> search(
+		long companyId, Boolean active, int start, int end,
+		OrderByComparator<LayoutSetPrototype> orderByComparator) {
+
+		if (active != null) {
+			return layoutSetPrototypePersistence.filterFindByC_A(
+				companyId, active, start, end, orderByComparator);
+		}
+
+		return layoutSetPrototypePersistence.filterFindByCompanyId(
+			companyId, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<LayoutSetPrototype> search(
 			long companyId, Boolean active,
 			OrderByComparator<LayoutSetPrototype> orderByComparator)
 		throws PortalException {
@@ -159,19 +155,13 @@ public class LayoutSetPrototypeServiceImpl
 	}
 
 	@Override
-	public LayoutSetPrototype updateLayoutSetPrototype(
-			long layoutSetPrototypeId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, boolean active,
-			boolean layoutsUpdateable, boolean readyForPropagation,
-			ServiceContext serviceContext)
-		throws PortalException {
+	public int searchCount(long companyId, Boolean active) {
+		if (active != null) {
+			return layoutSetPrototypePersistence.filterCountByC_A(
+				companyId, active);
+		}
 
-		LayoutSetPrototypePermissionUtil.check(
-			getPermissionChecker(), layoutSetPrototypeId, ActionKeys.UPDATE);
-
-		return layoutSetPrototypeLocalService.updateLayoutSetPrototype(
-			layoutSetPrototypeId, nameMap, descriptionMap, active,
-			layoutsUpdateable, readyForPropagation, serviceContext);
+		return layoutSetPrototypePersistence.filterCountByCompanyId(companyId);
 	}
 
 	@Override
@@ -205,22 +195,21 @@ public class LayoutSetPrototypeServiceImpl
 			List<LayoutSetPrototype> layoutSetPrototypes)
 		throws PortalException {
 
-		List<LayoutSetPrototype> filteredLayoutSetPrototypes =
-			new ArrayList<>();
-
 		PermissionChecker permissionChecker = getPermissionChecker();
 
-		for (LayoutSetPrototype layoutSetPrototype : layoutSetPrototypes) {
-			if (LayoutSetPrototypePermissionUtil.contains(
-					permissionChecker,
-					layoutSetPrototype.getLayoutSetPrototypeId(),
-					ActionKeys.VIEW)) {
+		return TransformUtil.transform(
+			layoutSetPrototypes,
+			layoutSetPrototype -> {
+				if (LayoutSetPrototypePermissionUtil.contains(
+						permissionChecker,
+						layoutSetPrototype.getLayoutSetPrototypeId(),
+						ActionKeys.VIEW)) {
 
-				filteredLayoutSetPrototypes.add(layoutSetPrototype);
-			}
-		}
+					return layoutSetPrototype;
+				}
 
-		return filteredLayoutSetPrototypes;
+				return null;
+			});
 	}
 
 }

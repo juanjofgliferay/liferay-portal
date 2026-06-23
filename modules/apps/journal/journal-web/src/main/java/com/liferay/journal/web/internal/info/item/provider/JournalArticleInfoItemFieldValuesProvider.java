@@ -9,7 +9,6 @@ import com.liferay.asset.info.item.provider.AssetEntryInfoItemFieldSetProvider;
 import com.liferay.dynamic.data.mapping.info.item.provider.DDMFormValuesInfoFieldValuesProvider;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
-import com.liferay.dynamic.data.mapping.service.DDMFieldLocalService;
 import com.liferay.expando.info.item.provider.ExpandoInfoItemFieldSetProvider;
 import com.liferay.info.constants.InfoDisplayWebKeys;
 import com.liferay.info.display.request.attributes.contributor.InfoDisplayRequestAttributesContributor;
@@ -30,11 +29,10 @@ import com.liferay.journal.model.JournalArticleDisplay;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.util.JournalContent;
 import com.liferay.journal.web.internal.info.item.JournalArticleInfoItemFields;
+import com.liferay.layout.display.page.constants.LayoutDisplayPageWebKeys;
 import com.liferay.layout.page.template.info.item.provider.DisplayPageInfoItemFieldSetProvider;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -48,14 +46,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.template.info.item.provider.TemplateInfoItemFieldSetProvider;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
@@ -90,7 +88,8 @@ public class JournalArticleInfoItemFieldValuesProvider
 						JournalArticle.class.getName(),
 						journalArticle.getResourcePrimKey()),
 					String.valueOf(journalArticle.getDDMStructureId()),
-					JournalArticle.class.getSimpleName(), _getThemeDisplay())
+					JournalArticle.class.getSimpleName(), journalArticle,
+					_getThemeDisplay())
 			).infoFieldValues(
 				_expandoInfoItemFieldSetProvider.getInfoFieldValues(
 					JournalArticle.class.getName(), journalArticle)
@@ -99,8 +98,6 @@ public class JournalArticleInfoItemFieldValuesProvider
 					JournalArticle.class.getName(), journalArticle)
 			).infoFieldValues(
 				_getDDMStructureInfoFieldValues(journalArticle)
-			).infoFieldValues(
-				_getDefaultDDMStructureInfoFieldValues(journalArticle)
 			).infoFieldValues(
 				_getDDMTemplateInfoFieldValues(journalArticle)
 			).infoFieldValues(
@@ -119,45 +116,15 @@ public class JournalArticleInfoItemFieldValuesProvider
 				"Caught unexpected exception", noSuchInfoItemException);
 		}
 		catch (Exception exception) {
-			throw new RuntimeException("Unexpected exception", exception);
+			throw new RuntimeException(exception);
 		}
 	}
 
 	private List<InfoFieldValue<Object>> _getDDMStructureInfoFieldValues(
 		JournalArticle article) {
 
-		DDMStructure ddmStructure = article.getDDMStructure();
-
-		JournalArticle ddmStructureArticle = null;
-
-		try {
-			ddmStructureArticle = _journalArticleLocalService.getArticle(
-				ddmStructure.getGroupId(), DDMStructure.class.getName(),
-				ddmStructure.getStructureId());
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
-			}
-		}
-
-		if (ddmStructureArticle == null) {
-			return _ddmFormValuesInfoFieldValuesProvider.getInfoFieldValues(
-				article, article.getDDMFormValues());
-		}
-
-		List<InfoFieldValue<Object>> journalArticleFieldValues =
-			new ArrayList<>();
-
-		journalArticleFieldValues.addAll(
-			_ddmFormValuesInfoFieldValuesProvider.getInfoFieldValues(
-				article, article.getDDMFormValues(false)));
-
-		journalArticleFieldValues.addAll(
-			_ddmFormValuesInfoFieldValuesProvider.getInfoFieldValues(
-				ddmStructureArticle, ddmStructureArticle.getDDMFormValues()));
-
-		return journalArticleFieldValues;
+		return _ddmFormValuesInfoFieldValuesProvider.getInfoFieldValues(
+			article, article.getDDMFormValues(true));
 	}
 
 	private List<InfoFieldValue<Object>> _getDDMTemplateInfoFieldValues(
@@ -179,32 +146,6 @@ public class JournalArticleInfoItemFieldValuesProvider
 			});
 
 		return infoFieldValues;
-	}
-
-	private List<InfoFieldValue<Object>> _getDefaultDDMStructureInfoFieldValues(
-		JournalArticle article) {
-
-		DDMStructure ddmStructure = article.getDDMStructure();
-
-		JournalArticle ddmStructureArticle = null;
-
-		try {
-			ddmStructureArticle = _journalArticleLocalService.getArticle(
-				ddmStructure.getGroupId(), DDMStructure.class.getName(),
-				ddmStructure.getStructureId());
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException);
-			}
-		}
-
-		if (ddmStructureArticle != null) {
-			return _ddmFormValuesInfoFieldValuesProvider.getInfoFieldValues(
-				ddmStructureArticle, ddmStructureArticle.getDDMFormValues());
-		}
-
-		return new ArrayList<>();
 	}
 
 	private String _getInfoItemFormVariationKey(JournalArticle journalArticle) {
@@ -358,32 +299,61 @@ public class JournalArticleInfoItemFieldValuesProvider
 				HttpServletRequest httpServletRequest =
 					themeDisplay.getRequest();
 
-				InfoItemDetailsProvider infoItemDetailsProvider =
-					_infoItemServiceRegistry.getFirstInfoItemService(
-						InfoItemDetailsProvider.class,
-						JournalArticle.class.getName());
+				Object currentInfoItem = httpServletRequest.getAttribute(
+					InfoDisplayWebKeys.INFO_ITEM);
+				Object currentInfoItemDetail = httpServletRequest.getAttribute(
+					InfoDisplayWebKeys.INFO_ITEM_DETAILS);
+				Object currentLayoutDisplayPageObjectProvider =
+					httpServletRequest.getAttribute(
+						LayoutDisplayPageWebKeys.
+							LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER);
+				Object currentLayoutDisplayPageProvider =
+					httpServletRequest.getAttribute(
+						LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_PROVIDER);
 
-				httpServletRequest.setAttribute(
-					InfoDisplayWebKeys.INFO_ITEM_DETAILS,
-					infoItemDetailsProvider.getInfoItemDetails(journalArticle));
+				try {
+					InfoItemDetailsProvider infoItemDetailsProvider =
+						_infoItemServiceRegistry.getFirstInfoItemService(
+							InfoItemDetailsProvider.class,
+							JournalArticle.class.getName());
 
-				for (InfoDisplayRequestAttributesContributor
-						infoDisplayRequestAttributesContributor :
-							_infoDisplayRequestAttributesContributors) {
+					httpServletRequest.setAttribute(
+						InfoDisplayWebKeys.INFO_ITEM_DETAILS,
+						infoItemDetailsProvider.getInfoItemDetails(
+							journalArticle));
 
-					infoDisplayRequestAttributesContributor.addAttributes(
-						httpServletRequest);
+					for (InfoDisplayRequestAttributesContributor
+							infoDisplayRequestAttributesContributor :
+								_infoDisplayRequestAttributesContributors) {
+
+						infoDisplayRequestAttributesContributor.addAttributes(
+							httpServletRequest);
+					}
+				}
+				finally {
+					httpServletRequest.setAttribute(
+						InfoDisplayWebKeys.INFO_ITEM, currentInfoItem);
+					httpServletRequest.setAttribute(
+						InfoDisplayWebKeys.INFO_ITEM_DETAILS,
+						currentInfoItemDetail);
+					httpServletRequest.setAttribute(
+						LayoutDisplayPageWebKeys.
+							LAYOUT_DISPLAY_PAGE_OBJECT_PROVIDER,
+						currentLayoutDisplayPageObjectProvider);
+					httpServletRequest.setAttribute(
+						LayoutDisplayPageWebKeys.LAYOUT_DISPLAY_PAGE_PROVIDER,
+						currentLayoutDisplayPageProvider);
 				}
 
 				PortletRequestModel portletRequestModel = null;
 
 				PortletRequest portletRequest =
 					(PortletRequest)httpServletRequest.getAttribute(
-						JavaConstants.JAVAX_PORTLET_REQUEST);
+						JavaConstants.JAKARTA_PORTLET_REQUEST);
 
 				PortletResponse portletResponse =
 					(PortletResponse)httpServletRequest.getAttribute(
-						JavaConstants.JAVAX_PORTLET_RESPONSE);
+						JavaConstants.JAKARTA_PORTLET_RESPONSE);
 
 				if ((portletRequest != null) && (portletResponse != null)) {
 					portletRequestModel = new PortletRequestModel(
@@ -435,15 +405,9 @@ public class JournalArticleInfoItemFieldValuesProvider
 		return null;
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		JournalArticleInfoItemFieldValuesProvider.class);
-
 	@Reference
 	private AssetEntryInfoItemFieldSetProvider
 		_assetEntryInfoItemFieldSetProvider;
-
-	@Reference
-	private DDMFieldLocalService _ddmFieldLocalService;
 
 	@Reference
 	private DDMFormValuesInfoFieldValuesProvider

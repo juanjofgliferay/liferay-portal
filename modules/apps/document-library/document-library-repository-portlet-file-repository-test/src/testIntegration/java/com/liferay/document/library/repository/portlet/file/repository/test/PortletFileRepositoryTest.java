@@ -5,20 +5,24 @@
 
 package com.liferay.document.library.repository.portlet.file.repository.test;
 
+import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
+import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
+import com.liferay.adaptive.media.image.service.AMImageEntryLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.exception.DuplicateFileEntryException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.capabilities.WorkflowCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -27,9 +31,13 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import java.io.File;
 import java.io.InputStream;
 
 import org.junit.Assert;
@@ -61,6 +69,32 @@ public class PortletFileRepositoryTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(),
 			ServiceContextTestUtil.getServiceContext());
+	}
+
+	@Test
+	public void testFetchPortletFileEntryByExternalReferenceCode()
+		throws Exception {
+
+		FileEntry fileEntry = _addPortletFileEntry(
+			RandomTestUtil.randomString());
+
+		FileEntry fetchFileEntry =
+			PortletFileRepositoryUtil.
+				fetchPortletFileEntryByExternalReferenceCode(
+					fileEntry.getExternalReferenceCode(),
+					fileEntry.getGroupId());
+
+		Assert.assertEquals(
+			fileEntry.getFileEntryId(), fetchFileEntry.getFileEntryId());
+
+		PortletFileRepositoryUtil.deletePortletFileEntry(
+			fileEntry.getFileEntryId());
+
+		Assert.assertNull(
+			PortletFileRepositoryUtil.
+				fetchPortletFileEntryByExternalReferenceCode(
+					fileEntry.getExternalReferenceCode(),
+					fileEntry.getGroupId()));
 	}
 
 	@Test
@@ -206,6 +240,44 @@ public class PortletFileRepositoryTest {
 		Assert.assertEquals(0, count);
 	}
 
+	@Test
+	public void testFolderDeleteShouldDeleteAMImageEntries() throws Exception {
+		byte[] bytes = FileUtil.getBytes(
+			getClass(), "dependencies/liferay.jpg");
+
+		FileEntry fileEntry = PortletFileRepositoryUtil.addPortletFileEntry(
+			_group.getGroupId(), TestPropsValues.getUserId(),
+			User.class.getName(), TestPropsValues.getUserId(), _portletId,
+			_folder.getFolderId(), bytes, RandomTestUtil.randomString(),
+			ContentTypes.IMAGE_JPEG, false);
+
+		AMImageConfigurationEntry amImageConfigurationEntry =
+			_amImageConfigurationHelper.addAMImageConfigurationEntry(
+				_group.getCompanyId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+				HashMapBuilder.put(
+					"max-height", String.valueOf(100)
+				).put(
+					"max-width", String.valueOf(200)
+				).build());
+
+		_amImageEntryLocalService.addAMImageEntry(
+			amImageConfigurationEntry, fileEntry.getFileVersion(), 100, 200,
+			new UnsyncByteArrayInputStream(bytes), 12345);
+
+		Assert.assertNotEquals(
+			0,
+			_amImageEntryLocalService.getAMImageEntriesCount(
+				_group.getCompanyId(), amImageConfigurationEntry.getUUID()));
+
+		PortletFileRepositoryUtil.deletePortletFolder(_folder.getFolderId());
+
+		Assert.assertEquals(
+			0,
+			_amImageEntryLocalService.getAMImageEntriesCount(
+				_group.getCompanyId(), amImageConfigurationEntry.getUUID()));
+	}
+
 	@Test(expected = NoSuchFolderException.class)
 	public void testFolderDeleteShouldSucceedIfFolderExists() throws Exception {
 		PortletFileRepositoryUtil.deletePortletFolder(_folder.getFolderId());
@@ -229,6 +301,42 @@ public class PortletFileRepositoryTest {
 				null, fileEntry, StringPool.AMPERSAND + queryString));
 	}
 
+	@Test
+	@TestInfo("LPD-91226")
+	public void testUpdatePortletFileEntry() throws Exception {
+		FileEntry fileEntry = _addPortletFileEntry(
+			RandomTestUtil.randomString());
+
+		byte[] bytes = RandomTestUtil.randomBytes();
+
+		FileEntry updatedFileEntry;
+
+		try (InputStream inputStream = new UnsyncByteArrayInputStream(bytes)) {
+			updatedFileEntry = PortletFileRepositoryUtil.updatePortletFileEntry(
+				TestPropsValues.getUserId(), fileEntry.getFileEntryId(),
+				inputStream, fileEntry.getFileName(), fileEntry.getMimeType(),
+				ServiceContextTestUtil.getServiceContext());
+		}
+
+		_assertUpdatedFileEntry(bytes, fileEntry, updatedFileEntry);
+
+		bytes = RandomTestUtil.randomBytes();
+
+		File file = FileUtil.createTempFile(bytes);
+
+		try {
+			updatedFileEntry = PortletFileRepositoryUtil.updatePortletFileEntry(
+				TestPropsValues.getUserId(), fileEntry.getFileEntryId(), file,
+				fileEntry.getFileName(), fileEntry.getMimeType(),
+				ServiceContextTestUtil.getServiceContext());
+		}
+		finally {
+			FileUtil.delete(file);
+		}
+
+		_assertUpdatedFileEntry(bytes, fileEntry, updatedFileEntry);
+	}
+
 	private FileEntry _addPortletFileEntry(String name) throws Exception {
 		try (InputStream inputStream = new UnsyncByteArrayInputStream(
 				TestDataConstants.TEST_BYTE_ARRAY)) {
@@ -247,6 +355,34 @@ public class PortletFileRepositoryTest {
 			_folder.getFolderId(), name,
 			ServiceContextTestUtil.getServiceContext());
 	}
+
+	private void _assertUpdatedFileEntry(
+			byte[] expectedBytes, FileEntry fileEntry,
+			FileEntry updatedFileEntry)
+		throws Exception {
+
+		Assert.assertEquals(fileEntry.getUuid(), updatedFileEntry.getUuid());
+		Assert.assertEquals(
+			fileEntry.getExternalReferenceCode(),
+			updatedFileEntry.getExternalReferenceCode());
+		Assert.assertEquals(
+			fileEntry.getFileEntryId(), updatedFileEntry.getFileEntryId());
+		Assert.assertEquals(
+			fileEntry.getFolderId(), updatedFileEntry.getFolderId());
+		Assert.assertEquals(
+			fileEntry.getVersion(), updatedFileEntry.getVersion());
+
+		try (InputStream inputStream = updatedFileEntry.getContentStream()) {
+			Assert.assertArrayEquals(
+				expectedBytes, FileUtil.getBytes(inputStream));
+		}
+	}
+
+	@Inject
+	private AMImageConfigurationHelper _amImageConfigurationHelper;
+
+	@Inject
+	private AMImageEntryLocalService _amImageEntryLocalService;
 
 	private Folder _folder;
 

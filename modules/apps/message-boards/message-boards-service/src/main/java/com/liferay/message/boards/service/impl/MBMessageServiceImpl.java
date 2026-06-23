@@ -18,6 +18,7 @@ import com.liferay.message.boards.service.MBCategoryLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.message.boards.service.base.MBMessageServiceBaseImpl;
 import com.liferay.message.boards.util.comparator.MessageCreateDateComparator;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
@@ -46,9 +47,9 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.rss.export.RSSExporter;
 import com.liferay.rss.model.SyndContent;
 import com.liferay.rss.model.SyndEntry;
@@ -391,21 +392,18 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			long groupId, long categoryId, int status, int start, int end)
 		throws PortalException {
 
-		List<MBMessage> messages = new ArrayList<>();
-
-		List<MBMessage> categoryMessages =
+		return TransformUtil.transform(
 			mbMessageLocalService.getCategoryMessages(
-				groupId, categoryId, status, start, end);
+				groupId, categoryId, status, start, end),
+			message -> {
+				if (_messageModelResourcePermission.contains(
+						getPermissionChecker(), message, ActionKeys.VIEW)) {
 
-		for (MBMessage message : categoryMessages) {
-			if (_messageModelResourcePermission.contains(
-					getPermissionChecker(), message, ActionKeys.VIEW)) {
+					return message;
+				}
 
-				messages.add(message);
-			}
-		}
-
-		return messages;
+				return null;
+			});
 	}
 
 	@Override
@@ -450,7 +448,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -528,7 +526,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -584,7 +582,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -631,7 +629,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 		int lastIntervalStart = 0;
 		boolean listNotExhausted = true;
 		MessageCreateDateComparator comparator =
-			new MessageCreateDateComparator(false);
+			MessageCreateDateComparator.getInstance(false);
 
 		while ((messages.size() < max) && listNotExhausted) {
 			List<MBMessage> messageList =
@@ -672,6 +670,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			groupId, userId, start, end);
 	}
 
+	@Override
 	public int getGroupUserMessageBoardMessagesActivityCount(
 			long groupId, long userId)
 		throws PortalException {
@@ -779,7 +778,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 				ActionKeys.VIEW)) {
 
 			MessageCreateDateComparator comparator =
-				new MessageCreateDateComparator(false);
+				MessageCreateDateComparator.getInstance(false);
 
 			List<MBMessage> threadMessages =
 				mbMessageLocalService.getThreadMessages(

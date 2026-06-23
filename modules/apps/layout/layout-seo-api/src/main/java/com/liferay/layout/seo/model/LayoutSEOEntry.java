@@ -47,4 +47,7 @@ public interface LayoutSEOEntry extends LayoutSEOEntryModel, PersistedModel {
 
 		};
 
+	public long getOpenGraphImageFileEntryGroupId();
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-641941886

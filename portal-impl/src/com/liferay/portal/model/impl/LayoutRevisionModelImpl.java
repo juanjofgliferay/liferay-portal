@@ -128,6 +128,8 @@ public class LayoutRevisionModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table LayoutRevision";
 
+	public static final String ENTITY_ALIAS = "layoutRevision";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY layoutRevision.modifiedDate DESC";
 
@@ -202,7 +204,7 @@ public class LayoutRevisionModelImpl
 	public static final long MODIFIEDDATE_COLUMN_BITMASK = 64L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutRevision"));
 
 	public LayoutRevisionModelImpl() {
@@ -2370,3 +2372,4 @@ public class LayoutRevisionModelImpl
 	private LayoutRevision _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1649651146

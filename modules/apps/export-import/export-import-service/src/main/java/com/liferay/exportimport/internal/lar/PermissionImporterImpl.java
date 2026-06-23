@@ -10,17 +10,15 @@ import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.lar.PermissionImporter;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.exception.NoSuchTeamException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.Team;
-import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
-import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.TeamLocalService;
@@ -32,7 +30,6 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -95,8 +92,8 @@ public class PermissionImporterImpl implements PermissionImporter {
 				layout.getPlid(), portletId);
 
 			_importPermissions(
-				companyId, groupId, userId, layout, resourceName,
-				resourcePrimKey, permissionsElement);
+				companyId, groupId, userId, resourceName, resourcePrimKey,
+				permissionsElement);
 		}
 	}
 
@@ -126,23 +123,16 @@ public class PermissionImporterImpl implements PermissionImporter {
 			long resourcePK = GetterUtil.getLong(
 				portletDataElement.attributeValue("resource-pk"));
 
-			List<KeyValuePair> permissions = new ArrayList<>();
-
 			List<Element> permissionsElements = portletDataElement.elements(
 				"permissions");
 
-			for (Element permissionsElement : permissionsElements) {
-				String roleName = permissionsElement.attributeValue(
-					"role-name");
-				String actions = permissionsElement.attributeValue("actions");
-
-				KeyValuePair permission = new KeyValuePair(roleName, actions);
-
-				permissions.add(permission);
-			}
-
 			portletDataContext.addPermissions(
-				resourceName, resourcePK, permissions);
+				resourceName, resourcePK,
+				TransformUtil.transform(
+					permissionsElements,
+					permissionsElement -> new KeyValuePair(
+						permissionsElement.attributeValue("role-name"),
+						permissionsElement.attributeValue("actions"))));
 		}
 	}
 
@@ -216,26 +206,19 @@ public class PermissionImporterImpl implements PermissionImporter {
 		serviceContext.setUuid(uuid);
 
 		return _roleLocalService.addRole(
-			userId, null, 0, name, titleMap, descriptionMap, type, subtype,
-			serviceContext);
+			null, userId, null, 0, name, titleMap, descriptionMap, type,
+			subtype, serviceContext);
 	}
 
 	private List<String> _getActions(Element element) {
-		List<String> actions = new ArrayList<>();
-
-		List<Element> actionKeyElements = element.elements("action-key");
-
-		for (Element actionKeyElement : actionKeyElements) {
-			actions.add(actionKeyElement.getText());
-		}
-
-		return actions;
+		return TransformUtil.transform(
+			element.elements("action-key"),
+			actionKeyElement -> actionKeyElement.getText());
 	}
 
 	private void _importPermissions(
-			long companyId, long groupId, long userId, Layout layout,
-			String resourceName, String resourcePrimKey,
-			Element permissionsElement)
+			long companyId, long groupId, long userId, String resourceName,
+			String resourcePrimKey, Element permissionsElement)
 		throws Exception {
 
 		Map<Long, Set<String>> existingRoleIdsToActionIds =
@@ -251,18 +234,6 @@ public class PermissionImporterImpl implements PermissionImporter {
 
 			if (role == null) {
 				continue;
-			}
-
-			Group group = _groupLocalService.getGroup(groupId);
-
-			if (!group.isLayoutPrototype() && !group.isLayoutSetPrototype() &&
-				layout.isPrivateLayout()) {
-
-				String roleName = role.getName();
-
-				if (roleName.equals(RoleConstants.GUEST)) {
-					continue;
-				}
 			}
 
 			List<String> actions = _getActions(roleElement);
@@ -283,9 +254,6 @@ public class PermissionImporterImpl implements PermissionImporter {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PermissionImporterImpl.class);
-
-	@Reference
-	private GroupLocalService _groupLocalService;
 
 	private CentralizedThreadLocal<LayoutCache> _layoutCacheThreadLocal;
 

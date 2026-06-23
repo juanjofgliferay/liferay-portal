@@ -10,15 +10,16 @@ import com.liferay.client.extension.model.ClientExtensionEntryRel;
 import com.liferay.client.extension.service.ClientExtensionEntryRelLocalService;
 import com.liferay.client.extension.type.CET;
 import com.liferay.client.extension.type.manager.CETManager;
-import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.headless.delivery.dto.v1_0.ClientExtension;
 import com.liferay.headless.delivery.dto.v1_0.MasterPage;
 import com.liferay.headless.delivery.dto.v1_0.PageDefinition;
+import com.liferay.headless.delivery.dto.v1_0.PageElement;
 import com.liferay.headless.delivery.dto.v1_0.Settings;
 import com.liferay.headless.delivery.dto.v1_0.StyleBook;
 import com.liferay.headless.delivery.dto.v1_0.util.ContentDocumentUtil;
-import com.liferay.headless.delivery.internal.dto.v1_0.util.PageElementUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.PageRulesUtil;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
@@ -26,15 +27,19 @@ import com.liferay.layout.util.constants.LayoutStructureConstants;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
@@ -79,24 +84,44 @@ public class PageDefinitionDTOConverter
 					layoutStructure.getMainItemId());
 		}
 
-		LayoutStructureItem mainLayoutStructureItem =
-			layoutStructure.getMainLayoutStructureItem();
-		boolean saveInlineContent = GetterUtil.getBoolean(
-			dtoConverterContext.getAttribute("saveInlineContent"), true);
-		boolean saveMappingConfiguration = GetterUtil.getBoolean(
-			dtoConverterContext.getAttribute("saveMappingConfiguration"), true);
-
 		return new PageDefinition() {
 			{
-				pageElement = PageElementUtil.toPageElement(
-					layout.getGroupId(), layoutStructure,
-					mainLayoutStructureItem, saveInlineContent,
-					saveMappingConfiguration);
-				pageRules = PageRulesUtil.toPageRules(
-					layoutStructure.getLayoutStructureRules());
-				settings = _toSettings(dtoConverterContext, layout);
-				version =
-					LayoutStructureConstants.LATEST_PAGE_DEFINITION_VERSION;
+				setPageElement(
+					() -> {
+						LayoutStructureItem mainLayoutStructureItem =
+							layoutStructure.getMainLayoutStructureItem();
+						boolean saveInlineContent = GetterUtil.getBoolean(
+							dtoConverterContext.getAttribute(
+								"saveInlineContent"),
+							true);
+						boolean saveMappingConfiguration =
+							GetterUtil.getBoolean(
+								dtoConverterContext.getAttribute(
+									"saveMappingConfiguration"),
+								true);
+
+						return _pageElementDTOConverter.toDTO(
+							new AttributesDTOConverterContext(
+								HashMapBuilder.put(
+									"groupId", (Object)layout.getGroupId()
+								).put(
+									"layoutStructure", layoutStructure
+								).put(
+									"saveInlineContent", saveInlineContent
+								).put(
+									"saveMappingConfiguration",
+									saveMappingConfiguration
+								).build()),
+							mainLayoutStructureItem);
+					});
+				setPageRules(
+					() -> PageRulesUtil.toPageRules(
+						layoutStructure.getLayoutStructureRules()));
+				setSettings(() -> _toSettings(dtoConverterContext, layout));
+				setVersion(
+					() ->
+						LayoutStructureConstants.
+							LATEST_PAGE_DEFINITION_VERSION);
 			}
 		};
 	}
@@ -158,10 +183,12 @@ public class PageDefinitionDTOConverter
 
 				return new ClientExtension() {
 					{
-						clientExtensionConfig = _getClientExtensionConfig(
-							clientExtensionEntryRel);
-						externalReferenceCode = cet.getExternalReferenceCode();
-						name = cet.getName(dtoConverterContext.getLocale());
+						setClientExtensionConfig(
+							() -> _getClientExtensionConfig(
+								clientExtensionEntryRel));
+						setExternalReferenceCode(cet::getExternalReferenceCode);
+						setName(
+							() -> cet.getName(dtoConverterContext.getLocale()));
 					}
 				};
 			},
@@ -188,8 +215,28 @@ public class PageDefinitionDTOConverter
 
 		return new ClientExtension() {
 			{
-				externalReferenceCode = cet.getExternalReferenceCode();
-				name = cet.getName(dtoConverterContext.getLocale());
+				setExternalReferenceCode(cet::getExternalReferenceCode);
+				setName(() -> cet.getName(dtoConverterContext.getLocale()));
+			}
+		};
+	}
+
+	private ClientExtension _getThemeSpritemapClientExtension(
+		long classNameId, Layout layout,
+		DTOConverterContext dtoConverterContext) {
+
+		CET cet = _getCET(
+			classNameId, layout.getPlid(), layout.getCompanyId(),
+			ClientExtensionEntryConstants.TYPE_THEME_SPRITEMAP);
+
+		if (cet == null) {
+			return null;
+		}
+
+		return new ClientExtension() {
+			{
+				setExternalReferenceCode(cet::getExternalReferenceCode);
+				setName(() -> cet.getName(dtoConverterContext.getLocale()));
 			}
 		};
 	}
@@ -203,15 +250,6 @@ public class PageDefinitionDTOConverter
 
 		return new Settings() {
 			{
-				globalCSSClientExtensions = _getClientExtensions(
-					classNameId, dtoConverterContext, layout,
-					ClientExtensionEntryConstants.TYPE_GLOBAL_CSS);
-				globalJSClientExtensions = _getClientExtensions(
-					classNameId, dtoConverterContext, layout,
-					ClientExtensionEntryConstants.TYPE_GLOBAL_JS);
-				themeCSSClientExtension = _getThemeCSSClientExtension(
-					classNameId, layout, dtoConverterContext);
-
 				setColorSchemeName(
 					() -> {
 						ColorScheme colorScheme = null;
@@ -249,26 +287,63 @@ public class PageDefinitionDTOConverter
 						if (cet != null) {
 							return new ClientExtension() {
 								{
-									externalReferenceCode =
-										cet.getExternalReferenceCode();
-									name = cet.getName(
-										dtoConverterContext.getLocale());
+									setExternalReferenceCode(
+										cet::getExternalReferenceCode);
+									setName(
+										() -> cet.getName(
+											dtoConverterContext.getLocale()));
 								}
 							};
 						}
 
-						long faviconFileEntryId =
-							layout.getFaviconFileEntryId();
+						String faviconFileEntryERC =
+							layout.getFaviconFileEntryERC();
 
-						if (faviconFileEntryId != 0) {
-							return ContentDocumentUtil.toContentDocument(
-								_dlURLHelper, "settings.favIcon.image",
-								_dlAppService.getFileEntry(faviconFileEntryId),
-								dtoConverterContext.getUriInfo());
+						if (Validator.isNull(faviconFileEntryERC)) {
+							return null;
 						}
 
-						return null;
+						Long groupId = ScopeUtil.getItemGroupId(
+							layout.getCompanyId(),
+							layout.getFaviconFileEntryScopeERC(),
+							layout.getGroupId());
+
+						if (groupId == null) {
+							if (_log.isDebugEnabled()) {
+								_log.debug(
+									StringBundler.concat(
+										"Unable to resolve group ID for ",
+										"favicon file entry in layout with ",
+										"PLID ", layout.getPlid(),
+										" using favicon file entry scope ",
+										"external reference code ",
+										layout.getFaviconFileEntryScopeERC()));
+							}
+
+							return null;
+						}
+
+						FileEntry fileEntry =
+							_dlAppLocalService.
+								fetchFileEntryByExternalReferenceCode(
+									groupId, faviconFileEntryERC);
+
+						if (fileEntry == null) {
+							return null;
+						}
+
+						return ContentDocumentUtil.toContentDocument(
+							_dlURLHelper, "settings.favIcon.image", fileEntry,
+							dtoConverterContext.getUriInfo());
 					});
+				setGlobalCSSClientExtensions(
+					() -> _getClientExtensions(
+						classNameId, dtoConverterContext, layout,
+						ClientExtensionEntryConstants.TYPE_GLOBAL_CSS));
+				setGlobalJSClientExtensions(
+					() -> _getClientExtensions(
+						classNameId, dtoConverterContext, layout,
+						ClientExtensionEntryConstants.TYPE_GLOBAL_JS));
 				setJavascript(
 					() -> {
 						for (Map.Entry<String, String> entry :
@@ -296,29 +371,38 @@ public class PageDefinitionDTOConverter
 
 						return new MasterPage() {
 							{
-								key =
-									layoutPageTemplateEntry.
-										getLayoutPageTemplateEntryKey();
+								setKey(
+									() ->
+										layoutPageTemplateEntry.
+											getLayoutPageTemplateEntryKey());
 							}
 						};
 					});
 				setStyleBook(
 					() -> {
-						StyleBookEntry styleBookEntry =
-							_styleBookEntryLocalService.fetchStyleBookEntry(
-								layout.getStyleBookEntryId());
-
-						if (styleBookEntry == null) {
+						if (Validator.isNull(layout.getStyleBookEntryERC())) {
 							return null;
 						}
 
+						StyleBookEntry styleBookEntry =
+							_styleBookEntryLocalService.
+								fetchStyleBookEntryByExternalReferenceCode(
+									layout.getStyleBookEntryERC(),
+									_staging.getLiveGroupId(
+										layout.getGroupId()));
+
 						return new StyleBook() {
 							{
-								key = styleBookEntry.getStyleBookEntryKey();
-								name = styleBookEntry.getName();
+								setKey(
+									() ->
+										styleBookEntry.getStyleBookEntryKey());
+								setName(styleBookEntry::getName);
 							}
 						};
 					});
+				setThemeCSSClientExtension(
+					() -> _getThemeCSSClientExtension(
+						classNameId, layout, dtoConverterContext));
 				setThemeName(
 					() -> {
 						Theme theme = layout.getTheme();
@@ -351,6 +435,9 @@ public class PageDefinitionDTOConverter
 
 						return themeSettingsUnicodeProperties;
 					});
+				setThemeSpritemapClientExtension(
+					() -> _getThemeSpritemapClientExtension(
+						classNameId, layout, dtoConverterContext));
 			}
 		};
 	}
@@ -366,7 +453,7 @@ public class PageDefinitionDTOConverter
 		_clientExtensionEntryRelLocalService;
 
 	@Reference
-	private DLAppService _dlAppService;
+	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private DLURLHelper _dlURLHelper;
@@ -375,10 +462,35 @@ public class PageDefinitionDTOConverter
 	private LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
 
+	@Reference(
+		target = "(component.name=com.liferay.headless.delivery.internal.dto.v1_0.converter.PageElementDTOConverter)"
+	)
+	private DTOConverter<LayoutStructureItem, PageElement>
+		_pageElementDTOConverter;
+
 	@Reference
 	private Portal _portal;
 
 	@Reference
+	private Staging _staging;
+
+	@Reference
 	private StyleBookEntryLocalService _styleBookEntryLocalService;
+
+	private static class AttributesDTOConverterContext
+		implements DTOConverterContext {
+
+		@Override
+		public Object getAttribute(String name) {
+			return _attributes.get(name);
+		}
+
+		private AttributesDTOConverterContext(Map<String, Object> attributes) {
+			_attributes = attributes;
+		}
+
+		private final Map<String, Object> _attributes;
+
+	}
 
 }

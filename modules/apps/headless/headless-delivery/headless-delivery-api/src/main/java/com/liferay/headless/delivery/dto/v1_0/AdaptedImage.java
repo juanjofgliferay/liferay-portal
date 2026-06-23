@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,58 +49,83 @@ public class AdaptedImage implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(AdaptedImage.class, json);
 	}
 
-	@Schema(description = "The image's relative URL.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The image's relative URL."
+	)
 	public String getContentUrl() {
+		if (_contentUrlSupplier != null) {
+			contentUrl = _contentUrlSupplier.get();
+
+			_contentUrlSupplier = null;
+		}
+
 		return contentUrl;
 	}
 
 	public void setContentUrl(String contentUrl) {
 		this.contentUrl = contentUrl;
+
+		_contentUrlSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentUrl(
 		UnsafeSupplier<String, Exception> contentUrlUnsafeSupplier) {
 
-		try {
-			contentUrl = contentUrlUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentUrlSupplier = () -> {
+			try {
+				return contentUrlUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The image's relative URL.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String contentUrl;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _contentUrlSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Optional field with the content of the image in Base64, can be embedded with nestedFields."
 	)
 	public String getContentValue() {
+		if (_contentValueSupplier != null) {
+			contentValue = _contentValueSupplier.get();
+
+			_contentValueSupplier = null;
+		}
+
 		return contentValue;
 	}
 
 	public void setContentValue(String contentValue) {
 		this.contentValue = contentValue;
+
+		_contentValueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContentValue(
 		UnsafeSupplier<String, Exception> contentValueUnsafeSupplier) {
 
-		try {
-			contentValue = contentValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_contentValueSupplier = () -> {
+			try {
+				return contentValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -110,58 +134,86 @@ public class AdaptedImage implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String contentValue;
 
-	@Schema(description = "The image's height in pixels.")
+	@JsonIgnore
+	private Supplier<String> _contentValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The image's height in pixels."
+	)
 	public Integer getHeight() {
+		if (_heightSupplier != null) {
+			height = _heightSupplier.get();
+
+			_heightSupplier = null;
+		}
+
 		return height;
 	}
 
 	public void setHeight(Integer height) {
 		this.height = height;
+
+		_heightSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHeight(
 		UnsafeSupplier<Integer, Exception> heightUnsafeSupplier) {
 
-		try {
-			height = heightUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_heightSupplier = () -> {
+			try {
+				return heightUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The image's height in pixels.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer height;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Integer> _heightSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The name of the image's Adaptive Media image resolution."
 	)
 	public String getResolutionName() {
+		if (_resolutionNameSupplier != null) {
+			resolutionName = _resolutionNameSupplier.get();
+
+			_resolutionNameSupplier = null;
+		}
+
 		return resolutionName;
 	}
 
 	public void setResolutionName(String resolutionName) {
 		this.resolutionName = resolutionName;
+
+		_resolutionNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setResolutionName(
 		UnsafeSupplier<String, Exception> resolutionNameUnsafeSupplier) {
 
-		try {
-			resolutionName = resolutionNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_resolutionNameSupplier = () -> {
+			try {
+				return resolutionNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -170,61 +222,94 @@ public class AdaptedImage implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String resolutionName;
 
-	@Schema(description = "The image's size in bytes.")
+	@JsonIgnore
+	private Supplier<String> _resolutionNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The image's size in bytes."
+	)
 	public Long getSizeInBytes() {
+		if (_sizeInBytesSupplier != null) {
+			sizeInBytes = _sizeInBytesSupplier.get();
+
+			_sizeInBytesSupplier = null;
+		}
+
 		return sizeInBytes;
 	}
 
 	public void setSizeInBytes(Long sizeInBytes) {
 		this.sizeInBytes = sizeInBytes;
+
+		_sizeInBytesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSizeInBytes(
 		UnsafeSupplier<Long, Exception> sizeInBytesUnsafeSupplier) {
 
-		try {
-			sizeInBytes = sizeInBytesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_sizeInBytesSupplier = () -> {
+			try {
+				return sizeInBytesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The image's size in bytes.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long sizeInBytes;
 
-	@Schema(description = "The image's width in pixels.")
+	@JsonIgnore
+	private Supplier<Long> _sizeInBytesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The image's width in pixels."
+	)
 	public Integer getWidth() {
+		if (_widthSupplier != null) {
+			width = _widthSupplier.get();
+
+			_widthSupplier = null;
+		}
+
 		return width;
 	}
 
 	public void setWidth(Integer width) {
 		this.width = width;
+
+		_widthSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWidth(
 		UnsafeSupplier<Integer, Exception> widthUnsafeSupplier) {
 
-		try {
-			width = widthUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_widthSupplier = () -> {
+			try {
+				return widthUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The image's width in pixels.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer width;
+
+	@JsonIgnore
+	private Supplier<Integer> _widthSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -253,6 +338,8 @@ public class AdaptedImage implements Serializable {
 
 		sb.append("{");
 
+		String contentUrl = getContentUrl();
+
 		if (contentUrl != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -266,6 +353,8 @@ public class AdaptedImage implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String contentValue = getContentValue();
 
 		if (contentValue != null) {
 			if (sb.length() > 1) {
@@ -281,6 +370,8 @@ public class AdaptedImage implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer height = getHeight();
+
 		if (height != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -290,6 +381,8 @@ public class AdaptedImage implements Serializable {
 
 			sb.append(height);
 		}
+
+		String resolutionName = getResolutionName();
 
 		if (resolutionName != null) {
 			if (sb.length() > 1) {
@@ -305,6 +398,8 @@ public class AdaptedImage implements Serializable {
 			sb.append("\"");
 		}
 
+		Long sizeInBytes = getSizeInBytes();
+
 		if (sizeInBytes != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -314,6 +409,8 @@ public class AdaptedImage implements Serializable {
 
 			sb.append(sizeInBytes);
 		}
+
+		Integer width = getWidth();
 
 		if (width != null) {
 			if (sb.length() > 1) {
@@ -330,8 +427,8 @@ public class AdaptedImage implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.AdaptedImage",
 		name = "x-class-name"
 	)
@@ -377,7 +474,10 @@ public class AdaptedImage implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -423,3 +523,4 @@ public class AdaptedImage implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1384176327

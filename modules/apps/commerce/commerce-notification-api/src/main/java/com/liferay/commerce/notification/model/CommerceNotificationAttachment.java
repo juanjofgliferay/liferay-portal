@@ -16,8 +16,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationAttachmentModel
+ * @deprecated
  * @generated
  */
+@Deprecated
 @ImplementationClassName(
 	"com.liferay.commerce.notification.model.impl.CommerceNotificationAttachmentImpl"
 )
@@ -59,3 +61,4 @@ public interface CommerceNotificationAttachment
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2110203914

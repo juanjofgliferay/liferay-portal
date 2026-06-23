@@ -5,7 +5,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -67,11 +67,14 @@ page import="com.liferay.commerce.product.type.CPType" %><%@
 page import="com.liferay.commerce.product.type.grouped.constants.GroupedCPTypeWebKeys" %><%@
 page import="com.liferay.commerce.product.type.grouped.util.GroupedCPTypeHelper" %><%@
 page import="com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeWebKeys" %><%@
-page import="com.liferay.commerce.product.type.virtual.util.VirtualCPTypeHelper" %><%@
+page import="com.liferay.commerce.product.type.virtual.helper.VirtualCPTypeHelper" %><%@
 page import="com.liferay.commerce.util.CommerceUtil" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
 page import="com.liferay.portal.kernel.dao.search.ResultRow" %><%@
 page import="com.liferay.portal.kernel.dao.search.SearchContainer" %><%@
+page import="com.liferay.portal.kernel.json.JSONFactoryUtil" %><%@
+page import="com.liferay.portal.kernel.json.JSONObject" %><%@
+page import="com.liferay.portal.kernel.json.JSONSerializer" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.util.BigDecimalUtil" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
@@ -84,16 +87,17 @@ page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %>
 
+<%@ page import="jakarta.portlet.PortletURL" %>
+
 <%@ page import="java.math.BigDecimal" %>
 
 <%@ page import="java.text.Format" %>
 
-<%@ page import="java.util.Collections" %><%@
+<%@ page import="java.util.ArrayList" %><%@
+page import="java.util.Collections" %><%@
 page import="java.util.List" %><%@
 page import="java.util.Map" %><%@
 page import="java.util.Set" %>
-
-<%@ page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 

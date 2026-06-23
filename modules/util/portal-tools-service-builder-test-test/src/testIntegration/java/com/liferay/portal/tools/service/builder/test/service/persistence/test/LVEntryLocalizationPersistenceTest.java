@@ -493,7 +493,7 @@ public class LVEntryLocalizationPersistenceTest {
 
 		lvEntryLocalization.setMvccVersion(RandomTestUtil.nextLong());
 
-		lvEntryLocalization.setHeadId(RandomTestUtil.nextLong());
+		lvEntryLocalization.setHeadId(-pk);
 
 		lvEntryLocalization.setCompanyId(RandomTestUtil.nextLong());
 
@@ -516,3 +516,4 @@ public class LVEntryLocalizationPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-357711599

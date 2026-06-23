@@ -12,7 +12,8 @@ import ClayList from '@clayui/list';
 import ClayModal, {useModal} from '@clayui/modal';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
 import ClayPanel from '@clayui/panel';
-import {navigate, openConfirmModal} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {dateUtils, navigate} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import ChangeTrackingBaseScheduleView from './ChangeTrackingBaseScheduleView';
@@ -24,36 +25,46 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 
 		const {
 			hasUnapprovedChanges,
+			isEmpty,
 			learnLink,
+			learnResolvingConflictsLink,
 			publishURL,
 			redirect,
 			resolvedConflicts,
 			schedule,
 			scheduleURL,
-			showPageOverwriteWarning,
 			spritemap,
 			timeZone,
 			unapprovedChangesAllowed,
 			unresolvedConflicts,
+			unscheduleURL,
 		} = props;
 
 		this.hasUnapprovedChanges = hasUnapprovedChanges;
+		this.isEmpty = isEmpty;
 		this.learnLink = learnLink;
+		this.learnResolvingConflictsLink = learnResolvingConflictsLink;
 		this.publishURL = publishURL;
 		this.redirect = redirect;
 		this.resolvedConflicts = resolvedConflicts;
 		this.schedule = schedule;
 		this.scheduleURL = scheduleURL;
-		this.showPageOverwriteWarning = showPageOverwriteWarning;
 		this.spritemap = spritemap;
 		this.timeZone = timeZone;
 		this.unapprovedChangesAllowed = unapprovedChangesAllowed;
 		this.unresolvedConflicts = unresolvedConflicts;
+		this.unscheduleURL = unscheduleURL;
 
 		this.state = {
 			date: null,
 			dateError: '',
 			formError: null,
+			publishButtonDisabled:
+				!!this.unresolvedConflicts.length ||
+				isEmpty ||
+				(this.hasUnapprovedChanges && !this.unapprovedChangesAllowed)
+					? true
+					: false,
 			time: null,
 			timeError: '',
 			validationError: null,
@@ -63,6 +74,8 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 	handleSubmit() {
 		if (!this.schedule) {
 			submitForm(document.hrefFm, this.publishURL);
+
+			this.setState({publishButtonDisabled: true});
 
 			return;
 		}
@@ -86,10 +99,10 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 								this.unapprovedChangesAllowed
 									? Liferay.Language.get(
 											'this-publication-contains-unapproved-changes'
-									  )
+										)
 									: Liferay.Language.get(
 											'this-publication-contains-unapproved-changes-that-must-be-approved-before-publishing'
-									  )
+										)
 							}
 						/>
 					)}
@@ -100,13 +113,17 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 							spritemap={this.spritemap}
 						>
 							<span>
-								{Liferay.Language.get(
-									'this-publication-contains-conflicting-changes-that-must-be-manually-resolved-before-publishing'
-								) + ' '}
+								{this.unscheduleURL
+									? Liferay.Language.get(
+											'this-scheduled-publication-contains-conflicting-changes-that-must-be-manually-resolved-before-publishing'
+										)
+									: Liferay.Language.get(
+											'this-publication-contains-conflicting-changes-that-must-be-manually-resolved-before-publishing'
+										)}
 							</span>
 
 							<a href={this.learnLink.url}>
-								{this.learnLink.message}
+								{' ' + this.learnLink.message}
 							</a>
 						</ClayAlert>
 					)}
@@ -124,15 +141,17 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 							/>
 						)}
 
-					{this.showPageOverwriteWarning && (
-						<ClayAlert
-							displayType="info"
-							spritemap={this.spritemap}
-							title={Liferay.Language.get(
-								"this-publication-contains-changes-to-a-content-page.-publishing-these-changes-will-fully-overwrite-the-page's-content-and-layout-in-production"
-							)}
-						/>
-					)}
+					<ClayAlert
+						displayType="info"
+						spritemap={this.spritemap}
+						title={Liferay.Language.get(
+							'publishing-may-overwrite-changes-made-in-production-after-this-publication-was-created'
+						)}
+					>
+						<a href={this.learnResolvingConflictsLink.url}>
+							{this.learnResolvingConflictsLink.message}
+						</a>
+					</ClayAlert>
 				</div>
 
 				<div className="sheet-section">
@@ -196,14 +215,47 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 							<div className={this.getDateClassName()}>
 								<div>
 									<ClayDatePicker
+										ariaLabels={{
+											buttonChooseDate: `${Liferay.Language.get(
+												'select-date'
+											)}`,
+											buttonDot: `${Liferay.Language.get(
+												'select-current-date'
+											)}`,
+											buttonNextMonth: `${Liferay.Language.get(
+												'select-next-month'
+											)}`,
+											buttonPreviousMonth: `${Liferay.Language.get(
+												'select-previous-month'
+											)}`,
+											dialog: `${Liferay.Language.get('select-date')}`,
+											selectMonth: `${Liferay.Language.get('select-a-month')}`,
+											selectYear: `${Liferay.Language.get('select-a-year')}`,
+										}}
 										disabled={
 											!!this.unresolvedConflicts.length
 										}
+										firstDayOfWeek={dateUtils.getFirstDayOfWeek()}
+										months={[
+											`${Liferay.Language.get('january')}`,
+											`${Liferay.Language.get('february')}`,
+											`${Liferay.Language.get('march')}`,
+											`${Liferay.Language.get('april')}`,
+											`${Liferay.Language.get('may')}`,
+											`${Liferay.Language.get('june')}`,
+											`${Liferay.Language.get('july')}`,
+											`${Liferay.Language.get('august')}`,
+											`${Liferay.Language.get('september')}`,
+											`${Liferay.Language.get('october')}`,
+											`${Liferay.Language.get('november')}`,
+											`${Liferay.Language.get('december')}`,
+										]}
 										onValueChange={this.handleDateChange}
 										placeholder="YYYY-MM-DD"
 										spritemap={this.spritemap}
 										timezone={this.timeZone}
 										value={this.state.date}
+										weekdaysShort={dateUtils.getWeekdaysShort()}
 										years={{
 											end: new Date().getFullYear() + 1,
 											start: new Date().getFullYear() - 1,
@@ -254,21 +306,26 @@ class ChangeTrackingConflictsView extends ChangeTrackingBaseScheduleView {
 				<div className="sheet-footer sheet-footer-btn-block-sm-down">
 					<div className="btn-group">
 						<div className="btn-group-item">
-							<button
-								className={
-									!!this.unresolvedConflicts.length ||
-									(this.hasUnapprovedChanges &&
-										!this.unapprovedChangesAllowed)
-										? 'btn btn-primary disabled'
-										: 'btn btn-primary'
-								}
-								onClick={() => this.handleSubmit()}
-								type="button"
-							>
-								{this.schedule
-									? Liferay.Language.get('schedule')
-									: Liferay.Language.get('publish')}
-							</button>
+							{this.unscheduleURL ? (
+								<button
+									className="btn btn-primary"
+									onClick={() => navigate(this.unscheduleURL)}
+									type="button"
+								>
+									{Liferay.Language.get('unschedule')}
+								</button>
+							) : (
+								<button
+									className="btn btn-primary"
+									disabled={this.state.publishButtonDisabled}
+									onClick={() => this.handleSubmit()}
+									type="button"
+								>
+									{this.schedule
+										? Liferay.Language.get('schedule')
+										: Liferay.Language.get('publish')}
+								</button>
+							)}
 						</div>
 
 						<div className="btn-group-item">
@@ -629,7 +686,9 @@ const ConflictsTable = ({conflicts, spritemap}) => {
 				size="full-screen"
 				spritemap={spritemap}
 			>
-				<ClayModal.Header>
+				<ClayModal.Header
+					closeButtonAriaLabel={Liferay.Language.get('close')}
+				>
 					<div className="autofit-row">
 						<div className="autofit-col">
 							<div className="modal-title">
@@ -645,6 +704,7 @@ const ConflictsTable = ({conflicts, spritemap}) => {
 
 				<ClayModal.Header
 					className="publications-conflicts-header"
+					closeButtonAriaLabel={Liferay.Language.get('close')}
 					withTitle={false}
 				>
 					<ClayAlert

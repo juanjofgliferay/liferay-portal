@@ -32,14 +32,14 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
 import com.liferay.portal.search.geolocation.GeoBuilders;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
 import com.liferay.portal.search.test.util.ExpandoTableSearchFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.users.admin.test.util.search.GroupBlueprint;
@@ -112,10 +112,10 @@ public class JournalArticleExpandoGeolocationSearchTest {
 				).occur(
 					"filter"
 				).query(
-					queries.geoDistance(
+					QueriesUtil.geoDistance(
 						_EXPANDO_COLUMN_GEOLOCATION_FULL_NAME,
-						geoBuilders.geoLocationPoint(34.01, -117.42),
-						geoBuilders.geoDistance(1000))
+						GeoBuilders.INSTANCE.geoLocationPoint(34.01, -117.42),
+						GeoBuilders.INSTANCE.geoDistance(1000))
 				).build()
 			).emptySearchEnabled(
 				true
@@ -127,10 +127,10 @@ public class JournalArticleExpandoGeolocationSearchTest {
 				).occur(
 					"filter"
 				).query(
-					queries.geoDistance(
+					QueriesUtil.geoDistance(
 						_EXPANDO_COLUMN_GEOLOCATION_FULL_NAME,
-						geoBuilders.geoLocationPoint(34.01, -117.42),
-						geoBuilders.geoDistance(100))
+						GeoBuilders.INSTANCE.geoLocationPoint(34.01, -117.42),
+						GeoBuilders.INSTANCE.geoDistance(100))
 				).build()
 			).emptySearchEnabled(
 				true
@@ -326,13 +326,7 @@ public class JournalArticleExpandoGeolocationSearchTest {
 	protected ExpandoTableLocalService expandoTableLocalService;
 
 	@Inject
-	protected GeoBuilders geoBuilders;
-
-	@Inject
 	protected JournalArticleLocalService journalArticleLocalService;
-
-	@Inject
-	protected Queries queries;
 
 	@Inject
 	protected Searcher searcher;

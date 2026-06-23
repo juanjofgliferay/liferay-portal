@@ -16,7 +16,9 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -50,30 +49,40 @@ public class HoursAvailable implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(HoursAvailable.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's closing time (in `HH:MM` format)."
 	)
 	public String getCloses() {
+		if (_closesSupplier != null) {
+			closes = _closesSupplier.get();
+
+			_closesSupplier = null;
+		}
+
 		return closes;
 	}
 
 	public void setCloses(String closes) {
 		this.closes = closes;
+
+		_closesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCloses(
 		UnsafeSupplier<String, Exception> closesUnsafeSupplier) {
 
-		try {
-			closes = closesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_closesSupplier = () -> {
+			try {
+				return closesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -82,58 +91,86 @@ public class HoursAvailable implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String closes;
 
-	@Schema(description = "The day of the week.")
+	@JsonIgnore
+	private Supplier<String> _closesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The day of the week."
+	)
 	public String getDayOfWeek() {
+		if (_dayOfWeekSupplier != null) {
+			dayOfWeek = _dayOfWeekSupplier.get();
+
+			_dayOfWeekSupplier = null;
+		}
+
 		return dayOfWeek;
 	}
 
 	public void setDayOfWeek(String dayOfWeek) {
 		this.dayOfWeek = dayOfWeek;
+
+		_dayOfWeekSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDayOfWeek(
 		UnsafeSupplier<String, Exception> dayOfWeekUnsafeSupplier) {
 
-		try {
-			dayOfWeek = dayOfWeekUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dayOfWeekSupplier = () -> {
+			try {
+				return dayOfWeekUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The day of the week.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String dayOfWeek;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String> _dayOfWeekSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The organization's opening time (in `HH:MM` format)."
 	)
 	public String getOpens() {
+		if (_opensSupplier != null) {
+			opens = _opensSupplier.get();
+
+			_opensSupplier = null;
+		}
+
 		return opens;
 	}
 
 	public void setOpens(String opens) {
 		this.opens = opens;
+
+		_opensSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOpens(
 		UnsafeSupplier<String, Exception> opensUnsafeSupplier) {
 
-		try {
-			opens = opensUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_opensSupplier = () -> {
+			try {
+				return opensUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -141,6 +178,9 @@ public class HoursAvailable implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String opens;
+
+	@JsonIgnore
+	private Supplier<String> _opensSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -169,6 +209,8 @@ public class HoursAvailable implements Serializable {
 
 		sb.append("{");
 
+		String closes = getCloses();
+
 		if (closes != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -183,6 +225,8 @@ public class HoursAvailable implements Serializable {
 			sb.append("\"");
 		}
 
+		String dayOfWeek = getDayOfWeek();
+
 		if (dayOfWeek != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -196,6 +240,8 @@ public class HoursAvailable implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String opens = getOpens();
 
 		if (opens != null) {
 			if (sb.length() > 1) {
@@ -216,8 +262,8 @@ public class HoursAvailable implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.HoursAvailable",
 		name = "x-class-name"
 	)
@@ -263,7 +309,10 @@ public class HoursAvailable implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -309,3 +358,4 @@ public class HoursAvailable implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-961605920

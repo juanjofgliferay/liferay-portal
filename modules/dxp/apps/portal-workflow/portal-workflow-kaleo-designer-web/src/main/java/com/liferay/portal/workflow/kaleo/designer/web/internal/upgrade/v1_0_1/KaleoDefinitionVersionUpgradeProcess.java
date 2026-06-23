@@ -102,6 +102,7 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 				"status", WorkflowConstants.STATUS_DRAFT);
 		}
 
+		serviceContext.setCompanyId(companyId);
 		serviceContext.setCreateDate(createDate);
 		serviceContext.setModifiedDate(modifiedDate);
 		serviceContext.setScopeGroupId(groupId);
@@ -181,10 +182,12 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 
 	private void _upgradeKaleoDefinitionVersion() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
-			PreparedStatement preparedStatement1 = connection.prepareStatement(
+
+			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select * from KaleoDraftDefinition order by version, " +
 					"draftVersion");
-			ResultSet resultSet = preparedStatement1.executeQuery()) {
+
+			ResultSet resultSet = preparedStatement.executeQuery()) {
 
 			while (resultSet.next()) {
 				long companyId = resultSet.getLong("companyId");

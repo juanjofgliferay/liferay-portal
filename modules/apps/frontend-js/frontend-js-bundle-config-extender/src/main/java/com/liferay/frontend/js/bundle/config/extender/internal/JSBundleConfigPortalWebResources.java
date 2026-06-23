@@ -9,9 +9,9 @@ import com.liferay.portal.kernel.servlet.PortalWebResourceConstants;
 import com.liferay.portal.kernel.servlet.PortalWebResources;
 import com.liferay.portal.servlet.delegate.ServletContextDelegate;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -52,9 +52,6 @@ public class JSBundleConfigPortalWebResources {
 		}
 	}
 
-	@Reference
-	private JSBundleConfigRegistry _jsBundleConfigRegistry;
-
 	@Reference(
 		target = "(component.name=com.liferay.frontend.js.bundle.config.extender.internal.JSBundleConfigServlet)"
 	)
@@ -71,7 +68,7 @@ public class JSBundleConfigPortalWebResources {
 
 		@Override
 		public long getLastModified() {
-			return _jsBundleConfigRegistry.getLastModified();
+			return JSBundleConfigRegistryUtil.getLastModified();
 		}
 
 		@Override

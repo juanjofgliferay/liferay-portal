@@ -8,6 +8,7 @@ package com.liferay.osb.faro.model;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,6 +46,7 @@ public class FaroProjectWrapper
 		attributes.put("accountName", getAccountName());
 		attributes.put("corpProjectName", getCorpProjectName());
 		attributes.put("corpProjectUuid", getCorpProjectUuid());
+		attributes.put("dataSourceConnected", isDataSourceConnected());
 		attributes.put("ipAddresses", getIpAddresses());
 		attributes.put(
 			"incidentReportEmailAddresses", getIncidentReportEmailAddresses());
@@ -54,6 +56,8 @@ public class FaroProjectWrapper
 		attributes.put("services", getServices());
 		attributes.put("state", getState());
 		attributes.put("subscription", getSubscription());
+		attributes.put(
+			"subscriptionModifiedTime", getSubscriptionModifiedTime());
 		attributes.put("timeZoneId", getTimeZoneId());
 		attributes.put("weDeployKey", getWeDeployKey());
 
@@ -140,6 +144,13 @@ public class FaroProjectWrapper
 			setCorpProjectUuid(corpProjectUuid);
 		}
 
+		Boolean dataSourceConnected = (Boolean)attributes.get(
+			"dataSourceConnected");
+
+		if (dataSourceConnected != null) {
+			setDataSourceConnected(dataSourceConnected);
+		}
+
 		String ipAddresses = (String)attributes.get("ipAddresses");
 
 		if (ipAddresses != null) {
@@ -188,6 +199,13 @@ public class FaroProjectWrapper
 
 		if (subscription != null) {
 			setSubscription(subscription);
+		}
+
+		Long subscriptionModifiedTime = (Long)attributes.get(
+			"subscriptionModifiedTime");
+
+		if (subscriptionModifiedTime != null) {
+			setSubscriptionModifiedTime(subscriptionModifiedTime);
 		}
 
 		String timeZoneId = (String)attributes.get("timeZoneId");
@@ -269,6 +287,16 @@ public class FaroProjectWrapper
 	}
 
 	/**
+	 * Returns the data source connected of this faro project.
+	 *
+	 * @return the data source connected of this faro project
+	 */
+	@Override
+	public boolean getDataSourceConnected() {
+		return model.getDataSourceConnected();
+	}
+
+	/**
 	 * Returns the faro project ID of this faro project.
 	 *
 	 * @return the faro project ID of this faro project
@@ -316,6 +344,11 @@ public class FaroProjectWrapper
 	@Override
 	public long getLastAccessTime() {
 		return model.getLastAccessTime();
+	}
+
+	@Override
+	public Date getLastAnniversaryDate() throws Exception {
+		return model.getLastAnniversaryDate();
 	}
 
 	/**
@@ -393,6 +426,11 @@ public class FaroProjectWrapper
 		return model.getServices();
 	}
 
+	@Override
+	public Date getStartDate() throws Exception {
+		return model.getStartDate();
+	}
+
 	/**
 	 * Returns the state of this faro project.
 	 *
@@ -411,6 +449,21 @@ public class FaroProjectWrapper
 	@Override
 	public String getSubscription() {
 		return model.getSubscription();
+	}
+
+	/**
+	 * Returns the subscription modified time of this faro project.
+	 *
+	 * @return the subscription modified time of this faro project
+	 */
+	@Override
+	public long getSubscriptionModifiedTime() {
+		return model.getSubscriptionModifiedTime();
+	}
+
+	@Override
+	public String getSubscriptionName() throws Exception {
+		return model.getSubscriptionName();
 	}
 
 	/**
@@ -466,6 +519,16 @@ public class FaroProjectWrapper
 	@Override
 	public boolean isAllowedIPAddress(String ipAddress) {
 		return model.isAllowedIPAddress(ipAddress);
+	}
+
+	/**
+	 * Returns <code>true</code> if this faro project is data source connected.
+	 *
+	 * @return <code>true</code> if this faro project is data source connected; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isDataSourceConnected() {
+		return model.isDataSourceConnected();
 	}
 
 	/**
@@ -546,6 +609,16 @@ public class FaroProjectWrapper
 	@Override
 	public void setCreateTime(long createTime) {
 		model.setCreateTime(createTime);
+	}
+
+	/**
+	 * Sets whether this faro project is data source connected.
+	 *
+	 * @param dataSourceConnected the data source connected of this faro project
+	 */
+	@Override
+	public void setDataSourceConnected(boolean dataSourceConnected) {
+		model.setDataSourceConnected(dataSourceConnected);
 	}
 
 	/**
@@ -691,6 +764,16 @@ public class FaroProjectWrapper
 	}
 
 	/**
+	 * Sets the subscription modified time of this faro project.
+	 *
+	 * @param subscriptionModifiedTime the subscription modified time of this faro project
+	 */
+	@Override
+	public void setSubscriptionModifiedTime(long subscriptionModifiedTime) {
+		model.setSubscriptionModifiedTime(subscriptionModifiedTime);
+	}
+
+	/**
 	 * Sets the time zone ID of this faro project.
 	 *
 	 * @param timeZoneId the time zone ID of this faro project
@@ -751,3 +834,4 @@ public class FaroProjectWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-16707228

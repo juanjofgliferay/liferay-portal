@@ -31,7 +31,7 @@ EditRolesDisplayContext editRolesDisplayContext = new EditRolesDisplayContext(re
 			cssClass="table-cell-expand-small table-cell-minw-200 table-title"
 			href="<%= rowURL %>"
 			name="title"
-			value="<%= role.getTitle(locale) %>"
+			value="<%= HtmlUtil.escape(role.getTitle(locale)) %>"
 		/>
 
 		<liferay-ui:search-container-column-text
@@ -45,8 +45,18 @@ EditRolesDisplayContext editRolesDisplayContext = new EditRolesDisplayContext(re
 			cssClass="table-cell-expand table-cell-minw-300"
 			href="<%= rowURL %>"
 			name="description"
-			value="<%= role.getDescription(locale) %>"
+			value="<%= HtmlUtil.escape(role.getDescription(locale)) %>"
 		/>
+
+		<liferay-ui:search-container-column-text
+			cssClass="table-cell-expand-smaller table-cell-minw-150 table-cell-ws-nowrap"
+			name="status"
+		>
+			<clay:label
+				displayType="<%= WorkflowConstants.getStatusStyle(role.getStatus()) %>"
+				label="<%= WorkflowConstants.getStatusLabel(role.getStatus()) %>"
+			/>
+		</liferay-ui:search-container-column-text>
 	</liferay-ui:search-container-row>
 
 	<liferay-ui:search-iterator

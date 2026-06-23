@@ -1,11 +1,43 @@
-@import 'atlas-variables';
-
 $prefix: '.page-editor__single-select-with-icon';
 
 html#{$cadmin-selector} .cadmin .page-editor__select-field {
-	&:not(:hover):not(.custom)
-		.page-editor__select-field__action-button:not(:focus) {
+	border: 1px solid $cadmin-secondary-l3;
+
+	&:focus-within,
+	&:hover {
+		border-color: $cadmin-secondary-l0;
+	}
+
+	&:not(:hover):not(:focus-within):not(.custom)
+		.page-editor__select-field__action-button {
 		opacity: 0;
+	}
+
+	&.custom {
+		background-color: $cadmin-light;
+
+		.input-group {
+			background-color: transparent;
+			border: 0;
+		}
+
+		.input-group-inset,
+		.input-group-inset-item {
+			border-width: 0;
+		}
+	}
+
+	.page-editor__select-field__action-button {
+		background-color: transparent;
+		height: 28px;
+		margin: 2px;
+		padding: 4px;
+		width: 28px;
+
+		&:focus-visible,
+		&:hover {
+			background-color: unquote('hsl(from #{$cadmin-dark} h s l / 0.06)');
+		}
 	}
 
 	#{$prefix} {
@@ -21,7 +53,7 @@ html#{$cadmin-selector} .cadmin .page-editor__select-field {
 
 	label.page-editor__input-with-icon__label-icon,
 	#{$prefix} label#{$prefix}__label-icon {
-		font-size: $font-size-sm;
+		font-size: $cadmin-font-size-sm;
 	}
 
 	#{$prefix}__select,
@@ -45,12 +77,7 @@ html#{$cadmin-selector} .cadmin .page-editor__select-field {
 		z-index: 1;
 	}
 
-	#{$prefix}:hover,
 	#{$prefix}:focus-within {
-		background-color: $cadmin-gray-100;
-	}
-
-	#{$prefix}:focus-within {
-		box-shadow: $btn-focus-box-shadow;
+		box-shadow: $cadmin-btn-focus-box-shadow;
 	}
 }

@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class OnDemandAdminPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "submission";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class OnDemandAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + OnDemandAdminPortletKeys.ON_DEMAND_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + OnDemandAdminPortletKeys.ON_DEMAND_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

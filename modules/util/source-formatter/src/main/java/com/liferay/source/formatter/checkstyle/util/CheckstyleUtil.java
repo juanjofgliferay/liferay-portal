@@ -5,11 +5,11 @@
 
 package com.liferay.source.formatter.checkstyle.util;
 
+import com.liferay.petra.io.unsync.UnsyncBufferedReader;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONArrayImpl;
 import com.liferay.portal.json.JSONObjectImpl;
-import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -231,7 +231,8 @@ public class CheckstyleUtil {
 			attributesJSONObject, propertiesMap,
 			SourceFormatterUtil.GIT_LIFERAY_PORTAL_BRANCH,
 			SourceFormatterUtil.UPGRADE_FROM_VERSION,
-			SourceFormatterUtil.UPGRADE_TO_VERSION);
+			SourceFormatterUtil.UPGRADE_TO_LIFERAY_VERSION,
+			SourceFormatterUtil.UPGRADE_TO_RELEASE_VERSION);
 
 		attributesJSONObject = SourceFormatterCheckUtil.addPropertiesAttributes(
 			attributesJSONObject, propertiesMap, CheckType.CHECKSTYLE,

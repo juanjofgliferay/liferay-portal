@@ -39,15 +39,24 @@ interface StatefulPaginationResult extends State {
 	onQueryChange: (query: string) => void;
 }
 
-const DEFAULT_INITIAL_PAGINATION_PROPS = {
+const DEFAULT_INITIAL_PAGINATION_PROPS: {
+	initialDelta: number;
+	initialFilterBy: FilterByType;
+	initialOrderIOMap: OrderedMap<string, OrderParams>;
+	initialPage: number;
+	initialQuery: string;
+} = {
 	initialDelta: DEFAULT_DELTA,
-	initialFilterBy: Map(),
-	initialOrderIOMap: null,
+	initialFilterBy: Map() as FilterByType,
+	initialOrderIOMap: OrderedMap<string, OrderParams>(),
 	initialPage: DEFAULT_PAGE,
 	initialQuery: ''
 };
 
-const statefulPaginationReducer = (state: State, {payload, type}: Action) => {
+const statefulPaginationReducer = (
+	state: State,
+	{payload, type}: Action
+): State => {
 	switch (type) {
 		case 'resetPage':
 			return {
@@ -88,9 +97,11 @@ const statefulPaginationReducer = (state: State, {payload, type}: Action) => {
 	}
 };
 
-export default function useStatefulPagination(
-	mapPropsFn = undefined,
-	initialPaginationProps = {}
+export function useStatefulPagination(
+	mapPropsFn: ((state: State) => State) | undefined = undefined,
+	initialPaginationProps: Partial<
+		typeof DEFAULT_INITIAL_PAGINATION_PROPS
+	> = {}
 ): StatefulPaginationResult {
 	const paginationProps = {
 		...DEFAULT_INITIAL_PAGINATION_PROPS,
@@ -119,14 +130,14 @@ export default function useStatefulPagination(
 		});
 	};
 
-	const setDelta = (delta: string): void => {
+	const setDelta = (delta: number): void => {
 		setState({
 			payload: delta,
 			type: ActionType.setDelta
 		});
 	};
 
-	const setFilterBy = (filterBy: string): void => {
+	const setFilterBy = (filterBy: FilterByType): void => {
 		setState({
 			payload: filterBy,
 			type: ActionType.setFilterBy
@@ -140,7 +151,7 @@ export default function useStatefulPagination(
 		});
 	};
 
-	const setPage = (page: string): void => {
+	const setPage = (page: number): void => {
 		setState({
 			payload: page,
 			type: ActionType.setPage

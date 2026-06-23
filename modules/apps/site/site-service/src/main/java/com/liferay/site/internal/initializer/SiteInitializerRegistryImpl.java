@@ -9,12 +9,15 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.site.initializer.SiteInitializer;
 import com.liferay.site.initializer.SiteInitializerRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -55,19 +58,17 @@ public class SiteInitializerRegistryImpl implements SiteInitializerRegistry {
 	public List<SiteInitializer> getSiteInitializers(
 		long companyId, boolean activeOnly) {
 
-		if (!activeOnly) {
-			return new ArrayList<>(_serviceTrackerMap.values());
+		Predicate<SiteInitializer> predicate =
+			siteInitializer -> !_excludedSiteInitializerKeys.contains(
+				siteInitializer.getKey());
+
+		if (activeOnly) {
+			predicate = predicate.and(
+				siteInitializer -> siteInitializer.isActive(companyId));
 		}
 
-		List<SiteInitializer> siteInitializers = new ArrayList<>();
-
-		for (SiteInitializer siteInitializer : _serviceTrackerMap.values()) {
-			if (siteInitializer.isActive(companyId)) {
-				siteInitializers.add(siteInitializer);
-			}
-		}
-
-		return siteInitializers;
+		return ListUtil.filter(
+			new ArrayList<>(_serviceTrackerMap.values()), predicate);
 	}
 
 	@Activate
@@ -83,6 +84,14 @@ public class SiteInitializerRegistryImpl implements SiteInitializerRegistry {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SiteInitializerRegistryImpl.class);
+
+	private static final Set<String> _excludedSiteInitializerKeys = Set.of(
+		"com.liferay.ai.hub.pricing.site.initializer",
+		"com.liferay.digital.sales.room.site.initializer",
+		"com.liferay.seo.studio.site.initializer",
+		"com.liferay.site.initializer.cmp", "com.liferay.site.initializer.cms",
+		"com.liferay.site.initializer.cms.standalone",
+		"com.liferay.site.initializer.dsr");
 
 	private ServiceTrackerMap<String, SiteInitializer> _serviceTrackerMap;
 

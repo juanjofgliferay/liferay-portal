@@ -8,6 +8,7 @@ package com.liferay.asset.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.link.model.AssetLink;
 import com.liferay.asset.link.model.adapter.StagedAssetLink;
 import com.liferay.asset.link.service.AssetLinkLocalService;
@@ -17,14 +18,19 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.SystemEvent;
 import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.SystemEventLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -85,6 +91,70 @@ public class AssetEntryLocalServiceTest {
 			systemEvent.getClassUuid());
 	}
 
+	@Test
+	public void testSearch() throws Exception {
+		Hits hits = _assetEntryLocalService.search(
+			TestPropsValues.getCompanyId(),
+			new long[] {TestPropsValues.getGroupId()},
+			TestPropsValues.getUserId(), AssetEntry.class.getName(), 0,
+			StringPool.BLANK, false, new int[] {WorkflowConstants.STATUS_ANY},
+			0, 10, (Sort)null);
+
+		Assert.assertNotNull(hits);
+	}
+
+	@Test
+	public void testUpdateEntry() throws Exception {
+		AssetEntry assetEntry1 = _addAssetEntryWithClassUUID(
+			TestPropsValues.getGroupId());
+
+		Assert.assertNull(
+			_assetTagLocalService.fetchTag(assetEntry1.getGroupId(), "tag"));
+
+		_assetEntryLocalService.updateEntry(
+			TestPropsValues.getUserId(), assetEntry1.getGroupId(), null, null,
+			assetEntry1.getClassName(), assetEntry1.getClassPK(),
+			assetEntry1.getClassUuid(), assetEntry1.getClassTypeId(), null,
+			new String[] {"tag"}, false, false, null, null, null, null,
+			assetEntry1.getMimeType(), assetEntry1.getTitle(),
+			assetEntry1.getDescription(), assetEntry1.getSummary(),
+			assetEntry1.getUrl(), assetEntry1.getLayoutUuid(),
+			assetEntry1.getHeight(), assetEntry1.getWidth(),
+			assetEntry1.getPriority(),
+			ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertNotNull(
+			_assetTagLocalService.fetchTag(assetEntry1.getGroupId(), "tag"));
+
+		Group group = _groupLocalService.getCompanyGroup(
+			TestPropsValues.getCompanyId());
+
+		AssetEntry assetEntry2 = _addAssetEntryWithClassUUID(
+			TestPropsValues.getGroupId());
+
+		Assert.assertNull(
+			_assetTagLocalService.fetchTag(group.getGroupId(), "tag"));
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext();
+
+		serviceContext.setAttribute("assetTagScopeGroupId", group.getGroupId());
+
+		_assetEntryLocalService.updateEntry(
+			TestPropsValues.getUserId(), assetEntry2.getGroupId(), null, null,
+			assetEntry2.getClassName(), assetEntry2.getClassPK(),
+			assetEntry2.getClassUuid(), assetEntry2.getClassTypeId(), null,
+			new String[] {"tag"}, false, false, null, null, null, null,
+			assetEntry2.getMimeType(), assetEntry2.getTitle(),
+			assetEntry2.getDescription(), assetEntry2.getSummary(),
+			assetEntry2.getUrl(), assetEntry2.getLayoutUuid(),
+			assetEntry2.getHeight(), assetEntry2.getWidth(),
+			assetEntry2.getPriority(), serviceContext);
+
+		Assert.assertNotNull(
+			_assetTagLocalService.fetchTag(group.getGroupId(), "tag"));
+	}
+
 	private AssetEntry _addAssetEntryWithClassUUID(long groupId) {
 		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(groupId);
 
@@ -98,6 +168,12 @@ public class AssetEntryLocalServiceTest {
 
 	@Inject
 	private AssetLinkLocalService _assetLinkLocalService;
+
+	@Inject
+	private AssetTagLocalService _assetTagLocalService;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
 
 	@Inject
 	private Portal _portal;

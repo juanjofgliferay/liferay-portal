@@ -114,6 +114,8 @@ public interface SearchRequest {
 	 */
 	public List<StatsRequest> getStatsRequests();
 
+	public String[] getStoredFields();
+
 	public boolean isBasicFacetSelection();
 
 	public boolean isEmptySearchEnabled();
@@ -135,5 +137,7 @@ public interface SearchRequest {
 	 *         <code>false</code> otherwise
 	 */
 	public boolean isIncludeResponseString();
+
+	public boolean isRetainFacetSelections();
 
 }

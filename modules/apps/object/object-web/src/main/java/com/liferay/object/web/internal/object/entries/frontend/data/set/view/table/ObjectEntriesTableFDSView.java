@@ -5,6 +5,7 @@
 
 package com.liferay.object.web.internal.object.entries.frontend.data.set.view.table;
 
+import com.liferay.frontend.data.set.constants.FDSTimeZoneBehaviorConstants;
 import com.liferay.frontend.data.set.view.table.BaseTableFDSView;
 import com.liferay.frontend.data.set.view.table.DateFDSTableSchemaField;
 import com.liferay.frontend.data.set.view.table.DateTimeFDSTableSchemaField;
@@ -14,6 +15,7 @@ import com.liferay.frontend.data.set.view.table.FDSTableSchemaBuilderFactory;
 import com.liferay.frontend.data.set.view.table.FDSTableSchemaField;
 import com.liferay.frontend.data.set.view.table.StringFDSTableSchemaField;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
 import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.model.ObjectDefinition;
@@ -160,6 +162,17 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 				_objectFieldLocalService.getObjectFields(
 					_objectDefinition.getObjectDefinitionId())) {
 
+			if (objectField.compareBusinessType(
+					ObjectFieldConstants.BUSINESS_TYPE_RELATIONSHIP)) {
+
+				ObjectRelationship objectRelationship =
+					objectField.getObjectRelationship();
+
+				if (objectRelationship.isEdge()) {
+					continue;
+				}
+			}
+
 			_addObjectField(
 				fdsTableSchemaBuilder, objectField.getLabel(locale, true),
 				objectField);
@@ -185,7 +198,9 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 
 		if (Objects.equals(
 				businessType, ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) ||
+			Objects.equals(dbType, ObjectFieldConstants.DB_TYPE_BIG_DECIMAL) ||
 			Objects.equals(dbType, ObjectFieldConstants.DB_TYPE_CLOB) ||
+			Objects.equals(dbType, ObjectFieldConstants.DB_TYPE_DOUBLE) ||
 			Objects.equals(dbType, ObjectFieldConstants.DB_TYPE_STRING)) {
 
 			StringFDSTableSchemaField stringFDSTableSchemaField =
@@ -199,6 +214,17 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 			}
 			else if (Objects.equals(
 						businessType,
+						ObjectFieldConstants.BUSINESS_TYPE_DECIMAL) ||
+					 Objects.equals(
+						 businessType,
+						 ObjectFieldConstants.
+							 BUSINESS_TYPE_PRECISION_DECIMAL)) {
+
+				stringFDSTableSchemaField.setContentRenderer(
+					"decimalDataRenderer");
+			}
+			else if (Objects.equals(
+						businessType,
 						ObjectFieldConstants.
 							BUSINESS_TYPE_MULTISELECT_PICKLIST)) {
 
@@ -206,9 +232,14 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 					"multiselectPicklistDataRenderer");
 			}
 
-			stringFDSTableSchemaField.setFieldName(fieldName);
-			stringFDSTableSchemaField.setLabel(label);
-			stringFDSTableSchemaField.setLocalizeLabel(localizeLabel);
+			stringFDSTableSchemaField.setFieldName(
+				fieldName
+			).setLabel(
+				label
+			).setLocalizeLabel(
+				localizeLabel
+			);
+
 			stringFDSTableSchemaField.setTruncate(true);
 
 			fdsTableSchemaBuilder.add(stringFDSTableSchemaField);
@@ -224,8 +255,11 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 			dateFDSTableSchemaField.setFieldName(fieldName);
 			dateFDSTableSchemaField.setFormat(
 				_getFormatJSONObject(businessType, null));
-			dateFDSTableSchemaField.setLabel(label);
-			dateFDSTableSchemaField.setLocalizeLabel(localizeLabel);
+			dateFDSTableSchemaField.setLabel(
+				label
+			).setLocalizeLabel(
+				localizeLabel
+			);
 
 			fdsTableSchemaBuilder.add(dateFDSTableSchemaField);
 
@@ -239,6 +273,17 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 				new DateTimeFDSTableSchemaField();
 
 			dateTimeFDSTableSchemaField.setFieldName(fieldName);
+
+			if (ListUtil.isNotEmpty(objectFieldSettings) &&
+				StringUtil.equals(
+					ObjectFieldSettingUtil.getValue(
+						ObjectFieldSettingConstants.NAME_TIME_STORAGE,
+						objectFieldSettings),
+					ObjectFieldSettingConstants.VALUE_USE_INPUT_AS_ENTERED)) {
+
+				dateTimeFDSTableSchemaField.setTimeZoneBehavior(
+					FDSTimeZoneBehaviorConstants.DO_NOT_MODIFY_DATE_VALUE);
+			}
 
 			User user = null;
 
@@ -257,16 +302,22 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 					businessType,
 					ObjectFieldSettingUtil.getTimeZoneId(
 						objectFieldSettings, user)));
-			dateTimeFDSTableSchemaField.setLabel(label);
-			dateTimeFDSTableSchemaField.setLocalizeLabel(localizeLabel);
+			dateTimeFDSTableSchemaField.setLabel(
+				label
+			).setLocalizeLabel(
+				localizeLabel
+			);
 
 			fdsTableSchemaBuilder.add(dateTimeFDSTableSchemaField);
 
 			fdsTableSchemaField = dateTimeFDSTableSchemaField;
 		}
 		else {
-			fdsTableSchemaField.setFieldName(fieldName);
-			fdsTableSchemaField.setLabel(label);
+			fdsTableSchemaField.setFieldName(
+				fieldName
+			).setLabel(
+				label
+			);
 
 			fdsTableSchemaBuilder.add(fdsTableSchemaField);
 
@@ -281,6 +332,8 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 
 		if (!Objects.equals(
 				businessType, ObjectFieldConstants.BUSINESS_TYPE_AGGREGATION) &&
+			!Objects.equals(
+				businessType, ObjectFieldConstants.BUSINESS_TYPE_ASSIGNEE) &&
 			!Objects.equals(
 				businessType, ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) &&
 			!Objects.equals(
@@ -400,6 +453,12 @@ public class ObjectEntriesTableFDSView extends BaseTableFDSView {
 	private String _getFieldName(String businessType, String fieldName) {
 		if (fieldName.contains(".creator")) {
 			return StringUtil.replaceLast(fieldName, "creator", "creator.name");
+		}
+
+		if (Objects.equals(
+				businessType, ObjectFieldConstants.BUSINESS_TYPE_ASSIGNEE)) {
+
+			return fieldName + ".name";
 		}
 
 		if (Objects.equals(

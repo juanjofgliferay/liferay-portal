@@ -6,7 +6,6 @@
 package com.liferay.staging.internal;
 
 import com.liferay.exportimport.kernel.lar.ExportImportHelper;
-import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.staging.StagingURLHelper;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
@@ -21,15 +20,14 @@ import com.liferay.portal.kernel.security.auth.HttpPrincipal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.service.http.GroupServiceHttp;
 import com.liferay.staging.StagingGroupHelper;
+import com.liferay.staging.internal.constants.CompanyGroupConstants;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,6 +37,12 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = StagingGroupHelper.class)
 public class StagingGroupHelperImpl implements StagingGroupHelper {
+
+	@Override
+	public Group fetchCompanyGroup(long companyId) {
+		return _groupLocalService.fetchFriendlyURLGroup(
+			companyId, CompanyGroupConstants.FRIENDLY_URL);
+	}
 
 	@Override
 	public Group fetchLiveGroup(Group group) {
@@ -158,6 +162,34 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 		}
 
 		return groupId;
+	}
+
+	@Override
+	public boolean isCompanyGroup(Group group) {
+		return isCompanyGroup(group.getCompanyId(), group.getGroupId());
+	}
+
+	@Override
+	public boolean isCompanyGroup(long companyId, long groupId) {
+		Group companyGroup = fetchCompanyGroup(companyId);
+
+		if ((companyGroup != null) && (companyGroup.getGroupId() == groupId)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean isCompanyGroupFriendlyURL(String friendlyURL) {
+		return Objects.equals(friendlyURL, CompanyGroupConstants.FRIENDLY_URL);
+	}
+
+	@Override
+	public boolean isDepotGroup(long groupId) {
+		Group group = _groupLocalService.fetchGroup(groupId);
+
+		return group.isDepot();
 	}
 
 	@Override
@@ -307,34 +339,16 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 			return true;
 		}
 
-		List<Portlet> dataSiteLevelPortlets = Collections.emptyList();
+		Portlet dataSiteLevelPortlet =
+			_exportImportHelper.getDataSiteLevelPortlet(
+				className, group.getCompanyId(), true);
 
-		try {
-			dataSiteLevelPortlets =
-				_exportImportHelper.getDataSiteLevelPortlets(
-					group.getCompanyId(), true);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception);
-			}
-
+		if (dataSiteLevelPortlet == null) {
 			return true;
 		}
 
-		for (Portlet dataSiteLevelPortlet : dataSiteLevelPortlets) {
-			PortletDataHandler portletDataHandler =
-				dataSiteLevelPortlet.getPortletDataHandlerInstance();
-
-			if (ArrayUtil.contains(
-					portletDataHandler.getClassNames(), className)) {
-
-				return isStagedPortlet(
-					groupId, dataSiteLevelPortlet.getRootPortletId());
-			}
-		}
-
-		return true;
+		return isStagedPortlet(
+			groupId, dataSiteLevelPortlet.getRootPortletId());
 	}
 
 	@Override

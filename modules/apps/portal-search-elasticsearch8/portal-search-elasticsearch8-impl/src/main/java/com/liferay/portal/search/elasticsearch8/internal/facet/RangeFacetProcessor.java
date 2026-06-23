@@ -1,0 +1,87 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2025 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.portal.search.elasticsearch8.internal.facet;
+
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationRange;
+import co.elastic.clients.elasticsearch._types.aggregations.RangeAggregation;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.search.facet.Facet;
+import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
+import com.liferay.portal.kernel.search.facet.util.RangeParserUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+
+/**
+ * @author Michael C. Han
+ * @author Milen Dyankov
+ * @author Tibor Lipusz
+ */
+public class RangeFacetProcessor
+	implements FacetProcessor<SearchRequest.Builder> {
+
+	public static final RangeFacetProcessor INSTANCE =
+		new RangeFacetProcessor();
+
+	@Override
+	public Aggregation.Builder.ContainerBuilder processFacet(Facet facet) {
+		FacetConfiguration facetConfiguration = facet.getFacetConfiguration();
+
+		RangeAggregation.Builder rangeAggregationBuilder =
+			AggregationBuilders.range();
+
+		rangeAggregationBuilder.field(facetConfiguration.getFieldName());
+
+		_addConfigurationRanges(rangeAggregationBuilder, facetConfiguration);
+
+		RangeAggregation rangeAggregation = rangeAggregationBuilder.build();
+
+		if (ListUtil.isEmpty(rangeAggregation.ranges())) {
+			return null;
+		}
+
+		Aggregation.Builder aggregationBuilder = new Aggregation.Builder();
+
+		return aggregationBuilder.range(rangeAggregation);
+	}
+
+	private void _addConfigurationRanges(
+		RangeAggregation.Builder builder,
+		FacetConfiguration facetConfiguration) {
+
+		JSONObject jsonObject = facetConfiguration.getData();
+
+		JSONArray jsonArray = jsonObject.getJSONArray("ranges");
+
+		if (jsonArray == null) {
+			return;
+		}
+
+		for (int i = 0; i < jsonArray.length(); i++) {
+			JSONObject rangeJSONObject = jsonArray.getJSONObject(i);
+
+			builder.ranges(
+				_createAggregationRange(rangeJSONObject.getString("range")));
+		}
+	}
+
+	private AggregationRange _createAggregationRange(String range) {
+		String[] rangeParts = RangeParserUtil.parserRange(range);
+
+		return AggregationRange.of(
+			aggregationRange -> aggregationRange.key(
+				range
+			).from(
+				Double.valueOf(rangeParts[0])
+			).to(
+				Double.valueOf(rangeParts[1])
+			));
+	}
+
+}

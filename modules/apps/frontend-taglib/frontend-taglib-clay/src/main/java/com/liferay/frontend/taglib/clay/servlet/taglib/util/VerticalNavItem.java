@@ -25,6 +25,18 @@ public class VerticalNavItem extends NavigationItem {
 		iconItems.add(iconItem);
 	}
 
+	public void addLabelItem(LabelItem labelItem) {
+		List<LabelItem> labelItems = (List<LabelItem>)get("labelItems");
+
+		if (labelItems == null) {
+			labelItems = new ArrayList<>();
+
+			put("labelItems", labelItems);
+		}
+
+		labelItems.add(labelItem);
+	}
+
 	public void setExpanded(boolean expanded) {
 		put("expanded", expanded);
 	}
@@ -38,7 +50,19 @@ public class VerticalNavItem extends NavigationItem {
 	}
 
 	public void setItems(List<VerticalNavItem> verticalNavItems) {
-		put("items", verticalNavItems);
+		VerticalNavItemList verticalNavItemList = new VerticalNavItemList();
+
+		verticalNavItemList.addAll(verticalNavItems);
+
+		put("items", verticalNavItemList);
+	}
+
+	public void setLabelItems(List<LabelItem> labelItems) {
+		put("labelItems", labelItems);
+	}
+
+	public void setLeadingIcon(IconItem iconItem) {
+		put("leadingIcon", iconItem);
 	}
 
 }

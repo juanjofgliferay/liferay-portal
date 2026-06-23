@@ -54,13 +54,6 @@ public interface CommerceShipmentService extends BaseService {
 			String commerceShippingOptionName, ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), pass boolean for restoring stock
-	 */
-	@Deprecated
-	public void deleteCommerceShipment(long commerceShipmentId)
-		throws PortalException;
-
 	public void deleteCommerceShipment(
 			long commerceShipmentId, boolean restoreStockQuantity)
 		throws PortalException;
@@ -101,7 +94,8 @@ public interface CommerceShipmentService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceShipment> getCommerceShipmentsByOrderId(
-		long commerceOrderId, int start, int end);
+			long commerceOrderId, int start, int end)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceShipmentsCount(long companyId) throws PortalException;
@@ -122,7 +116,8 @@ public interface CommerceShipmentService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceShipmentsCountByOrderId(long commerceOrderId);
+	public int getCommerceShipmentsCountByOrderId(long commerceOrderId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -134,23 +129,11 @@ public interface CommerceShipmentService extends BaseService {
 	public CommerceShipment reprocessCommerceShipment(long commerceShipmentId)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #updateAddress(long, String, String, String, String, String, String,
-	 String, long, long, String, ServiceContext)}
-	 */
-	@Deprecated
 	public CommerceShipment updateAddress(
-			long commerceShipmentId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber)
-		throws PortalException;
-
-	public CommerceShipment updateAddress(
-			long commerceShipmentId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long commerceShipmentId, String name,
+			String description, String street1, String street2, String street3,
+			String city, String zip, long regionId, long countryId,
+			String phoneNumber, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CommerceShipment updateCarrierDetails(
@@ -201,3 +184,4 @@ public interface CommerceShipmentService extends BaseService {
 		throws PortalException;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:652540385

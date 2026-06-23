@@ -22,11 +22,12 @@ import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Albert Lee
  */
 @Component(
-	property = "javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+	property = "jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 	service = PortletConfigurationIcon.class
 )
 public class ManageCustomFieldsPortletConfigurationIcon
@@ -80,9 +81,14 @@ public class ManageCustomFieldsPortletConfigurationIcon
 
 	@Override
 	public boolean isShow(PortletRequest portletRequest) {
-		String usersListView = ParamUtil.get(
-			portletRequest, "usersListView",
-			UserConstants.LIST_VIEW_FLAT_USERS);
+		String usersListView = (String)portletRequest.getAttribute(
+			"view.jsp-usersListView");
+
+		if (Validator.isNull(usersListView)) {
+			usersListView = ParamUtil.get(
+				portletRequest, "usersListView",
+				UserConstants.LIST_VIEW_FLAT_USERS);
+		}
 
 		if (!usersListView.equals(UserConstants.LIST_VIEW_FLAT_USERS)) {
 			return false;

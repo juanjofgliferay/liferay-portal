@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,31 +53,41 @@ public class PageDropZoneDefinition implements Serializable {
 			PageDropZoneDefinition.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The page drop zone's allowed or unallowed fragments."
 	)
 	@Valid
 	public Object getFragmentSettings() {
+		if (_fragmentSettingsSupplier != null) {
+			fragmentSettings = _fragmentSettingsSupplier.get();
+
+			_fragmentSettingsSupplier = null;
+		}
+
 		return fragmentSettings;
 	}
 
 	public void setFragmentSettings(Object fragmentSettings) {
 		this.fragmentSettings = fragmentSettings;
+
+		_fragmentSettingsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFragmentSettings(
 		UnsafeSupplier<Object, Exception> fragmentSettingsUnsafeSupplier) {
 
-		try {
-			fragmentSettings = fragmentSettingsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fragmentSettingsSupplier = () -> {
+			try {
+				return fragmentSettingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -86,6 +95,9 @@ public class PageDropZoneDefinition implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object fragmentSettings;
+
+	@JsonIgnore
+	private Supplier<Object> _fragmentSettingsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -115,6 +127,8 @@ public class PageDropZoneDefinition implements Serializable {
 
 		sb.append("{");
 
+		Object fragmentSettings = getFragmentSettings();
+
 		if (fragmentSettings != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -142,8 +156,8 @@ public class PageDropZoneDefinition implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageDropZoneDefinition",
 		name = "x-class-name"
 	)
@@ -189,7 +203,10 @@ public class PageDropZoneDefinition implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -235,3 +252,4 @@ public class PageDropZoneDefinition implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1323761812

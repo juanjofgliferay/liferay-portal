@@ -5,6 +5,8 @@
 
 package com.liferay.portal.security.ldap.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -18,8 +20,8 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropertiesUtil;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.ldap.SafeLdapContext;
@@ -457,7 +459,9 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 					environmentProperties, null, Context.SECURITY_CREDENTIALS));
 		}
 
-		try {
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				SafeLdapContextImpl.class.getClassLoader())) {
+
 			return new SafeLdapContextImpl(
 				new InitialLdapContext(environmentProperties, null));
 		}
@@ -955,7 +959,7 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 	@Activate
 	protected void activate() {
 		_companySecurityAuthType = GetterUtil.getString(
-			_props.get(PropsKeys.COMPANY_SECURITY_AUTH_TYPE));
+			PropsUtil.get(PropsKeys.COMPANY_SECURITY_AUTH_TYPE));
 	}
 
 	private Attributes _getAttributes(
@@ -1082,9 +1086,6 @@ public class SafePortalLDAPImpl implements SafePortalLDAP {
 
 	@Reference
 	private LDAPSettings _ldapSettings;
-
-	@Reference
-	private Props _props;
 
 	@Reference(
 		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.SystemLDAPConfiguration)"

@@ -6,16 +6,25 @@ exports[`WithPropertyGroups should pass propertyGroups to the WrappedComponent 1
     <div>
       Events
       <div>
-        Events-0: 8
+        Default Events-0: 8
+      </div>
+      <div>
+        Custom Events-1: 1
       </div>
     </div>
     <div>
-      Individual Attributes
+      Individual
       <div>
-        Individual Attributes-0: 6
+        Individual-0: 6
       </div>
       <div>
         DXP Custom Fields-1: 1
+      </div>
+    </div>
+    <div>
+      Account
+      <div>
+        Account-0: 1
       </div>
     </div>
     <div>
@@ -25,15 +34,27 @@ exports[`WithPropertyGroups should pass propertyGroups to the WrappedComponent 1
       </div>
     </div>
     <div>
-      Session Attributes
+      Session
       <div>
-        Session Attributes-0: 6
+        Session-0: 6
       </div>
     </div>
     <div>
-      Organization Attributes
+      Vocabularies and Categories
       <div>
-        Organization Attributes-0: 6
+        Vocabularies and Categories-0: 0
+      </div>
+    </div>
+    <div>
+      Tags
+      <div>
+        Tags-0: 0
+      </div>
+    </div>
+    <div>
+      Organization
+      <div>
+        Organization-0: 6
       </div>
       <div>
         DXP Custom Fields-1: 1

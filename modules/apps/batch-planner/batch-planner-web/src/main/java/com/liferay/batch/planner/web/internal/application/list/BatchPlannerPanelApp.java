@@ -31,6 +31,11 @@ import org.osgi.service.component.annotations.Reference;
 public class BatchPlannerPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "database";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -52,7 +57,7 @@ public class BatchPlannerPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + BatchPlannerPortletKeys.BATCH_PLANNER + ")"
+		target = "(jakarta.portlet.name=" + BatchPlannerPortletKeys.BATCH_PLANNER + ")"
 	)
 	private Portlet _portlet;
 

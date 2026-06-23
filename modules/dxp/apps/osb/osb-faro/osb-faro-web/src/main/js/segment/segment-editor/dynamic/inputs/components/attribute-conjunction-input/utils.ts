@@ -1,31 +1,60 @@
 import {BetweenNumber} from '../BetweenNumberInput';
-import {
-	BOOLEAN_LABELS_MAP,
-	DATE_OPERATOR_LONGHAND_LABELS_MAP,
-	DATE_OPTIONS,
-	DURATION_OPERATOR_LONGHAND_LABELS_MAP,
-	DURATION_OPTIONS,
-	NUMBER_OPERATOR_LONGHAND_LABELS_MAP,
-	NUMBER_OPTIONS
-} from 'event-analysis/utils/utils';
-import {DataTypes} from 'event-analysis/utils/types';
+import {BOOLEAN_LABELS_MAP} from 'event-analysis/utils/utils';
+import {DataTypes, Operators} from 'event-analysis/utils/types';
 import {DateRange} from 'shared/components/DateRangeInput';
 import {
 	FunctionalOperators,
+	NotOperators,
 	RelationalOperators,
-	STRING_OPERATOR_LABELS_MAP,
 	STRING_OPTIONS
 } from '../../../utils/constants';
 import {isNumber} from 'lodash';
 import {isValid} from '../../../utils/utils';
 
-export const createOption = (option, dataType: DataTypes) => {
-	const LABELS_MAP = {
+const ATTRIBUTES_DATE_AND_DURATION_OPERATORS_LONGHAND_LABELS_MAP = {
+	[Operators.EQ]: Liferay.Language.get('is').toLowerCase(),
+	[Operators.GT]: Liferay.Language.get('is-after').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('is-before').toLowerCase()
+};
+
+const ATTRIBUTES_DATE_AND_DURATION_OPTIONS = [
+	Operators.LT,
+	Operators.EQ,
+	Operators.GT
+];
+
+export const ATTRIBUTES_NUMBER_OPERATOR_LONGHAND_LABELS_MAP = {
+	[Operators.EQ]: Liferay.Language.get('is-equal-to').toLowerCase(),
+	[Operators.GT]: Liferay.Language.get('greater-than').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('less-than').toLowerCase(),
+	[Operators.NE]: Liferay.Language.get('is-not-equal-to').toLowerCase()
+};
+
+const ATTRIBUTE_NUMBER_OPTIONS = [
+	Operators.EQ,
+	Operators.GT,
+	Operators.LT,
+	Operators.NE
+];
+
+const ATTRIBUTES_STRING_OPERATOR_LABELS_MAP = {
+	[FunctionalOperators.Contains]:
+		Liferay.Language.get('contains').toLowerCase(),
+	[NotOperators.NotContains]:
+		Liferay.Language.get('does-not-contain').toLowerCase(),
+	[RelationalOperators.EQ]: Liferay.Language.get('is').toLowerCase(),
+	[RelationalOperators.NE]: Liferay.Language.get('is-not').toLowerCase()
+};
+
+export const createOption = (option: string, dataType: DataTypes) => {
+	const LABELS_MAP: Record<string, Record<string, string>> = {
 		[DataTypes.Boolean]: BOOLEAN_LABELS_MAP,
-		[DataTypes.Date]: DATE_OPERATOR_LONGHAND_LABELS_MAP,
-		[DataTypes.Duration]: DURATION_OPERATOR_LONGHAND_LABELS_MAP,
-		[DataTypes.Number]: NUMBER_OPERATOR_LONGHAND_LABELS_MAP,
-		[DataTypes.String]: STRING_OPERATOR_LABELS_MAP // STRING_OPERATOR_LABELS_MAP is provided from the segment-editor utils as "NotContains" differs from segment-editor and event-analysis. We should be able to use the evente-analysis version once we move away from odata.
+		[DataTypes.Date]:
+			ATTRIBUTES_DATE_AND_DURATION_OPERATORS_LONGHAND_LABELS_MAP,
+		[DataTypes.Duration]:
+			ATTRIBUTES_DATE_AND_DURATION_OPERATORS_LONGHAND_LABELS_MAP,
+		[DataTypes.Number]: ATTRIBUTES_NUMBER_OPERATOR_LONGHAND_LABELS_MAP,
+		[DataTypes.String]: ATTRIBUTES_STRING_OPERATOR_LABELS_MAP // "NotContains" differs from segment-editor and event-analysis. We should be able to use the evente-analysis version once we move away from odata.
 	};
 
 	return {
@@ -35,14 +64,14 @@ export const createOption = (option, dataType: DataTypes) => {
 };
 
 export const getOperatorOptions = (dataType: DataTypes) => {
-	const OPERATOR_OPTIONS = {
-		[DataTypes.Date]: DATE_OPTIONS,
-		[DataTypes.Duration]: DURATION_OPTIONS,
-		[DataTypes.Number]: NUMBER_OPTIONS,
+	const OPERATOR_OPTIONS: Record<string, string[]> = {
+		[DataTypes.Date]: ATTRIBUTES_DATE_AND_DURATION_OPTIONS,
+		[DataTypes.Duration]: ATTRIBUTES_DATE_AND_DURATION_OPTIONS,
+		[DataTypes.Number]: ATTRIBUTE_NUMBER_OPTIONS,
 		[DataTypes.String]: STRING_OPTIONS // STRING_OPTIONS is provided from the segment-editor utils as "NotContains" differs from segment-editor and event-analysis. We should be able to use the evente-analysis version once we move away from odata.
 	};
 
-	return OPERATOR_OPTIONS[dataType]?.map(option =>
+	return OPERATOR_OPTIONS[dataType]?.map((option: string) =>
 		createOption(option, dataType)
 	);
 };

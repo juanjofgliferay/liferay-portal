@@ -5,6 +5,7 @@
 
 package com.liferay.user.groups.admin.internal.exportimport.data.handler;
 
+import com.liferay.exportimport.constants.ExportImportConstants;
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -17,9 +18,9 @@ import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.user.groups.admin.constants.UserGroupsAdminPortletKeys;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -30,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author David Mendez Gonzalez
  */
 @Component(
-	property = "javax.portlet.name=" + UserGroupsAdminPortletKeys.USER_GROUPS_ADMIN,
+	property = "jakarta.portlet.name=" + UserGroupsAdminPortletKeys.USER_GROUPS_ADMIN,
 	service = PortletDataHandler.class
 )
 public class UserGroupsAdminPortletDataHandler extends BasePortletDataHandler {
@@ -45,6 +46,11 @@ public class UserGroupsAdminPortletDataHandler extends BasePortletDataHandler {
 	}
 
 	@Override
+	public String getSectionKey() {
+		return ExportImportConstants.SECTION_KEY_USERS;
+	}
+
+	@Override
 	public boolean isSupportsDataStrategyCopyAsNew() {
 		return false;
 	}
@@ -52,7 +58,7 @@ public class UserGroupsAdminPortletDataHandler extends BasePortletDataHandler {
 	@Activate
 	protected void activate() {
 		setDataLevel(DataLevel.PORTAL);
-		setExportControls(
+		setExportPortletDataHandlerControls(
 			new PortletDataHandlerBoolean(
 				NAMESPACE, "user-groups", true, true, null,
 				UserGroup.class.getName()));

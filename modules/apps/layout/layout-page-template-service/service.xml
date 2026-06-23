@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.layout.page.template">
 	<namespace>Layout</namespace>
-	<entity local-service="true" name="LayoutPageTemplateCollection" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="LayoutPageTemplateCollection" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -49,12 +49,17 @@
 			<finder-column name="groupId" />
 			<finder-column name="type" />
 		</finder>
+		<finder name="G_P_T" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="parentLayoutPageTemplateCollectionId" />
+			<finder-column name="type" />
+		</finder>
 		<finder name="G_LPTCK_T" return-type="LayoutPageTemplateCollection" unique="true">
 			<finder-column name="groupId" />
 			<finder-column name="layoutPageTemplateCollectionKey" />
 			<finder-column name="type" />
 		</finder>
-		<finder name="G_N_T" return-type="LayoutPageTemplateCollection" unique="true">
+		<finder name="G_N_T" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="name" />
 			<finder-column name="type" />
@@ -64,8 +69,14 @@
 			<finder-column comparator="LIKE" name="name" />
 			<finder-column name="type" />
 		</finder>
+		<finder name="G_P_N_T" return-type="LayoutPageTemplateCollection" unique="true">
+			<finder-column name="groupId" />
+			<finder-column name="parentLayoutPageTemplateCollectionId" />
+			<finder-column name="name" />
+			<finder-column name="type" />
+		</finder>
 	</entity>
-	<entity local-service="true" name="LayoutPageTemplateEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="LayoutPageTemplateEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -89,6 +100,7 @@
 		<column name="layoutPageTemplateEntryKey" type="String" />
 		<column name="classNameId" type="long" />
 		<column name="classTypeId" type="long" />
+		<column name="classTypeKey" type="String" />
 		<column accessor="true" name="name" type="String" />
 		<column name="type" type="int" />
 		<column name="previewFileEntryId" type="long" />
@@ -134,6 +146,10 @@
 			<finder-column name="groupId" />
 			<finder-column arrayable-operator="OR" name="type" />
 		</finder>
+		<finder name="G_S" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="status" />
+		</finder>
 		<finder name="G_L_LikeN" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="layoutPageTemplateCollectionId" />
@@ -149,7 +165,7 @@
 			<finder-column name="layoutPageTemplateCollectionId" />
 			<finder-column name="status" />
 		</finder>
-		<finder name="G_N_T" return-type="LayoutPageTemplateEntry" unique="true">
+		<finder name="G_N_T" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="name" />
 			<finder-column name="type" />
@@ -164,6 +180,12 @@
 			<finder-column arrayable-operator="OR" name="type" />
 			<finder-column name="status" />
 		</finder>
+		<finder name="G_L_N_T" return-type="LayoutPageTemplateEntry" unique="true">
+			<finder-column name="groupId" />
+			<finder-column name="layoutPageTemplateCollectionId" />
+			<finder-column name="name" />
+			<finder-column name="type" />
+		</finder>
 		<finder name="G_L_LikeN_S" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="layoutPageTemplateCollectionId" />
@@ -173,13 +195,13 @@
 		<finder name="G_C_C_T" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classTypeId" />
+			<finder-column name="classTypeKey" />
 			<finder-column name="type" />
 		</finder>
 		<finder name="G_C_C_D" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classTypeId" />
+			<finder-column name="classTypeKey" />
 			<finder-column name="defaultTemplate" />
 		</finder>
 		<finder name="G_C_T_D" return-type="Collection">
@@ -203,28 +225,28 @@
 		<finder name="G_C_C_LikeN_T" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classTypeId" />
+			<finder-column name="classTypeKey" />
 			<finder-column comparator="LIKE" name="name" />
 			<finder-column name="type" />
 		</finder>
 		<finder name="G_C_C_T_S" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classTypeId" />
+			<finder-column name="classTypeKey" />
 			<finder-column name="type" />
 			<finder-column name="status" />
 		</finder>
 		<finder name="G_C_C_D_S" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classTypeId" />
+			<finder-column name="classTypeKey" />
 			<finder-column name="defaultTemplate" />
 			<finder-column name="status" />
 		</finder>
 		<finder name="G_C_C_LikeN_T_S" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classTypeId" />
+			<finder-column name="classTypeKey" />
 			<finder-column comparator="LIKE" name="name" />
 			<finder-column name="type" />
 			<finder-column name="status" />
@@ -284,7 +306,7 @@
 
 		<column name="layoutPageTemplateStructureId" type="long" />
 		<column name="segmentsExperienceId" type="long" />
-		<column change-tracking-resolution-type="merge" name="data" type="String" />
+		<column name="data" type="String" />
 		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -304,11 +326,56 @@
 			<finder-column name="segmentsExperienceId" />
 		</finder>
 	</entity>
+	<entity external-reference-code="group" local-service="true" name="LayoutPageTemplateStructureRelElementVariation" remote-service="false" table="LPTStructureElementVariation" uuid="true">
+
+		<!-- PK fields -->
+
+		<column db-name="lptStructureElementVariationId" name="layoutPageTemplateStructureRelElementVariationId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="audienceEntryERC" type="String" />
+		<column localized="true" name="hide" type="String" />
+		<column localized="true" name="html" type="String" />
+		<column localized="true" name="js" type="String" />
+		<column name="name" type="String" />
+		<column name="plid" type="long" />
+		<column name="segmentsExperienceERC" type="String" />
+		<column name="targetElement" type="String" />
+
+		<!-- Finder methods -->
+
+		<finder name="SegmentsExperienceERC" return-type="Collection">
+			<finder-column name="segmentsExperienceERC" />
+		</finder>
+		<finder name="P_SEERC" return-type="Collection">
+			<finder-column name="plid" />
+			<finder-column name="segmentsExperienceERC" />
+		</finder>
+	</entity>
 	<exceptions>
 		<exception>DuplicateLayoutPageTemplateCollection</exception>
 		<exception>DuplicateLayoutPageTemplateCollectionType</exception>
 		<exception>DuplicateLayoutPageTemplateEntry</exception>
+		<exception>LayoutPageTemplateCollectionGroupId</exception>
+		<exception>LayoutPageTemplateCollectionLayoutPageTemplateCollectionKey</exception>
 		<exception>LayoutPageTemplateCollectionName</exception>
+		<exception>LayoutPageTemplateEntryDefaultTemplate</exception>
+		<exception>LayoutPageTemplateEntryGroupId</exception>
+		<exception>LayoutPageTemplateEntryLayoutPageTemplateCollectionId</exception>
+		<exception>LayoutPageTemplateEntryLayoutPageTemplateEntryKey</exception>
 		<exception>LayoutPageTemplateEntryName</exception>
 		<exception>RequiredLayoutPageTemplateEntry</exception>
 	</exceptions>

@@ -11,12 +11,15 @@ dependencies {
 	compileOnly group: "org.osgi", name: "osgi.core", transitive: false, version: "6.0.0"
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
 	}
 
 	fileNames "org/eclipse/equinox/console/commands/DisconnectCommand.java"
-
 	originalLibModuleName = "org.eclipse.equinox.console"
 }

@@ -26,12 +26,15 @@ deployJar {
 	}
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
 	}
 
 	fileNames "org/apache/commons/configuration/PropertiesConfiguration.java"
-
 	originalLibModuleName = "commons-configuration"
 }

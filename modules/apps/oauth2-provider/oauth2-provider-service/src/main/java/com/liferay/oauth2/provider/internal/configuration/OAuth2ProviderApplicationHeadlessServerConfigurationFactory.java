@@ -9,30 +9,30 @@ import com.liferay.oauth2.provider.configuration.OAuth2ProviderApplicationHeadle
 import com.liferay.oauth2.provider.constants.ClientProfile;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.scope.liferay.ScopeLocator;
 import com.liferay.oauth2.provider.util.OAuth2SecureRandomGenerator;
-import com.liferay.osgi.util.configuration.ConfigurationFactoryUtil;
-import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PropsValues;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Raymond Augé
@@ -45,74 +45,64 @@ import org.osgi.service.component.annotations.ConfigurationPolicy;
 public class OAuth2ProviderApplicationHeadlessServerConfigurationFactory
 	extends BaseConfigurationFactory {
 
-	@Activate
-	protected void activate(Map<String, Object> properties) throws Exception {
-		if (_log.isDebugEnabled()) {
-			_log.debug("Activate " + properties);
-		}
+	@Override
+	protected void doActivate(
+			Map<String, Object> properties, long companyId,
+			String externalReferenceCode)
+		throws Exception {
 
-		ConfigurationFactoryUtil.executeAsCompany(
-			companyLocalService, properties,
-			companyId -> {
-				String externalReferenceCode =
-					ConfigurationFactoryUtil.getExternalReferenceCode(
-						properties);
+		Collection<String> scopeAliases = _scopeLocator.getScopeAliases(
+			companyId);
 
-				OAuth2ProviderApplicationHeadlessServerConfiguration
-					oAuth2ProviderApplicationHeadlessServerConfiguration =
-						ConfigurableUtil.createConfigurable(
-							OAuth2ProviderApplicationHeadlessServerConfiguration.class,
-							properties);
+		OAuth2ProviderApplicationHeadlessServerConfiguration
+			oAuth2ProviderApplicationHeadlessServerConfiguration =
+				ConfigurableUtil.createConfigurable(
+					OAuth2ProviderApplicationHeadlessServerConfiguration.class,
+					properties);
 
-				List<String> scopeAliasesList = ListUtil.fromArray(
-					oAuth2ProviderApplicationHeadlessServerConfiguration.
-						scopes());
+		List<String> scopeAliasesList = TransformUtil.transformToList(
+			oAuth2ProviderApplicationHeadlessServerConfiguration.scopes(),
+			scopeAlias -> {
+				if (!scopeAliases.contains(scopeAlias)) {
+					for (String curScopeAlias : scopeAliases) {
+						if (StringUtil.equalsIgnoreCase(
+								curScopeAlias, scopeAlias)) {
 
-				oAuth2Application = _addOrUpdateOAuth2Application(
-					companyId, externalReferenceCode,
-					oAuth2ProviderApplicationHeadlessServerConfiguration,
-					scopeAliasesList);
-
-				if (_log.isDebugEnabled()) {
-					_log.debug("OAuth 2 application " + oAuth2Application);
+							return curScopeAlias;
+						}
+					}
 				}
 
-				modifyConfigMap(
-					companyLocalService.getCompanyById(companyId),
-					HashMapBuilder.put(
-						externalReferenceCode +
-							".oauth2.headless.server.audience",
-						oAuth2Application.getHomePageURL()
-					).put(
-						externalReferenceCode +
-							".oauth2.headless.server.client.id",
-						oAuth2Application.getClientId()
-					).put(
-						externalReferenceCode +
-							".oauth2.headless.server.client.secret",
-						oAuth2Application.getClientSecret()
-					).put(
-						externalReferenceCode +
-							".oauth2.headless.server.scopes",
-						StringUtil.merge(scopeAliasesList, StringPool.NEW_LINE)
-					).put(
-						externalReferenceCode + ".oauth2.authorization.uri",
-						"/o/oauth2/authorize"
-					).put(
-						externalReferenceCode + ".oauth2.introspection.uri",
-						"/o/oauth2/introspect"
-					).put(
-						externalReferenceCode + ".oauth2.jwks.uri",
-						"/o/oauth2/jwks"
-					).put(
-						externalReferenceCode + ".oauth2.redirect.uris",
-						"/o/oauth2/redirect"
-					).put(
-						externalReferenceCode + ".oauth2.token.uri",
-						"/o/oauth2/token"
-					).build(),
-					properties);
+				return scopeAlias;
 			});
+
+		oAuth2Application = _addOrUpdateOAuth2Application(
+			companyId, externalReferenceCode,
+			oAuth2ProviderApplicationHeadlessServerConfiguration,
+			scopeAliasesList);
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("OAuth 2 application " + oAuth2Application);
+		}
+
+		modifyConfigMap(
+			companyLocalService.getCompanyById(companyId),
+			getExtensionProperties(
+				externalReferenceCode, oAuth2Application
+			).put(
+				externalReferenceCode + ".oauth2.headless.server.audience",
+				oAuth2Application.getHomePageURL()
+			).put(
+				externalReferenceCode + ".oauth2.headless.server.client.id",
+				oAuth2Application.getClientId()
+			).put(
+				externalReferenceCode + ".oauth2.headless.server.client.secret",
+				oAuth2Application.getClientSecret()
+			).put(
+				externalReferenceCode + ".oauth2.headless.server.scopes",
+				StringUtil.merge(scopeAliasesList, StringPool.NEW_LINE)
+			).build(),
+			properties);
 	}
 
 	@Override
@@ -127,23 +117,28 @@ public class OAuth2ProviderApplicationHeadlessServerConfigurationFactory
 			List<String> scopeAliasesList)
 		throws Exception {
 
-		User user = userLocalService.getGuestUser(companyId);
-
-		User serviceUser = _getServiceUser(
-			companyId, oAuth2ProviderApplicationHeadlessServerConfiguration);
-
-		String clientId = OAuth2SecureRandomGenerator.generateClientId();
-		String clientSecret =
-			OAuth2SecureRandomGenerator.generateClientSecret();
-
 		OAuth2Application oAuth2Application =
 			oAuth2ApplicationLocalService.
 				fetchOAuth2ApplicationByExternalReferenceCode(
 					externalReferenceCode, companyId);
 
+		User user = userLocalService.getGuestUser(companyId);
+
+		User serviceUser = null;
+		String clientId = OAuth2SecureRandomGenerator.generateClientId();
+		String clientSecret =
+			OAuth2SecureRandomGenerator.generateClientSecret();
+
 		if (oAuth2Application != null) {
+			serviceUser = userLocalService.getUserById(
+				companyId, oAuth2Application.getClientCredentialUserId());
 			clientId = oAuth2Application.getClientId();
 			clientSecret = oAuth2Application.getClientSecret();
+		}
+		else {
+			serviceUser = _getServiceUser(
+				companyId,
+				oAuth2ProviderApplicationHeadlessServerConfiguration);
 		}
 
 		String homePageURL = getHomePageURL(
@@ -168,18 +163,9 @@ public class OAuth2ProviderApplicationHeadlessServerConfigurationFactory
 				Collections.emptyList(), false, true, null,
 				new ServiceContext());
 
-		oAuth2Application = oAuth2ApplicationLocalService.updateScopeAliases(
-			oAuth2Application.getUserId(), oAuth2Application.getUserName(),
-			oAuth2Application.getOAuth2ApplicationId(), scopeAliasesList);
+		updateScopes(oAuth2Application, scopeAliasesList);
 
-		if (_log.isInfoEnabled()) {
-			_log.info(
-				StringBundler.concat(
-					"OAuth 2 application with external reference code ",
-					oAuth2Application.getExternalReferenceCode(),
-					" and company ID ", oAuth2Application.getCompanyId(),
-					" has client ID ", oAuth2Application.getClientId()));
-		}
+		logOAuth2Application(oAuth2Application);
 
 		return oAuth2Application;
 	}
@@ -220,7 +206,7 @@ public class OAuth2ProviderApplicationHeadlessServerConfigurationFactory
 				_COMPANY_DEFAULT_USER_TOKEN, userAccountScreenName)) {
 
 			return userLocalService.getUserByScreenName(
-				companyId, PropsValues.DEFAULT_ADMIN_SCREEN_NAME);
+				companyId, UserConstants.SCREEN_NAME_DEFAULT_SERVICE_ACCOUNT);
 		}
 
 		return userLocalService.getUserByScreenName(
@@ -232,5 +218,8 @@ public class OAuth2ProviderApplicationHeadlessServerConfigurationFactory
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		OAuth2ProviderApplicationHeadlessServerConfigurationFactory.class);
+
+	@Reference
+	private ScopeLocator _scopeLocator;
 
 }

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import java.time.Duration;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,7 +36,6 @@ import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxBinary;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
-import org.openqa.selenium.firefox.FirefoxProfile;
 import org.openqa.selenium.ie.InternetExplorerDriver;
 import org.openqa.selenium.ie.InternetExplorerOptions;
 import org.openqa.selenium.remote.CapabilityType;
@@ -151,6 +152,11 @@ public class WebDriverUtil {
 		if (Validator.isNotNull(poshiProperties.browserChromeBinFile)) {
 			chromeOptions.setBinary(poshiProperties.browserChromeBinFile);
 		}
+
+		chromeOptions.setCapability(
+			"selenium:sessionTimeout", poshiProperties.timeoutPageLoadWait);
+		chromeOptions.setPageLoadTimeout(
+			Duration.ofSeconds(poshiProperties.timeoutPageLoadWait));
 
 		if (poshiProperties.testRunType.equals("parallel")) {
 			ChromeDriverService chromeDriverService =
@@ -293,21 +299,6 @@ public class WebDriverUtil {
 
 		firefoxOptions.setCapability("locationContextEnabled", false);
 		firefoxOptions.setCapability("marionette", true);
-
-		try {
-			FirefoxProfile firefoxProfile = new FirefoxProfile();
-
-			firefoxProfile.addExtension(
-				WebDriverUtil.class,
-				"/META-INF/resources/firefox/extensions/jserrorcollector.xpi");
-
-			firefoxOptions.setProfile(firefoxProfile);
-		}
-		catch (Exception exception) {
-			System.out.println(
-				"Unable to add the jserrorcollector.xpi extension to the " +
-					"Firefox profile.");
-		}
 
 		return new FirefoxDriver(firefoxOptions);
 	}

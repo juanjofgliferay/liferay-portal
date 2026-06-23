@@ -25,6 +25,7 @@ import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.ListTypeConstants;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.Role;
@@ -65,6 +66,7 @@ import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.comparator.UserIdComparator;
@@ -76,7 +78,6 @@ import com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyUti
 import com.liferay.portal.service.base.UserServiceBaseImpl;
 import com.liferay.portal.service.permission.PasswordPolicyPermissionUtil;
 import com.liferay.portal.service.permission.UserGroupPermissionUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.admin.util.OmniadminUtil;
 import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
@@ -171,10 +172,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			return;
 		}
 
+		validateUserIds(userIds);
+
 		OrganizationPermissionUtil.check(
 			getPermissionChecker(), organizationId, ActionKeys.ASSIGN_MEMBERS);
 
-		validateOrganizationUsers(userIds);
+		validateOrganizationUsers(organizationId, userIds);
 
 		OrganizationMembershipPolicyUtil.checkMembership(
 			userIds, new long[] {organizationId}, null);
@@ -245,7 +248,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 			if (addresses != null) {
 				UsersAdminUtil.updateAddresses(
-					Contact.class.getName(), user.getContactId(), addresses);
+					Contact.class.getName(), user.getContactId(), addresses,
+					ListTypeConstants.CONTACT_ADDRESS);
 			}
 
 			if (emailAddresses != null) {
@@ -864,7 +868,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				serviceContext);
 
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 
 			UsersAdminUtil.updateEmailAddresses(
 				Contact.class.getName(), user.getContactId(), emailAddresses);
@@ -1085,7 +1090,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				serviceContext);
 
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 
 			UsersAdminUtil.updateEmailAddresses(
 				Contact.class.getName(), user.getContactId(), emailAddresses);
@@ -1163,7 +1169,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 	@Override
 	public User fetchUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		User user = userLocalService.fetchUserByExternalReferenceCode(
@@ -1314,7 +1320,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 
 		return userPersistence.findByGtU_C(
-			gtUserId, companyId, 0, size, new UserIdComparator(true));
+			gtUserId, companyId, 0, size, UserIdComparator.getInstance(true));
 	}
 
 	@Override
@@ -1498,7 +1504,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	@Override
 	public long[] getRoleUserIds(long roleId) throws PortalException {
 		RolePermissionUtil.check(
-			getPermissionChecker(), roleId, ActionKeys.VIEW);
+			getPermissionChecker(), roleId, ActionKeys.ASSIGN_MEMBERS);
 
 		return userLocalService.getRoleUserIds(roleId);
 	}
@@ -1523,16 +1529,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		return user;
 	}
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param  companyId the primary key of the user's company
-	 * @param  externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	@Override
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		User user = userLocalService.getUserByExternalReferenceCode(
@@ -2132,6 +2131,30 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			userId, password, emailAddress1, emailAddress2, serviceContext);
 	}
 
+	@Override
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
+		return userLocalService.updateExternalReferenceCode(
+			userId, externalReferenceCode);
+	}
+
+	@Override
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), user.getUserId(), ActionKeys.UPDATE);
+
+		return userLocalService.updateExternalReferenceCode(
+			user, externalReferenceCode);
+	}
+
 	/**
 	 * Updates a user account that was automatically created when a guest user
 	 * participated in an action (e.g. posting a comment) and only provided his
@@ -2283,6 +2306,16 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			updateUserInformation, sendEmail, serviceContext);
 	}
 
+	@Override
+	public User updateLanguageId(long userId, String languageId)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
+		return userLocalService.updateLanguageId(userId, languageId);
+	}
+
 	/**
 	 * Updates whether the user is locked out from logging in.
 	 *
@@ -2298,25 +2331,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), userId, ActionKeys.DELETE);
 
 		return userLocalService.updateLockoutById(userId, lockout);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      openId the new OpenID
-	 * @return     the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		UserPermissionUtil.check(
-			getPermissionChecker(), userId, ActionKeys.UPDATE);
-
-		return userLocalService.updateOpenId(userId, openId);
 	}
 
 	/**
@@ -2434,6 +2448,17 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long userId, int status, ServiceContext serviceContext)
 		throws PortalException {
 
+		return updateStatus(
+			userPersistence.findByPrimaryKey(userId), status, serviceContext);
+	}
+
+	@Override
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		long userId = user.getUserId();
+
 		if ((getUserId() == userId) &&
 			(status != WorkflowConstants.STATUS_APPROVED)) {
 
@@ -2469,7 +2494,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				getPermissionChecker(), userId, ActionKeys.DELETE);
 		}
 
-		return userLocalService.updateStatus(userId, status, serviceContext);
+		return userLocalService.updateStatus(user, status, serviceContext);
 	}
 
 	/**
@@ -2552,7 +2577,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		if (addresses != null) {
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 		}
 
 		if (emailAddresses != null) {
@@ -2920,7 +2946,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		if (addresses != null) {
 			UsersAdminUtil.updateAddresses(
-				Contact.class.getName(), user.getContactId(), addresses);
+				Contact.class.getName(), user.getContactId(), addresses,
+				ListTypeConstants.CONTACT_ADDRESS);
 		}
 
 		if (emailAddresses != null) {
@@ -3507,6 +3534,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
+		boolean strictAssignment = false;
+
+		if (PropsValues.ORGANIZATIONS_ASSIGNMENT_STRICT ||
+			!permissionChecker.isCompanyAdmin()) {
+
+			strictAssignment = true;
+		}
+
 		if (userId != CompanyConstants.SYSTEM) {
 
 			// Add back any mandatory organizations or organizations that the
@@ -3526,6 +3561,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 					(!OrganizationPermissionUtil.contains(
 						permissionChecker, organization,
 						ActionKeys.ASSIGN_MEMBERS) ||
+					 (strictAssignment &&
+					  !OrganizationPermissionUtil.contains(
+						  permissionChecker, organization,
+						  ActionKeys.MANAGE_USERS)) ||
 					 OrganizationMembershipPolicyUtil.isMembershipProtected(
 						 permissionChecker, userId,
 						 organization.getOrganizationId()) ||
@@ -3555,6 +3594,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 			OrganizationPermissionUtil.check(
 				permissionChecker, organization, ActionKeys.ASSIGN_MEMBERS);
+
+			if (strictAssignment) {
+				OrganizationPermissionUtil.check(
+					permissionChecker, organization, ActionKeys.MANAGE_USERS);
+			}
 		}
 
 		return organizationIds;
@@ -3792,13 +3836,15 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 	}
 
-	protected void validateOrganizationUsers(long[] userIds)
+	protected void validateOrganizationUsers(
+			long organizationId, long[] userIds)
 		throws PortalException {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
 		if (!PropsValues.ORGANIZATIONS_ASSIGNMENT_STRICT ||
-			permissionChecker.isCompanyAdmin()) {
+			OrganizationPermissionUtil.contains(
+				permissionChecker, organizationId, ActionKeys.MANAGE_USERS)) {
 
 			return;
 		}
@@ -3900,6 +3946,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		if (userFieldException.hasFields()) {
 			throw userFieldException;
+		}
+	}
+
+	protected void validateUserIds(long[] userIds) throws PortalException {
+		for (long userId : userIds) {
+			getUserById(userId);
 		}
 	}
 

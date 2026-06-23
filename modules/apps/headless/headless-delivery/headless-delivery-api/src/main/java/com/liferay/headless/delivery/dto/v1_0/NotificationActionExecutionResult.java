@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -54,30 +53,40 @@ public class NotificationActionExecutionResult implements Serializable {
 			NotificationActionExecutionResult.class, json);
 	}
 
-	@Schema(
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "Whether to reload the page after the action is executed."
 	)
 	public Boolean getReload() {
+		if (_reloadSupplier != null) {
+			reload = _reloadSupplier.get();
+
+			_reloadSupplier = null;
+		}
+
 		return reload;
 	}
 
 	public void setReload(Boolean reload) {
 		this.reload = reload;
+
+		_reloadSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReload(
 		UnsafeSupplier<Boolean, Exception> reloadUnsafeSupplier) {
 
-		try {
-			reload = reloadUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_reloadSupplier = () -> {
+			try {
+				return reloadUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -86,31 +95,44 @@ public class NotificationActionExecutionResult implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean reload;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Boolean> _reloadSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
 		description = "The localized text to display when an action is executed."
 	)
 	@Valid
 	public FragmentInlineValue getText() {
+		if (_textSupplier != null) {
+			text = _textSupplier.get();
+
+			_textSupplier = null;
+		}
+
 		return text;
 	}
 
 	public void setText(FragmentInlineValue text) {
 		this.text = text;
+
+		_textSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setText(
 		UnsafeSupplier<FragmentInlineValue, Exception> textUnsafeSupplier) {
 
-		try {
-			text = textUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_textSupplier = () -> {
+			try {
+				return textUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -118,6 +140,9 @@ public class NotificationActionExecutionResult implements Serializable {
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FragmentInlineValue text;
+
+	@JsonIgnore
+	private Supplier<FragmentInlineValue> _textSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -148,6 +173,8 @@ public class NotificationActionExecutionResult implements Serializable {
 
 		sb.append("{");
 
+		Boolean reload = getReload();
+
 		if (reload != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -157,6 +184,8 @@ public class NotificationActionExecutionResult implements Serializable {
 
 			sb.append(reload);
 		}
+
+		FragmentInlineValue text = getText();
 
 		if (text != null) {
 			if (sb.length() > 1) {
@@ -173,8 +202,8 @@ public class NotificationActionExecutionResult implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.NotificationActionExecutionResult",
 		name = "x-class-name"
 	)
@@ -220,7 +249,10 @@ public class NotificationActionExecutionResult implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -266,3 +298,4 @@ public class NotificationActionExecutionResult implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1807343799

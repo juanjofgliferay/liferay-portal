@@ -16,7 +16,14 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -28,24 +35,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Riccardo Ferrari
  * @generated
  */
 @Generated("")
-@GraphQLName("Product")
+@GraphQLName(
+	description = "Wire shape for a catalog product uploaded to the analytics pipeline. Carries the metadata the training models need to learn product affinity and content-based recommendations.",
+	value = "Product"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "Wire shape for a catalog product uploaded to the analytics pipeline. Carries the metadata the training models need to learn product affinity and content-based recommendations.",
+	requiredProperties = {"catalogId", "name", "productType"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"catalogId", "name", "productType"})
 @XmlRootElement(name = "Product")
 public class Product implements Serializable {
 
@@ -58,130 +63,211 @@ public class Product implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema(example = "30054")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the catalog the product belongs to (FK identifier).",
+		example = "30054"
+	)
 	public Long getCatalogId() {
+		if (_catalogIdSupplier != null) {
+			catalogId = _catalogIdSupplier.get();
+
+			_catalogIdSupplier = null;
+		}
+
 		return catalogId;
 	}
 
 	public void setCatalogId(Long catalogId) {
 		this.catalogId = catalogId;
+
+		_catalogIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCatalogId(
 		UnsafeSupplier<Long, Exception> catalogIdUnsafeSupplier) {
 
-		try {
-			catalogId = catalogIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_catalogIdSupplier = () -> {
+			try {
+				return catalogIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the catalog the product belongs to (FK identifier)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long catalogId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _catalogIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "References to the categories the product is classified under (FK identifier array).",
+		example = "[10130, 10131]"
+	)
 	public Long[] getCategoryIds() {
+		if (_categoryIdsSupplier != null) {
+			categoryIds = _categoryIdsSupplier.get();
+
+			_categoryIdsSupplier = null;
+		}
+
 		return categoryIds;
 	}
 
 	public void setCategoryIds(Long[] categoryIds) {
 		this.categoryIds = categoryIds;
+
+		_categoryIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCategoryIds(
 		UnsafeSupplier<Long[], Exception> categoryIdsUnsafeSupplier) {
 
-		try {
-			categoryIds = categoryIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_categoryIdsSupplier = () -> {
+			try {
+				return categoryIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "References to the categories the product is classified under (FK identifier array)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] categoryIds;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Long[]> _categoryIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date the product was created, in ISO 8601 (yyyy-MM-dd). Read-only.",
+		example = "2017-07-21"
+	)
 	public Date getCreateDate() {
+		if (_createDateSupplier != null) {
+			createDate = _createDateSupplier.get();
+
+			_createDateSupplier = null;
+		}
+
 		return createDate;
 	}
 
 	public void setCreateDate(Date createDate) {
 		this.createDate = createDate;
+
+		_createDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCreateDate(
 		UnsafeSupplier<Date, Exception> createDateUnsafeSupplier) {
 
-		try {
-			createDate = createDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_createDateSupplier = () -> {
+			try {
+				return createDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	@GraphQLField(
+		description = "Date the product was created, in ISO 8601 (yyyy-MM-dd). Read-only."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date createDate;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _createDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Free-form custom attributes attached to the product. Map keys are the attribute names; values are their typed values serialised as JSON.",
+		example = "{warrantyYears=2}"
+	)
 	@Valid
 	public Map<String, ?> getCustomFields() {
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
 	public void setCustomFields(Map<String, ?> customFields) {
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
 		UnsafeSupplier<Map<String, ?>, Exception> customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Free-form custom attributes attached to the product. Map keys are the attribute names; values are their typed values serialised as JSON."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, ?> customFields;
 
-	@Schema(
-		example = "{hu_HU=Product Description HU, hr_HR=Product Description HR, en_US=Professional hand stainless steel saw for wood. Made to last and saw forever. Made of best steel}"
+	@JsonIgnore
+	private Supplier<Map<String, ?>> _customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized long description of the product. Map keys are locale codes; values are the translated strings.",
+		example = "{en_US=Professional hand stainless steel saw for wood. Made to last and saw forever. Made of best steel, hr_HR=Product Description HR, hu_HU=Product Description HU}"
 	)
 	@Valid
 	public Map<String, String> getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(Map<String, String> description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -189,142 +275,230 @@ public class Product implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized long description of the product. Map keys are locale codes; values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> description;
 
-	@Schema(example = "2017-07-21")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date from which the product is visible on the storefront, in ISO 8601 (yyyy-MM-dd).",
+		example = "2017-07-21"
+	)
 	public Date getDisplayDate() {
+		if (_displayDateSupplier != null) {
+			displayDate = _displayDateSupplier.get();
+
+			_displayDateSupplier = null;
+		}
+
 		return displayDate;
 	}
 
 	public void setDisplayDate(Date displayDate) {
 		this.displayDate = displayDate;
+
+		_displayDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDisplayDate(
 		UnsafeSupplier<Date, Exception> displayDateUnsafeSupplier) {
 
-		try {
-			displayDate = displayDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_displayDateSupplier = () -> {
+			try {
+				return displayDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date from which the product is visible on the storefront, in ISO 8601 (yyyy-MM-dd)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date displayDate;
 
-	@Schema(example = "2017-08-21")
+	@JsonIgnore
+	private Supplier<Date> _displayDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date from which the product is no longer visible on the storefront, in ISO 8601 (yyyy-MM-dd).",
+		example = "2017-08-21"
+	)
 	public Date getExpirationDate() {
+		if (_expirationDateSupplier != null) {
+			expirationDate = _expirationDateSupplier.get();
+
+			_expirationDateSupplier = null;
+		}
+
 		return expirationDate;
 	}
 
 	public void setExpirationDate(Date expirationDate) {
 		this.expirationDate = expirationDate;
+
+		_expirationDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExpirationDate(
 		UnsafeSupplier<Date, Exception> expirationDateUnsafeSupplier) {
 
-		try {
-			expirationDate = expirationDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_expirationDateSupplier = () -> {
+			try {
+				return expirationDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Date from which the product is no longer visible on the storefront, in ISO 8601 (yyyy-MM-dd)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date expirationDate;
 
-	@Schema(example = "AB-34098-789-N")
+	@JsonIgnore
+	private Supplier<Date> _expirationDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Idempotency key for the product; must be unique per product within the company.",
+		example = "AB-34098-789-N"
+	)
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Idempotency key for the product; must be unique per product within the company."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the product (FK identifier). Read-only.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the product (FK identifier). Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized SEO meta description of the product. Map keys are locale codes; values are the translated strings.",
 		example = "{en_US=Meta description HU, hr_HR=Meta description HU, hu_HU=Meta description HU}"
 	)
 	@Valid
 	public Map<String, String> getMetaDescription() {
+		if (_metaDescriptionSupplier != null) {
+			metaDescription = _metaDescriptionSupplier.get();
+
+			_metaDescriptionSupplier = null;
+		}
+
 		return metaDescription;
 	}
 
 	public void setMetaDescription(Map<String, String> metaDescription) {
 		this.metaDescription = metaDescription;
+
+		_metaDescriptionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -332,31 +506,47 @@ public class Product implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			metaDescriptionUnsafeSupplier) {
 
-		try {
-			metaDescription = metaDescriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_metaDescriptionSupplier = () -> {
+			try {
+				return metaDescriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized SEO meta description of the product. Map keys are locale codes; values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> metaDescription;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Map<String, String>> _metaDescriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized SEO meta keywords of the product. Map keys are locale codes; values are the translated strings.",
 		example = "{en_US=Meta keyword HU, hr_HR=Meta keyword HU, hu_HU=Meta keyword HU}"
 	)
 	@Valid
 	public Map<String, String> getMetaKeyword() {
+		if (_metaKeywordSupplier != null) {
+			metaKeyword = _metaKeywordSupplier.get();
+
+			_metaKeywordSupplier = null;
+		}
+
 		return metaKeyword;
 	}
 
 	public void setMetaKeyword(Map<String, String> metaKeyword) {
 		this.metaKeyword = metaKeyword;
+
+		_metaKeywordSupplier = null;
 	}
 
 	@JsonIgnore
@@ -364,31 +554,47 @@ public class Product implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			metaKeywordUnsafeSupplier) {
 
-		try {
-			metaKeyword = metaKeywordUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_metaKeywordSupplier = () -> {
+			try {
+				return metaKeywordUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized SEO meta keywords of the product. Map keys are locale codes; values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> metaKeyword;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Map<String, String>> _metaKeywordSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized SEO meta title of the product. Map keys are locale codes; values are the translated strings.",
 		example = "{en_US=Meta title HU, hr_HR=Meta title HU, hu_HU=Meta title HU}"
 	)
 	@Valid
 	public Map<String, String> getMetaTitle() {
+		if (_metaTitleSupplier != null) {
+			metaTitle = _metaTitleSupplier.get();
+
+			_metaTitleSupplier = null;
+		}
+
 		return metaTitle;
 	}
 
 	public void setMetaTitle(Map<String, String> metaTitle) {
 		this.metaTitle = metaTitle;
+
+		_metaTitleSupplier = null;
 	}
 
 	@JsonIgnore
@@ -396,145 +602,232 @@ public class Product implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			metaTitleUnsafeSupplier) {
 
-		try {
-			metaTitle = metaTitleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_metaTitleSupplier = () -> {
+			try {
+				return metaTitleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized SEO meta title of the product. Map keys are locale codes; values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> metaTitle;
 
-	@Schema(example = "2017-08-21")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _metaTitleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Date the product was last modified, in ISO 8601 (yyyy-MM-dd). Read-only.",
+		example = "2017-08-21"
+	)
 	public Date getModifiedDate() {
+		if (_modifiedDateSupplier != null) {
+			modifiedDate = _modifiedDateSupplier.get();
+
+			_modifiedDateSupplier = null;
+		}
+
 		return modifiedDate;
 	}
 
 	public void setModifiedDate(Date modifiedDate) {
 		this.modifiedDate = modifiedDate;
+
+		_modifiedDateSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setModifiedDate(
 		UnsafeSupplier<Date, Exception> modifiedDateUnsafeSupplier) {
 
-		try {
-			modifiedDate = modifiedDateUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_modifiedDateSupplier = () -> {
+			try {
+				return modifiedDateUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	@GraphQLField(
+		description = "Date the product was last modified, in ISO 8601 (yyyy-MM-dd). Read-only."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Date modifiedDate;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Date> _modifiedDateSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized display name of the product. Map keys are locale codes; values are the translated strings.",
 		example = "{en_US=Hand Saw, hr_HR=Product Name HR, hu_HU=Product Name HU}"
 	)
 	@Valid
 	public Map<String, String> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, String> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized display name of the product. Map keys are locale codes; values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Map<String, String> name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "References to the channels the product is published on (FK identifier array).",
+		example = "[30130, 30131]"
+	)
 	public Long[] getProductChannelIds() {
+		if (_productChannelIdsSupplier != null) {
+			productChannelIds = _productChannelIdsSupplier.get();
+
+			_productChannelIdsSupplier = null;
+		}
+
 		return productChannelIds;
 	}
 
 	public void setProductChannelIds(Long[] productChannelIds) {
 		this.productChannelIds = productChannelIds;
+
+		_productChannelIdsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductChannelIds(
 		UnsafeSupplier<Long[], Exception> productChannelIdsUnsafeSupplier) {
 
-		try {
-			productChannelIds = productChannelIdsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productChannelIdsSupplier = () -> {
+			try {
+				return productChannelIdsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "References to the channels the product is published on (FK identifier array)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long[] productChannelIds;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long[]> _productChannelIdsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Alias for `id`. Reference to the product (FK identifier). Read-only.",
+		example = "30130"
+	)
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Alias for `id`. Reference to the product (FK identifier). Read-only."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long productId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Product option definitions attached to the product."
+	)
 	@Valid
 	public ProductOption[] getProductOptions() {
+		if (_productOptionsSupplier != null) {
+			productOptions = _productOptionsSupplier.get();
+
+			_productOptionsSupplier = null;
+		}
+
 		return productOptions;
 	}
 
 	public void setProductOptions(ProductOption[] productOptions) {
 		this.productOptions = productOptions;
+
+		_productOptionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -542,24 +835,39 @@ public class Product implements Serializable {
 		UnsafeSupplier<ProductOption[], Exception>
 			productOptionsUnsafeSupplier) {
 
-		try {
-			productOptions = productOptionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productOptionsSupplier = () -> {
+			try {
+				return productOptionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Product option definitions attached to the product."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ProductOption[] productOptions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<ProductOption[]> _productOptionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Product specification entries -- such as weight or material -- attached to the product."
+	)
 	@Valid
 	public ProductSpecification[] getProductSpecifications() {
+		if (_productSpecificationsSupplier != null) {
+			productSpecifications = _productSpecificationsSupplier.get();
+
+			_productSpecificationsSupplier = null;
+		}
+
 		return productSpecifications;
 	}
 
@@ -567,6 +875,8 @@ public class Product implements Serializable {
 		ProductSpecification[] productSpecifications) {
 
 		this.productSpecifications = productSpecifications;
+
+		_productSpecificationsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -574,191 +884,301 @@ public class Product implements Serializable {
 		UnsafeSupplier<ProductSpecification[], Exception>
 			productSpecificationsUnsafeSupplier) {
 
-		try {
-			productSpecifications = productSpecificationsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productSpecificationsSupplier = () -> {
+			try {
+				return productSpecificationsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Product specification entries -- such as weight or material -- attached to the product."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ProductSpecification[] productSpecifications;
 
-	@Schema(example = "simple")
+	@JsonIgnore
+	private Supplier<ProductSpecification[]> _productSpecificationsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Key of the product type. Resolved against the registered product types.",
+		example = "simple"
+	)
 	public String getProductType() {
+		if (_productTypeSupplier != null) {
+			productType = _productTypeSupplier.get();
+
+			_productTypeSupplier = null;
+		}
+
 		return productType;
 	}
 
 	public void setProductType(String productType) {
 		this.productType = productType;
+
+		_productTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductType(
 		UnsafeSupplier<String, Exception> productTypeUnsafeSupplier) {
 
-		try {
-			productType = productTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productTypeSupplier = () -> {
+			try {
+				return productTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Key of the product type. Resolved against the registered product types."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String productType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _productTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "SKU variants attached to the product."
+	)
 	@Valid
 	public Sku[] getSkus() {
+		if (_skusSupplier != null) {
+			skus = _skusSupplier.get();
+
+			_skusSupplier = null;
+		}
+
 		return skus;
 	}
 
 	public void setSkus(Sku[] skus) {
 		this.skus = skus;
+
+		_skusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSkus(UnsafeSupplier<Sku[], Exception> skusUnsafeSupplier) {
-		try {
-			skus = skusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skusSupplier = () -> {
+			try {
+				return skusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(description = "SKU variants attached to the product.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Sku[] skus;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Sku[]> _skusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Portal workflow status -- 0=Approved, 1=Pending, 2=Draft, 3=Expired, 4=Inactive, 5=Scheduled, 6=Incomplete, 7=Denied, 8=InTrash.",
+		example = "0"
+	)
 	public Integer getStatus() {
+		if (_statusSupplier != null) {
+			status = _statusSupplier.get();
+
+			_statusSupplier = null;
+		}
+
 		return status;
 	}
 
 	public void setStatus(Integer status) {
 		this.status = status;
+
+		_statusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStatus(
 		UnsafeSupplier<Integer, Exception> statusUnsafeSupplier) {
 
-		try {
-			status = statusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_statusSupplier = () -> {
+			try {
+				return statusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Portal workflow status -- 0=Approved, 1=Pending, 2=Draft, 3=Expired, 4=Inactive, 5=Scheduled, 6=Incomplete, 7=Denied, 8=InTrash."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer status;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _statusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "True when the product can be sold as a subscription; false for one-shot purchases.",
+		example = "true"
+	)
 	public Boolean getSubscriptionEnabled() {
+		if (_subscriptionEnabledSupplier != null) {
+			subscriptionEnabled = _subscriptionEnabledSupplier.get();
+
+			_subscriptionEnabledSupplier = null;
+		}
+
 		return subscriptionEnabled;
 	}
 
 	public void setSubscriptionEnabled(Boolean subscriptionEnabled) {
 		this.subscriptionEnabled = subscriptionEnabled;
+
+		_subscriptionEnabledSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSubscriptionEnabled(
 		UnsafeSupplier<Boolean, Exception> subscriptionEnabledUnsafeSupplier) {
 
-		try {
-			subscriptionEnabled = subscriptionEnabledUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_subscriptionEnabledSupplier = () -> {
+			try {
+				return subscriptionEnabledUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "True when the product can be sold as a subscription; false for one-shot purchases."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean subscriptionEnabled;
 
-	@Schema(example = "[tag1, tag2, tag3]")
+	@JsonIgnore
+	private Supplier<Boolean> _subscriptionEnabledSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Asset tag names attached to the product. Free-form strings.",
+		example = "[tag1, tag2, tag3]"
+	)
 	public String[] getTags() {
+		if (_tagsSupplier != null) {
+			tags = _tagsSupplier.get();
+
+			_tagsSupplier = null;
+		}
+
 		return tags;
 	}
 
 	public void setTags(String[] tags) {
 		this.tags = tags;
+
+		_tagsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTags(
 		UnsafeSupplier<String[], Exception> tagsUnsafeSupplier) {
 
-		try {
-			tags = tagsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_tagsSupplier = () -> {
+			try {
+				return tagsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Asset tag names attached to the product. Free-form strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] tags;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<String[]> _tagsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Localized URL slugs of the product, keyed by locale code. Used to build canonical storefront URLs.",
 		example = "{en_US=product-url-us, hr_HR=product-url-hr, hu_HU=product-url-hu}"
 	)
 	@Valid
 	public Map<String, String> getUrls() {
+		if (_urlsSupplier != null) {
+			urls = _urlsSupplier.get();
+
+			_urlsSupplier = null;
+		}
+
 		return urls;
 	}
 
 	public void setUrls(Map<String, String> urls) {
 		this.urls = urls;
+
+		_urlsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUrls(
 		UnsafeSupplier<Map<String, String>, Exception> urlsUnsafeSupplier) {
 
-		try {
-			urls = urlsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_urlsSupplier = () -> {
+			try {
+				return urlsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Localized URL slugs of the product, keyed by locale code. Used to build canonical storefront URLs."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> urls;
+
+	@JsonIgnore
+	private Supplier<Map<String, String>> _urlsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -790,6 +1210,8 @@ public class Product implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Long catalogId = getCatalogId();
+
 		if (catalogId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -799,6 +1221,8 @@ public class Product implements Serializable {
 
 			sb.append(catalogId);
 		}
+
+		Long[] categoryIds = getCategoryIds();
 
 		if (categoryIds != null) {
 			if (sb.length() > 1) {
@@ -820,6 +1244,8 @@ public class Product implements Serializable {
 			sb.append("]");
 		}
 
+		Date createDate = getCreateDate();
+
 		if (createDate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -834,6 +1260,8 @@ public class Product implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, ?> customFields = getCustomFields();
+
 		if (customFields != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -844,6 +1272,8 @@ public class Product implements Serializable {
 			sb.append(_toJSON(customFields));
 		}
 
+		Map<String, String> description = getDescription();
+
 		if (description != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -853,6 +1283,8 @@ public class Product implements Serializable {
 
 			sb.append(_toJSON(description));
 		}
+
+		Date displayDate = getDisplayDate();
 
 		if (displayDate != null) {
 			if (sb.length() > 1) {
@@ -868,6 +1300,8 @@ public class Product implements Serializable {
 			sb.append("\"");
 		}
 
+		Date expirationDate = getExpirationDate();
+
 		if (expirationDate != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -881,6 +1315,8 @@ public class Product implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -896,6 +1332,8 @@ public class Product implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -905,6 +1343,8 @@ public class Product implements Serializable {
 
 			sb.append(id);
 		}
+
+		Map<String, String> metaDescription = getMetaDescription();
 
 		if (metaDescription != null) {
 			if (sb.length() > 1) {
@@ -916,6 +1356,8 @@ public class Product implements Serializable {
 			sb.append(_toJSON(metaDescription));
 		}
 
+		Map<String, String> metaKeyword = getMetaKeyword();
+
 		if (metaKeyword != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -926,6 +1368,8 @@ public class Product implements Serializable {
 			sb.append(_toJSON(metaKeyword));
 		}
 
+		Map<String, String> metaTitle = getMetaTitle();
+
 		if (metaTitle != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -935,6 +1379,8 @@ public class Product implements Serializable {
 
 			sb.append(_toJSON(metaTitle));
 		}
+
+		Date modifiedDate = getModifiedDate();
 
 		if (modifiedDate != null) {
 			if (sb.length() > 1) {
@@ -950,6 +1396,8 @@ public class Product implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -959,6 +1407,8 @@ public class Product implements Serializable {
 
 			sb.append(_toJSON(name));
 		}
+
+		Long[] productChannelIds = getProductChannelIds();
 
 		if (productChannelIds != null) {
 			if (sb.length() > 1) {
@@ -980,6 +1430,8 @@ public class Product implements Serializable {
 			sb.append("]");
 		}
 
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -989,6 +1441,8 @@ public class Product implements Serializable {
 
 			sb.append(productId);
 		}
+
+		ProductOption[] productOptions = getProductOptions();
 
 		if (productOptions != null) {
 			if (sb.length() > 1) {
@@ -1010,6 +1464,9 @@ public class Product implements Serializable {
 			sb.append("]");
 		}
 
+		ProductSpecification[] productSpecifications =
+			getProductSpecifications();
+
 		if (productSpecifications != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1030,6 +1487,8 @@ public class Product implements Serializable {
 			sb.append("]");
 		}
 
+		String productType = getProductType();
+
 		if (productType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1043,6 +1502,8 @@ public class Product implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Sku[] skus = getSkus();
 
 		if (skus != null) {
 			if (sb.length() > 1) {
@@ -1064,6 +1525,8 @@ public class Product implements Serializable {
 			sb.append("]");
 		}
 
+		Integer status = getStatus();
+
 		if (status != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1074,6 +1537,8 @@ public class Product implements Serializable {
 			sb.append(status);
 		}
 
+		Boolean subscriptionEnabled = getSubscriptionEnabled();
+
 		if (subscriptionEnabled != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1083,6 +1548,8 @@ public class Product implements Serializable {
 
 			sb.append(subscriptionEnabled);
 		}
+
+		String[] tags = getTags();
 
 		if (tags != null) {
 			if (sb.length() > 1) {
@@ -1108,6 +1575,8 @@ public class Product implements Serializable {
 			sb.append("]");
 		}
 
+		Map<String, String> urls = getUrls();
+
 		if (urls != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -1123,8 +1592,8 @@ public class Product implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.machine.learning.dto.v1_0.Product",
 		name = "x-class-name"
 	)
@@ -1170,7 +1639,10 @@ public class Product implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -1216,3 +1688,4 @@ public class Product implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-588184774

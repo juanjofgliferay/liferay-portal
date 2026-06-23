@@ -11,7 +11,6 @@ import com.liferay.headless.admin.address.resource.v1_0.CountryResource;
 import com.liferay.headless.admin.address.resource.v1_0.RegionResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -20,15 +19,15 @@ import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTa
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -56,9 +55,79 @@ public class Mutation {
 	}
 
 	@GraphQLField
+	public boolean deleteCountry(@GraphQLName("countryId") Long countryId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_countryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			countryResource -> countryResource.deleteCountry(countryId));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Response deleteCountryBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_countryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			countryResource -> countryResource.deleteCountryBatch(
+				callbackURL, object));
+	}
+
+	@GraphQLField(description = "Deletes a country.")
+	public boolean deleteCountryByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_countryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			countryResource ->
+				countryResource.deleteCountryByExternalReferenceCode(
+					externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Country patchCountry(
+			@GraphQLName("countryId") Long countryId,
+			@GraphQLName("country") Country country)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_countryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			countryResource -> countryResource.patchCountry(
+				countryId, country));
+	}
+
+	@GraphQLField(
+		description = "Updates the country with information sent in the request body. Only the provided fields are updated."
+	)
+	public Country patchCountryByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("country") Country country)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_countryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			countryResource ->
+				countryResource.patchCountryByExternalReferenceCode(
+					externalReferenceCode, country));
+	}
+
+	@GraphQLField
 	public Response createCountriesPageExportBatch(
 			@GraphQLName("active") Boolean active,
 			@GraphQLName("search") String search,
+			@GraphQLName("filter") String filterString,
 			@GraphQLName("sort") String sortsString,
 			@GraphQLName("callbackURL") String callbackURL,
 			@GraphQLName("contentType") String contentType,
@@ -70,6 +139,7 @@ public class Mutation {
 			this::_populateResourceContext,
 			countryResource -> countryResource.postCountriesPageExportBatch(
 				active, search,
+				_filterBiFunction.apply(countryResource, filterString),
 				_sortsBiFunction.apply(countryResource, sortsString),
 				callbackURL, contentType, fieldNames));
 	}
@@ -98,44 +168,6 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public boolean deleteCountry(@GraphQLName("countryId") Long countryId)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_countryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			countryResource -> countryResource.deleteCountry(countryId));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response deleteCountryBatch(
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_countryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			countryResource -> countryResource.deleteCountryBatch(
-				callbackURL, object));
-	}
-
-	@GraphQLField
-	public Country patchCountry(
-			@GraphQLName("countryId") Long countryId,
-			@GraphQLName("country") Country country)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_countryResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			countryResource -> countryResource.patchCountry(
-				countryId, country));
-	}
-
-	@GraphQLField
 	public Country updateCountry(
 			@GraphQLName("countryId") Long countryId,
 			@GraphQLName("country") Country country)
@@ -160,24 +192,87 @@ public class Mutation {
 				callbackURL, object));
 	}
 
+	@GraphQLField(
+		description = "Replaces the country with information sent in the request body. Any missing fields are deleted unless they are required."
+	)
+	public Country updateCountryByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("country") Country country)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_countryResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			countryResource ->
+				countryResource.putCountryByExternalReferenceCode(
+					externalReferenceCode, country));
+	}
+
 	@GraphQLField
-	public Response createCountryRegionsPageExportBatch(
-			@GraphQLName("countryId") Long countryId,
-			@GraphQLName("active") Boolean active,
-			@GraphQLName("search") String search,
-			@GraphQLName("sort") String sortsString,
+	public boolean deleteRegion(@GraphQLName("regionId") Long regionId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_regionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			regionResource -> regionResource.deleteRegion(regionId));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Response deleteRegionBatch(
 			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("contentType") String contentType,
-			@GraphQLName("fieldNames") String fieldNames)
+			@GraphQLName("object") Object object)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_regionResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			regionResource -> regionResource.postCountryRegionsPageExportBatch(
-				countryId, active, search,
-				_sortsBiFunction.apply(regionResource, sortsString),
-				callbackURL, contentType, fieldNames));
+			regionResource -> regionResource.deleteRegionBatch(
+				callbackURL, object));
+	}
+
+	@GraphQLField(description = "Deletes a region.")
+	public boolean deleteRegionByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_regionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			regionResource ->
+				regionResource.deleteRegionByExternalReferenceCode(
+					externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Region patchRegion(
+			@GraphQLName("regionId") Long regionId,
+			@GraphQLName("region") Region region)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_regionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			regionResource -> regionResource.patchRegion(regionId, region));
+	}
+
+	@GraphQLField(
+		description = "Updates the region with information sent in the request body. Only the provided fields are updated."
+	)
+	public Region patchRegionByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("region") Region region)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_regionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			regionResource -> regionResource.patchRegionByExternalReferenceCode(
+				externalReferenceCode, region));
 	}
 
 	@GraphQLField
@@ -208,7 +303,8 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public Response createRegionsPageExportBatch(
+	public Response createCountryRegionsPageExportBatch(
+			@GraphQLName("countryId") Long countryId,
 			@GraphQLName("active") Boolean active,
 			@GraphQLName("search") String search,
 			@GraphQLName("sort") String sortsString,
@@ -220,47 +316,31 @@ public class Mutation {
 		return _applyComponentServiceObjects(
 			_regionResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			regionResource -> regionResource.postRegionsPageExportBatch(
-				active, search,
+			regionResource -> regionResource.postCountryRegionsPageExportBatch(
+				countryId, active, search,
 				_sortsBiFunction.apply(regionResource, sortsString),
 				callbackURL, contentType, fieldNames));
 	}
 
 	@GraphQLField
-	public boolean deleteRegion(@GraphQLName("regionId") Long regionId)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_regionResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			regionResource -> regionResource.deleteRegion(regionId));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response deleteRegionBatch(
+	public Response createRegionsPageExportBatch(
+			@GraphQLName("active") Boolean active,
+			@GraphQLName("search") String search,
+			@GraphQLName("filter") String filterString,
+			@GraphQLName("sort") String sortsString,
 			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_regionResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			regionResource -> regionResource.deleteRegionBatch(
-				callbackURL, object));
-	}
-
-	@GraphQLField
-	public Region patchRegion(
-			@GraphQLName("regionId") Long regionId,
-			@GraphQLName("region") Region region)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_regionResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			regionResource -> regionResource.patchRegion(regionId, region));
+			regionResource -> regionResource.postRegionsPageExportBatch(
+				active, search,
+				_filterBiFunction.apply(regionResource, filterString),
+				_sortsBiFunction.apply(regionResource, sortsString),
+				callbackURL, contentType, fieldNames));
 	}
 
 	@GraphQLField
@@ -286,6 +366,21 @@ public class Mutation {
 			this::_populateResourceContext,
 			regionResource -> regionResource.putRegionBatch(
 				callbackURL, object));
+	}
+
+	@GraphQLField(
+		description = "Replaces the region with information sent in the request body. Any missing fields are deleted unless they are required."
+	)
+	public Region updateRegionByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode,
+			@GraphQLName("region") Region region)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_regionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			regionResource -> regionResource.putRegionByExternalReferenceCode(
+				externalReferenceCode, region));
 	}
 
 	private <T, R, E1 extends Throwable, E2 extends Throwable> R
@@ -371,11 +466,15 @@ public class Mutation {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 	private VulcanBatchEngineExportTaskResource
@@ -384,3 +483,4 @@ public class Mutation {
 		_vulcanBatchEngineImportTaskResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:643611943

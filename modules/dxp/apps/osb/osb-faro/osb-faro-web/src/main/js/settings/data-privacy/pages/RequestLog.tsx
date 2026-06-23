@@ -1,39 +1,15 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import React from 'react';
 import RequestList from '../hocs/RequestList';
-import {compose} from 'redux';
-import {connect, ConnectedProps} from 'react-redux';
 import {getDataPrivacy} from 'shared/util/breadcrumbs';
-import {RootState} from 'shared/store';
-import {Router} from 'shared/types';
-import {User} from 'shared/util/records';
-import {withCurrentUser} from 'shared/hoc';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useParams} from 'react-router-dom';
+import {useTimeZone} from 'shared/hooks/useTimeZone';
 
-const connector = connect((store: RootState, {groupId}: {groupId: string}) => ({
-	timeZoneId: store.getIn([
-		'projects',
-		groupId,
-		'data',
-		'timeZone',
-		'timeZoneId'
-	])
-}));
-
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-interface IRequestLogProps extends PropsFromRedux {
-	currentUser: User;
-	router: Router;
-}
-
-export const RequestLog: React.FC<IRequestLogProps> = ({
-	currentUser,
-	router,
-	timeZoneId
-}) => {
-	const {
-		params: {groupId}
-	} = router;
+export const RequestLog = () => {
+	const {groupId = ''} = useParams<{groupId: string}>();
+	const currentUser = useCurrentUser();
+	const {timeZoneId} = useTimeZone();
 
 	return (
 		<BasePage
@@ -46,15 +22,10 @@ export const RequestLog: React.FC<IRequestLogProps> = ({
 			]}
 			className='request-log-page-root'
 			documentTitle={Liferay.Language.get('request-log')}
-			groupId={groupId}
 		>
-			<RequestList
-				currentUser={currentUser}
-				router={router}
-				timeZoneId={timeZoneId}
-			/>
+			<RequestList currentUser={currentUser} timeZoneId={timeZoneId} />
 		</BasePage>
 	);
 };
 
-export default compose<any>(withCurrentUser)(RequestLog);
+export default RequestLog;

@@ -9,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.security.audit.storage.model.AuditEvent;
 
@@ -54,6 +55,12 @@ public class AuditEventLocalServiceUtil {
 		com.liferay.portal.kernel.audit.AuditMessage auditMessage) {
 
 		return getService().addAuditEvent(auditMessage);
+	}
+
+	public static void addAuditEvents(
+		List<com.liferay.portal.kernel.audit.AuditMessage> auditMessages) {
+
+		getService().addAuditEvents(auditMessages);
 	}
 
 	/**
@@ -257,28 +264,32 @@ public class AuditEventLocalServiceUtil {
 	public static List<AuditEvent> getAuditEvents(
 		long companyId, long groupId, long userId, String userName,
 		java.util.Date createDateGT, java.util.Date createDateLT,
-		String eventType, String className, String classPK, String clientHost,
-		String clientIP, String serverName, int serverPort, String sessionID,
+		long[] accountEntryIds, String className, String classPK,
+		String clientHost, String clientIP, String contextName,
+		String eventType, String serverName, int serverPort, String sessionID,
 		boolean andSearch, int start, int end) {
 
 		return getService().getAuditEvents(
 			companyId, groupId, userId, userName, createDateGT, createDateLT,
-			eventType, className, classPK, clientHost, clientIP, serverName,
-			serverPort, sessionID, andSearch, start, end);
+			accountEntryIds, className, classPK, clientHost, clientIP,
+			contextName, eventType, serverName, serverPort, sessionID,
+			andSearch, start, end);
 	}
 
 	public static List<AuditEvent> getAuditEvents(
 		long companyId, long groupId, long userId, String userName,
 		java.util.Date createDateGT, java.util.Date createDateLT,
-		String eventType, String className, String classPK, String clientHost,
-		String clientIP, String serverName, int serverPort, String sessionID,
+		long[] accountEntryIds, String className, String classPK,
+		String clientHost, String clientIP, String contextName,
+		String eventType, String serverName, int serverPort, String sessionID,
 		boolean andSearch, int start, int end,
 		OrderByComparator<AuditEvent> orderByComparator) {
 
 		return getService().getAuditEvents(
 			companyId, groupId, userId, userName, createDateGT, createDateLT,
-			eventType, className, classPK, clientHost, clientIP, serverName,
-			serverPort, sessionID, andSearch, start, end, orderByComparator);
+			accountEntryIds, className, classPK, clientHost, clientIP,
+			contextName, eventType, serverName, serverPort, sessionID,
+			andSearch, start, end, orderByComparator);
 	}
 
 	/**
@@ -297,14 +308,16 @@ public class AuditEventLocalServiceUtil {
 	public static int getAuditEventsCount(
 		long companyId, long groupId, long userId, String userName,
 		java.util.Date createDateGT, java.util.Date createDateLT,
-		String eventType, String className, String classPK, String clientHost,
-		String clientIP, String serverName, int serverPort, String sessionID,
+		long[] accountEntryIds, String className, String classPK,
+		String clientHost, String clientIP, String contextName,
+		String eventType, String serverName, int serverPort, String sessionID,
 		boolean andSearch) {
 
 		return getService().getAuditEventsCount(
 			companyId, groupId, userId, userName, createDateGT, createDateLT,
-			eventType, className, classPK, clientHost, clientIP, serverName,
-			serverPort, sessionID, andSearch);
+			accountEntryIds, className, classPK, clientHost, clientIP,
+			contextName, eventType, serverName, serverPort, sessionID,
+			andSearch);
 	}
 
 	public static
@@ -347,13 +360,12 @@ public class AuditEventLocalServiceUtil {
 	}
 
 	public static AuditEventLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(AuditEventLocalService service) {
-		_service = service;
-	}
-
-	private static volatile AuditEventLocalService _service;
+	private static final Snapshot<AuditEventLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			AuditEventLocalServiceUtil.class, AuditEventLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1872448875

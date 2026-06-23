@@ -1,26 +1,39 @@
-import client from 'shared/apollo/client';
+import mockStore from 'test/mock-store';
 import React from 'react';
 import Touchpoints from '../Touchpoints';
-import {ApolloProvider} from '@apollo/react-components';
+import {InMemoryCache} from '@apollo/client';
+import {MemoryRouter} from 'react-router-dom';
+import {MockedProvider} from '@apollo/client/testing';
+import {mockPreferenceReq, mockTimeRangeReq} from 'test/graphql-data';
+import {Provider} from 'react-redux';
 import {render} from '@testing-library/react';
-import {StaticRouter} from 'react-router';
-import {waitForLoading} from 'test/helpers';
+import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
+const DefaultComponent = () => (
+	<Provider store={mockStore()}>
+		<MemoryRouter>
+			<MockedProvider
+				cache={
+					new InMemoryCache({
+						addTypename: false,
+						freezeResults: false
+					})
+				}
+				mocks={[mockTimeRangeReq(), mockPreferenceReq()]}
+			>
+				<Touchpoints router={{params: {}, query: {}}} />
+			</MockedProvider>
+		</MemoryRouter>
+	</Provider>
+);
+
 describe('Sites Dashboard Touchpoints Page', () => {
 	it('render', async () => {
-		const {container} = render(
-			<ApolloProvider client={client}>
-				<StaticRouter>
-					<Touchpoints router={{params: {}, query: {}}} />
-				</StaticRouter>
-			</ApolloProvider>
-		);
+		const {container} = render(<DefaultComponent />);
 
-		await waitForLoading(container);
-
-		jest.runAllTimers();
+		await waitForLoadingToBeRemoved(container);
 
 		expect(container).toMatchSnapshot();
 	});

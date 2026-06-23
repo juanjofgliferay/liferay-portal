@@ -15,12 +15,19 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.antivirus.AntivirusScanner;
 import com.liferay.document.library.kernel.antivirus.AntivirusScannerException;
 import com.liferay.document.library.kernel.antivirus.AntivirusVirusFoundException;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
+import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.store.DLStore;
+import com.liferay.document.library.kernel.store.Store;
 import com.liferay.document.library.test.util.DLTestUtil;
 import com.liferay.petra.concurrent.NoticeableThreadPoolExecutor;
 import com.liferay.petra.concurrent.ThreadPoolHandlerAdapter;
 import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.Message;
@@ -28,23 +35,36 @@ import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.constants.TestDataConstants;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
+import com.liferay.portal.kernel.util.SystemProperties;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.io.File;
 import java.io.InputStream;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +75,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.management.DynamicMBean;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -69,18 +91,25 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 
 /**
  * @author Raymond Augé
+ * @author Jorge Garcia
+ * @author Alvaro Saugar
  */
 @RunWith(Arquillian.class)
 public class AsyncAntivirusDLStoreTest {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() {
@@ -124,7 +153,7 @@ public class AsyncAntivirusDLStoreTest {
 			new MockAntivirusScanner(() -> calledScan.set(true)), null);
 
 		_withAsyncAntivirusConfiguration(
-			1, "0 0/1 * * * ?", true,
+			"0 0/1 * * * ?", 1, true,
 			() -> {
 				_messageBus.sendMessage(
 					AntivirusAsyncDestinationNames.ANTIVIRUS,
@@ -186,7 +215,7 @@ public class AsyncAntivirusDLStoreTest {
 			null);
 
 		_withAsyncAntivirusConfiguration(
-			1, "0 0/1 * * * ?", true,
+			"0 0/1 * * * ?", 1, true,
 			() -> {
 				DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
 
@@ -229,7 +258,7 @@ public class AsyncAntivirusDLStoreTest {
 			null);
 
 		_withAsyncAntivirusConfiguration(
-			1, "0 0/1 * * * ?", true,
+			"0 0/1 * * * ?", 1, true,
 			() -> {
 				DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
 
@@ -265,7 +294,7 @@ public class AsyncAntivirusDLStoreTest {
 			new MockAntivirusScanner(() -> calledScan.set(true)), null);
 
 		_withAsyncAntivirusConfiguration(
-			1, "0 0/1 * * * ?", true,
+			"0 0/1 * * * ?", 1, true,
 			() -> {
 				DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
 
@@ -309,16 +338,44 @@ public class AsyncAntivirusDLStoreTest {
 			null);
 
 		_withAsyncAntivirusConfiguration(
-			1, "0 0/1 * * * ?", true,
+			"0 0/1 * * * ?", 1, true,
 			() -> {
 				DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
 
-				DLTestUtil.addDLFileEntry(dlFolder.getFolderId());
+				DLFileEntry dlFileEntry = DLTestUtil.addDLFileEntry(
+					dlFolder.getFolderId());
 
 				Assert.assertTrue(calledScan.get());
 				Assert.assertTrue(firedEventPrepare.get());
 				Assert.assertTrue(firedEventVirusFound.get());
+				Assert.assertNull(
+					_dlFileEntryLocalService.fetchDLFileEntry(
+						dlFileEntry.getFileEntryId()));
+				Assert.assertTrue(
+					ArrayUtil.isEmpty(
+						_store.getFileVersions(
+							dlFileEntry.getCompanyId(),
+							dlFileEntry.getDataRepositoryId(),
+							dlFileEntry.getName())));
 			});
+	}
+
+	@Test
+	public void testFileEntryUpdatedWithVirusThenFileVersionDeleted()
+		throws Exception {
+
+		_testScanUpdatedFileEntry();
+
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"DL_STORE_IMPL", _CLASS_NAME_DB_STORE);
+			SafeCloseable safeCloseable2 =
+				_updateAntivirusAsyncDLStoreWithSafeCloseable()) {
+
+			Thread.sleep(_SLEEP_TIME);
+
+			_testScanUpdatedFileEntry();
+		}
 	}
 
 	@Test
@@ -368,7 +425,7 @@ public class AsyncAntivirusDLStoreTest {
 			null);
 
 		_withAsyncAntivirusConfiguration(
-			1, "0 0/10 * * * ?", false,
+			"0 0/10 * * * ?", 1, false,
 			() -> {
 				DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
 
@@ -401,6 +458,27 @@ public class AsyncAntivirusDLStoreTest {
 					calledSchedule.get() > 0);
 				Assert.assertEquals(count, firedEventPrepare.get());
 			});
+
+		String[] fileNames = FileUtil.listFiles(
+			SystemProperties.get(SystemProperties.TMP_DIR));
+
+		long count = fileNames.length;
+
+		_withAsyncAntivirusConfiguration(
+			"0 0/10 * * * ?", 0, false,
+			() -> {
+				DLFolder dlFolder = DLTestUtil.addDLFolder(_group.getGroupId());
+
+				for (int i = 10; i > 0; i--) {
+					DLTestUtil.addDLFileEntry(dlFolder.getFolderId());
+				}
+			});
+
+		fileNames = FileUtil.listFiles(
+			SystemProperties.get(SystemProperties.TMP_DIR));
+
+		Assert.assertEquals(
+			Arrays.toString(fileNames), count, fileNames.length);
 	}
 
 	@Test
@@ -460,13 +538,19 @@ public class AsyncAntivirusDLStoreTest {
 			MapUtil.singletonDictionary(Constants.SERVICE_RANKING, 100));
 
 		_withAsyncAntivirusConfiguration(
-			5, "0 0/10 * * * ?", true,
+			"0 0/10 * * * ?", 5, true,
 			() -> {
+				ServiceReference<?>[] serviceReferences =
+					_bundleContext.getServiceReferences(
+						DynamicMBean.class.getName(),
+						"(component.name=" +
+							"com.liferay.antivirus.async.store.jmx." +
+								"AntivirusAsyncStatisticsManager)");
+
 				AntivirusAsyncStatisticsManagerMBean
 					antivirusAsyncStatisticsManagerMBean =
-						_bundleContext.getService(
-							_bundleContext.getServiceReference(
-								AntivirusAsyncStatisticsManagerMBean.class));
+						(AntivirusAsyncStatisticsManagerMBean)
+							_bundleContext.getService(serviceReferences[0]);
 
 				Assert.assertNotNull(antivirusAsyncStatisticsManagerMBean);
 
@@ -512,13 +596,52 @@ public class AsyncAntivirusDLStoreTest {
 		};
 	}
 
-	private <S> void _registerService(
+	private <T> T _getService(String className, String componentName)
+		throws Exception {
+
+		String filterString = "(component.name=" + componentName + ")";
+
+		ServiceReference<T>[] serviceReferences = null;
+
+		int waitTime = 0;
+
+		while (ArrayUtil.isEmpty(serviceReferences)) {
+			serviceReferences =
+				(ServiceReference<T>[])_bundleContext.getServiceReferences(
+					className, filterString);
+
+			if (waitTime >= TestPropsValues.CI_TEST_TIMEOUT_TIME) {
+				throw new IllegalStateException(
+					StringBundler.concat(
+						"Timed out while waiting for service ", className, " ",
+						filterString));
+			}
+
+			if (serviceReferences == null) {
+				Thread.sleep(_SLEEP_TIME);
+
+				waitTime += _SLEEP_TIME;
+			}
+		}
+
+		return _bundleContext.getService(serviceReferences[0]);
+	}
+
+	private <S> SafeCloseable _registerService(
 		Class<S> clazz, S service, Dictionary<String, ?> properties) {
 
 		ServiceRegistration<?> serviceRegistration =
 			_bundleContext.registerService(clazz, service, properties);
 
 		_serviceRegistrations.add(serviceRegistration);
+
+		return () -> {
+			_serviceRegistrations.remove(serviceRegistration);
+
+			if (serviceRegistration != null) {
+				serviceRegistration.unregister();
+			}
+		};
 	}
 
 	private SafeCloseable _sync() {
@@ -542,8 +665,127 @@ public class AsyncAntivirusDLStoreTest {
 		};
 	}
 
+	private void _testScanUpdatedFileEntry() throws Exception {
+		AtomicBoolean firedEventPrepare = new AtomicBoolean();
+		AtomicBoolean firedEventSuccess = new AtomicBoolean();
+		AtomicBoolean firedEventVirusFound = new AtomicBoolean();
+		AtomicInteger scanCount = new AtomicInteger(0);
+
+		try (SafeCloseable closeable1 = _registerService(
+				AntivirusAsyncEventListener.class,
+				_create(
+					HashMapBuilder.<AntivirusAsyncEvent, Runnable>put(
+						AntivirusAsyncEvent.MISSING,
+						() -> firedEventSuccess.set(true)
+					).put(
+						AntivirusAsyncEvent.PREPARE,
+						() -> firedEventPrepare.set(true)
+					).put(
+						AntivirusAsyncEvent.PROCESSING_ERROR,
+						() -> firedEventSuccess.set(true)
+					).put(
+						AntivirusAsyncEvent.SUCCESS,
+						() -> firedEventSuccess.set(true)
+					).put(
+						AntivirusAsyncEvent.VIRUS_FOUND,
+						() -> firedEventVirusFound.set(true)
+					).build()),
+				MapUtil.singletonDictionary(Constants.SERVICE_RANKING, -100));
+			SafeCloseable closeable2 = _registerService(
+				AntivirusAsyncRetryScheduler.class,
+				ProxyFactory.newDummyInstance(
+					AntivirusAsyncRetryScheduler.class),
+				MapUtil.singletonDictionary(Constants.SERVICE_RANKING, 100));
+			SafeCloseable closeable3 = _registerService(
+				AntivirusScanner.class,
+				new MockAntivirusScanner(
+					() -> {
+						int currentScan = scanCount.getAndIncrement();
+
+						if (currentScan > 0) {
+							throw new AntivirusVirusFoundException(
+								RandomTestUtil.randomString(),
+								RandomTestUtil.randomString());
+						}
+					}),
+				MapUtil.singletonDictionary(Constants.SERVICE_RANKING, 100))) {
+
+			_withAsyncAntivirusConfiguration(
+				"0 0/1 * * * ?", 2, true,
+				() -> {
+					DLFolder dlFolder = DLTestUtil.addDLFolder(
+						_group.getGroupId());
+
+					DLFileEntry dlFileEntry = DLTestUtil.addDLFileEntry(
+						dlFolder.getFolderId());
+
+					dlFileEntry = _dlFileEntryLocalService.updateStatus(
+						TestPropsValues.getUserId(), dlFileEntry,
+						dlFileEntry.getLatestFileVersion(true),
+						WorkflowConstants.STATUS_APPROVED,
+						ServiceContextTestUtil.getServiceContext(
+							_group, TestPropsValues.getUserId()),
+						Collections.emptyMap());
+
+					Assert.assertTrue(firedEventSuccess.get());
+					Assert.assertFalse(firedEventVirusFound.get());
+
+					_dlAppService.updateFileEntry(
+						dlFileEntry.getFileEntryId(), dlFileEntry.getFileName(),
+						dlFileEntry.getMimeType(), dlFileEntry.getTitle(),
+						dlFileEntry.getTitle(), dlFileEntry.getDescription(),
+						null, DLVersionNumberIncrease.MAJOR,
+						TestDataConstants.TEST_BYTE_ARRAY, new Date(), null,
+						null,
+						ServiceContextTestUtil.getServiceContext(
+							dlFolder.getGroupId()));
+
+					Assert.assertTrue(firedEventVirusFound.get());
+
+					DLFileEntry updatedFileEntry =
+						_dlFileEntryLocalService.fetchDLFileEntry(
+							dlFileEntry.getFileEntryId());
+
+					Assert.assertNotNull(updatedFileEntry);
+					Assert.assertEquals("1.0", updatedFileEntry.getVersion());
+
+					Assert.assertFalse(
+						ArrayUtil.isEmpty(
+							_store.getFileVersions(
+								dlFileEntry.getCompanyId(),
+								dlFileEntry.getDataRepositoryId(),
+								dlFileEntry.getName())));
+				});
+		}
+	}
+
+	private SafeCloseable _updateAntivirusAsyncDLStoreWithSafeCloseable()
+		throws Exception {
+
+		_configuration = _configurationAdmin.getConfiguration(
+			AntivirusAsyncConfiguration.class.getName(), "?");
+
+		_configuration.update(
+			HashMapDictionaryBuilder.<String, Object>put(
+				"batchScanCronExpression", "0 0 * 5 * ?"
+			).put(
+				"maximumQueueSize", 1
+			).put(
+				"retryCronExpression", "0 0/5 * * * ?"
+			).build());
+
+		DLStore dlStore = _getService(
+			DLStore.class.getName(),
+			"com.liferay.antivirus.async.store.internal.AntivirusAsyncDLStore");
+
+		Store store = ReflectionTestUtil.getAndSetFieldValue(
+			dlStore, "_store", _dbStore);
+
+		return () -> ReflectionTestUtil.setFieldValue(dlStore, "_store", store);
+	}
+
 	private void _withAsyncAntivirusConfiguration(
-			int maximumQueueSize, String retryCronExpression, boolean sync,
+			String batchScanCronExpression, int maximumQueueSize, boolean sync,
 			UnsafeRunnable<Exception> unsafeRunnable)
 		throws Exception {
 
@@ -551,9 +793,9 @@ public class AsyncAntivirusDLStoreTest {
 				new ConfigurationTemporarySwapper(
 					AntivirusAsyncConfiguration.class.getName(),
 					HashMapDictionaryBuilder.<String, Object>put(
-						"maximumQueueSize", maximumQueueSize
+						"batch-scan-cron-expression", batchScanCronExpression
 					).put(
-						"retryCronExpression", retryCronExpression
+						"maximumQueueSize", maximumQueueSize
 					).build())) {
 
 			if (sync) {
@@ -567,7 +809,26 @@ public class AsyncAntivirusDLStoreTest {
 		}
 	}
 
+	private static final String _CLASS_NAME_DB_STORE =
+		"com.liferay.portal.store.db.DBStore";
+
+	private static final int _SLEEP_TIME = 2000;
+
 	private static BundleContext _bundleContext;
+
+	private Configuration _configuration;
+
+	@Inject
+	private ConfigurationAdmin _configurationAdmin;
+
+	@Inject(filter = "store.type=" + _CLASS_NAME_DB_STORE)
+	private Store _dbStore;
+
+	@Inject
+	private DLAppService _dlAppService;
+
+	@Inject
+	private DLFileEntryLocalService _dlFileEntryLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;
@@ -577,6 +838,9 @@ public class AsyncAntivirusDLStoreTest {
 
 	private final List<ServiceRegistration<?>> _serviceRegistrations =
 		new ArrayList<>();
+
+	@Inject
+	private Store _store;
 
 	private final NoticeableThreadPoolExecutor
 		_syncNoticeableThreadPoolExecutor = new NoticeableThreadPoolExecutor(
@@ -611,8 +875,8 @@ public class AsyncAntivirusDLStoreTest {
 		}
 
 		@Override
-		public void scan(File file) {
-			throw new UnsupportedOperationException();
+		public void scan(File file) throws AntivirusScannerException {
+			_unsafeRunnable.run();
 		}
 
 		@Override

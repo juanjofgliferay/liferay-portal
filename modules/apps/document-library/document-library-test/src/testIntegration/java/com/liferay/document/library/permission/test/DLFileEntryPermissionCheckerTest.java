@@ -74,7 +74,7 @@ public class DLFileEntryPermissionCheckerTest extends BasePermissionTestCase {
 		return DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), group.getGroupId(), folderId,
 			RandomTestUtil.randomString() + ".txt", ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null,
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				group.getGroupId(), TestPropsValues.getUserId()));
 	}
@@ -124,13 +124,14 @@ public class DLFileEntryPermissionCheckerTest extends BasePermissionTestCase {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLFileEntryPermissionCheckerTest.class);
 
+	private FileEntry _fileEntry;
+
 	@Inject(
 		filter = "model.class.name=com.liferay.portal.kernel.repository.model.FileEntry"
 	)
-	private static ModelResourcePermission<FileEntry>
+	private ModelResourcePermission<FileEntry>
 		_fileEntryModelResourcePermission;
 
-	private FileEntry _fileEntry;
 	private FileEntry _subfileEntry;
 
 }

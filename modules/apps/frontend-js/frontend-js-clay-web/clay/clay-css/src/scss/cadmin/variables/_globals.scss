@@ -1,0 +1,1027 @@
+// The keyword `clay-unset` allows unsetting a Sass variable value so it doesn't get output in the final CSS file.
+
+$cadmin-clay-unset: clay-unset !default;
+
+// An alias for `$cadmin-clay-unset`
+
+$cadmin-c-unset: $cadmin-clay-unset !default;
+
+$cadmin-clay-unset-placeholder: clay-unset-placeholder !default;
+
+// Settings
+
+$cadmin-enable-c-inner: true !default;
+$cadmin-enable-lexicon-flat-colors: true !default;
+$cadmin-enable-scaling-components: true !default;
+
+$cadmin-enable-focus-visible: true !default;
+
+$focus-visible-selector: if(
+	$cadmin-enable-focus-visible,
+	'&:focus-visible',
+	'&:focus'
+) !default;
+
+$c-prefers-focus-selector: null !default;
+
+$cadmin-scaling-breakpoint-down: sm !default;
+
+// This enables Clay color functions to get the fallback color of a CSS Custom Property, convert it to the correct Sass type color, then process it using the corresponding Sass color function. The Clay color function will return a CSS color value. Set this variable to `false` if you want the Clay color function to return the CSS Custom Property without any modifications.
+
+$cadmin-enable-clay-color-functions-process-fallback: true !default;
+
+$cadmin-enable-caret: false !default;
+$cadmin-enable-deprecation-messages: true !default;
+$cadmin-enable-gradients: false !default;
+$cadmin-enable-grid-classes: true !default;
+$cadmin-enable-pagination-sizes: false !default;
+$cadmin-enable-pointer-cursor-for-buttons: true !default;
+$cadmin-enable-prefers-reduced-motion-media-query: true !default;
+$cadmin-enable-print-styles: true !default;
+$cadmin-enable-responsive-font-sizes: false !default;
+$cadmin-enable-rounded: true !default;
+$cadmin-enable-shadows: true !default;
+$cadmin-enable-transitions: true !default;
+$cadmin-enable-validation-icons: false !default;
+
+// Deprecated, no longer affects any compiled CSS
+
+$cadmin-enable-hover-media-query: false !default;
+
+$cadmin-selector: ':not(#__):not(#___)' !default;
+
+$cadmin-white: var(--cadmin-white) !default;
+
+$cadmin-gray-100: var(--cadmin-gray-100) !default;
+$cadmin-gray-200: var(--cadmin-gray-200) !default;
+$cadmin-gray-300: var(--cadmin-gray-300) !default;
+$cadmin-gray-400: var(--cadmin-gray-400) !default;
+$cadmin-gray-500: var(--cadmin-gray-500) !default;
+$cadmin-gray-600: var(--cadmin-gray-600) !default;
+$cadmin-gray-700: var(--cadmin-gray-700) !default;
+$cadmin-gray-800: var(--cadmin-gray-800) !default;
+$cadmin-gray-900: var(--cadmin-gray-900) !default;
+
+$cadmin-black: var(--cadmin-black) !default;
+
+$cadmin-grays: () !default;
+$cadmin-grays: map-merge(
+	(
+		'100': $cadmin-gray-100,
+		'200': $cadmin-gray-200,
+		'300': $cadmin-gray-300,
+		'400': $cadmin-gray-400,
+		'500': $cadmin-gray-500,
+		'600': $cadmin-gray-600,
+		'700': $cadmin-gray-700,
+		'800': $cadmin-gray-800,
+		'900': $cadmin-gray-900,
+	),
+	$cadmin-grays
+);
+
+$cadmin-blue: var(--cadmin-blue) !default;
+
+$cadmin-blue-d1: var(--cadmin-blue-d1) !default;
+$cadmin-blue-d2: var(--cadmin-blue-d2) !default;
+$cadmin-blue-d3: var(--cadmin-blue-d3) !default;
+$cadmin-blue-d4: var(--cadmin-blue-d4) !default;
+$cadmin-blue-l1: var(--cadmin-blue-l1) !default;
+$cadmin-blue-l2: var(--cadmin-blue-l2) !default;
+$cadmin-blue-l3: var(--cadmin-blue-l3) !default;
+$cadmin-blue-l4: var(--cadmin-blue-l4) !default;
+$cadmin-blue-l5: var(--cadmin-blue-l5) !default;
+
+$cadmin-indigo: var(--cadmin-indigo) !default;
+
+$cadmin-indigo-d1: var(--cadmin-indigo-d1) !default;
+$cadmin-indigo-d2: var(--cadmin-indigo-d2) !default;
+$cadmin-indigo-d3: var(--cadmin-indigo-d3) !default;
+$cadmin-indigo-d4: var(--cadmin-indigo-d4) !default;
+$cadmin-indigo-l1: var(--cadmin-indigo-l1) !default;
+$cadmin-indigo-l2: var(--cadmin-indigo-l2) !default;
+$cadmin-indigo-l3: var(--cadmin-indigo-l3) !default;
+$cadmin-indigo-l4: var(--cadmin-indigo-l4) !default;
+$cadmin-indigo-l5: var(--cadmin-indigo-l5) !default;
+
+$cadmin-purple: var(--cadmin-purple) !default;
+
+$cadmin-purple-d1: var(--cadmin-purple-d1) !default;
+$cadmin-purple-d2: var(--cadmin-purple-d2) !default;
+$cadmin-purple-d3: var(--cadmin-purple-d3) !default;
+$cadmin-purple-d4: var(--cadmin-purple-d4) !default;
+$cadmin-purple-l1: var(--cadmin-purple-l1) !default;
+$cadmin-purple-l2: var(--cadmin-purple-l2) !default;
+$cadmin-purple-l3: var(--cadmin-purple-l3) !default;
+$cadmin-purple-l4: var(--cadmin-purple-l4) !default;
+$cadmin-purple-l5: var(--cadmin-purple-l5) !default;
+
+$cadmin-pink: var(--cadmin-pink) !default;
+
+$cadmin-pink-d1: var(--cadmin-pink-d1) !default;
+$cadmin-pink-d2: var(--cadmin-pink-d2) !default;
+$cadmin-pink-d3: var(--cadmin-pink-d3) !default;
+$cadmin-pink-d4: var(--cadmin-pink-d4) !default;
+$cadmin-pink-l1: var(--cadmin-pink-l1) !default;
+$cadmin-pink-l2: var(--cadmin-pink-l2) !default;
+$cadmin-pink-l3: var(--cadmin-pink-l3) !default;
+$cadmin-pink-l4: var(--cadmin-pink-l4) !default;
+$cadmin-pink-l5: var(--cadmin-pink-l5) !default;
+
+$cadmin-red: var(--cadmin-red) !default;
+
+$cadmin-red-d1: var(--cadmin-red-d1) !default;
+$cadmin-red-d2: var(--cadmin-red-d2) !default;
+$cadmin-red-d3: var(--cadmin-red-d3) !default;
+$cadmin-red-d4: var(--cadmin-red-d4) !default;
+$cadmin-red-l1: var(--cadmin-red-l1) !default;
+$cadmin-red-l2: var(--cadmin-red-l2) !default;
+$cadmin-red-l3: var(--cadmin-red-l3) !default;
+$cadmin-red-l4: var(--cadmin-red-l4) !default;
+$cadmin-red-l5: var(--cadmin-red-l5) !default;
+
+$cadmin-orange: var(--cadmin-orange) !default;
+
+$cadmin-orange-d1: var(--cadmin-orange-d1) !default;
+$cadmin-orange-d2: var(--cadmin-orange-d2) !default;
+$cadmin-orange-d3: var(--cadmin-orange-d3) !default;
+$cadmin-orange-d4: var(--cadmin-orange-d4) !default;
+$cadmin-orange-l1: var(--cadmin-orange-l1) !default;
+$cadmin-orange-l2: var(--cadmin-orange-l2) !default;
+$cadmin-orange-l3: var(--cadmin-orange-l3) !default;
+$cadmin-orange-l4: var(--cadmin-orange-l4) !default;
+$cadmin-orange-l5: var(--cadmin-orange-l5) !default;
+
+$cadmin-yellow: var(--cadmin-yellow) !default;
+
+$cadmin-yellow-d1: var(--cadmin-yellow-d1) !default;
+$cadmin-yellow-d2: var(--cadmin-yellow-d2) !default;
+$cadmin-yellow-d3: var(--cadmin-yellow-d3) !default;
+$cadmin-yellow-d4: var(--cadmin-yellow-d4) !default;
+$cadmin-yellow-l1: var(--cadmin-yellow-l1) !default;
+$cadmin-yellow-l2: var(--cadmin-yellow-l2) !default;
+$cadmin-yellow-l3: var(--cadmin-yellow-l3) !default;
+$cadmin-yellow-l4: var(--cadmin-yellow-l4) !default;
+$cadmin-yellow-l5: var(--cadmin-yellow-l5) !default;
+
+$cadmin-green: var(--cadmin-green) !default;
+
+$cadmin-green-d1: var(--cadmin-green-d1) !default;
+$cadmin-green-d2: var(--cadmin-green-d2) !default;
+$cadmin-green-d3: var(--cadmin-green-d3) !default;
+$cadmin-green-d4: var(--cadmin-green-d4) !default;
+$cadmin-green-l1: var(--cadmin-green-l1) !default;
+$cadmin-green-l2: var(--cadmin-green-l2) !default;
+$cadmin-green-l3: var(--cadmin-green-l3) !default;
+$cadmin-green-l4: var(--cadmin-green-l4) !default;
+$cadmin-green-l5: var(--cadmin-green-l5) !default;
+
+$cadmin-teal: var(--cadmin-teal) !default;
+
+$cadmin-teal-d1: var(--cadmin-teal-d1) !default;
+$cadmin-teal-d2: var(--cadmin-teal-d2) !default;
+$cadmin-teal-d3: var(--cadmin-teal-d3) !default;
+$cadmin-teal-d4: var(--cadmin-teal-d4) !default;
+$cadmin-teal-l1: var(--cadmin-teal-l1) !default;
+$cadmin-teal-l2: var(--cadmin-teal-l2) !default;
+$cadmin-teal-l3: var(--cadmin-teal-l3) !default;
+$cadmin-teal-l4: var(--cadmin-teal-l4) !default;
+$cadmin-teal-l5: var(--cadmin-teal-l5) !default;
+
+$cadmin-cyan: var(--cadmin-cyan) !default;
+
+$cadmin-cyan-d1: var(--cadmin-cyan-d1) !default;
+$cadmin-cyan-d2: var(--cadmin-cyan-d2) !default;
+$cadmin-cyan-d3: var(--cadmin-cyan-d3) !default;
+$cadmin-cyan-d4: var(--cadmin-cyan-d4) !default;
+$cadmin-cyan-l1: var(--cadmin-cyan-l1) !default;
+$cadmin-cyan-l2: var(--cadmin-cyan-l2) !default;
+$cadmin-cyan-l3: var(--cadmin-cyan-l3) !default;
+$cadmin-cyan-l4: var(--cadmin-cyan-l4) !default;
+$cadmin-cyan-l5: var(--cadmin-cyan-l5) !default;
+
+$cadmin-colors: () !default;
+$cadmin-colors: map-merge(
+	(
+		'blue': $cadmin-blue,
+
+		'indigo': $cadmin-indigo,
+
+		'purple': $cadmin-purple,
+
+		'pink': $cadmin-pink,
+
+		'red': $cadmin-red,
+
+		'orange': $cadmin-orange,
+
+		'yellow': $cadmin-yellow,
+
+		'green': $cadmin-green,
+
+		'teal': $cadmin-teal,
+
+		'cyan': $cadmin-cyan,
+
+		'white': $cadmin-white,
+
+		'gray': $cadmin-gray-600,
+
+		'gray-dark': $cadmin-gray-800,
+	),
+	$cadmin-colors
+);
+
+$cadmin-primary: var(--cadmin-primary) !default;
+
+$cadmin-primary-d1: var(--cadmin-primary-d1) !default;
+$cadmin-primary-d2: var(--cadmin-primary-d2) !default;
+$cadmin-primary-l0: var(--cadmin-primary-l0) !default;
+$cadmin-primary-l1: var(--cadmin-primary-l1) !default;
+$cadmin-primary-l2: var(--cadmin-primary-l2) !default;
+$cadmin-primary-l3: var(--cadmin-primary-l3) !default;
+
+$cadmin-secondary: var(--cadmin-secondary) !default;
+
+$cadmin-secondary-d1: var(--cadmin-secondary-d1) !default;
+$cadmin-secondary-d2: var(--cadmin-secondary-d2) !default;
+$cadmin-secondary-l0: var(--cadmin-secondary-l0) !default;
+$cadmin-secondary-l1: var(--cadmin-secondary-l1) !default;
+$cadmin-secondary-l2: var(--cadmin-secondary-l2) !default;
+$cadmin-secondary-l3: var(--cadmin-secondary-l3) !default;
+
+$cadmin-info: var(--cadmin-info) !default;
+
+$cadmin-info-d1: var(--cadmin-info-d1) !default;
+$cadmin-info-d2: var(--cadmin-info-d2) !default;
+$cadmin-info-l1: var(--cadmin-info-l1) !default;
+$cadmin-info-l2: var(--cadmin-info-l2) !default;
+
+$cadmin-success: var(--cadmin-success) !default;
+
+$cadmin-success-d1: var(--cadmin-success-d1) !default;
+$cadmin-success-d2: var(--cadmin-success-d2) !default;
+$cadmin-success-l1: var(--cadmin-success-l1) !default;
+$cadmin-success-l2: var(--cadmin-success-l2) !default;
+
+$cadmin-warning: var(--cadmin-warning) !default;
+
+$cadmin-warning-d1: var(--cadmin-warning-d1) !default;
+$cadmin-warning-d2: var(--cadmin-warning-d2) !default;
+$cadmin-warning-l1: var(--cadmin-warning-l1) !default;
+$cadmin-warning-l2: var(--cadmin-warning-l2) !default;
+
+$cadmin-danger: var(--cadmin-danger) !default;
+
+$cadmin-danger-d1: var(--cadmin-danger-d1) !default;
+$cadmin-danger-d2: var(--cadmin-danger-d2) !default;
+$cadmin-danger-l1: var(--cadmin-danger-l1) !default;
+$cadmin-danger-l2: var(--cadmin-danger-l2) !default;
+
+$cadmin-light: var(--cadmin-light) !default;
+
+$cadmin-light-d1: var(--cadmin-light-d1) !default;
+$cadmin-light-d2: var(--cadmin-light-d2) !default;
+$cadmin-light-l1: var(--cadmin-light-l1) !default;
+$cadmin-light-l2: var(--cadmin-light-l2) !default;
+
+$cadmin-dark: var(--cadmin-dark) !default;
+
+$cadmin-dark-d1: var(--cadmin-dark-d1) !default;
+$cadmin-dark-d2: var(--cadmin-dark-d2) !default;
+$cadmin-dark-l1: var(--cadmin-dark-l1) !default;
+$cadmin-dark-l2: var(--cadmin-dark-l2) !default;
+
+$cadmin-theme-colors: () !default;
+$cadmin-theme-colors: map-merge(
+	(
+		'primary': $cadmin-primary,
+
+		'secondary': $cadmin-secondary,
+
+		'success': $cadmin-success,
+
+		'info': $cadmin-info,
+
+		'warning': $cadmin-warning,
+
+		'danger': $cadmin-danger,
+
+		'light': $cadmin-light,
+
+		'dark': $cadmin-dark,
+	),
+	$cadmin-theme-colors
+);
+
+// Set a specific jump point for requesting color jumps
+
+$cadmin-theme-color-interval: 8% !default;
+
+// The yiq lightness value that determines when the lightness of color changes from "dark" to "light". Acceptable values are between 0 and 255.
+
+$cadmin-yiq-contrasted-threshold: 150 !default;
+
+$cadmin-yiq-text-dark: $cadmin-gray-900 !default;
+$cadmin-yiq-text-light: $cadmin-white !default;
+
+// Characters which are escaped by the escape-svg function
+
+$cadmin-escaped-characters: (('<', '%3c'), ('>', '%3e'), ('#', '%23')) !default;
+
+// Spacers
+
+$cadmin-spacer: 16px !default;
+$cadmin-spacers: () !default;
+$cadmin-spacers: map-deep-merge(
+	(
+		0: 0,
+		1: $cadmin-spacer * 0.25,
+		2: $cadmin-spacer * 0.5,
+		3: $cadmin-spacer * 1,
+		4: $cadmin-spacer * 1.5,
+		5: $cadmin-spacer * 3,
+		6: $cadmin-spacer * 4.5,
+		7: $cadmin-spacer * 6,
+		8: $cadmin-spacer * 7.5,
+		9: $cadmin-spacer * 9,
+		10: $cadmin-spacer * 10,
+	),
+	$cadmin-spacers
+);
+
+// This variable affects the `.h-*` and `.w-*` classes.
+
+$cadmin-sizes: () !default;
+$cadmin-sizes: map-merge(
+	(
+		25: 25%,
+		50: 50%,
+		75: 75%,
+		100: 100%,
+		auto: auto,
+	),
+	$cadmin-sizes
+);
+
+// Reusable Values
+
+$cadmin-line-height-lg: 1.5 !default;
+$cadmin-line-height-sm: 1.5 !default;
+
+$cadmin-border-color: $cadmin-gray-300 !default;
+$cadmin-border-width: 1px !default;
+
+$cadmin-border-radius: 4px !default; // 4px
+$cadmin-border-radius-lg: 6px !default; // 6px
+$cadmin-border-radius-sm: 3px !default; // 3px
+$cadmin-border-radius-xl: 16px !default; // 16px
+
+$cadmin-rounded-0-border-radius: 0px !default;
+$cadmin-rounded-border-radius: $cadmin-border-radius !default;
+$cadmin-rounded-circle-border-radius: 5000px !default;
+$cadmin-rounded-pill: 800px !default;
+
+$cadmin-box-shadow: unquote(
+	'0 8px 16px hsl(from #{$cadmin-black} h s l / 0.15)'
+) !default;
+$cadmin-box-shadow-sm: unquote(
+	'0 2px 4px hsl(from #{$cadmin-black} h s l / 0.075)'
+) !default;
+$cadmin-box-shadow-lg: unquote(
+	'0 16px 48px hsl(from #{$cadmin-black} h s l / 0.175)'
+) !default;
+
+$cadmin-caret-width: 0.3em !default;
+
+$cadmin-caret-spacing: calc(#{$cadmin-caret-width} * 0.85) !default;
+$cadmin-caret-vertical-align: calc(#{$cadmin-caret-width} * 0.85) !default;
+
+$cadmin-transition-base: all 0.2s ease-in-out !default;
+$cadmin-transition-collapse: height 0.35s ease !default;
+$cadmin-transition-fade: opacity 0.15s linear !default;
+
+$cadmin-embed-responsive-aspect-ratios: () !default;
+$cadmin-embed-responsive-aspect-ratios: join(
+	((21 9), (16 9), (4 3), (1 1)),
+	$cadmin-embed-responsive-aspect-ratios
+);
+
+$cadmin-component-transition:
+	color 0.15s ease-in-out,
+	background-color 0.15s ease-in-out,
+	border-color 0.15s ease-in-out,
+	box-shadow 0.15s ease-in-out !default;
+
+$cadmin-component-focus-box-shadow: unquote(
+	'0 0 0 2px #{$cadmin-white}, 0 0 0 4px #{$cadmin-primary-l0}'
+) !default;
+$cadmin-component-focus-inset-box-shadow: unquote(
+	'inset 0 0 0 2px #{$cadmin-primary-l0}, inset 0 0 0 4px #{$cadmin-white}'
+) !default;
+
+$cadmin-component-active-bg: $cadmin-primary !default;
+$cadmin-component-active-color: $cadmin-white !default;
+
+$cadmin-component-disabled-opacity: 0.4 !default;
+
+// Cursors
+
+$cadmin-link-cursor: pointer !default;
+
+$cadmin-disabled-cursor: not-allowed !default;
+
+// Grid
+
+$cadmin-grid-breakpoints: (
+	xs: 0,
+
+	sm: 576px,
+
+	md: 768px,
+
+	lg: 992px,
+
+	xl: 1280px,
+) !default;
+
+@include _assert-ascending(
+	$cadmin-grid-breakpoints,
+	'$cadmin-grid-breakpoints'
+);
+@include _assert-starts-at-zero(
+	$cadmin-grid-breakpoints,
+	'$cadmin-grid-breakpoints'
+);
+
+// Grid columns
+
+$cadmin-grid-columns: 12 !default;
+$cadmin-grid-gutter-width: 24px !default;
+$cadmin-grid-row-columns: 6 !default;
+
+// Containers
+
+$cadmin-clay-container: () !default;
+$cadmin-clay-container: map-merge(
+	(
+		margin-left: auto,
+		margin-right: auto,
+		padding-left: calc(#{$cadmin-grid-gutter-width} * 0.5),
+		padding-right: calc(#{$cadmin-grid-gutter-width} * 0.5),
+		width: 100%,
+	),
+	$cadmin-clay-container
+);
+
+$cadmin-clay-container-fluid: () !default;
+$cadmin-clay-container-fluid: map-merge(
+	(
+		margin-left: auto,
+		margin-right: auto,
+		padding-left: calc(#{$cadmin-grid-gutter-width} * 0.5),
+		padding-right: calc(#{$cadmin-grid-gutter-width} * 0.5),
+		width: 100%,
+	),
+	$cadmin-clay-container-fluid
+);
+
+$cadmin-container-max-widths: (
+	sm: 540px,
+
+	md: 720px,
+
+	lg: 960px,
+
+	xl: 1248px,
+
+	xxl: 1392px,
+
+	xxxl: 1872px,
+) !default;
+
+@include _assert-ascending(
+	$cadmin-container-max-widths,
+	'$cadmin-container-max-widths'
+);
+
+$cadmin-container-form-lg: () !default;
+$cadmin-container-form-lg: map-deep-merge(
+	(
+		breakpoint-up: lg,
+		padding-bottom: 48px,
+		padding-top: 48px,
+		padding-bottom-mobile: 16px,
+		padding-top-mobile: 16px,
+	),
+	$cadmin-container-form-lg
+);
+
+$cadmin-container-view: () !default;
+$cadmin-container-view: map-deep-merge(
+	(
+		padding-bottom: 24px,
+		padding-top: 24px,
+	),
+	$cadmin-container-view
+);
+
+// Fonts
+
+$cadmin-moz-osx-font-smoothing: grayscale !default;
+$cadmin-webkit-font-smoothing: antialiased !default;
+
+$cadmin-font-import-url: null !default;
+
+$cadmin-font-family-sans-serif:
+	system-ui,
+	-apple-system,
+	BlinkMacSystemFont,
+	'Segoe UI',
+	Roboto,
+	Oxygen-Sans,
+	Ubuntu,
+	Cantarell,
+	'Helvetica Neue',
+	Arial,
+	sans-serif,
+	'Apple Color Emoji',
+	'Segoe UI Emoji',
+	'Segoe UI Symbol' !default;
+
+$cadmin-font-family-serif: Georgia, 'Times New Roman', Times, serif !default;
+
+$cadmin-font-family-monospace: SFMono-Regular, Menlo, Monaco, Consolas,
+	'Liberation Mono', 'Courier New', monospace !default;
+
+$cadmin-font-family-base: $cadmin-font-family-sans-serif !default;
+
+$cadmin-font-size-base: 16px !default; // 16px
+$cadmin-font-size-lg: 18px !default; // 18px
+$cadmin-font-size-sm: 14px !default; // 14px
+
+$cadmin-font-size-base-mobile: $cadmin-font-size-base !default;
+$cadmin-font-size-lg-mobile: $cadmin-font-size-lg !default;
+
+$cadmin-font-weight-lighter: lighter !default;
+
+$cadmin-font-weight-light: 300 !default;
+
+$cadmin-font-weight-normal: 400 !default;
+
+$cadmin-font-weight-semi-bold: 600 !default;
+
+$cadmin-font-weight-bold: 700 !default;
+
+$cadmin-font-weight-bolder: 900 !default;
+
+$cadmin-font-weight-base: $cadmin-font-weight-normal !default;
+$cadmin-line-height-base: 1.5 !default;
+
+// h1, .h1
+
+$cadmin-h1-font-size: 26px !default; // 26px
+
+$cadmin-h1-font-size-mobile: null !default;
+
+$cadmin-h1: () !default;
+$cadmin-h1: map-deep-merge(
+	(
+		font-size: $cadmin-h1-font-size,
+
+		media-breakpoint-down: (
+			sm: (
+				font-size: $cadmin-h1-font-size-mobile,
+			),
+		),
+	),
+	$cadmin-h1
+);
+
+// h2, .h2
+
+$cadmin-h2-font-size: 22px !default; // 22px
+
+$cadmin-h2-font-size-mobile: null !default;
+
+$cadmin-h2: () !default;
+$cadmin-h2: map-deep-merge(
+	(
+		font-size: $cadmin-h2-font-size,
+
+		media-breakpoint-down: (
+			sm: (
+				font-size: $cadmin-h2-font-size-mobile,
+			),
+		),
+	),
+	$cadmin-h2
+);
+
+// h3, .h3
+
+$cadmin-h3-font-size: 19px !default; // 19px
+
+$cadmin-h3-font-size-mobile: null !default;
+
+$cadmin-h3: () !default;
+$cadmin-h3: map-deep-merge(
+	(
+		font-size: $cadmin-h3-font-size,
+
+		media-breakpoint-down: (
+			sm: (
+				font-size: $cadmin-h3-font-size-mobile,
+			),
+		),
+	),
+	$cadmin-h3
+);
+
+// h4, .h4
+
+$cadmin-h4-font-size: 16px !default; // 16px
+
+$cadmin-h4-font-size-mobile: null !default;
+
+$cadmin-h4: () !default;
+$cadmin-h4: map-deep-merge(
+	(
+		font-size: $cadmin-h4-font-size,
+
+		media-breakpoint-down: (
+			sm: (
+				font-size: $cadmin-h4-font-size-mobile,
+			),
+		),
+	),
+	$cadmin-h4
+);
+
+// h5, .h5
+
+$cadmin-h5-font-size: 14px !default; // 14px
+
+$cadmin-h5-font-size-mobile: null !default;
+
+$cadmin-h5: () !default;
+$cadmin-h5: map-deep-merge(
+	(
+		font-size: $cadmin-h5-font-size,
+
+		media-breakpoint-down: (
+			sm: (
+				font-size: $cadmin-h5-font-size-mobile,
+			),
+		),
+	),
+	$cadmin-h5
+);
+
+// h6, .h6
+
+$cadmin-h6-font-size: 13px !default; // 13px
+
+$cadmin-h6-font-size-mobile: null !default;
+
+$cadmin-h6: () !default;
+$cadmin-h6: map-deep-merge(
+	(
+		font-size: $cadmin-h6-font-size,
+
+		media-breakpoint-down: (
+			sm: (
+				font-size: $cadmin-h6-font-size-mobile,
+			),
+		),
+	),
+	$cadmin-h6
+);
+
+// Headings h1-h6
+
+$cadmin-headings-color: null !default;
+$cadmin-headings-font-family: null !default;
+$cadmin-headings-font-weight: $cadmin-font-weight-bold !default;
+$cadmin-headings-line-height: 1.2 !default;
+$cadmin-headings-margin-bottom: calc(#{$cadmin-spacer} * 0.5) !default;
+
+$cadmin-headings: () !default;
+$cadmin-headings: map-deep-merge(
+	(
+		color: $cadmin-headings-color,
+		font-family: $cadmin-headings-font-family,
+		font-weight: $cadmin-headings-font-weight,
+		line-height: $cadmin-headings-line-height,
+		margin-bottom: $cadmin-headings-margin-bottom,
+		margin-top: 0px,
+	),
+	$cadmin-headings
+);
+
+// This is similar to the html and body tag allows you to isolate all styles inside it.
+
+$cadmin: () !default;
+$cadmin: map-merge(
+	(
+		-moz-osx-font-smoothing: grayscale,
+		-webkit-font-smoothing: antialiased,
+		animation: none,
+		background-color: transparent,
+		background-image: none,
+		border-width: 0px,
+		box-shadow: none,
+		box-sizing: border-box,
+		color: $cadmin-gray-900,
+		font-family: $cadmin-font-family-base,
+		font-size: $cadmin-font-size-base,
+		font-style: normal,
+		font-variant: normal,
+		font-weight: $cadmin-font-weight-normal,
+		height: auto,
+		letter-spacing: normal,
+		line-height: $cadmin-line-height-base,
+		margin: 0px,
+		max-height: none,
+		max-width: none,
+		min-height: 0px,
+		min-width: 0px,
+		padding: 0px,
+		text-align: left,
+		text-decoration: none,
+		text-decoration-color: currentcolor,
+		text-indent: 0px,
+		text-shadow: none,
+		text-transform: none,
+		transform: none,
+		transition: none,
+		visibility: visible,
+		white-space: normal,
+		width: auto,
+		word-break: normal,
+		word-spacing: normal,
+		word-wrap: normal
+	),
+	$cadmin
+);
+
+// Sets properties so it inherits from .cadmin or parent element.
+
+$cadmin-reset: () !default;
+$cadmin-reset: map-merge(
+	(
+		animation: none,
+		background-color: transparent,
+		background-image: none,
+		border-width: 0px,
+		box-shadow: none,
+		box-sizing: border-box,
+		color: inherit,
+		font-family: inherit,
+		font-size: inherit,
+		font-style: inherit,
+		font-variant: inherit,
+		font-weight: inherit,
+		height: auto,
+		letter-spacing: inherit,
+		line-height: inherit,
+		margin: 0px,
+		max-height: none,
+		max-width: none,
+		min-height: 0px,
+		min-width: 0px,
+		overflow-wrap: inherit,
+		padding: 0px,
+		text-align: inherit,
+		text-decoration: inherit,
+		text-decoration-color: inherit,
+		text-indent: inherit,
+		text-shadow: inherit,
+		text-transform: inherit,
+		transform: none,
+		transition: none,
+		visibility: inherit,
+		white-space: inherit,
+		width: auto,
+		word-break: inherit,
+		word-spacing: inherit,
+	),
+	$cadmin-reset
+);
+
+// Body
+
+$cadmin-body-bg: $cadmin-white !default;
+$cadmin-body-color: $cadmin-dark-d1 !default;
+
+// Button
+
+$cadmin-c-button-base: () !default;
+$cadmin-c-button-base: map-merge(
+	(-webkit-appearance: button, cursor: $cadmin-link-cursor),
+	$cadmin-c-button-base
+);
+
+// Link
+
+$cadmin-link-color: $cadmin-primary !default;
+$cadmin-link-decoration: none !default;
+
+$cadmin-link-hover-color: $cadmin-primary-d2 !default;
+$cadmin-link-hover-decoration: underline !default;
+
+$cadmin-link: () !default;
+$cadmin-link: map-deep-merge(
+	(
+		border-radius: 1px,
+		color: $cadmin-link-color,
+		cursor: $cadmin-link-cursor,
+		text-decoration: $cadmin-link-decoration,
+		text-underline-offset: 0.23em,
+		transition: clay-enable-transitions($cadmin-component-transition),
+		hover: (
+			color: $cadmin-link-hover-color,
+			text-decoration: $cadmin-link-hover-decoration,
+		),
+
+		focus: (
+			box-shadow: $cadmin-component-focus-box-shadow,
+			outline: 0,
+		),
+	),
+	$cadmin-link
+);
+
+// Darken percentage for links with `.text-*` class (e.g. `.text-success`)
+
+$cadmin-emphasized-link-hover-darken-percentage: 15% !default;
+
+// Paragraph
+
+$cadmin-paragraph-margin-bottom: 16px !default;
+
+// Display
+
+$cadmin-display-line-height: $cadmin-headings-line-height !default;
+
+// .display-1
+
+$cadmin-display1-size: 96px !default;
+$cadmin-display1-weight: 300 !default;
+
+$cadmin-display-1: () !default;
+$cadmin-display-1: map-deep-merge(
+	(
+		font-size: $cadmin-display1-size,
+		font-weight: $cadmin-display1-weight,
+		line-height: $cadmin-display-line-height,
+	),
+	$cadmin-display-1
+);
+
+// .display-2
+
+$cadmin-display2-size: 88px !default;
+$cadmin-display2-weight: 300 !default;
+
+$cadmin-display-2: () !default;
+$cadmin-display-2: map-deep-merge(
+	(
+		font-size: $cadmin-display2-size,
+		font-weight: $cadmin-display2-weight,
+		line-height: $cadmin-display-line-height,
+	),
+	$cadmin-display-2
+);
+
+// .display-3
+
+$cadmin-display3-size: 72px !default;
+$cadmin-display3-weight: 300 !default;
+
+$cadmin-display-3: () !default;
+$cadmin-display-3: map-deep-merge(
+	(
+		font-size: $cadmin-display3-size,
+		font-weight: $cadmin-display3-weight,
+		line-height: $cadmin-display-line-height,
+	),
+	$cadmin-display-3
+);
+
+// .display-4
+
+$cadmin-display4-size: 56px !default;
+$cadmin-display4-weight: 300 !default;
+
+$cadmin-display-4: () !default;
+$cadmin-display-4: map-deep-merge(
+	(
+		font-size: $cadmin-display4-size,
+		font-weight: $cadmin-display4-weight,
+		line-height: $cadmin-display-line-height,
+	),
+	$cadmin-display-4
+);
+
+$cadmin-lead-font-size: calc(#{$cadmin-font-size-base} * 1.25) !default;
+$cadmin-lead-font-weight: 300 !default;
+
+$cadmin-small-font-size: 80% !default;
+
+$cadmin-text-muted: $cadmin-gray-500 !default;
+
+$cadmin-blockquote-small-color: $cadmin-gray-600 !default;
+$cadmin-blockquote-small-font-size: $cadmin-small-font-size !default;
+
+$cadmin-blockquote-font-size: calc(#{$cadmin-font-size-base} * 1.25) !default;
+
+$cadmin-hr-border-color: unquote(
+	'hsl(from #{$cadmin-black} h s l / 0.1)'
+) !default;
+$cadmin-hr-border-width: $cadmin-border-width !default;
+$cadmin-hr-margin-y: $cadmin-spacer !default;
+
+$cadmin-mark-bg: var(--cadmin-yellow-l3) !default;
+$cadmin-mark-color: null !default;
+$cadmin-mark-padding: null !default;
+
+$cadmin-mark: () !default;
+$cadmin-mark: map-deep-merge(
+	(
+		background-color: $cadmin-mark-bg,
+		color: $cadmin-mark-color,
+		display: inline,
+		line-height: normal,
+		padding: $cadmin-mark-padding,
+		position: relative,
+		white-space: pre-wrap,
+	),
+	$cadmin-mark
+);
+
+$cadmin-clay-dark-mark: () !default;
+$cadmin-clay-dark-mark: map-deep-merge(
+	(
+		background-color: $cadmin-dark-l2,
+		color: $cadmin-white,
+	),
+	$cadmin-clay-dark-mark
+);
+
+$cadmin-dt-font-weight: $cadmin-font-weight-bold !default;
+
+$cadmin-code-color: $cadmin-red !default;
+$cadmin-code-font-size: 87.5% !default;
+
+$cadmin-kbd-bg: $cadmin-gray-900 !default;
+$cadmin-kbd-box-shadow: unquote(
+	'inset 0 -1.6px 0 hsl(from #{$cadmin-black} h s l / 0.25)'
+) !default;
+$cadmin-kbd-color: $cadmin-white !default;
+$cadmin-kbd-font-size: $cadmin-code-font-size !default;
+$cadmin-kbd-padding-x: 6.4px !default;
+$cadmin-kbd-padding-y: 3.2px !default;
+
+$cadmin-nested-kbd-font-weight: $cadmin-font-weight-bold !default;
+
+$cadmin-pre-color: $cadmin-gray-900 !default;
+$cadmin-pre-scrollable-max-height: 340px !default;
+
+$cadmin-list-inline-padding: 8px !default;
+
+// Buttons + Forms
+
+$cadmin-label-margin-bottom: 8px !default;
+
+$cadmin-input-btn-font-family: null !default;
+$cadmin-input-btn-font-size: $cadmin-font-size-base !default;
+$cadmin-input-btn-line-height: $cadmin-line-height-base !default;
+$cadmin-input-btn-padding-x: 12px !default;
+$cadmin-input-btn-padding-y: 6px !default;
+
+$cadmin-input-btn-focus-width: 3.2px !default;
+
+$cadmin-input-btn-focus-color: unquote(
+	'hsl(from #{$cadmin-component-active-bg} h s l / 0.25)'
+) !default;
+
+$cadmin-input-btn-focus-box-shadow: 0 0 0 $cadmin-input-btn-focus-width
+	$cadmin-input-btn-focus-color !default;
+
+$cadmin-input-btn-font-size-sm: $cadmin-font-size-sm !default;
+$cadmin-input-btn-line-height-sm: $cadmin-line-height-sm !default;
+$cadmin-input-btn-padding-x-sm: 8px !default;
+$cadmin-input-btn-padding-y-sm: 4px !default;
+
+$cadmin-input-btn-font-size-lg: $cadmin-font-size-lg !default;
+$cadmin-input-btn-line-height-lg: $cadmin-line-height-lg !default;
+$cadmin-input-btn-padding-x-lg: 16px !default;
+$cadmin-input-btn-padding-y-lg: 8px !default;
+
+$cadmin-input-btn-border-width: $cadmin-border-width !default;
+
+// Print
+
+$cadmin-print-body-min-width: map-get($cadmin-grid-breakpoints, 'lg') !default;
+$cadmin-print-page-size: a3 !default;

@@ -10,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -334,6 +335,13 @@ public class CalendarBookingLocalServiceUtil {
 		return getService().fetchCalendarBooking(uuid, groupId);
 	}
 
+	public static CalendarBooking fetchCalendarBookingByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchCalendarBookingByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the calendar booking matching the UUID and group.
 	 *
@@ -372,6 +380,14 @@ public class CalendarBookingLocalServiceUtil {
 
 		return getService().getCalendarBooking(
 			calendarId, parentCalendarBookingId);
+	}
+
+	public static CalendarBooking getCalendarBookingByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getCalendarBookingByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -816,13 +832,13 @@ public class CalendarBookingLocalServiceUtil {
 	}
 
 	public static CalendarBookingLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(CalendarBookingLocalService service) {
-		_service = service;
-	}
-
-	private static volatile CalendarBookingLocalService _service;
+	private static final Snapshot<CalendarBookingLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CalendarBookingLocalServiceUtil.class,
+			CalendarBookingLocalService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:157156017

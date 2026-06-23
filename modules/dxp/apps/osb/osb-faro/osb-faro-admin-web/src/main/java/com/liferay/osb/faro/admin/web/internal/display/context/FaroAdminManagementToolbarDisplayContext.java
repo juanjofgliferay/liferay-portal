@@ -7,6 +7,7 @@ package com.liferay.osb.faro.admin.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.SearchContainerManagementToolbarDisplayContext;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -19,11 +20,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Shinn Lok
@@ -56,6 +57,7 @@ public class FaroAdminManagementToolbarDisplayContext
 		).buildString();
 	}
 
+	@Override
 	public CreationMenu getCreationMenu() {
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
@@ -72,18 +74,15 @@ public class FaroAdminManagementToolbarDisplayContext
 				_themeDisplay.getURLCurrent())
 		).buildPortletURL();
 
-		return new CreationMenu() {
-			{
-				addDropdownItem(
-					dropdownItem -> {
-						dropdownItem.setHref(
-							portletURL, ActionRequest.ACTION_NAME,
-							"/faro_admin/refresh_project", "groupId", -1);
-						dropdownItem.setLabel(
-							LanguageUtil.get(request, "refresh-all-projects"));
-					});
+		return CreationMenuBuilder.addDropdownItem(
+			dropdownItem -> {
+				dropdownItem.setHref(
+					portletURL, ActionRequest.ACTION_NAME,
+					"/faro_admin/refresh_project", "groupId", -1);
+				dropdownItem.setLabel(
+					LanguageUtil.get(request, "refresh-all-projects"));
 			}
-		};
+		).build();
 	}
 
 	@Override

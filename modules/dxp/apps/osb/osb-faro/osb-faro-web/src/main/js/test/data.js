@@ -31,6 +31,7 @@ import {
 	NotificationSubtypes,
 	NotificationTypes
 } from 'shared/util/records/Notification';
+import {SubscriptionNames} from 'shared/util/subscriptions';
 
 const BASE_TIMESTAMP = 1531263666366;
 
@@ -72,7 +73,24 @@ export function mockIndividual(seed = 0, properties) {
 	return {
 		activitiesCount: 1000,
 		colorId: String(seed),
+		context: {
+			browserName: 'Chrome',
+			city: 'Los Angeles',
+			contactId: `contact-${seed}`,
+			country: 'United States',
+			devicePixelRatio: '2',
+			deviceType: 'Desktop',
+			languageId: 'en_US',
+			platformName: 'Mac OS X',
+			region: 'California',
+			screenHeight: '1080',
+			screenWidth: '1920',
+			timeZoneOffset: '-04:00',
+			userAgent: 'Mozilla/5.0',
+			userId: `user-${seed}`
+		},
 		dateCreated: getTimestamp(-2),
+		firstActivityDate: getTimestamp(-1),
 		id: String(seed),
 		image: '/path/to/portrait.png',
 		lastActivityDate: getTimestamp(),
@@ -696,11 +714,11 @@ export function mockSubscription(data = {}) {
 	return {
 		addOns: new List([
 			new Map({
-				name: 'Liferay Analytics Cloud Enterprise Contacts',
+				name: SubscriptionNames.LiferayAnalyticsCloudEnterpriseContacts,
 				quantity: 2
 			}),
 			new Map({
-				name: 'Liferay Analytics Cloud Enterprise Tracked Pages',
+				name: SubscriptionNames.LiferayAnalyticsCloudEnterpriseTrackedPages,
 				quantity: 1
 			})
 		]),
@@ -709,7 +727,7 @@ export function mockSubscription(data = {}) {
 		individualsLimit: 105000,
 		individualsStatus: SubscriptionStatuses.Ok,
 		lastAnniversaryDate: getTimestamp(-2),
-		name: 'Liferay Analytics Cloud Enterprise',
+		name: SubscriptionNames.LiferayAnalyticsCloudEnterprise,
 		pageViewsCountSinceLastAnniversary: 100023,
 		pageViewsLimit: 7000000,
 		pageViewsStatus: SubscriptionStatuses.Ok,
@@ -792,6 +810,8 @@ export function mockActivityHistory(data = {}) {
 
 export function mockEvent(seed = 0) {
 	return {
+		applicationId: 'Page',
+		assetTitle: 'Page Title',
 		canonicalUrl: `https://www.liferay${seed}.com`,
 		createDate: seed + 100000,
 		name: `Asset ${seed}`,
@@ -801,29 +821,6 @@ export function mockEvent(seed = 0) {
 		referrer: 'www.liferay.com',
 		url: `https://www.liferay${seed}.com`
 	};
-}
-
-export function mockAddOns() {
-	return [
-		{
-			baseSubscriptionPlan: 'Liferay Analytics Cloud Enterprise',
-			limits: {
-				individuals: 5000,
-				pageViews: 0
-			},
-			name: 'Liferay Analytics Cloud Enterprise Contacts',
-			price: 500
-		},
-		{
-			baseSubscriptionPlan: 'Liferay Analytics Cloud Enterprise',
-			limits: {
-				individuals: 0,
-				pageViews: 5000000
-			},
-			name: 'Liferay Analytics Cloud Enterprise Tracked Pages',
-			price: 250
-		}
-	];
 }
 
 export function mockBlockedCustomEventDefinition(seed = 0, data = {}) {
@@ -867,11 +864,11 @@ export function mockPlan({data = {}, individuals = {}, pageViews = {}} = {}) {
 	return {
 		addOns: {
 			individuals: {
-				name: 'Liferay Analytics Cloud Enterprise Contacts',
+				name: SubscriptionNames.LiferayAnalyticsCloudEnterpriseContacts,
 				quantity: 2
 			},
 			pageViews: {
-				name: 'Liferay Analytics Cloud Enterprise Tracked Pages',
+				name: SubscriptionNames.LiferayAnalyticsCloudEnterpriseTrackedPages,
 				quantity: 1
 			}
 		},
@@ -891,9 +888,9 @@ export function mockPlan({data = {}, individuals = {}, pageViews = {}} = {}) {
 				...pageViews
 			})
 		},
-		name: 'Liferay Analytics Cloud Enterprise',
+		name: SubscriptionNames.LiferayAnalyticsCloudEnterprise,
 		startDate: getTimestamp(-2),
-		...{data}
+		...data
 	};
 }
 
@@ -901,7 +898,26 @@ export function mockProject(seed = 1, data = {}) {
 	return {
 		accountKey: `accountKey${seed}`,
 		accountName: `accountName${seed}`,
-		addOnsIList: new Map(mockAddOns()),
+		addOnsIList: new Map([
+			{
+				baseSubscriptionPlan:
+					SubscriptionNames.LiferayAnalyticsCloudEnterprise,
+				limits: {
+					individuals: 5000,
+					pageViews: 0
+				},
+				name: SubscriptionNames.LiferayAnalyticsCloudEnterpriseContacts
+			},
+			{
+				baseSubscriptionPlan:
+					SubscriptionNames.LiferayAnalyticsCloudEnterprise,
+				limits: {
+					individuals: 0,
+					pageViews: 5000000
+				},
+				name: SubscriptionNames.LiferayAnalyticsCloudEnterpriseTrackedPages
+			}
+		]),
 		corpProjectName: `corpProjectName${seed}`,
 		corpProjectUuid: `corpProjectUuid${seed}`,
 		faroSubscription: new Map(),

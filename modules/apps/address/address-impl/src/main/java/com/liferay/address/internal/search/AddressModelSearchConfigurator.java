@@ -7,9 +7,11 @@ package com.liferay.address.internal.search;
 
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,9 +47,15 @@ public class AddressModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.portal.kernel.model.Address)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			_addressLocalService::getIndexableActionableDynamicQuery);
+	}
+
+	@Reference
+	private AddressLocalService _addressLocalService;
+
 	private ModelIndexerWriterContributor<Address> _modelIndexWriterContributor;
 
 }

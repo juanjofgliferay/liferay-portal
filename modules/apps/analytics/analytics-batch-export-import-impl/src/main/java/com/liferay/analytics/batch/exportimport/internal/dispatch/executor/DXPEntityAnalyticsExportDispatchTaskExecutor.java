@@ -7,12 +7,19 @@ package com.liferay.analytics.batch.exportimport.internal.dispatch.executor;
 
 import com.liferay.analytics.batch.exportimport.manager.AnalyticsBatchExportImportManager;
 import com.liferay.analytics.dxp.entity.rest.dto.v1_0.DXPEntity;
+import com.liferay.analytics.message.storage.service.AnalyticsAssociationLocalService;
+import com.liferay.analytics.message.storage.service.AnalyticsDeleteMessageLocalService;
 import com.liferay.analytics.settings.configuration.AnalyticsConfigurationRegistry;
 import com.liferay.dispatch.executor.DispatchTaskExecutor;
 import com.liferay.dispatch.executor.DispatchTaskExecutorOutput;
 import com.liferay.dispatch.model.DispatchTrigger;
+import com.liferay.dispatch.service.DispatchTriggerLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -43,14 +50,50 @@ public class DXPEntityAnalyticsExportDispatchTaskExecutor
 			return;
 		}
 
+		Date resourceLastModifiedDate = null;
+
+		UnicodeProperties dispatchTaskSettingsUnicodeProperties =
+			dispatchTrigger.getDispatchTaskSettingsUnicodeProperties();
+
+		boolean forceFullExport = GetterUtil.getBoolean(
+			dispatchTaskSettingsUnicodeProperties.getProperty(
+				"forceFullExport", StringPool.FALSE));
+
+		if (forceFullExport) {
+			_analyticsAssociationLocalService.deleteAnalyticsAssociations(
+				dispatchTrigger.getCompanyId());
+			_analyticsDeleteMessageLocalService.deleteAnalyticsDeleteMessages(
+				dispatchTrigger.getCompanyId());
+		}
+		else {
+			resourceLastModifiedDate = getResourceLastModifiedDate(
+				dispatchTrigger.getDispatchTriggerId());
+		}
+
 		_analyticsBatchExportImportManager.exportToAnalyticsCloud(
 			_batchEngineExportTaskItemDelegateNames,
 			dispatchTrigger.getCompanyId(),
 			getNotificationUnsafeConsumer(
 				dispatchTrigger.getDispatchTriggerId(),
 				dispatchTaskExecutorOutput),
-			getResourceLastModifiedDate(dispatchTrigger.getDispatchTriggerId()),
-			DXPEntity.class.getName(), dispatchTrigger.getUserId());
+			resourceLastModifiedDate, DXPEntity.class.getName(),
+			dispatchTrigger.getUserId());
+
+		resourceLastModifiedDate = getResourceLastModifiedDate(
+			dispatchTrigger.getDispatchTriggerId());
+
+		if (resourceLastModifiedDate != null) {
+			_analyticsAssociationLocalService.deleteAnalyticsAssociations(
+				dispatchTrigger.getCompanyId(), resourceLastModifiedDate);
+			_analyticsDeleteMessageLocalService.deleteAnalyticsDeleteMessages(
+				dispatchTrigger.getCompanyId(), resourceLastModifiedDate);
+		}
+
+		if (forceFullExport) {
+			dispatchTaskSettingsUnicodeProperties.remove("forceFullExport");
+
+			_dispatchTriggerLocalService.updateDispatchTrigger(dispatchTrigger);
+		}
 	}
 
 	@Override
@@ -71,10 +114,20 @@ public class DXPEntityAnalyticsExportDispatchTaskExecutor
 			"user-analytics-dxp-entities", "user-group-analytics-dxp-entities");
 
 	@Reference
+	private AnalyticsAssociationLocalService _analyticsAssociationLocalService;
+
+	@Reference
 	private AnalyticsBatchExportImportManager
 		_analyticsBatchExportImportManager;
 
 	@Reference
 	private AnalyticsConfigurationRegistry _analyticsConfigurationRegistry;
+
+	@Reference
+	private AnalyticsDeleteMessageLocalService
+		_analyticsDeleteMessageLocalService;
+
+	@Reference
+	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
 }

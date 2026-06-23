@@ -1,0 +1,97 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+export const {
+	AutoSize: autoSize,
+	BREAKPOINTS,
+	CONSENT_TYPES: COOKIE_TYPES,
+	DefaultEventHandler,
+	Disposable,
+	DynamicInlineScroll,
+	EventEmitter,
+	EventHandler,
+	PortletBase,
+	STATUS_CODE,
+	Session,
+	addParams,
+	cancelDebounce,
+	checkConsent,
+	createActionURL,
+	createPortletURL,
+	createRenderURL,
+	createResourceURL,
+	debounce,
+	delegate,
+	escapeHTML,
+	fetch,
+	focusFormField,
+	formatStorage,
+	getCheckedCheckboxes,
+	getCookie,
+	getCountries,
+	getCropRegion,
+	getFormElement,
+	getGeolocation,
+	getLexiconIcon,
+	getLexiconIconTpl,
+	getOpener,
+	getPortletId,
+	getPortletNamespace,
+	getRegions,
+	getSelectedOptionValues,
+	getSessionValue,
+	getTop,
+	getUncheckedCheckboxes,
+	getWindow,
+	inBrowserView,
+	isObject,
+	isPhone,
+	isTablet,
+	loadClientExtensions,
+	loadEditorClientExtensions,
+	loadModule,
+	localStorage,
+	memoize,
+	navigate,
+	normalizeFriendlyURL,
+	objectToFormData,
+	openWindow,
+	postForm,
+	removeCookie,
+	removeEntitySelection,
+	runScriptsInElement,
+	selectFolder,
+	sessionStorage,
+	setCookie,
+	setFormValues,
+	setSessionValue,
+	showCapsLock,
+	sub,
+	throttle,
+	toggleBoxes,
+	toggleControls,
+	toggleDisabled,
+	toggleRadio,
+	toggleSelectBox,
+	unescapeHTML,
+	zIndex,
+} = Liferay.__INTERNALS;
+
+export {
+	ALIGN_POSITIONS,
+	align,
+	getAlignBestRegion,
+	getAlignRegion,
+	suggestAlignBestRegion,
+} from './align';
+export {default as AOP} from './aop/AOP.es';
+export {default as buildFragment} from './util/build_fragment';
+export {default as deepClone} from './util/deepClone';
+export {default as printPage} from './util/print_page';
+export {default as dateUtils} from './utils/date_time/index';
+export {default as mimeTypeUtils} from './utils/mime_type/index';
+export {getObjectValueFromPath} from './utils/object/getObjectValueFromPath';
+export {default as pkceChallenge} from './utils/pkceChallenge';
+export {getFileAsBase64} from './utils/string/getFileAsBase64';

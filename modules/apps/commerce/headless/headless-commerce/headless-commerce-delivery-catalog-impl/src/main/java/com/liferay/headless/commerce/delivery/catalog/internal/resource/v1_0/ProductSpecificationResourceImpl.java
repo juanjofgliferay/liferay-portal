@@ -8,8 +8,12 @@ package com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
+import com.liferay.commerce.product.model.CProduct;
+import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPDefinitionSpecificationOptionValueLocalService;
+import com.liferay.commerce.product.service.CProductLocalService;
+import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.delivery.catalog.dto.v1_0.ProductSpecification;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.ProductSpecificationResource;
@@ -21,7 +25,6 @@ import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -40,6 +43,28 @@ import org.osgi.service.component.annotations.ServiceScope;
 public class ProductSpecificationResourceImpl
 	extends BaseProductSpecificationResourceImpl {
 
+	@Override
+	public Page<ProductSpecification>
+			getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductSpecificationsPage(
+				String channelExternalReferenceCode,
+				String productExternalReferenceCode, Pagination pagination)
+		throws Exception {
+
+		CommerceChannel commerceChannel =
+			_commerceChannelLocalService.
+				getCommerceChannelByExternalReferenceCode(
+					channelExternalReferenceCode,
+					contextCompany.getCompanyId());
+
+		CProduct cProduct =
+			_cProductLocalService.getCProductByExternalReferenceCode(
+				productExternalReferenceCode, contextCompany.getCompanyId());
+
+		return getChannelProductProductSpecificationsPage(
+			commerceChannel.getCommerceChannelId(), cProduct.getCProductId(),
+			pagination);
+	}
+
 	@NestedField(parentClass = Product.class, value = "productSpecifications")
 	@Override
 	public Page<ProductSpecification>
@@ -50,7 +75,8 @@ public class ProductSpecificationResourceImpl
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionLocalService.fetchCPDefinitionByCProductId(
+				productId, true);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -61,18 +87,18 @@ public class ProductSpecificationResourceImpl
 			cpDefinitionSpecificationOptionValues =
 				_cpDefinitionSpecificationOptionValueLocalService.
 					getCPDefinitionSpecificationOptionValues(
-						cpDefinition.getCPDefinitionId(),
+						cpDefinition.getCPDefinitionId(), true,
 						pagination.getStartPosition(),
 						pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_cpDefinitionSpecificationOptionValueLocalService.
 				getCPDefinitionSpecificationOptionValuesCount(
-					cpDefinition.getCPDefinitionId());
+					cpDefinition.getCPDefinitionId(), true);
 
 		return Page.of(
 			_toProductSpecifications(cpDefinitionSpecificationOptionValues),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	private List<ProductSpecification> _toProductSpecifications(
@@ -80,22 +106,18 @@ public class ProductSpecificationResourceImpl
 				cpDefinitionSpecificationOptionValues)
 		throws Exception {
 
-		List<ProductSpecification> productSpecifications = new ArrayList<>();
-
-		for (CPDefinitionSpecificationOptionValue
-				cpDefinitionSpecificationOptionValue :
-					cpDefinitionSpecificationOptionValues) {
-
-			productSpecifications.add(
+		return transform(
+			cpDefinitionSpecificationOptionValues,
+			cpDefinitionSpecificationOptionValue ->
 				_productSpecificationDTOConverter.toDTO(
 					new DefaultDTOConverterContext(
 						cpDefinitionSpecificationOptionValue.
 							getCPDefinitionSpecificationOptionValueId(),
 						contextAcceptLanguage.getPreferredLocale())));
-		}
-
-		return productSpecifications;
 	}
+
+	@Reference
+	private CommerceChannelLocalService _commerceChannelLocalService;
 
 	@Reference
 	private CPDefinitionLocalService _cpDefinitionLocalService;
@@ -103,6 +125,9 @@ public class ProductSpecificationResourceImpl
 	@Reference
 	private CPDefinitionSpecificationOptionValueLocalService
 		_cpDefinitionSpecificationOptionValueLocalService;
+
+	@Reference
+	private CProductLocalService _cProductLocalService;
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter.ProductSpecificationDTOConverter)"

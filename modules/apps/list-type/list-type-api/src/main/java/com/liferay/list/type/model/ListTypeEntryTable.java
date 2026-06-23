@@ -52,11 +52,16 @@ public class ListTypeEntryTable extends BaseTable<ListTypeEntryTable> {
 		"key_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<ListTypeEntryTable, String> name = createColumn(
 		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ListTypeEntryTable, Boolean> system = createColumn(
+		"system_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<ListTypeEntryTable, String> type = createColumn(
 		"type_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ListTypeEntryTable, Integer> status = createColumn(
+		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 
 	private ListTypeEntryTable() {
 		super("ListTypeEntry", ListTypeEntryTable::new);
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-202937825

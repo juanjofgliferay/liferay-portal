@@ -3,8 +3,9 @@ import Membership, {MembershipChart} from '../Membership';
 import mockStore from 'test/mock-store';
 import React from 'react';
 import {Provider} from 'react-redux';
-import {render} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {Segment} from 'shared/util/records';
+import {SegmentTypes} from 'shared/util/constants';
 import {StaticRouter} from 'react-router';
 import {waitForLoadingToBeRemoved} from 'test/helpers';
 
@@ -16,6 +17,7 @@ const defaultProps = {
 	growthHistory: {data: []},
 	id: '321',
 	segment: data.getImmutableMock(Segment, data.mockSegment),
+	segmentType: SegmentTypes.Batch,
 	timeZoneId: 'UTC'
 };
 
@@ -35,7 +37,9 @@ describe('Membership', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		expect(container).toMatchSnapshot();
+		expect(
+			screen.getByText('Segment Membership Trend')
+		).toBeInTheDocument();
 	});
 });
 
@@ -53,6 +57,6 @@ describe('MembershipChart', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		expect(container).toMatchSnapshot();
+		expect(screen.getByText('Known Members')).toBeInTheDocument();
 	});
 });

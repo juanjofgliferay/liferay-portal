@@ -37,7 +37,7 @@ exports[`IndividualProfileRoutes should render 1`] = `
                 class="breadcrumb-text-truncate breadcrumb-link"
                 href="/workspace/23/123/contacts/individuals/known-individuals"
               >
-                Known Individuals
+                Individuals
               </a>
             </li>
             <li
@@ -52,7 +52,7 @@ exports[`IndividualProfileRoutes should render 1`] = `
           </ol>
         </div>
         <div
-          class="header-section title-section"
+          class="header-section title-section subtitle"
         >
           <span
             class="align-items-center d-flex"
@@ -69,6 +69,13 @@ exports[`IndividualProfileRoutes should render 1`] = `
               </span>
             </h1>
           </span>
+          <div
+            class="subtitle"
+          >
+            <span
+              class="text-4 text-secondary"
+            />
+          </div>
         </div>
         <div
           class="row"
@@ -81,12 +88,16 @@ exports[`IndividualProfileRoutes should render 1`] = `
             >
               <button
                 aria-expanded="false"
+                aria-label="Open Menu, Current Page: Overview"
                 class="navbar-toggler navbar-toggler-link collapsed btn btn-unstyled"
+                data-testid="navbarToggler"
                 type="button"
               >
                 <span
                   class="navbar-text-truncate"
-                />
+                >
+                  Overview
+                </span>
                 <svg
                   class="lexicon-icon lexicon-icon-caret-bottom"
                   role="presentation"
@@ -112,9 +123,7 @@ exports[`IndividualProfileRoutes should render 1`] = `
                         class="nav-link"
                         href="/workspace/23/123/contacts/individuals/known-individuals/test"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Overview
                         </span>
                       </a>
@@ -126,9 +135,7 @@ exports[`IndividualProfileRoutes should render 1`] = `
                         class="nav-link"
                         href="/workspace/23/123/contacts/individuals/known-individuals/test/interests"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Interests
                         </span>
                       </a>
@@ -140,9 +147,7 @@ exports[`IndividualProfileRoutes should render 1`] = `
                         class="nav-link"
                         href="/workspace/23/123/contacts/individuals/known-individuals/test/segments"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Segments
                         </span>
                       </a>
@@ -154,9 +159,7 @@ exports[`IndividualProfileRoutes should render 1`] = `
                         class="nav-link"
                         href="/workspace/23/123/contacts/individuals/known-individuals/test/details"
                       >
-                        <span
-                          class="navbar-text-truncate"
-                        >
+                        <span>
                           Details
                         </span>
                       </a>

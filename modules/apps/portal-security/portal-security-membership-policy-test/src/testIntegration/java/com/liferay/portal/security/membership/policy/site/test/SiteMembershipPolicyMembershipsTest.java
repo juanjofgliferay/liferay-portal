@@ -34,7 +34,6 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -208,7 +207,6 @@ public class SiteMembershipPolicyMembershipsTest
 			groups.toString(), userGroupIds.length - 1, groups.size());
 	}
 
-	@Ignore
 	@Test
 	public void testUnassignUserFromRequiredGroups() throws Exception {
 		long[] userIds = addUsers();
@@ -292,7 +290,7 @@ public class SiteMembershipPolicyMembershipsTest
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()
 			).build(),
-			group.getDescriptionMap(), group.getType(),
+			group.getDescriptionMap(), group.getType(), null,
 			group.isManualMembership(), group.getMembershipRestriction(),
 			group.getFriendlyURL(), group.isInheritContent(), group.isActive(),
 			ServiceContextTestUtil.getServiceContext());

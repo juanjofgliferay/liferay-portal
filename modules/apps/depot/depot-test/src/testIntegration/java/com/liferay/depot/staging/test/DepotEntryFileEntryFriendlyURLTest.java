@@ -6,6 +6,7 @@
 package com.liferay.depot.staging.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.depot.test.util.DepotStagingTestUtil;
@@ -87,7 +88,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -109,7 +110,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -127,7 +128,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -149,7 +150,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringPool.BLANK,
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -173,7 +174,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -189,7 +190,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -214,7 +215,8 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null, serviceContext);
+			StringUtil.randomString(), new byte[0], null, null, null,
+			serviceContext);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -228,7 +230,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			fileEntry.getFileEntryId(), StringPool.BLANK,
 			ContentTypes.TEXT_PLAIN, fileEntry.getTitle(), "modifiedurltitle",
 			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
-			(byte[])null, null, null, serviceContext);
+			(byte[])null, null, null, null, serviceContext);
 
 		friendlyURLEntry =
 			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
@@ -249,7 +251,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringPool.BLANK,
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -289,7 +291,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), StringPool.BLANK,
 			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
-			null, null,
+			null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -320,7 +322,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
 			StringUtil.randomString(), "urltitle", StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null,
+			StringUtil.randomString(), new byte[0], null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_liveDepotEntry.getGroupId()));
 
@@ -346,6 +348,7 @@ public class DepotEntryFileEntryFriendlyURLTest {
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+			DepotConstants.TYPE_ASSET_LIBRARY,
 			ServiceContextTestUtil.getServiceContext());
 	}
 

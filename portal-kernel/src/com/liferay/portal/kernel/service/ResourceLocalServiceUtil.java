@@ -358,6 +358,15 @@ public class ResourceLocalServiceUtil {
 			userId, resourceId, resources, actionId, roleIds);
 	}
 
+	public static void removeResource(
+			long companyId, String name, int scope, String primKey, long roleId,
+			String actionId)
+		throws PortalException {
+
+		getService().removeResource(
+			companyId, name, scope, primKey, roleId, actionId);
+	}
+
 	/**
 	 * Updates the resources for the model, replacing their group and guest
 	 * permissions with new ones from the service context.
@@ -492,3 +501,4 @@ public class ResourceLocalServiceUtil {
 	private static volatile ResourceLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:56793761

@@ -313,14 +313,6 @@ public class PasswordPolicyPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_DP() throws Exception {
-		_persistence.countByC_DP(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByC_DP(0L, RandomTestUtil.randomBoolean());
-	}
-
-	@Test
 	public void testCountByC_N() throws Exception {
 		_persistence.countByC_N(RandomTestUtil.nextLong(), "");
 
@@ -640,17 +632,6 @@ public class PasswordPolicyPersistenceTest {
 				passwordPolicy, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "companyId"));
 		Assert.assertEquals(
-			Boolean.valueOf(passwordPolicy.getDefaultPolicy()),
-			ReflectionTestUtil.<Boolean>invoke(
-				passwordPolicy, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "defaultPolicy"));
-
-		Assert.assertEquals(
-			Long.valueOf(passwordPolicy.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				passwordPolicy, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			passwordPolicy.getName(),
 			ReflectionTestUtil.invoke(
 				passwordPolicy, "getColumnOriginalValue",
@@ -741,3 +722,4 @@ public class PasswordPolicyPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1342683907

@@ -82,7 +82,7 @@ public class AssetDisplayLayoutUpgradeProcess extends UpgradeProcess {
 			"layout.instanceable.allowed", Boolean.TRUE);
 
 		Layout layout = _layoutLocalService.addLayout(
-			userId, groupId, false, 0, assetEntry.getTitleMap(),
+			null, userId, groupId, false, 0, assetEntry.getTitleMap(),
 			assetEntry.getTitleMap(), assetEntry.getDescriptionMap(), null,
 			null, LayoutConstants.TYPE_ASSET_DISPLAY, StringPool.BLANK, true,
 			true, new HashMap<>(), serviceContext);
@@ -119,12 +119,15 @@ public class AssetDisplayLayoutUpgradeProcess extends UpgradeProcess {
 		ServiceContext serviceContext = new ServiceContext();
 
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			Statement s = connection.createStatement();
+
 			ResultSet resultSet = s.executeQuery(
 				StringBundler.concat(
 					"select assetDisplayPageEntryId, userId, groupId, ",
 					"classNameId, classPK, layoutPageTemplateEntryId from ",
 					"AssetDisplayPageEntry where plid is null or plid = 0"));
+
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
 					connection,

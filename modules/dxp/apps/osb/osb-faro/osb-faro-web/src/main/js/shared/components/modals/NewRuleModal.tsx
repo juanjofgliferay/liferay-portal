@@ -14,8 +14,8 @@ import {
 } from 'shared/util/pagination';
 import {EXCLUDE, INCLUDE} from 'settings/recommendations/utils/utils';
 import {isArray, isString} from 'lodash';
-import {useLazyQuery} from '@apollo/react-hooks';
-import {useStatefulPagination} from 'shared/hooks';
+import {useLazyQuery} from '@apollo/client';
+import {useStatefulPagination} from 'shared/hooks/useStatefulPagination';
 import {withEmpty, withPaginationBar} from 'shared/hoc';
 
 const {
@@ -35,7 +35,7 @@ const NewRuleModal: React.FC<INewRuleModalProps> = ({onClose, onSubmit}) => {
 		onPageChange,
 		orderIOMap,
 		page
-	} = useStatefulPagination(null, {
+	} = useStatefulPagination(undefined, {
 		initialOrderIOMap: createOrderIOMap(TITLE)
 	});
 	const [initialRender, setInitialRender] = useState(true);
@@ -202,12 +202,18 @@ const NewRuleModal: React.FC<INewRuleModalProps> = ({onClose, onSubmit}) => {
 									accessor: metadata ? metadata : 'url',
 									className:
 										'table-cell-expand text-truncate',
-									dataFormatter: val => {
+									dataFormatter: (val: unknown) => {
 										if (isString(val)) {
 											return val;
 										} else if (isArray(val)) {
 											return val
-												.map(({value}) => value)
+												.map(
+													({
+														value
+													}: {
+														value: string;
+													}) => value
+												)
 												.join(', ');
 										}
 									},

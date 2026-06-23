@@ -30,8 +30,7 @@ components:
             type: object
         Creator:
             description:
-                Represents the user who created/authored the content. Properties follow the
-                [creator](https://schema.org/creator) specification.
+                Represents the user who created/authored the content. Properties follow the [creator](https://schema.org/creator) specification.
             properties:
                 additionalName:
                     description:
@@ -93,7 +92,7 @@ components:
                     # @review
                     description:
                         The workflow's node types.
-                    enum: [CONDITION, FORK, INITIAL_STATE, JOIN, JOIN_XOR, STATE, TASK, TERMINAL_STATE]
+                    enum: [AI_DECISION, CONDITION, FORK, INITIAL_STATE, JOIN, JOIN_XOR, LLM, STATE, TASK, TERMINAL_STATE]
                     readOnly: true
                     type: string
             type: object
@@ -121,8 +120,7 @@ components:
             type: object
         Role:
             description:
-                Represents a relationship between a user and a company or site. This follows the
-                [`Role`](https://www.schema.org/Role) specification.
+                Represents a relationship between a user and a company or site. This follows the [`Role`](https://www.schema.org/Role) specification.
             properties:
                 availableLanguages:
                     description:
@@ -211,6 +209,11 @@ components:
                 content:
                     type: string
                     x-json-string: true
+                creator:
+                    $ref: "#/components/schemas/Creator"
+                    description:
+                        The workflow's creator.
+                    readOnly: true
                 dateCreated:
                     format: date-time
                     readOnly: true
@@ -221,6 +224,10 @@ components:
                     type: string
                 description:
                     readOnly: true
+                    type: string
+                externalReferenceCode:
+                    type: string
+                groupExternalReferenceCode:
                     type: string
                 id:
                     format: int64
@@ -233,6 +240,8 @@ components:
                         $ref: "#/components/schemas/Node"
                     readOnly: true
                     type: array
+                scope:
+                    type: string
                 title:
                     type: string
                 title_i18n:
@@ -246,6 +255,28 @@ components:
                     type: array
                 version:
                     type: string
+            type: object
+        WorkflowDefinitionLink:
+            properties:
+                className:
+                    type: string
+                externalReferenceCode:
+                    type: string
+                groupExternalReferenceCode:
+                    type: string
+                groupId:
+                    format: int64
+                    type: integer
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                workflowDefinitionName:
+                    description:
+                        The name of the instance's workflow definition.
+                    type: string
+                workflowDefinitionVersion:
+                    type: integer
             type: object
         WorkflowInstance:
             # @review
@@ -264,6 +295,9 @@ components:
                         A flag that indicates whether the instance is complete.
                     readOnly: true
                     type: boolean
+                context:
+                    additionalProperties: true
+                    type: object
                 currentNodeNames:
                     # @review
                     description:
@@ -395,7 +429,7 @@ components:
                 type:
                     description:
                         The workflow log's type.
-                    enum: [NodeEntry, TaskAssign, TaskCompletion, TaskUpdate, Transition]
+                    enum: [InstanceFail, NodeEntry, NodeUsageMetadata, TaskAssign, TaskCompletion, TaskUpdate, Transition]
                     readOnly: true
                     type: string
                 workflowTaskId:
@@ -416,6 +450,11 @@ components:
                         type: object
                     readOnly: true
                     type: object
+                assignedToMe:
+                    description:
+                        A flag that indicates whether the task is assigned to the currently logged-in user.
+                    readOnly: true
+                    type: boolean
                 assigneePerson:
                     $ref: "#/components/schemas/Creator"
                 assigneeRoles:
@@ -427,6 +466,11 @@ components:
                         A flag that indicates whether the task is complete.
                     readOnly: true
                     type: boolean
+                creator:
+                    $ref: "#/components/schemas/Creator"
+                    description:
+                        The task's creator.
+                    readOnly: true
                 dateCompletion:
                     description:
                         The task's completion date.
@@ -485,6 +529,10 @@ components:
                     format: int64
                     readOnly: true
                     type: integer
+                workflowLogs:
+                    items:
+                        $ref: "#/components/schemas/WorkflowLog"
+                    type: array
             type: object
         WorkflowTaskAssignToMe:
             description:
@@ -641,36 +689,66 @@ components:
             type: object
 info:
     description:
-        "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.headless.admin.workflow.client', and version '4.0.23'."
+        "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID 'com.liferay.headless.admin.workflow.client', and version '4.0.49'."
     license:
-        name: "Apache 2.0"
-        url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-    title: "Headless Admin Workflow"
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+    title: Headless Admin Workflow
     version: v1.0
 openapi: 3.0.1
 paths:
+    "/workflow-definition-links/by-external-reference-code/{externalReferenceCode}":
+        put:
+            operationId: putWorkflowDefinitionLinkByExternalReferenceCode
+            parameters:
+                -   in: path
+                    name: externalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinitionLink"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinitionLink"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinitionLink"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinitionLink"
+            tags: ["WorkflowDefinitionLink"]
     "/workflow-definitions":
         get:
             operationId: getWorkflowDefinitionsPage
             parameters:
-                - in: query
-                  name: active
-                  schema:
-                      type: boolean
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
-                - in: query
-                  name: sort
-                  required: false
-                  schema:
-                      type: string
+                -   in: query
+                    name: active
+                    schema:
+                        type: boolean
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: scope
+                    schema:
+                        type: string
+                -   in: query
+                    name: sort
+                    required: false
+                    schema:
+                        type: string
             responses:
                 200:
                     content:
@@ -705,24 +783,81 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/WorkflowDefinition"
             tags: ["WorkflowDefinition"]
+    "/workflow-definitions/by-external-reference-code/{externalReferenceCode}/workflow-definition-links":
+        get:
+            operationId: getWorkflowDefinitionByExternalReferenceCodeWorkflowDefinitionLinksPage
+            parameters:
+                -   in: path
+                    name: externalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/WorkflowDefinitionLink"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/WorkflowDefinitionLink"
+                                type: array
+            tags: ["WorkflowDefinitionLink"]
+        post:
+            operationId: postWorkflowDefinitionByExternalReferenceCodeWorkflowDefinitionLink
+            parameters:
+                -   in: path
+                    name: externalReferenceCode
+                    required: true
+                    schema:
+                        type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinitionLink"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinitionLink"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinitionLink"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinitionLink"
+            tags: ["WorkflowDefinitionLink"]
     "/workflow-definitions/by-name/{name}":
         get:
             operationId: getWorkflowDefinitionByName
             parameters:
-                - in: path
-                  name: name
-                  required: true
-                  schema:
-                      type: string
-                - in: query
-                  name: contentFormat
-                  schema:
-                      enum: [JSON, XML]
-                      type: string
-                - in: query
-                  name: version
-                  schema:
-                      type: integer
+                -   in: path
+                    name: name
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: contentFormat
+                    schema:
+                        enum: [JSON, XML]
+                        type: string
+                -   in: query
+                    name: version
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -779,16 +914,16 @@ paths:
         delete:
             operationId: deleteWorkflowDefinitionUndeploy
             parameters:
-                - in: query
-                  name: name
-                  required: true
-                  schema:
-                      type: string
-                - in: query
-                  name: version
-                  required: true
-                  schema:
-                      type: string
+                -   in: query
+                    name: name
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: version
+                    required: true
+                    schema:
+                        type: string
             responses:
                 204:
                     content:
@@ -799,21 +934,21 @@ paths:
         post:
             operationId: postWorkflowDefinitionUpdateActive
             parameters:
-                - in: query
-                  name: active
-                  required: true
-                  schema:
-                      type: boolean
-                - in: query
-                  name: name
-                  required: true
-                  schema:
-                      type: string
-                - in: query
-                  name: version
-                  required: true
-                  schema:
-                      type: string
+                -   in: query
+                    name: active
+                    required: true
+                    schema:
+                        type: boolean
+                -   in: query
+                    name: name
+                    required: true
+                    schema:
+                        type: string
+                -   in: query
+                    name: version
+                    required: true
+                    schema:
+                        type: string
             responses:
                 200:
                     content:
@@ -828,12 +963,12 @@ paths:
         delete:
             operationId: deleteWorkflowDefinition
             parameters:
-                - in: path
-                  name: workflowDefinitionId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowDefinitionId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 204:
                     content:
@@ -843,12 +978,12 @@ paths:
         get:
             operationId: getWorkflowDefinition
             parameters:
-                - in: path
-                  name: workflowDefinitionId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowDefinitionId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 200:
                     content:
@@ -862,12 +997,12 @@ paths:
         put:
             operationId: putWorkflowDefinition
             parameters:
-                - in: path
-                  name: workflowDefinitionId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowDefinitionId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -886,31 +1021,90 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/WorkflowDefinition"
             tags: ["WorkflowDefinition"]
+    "/workflow-definitions/{workflowDefinitionId}/workflow-definition-links":
+        get:
+            operationId: getWorkflowDefinitionWorkflowDefinitionLinksPage
+            parameters:
+                -   in: path
+                    name: workflowDefinitionId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/WorkflowDefinitionLink"
+                                type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/WorkflowDefinitionLink"
+                                type: array
+            tags: ["WorkflowDefinitionLink"]
+        post:
+            operationId: postWorkflowDefinitionWorkflowDefinitionLink
+            parameters:
+                -   in: path
+                    name: workflowDefinitionId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinitionLink"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowDefinitionLink"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinitionLink"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowDefinitionLink"
+            tags: ["WorkflowDefinitionLink"]
     "/workflow-instances":
         get:
             operationId: getWorkflowInstancesPage
             parameters:
-                - in: query
-                  name: assetClassName
-                  schema:
-                      type: string
-                - in: query
-                  name: assetPrimaryKey
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: completed
-                  schema:
-                      type: boolean
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: assetClassName
+                    schema:
+                        type: string
+                -   in: query
+                    name: assetPrimaryKey
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: completed
+                    schema:
+                        type: boolean
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -950,12 +1144,12 @@ paths:
         delete:
             operationId: deleteWorkflowInstance
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 204:
                     content:
@@ -965,12 +1159,38 @@ paths:
         get:
             operationId: getWorkflowInstance
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowInstance"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/WorkflowInstance"
+            tags: ["WorkflowInstance"]
+        patch:
+            parameters:
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowInstance"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/WorkflowInstance"
             responses:
                 200:
                     content:
@@ -985,12 +1205,12 @@ paths:
         post:
             operationId: postWorkflowInstanceChangeTransition
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -1013,20 +1233,20 @@ paths:
         get:
             operationId: getWorkflowInstanceNextTransitionsPage
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1045,27 +1265,27 @@ paths:
         get:
             operationId: getWorkflowInstanceWorkflowLogsPage
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: types
-                  schema:
-                      items:
-                          enum: [NodeEntry, TaskAssign, TaskCompletion, TaskUpdate, Transition]
-                          type: string
-                      type: array
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: types
+                    schema:
+                        items:
+                            enum: [InstanceFail, NodeEntry, NodeUsageMetadata, TaskAssign, TaskCompletion, TaskUpdate, Transition]
+                            type: string
+                        type: array
             responses:
                 200:
                     content:
@@ -1084,24 +1304,24 @@ paths:
         get:
             operationId: getWorkflowInstanceWorkflowTasksPage
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: completed
-                  schema:
-                      type: boolean
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: completed
+                    schema:
+                        type: boolean
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1120,24 +1340,24 @@ paths:
         get:
             operationId: getWorkflowInstanceWorkflowTasksAssignedToMePage
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: completed
-                  schema:
-                      type: boolean
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: completed
+                    schema:
+                        type: boolean
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1156,29 +1376,29 @@ paths:
         get:
             operationId: getWorkflowInstanceWorkflowTasksAssignedToUserPage
             parameters:
-                - in: path
-                  name: workflowInstanceId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: assigneeId
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: completed
-                  schema:
-                      type: boolean
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowInstanceId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: assigneeId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: completed
+                    schema:
+                        type: boolean
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1197,12 +1417,12 @@ paths:
         get:
             operationId: getWorkflowLog
             parameters:
-                - in: path
-                  name: workflowLogId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowLogId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 200:
                     content:
@@ -1217,18 +1437,18 @@ paths:
         post:
             operationId: postWorkflowTasksPage
             parameters:
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
-                - in: query
-                  name: sort
-                  schema:
-                      type: string
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: sort
+                    schema:
+                        type: string
             requestBody:
                 content:
                     application/json:
@@ -1297,14 +1517,14 @@ paths:
         get:
             operationId: getWorkflowTasksAssignedToMePage
             parameters:
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1323,14 +1543,14 @@ paths:
         get:
             operationId: getWorkflowTasksAssignedToMyRolesPage
             parameters:
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1349,20 +1569,20 @@ paths:
         get:
             operationId: getWorkflowTasksAssignedToRolePage
             parameters:
-                - in: query
-                  name: roleId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: roleId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 200:
                     content:
@@ -1381,19 +1601,19 @@ paths:
         get:
             operationId: getWorkflowTasksAssignedToUserPage
             parameters:
-                - in: query
-                  name: assigneeId
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: assigneeId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1412,19 +1632,19 @@ paths:
         get:
             operationId: getWorkflowTasksAssignedToUserRolesPage
             parameters:
-                - in: query
-                  name: assigneeId
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: assigneeId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1485,19 +1705,19 @@ paths:
         get:
             operationId: getWorkflowTasksSubmittingUserPage
             parameters:
-                - in: query
-                  name: creatorId
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: query
+                    name: creatorId
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1537,12 +1757,12 @@ paths:
         get:
             operationId: getWorkflowTask
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 200:
                     content:
@@ -1557,12 +1777,12 @@ paths:
         post:
             operationId: postWorkflowTaskAssignToMe
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -1585,12 +1805,12 @@ paths:
         post:
             operationId: postWorkflowTaskAssignToRole
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -1613,12 +1833,12 @@ paths:
         post:
             operationId: postWorkflowTaskAssignToUser
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -1641,20 +1861,20 @@ paths:
         get:
             operationId: getWorkflowTaskAssignableUsersPage
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1673,12 +1893,12 @@ paths:
         post:
             operationId: postWorkflowTaskChangeTransition
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -1701,12 +1921,12 @@ paths:
         get:
             operationId: getWorkflowTaskHasAssignableUsers
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             responses:
                 200:
                     content:
@@ -1718,20 +1938,20 @@ paths:
         get:
             operationId: getWorkflowTaskNextTransitionsPage
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
             responses:
                 200:
                     content:
@@ -1750,12 +1970,12 @@ paths:
         post:
             operationId: postWorkflowTaskUpdateDueDate
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
             requestBody:
                 content:
                     application/json:
@@ -1778,27 +1998,27 @@ paths:
         get:
             operationId: getWorkflowTaskWorkflowLogsPage
             parameters:
-                - in: path
-                  name: workflowTaskId
-                  required: true
-                  schema:
-                      format: int64
-                      type: integer
-                - in: query
-                  name: types
-                  schema:
-                      items:
-                          enum: [TaskAssign, TaskCompletion, TaskUpdate, Transition]
-                          type: string
-                      type: array
-                - in: query
-                  name: page
-                  schema:
-                      type: integer
-                - in: query
-                  name: pageSize
-                  schema:
-                      type: integer
+                -   in: path
+                    name: workflowTaskId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: types
+                    schema:
+                        items:
+                            enum: [TaskAssign, TaskCompletion, TaskUpdate, Transition]
+                            type: string
+                        type: array
             responses:
                 200:
                     content:

@@ -6,8 +6,8 @@
 package com.liferay.commerce.price.list.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
 import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.price.list.exception.CommercePriceListCurrencyException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
@@ -336,8 +336,9 @@ public class CommercePriceListLocalServiceTest {
 			RandomTestUtil.randomDouble(), true, null, null);
 
 		CommercePriceList commercePriceList =
-			_commercePriceListLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, _group.getCompanyId());
+			_commercePriceListLocalService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, _group.getCompanyId());
 
 		_assertPriceListAttributes(
 			updatedCurrency, updatedName, commercePriceList);
@@ -393,7 +394,7 @@ public class CommercePriceListLocalServiceTest {
 			updatedCurrency, updatedName, updatedCommercePriceList);
 	}
 
-	@Test(expected = NoSuchCurrencyException.class)
+	@Test(expected = CommercePriceListCurrencyException.class)
 	public void testAddOrUpdateCommercePriceList4() throws Exception {
 		frutillaRule.scenario(
 			"Adding a new Price List"
@@ -624,10 +625,11 @@ public class CommercePriceListLocalServiceTest {
 			CommercePriceListTestUtil.updateCommercePriceList(
 				commercePriceList.getGroupId(),
 				commercePriceList.getCommercePriceListId(),
-				currency.getCurrencyCode(),
-				commercePriceList.getParentCommercePriceListId(), name,
-				commercePriceList.getPriority(), false, displayDate,
-				expirationDate);
+				commercePriceList.getParentCommercePriceListId(),
+				commercePriceList.isCatalogBasePriceList(),
+				currency.getCurrencyCode(), displayDate, expirationDate, name,
+				commercePriceList.isNetPrice(), false,
+				commercePriceList.getPriority());
 
 		_assertPriceListAttributes(currency, name, updatedCommercePriceList);
 
@@ -656,9 +658,9 @@ public class CommercePriceListLocalServiceTest {
 	@Test(expected = NoSuchPriceListException.class)
 	public void testUpdateCommercePriceList2() throws Exception {
 		frutillaRule.scenario(
-			"Update a nonexisting Price List"
+			"Update a nonexistent Price List"
 		).given(
-			"A nonexisting Price List ID"
+			"A nonexistent Price List ID"
 		).when(
 			"The value is used in the method invocation"
 		).then(
@@ -675,9 +677,10 @@ public class CommercePriceListLocalServiceTest {
 		CommerceCatalog commerceCatalog = commerceCatalogs.get(0);
 
 		CommercePriceListTestUtil.updateCommercePriceList(
-			commerceCatalog.getGroupId(), commercePriceListId,
-			currency.getCurrencyCode(), 0, RandomTestUtil.randomString(),
-			RandomTestUtil.randomDouble(), true, null, null);
+			commerceCatalog.getGroupId(), commercePriceListId, 0, false,
+			currency.getCurrencyCode(), null, null,
+			RandomTestUtil.randomString(), true, true,
+			RandomTestUtil.randomDouble());
 	}
 
 	@Test
@@ -713,12 +716,14 @@ public class CommercePriceListLocalServiceTest {
 
 		CommercePriceList updatedCommercePriceList =
 			CommercePriceListTestUtil.updateCommercePriceList(
-				commercePriceList.getGroupId(),
+				commerceCatalog.getGroupId(),
 				commercePriceList.getCommercePriceListId(),
-				currency.getCurrencyCode(), parentCommercePriceListId, name,
-				commercePriceList.getPriority(), false,
-				commercePriceList.getDisplayDate(),
-				commercePriceList.getExpirationDate());
+				parentCommercePriceListId,
+				commercePriceList.isCatalogBasePriceList(),
+				currency.getCurrencyCode(), commercePriceList.getDisplayDate(),
+				commercePriceList.getExpirationDate(), name,
+				commercePriceList.isNetPrice(), false,
+				commercePriceList.getPriority());
 
 		Assert.assertThat(
 			updatedCommercePriceList.getParentCommercePriceListId(),

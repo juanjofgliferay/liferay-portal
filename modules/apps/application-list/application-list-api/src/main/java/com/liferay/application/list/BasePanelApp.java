@@ -26,17 +26,17 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * Provides a skeletal implementation of the {@link PanelApp} to minimize the
@@ -55,6 +55,11 @@ import javax.servlet.http.HttpServletResponse;
 public abstract class BasePanelApp implements PanelApp {
 
 	@Override
+	public String getIcon() {
+		return "simulation-menu-closed";
+	}
+
+	@Override
 	public String getKey() {
 		Class<?> clazz = getClass();
 
@@ -69,7 +74,7 @@ public abstract class BasePanelApp implements PanelApp {
 
 			return LanguageUtil.get(
 				resourceBundle,
-				JavaConstants.JAVAX_PORTLET_TITLE + StringPool.PERIOD +
+				JavaConstants.JAKARTA_PORTLET_TITLE + StringPool.PERIOD +
 					getPortletId());
 		}
 		catch (MissingResourceException missingResourceException) {
@@ -80,7 +85,7 @@ public abstract class BasePanelApp implements PanelApp {
 
 		return LanguageUtil.get(
 			locale,
-			JavaConstants.JAVAX_PORTLET_TITLE + StringPool.PERIOD +
+			JavaConstants.JAKARTA_PORTLET_TITLE + StringPool.PERIOD +
 				getPortletId());
 	}
 
@@ -182,26 +187,29 @@ public abstract class BasePanelApp implements PanelApp {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		Group group = themeDisplay.getScopeGroup();
-
-		if (!group.isControlPanel()) {
-			return null;
-		}
-
 		Portlet portlet = getPortlet();
+
+		if (portlet == null) {
+			return themeDisplay.getControlPanelGroup();
+		}
 
 		String controlPanelEntryCategory =
 			portlet.getControlPanelEntryCategory();
 
 		if (Validator.isNull(controlPanelEntryCategory) ||
 			!controlPanelEntryCategory.startsWith(
-				PortletCategoryKeys.SITE_ADMINISTRATION) ||
-			(groupProvider == null)) {
+				PortletCategoryKeys.SITE_ADMINISTRATION)) {
 
-			return null;
+			return themeDisplay.getControlPanelGroup();
 		}
 
-		return groupProvider.getGroup(httpServletRequest);
+		Group group = themeDisplay.getScopeGroup();
+
+		if (group.isControlPanel() && (groupProvider != null)) {
+			return groupProvider.getGroup(httpServletRequest);
+		}
+
+		return null;
 	}
 
 	protected void setUserNotificationEventLocalService(

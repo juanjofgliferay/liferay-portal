@@ -11,7 +11,6 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.resource.bundle.AggregateResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ClassResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
@@ -31,8 +30,7 @@ public abstract class BaseLocalizedColumnUpgradeProcess extends UpgradeProcess {
 	protected void upgradeLocalizedColumn(
 			ResourceBundleLoader resourceBundleLoader, String tableName,
 			String columnName, String originalContent,
-			String localizationMapKey, String localizationXMLKey,
-			long[] companyIds)
+			String localizationMapKey, String localizationXMLKey)
 		throws SQLException {
 
 		try {
@@ -55,8 +53,7 @@ public abstract class BaseLocalizedColumnUpgradeProcess extends UpgradeProcess {
 							"content.Language", clazz.getClassLoader()),
 						resourceBundleLoader),
 					tableName, columnName, originalContent, localizationMapKey,
-					localizationXMLKey, companyId),
-				companyIds);
+					localizationXMLKey, companyId));
 		}
 		catch (Exception exception) {
 			throw new SQLException(exception);
@@ -68,20 +65,11 @@ public abstract class BaseLocalizedColumnUpgradeProcess extends UpgradeProcess {
 			long companyId, ResourceBundleLoader resourceBundleLoader)
 		throws SQLException {
 
-		Long originalCompanyId = CompanyThreadLocal.getCompanyId();
-
-		CompanyThreadLocal.setCompanyId(companyId);
-
-		try {
-			return LocalizationUtil.updateLocalization(
-				ResourceBundleUtil.getLocalizationMap(
-					resourceBundleLoader, localizationMapKey),
-				"", localizationXMLKey,
-				UpgradeProcessUtil.getDefaultLanguageId(companyId));
-		}
-		finally {
-			CompanyThreadLocal.setCompanyId(originalCompanyId);
-		}
+		return LocalizationUtil.updateLocalization(
+			ResourceBundleUtil.getLocalizationMap(
+				resourceBundleLoader, localizationMapKey),
+			"", localizationXMLKey,
+			UpgradeProcessUtil.getDefaultLanguageId(companyId));
 	}
 
 	private void _upgrade(

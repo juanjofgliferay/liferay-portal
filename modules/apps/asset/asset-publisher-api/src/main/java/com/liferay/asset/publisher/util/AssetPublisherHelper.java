@@ -8,6 +8,7 @@ package com.liferay.asset.publisher.util;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.info.pagination.InfoPage;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -17,16 +18,16 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -54,6 +55,15 @@ public interface AssetPublisherHelper {
 			Locale locale, TimeZone timeZone, long companyId, long scopeGroupId,
 			long userId, Map<String, Serializable> attributes, int start,
 			int end)
+		throws Exception;
+
+	public List<AssetEntry> getAssetEntries(
+			PortletRequest portletRequest,
+			PortletPreferences portletPreferences,
+			PermissionChecker permissionChecker, long companyId,
+			long[] groupIds, boolean checkPermission,
+			boolean deleteMissingAssetEntries, boolean includeNonvisibleAssets,
+			int type)
 		throws Exception;
 
 	public List<AssetEntry> getAssetEntries(
@@ -144,6 +154,17 @@ public interface AssetPublisherHelper {
 	public long[] getGroupIds(
 		PortletPreferences portletPreferences, long scopeGroupId,
 		Layout layout);
+
+	public InfoPage<AssetEntry> getInfoPage(
+			PortletRequest portletRequest,
+			PortletPreferences portletPreferences,
+			PermissionChecker permissionChecker, long[] groupIds,
+			long[] allCategoryIds, String[] allTagNames,
+			boolean deleteMissingAssetEntries, boolean checkPermission,
+			int start, int end)
+		throws Exception;
+
+	public Group getItemSelectorScopeGroup(Group scopeGroup) throws Exception;
 
 	public String[] getKeywords(PortletPreferences portletPreferences);
 

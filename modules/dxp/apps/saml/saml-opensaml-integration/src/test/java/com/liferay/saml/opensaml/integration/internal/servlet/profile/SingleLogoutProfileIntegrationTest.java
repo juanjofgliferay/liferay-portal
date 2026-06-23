@@ -16,7 +16,7 @@ import com.liferay.portal.struts.TilesUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.saml.constants.SamlWebKeys;
 import com.liferay.saml.opensaml.integration.internal.BaseSamlTestCase;
-import com.liferay.saml.opensaml.integration.internal.helper.RelayStateHelperImpl;
+import com.liferay.saml.opensaml.integration.internal.provider.CachingChainingMetadataResolver;
 import com.liferay.saml.persistence.model.SamlIdpSpSession;
 import com.liferay.saml.persistence.model.SamlSpSession;
 import com.liferay.saml.persistence.model.impl.SamlIdpSpConnectionImpl;
@@ -101,13 +101,10 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 		_singleLogoutProfileImpl = new SingleLogoutProfileImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			_singleLogoutProfileImpl, "_relayStateHelper",
-			_relayStateHelperImpl);
+			_singleLogoutProfileImpl, "credentialResolver", credentialResolver);
 		ReflectionTestUtil.setFieldValue(
-			_singleLogoutProfileImpl, "identifierGenerationStrategyFactory",
-			identifierGenerationStrategyFactory);
-		ReflectionTestUtil.setFieldValue(
-			_singleLogoutProfileImpl, "metadataManager", metadataManagerImpl);
+			_singleLogoutProfileImpl, "localEntityManager",
+			keyStoreLocalEntityManager);
 		ReflectionTestUtil.setFieldValue(
 			_singleLogoutProfileImpl, "portal", portal);
 		ReflectionTestUtil.setFieldValue(
@@ -123,8 +120,18 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 			_singleLogoutProfileImpl, "samlSpSessionLocalService",
 			_samlSpSessionLocalService);
 
+		_singleLogoutProfileImpl.activate(SystemBundleUtil.getBundleContext());
+
 		ReflectionTestUtil.invoke(
-			_relayStateHelperImpl, "activate", new Class<?>[0]);
+			_singleLogoutProfileImpl.getMetadataResolver(), "doDestroy",
+			new Class<?>[0]);
+
+		CachingChainingMetadataResolver cachingChainingMetadataResolver =
+			(CachingChainingMetadataResolver)
+				_singleLogoutProfileImpl.getMetadataResolver();
+
+		cachingChainingMetadataResolver.addMetadataResolver(
+			new MockMetadataResolver());
 
 		prepareServiceProvider(SP_ENTITY_ID);
 	}
@@ -134,10 +141,7 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 		MockHttpServletRequest mockHttpServletRequest =
 			getMockHttpServletRequest(SLO_LOGOUT_URL + "?cmd=logout");
 
-		SamlSloContext samlSloContext = new SamlSloContext(
-			null, _samlIdpSpConnectionLocalService,
-			_samlIdpSpSessionLocalService, samlPeerBindingLocalService,
-			userLocalService);
+		SamlSloContext samlSloContext = new SamlSloContext(null);
 
 		_singleLogoutProfileImpl.performIdpSpLogout(
 			mockHttpServletRequest, new MockHttpServletResponse(),
@@ -190,9 +194,7 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 		samlIdpSsoSessionImpl.setSamlIdpSsoSessionId(SESSION_ID);
 
 		SamlSloContext samlSloContext = new SamlSloContext(
-			samlIdpSsoSessionImpl, _samlIdpSpConnectionLocalService,
-			_samlIdpSpSessionLocalService, samlPeerBindingLocalService,
-			userLocalService);
+			samlIdpSsoSessionImpl);
 
 		SamlSloRequestInfo samlSloRequestInfo =
 			samlSloContext.getSamlSloRequestInfo(SP_ENTITY_ID);
@@ -236,9 +238,7 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 			new SamlIdpSsoSessionImpl();
 
 		SamlSloContext samlSloContext = new SamlSloContext(
-			samlIdpSsoSessionImpl, _samlIdpSpConnectionLocalService,
-			_samlIdpSpSessionLocalService, samlPeerBindingLocalService,
-			userLocalService);
+			samlIdpSsoSessionImpl);
 
 		SamlIdpSpSessionImpl samlIdpSpSessionImpl = new SamlIdpSpSessionImpl();
 
@@ -362,8 +362,6 @@ public class SingleLogoutProfileIntegrationTest extends BaseSamlTestCase {
 	private static ServiceRegistration<CookiesManager>
 		_cookiesManagerServiceRegistration;
 
-	private final RelayStateHelperImpl _relayStateHelperImpl =
-		new RelayStateHelperImpl();
 	private SamlIdpSpConnectionLocalService _samlIdpSpConnectionLocalService;
 	private SamlIdpSpSessionLocalService _samlIdpSpSessionLocalService;
 	private SamlSpSessionLocalService _samlSpSessionLocalService;

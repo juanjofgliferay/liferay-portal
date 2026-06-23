@@ -6,17 +6,27 @@
 package com.liferay.portal.vulcan.internal.jaxrs.container.request.filter.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.internal.test.util.URLConnectionUtil;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
+
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import java.io.IOException;
 
@@ -26,14 +36,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -105,8 +107,9 @@ public class TransactionContainerRequestFilterTest {
 		Assert.assertEquals(
 			204,
 			_getResponseCode(
-				"http://localhost:8080/o/test-vulcan/commit/" +
-					group.getGroupId()));
+				StringBundler.concat(
+					"http://localhost:", PortalUtil.getPortalServerPort(false),
+					"/o/test-vulcan/commit/", group.getGroupId())));
 		Assert.assertNull(GroupLocalServiceUtil.getGroup(group.getGroupId()));
 	}
 
@@ -120,8 +123,11 @@ public class TransactionContainerRequestFilterTest {
 			Assert.assertEquals(
 				500,
 				_getResponseCode(
-					"http://localhost:8080/o/test-vulcan/rollback/" +
-						group.getGroupId() + "?failInExceptionMapper=false"));
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false),
+						"/o/test-vulcan/rollback/", group.getGroupId(),
+						"?failInExceptionMapper=false")));
 
 			Assert.assertNotNull(
 				GroupLocalServiceUtil.getGroup(group.getGroupId()));
@@ -129,8 +135,11 @@ public class TransactionContainerRequestFilterTest {
 			Assert.assertEquals(
 				500,
 				_getResponseCode(
-					"http://localhost:8080/o/test-vulcan/rollback/" +
-						group.getGroupId() + "?failInExceptionMapper=true"));
+					StringBundler.concat(
+						"http://localhost:",
+						PortalUtil.getPortalServerPort(false),
+						"/o/test-vulcan/rollback/", group.getGroupId(),
+						"?failInExceptionMapper=true")));
 
 			Assert.assertNotNull(
 				GroupLocalServiceUtil.getGroup(group.getGroupId()));

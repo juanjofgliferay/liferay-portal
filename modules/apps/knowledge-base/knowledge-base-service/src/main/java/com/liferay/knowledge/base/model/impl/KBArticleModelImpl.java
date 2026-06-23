@@ -132,11 +132,18 @@ public class KBArticleModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table KBArticle";
 
+	public static final String ENTITY_ALIAS = "kbArticle";
+
+	public static final String FILTER_PK_COLUMN_NAME = "resourcePrimKey";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY kbArticle.modifiedDate DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY KBArticle.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY kbArticle.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -2050,3 +2057,4 @@ public class KBArticleModelImpl
 	private KBArticle _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1495088060

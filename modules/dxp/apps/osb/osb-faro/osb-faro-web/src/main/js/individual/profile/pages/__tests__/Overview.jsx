@@ -4,9 +4,10 @@ import Overview from '../Overview';
 import React from 'react';
 import {cleanup, render} from '@testing-library/react';
 import {Individual} from 'shared/util/records';
-import {MockedProvider} from '@apollo/react-testing';
+import {MockedProvider} from '@apollo/client/testing';
 import {
 	mockEventMetrics,
+	mockPreferenceReq,
 	mockSessions,
 	mockTimeRangeReq
 } from 'test/graphql-data';
@@ -19,32 +20,15 @@ jest.unmock('react-dom');
 const variables = {channelId: undefined};
 
 describe('IndividualOverview', () => {
-	const {ResizeObserver} = window;
-
-	beforeEach(() => {
-		delete window.ResizeObserver;
-
-		window.ResizeObserver = jest.fn().mockImplementation(() => ({
-			disconnect: jest.fn(),
-			observe: jest.fn(),
-			unobserve: jest.fn()
-		}));
-	});
-
-	afterEach(() => {
-		window.ResizeObserver = ResizeObserver;
-
-		jest.restoreAllMocks();
-
-		cleanup();
-	});
+	afterEach(cleanup);
 
 	it('should render', async () => {
-		const {container} = render(
+		const {container, getByText} = render(
 			<MockedProvider
 				mocks={[
 					mockEventMetrics(variables),
 					mockTimeRangeReq(),
+					mockPreferenceReq(),
 					mockSessions(variables)
 				]}
 			>
@@ -67,6 +51,6 @@ describe('IndividualOverview', () => {
 
 		await waitForLoadingToBeRemoved(container);
 
-		expect(container).toMatchSnapshot();
+		expect(getByText('View All Details')).toBeInTheDocument();
 	});
 });

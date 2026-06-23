@@ -30,7 +30,6 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -173,7 +172,6 @@ public class UserGroupMembershipPolicyMembershipsTest
 		Assert.assertTrue(isPropagateMembership());
 	}
 
-	@Ignore
 	@Test
 	public void testUnassignUserFromRequiredUserGroups() throws Exception {
 		long[] userIds = addUsers();
@@ -189,7 +187,7 @@ public class UserGroupMembershipPolicyMembershipsTest
 		long[] userUserGroupIds = ArrayUtil.append(
 			standardUserGroupIds, requiredUserGroupIds);
 
-		MembershipPolicyTestUtil.updateUser(
+		user = MembershipPolicyTestUtil.updateUser(
 			user, null, null, null, userUserGroupIds,
 			Collections.<UserGroupRole>emptyList());
 
@@ -198,7 +196,7 @@ public class UserGroupMembershipPolicyMembershipsTest
 		Assert.assertEquals(
 			userGroups.toString(), userUserGroupIds.length, userGroups.size());
 
-		MembershipPolicyTestUtil.updateUser(
+		user = MembershipPolicyTestUtil.updateUser(
 			user, null, null, null, requiredUserGroupIds,
 			Collections.<UserGroupRole>emptyList());
 
@@ -224,7 +222,7 @@ public class UserGroupMembershipPolicyMembershipsTest
 		long[] userUserGroupIds = ArrayUtil.append(
 			standardUserGroupIds, requiredUserGroupIds);
 
-		MembershipPolicyTestUtil.updateUser(
+		user = MembershipPolicyTestUtil.updateUser(
 			user, null, null, null, userUserGroupIds,
 			Collections.<UserGroupRole>emptyList());
 
@@ -233,7 +231,7 @@ public class UserGroupMembershipPolicyMembershipsTest
 		Assert.assertEquals(
 			userGroups.toString(), userUserGroupIds.length, userGroups.size());
 
-		MembershipPolicyTestUtil.updateUser(
+		user = MembershipPolicyTestUtil.updateUser(
 			user, null, null, null, standardUserGroupIds,
 			Collections.<UserGroupRole>emptyList());
 
@@ -288,8 +286,8 @@ public class UserGroupMembershipPolicyMembershipsTest
 		UserGroup userGroup = MembershipPolicyTestUtil.addUserGroup();
 
 		UserGroupServiceUtil.updateUserGroup(
-			userGroup.getUserGroupId(), userGroup.getName(),
-			userGroup.getDescription(),
+			userGroup.getExternalReferenceCode(), userGroup.getUserGroupId(),
+			userGroup.getName(), userGroup.getDescription(),
 			ServiceContextTestUtil.getServiceContext());
 
 		Assert.assertTrue(isVerify());

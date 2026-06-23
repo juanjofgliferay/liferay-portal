@@ -30,7 +30,6 @@ import com.liferay.knowledge.base.web.internal.util.comparator.KBOrderByComparat
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -50,19 +49,19 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -130,23 +129,13 @@ public class KBAdminManagementToolbarDisplayContext {
 	}
 
 	public CreationMenu getCreationMenu() throws PortalException {
-		long kbFolderClassNameId = PortalUtil.getClassNameId(
-			KBFolderConstants.getClassName());
-
-		long parentResourceClassNameId = ParamUtil.getLong(
-			_httpServletRequest, "parentResourceClassNameId",
-			kbFolderClassNameId);
+		CreationMenu creationMenu = new CreationMenu();
 
 		long parentResourcePrimKey = ParamUtil.getLong(
 			_httpServletRequest, "parentResourcePrimKey",
 			KBFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
-		boolean hasAddKBArticlePermission = _hasAddKBArticlePermission();
-		boolean hasAddKBFolderPermission = _hasAddKBFolderPermission();
-
-		CreationMenu creationMenu = new CreationMenu();
-
-		if (hasAddKBFolderPermission) {
+		if (_hasAddKBFolderPermission()) {
 			creationMenu.addDropdownItem(
 				dropdownItem -> {
 					dropdownItem.setHref(
@@ -169,7 +158,14 @@ public class KBAdminManagementToolbarDisplayContext {
 				});
 		}
 
-		if (hasAddKBArticlePermission) {
+		long kbFolderClassNameId = PortalUtil.getClassNameId(
+			KBFolderConstants.getClassName());
+
+		long parentResourceClassNameId = ParamUtil.getLong(
+			_httpServletRequest, "parentResourceClassNameId",
+			kbFolderClassNameId);
+
+		if (_hasAddKBArticlePermission()) {
 			creationMenu.addDropdownItem(
 				dropdownItem -> {
 					dropdownItem.setHref(
@@ -347,17 +343,6 @@ public class KBAdminManagementToolbarDisplayContext {
 		).build();
 	}
 
-	public List<DropdownItem> getFilterDropDownItems() {
-		return DropdownItemListBuilder.addGroup(
-			() -> !FeatureFlagManagerUtil.isEnabled("LPS-144527"),
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "order-by"));
-			}
-		).build();
-	}
-
 	public List<DropdownItem> getOrderByDropdownItems() {
 		return new DropdownItemList() {
 			{
@@ -445,15 +430,15 @@ public class KBAdminManagementToolbarDisplayContext {
 	}
 
 	public boolean isDisabled() {
-		return !_searchContainer.hasResults();
-	}
-
-	public boolean isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
+		if (!isSearch() && !_searchContainer.hasResults()) {
 			return true;
 		}
 
 		return false;
+	}
+
+	public boolean isSearch() {
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	public boolean isShowInfoButton() {
@@ -461,13 +446,7 @@ public class KBAdminManagementToolbarDisplayContext {
 	}
 
 	public boolean isTrashEnabled() throws PortalException {
-		if (FeatureFlagManagerUtil.isEnabled("LPS-188058") &&
-			_trashHelper.isTrashEnabled(_themeDisplay.getScopeGroupId())) {
-
-			return true;
-		}
-
-		return false;
+		return _trashHelper.isTrashEnabled(_themeDisplay.getScopeGroupId());
 	}
 
 	private SearchContainer<Object> _createSearchContainer()

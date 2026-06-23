@@ -7,6 +7,7 @@ package com.liferay.portal.kernel.upgrade;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.db.DBTypeToSQLMap;
 
 import java.util.Arrays;
 
@@ -100,6 +101,32 @@ public class UpgradeProcessFactory {
 			protected void doUpgrade() throws Exception {
 				for (String tableName : tableNames) {
 					dropTable(tableName);
+				}
+			}
+
+		};
+	}
+
+	public static UpgradeProcess runSQL(DBTypeToSQLMap... dbTypeToSQLMaps) {
+		return new UpgradeProcess(_getUpgradeInfo("run SQL updates")) {
+
+			@Override
+			protected void doUpgrade() throws Exception {
+				for (DBTypeToSQLMap dbTypeToSQLMap : dbTypeToSQLMaps) {
+					runSQL(dbTypeToSQLMap);
+				}
+			}
+
+		};
+	}
+
+	public static UpgradeProcess runSQL(String... sqls) {
+		return new UpgradeProcess(_getUpgradeInfo("run SQL updates")) {
+
+			@Override
+			protected void doUpgrade() throws Exception {
+				for (String sql : sqls) {
+					runSQL(sql);
 				}
 			}
 

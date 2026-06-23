@@ -11,6 +11,17 @@ import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
+jest.mock('react-router-dom', () => ({
+	...jest.requireActual('react-router-dom'),
+	useParams: () => ({
+		groupId: '23'
+	})
+}));
+
+jest.mock('shared/hooks/useTimeZone', () => ({
+	useTimeZone: () => ({timeZoneId: 'UTC'})
+}));
+
 const DefaultComponent = props => (
 	<Provider store={mockStore()}>
 		<StaticRouter>
@@ -20,12 +31,27 @@ const DefaultComponent = props => (
 );
 
 describe('IndividualAttributes', () => {
+	let OriginalDate;
+
+	beforeAll(() => {
+		OriginalDate = global.Date;
+
+		global.Date = class extends Date {
+			constructor() {
+				super();
+				return new OriginalDate(0);
+			}
+		};
+	});
+
+	afterAll(() => {
+		global.Date = OriginalDate;
+	});
+
 	afterEach(cleanup);
 
 	it('should render', async () => {
 		const {container} = render(<DefaultComponent />);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -35,15 +61,9 @@ describe('IndividualAttributes', () => {
 	it('should open modal after click on fielName', async () => {
 		const {container, getByText} = render(<DefaultComponent />);
 
-		jest.runAllTimers();
-
 		await waitForLoadingToBeRemoved(container);
 
 		fireEvent.click(getByText('testFildName0'));
-
-		jest.runAllTimers();
-
-		await waitForLoadingToBeRemoved(container);
 
 		expect(open).toBeCalled();
 	});

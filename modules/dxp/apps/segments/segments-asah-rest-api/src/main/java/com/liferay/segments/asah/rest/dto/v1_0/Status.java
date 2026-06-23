@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,8 +36,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("Status")
+@io.swagger.v3.oas.annotations.media.Schema(requiredProperties = {"status"})
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"status"})
 @XmlRootElement(name = "Status")
 public class Status implements Serializable {
 
@@ -50,28 +49,38 @@ public class Status implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Status.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getStatus() {
+		if (_statusSupplier != null) {
+			status = _statusSupplier.get();
+
+			_statusSupplier = null;
+		}
+
 		return status;
 	}
 
 	public void setStatus(String status) {
 		this.status = status;
+
+		_statusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStatus(
 		UnsafeSupplier<String, Exception> statusUnsafeSupplier) {
 
-		try {
-			status = statusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_statusSupplier = () -> {
+			try {
+				return statusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -79,33 +88,49 @@ public class Status implements Serializable {
 	@NotEmpty
 	protected String status;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _statusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getWinnerVariantId() {
+		if (_winnerVariantIdSupplier != null) {
+			winnerVariantId = _winnerVariantIdSupplier.get();
+
+			_winnerVariantIdSupplier = null;
+		}
+
 		return winnerVariantId;
 	}
 
 	public void setWinnerVariantId(String winnerVariantId) {
 		this.winnerVariantId = winnerVariantId;
+
+		_winnerVariantIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setWinnerVariantId(
 		UnsafeSupplier<String, Exception> winnerVariantIdUnsafeSupplier) {
 
-		try {
-			winnerVariantId = winnerVariantIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_winnerVariantIdSupplier = () -> {
+			try {
+				return winnerVariantIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String winnerVariantId;
+
+	@JsonIgnore
+	private Supplier<String> _winnerVariantIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -134,6 +159,8 @@ public class Status implements Serializable {
 
 		sb.append("{");
 
+		String status = getStatus();
+
 		if (status != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -147,6 +174,8 @@ public class Status implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String winnerVariantId = getWinnerVariantId();
 
 		if (winnerVariantId != null) {
 			if (sb.length() > 1) {
@@ -167,8 +196,8 @@ public class Status implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.segments.asah.rest.dto.v1_0.Status",
 		name = "x-class-name"
 	)
@@ -214,7 +243,10 @@ public class Status implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -260,3 +292,4 @@ public class Status implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:279709857

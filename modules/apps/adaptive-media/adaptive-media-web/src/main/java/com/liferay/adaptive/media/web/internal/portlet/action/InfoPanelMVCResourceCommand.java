@@ -16,12 +16,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
+		"jakarta.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
 		"mvc.command.name=/adaptive_media/info_panel"
 	},
 	service = MVCResourceCommand.class
@@ -49,6 +49,9 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 		resourceRequest.setAttribute(
 			AMWebKeys.SELECTED_CONFIGURATION_ENTRIES,
 			_getSelectedAMImageConfigurationEntries(resourceRequest));
+		resourceRequest.setAttribute(
+			AMWebKeys.TOTAL_IMAGES,
+			ParamUtil.getInteger(resourceRequest, "totalImages"));
 
 		include(
 			resourceRequest, resourceResponse,

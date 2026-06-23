@@ -198,11 +198,13 @@ public class RowStyledLayoutStructureItem extends StyledLayoutStructureItem {
 	public void setViewportConfiguration(
 		String viewportSizeId, JSONObject configurationJSONObject) {
 
+		JSONObject viewportConfigurationJSONObject =
+			_viewportConfigurationJSONObjects.getOrDefault(
+				viewportSizeId, JSONFactoryUtil.createJSONObject());
+
 		_viewportConfigurationJSONObjects.put(
 			viewportSizeId,
-			_viewportConfigurationJSONObjects.getOrDefault(
-				viewportSizeId, JSONFactoryUtil.createJSONObject()
-			).put(
+			viewportConfigurationJSONObject.put(
 				"modulesPerRow",
 				() -> {
 					if (configurationJSONObject.has("modulesPerRow")) {
@@ -214,22 +216,21 @@ public class RowStyledLayoutStructureItem extends StyledLayoutStructureItem {
 			).put(
 				"reverseOrder",
 				() -> {
-					if (configurationJSONObject.has("reverseOrder")) {
-						return configurationJSONObject.getBoolean(
-							"reverseOrder");
+					if (!configurationJSONObject.has("reverseOrder")) {
+						return null;
 					}
 
-					return null;
+					return configurationJSONObject.getBoolean("reverseOrder");
 				}
 			).put(
 				"verticalAlignment",
 				() -> {
-					if (configurationJSONObject.has("verticalAlignment")) {
-						return configurationJSONObject.getString(
-							"verticalAlignment");
+					if (!configurationJSONObject.has("verticalAlignment")) {
+						return null;
 					}
 
-					return null;
+					return configurationJSONObject.getString(
+						"verticalAlignment");
 				}
 			));
 	}

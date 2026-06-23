@@ -134,11 +134,18 @@ public class JournalArticleModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table JournalArticle";
 
+	public static final String ENTITY_ALIAS = "journalArticle";
+
+	public static final String FILTER_PK_COLUMN_NAME = "resourcePrimKey";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY journalArticle.articleId ASC, journalArticle.version DESC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY JournalArticle.articleId ASC, JournalArticle.version DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY journalArticle.articleId ASC, journalArticle.version DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -2272,3 +2279,4 @@ public class JournalArticleModelImpl
 	private JournalArticle _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-38089843

@@ -363,6 +363,13 @@ public class DispatchTriggerLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.dispatch.model.DispatchTrigger>
+		getDispatchTriggers(boolean active) {
+
+		return _dispatchTriggerLocalService.getDispatchTriggers(active);
+	}
+
+	@Override
+	public java.util.List<com.liferay.dispatch.model.DispatchTrigger>
 		getDispatchTriggers(
 			boolean active,
 			com.liferay.dispatch.executor.DispatchTaskClusterMode
@@ -550,3 +557,4 @@ public class DispatchTriggerLocalServiceWrapper
 	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-345077464

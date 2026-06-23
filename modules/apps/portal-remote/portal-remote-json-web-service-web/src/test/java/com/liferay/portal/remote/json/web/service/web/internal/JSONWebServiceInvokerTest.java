@@ -6,19 +6,20 @@
 package com.liferay.portal.remote.json.web.service.web.internal;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceAction;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.remote.json.web.service.JSONWebServiceAction;
 import com.liferay.portal.remote.json.web.service.web.internal.action.JSONWebServiceInvokerAction;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -28,8 +29,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -78,8 +77,6 @@ public class JSONWebServiceInvokerTest extends BaseJSONWebServiceTestCase {
 					}
 
 				}));
-
-		PropsTestUtil.setProps(Collections.emptyMap());
 
 		initPortalServices();
 
@@ -971,7 +968,8 @@ public class JSONWebServiceInvokerTest extends BaseJSONWebServiceTestCase {
 
 		mockHttpServletRequest.setContent(content.getBytes());
 
-		return new JSONWebServiceInvokerAction(mockHttpServletRequest);
+		return new JSONWebServiceInvokerAction(
+			jsonWebServiceActionsManager, mockHttpServletRequest);
 	}
 
 	private final MockedStatic<ServiceContextFactory>

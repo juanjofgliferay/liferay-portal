@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -51,37 +50,58 @@ public class SiteBrief implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SiteBrief.class, json);
 	}
 
-	@Schema(description = "The site's descriptive name.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The site's descriptive name."
+	)
 	public String getDescriptiveName() {
+		if (_descriptiveNameSupplier != null) {
+			descriptiveName = _descriptiveNameSupplier.get();
+
+			_descriptiveNameSupplier = null;
+		}
+
 		return descriptiveName;
 	}
 
 	public void setDescriptiveName(String descriptiveName) {
 		this.descriptiveName = descriptiveName;
+
+		_descriptiveNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDescriptiveName(
 		UnsafeSupplier<String, Exception> descriptiveNameUnsafeSupplier) {
 
-		try {
-			descriptiveName = descriptiveNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptiveNameSupplier = () -> {
+			try {
+				return descriptiveNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The site's descriptive name.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String descriptiveName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _descriptiveNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getDescriptiveName_i18n() {
+		if (_descriptiveName_i18nSupplier != null) {
+			descriptiveName_i18n = _descriptiveName_i18nSupplier.get();
+
+			_descriptiveName_i18nSupplier = null;
+		}
+
 		return descriptiveName_i18n;
 	}
 
@@ -89,6 +109,8 @@ public class SiteBrief implements Serializable {
 		Map<String, String> descriptiveName_i18n) {
 
 		this.descriptiveName_i18n = descriptiveName_i18n;
+
+		_descriptiveName_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -96,81 +118,166 @@ public class SiteBrief implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			descriptiveName_i18nUnsafeSupplier) {
 
-		try {
-			descriptiveName_i18n = descriptiveName_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptiveName_i18nSupplier = () -> {
+			try {
+				return descriptiveName_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> descriptiveName_i18n;
 
-	@Schema(description = "The site's ID.")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _descriptiveName_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The site's external reference code.",
+		example = "AB-34098-789-N"
+	)
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The site's external reference code.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(description = "The site's ID.")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The site's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema(description = "The site's name.")
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The site's name."
+	)
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The site's name.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getName_i18n() {
+		if (_name_i18nSupplier != null) {
+			name_i18n = _name_i18nSupplier.get();
+
+			_name_i18nSupplier = null;
+		}
+
 		return name_i18n;
 	}
 
 	public void setName_i18n(Map<String, String> name_i18n) {
 		this.name_i18n = name_i18n;
+
+		_name_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -178,49 +285,69 @@ public class SiteBrief implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			name_i18nUnsafeSupplier) {
 
-		try {
-			name_i18n = name_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_name_i18nSupplier = () -> {
+			try {
+				return name_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, String> name_i18n;
 
-	@Schema(description = "A list of the user's roles.")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _name_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of the user's roles."
+	)
 	@Valid
 	public RoleBrief[] getRoleBriefs() {
+		if (_roleBriefsSupplier != null) {
+			roleBriefs = _roleBriefsSupplier.get();
+
+			_roleBriefsSupplier = null;
+		}
+
 		return roleBriefs;
 	}
 
 	public void setRoleBriefs(RoleBrief[] roleBriefs) {
 		this.roleBriefs = roleBriefs;
+
+		_roleBriefsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRoleBriefs(
 		UnsafeSupplier<RoleBrief[], Exception> roleBriefsUnsafeSupplier) {
 
-		try {
-			roleBriefs = roleBriefsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_roleBriefsSupplier = () -> {
+			try {
+				return roleBriefsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "A list of the user's roles.")
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected RoleBrief[] roleBriefs;
+
+	@JsonIgnore
+	private Supplier<RoleBrief[]> _roleBriefsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -249,6 +376,8 @@ public class SiteBrief implements Serializable {
 
 		sb.append("{");
 
+		String descriptiveName = getDescriptiveName();
+
 		if (descriptiveName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -263,6 +392,8 @@ public class SiteBrief implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> descriptiveName_i18n = getDescriptiveName_i18n();
+
 		if (descriptiveName_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -273,6 +404,24 @@ public class SiteBrief implements Serializable {
 			sb.append(_toJSON(descriptiveName_i18n));
 		}
 
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -282,6 +431,8 @@ public class SiteBrief implements Serializable {
 
 			sb.append(id);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -297,6 +448,8 @@ public class SiteBrief implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> name_i18n = getName_i18n();
+
 		if (name_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -306,6 +459,8 @@ public class SiteBrief implements Serializable {
 
 			sb.append(_toJSON(name_i18n));
 		}
+
+		RoleBrief[] roleBriefs = getRoleBriefs();
 
 		if (roleBriefs != null) {
 			if (sb.length() > 1) {
@@ -332,8 +487,8 @@ public class SiteBrief implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.user.dto.v1_0.SiteBrief",
 		name = "x-class-name"
 	)
@@ -379,7 +534,10 @@ public class SiteBrief implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -425,3 +583,4 @@ public class SiteBrief implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:573897878

@@ -5,7 +5,7 @@
 
 package com.liferay.headless.commerce.delivery.order.client.pagination;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -63,3 +63,4 @@ public class Pagination {
 	private final int _pageSize;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-66559346

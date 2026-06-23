@@ -8,13 +8,13 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.Layout;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -52,9 +52,7 @@ public class LayoutSerDes {
 			sb.append("\"align\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getAlign());
-
 			sb.append("\"");
 		}
 
@@ -80,9 +78,7 @@ public class LayoutSerDes {
 			sb.append("\"borderRadius\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getBorderRadius());
-
 			sb.append("\"");
 		}
 
@@ -104,9 +100,7 @@ public class LayoutSerDes {
 			sb.append("\"containerType\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getContainerType());
-
 			sb.append("\"");
 		}
 
@@ -118,9 +112,7 @@ public class LayoutSerDes {
 			sb.append("\"contentDisplay\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getContentDisplay());
-
 			sb.append("\"");
 		}
 
@@ -132,9 +124,7 @@ public class LayoutSerDes {
 			sb.append("\"flexWrap\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getFlexWrap());
-
 			sb.append("\"");
 		}
 
@@ -146,9 +136,7 @@ public class LayoutSerDes {
 			sb.append("\"justify\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getJustify());
-
 			sb.append("\"");
 		}
 
@@ -260,9 +248,7 @@ public class LayoutSerDes {
 			sb.append("\"shadow\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getShadow());
-
 			sb.append("\"");
 		}
 
@@ -274,9 +260,7 @@ public class LayoutSerDes {
 			sb.append("\"widthType\": ");
 
 			sb.append("\"");
-
 			sb.append(layout.getWidthType());
-
 			sb.append("\"");
 		}
 
@@ -457,6 +441,72 @@ public class LayoutSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "align")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "borderColor")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "borderRadius")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "borderWidth")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "containerType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentDisplay")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "flexWrap")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "justify")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "marginBottom")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "marginLeft")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "marginRight")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "marginTop")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "opacity")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "paddingBottom")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "paddingHorizontal")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "paddingLeft")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "paddingRight")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "paddingTop")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shadow")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "widthType")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Layout layout, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -615,36 +665,7 @@ public class LayoutSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -656,4 +677,41 @@ public class LayoutSerDes {
 		return sb.toString();
 	}
 
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
+	}
+
 }
+// LIFERAY-REST-BUILDER-HASH:-1188497953

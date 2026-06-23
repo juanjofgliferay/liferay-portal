@@ -14,13 +14,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -73,6 +73,13 @@ public interface AssetRenderer<T> extends Renderer {
 	public String getNewName(String oldName, String token);
 
 	public String getSearchSummary(Locale locale);
+
+	public default String getSharingEntryRowPortletURL(
+			boolean editable, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		return StringPool.BLANK;
+	}
 
 	public int getStatus();
 
@@ -139,6 +146,19 @@ public interface AssetRenderer<T> extends Renderer {
 			LiferayPortletRequest liferayPortletRequest,
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception;
+
+	public default String getURLSharingNotification(
+			boolean editable, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		return getURLViewInContext(themeDisplay, StringPool.BLANK);
+	}
+
+	public default String getURLSharingNotification(ThemeDisplay themeDisplay)
+		throws Exception {
+
+		return getURLSharingNotification(false, themeDisplay);
+	}
 
 	public String getUrlTitle();
 

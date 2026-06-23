@@ -10,13 +10,13 @@
 <%
 JournalManagementToolbarDisplayContext journalManagementToolbarDisplayContext = null;
 
-if (!journalDisplayContext.isSearch() || journalDisplayContext.isWebContentTabSelected()) {
+if (!journalDisplayContext.isSearch() || journalDisplayContext.isShowWebContent()) {
 	journalManagementToolbarDisplayContext = new JournalManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, journalDisplayContext, trashHelper);
 }
-else if (journalDisplayContext.isIndexAllArticleVersions() && journalDisplayContext.isVersionsTabSelected()) {
+else if (journalDisplayContext.isIndexAllArticleVersions() && journalDisplayContext.isShowVersions()) {
 	journalManagementToolbarDisplayContext = new JournalArticleVersionsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, journalDisplayContext, trashHelper);
 }
-else if (journalDisplayContext.isCommentsTabSelected()) {
+else if (journalDisplayContext.isShowComments()) {
 	journalManagementToolbarDisplayContext = new JournalArticleCommentsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, journalDisplayContext, trashHelper);
 }
 else {
@@ -26,6 +26,90 @@ else {
 
 <liferay-ui:success key='<%= portletDisplay.getId() + "requestProcessed" %>' message="your-request-completed-successfully" />
 
+<c:if test='<%= MultiSessionMessages.contains(renderRequest, "articleCreated") || MultiSessionMessages.contains(renderRequest, "articlePending") || MultiSessionMessages.contains(renderRequest, "articlePendingScheduled") || MultiSessionMessages.contains(renderRequest, "articleScheduled") || MultiSessionMessages.contains(renderRequest, "articleUpdated") %>'>
+
+	<%
+	long id = GetterUtil.getLong(MultiSessionMessages.get(renderRequest, "articleCreated"));
+
+	if (MultiSessionMessages.contains(renderRequest, "articlePending")) {
+		id = GetterUtil.getLong(MultiSessionMessages.get(renderRequest, "articlePending"));
+	}
+	else if (MultiSessionMessages.contains(renderRequest, "articlePendingScheduled")) {
+		id = GetterUtil.getLong(MultiSessionMessages.get(renderRequest, "articlePendingScheduled"));
+	}
+	else if (MultiSessionMessages.contains(renderRequest, "articleScheduled")) {
+		id = GetterUtil.getLong(MultiSessionMessages.get(renderRequest, "articleScheduled"));
+	}
+	else if (MultiSessionMessages.contains(renderRequest, "articleUpdated")) {
+		id = GetterUtil.getLong(MultiSessionMessages.get(renderRequest, "articleUpdated"));
+	}
+
+	JournalArticle article = JournalArticleLocalServiceUtil.fetchJournalArticle(id);
+	%>
+
+	<c:if test="<%= article != null %>">
+		<liferay-util:buffer
+			var="alertMessage"
+		>
+			<liferay-util:buffer
+				var="articleLink"
+			>
+				<clay:link
+					cssClass="alert-link"
+					href='<%=
+						PortletURLBuilder.createRenderURL(
+							liferayPortletResponse
+						).setMVCRenderCommandName(
+							"/journal/edit_article"
+						).setRedirect(
+							currentURL
+						).setParameter(
+							"articleId", article.getArticleId()
+						).setParameter(
+							"backURLTitle", portletDisplay.getPortletDisplayName()
+						).setParameter(
+							"folderId", article.getFolderId()
+						).setParameter(
+							"groupId", article.getGroupId()
+						).setParameter(
+							"version", article.getVersion()
+						).buildString()
+					%>'
+					label="<%= article.getTitle(locale) %>"
+					translated="<%= false %>"
+				/>
+			</liferay-util:buffer>
+
+			<c:choose>
+				<c:when test='<%= MultiSessionMessages.contains(renderRequest, "articleCreated") %>'>
+					<liferay-ui:message arguments="<%= articleLink %>" key="x-was-created-successfully" />
+				</c:when>
+				<c:when test='<%= MultiSessionMessages.contains(renderRequest, "articlePending") %>'>
+					<liferay-ui:message arguments="<%= articleLink %>" key="x-has-been-submitted-for-workflow" />
+				</c:when>
+				<c:when test='<%= MultiSessionMessages.contains(renderRequest, "articlePendingScheduled") %>'>
+					<liferay-ui:message arguments="<%= articleLink %>" key="x-has-been-scheduled-and-submitted-for-workflow" />
+				</c:when>
+				<c:when test='<%= MultiSessionMessages.contains(renderRequest, "articleScheduled") %>'>
+					<liferay-ui:message arguments="<%= new Object[] {articleLink, dateTimeFormat.format(article.getDisplayDate())} %>" key="x-will-be-published-on-x" />
+				</c:when>
+				<c:otherwise>
+					<liferay-ui:message arguments="<%= articleLink %>" key="x-was-updated-successfully" />
+				</c:otherwise>
+			</c:choose>
+		</liferay-util:buffer>
+
+		<liferay-frontend:component
+			context='<%=
+				HashMapBuilder.<String, Object>put(
+					"alertMessage", alertMessage
+				).build()
+			%>'
+			module="{SuccessMessageWithLink} from journal-web"
+		/>
+	</c:if>
+</c:if>
+
 <portlet:actionURL name="/journal/restore_trash_entries" var="restoreTrashEntriesURL" />
 
 <liferay-trash:undo
@@ -33,13 +117,12 @@ else {
 />
 
 <clay:navigation-bar
-	inverted="<%= true %>"
 	navigationItems='<%= journalDisplayContext.getNavigationItems("web-content") %>'
 />
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= journalManagementToolbarDisplayContext %>"
-	propsTransformer="js/ManagementToolbarPropsTransformer"
+	propsTransformer="{ManagementToolbarPropsTransformer} from journal-web"
 />
 
 <div class="closed sidenav-container sidenav-right" id="<portlet:namespace />infoPanelId">
@@ -58,6 +141,7 @@ else {
 
 	<clay:container-fluid
 		cssClass="container-view sidenav-content"
+		size="xxxl"
 	>
 
 		<%
@@ -65,7 +149,7 @@ else {
 		%>
 
 		<c:choose>
-			<c:when test='<%= FeatureFlagManagerUtil.isEnabled("LPS-194763") && ListUtil.isNotEmpty(ddmStructureVerticalNavItemList) %>'>
+			<c:when test="<%= ListUtil.isNotEmpty(ddmStructureVerticalNavItemList) %>">
 				<clay:row>
 					<clay:col
 						lg="3"

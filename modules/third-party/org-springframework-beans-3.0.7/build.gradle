@@ -10,12 +10,15 @@ dependencies {
 	api group: "org.springframework", name: "spring-core", version: "3.0.7.RELEASE"
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
 	}
 
 	fileNames "org/springframework/beans/CachedIntrospectionResults.java"
-
 	originalLibModuleName = "spring-beans"
 }

@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.inventory.client.dto.v1_0.WarehouseChannel;
 import com.liferay.headless.commerce.admin.inventory.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.inventory.client.pagination.Page;
@@ -27,26 +30,32 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
 import java.lang.reflect.Method;
 
-import java.text.DateFormat;
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,12 +67,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -87,7 +90,7 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -101,11 +104,27 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 		_warehouseChannelResource.setContextCompany(testCompany);
 
-		WarehouseChannelResource.Builder builder =
-			WarehouseChannelResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		warehouseChannelResource = builder.authentication(
-			"test@liferay.com", "test"
+		warehouseChannelResource = WarehouseChannelResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -119,7 +138,32 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		WarehouseChannel warehouseChannel1 = randomWarehouseChannel();
+
+		String json = objectMapper.writeValueAsString(warehouseChannel1);
+
+		WarehouseChannel warehouseChannel2 = WarehouseChannelSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(warehouseChannel1, warehouseChannel2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		WarehouseChannel warehouseChannel = randomWarehouseChannel();
+
+		String json1 = objectMapper.writeValueAsString(warehouseChannel);
+		String json2 = WarehouseChannelSerDes.toJSON(warehouseChannel);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -134,40 +178,6 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		WarehouseChannel warehouseChannel1 = randomWarehouseChannel();
-
-		String json = objectMapper.writeValueAsString(warehouseChannel1);
-
-		WarehouseChannel warehouseChannel2 = WarehouseChannelSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(warehouseChannel1, warehouseChannel2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		WarehouseChannel warehouseChannel = randomWarehouseChannel();
-
-		String json1 = objectMapper.writeValueAsString(warehouseChannel);
-		String json2 = WarehouseChannelSerDes.toJSON(warehouseChannel);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -193,12 +203,114 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 	@Test
 	public void testDeleteWarehouseChannel() throws Exception {
-		Assert.assertTrue(false);
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		WarehouseChannel warehouseChannel =
+			testDeleteWarehouseChannel_addWarehouseChannel();
+
+		assertHttpResponseStatusCode(
+			204,
+			warehouseChannelResource.deleteWarehouseChannelHttpResponse(
+				warehouseChannel.getWarehouseChannelId()));
+	}
+
+	protected WarehouseChannel testDeleteWarehouseChannel_addWarehouseChannel()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
 	public void testGraphQLDeleteWarehouseChannel() throws Exception {
-		Assert.assertTrue(false);
+
+		// No namespace
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		WarehouseChannel warehouseChannel1 =
+			testGraphQLDeleteWarehouseChannel_addWarehouseChannel();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteWarehouseChannel",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"warehouseChannelId",
+									warehouseChannel1.getWarehouseChannelId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteWarehouseChannel"));
+
+		// Using the namespace headlessCommerceAdminInventory_v1_0
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		WarehouseChannel warehouseChannel2 =
+			testGraphQLDeleteWarehouseChannel_addWarehouseChannel();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminInventory_v1_0",
+						new GraphQLField(
+							"deleteWarehouseChannel",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"warehouseChannelId",
+										warehouseChannel2.
+											getWarehouseChannelId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminInventory_v1_0",
+				"Object/deleteWarehouseChannel"));
+	}
+
+	protected WarehouseChannel
+			testGraphQLDeleteWarehouseChannel_addWarehouseChannel()
+		throws Exception {
+
+		return testGraphQLWarehouseChannel_addWarehouseChannel();
+	}
+
+	@Test
+	public void testDeleteWarehouseChannelBatch() throws Exception {
+		WarehouseChannel warehouseChannel1 =
+			testDeleteWarehouseChannelBatch_addWarehouseChannel();
+
+		testDeleteWarehouseChannelBatch_deleteWarehouseChannel(
+			202, null, warehouseChannel1.getWarehouseChannelId());
+	}
+
+	protected WarehouseChannel
+			testDeleteWarehouseChannelBatch_addWarehouseChannel()
+		throws Exception {
+
+		return testDeleteWarehouseChannel_addWarehouseChannel();
+	}
+
+	protected void testDeleteWarehouseChannelBatch_deleteWarehouseChannel(
+			int expectedStatusCode, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			warehouseChannelResource.deleteWarehouseChannelBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"warehouseChannelId", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		waitForFinish(
+			"COMPLETED",
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
 	}
 
 	@Test
@@ -263,6 +375,12 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			page,
 			testGetWarehouseByExternalReferenceCodeWarehouseChannelsPage_getExpectedActions(
 				externalReferenceCode));
+
+		warehouseChannelResource.deleteWarehouseChannel(
+			warehouseChannel1.getWarehouseChannelId());
+
+		warehouseChannelResource.deleteWarehouseChannel(
+			warehouseChannel2.getWarehouseChannelId());
 	}
 
 	protected Map<String, Map<String, String>>
@@ -282,13 +400,13 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 		String externalReferenceCode =
 			testGetWarehouseByExternalReferenceCodeWarehouseChannelsPage_getExternalReferenceCode();
 
-		Page<WarehouseChannel> warehouseChannelPage =
+		Page<WarehouseChannel> warehouseChannelsPage =
 			warehouseChannelResource.
 				getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
 					externalReferenceCode, null);
 
 		int totalCount = GetterUtil.getInteger(
-			warehouseChannelPage.getTotalCount());
+			warehouseChannelsPage.getTotalCount());
 
 		WarehouseChannel warehouseChannel1 =
 			testGetWarehouseByExternalReferenceCodeWarehouseChannelsPage_addWarehouseChannel(
@@ -302,43 +420,87 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			testGetWarehouseByExternalReferenceCodeWarehouseChannelsPage_addWarehouseChannel(
 				externalReferenceCode, randomWarehouseChannel());
 
-		Page<WarehouseChannel> page1 =
-			warehouseChannelResource.
-				getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
-					externalReferenceCode, Pagination.of(1, totalCount + 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<WarehouseChannel> warehouseChannels1 =
-			(List<WarehouseChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			warehouseChannels1.toString(), totalCount + 2,
-			warehouseChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<WarehouseChannel> page1 =
+				warehouseChannelResource.
+					getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<WarehouseChannel> page2 =
-			warehouseChannelResource.
-				getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
-					externalReferenceCode, Pagination.of(2, totalCount + 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				warehouseChannel1, (List<WarehouseChannel>)page1.getItems());
 
-		List<WarehouseChannel> warehouseChannels2 =
-			(List<WarehouseChannel>)page2.getItems();
+			Page<WarehouseChannel> page2 =
+				warehouseChannelResource.
+					getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			warehouseChannels2.toString(), 1, warehouseChannels2.size());
+			assertContains(
+				warehouseChannel2, (List<WarehouseChannel>)page2.getItems());
 
-		Page<WarehouseChannel> page3 =
-			warehouseChannelResource.
-				getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
-					externalReferenceCode,
-					Pagination.of(1, (int)totalCount + 3));
+			Page<WarehouseChannel> page3 =
+				warehouseChannelResource.
+					getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertContains(
-			warehouseChannel1, (List<WarehouseChannel>)page3.getItems());
-		assertContains(
-			warehouseChannel2, (List<WarehouseChannel>)page3.getItems());
-		assertContains(
-			warehouseChannel3, (List<WarehouseChannel>)page3.getItems());
+			assertContains(
+				warehouseChannel3, (List<WarehouseChannel>)page3.getItems());
+		}
+		else {
+			Page<WarehouseChannel> page1 =
+				warehouseChannelResource.
+					getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<WarehouseChannel> warehouseChannels1 =
+				(List<WarehouseChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				warehouseChannels1.toString(), totalCount + 2,
+				warehouseChannels1.size());
+
+			Page<WarehouseChannel> page2 =
+				warehouseChannelResource.
+					getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<WarehouseChannel> warehouseChannels2 =
+				(List<WarehouseChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				warehouseChannels2.toString(), 1, warehouseChannels2.size());
+
+			Page<WarehouseChannel> page3 =
+				warehouseChannelResource.
+					getWarehouseByExternalReferenceCodeWarehouseChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				warehouseChannel1, (List<WarehouseChannel>)page3.getItems());
+			assertContains(
+				warehouseChannel2, (List<WarehouseChannel>)page3.getItems());
+			assertContains(
+				warehouseChannel3, (List<WarehouseChannel>)page3.getItems());
+		}
 	}
 
 	protected WarehouseChannel
@@ -363,29 +525,6 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 		throws Exception {
 
 		return null;
-	}
-
-	@Test
-	public void testPostWarehouseByExternalReferenceCodeWarehouseChannel()
-		throws Exception {
-
-		WarehouseChannel randomWarehouseChannel = randomWarehouseChannel();
-
-		WarehouseChannel postWarehouseChannel =
-			testPostWarehouseByExternalReferenceCodeWarehouseChannel_addWarehouseChannel(
-				randomWarehouseChannel);
-
-		assertEquals(randomWarehouseChannel, postWarehouseChannel);
-		assertValid(postWarehouseChannel);
-	}
-
-	protected WarehouseChannel
-			testPostWarehouseByExternalReferenceCodeWarehouseChannel_addWarehouseChannel(
-				WarehouseChannel warehouseChannel)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
 	}
 
 	@Test
@@ -440,6 +579,12 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 		assertValid(
 			page,
 			testGetWarehouseIdWarehouseChannelsPage_getExpectedActions(id));
+
+		warehouseChannelResource.deleteWarehouseChannel(
+			warehouseChannel1.getWarehouseChannelId());
+
+		warehouseChannelResource.deleteWarehouseChannel(
+			warehouseChannel2.getWarehouseChannelId());
 	}
 
 	protected Map<String, Map<String, String>>
@@ -555,12 +700,12 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 		Long id = testGetWarehouseIdWarehouseChannelsPage_getId();
 
-		Page<WarehouseChannel> warehouseChannelPage =
+		Page<WarehouseChannel> warehouseChannelsPage =
 			warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
 				id, null, null, null, null);
 
 		int totalCount = GetterUtil.getInteger(
-			warehouseChannelPage.getTotalCount());
+			warehouseChannelsPage.getTotalCount());
 
 		WarehouseChannel warehouseChannel1 =
 			testGetWarehouseIdWarehouseChannelsPage_addWarehouseChannel(
@@ -574,39 +719,82 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			testGetWarehouseIdWarehouseChannelsPage_addWarehouseChannel(
 				id, randomWarehouseChannel());
 
-		Page<WarehouseChannel> page1 =
-			warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
-				id, null, null, Pagination.of(1, totalCount + 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<WarehouseChannel> warehouseChannels1 =
-			(List<WarehouseChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			warehouseChannels1.toString(), totalCount + 2,
-			warehouseChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<WarehouseChannel> page1 =
+				warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<WarehouseChannel> page2 =
-			warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
-				id, null, null, Pagination.of(2, totalCount + 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+			assertContains(
+				warehouseChannel1, (List<WarehouseChannel>)page1.getItems());
 
-		List<WarehouseChannel> warehouseChannels2 =
-			(List<WarehouseChannel>)page2.getItems();
+			Page<WarehouseChannel> page2 =
+				warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			warehouseChannels2.toString(), 1, warehouseChannels2.size());
+			assertContains(
+				warehouseChannel2, (List<WarehouseChannel>)page2.getItems());
 
-		Page<WarehouseChannel> page3 =
-			warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
-				id, null, null, Pagination.of(1, (int)totalCount + 3), null);
+			Page<WarehouseChannel> page3 =
+				warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertContains(
-			warehouseChannel1, (List<WarehouseChannel>)page3.getItems());
-		assertContains(
-			warehouseChannel2, (List<WarehouseChannel>)page3.getItems());
-		assertContains(
-			warehouseChannel3, (List<WarehouseChannel>)page3.getItems());
+			assertContains(
+				warehouseChannel3, (List<WarehouseChannel>)page3.getItems());
+		}
+		else {
+			Page<WarehouseChannel> page1 =
+				warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<WarehouseChannel> warehouseChannels1 =
+				(List<WarehouseChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				warehouseChannels1.toString(), totalCount + 2,
+				warehouseChannels1.size());
+
+			Page<WarehouseChannel> page2 =
+				warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<WarehouseChannel> warehouseChannels2 =
+				(List<WarehouseChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				warehouseChannels2.toString(), 1, warehouseChannels2.size());
+
+			Page<WarehouseChannel> page3 =
+				warehouseChannelResource.getWarehouseIdWarehouseChannelsPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(
+				warehouseChannel1, (List<WarehouseChannel>)page3.getItems());
+			assertContains(
+				warehouseChannel2, (List<WarehouseChannel>)page3.getItems());
+			assertContains(
+				warehouseChannel3, (List<WarehouseChannel>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -618,7 +806,7 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			(entityField, warehouseChannel1, warehouseChannel2) -> {
 				BeanTestUtil.setProperty(
 					warehouseChannel1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
 			});
 	}
 
@@ -786,6 +974,29 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 	}
 
 	@Test
+	public void testPostWarehouseByExternalReferenceCodeWarehouseChannel()
+		throws Exception {
+
+		WarehouseChannel randomWarehouseChannel = randomWarehouseChannel();
+
+		WarehouseChannel postWarehouseChannel =
+			testPostWarehouseByExternalReferenceCodeWarehouseChannel_addWarehouseChannel(
+				randomWarehouseChannel);
+
+		assertEquals(randomWarehouseChannel, postWarehouseChannel);
+		assertValid(postWarehouseChannel);
+	}
+
+	protected WarehouseChannel
+			testPostWarehouseByExternalReferenceCodeWarehouseChannel_addWarehouseChannel(
+				WarehouseChannel warehouseChannel)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
 	public void testPostWarehouseIdWarehouseChannel() throws Exception {
 		WarehouseChannel randomWarehouseChannel = randomWarehouseChannel();
 
@@ -806,8 +1017,67 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			"This method needs to be implemented");
 	}
 
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		WarehouseChannel warehouseChannel1 =
+			testBatchEngineDeleteImportTask_addWarehouseChannel();
+
+		testBatchEngineDeleteImportTask_deleteWarehouseChannel(
+			200, null, warehouseChannel1.getWarehouseChannelId());
+	}
+
+	protected WarehouseChannel
+			testBatchEngineDeleteImportTask_addWarehouseChannel()
+		throws Exception {
+
+		return testDeleteWarehouseChannel_addWarehouseChannel();
+	}
+
+	protected void testBatchEngineDeleteImportTask_deleteWarehouseChannel(
+			int expectedStatusCode, String externalReferenceCode, Long id,
+			String... parameters)
+		throws Exception {
+
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(),
+			PortalUtil.getPortalServerPort(false), "http"
+		).parameters(
+			parameters
+		).build();
+
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.commerce.admin.inventory.dto.v1_0.WarehouseChannel",
+				null, null, null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"warehouseChannelId", () -> id
+					)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+		}
+	}
+
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
+
+	protected WarehouseChannel testGraphQLWarehouseChannel_addWarehouseChannel()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
 
 	protected void assertContains(
 		WarehouseChannel warehouseChannel,
@@ -888,6 +1158,10 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 		throws Exception {
 
 		boolean valid = true;
+
+		if (warehouseChannel.getWarehouseChannelId() == null) {
+			valid = false;
+		}
 
 		for (String additionalAssertFieldName :
 				getAdditionalAssertFieldNames()) {
@@ -1018,6 +1292,8 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 	protected List<GraphQLField> getGraphQLFields() throws Exception {
 		List<GraphQLField> graphQLFields = new ArrayList<>();
+
+		graphQLFields.add(new GraphQLField("warehouseChannelId"));
 
 		for (java.lang.reflect.Field field :
 				getDeclaredFields(
@@ -1203,6 +1479,10 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
+
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
 		return TransformUtil.transform(
 			ReflectionUtil.getDeclaredFields(clazz),
@@ -1402,8 +1682,11 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			).toString(),
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
-		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.path(
+			"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+				"/o/graphql");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1457,22 +1740,45 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 		return randomWarehouseChannel();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected WarehouseChannelResource warehouseChannelResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
 
 	protected static class BeanTestUtil {
 
 		public static void copyProperties(Object source, Object target)
 			throws Exception {
 
-			Class<?> sourceClass = _getSuperClass(source.getClass());
+			Class<?> sourceClass = source.getClass();
 
 			Class<?> targetClass = target.getClass();
 
 			for (java.lang.reflect.Field field :
-					sourceClass.getDeclaredFields()) {
+					_getAllDeclaredFields(sourceClass)) {
 
 				if (field.isSynthetic()) {
 					continue;
@@ -1481,11 +1787,16 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 				Method getMethod = _getMethod(
 					sourceClass, field.getName(), "get");
 
-				Method setMethod = _getMethod(
-					targetClass, field.getName(), "set",
-					getMethod.getReturnType());
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
 
-				setMethod.invoke(target, getMethod.invoke(source));
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
 			}
 		}
 
@@ -1517,6 +1828,24 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
 		}
 
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
 		private static Method _getMethod(Class<?> clazz, String name) {
 			for (Method method : clazz.getMethods()) {
 				if (name.equals(method.getName()) &&
@@ -1538,16 +1867,6 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 			return clazz.getMethod(
 				prefix + StringUtil.upperCaseFirstLetter(fieldName),
 				parameterTypes);
-		}
-
-		private static Class<?> _getSuperClass(Class<?> clazz) {
-			Class<?> superClass = clazz.getSuperclass();
-
-			if ((superClass == null) || (superClass == Object.class)) {
-				return clazz;
-			}
-
-			return superClass;
 		}
 
 		private static Object _translateValue(
@@ -1645,10 +1964,13 @@ public abstract class BaseWarehouseChannelResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseWarehouseChannelResourceTestCase.class);
 
-	private static DateFormat _dateFormat;
+	private static Format _format;
+
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.inventory.resource.v1_0.
 		WarehouseChannelResource _warehouseChannelResource;
 
 }
+// LIFERAY-REST-BUILDER-HASH:2130028847

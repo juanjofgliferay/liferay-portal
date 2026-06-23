@@ -18,12 +18,12 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.item.selector.display.context.SitesItemSelectorViewDisplayContext;
 import com.liferay.site.item.selector.web.internal.constants.SitesItemSelectorWebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -37,7 +37,7 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 		String itemSelectedEventName, PortletURL portletURL) {
 
 		this.httpServletRequest = httpServletRequest;
-		_groupItemSelectorCriterion = groupItemSelectorCriterion;
+		this.groupItemSelectorCriterion = groupItemSelectorCriterion;
 		_itemSelectedEventName = itemSelectedEventName;
 		this.portletURL = portletURL;
 	}
@@ -57,7 +57,7 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 
 	@Override
 	public GroupItemSelectorCriterion getGroupItemSelectorCriterion() {
-		return _groupItemSelectorCriterion;
+		return groupItemSelectorCriterion;
 	}
 
 	@Override
@@ -77,13 +77,13 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 	@Override
 	public PortletRequest getPortletRequest() {
 		return (PortletRequest)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_REQUEST);
+			JavaConstants.JAKARTA_PORTLET_REQUEST);
 	}
 
 	@Override
 	public PortletResponse getPortletResponse() {
 		return (PortletResponse)httpServletRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+			JavaConstants.JAKARTA_PORTLET_RESPONSE);
 	}
 
 	@Override
@@ -108,11 +108,11 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 		return false;
 	}
 
+	protected final GroupItemSelectorCriterion groupItemSelectorCriterion;
 	protected final HttpServletRequest httpServletRequest;
 	protected final PortletURL portletURL;
 
 	private String _displayStyle;
-	private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
 	private final String _itemSelectedEventName;
 
 }

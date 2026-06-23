@@ -47,7 +47,7 @@ public class SegmentsExperimentTableReferenceDefinitionTest
 			layout.getGroupId());
 
 		_segmentsExperience = SegmentsTestUtil.addSegmentsExperience(
-			layout.getGroupId(), segmentsEntry.getSegmentsEntryId(),
+			layout.getGroupId(), segmentsEntry.getExternalReferenceCode(), null,
 			layout.getPlid());
 	}
 

@@ -15,6 +15,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Provides the local service utility for Contact. This utility wraps
@@ -214,6 +216,12 @@ public class ContactLocalServiceUtil {
 		return getService().fetchContact(contactId);
 	}
 
+	public static Map<Serializable, Contact> fetchContacts(
+		Set<Serializable> primaryKeys) {
+
+		return getService().fetchContacts(primaryKeys);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -342,3 +350,4 @@ public class ContactLocalServiceUtil {
 	private static volatile ContactLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:444362040

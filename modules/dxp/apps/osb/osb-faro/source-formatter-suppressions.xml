@@ -6,11 +6,11 @@
 		<suppress checks="GradleDependencyVersionCheck" files=".*" />
 		<suppress checks="GradleTestDependencyVersionCheck" files=".*" />
 		<suppress checks="GradleVersionCheck" files=".*" />
+		<suppress checks="JavaComponentAnnotationsCheck" files=".*/com/liferay/osb/faro/rest/internal/graphql/client/FaroGraphQLClient\.java" />
 		<suppress checks="JavaModuleTestCheck" files=".*/src/testIntegration/java/com/liferay/osb/faro/functional/test/steps/FaroHooks.java" />
 		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/BaseMock.*.java" />
 		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/com/liferay/osb/faro/web/internal/activator/OAuth2AuthorizationExpandoPortalInstanceLifecycleListener\.java" />
 		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/com/liferay/osb/faro/web/internal/card/template/ContactsCardTemplateManagerHelper\.java" />
-		<suppress checks="JavaReferenceAnnotationsCheck" files=".*/com/liferay/osb/faro/web/internal/controller/FaroControllerRegistry\.java" />
 
 		<!-- Begin LRAC-12941 -->
 
@@ -21,7 +21,7 @@
 
 		<suppress checks="JSONPackageJSONDependencyVersionCheck" files=".*" />
 		<suppress checks="PropertiesLiferayPluginPackageLiferayVersionsCheck" files=".*" />
+		<suppress checks="SHSubshellCheck" files="set_nexus_credentials\.sh" />
 		<suppress checks="SQLLongNamesCheck" files=".*" />
-		<suppress checks="YMLDefinitionOrderCheck" files=".*" />
 	</source-check>
 </suppressions>

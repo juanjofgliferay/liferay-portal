@@ -8,10 +8,10 @@ package com.liferay.portal.workflow.metrics.rest.internal.jaxrs.exception.mapper
 import com.liferay.portal.workflow.metrics.exception.WorkflowMetricsSLADefinitionNameException;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.GenericError;
 
+import jakarta.ws.rs.ext.ExceptionMapper;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.ws.rs.ext.ExceptionMapper;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -37,9 +37,10 @@ public class SLANameExceptionMapper
 		return Collections.singletonList(
 			new GenericError() {
 				{
-					fieldName = "name";
-					message = SLANameExceptionMapper.this.getMessage(
-						"a-name-is-required");
+					setFieldName(() -> "name");
+					setMessage(
+						() -> SLANameExceptionMapper.this.getMessage(
+							"a-name-is-required"));
 				}
 			});
 	}

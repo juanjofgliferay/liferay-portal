@@ -9,7 +9,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -28,12 +28,12 @@ definition {
 					"recipientType": "email",
 					"recipients": [
 						{
-							"cc": "${cc}",
 							"bcc": "${bcc}",
+							"cc": "${cc}",
+							"from": "${fromAddress}",
 							"fromName": {
 								"en_US": "${fromName}"
 							},
-							"from": "${fromAddress}",
 							"to": {
 								"en_US": "${toAddress}"
 							}
@@ -59,7 +59,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (!(isSet(panelCategoryKey))) {
@@ -79,12 +79,13 @@ definition {
 				-H 'Content-Type: application/json' \
 				-u ${userEmailAddress}:${userPassword} \
 				-d '{
+					"externalReferenceCode": "${externalReferenceCode}",
 					"label": {
 						"en_US": "${labelName}"
 					},
-					"externalReferenceCode": "${externalReferenceCode}",
 					"name": "${objectName}",
-					"objectFields": [],
+					"objectFields": [
+					],
 					"panelCategoryKey": "${panelCategoryKey}",
 					"pluralLabel": {
 						"en_US": "${pluralLabelName}"
@@ -105,40 +106,77 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
 		var list1 = ListUtil.newListFromString(${fieldNameList});
 		var list2 = ListUtil.newListFromString(${valueList});
-		var size = ListUtil.size(${list1});
+		var size1 = ListUtil.size(${list1});
 		var fieldName = ListUtil.get(${list1}, 0);
 		var value = ListUtil.get(${list2}, 0);
 
-		var data = "\"${fieldName}\": \"${value}\"";
-		var i = 1;
+		var data1 = "\"${fieldName}\": \"${value}\"";
 
-		while (${i} != ${size}) {
-			var fieldName = ListUtil.get(${list1}, ${i});
-			var value = ListUtil.get(${list2}, ${i});
+		if (isSet(entryLanguageList)) {
+			var list3 = ListUtil.newListFromString(${entryLanguageList});
 
-			var data = StringUtil.add(${data}, ",\"${fieldName}\": \"${value}\"", "");
-			var i = ${i} + 1;
+			var size2 = ListUtil.size(${list3});
+			var language = ListUtil.get(${list3}, 0);
+
+			var data2 = "\"${language}\": \"${value}\"";
 		}
 
-		var curl = '''
-			${portalURL}/o/c/${objectName}s \
-				-H accept: application/json \
-				-H Content-Type: application/json \
-				-u ${userEmailAddress}:${userPassword} \
-				-d {
-					${data}
-				}
-		''';
+		var i = 1;
 
-		var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
+		if (isSet(entryLanguageList)) {
+			while (${i} != ${size2}) {
+				var language = ListUtil.get(${list3}, ${i});
+				var value = ListUtil.get(${list2}, ${i});
 
-		return ${objectEntryId};
+				var data2 = StringUtil.add(${data2}, ",\"${language}\": \"${value}\"", "");
+				var i = ${i} + 1;
+			}
+
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H accept: application/json \
+					-H Content-Type: application/json \
+					-u ${userEmailAddress}:${userPassword} \
+					-d {
+						"${fieldNameList}_i18n": {
+							${data2}
+						}
+					}
+			''';
+
+			var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
+
+			return ${objectEntryId};
+		}
+		else {
+			while (${i} != ${size1}) {
+				var fieldName = ListUtil.get(${list1}, ${i});
+				var value = ListUtil.get(${list2}, ${i});
+
+				var data1 = StringUtil.add(${data1}, ",\"${fieldName}\": \"${value}\"", "");
+				var i = ${i} + 1;
+			}
+
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H accept: application/json \
+					-H Content-Type: application/json \
+					-u ${userEmailAddress}:${userPassword} \
+					-d {
+						${data1}
+					}
+			''';
+
+			var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
+
+			return ${objectEntryId};
+		}
 	}
 
 	@summary = "Default summary"
@@ -152,7 +190,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (${scope} == "site") {
@@ -204,8 +242,10 @@ definition {
 		var curl = '''
 			${portalURL}/api/jsonws/object.objectentry/add-object-entry \
 				-u ${userEmailAddress}:${userPassword} \
+				-d defaultLanguageId='' \
 				-d groupId=${groupId} \
 				-d objectDefinitionId=${objectId} \
+				-d objectEntryFolderId=0 \
 				-d values={${entryValues}}
 		''';
 
@@ -215,7 +255,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro addObjectField(fieldName = null, picklistName = null, fieldLabelName = null, timeStorageOption = null, isRequired = null, outputOption = null, fileSource = null, fieldBusinessType = null, formulaScript = null, objectName = null, fieldType = null) {
+	macro addObjectField(externalReferenceCode = null, fieldName = null, fieldBusinessType = null, fieldLabelName = null, fieldType = null, fileSource = null, formulaScript = null, isRequired = null, objectName = null, outputOption = null, picklistName = null, timeStorageOption = null) {
 		var portalURL = JSONCompany.getPortalURL();
 		var objectId = JSONObject.getObjectId(
 			objectName = ${objectName},
@@ -227,7 +267,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (!(isSet(picklistName))) {
@@ -248,8 +288,8 @@ definition {
 			var indexedAsKeyword = "true";
 		}
 
-		if (!(isSet(showFilesInDocumentsAndMedia))) {
-			var showFilesInDocumentsAndMedia = "false";
+		if (!(isSet(showFilesInLibrary))) {
+			var showFilesInLibrary = "false";
 		}
 
 		if (!(isSet(storageDLFolderPath))) {
@@ -272,8 +312,12 @@ definition {
 			var readOnlyExpression = "";
 		}
 
-		if (${fileSource} == "userComputer") {
-			if (${showFilesInDocumentsAndMedia} == "false") {
+		if (!(isSet(externalReferenceCode))) {
+			var externalReferenceCode = "";
+		}
+
+		if (${fileSource} == "userComputerToDocumentsAndMedia") {
+			if (${showFilesInLibrary} == "false") {
 				var curl = '''
 					${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
 						-H 'Content-Type: application/json' \
@@ -299,10 +343,10 @@ definition {
 								},
 								{
 									"name": "fileSource",
-									"value": "userComputer"
+									"value": "userComputerToDocumentsAndMedia"
 								},
 								{
-									"name": "showFilesInDocumentsAndMedia",
+									"name": "showFilesInLibrary",
 									"value": "false"
 								}
 							],
@@ -338,10 +382,10 @@ definition {
 								},
 								{
 									"name": "fileSource",
-									"value": "userComputer"
+									"value": "userComputerToDocumentsAndMedia"
 								},
 								{
-									"name": "showFilesInDocumentsAndMedia",
+									"name": "showFilesInLibrary",
 									"value": "true"
 								},
 								{
@@ -453,7 +497,7 @@ definition {
 					-H 'Content-Type: application/json' \
 					-u ${userEmailAddress}:${userPassword} \
 					-d '{
-						"type": "${fieldType}",
+						"DBType": "${fieldType}",
 						"businessType": "${fieldBusinessType}",
 						"indexed": ${indexed},
 						"indexedAsKeyword": ${indexedAsKeyword},
@@ -522,6 +566,7 @@ definition {
 							"en_US": "${fieldLabelName}"
 						},
 						"listTypeDefinitionId": ${picklistId},
+						"externalReferenceCode": "${externalReferenceCode}",
 						"name": "${fieldName}",
 						"readOnly": "${isReadOnly}",
 						"readOnlyConditionExpression": "${readOnlyExpression}",
@@ -546,7 +591,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -582,7 +627,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (!(isSet(deletionType))) {
@@ -618,7 +663,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (!(isSet(ercName))) {
@@ -627,16 +672,51 @@ definition {
 
 		var objectName = StringUtil.toLowerCase(${objectName});
 
-		var curl = '''
-			${portalURL}/o/c/${objectName}s \
-				-H 'accept: application/json' \
-				-H 'Content-Type: application/json' \
-				-u ${userEmailAddress}:${userPassword} \
-				-d '{
-					"externalReferenceCode": "${ercName}",
-					"${fieldName}": "${value}"
-				}'
-		''';
+		if (${fieldType} == "MultiselectPicklist") {
+			var fieldValue = "";
+			var list = ListUtil.newListFromString(${valueList});
+
+			var size = ListUtil.size(${list});
+			var i = 0;
+
+			while (${i} != ${size}) {
+				var value = ListUtil.get(${list}, ${i});
+
+				var key = StringUtil.replace(${value}, " ", "");
+
+				if (${i} != 0) {
+					var fieldValue = StringUtil.add(${fieldValue}, ",{\"key\": \"${key}\", \"name\": \"${value}\"}", "");
+				}
+				else {
+					var fieldValue = StringUtil.add(${fieldValue}, "{\"key\": \"${key}\", \"name\": \"${value}\"}", "");
+				}
+
+				var i = ${i} + 1;
+			}
+
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H 'accept: application/json' \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"externalReferenceCode": "${ercName}",
+						"${fieldName}": [${fieldValue}]
+						}'
+			''';
+		}
+		else {
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H 'accept: application/json' \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"${fieldName}": "${value}",
+						"externalReferenceCode": "${ercName}"
+					}'
+			''';
+		}
 
 		var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
 
@@ -659,7 +739,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (!(isSet(errorMessage))) {
@@ -740,7 +820,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		if (!(isSet(externalReferenceCode))) {
@@ -777,7 +857,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -797,7 +877,7 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro deleteAllCustomObjects(pageSize = null) {
+	macro deleteAllCustomObjects() {
 		var portalURL = JSONCompany.getPortalURL();
 
 		if (!(isSet(userEmailAddress))) {
@@ -805,18 +885,11 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
-		}
-
-		if (isSet(pageSize)) {
-			var url = "object-admin/v1.0/object-definitions?pageSize=${pageSize}";
-		}
-		else {
-			var url = "object-admin/v1.0/object-definitions";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
-			${portalURL}/o/${url} \
+			${portalURL}/o/object-admin/v1.0/object-definitions?pageSize=-1 \
 				-u ${userEmailAddress}:${userPassword}
 		''';
 
@@ -843,7 +916,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -890,7 +963,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -920,13 +993,63 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
 
 		var curl = '''
 			${portalURL}/o/c/${objectName}s/${entryId} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectEntryByERC(objectName,fieldName,value) {
+		var portalURL = JSONCompany.getPortalURL();
+		var entryERC = JSONObject.getObjectEntryERC(
+			entryValue = ${value},
+			fieldName = ${fieldName},
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s/by-external-reference-code/${entryERC} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectRelationship(objectRelationshipId = null) {
+		Variables.assertDefined(parameterList = ${objectRelationshipId});
+
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-relationships/${objectRelationshipId} \
 				-u ${userEmailAddress}:${userPassword}
 		''';
 
@@ -946,33 +1069,11 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
 			${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions/${picklistId} \
-				-u ${userEmailAddress}:${userPassword}
-		''';
-
-		JSONCurlUtil.delete(${curl});
-	}
-
-	@summary = "Default summary"
-	macro deleteRelationship(objectRelationshipId = null) {
-		Variables.assertDefined(parameterList = ${objectRelationshipId});
-
-		var portalURL = JSONCompany.getPortalURL();
-
-		if (!(isSet(userEmailAddress))) {
-			var userEmailAddress = "test@liferay.com";
-		}
-
-		if (!(isSet(userPassword))) {
-			var userPassword = "test";
-		}
-
-		var curl = '''
-			${portalURL}/o/object-admin/v1.0/object-relationships/${objectRelationshipId} \
 				-u ${userEmailAddress}:${userPassword}
 		''';
 
@@ -994,7 +1095,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
@@ -1014,7 +1115,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -1028,15 +1129,43 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro getCustomObjectRelationshipIds(objectName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(objectDefinitionId))) {
+			var objectDefinitionId = ObjectDefinitionAPI.getObjectDefinitionIdByName(name = ${objectName});
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/object-relationships?filter=system%20eq%20false \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var customObjectRelationshipIds = JSONCurlUtil.get(${curl}, "$.items..id");
+
+		return ${customObjectRelationshipIds};
+	}
+
+	@summary = "Default summary"
 	macro getObjectDefinition(objectName = null) {
 		Variables.assertDefined(parameterList = ${objectName});
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 		var objectId = JSONObject.getObjectId(objectName = ${objectName});
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
-				-u test@liferay.com:test
+				-u test@liferay.com:${userPassword}
 		''';
 
 		var objectDefinition = JSONCurlUtil.get(${curl});
@@ -1049,10 +1178,11 @@ definition {
 		Variables.assertDefined(parameterList = ${name});
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 
 		var curl = '''
 			${portalURL}/api/jsonws/object.objectdefinition/get-object-definitions \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-d <CURL_DATA[start=-1]CURL_DATA> \
 				-d <CURL_DATA[end=-1]CURL_DATA>
 		''';
@@ -1067,6 +1197,45 @@ definition {
 	}
 
 	@summary = "Default summary"
+	macro getObjectEntryERC(entryValue,fieldName,objectName) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var entryERC = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] == '${entryValue}')]['externalReferenceCode']");
+
+		var commaCount = StringUtil.count(${entryERC}, ",");
+
+		if (${commaCount} != 0) {
+			var entryERC = StringUtil.extractFirst(${entryERC}, ",");
+		}
+
+		return ${entryERC};
+	}
+
+	@summary = "Default summary"
 	macro getObjectEntryFieldValue(fieldName = null, attributeValue = null, attribute = null, type = null) {
 		var portalURL = JSONCompany.getPortalURL();
 
@@ -1075,7 +1244,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
@@ -1113,7 +1282,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
@@ -1126,12 +1295,46 @@ definition {
 		if (${entryValue} == "") {
 			var entryId = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] empty true)]['id']");
 		}
-		else if (${entryValue} == "null") {
-			var entryId = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] == null)]['id']");
-		}
 		else {
 			var entryId = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] == '${entryValue}')]['id']");
 		}
+
+		return ${entryId};
+	}
+
+	@summary = "Default summary"
+	macro getObjectEntryIdByIndex(virtualHost = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(index))) {
+			var index = 0;
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var entryId = JSONCurlUtil.get(${curl}, "$.items[${index}]['id']");
 
 		return ${entryId};
 	}
@@ -1147,7 +1350,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectFieldId = JSONObject.getObjectFieldId(
@@ -1182,7 +1385,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -1217,7 +1420,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -1235,32 +1438,6 @@ definition {
 	}
 
 	@summary = "Default summary"
-	macro getObjectRelationships(objectName = null) {
-		var portalURL = JSONCompany.getPortalURL();
-
-		if (!(isSet(userEmailAddress))) {
-			var userEmailAddress = "test@liferay.com";
-		}
-
-		if (!(isSet(userPassword))) {
-			var userPassword = "test";
-		}
-
-		if (!(isSet(objectDefinitionId))) {
-			var objectDefinitionId = ObjectDefinitionAPI.getObjectDefinitionIdByName(name = ${objectName});
-		}
-
-		var curl = '''
-			${portalURL}/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/object-relationships \
-				-u ${userEmailAddress}:${userPassword}
-		''';
-
-		var relationshipIdList = JSONCurlUtil.get(${curl}, "$.items..id");
-
-		return ${relationshipIdList};
-	}
-
-	@summary = "Default summary"
 	macro getObjectSearchEntry(searchString = null) {
 		var portalURL = JSONCompany.getPortalURL();
 
@@ -1269,7 +1446,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
@@ -1293,7 +1470,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var objectName = StringUtil.toLowerCase(${objectName});
@@ -1317,7 +1494,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -1343,7 +1520,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -1360,6 +1537,7 @@ definition {
 		Variables.assertDefined(parameterList = ${objectName});
 
 		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
 		var objectId = JSONObject.getObjectId(objectName = ${objectName});
 		var objectDefinition = JSONObject.getObjectDefinition(objectName = ${objectName});
 
@@ -1369,10 +1547,12 @@ definition {
 			fail("FAIL. Cannot find relationship between ${objectName} and AccountEntry.");
 		}
 
+		var userPassword = PropsUtil.get("default.admin.password");
+
 		var curl = '''
 			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
 				-H 'Content-Type: application/json' \
-				-u test@liferay.com:test \
+				-u test@liferay.com:${userPassword} \
 				-d '{
 					"accountEntryRestricted": true,
 					"accountEntryRestrictedObjectFieldName": "${accountEntryRestrictedObjectFieldName}"
@@ -1392,7 +1572,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''
@@ -1421,7 +1601,7 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
 		var curl = '''

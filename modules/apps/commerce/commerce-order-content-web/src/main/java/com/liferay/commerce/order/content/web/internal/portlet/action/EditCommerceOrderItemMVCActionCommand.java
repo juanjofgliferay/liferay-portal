@@ -15,22 +15,21 @@ import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 
-import java.math.BigDecimal;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_OPEN_ORDER_CONTENT,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_OPEN_ORDER_CONTENT,
 		"mvc.command.name=/commerce_open_order_content/edit_commerce_order_item"
 	},
 	service = MVCActionCommand.class
@@ -64,24 +63,30 @@ public class EditCommerceOrderItemMVCActionCommand
 
 		try {
 			if (cmd.equals(Constants.UPDATE)) {
-				BigDecimal quantity = (BigDecimal)ParamUtil.getNumber(
-					actionRequest, "quantity", BigDecimal.ZERO);
-
 				CommerceOrderItem commerceOrderItem =
 					_commerceOrderItemService.getCommerceOrderItem(
 						commerceOrderItemId);
 
-				ServiceContext serviceContext =
-					ServiceContextFactory.getInstance(
-						CommerceOrderItem.class.getName(), actionRequest);
-
 				_commerceOrderItemService.updateCommerceOrderItem(
+					commerceOrderItem.getExternalReferenceCode(),
 					commerceOrderItem.getCommerceOrderItemId(),
-					commerceOrderItem.getJson(), quantity, commerceContext,
-					serviceContext);
+					commerceOrderItem.getJson(),
+					_commerceOrderItemQuantityFormatter.parse(
+						actionRequest, CommerceOrderItem.class.getName(),
+						"quantity"),
+					commerceContext,
+					ServiceContextFactory.getInstance(
+						CommerceOrderItem.class.getName(), actionRequest));
 			}
 			else if (cmd.equals(Constants.RESET)) {
 				_deleteCommerceOrderItems(actionRequest);
+
+				String orderDetailURL = ParamUtil.getString(
+					actionRequest, "orderDetailURL");
+
+				if (Validator.isNotNull(orderDetailURL)) {
+					sendRedirect(actionRequest, actionResponse, orderDetailURL);
+				}
 			}
 		}
 		catch (CommerceOrderValidatorException
@@ -127,6 +132,10 @@ public class EditCommerceOrderItemMVCActionCommand
 				commerceOrderItem.getCommerceOrderItemId(), commerceContext);
 		}
 	}
+
+	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
 
 	@Reference
 	private CommerceOrderItemService _commerceOrderItemService;

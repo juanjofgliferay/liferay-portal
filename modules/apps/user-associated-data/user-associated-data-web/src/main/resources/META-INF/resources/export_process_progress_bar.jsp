@@ -25,8 +25,6 @@ BackgroundTaskStatus backgroundTaskStatus = BackgroundTaskStatusRegistryUtil.get
 	%>
 
 	<clay:progressbar
-		maxValue="<%= 100 %>"
-		minValue="<%= 0 %>"
 		value="<%= percentage %>"
 	/>
 </c:if>

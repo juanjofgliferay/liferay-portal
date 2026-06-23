@@ -12,6 +12,7 @@ import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.report.DDMFormFieldTypeReportProcessor;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -27,7 +28,6 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -121,18 +121,18 @@ public class NumericDDMFormFieldTypeReportProcessor
 				ddmFormInstanceRecord.getFormInstance();
 
 			List<DDMFormInstanceRecord> ddmFormInstanceRecords =
-				new ArrayList<>();
+				TransformUtil.transform(
+					ddmFormInstance.getFormInstanceRecords(),
+					currentDDMFormInstanceRecord -> {
+						if (formInstanceRecordId ==
+								currentDDMFormInstanceRecord.
+									getFormInstanceRecordId()) {
 
-			for (DDMFormInstanceRecord currentDDMFormInstanceRecord :
-					ddmFormInstance.getFormInstanceRecords()) {
+							return null;
+						}
 
-				if (formInstanceRecordId !=
-						currentDDMFormInstanceRecord.
-							getFormInstanceRecordId()) {
-
-					ddmFormInstanceRecords.add(currentDDMFormInstanceRecord);
-				}
-			}
+						return currentDDMFormInstanceRecord;
+					});
 
 			if (ddmFormInstanceRecords.isEmpty()) {
 				jsonObject.remove("summary");
@@ -244,36 +244,34 @@ public class NumericDDMFormFieldTypeReportProcessor
 		String ddmFormFieldValueName,
 		List<DDMFormInstanceRecord> ddmFormInstanceRecords) {
 
-		List<BigDecimal> values = new ArrayList<>();
+		return TransformUtil.transform(
+			ddmFormInstanceRecords,
+			ddmFormInstanceRecord -> {
+				try {
+					DDMFormValues ddmFormValues =
+						ddmFormInstanceRecord.getDDMFormValues();
 
-		for (DDMFormInstanceRecord ddmFormInstanceRecord :
-				ddmFormInstanceRecords) {
+					Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
+						ddmFormValues.getDDMFormFieldValuesMap(true);
 
-			try {
-				DDMFormValues ddmFormValues =
-					ddmFormInstanceRecord.getDDMFormValues();
+					List<DDMFormFieldValue> ddmFormFieldValues =
+						ddmFormFieldValuesMap.get(ddmFormFieldValueName);
 
-				Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
-					ddmFormValues.getDDMFormFieldValuesMap(true);
+					BigDecimal value = getValueBigDecimal(
+						ddmFormFieldValues.get(0));
 
-				List<DDMFormFieldValue> ddmFormFieldValues =
-					ddmFormFieldValuesMap.get(ddmFormFieldValueName);
-
-				BigDecimal value = getValueBigDecimal(
-					ddmFormFieldValues.get(0));
-
-				if (value != null) {
-					values.add(value);
+					if (value != null) {
+						return value;
+					}
 				}
-			}
-			catch (PortalException portalException) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(portalException);
+				catch (PortalException portalException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(portalException);
+					}
 				}
-			}
-		}
 
-		return values;
+				return null;
+			});
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

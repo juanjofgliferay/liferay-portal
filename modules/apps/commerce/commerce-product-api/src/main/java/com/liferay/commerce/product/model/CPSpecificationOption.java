@@ -54,4 +54,12 @@ public interface CPSpecificationOption
 	public CPOptionCategory getCPOptionCategory()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public java.util.List<com.liferay.list.type.model.ListTypeDefinition>
+			getListTypeDefinitions()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public long getListTypeDefinitionsCount()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1613363609

@@ -16,7 +16,14 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,24 +31,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("ProductOption")
+@GraphQLName(
+	description = "An option attached to a specific product, carrying per-product overrides for the global option template; the link captures localized labels, required and SKU-contributor flags, price modifier settings, and the list of selectable values for that product.",
+	value = "ProductOption"
+)
+@io.swagger.v3.oas.annotations.media.Schema(
+	description = "An option attached to a specific product, carrying per-product overrides for the global option template; the link captures localized labels, required and SKU-contributor flags, price modifier settings, and the list of selectable values for that product.",
+	requiredProperties = {"fieldType", "key", "name", "optionId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"fieldType", "key", "name", "optionId"})
 @XmlRootElement(name = "ProductOption")
 public class ProductOption implements Serializable {
 
@@ -53,101 +58,170 @@ public class ProductOption implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ProductOption.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Not populated on reads and ignored on writes; the product option link has no direct catalog reference.",
+		example = "30130"
+	)
 	public Long getCatalogId() {
+		if (_catalogIdSupplier != null) {
+			catalogId = _catalogIdSupplier.get();
+
+			_catalogIdSupplier = null;
+		}
+
 		return catalogId;
 	}
 
 	public void setCatalogId(Long catalogId) {
 		this.catalogId = catalogId;
+
+		_catalogIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCatalogId(
 		UnsafeSupplier<Long, Exception> catalogIdUnsafeSupplier) {
 
-		try {
-			catalogId = catalogIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_catalogIdSupplier = () -> {
+			try {
+				return catalogIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Not populated on reads and ignored on writes; the product option link has no direct catalog reference."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long catalogId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _catalogIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Custom field values stored against the product option link through the expando bridge; localized when the request accepts all languages."
+	)
 	@Valid
-	public CustomField[] getCustomFields() {
+	public com.liferay.portal.vulcan.custom.field.CustomField[]
+		getCustomFields() {
+
+		if (_customFieldsSupplier != null) {
+			customFields = _customFieldsSupplier.get();
+
+			_customFieldsSupplier = null;
+		}
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields) {
+
 		this.customFields = customFields;
+
+		_customFieldsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.portal.vulcan.custom.field.CustomField[], Exception>
+				customFieldsUnsafeSupplier) {
 
-		try {
-			customFields = customFieldsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_customFieldsSupplier = () -> {
+			try {
+				return customFieldsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Custom field values stored against the product option link through the expando bridge; localized when the request accepts all languages."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected CustomField[] customFields;
+	protected com.liferay.portal.vulcan.custom.field.CustomField[] customFields;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<com.liferay.portal.vulcan.custom.field.CustomField[]>
+		_customFieldsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the option and its values are sourced from an external system rather than the catalog; when true the price type must be dynamic; writable through patch but currently not echoed back on reads.",
+		example = "true"
+	)
 	public Boolean getDefinedExternally() {
+		if (_definedExternallySupplier != null) {
+			definedExternally = _definedExternallySupplier.get();
+
+			_definedExternallySupplier = null;
+		}
+
 		return definedExternally;
 	}
 
 	public void setDefinedExternally(Boolean definedExternally) {
 		this.definedExternally = definedExternally;
+
+		_definedExternallySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefinedExternally(
 		UnsafeSupplier<Boolean, Exception> definedExternallyUnsafeSupplier) {
 
-		try {
-			definedExternally = definedExternallyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_definedExternallySupplier = () -> {
+			try {
+				return definedExternallyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether the option and its values are sourced from an external system rather than the catalog; when true the price type must be dynamic; writable through patch but currently not echoed back on reads."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean definedExternally;
 
-	@Schema(
-		example = "{hu_HU=Description HU, hr_HR=Description HR, en_US=Description}"
+	@JsonIgnore
+	private Supplier<Boolean> _definedExternallySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Per-product localized description that overrides the global option description on this product only; map keys are locale codes and values are the translated strings.",
+		example = "{en_US=Description, hr_HR=Description HR, hu_HU=Description HU}"
 	)
 	@Valid
 	public Map<String, String> getDescription() {
+		if (_descriptionSupplier != null) {
+			description = _descriptionSupplier.get();
+
+			_descriptionSupplier = null;
+		}
+
 		return description;
 	}
 
 	public void setDescription(Map<String, String> description) {
 		this.description = description;
+
+		_descriptionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -155,281 +229,505 @@ public class ProductOption implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			descriptionUnsafeSupplier) {
 
-		try {
-			description = descriptionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_descriptionSupplier = () -> {
+			try {
+				return descriptionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Per-product localized description that overrides the global option description on this product only; map keys are locale codes and values are the translated strings."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> description;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<Map<String, String>> _descriptionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Per-product override of whether this option is exposed as a search facet for the parent product; defaults to the global option flag on first attach.",
+		example = "true"
+	)
 	public Boolean getFacetable() {
+		if (_facetableSupplier != null) {
+			facetable = _facetableSupplier.get();
+
+			_facetableSupplier = null;
+		}
+
 		return facetable;
 	}
 
 	public void setFacetable(Boolean facetable) {
 		this.facetable = facetable;
+
+		_facetableSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFacetable(
 		UnsafeSupplier<Boolean, Exception> facetableUnsafeSupplier) {
 
-		try {
-			facetable = facetableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_facetableSupplier = () -> {
+			try {
+				return facetableUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Per-product override of whether this option is exposed as a search facet for the parent product; defaults to the global option flag on first attach."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean facetable;
 
-	@Schema(
+	@JsonIgnore
+	private Supplier<Boolean> _facetableSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Per-product input widget for this option; validated against the configured allow list and, when `skuContributor` is true, restricted to select, select_date, and radio; required.",
 		example = "checkbox, checkbox_multiple, date, numeric, radio, select"
 	)
 	public String getFieldType() {
+		if (_fieldTypeSupplier != null) {
+			fieldType = _fieldTypeSupplier.get();
+
+			_fieldTypeSupplier = null;
+		}
+
 		return fieldType;
 	}
 
 	public void setFieldType(String fieldType) {
 		this.fieldType = fieldType;
+
+		_fieldTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldType(
 		UnsafeSupplier<String, Exception> fieldTypeUnsafeSupplier) {
 
-		try {
-			fieldType = fieldTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldTypeSupplier = () -> {
+			try {
+				return fieldTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Per-product input widget for this option; validated against the configured allow list and, when `skuContributor` is true, restricted to select, select_date, and radio; required."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String fieldType;
 
+	@JsonIgnore
+	private Supplier<String> _fieldTypeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Primary key; read-only and assigned by the service on create.",
+		example = "30130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Primary key; read-only and assigned by the service on create."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Service key identifying an external info-item provider that supplies option data from outside the catalog; used together with `definedExternally`; writable but currently not echoed back on reads."
+	)
 	public String getInfoItemServiceKey() {
+		if (_infoItemServiceKeySupplier != null) {
+			infoItemServiceKey = _infoItemServiceKeySupplier.get();
+
+			_infoItemServiceKeySupplier = null;
+		}
+
 		return infoItemServiceKey;
 	}
 
 	public void setInfoItemServiceKey(String infoItemServiceKey) {
 		this.infoItemServiceKey = infoItemServiceKey;
+
+		_infoItemServiceKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setInfoItemServiceKey(
 		UnsafeSupplier<String, Exception> infoItemServiceKeyUnsafeSupplier) {
 
-		try {
-			infoItemServiceKey = infoItemServiceKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_infoItemServiceKeySupplier = () -> {
+			try {
+				return infoItemServiceKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Service key identifying an external info-item provider that supplies option data from outside the catalog; used together with `definedExternally`; writable but currently not echoed back on reads."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String infoItemServiceKey;
 
-	@Schema(example = "color")
+	@JsonIgnore
+	private Supplier<String> _infoItemServiceKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Machine identifier on the product link; copied from the linked global option's key when the link is created and must be unique within the product; required.",
+		example = "color"
+	)
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Machine identifier on the product link; copied from the linked global option's key when the link is created and must be unique within the product; required."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String key;
 
-	@Schema(example = "{en_US=Color, hr_HR=Color HR, hu_HU=Color HU}")
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Per-product localized label that overrides the global option name on this product only; map keys are locale codes and values are the translated strings; required.",
+		example = "{en_US=Color, hr_HR=Color HR, hu_HU=Color HU}"
+	)
 	@Valid
 	public Map<String, String> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, String> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Per-product localized label that overrides the global option name on this product only; map keys are locale codes and values are the translated strings; required."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Map<String, String> name;
 
+	@JsonIgnore
+	private Supplier<Map<String, String>> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the linked global option; used as an alternative to `optionId` when wiring a product to an existing option.",
+		example = "AB-34098-789-N"
+	)
+	public String getOptionExternalReferenceCode() {
+		if (_optionExternalReferenceCodeSupplier != null) {
+			optionExternalReferenceCode =
+				_optionExternalReferenceCodeSupplier.get();
+
+			_optionExternalReferenceCodeSupplier = null;
+		}
+
+		return optionExternalReferenceCode;
+	}
+
+	public void setOptionExternalReferenceCode(
+		String optionExternalReferenceCode) {
+
+		this.optionExternalReferenceCode = optionExternalReferenceCode;
+
+		_optionExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setOptionExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			optionExternalReferenceCodeUnsafeSupplier) {
+
+		_optionExternalReferenceCodeSupplier = () -> {
+			try {
+				return optionExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(
+		description = "External reference code of the linked global option; used as an alternative to `optionId` when wiring a product to an existing option."
+	)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String optionExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _optionExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "30080")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Reference to the global option template this product link is based on; required.",
+		example = "30080"
+	)
 	public Long getOptionId() {
+		if (_optionIdSupplier != null) {
+			optionId = _optionIdSupplier.get();
+
+			_optionIdSupplier = null;
+		}
+
 		return optionId;
 	}
 
 	public void setOptionId(Long optionId) {
 		this.optionId = optionId;
+
+		_optionIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOptionId(
 		UnsafeSupplier<Long, Exception> optionIdUnsafeSupplier) {
 
-		try {
-			optionId = optionIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_optionIdSupplier = () -> {
+			try {
+				return optionIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Reference to the global option template this product link is based on; required."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotNull
 	protected Long optionId;
 
-	@Schema(example = "dynamic, static")
+	@JsonIgnore
+	private Supplier<Long> _optionIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "How a selected value affects the product price; one of static (delta added to the base price) or dynamic (delta computed by an external pricing engine); when `definedExternally` is true the value is forced to dynamic.",
+		example = "dynamic, static"
+	)
 	public String getPriceType() {
+		if (_priceTypeSupplier != null) {
+			priceType = _priceTypeSupplier.get();
+
+			_priceTypeSupplier = null;
+		}
+
 		return priceType;
 	}
 
 	public void setPriceType(String priceType) {
 		this.priceType = priceType;
+
+		_priceTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceType(
 		UnsafeSupplier<String, Exception> priceTypeUnsafeSupplier) {
 
-		try {
-			priceType = priceTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceTypeSupplier = () -> {
+			try {
+				return priceTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "How a selected value affects the product price; one of static (delta added to the base price) or dynamic (delta computed by an external pricing engine); when `definedExternally` is true the value is forced to dynamic."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String priceType;
 
-	@Schema(example = "1.2")
+	@JsonIgnore
+	private Supplier<String> _priceTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Display order used when listing options inside the product; lower values appear first.",
+		example = "1.2"
+	)
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Display order used when listing options inside the product; lower values appear first."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Per-product values for this option; returned only when the request asks for them, otherwise null."
+	)
 	@Valid
 	public ProductOptionValue[] getProductOptionValues() {
+		if (_productOptionValuesSupplier != null) {
+			productOptionValues = _productOptionValuesSupplier.get();
+
+			_productOptionValuesSupplier = null;
+		}
+
 		return productOptionValues;
 	}
 
@@ -437,6 +735,8 @@ public class ProductOption implements Serializable {
 		ProductOptionValue[] productOptionValues) {
 
 		this.productOptionValues = productOptionValues;
+
+		_productOptionValuesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -444,104 +744,165 @@ public class ProductOption implements Serializable {
 		UnsafeSupplier<ProductOptionValue[], Exception>
 			productOptionValuesUnsafeSupplier) {
 
-		try {
-			productOptionValues = productOptionValuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productOptionValuesSupplier = () -> {
+			try {
+				return productOptionValuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Per-product values for this option; returned only when the request asks for them, otherwise null."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected ProductOptionValue[] productOptionValues;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<ProductOptionValue[]> _productOptionValuesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether the shopper must select a value for this option before the product can be added to the cart.",
+		example = "true"
+	)
 	public Boolean getRequired() {
+		if (_requiredSupplier != null) {
+			required = _requiredSupplier.get();
+
+			_requiredSupplier = null;
+		}
+
 		return required;
 	}
 
 	public void setRequired(Boolean required) {
 		this.required = required;
+
+		_requiredSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRequired(
 		UnsafeSupplier<Boolean, Exception> requiredUnsafeSupplier) {
 
-		try {
-			required = requiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_requiredSupplier = () -> {
+			try {
+				return requiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether the shopper must select a value for this option before the product can be added to the cart."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean required;
 
-	@Schema(example = "true")
+	@JsonIgnore
+	private Supplier<Boolean> _requiredSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Whether selecting a value on this option produces a distinct SKU for the parent product; enabling it restricts `fieldType` to select, select_date, or radio.",
+		example = "true"
+	)
 	public Boolean getSkuContributor() {
+		if (_skuContributorSupplier != null) {
+			skuContributor = _skuContributorSupplier.get();
+
+			_skuContributorSupplier = null;
+		}
+
 		return skuContributor;
 	}
 
 	public void setSkuContributor(Boolean skuContributor) {
 		this.skuContributor = skuContributor;
+
+		_skuContributorSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSkuContributor(
 		UnsafeSupplier<Boolean, Exception> skuContributorUnsafeSupplier) {
 
-		try {
-			skuContributor = skuContributorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_skuContributorSupplier = () -> {
+			try {
+				return skuContributorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Whether selecting a value on this option produces a distinct SKU for the parent product; enabling it restricts `fieldType` to select, select_date, or radio."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean skuContributor;
 
-	@Schema(example = "22.50")
+	@JsonIgnore
+	private Supplier<Boolean> _skuContributorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Opaque, type-specific configuration string persisted on the product option link; format is determined by the field type implementation.",
+		example = "22.50"
+	)
 	public String getTypeSettings() {
+		if (_typeSettingsSupplier != null) {
+			typeSettings = _typeSettingsSupplier.get();
+
+			_typeSettingsSupplier = null;
+		}
+
 		return typeSettings;
 	}
 
 	public void setTypeSettings(String typeSettings) {
 		this.typeSettings = typeSettings;
+
+		_typeSettingsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTypeSettings(
 		UnsafeSupplier<String, Exception> typeSettingsUnsafeSupplier) {
 
-		try {
-			typeSettings = typeSettingsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSettingsSupplier = () -> {
+			try {
+				return typeSettingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Opaque, type-specific configuration string persisted on the product option link; format is determined by the field type implementation."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String typeSettings;
+
+	@JsonIgnore
+	private Supplier<String> _typeSettingsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -570,6 +931,8 @@ public class ProductOption implements Serializable {
 
 		sb.append("{");
 
+		Long catalogId = getCatalogId();
+
 		if (catalogId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -579,6 +942,9 @@ public class ProductOption implements Serializable {
 
 			sb.append(catalogId);
 		}
+
+		com.liferay.portal.vulcan.custom.field.CustomField[] customFields =
+			getCustomFields();
 
 		if (customFields != null) {
 			if (sb.length() > 1) {
@@ -590,7 +956,7 @@ public class ProductOption implements Serializable {
 			sb.append("[");
 
 			for (int i = 0; i < customFields.length; i++) {
-				sb.append(String.valueOf(customFields[i]));
+				sb.append(customFields[i]);
 
 				if ((i + 1) < customFields.length) {
 					sb.append(", ");
@@ -599,6 +965,8 @@ public class ProductOption implements Serializable {
 
 			sb.append("]");
 		}
+
+		Boolean definedExternally = getDefinedExternally();
 
 		if (definedExternally != null) {
 			if (sb.length() > 1) {
@@ -610,6 +978,8 @@ public class ProductOption implements Serializable {
 			sb.append(definedExternally);
 		}
 
+		Map<String, String> description = getDescription();
+
 		if (description != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -620,6 +990,8 @@ public class ProductOption implements Serializable {
 			sb.append(_toJSON(description));
 		}
 
+		Boolean facetable = getFacetable();
+
 		if (facetable != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -629,6 +1001,8 @@ public class ProductOption implements Serializable {
 
 			sb.append(facetable);
 		}
+
+		String fieldType = getFieldType();
 
 		if (fieldType != null) {
 			if (sb.length() > 1) {
@@ -644,6 +1018,8 @@ public class ProductOption implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -653,6 +1029,8 @@ public class ProductOption implements Serializable {
 
 			sb.append(id);
 		}
+
+		String infoItemServiceKey = getInfoItemServiceKey();
 
 		if (infoItemServiceKey != null) {
 			if (sb.length() > 1) {
@@ -668,6 +1046,8 @@ public class ProductOption implements Serializable {
 			sb.append("\"");
 		}
 
+		String key = getKey();
+
 		if (key != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -682,6 +1062,8 @@ public class ProductOption implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -692,6 +1074,24 @@ public class ProductOption implements Serializable {
 			sb.append(_toJSON(name));
 		}
 
+		String optionExternalReferenceCode = getOptionExternalReferenceCode();
+
+		if (optionExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"optionExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(optionExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long optionId = getOptionId();
+
 		if (optionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -701,6 +1101,8 @@ public class ProductOption implements Serializable {
 
 			sb.append(optionId);
 		}
+
+		String priceType = getPriceType();
 
 		if (priceType != null) {
 			if (sb.length() > 1) {
@@ -716,6 +1118,8 @@ public class ProductOption implements Serializable {
 			sb.append("\"");
 		}
 
+		Double priority = getPriority();
+
 		if (priority != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -725,6 +1129,8 @@ public class ProductOption implements Serializable {
 
 			sb.append(priority);
 		}
+
+		ProductOptionValue[] productOptionValues = getProductOptionValues();
 
 		if (productOptionValues != null) {
 			if (sb.length() > 1) {
@@ -746,6 +1152,8 @@ public class ProductOption implements Serializable {
 			sb.append("]");
 		}
 
+		Boolean required = getRequired();
+
 		if (required != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -756,6 +1164,8 @@ public class ProductOption implements Serializable {
 			sb.append(required);
 		}
 
+		Boolean skuContributor = getSkuContributor();
+
 		if (skuContributor != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -765,6 +1175,8 @@ public class ProductOption implements Serializable {
 
 			sb.append(skuContributor);
 		}
+
+		String typeSettings = getTypeSettings();
 
 		if (typeSettings != null) {
 			if (sb.length() > 1) {
@@ -785,8 +1197,8 @@ public class ProductOption implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOption",
 		name = "x-class-name"
 	)
@@ -832,7 +1244,10 @@ public class ProductOption implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -878,3 +1293,4 @@ public class ProductOption implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1718900134

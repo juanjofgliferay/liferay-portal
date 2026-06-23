@@ -1,0 +1,28 @@
+.app-details {
+	&-body-container {
+		display: grid;
+		gap: 2rem;
+		grid-template-columns: repeat(auto-fill, minmax(511px, 510px));
+
+		h5 {
+			color: #282934;
+		}
+
+		p {
+			color: #54555f;
+			font-size: 13px;
+		}
+	}
+
+	&-description {
+		color: #6c6c75;
+		font-size: 16px;
+		font-weight: 400;
+		line-height: 24px;
+		vertical-align: middle;
+	}
+
+	&-page-container {
+		width: 100%;
+	}
+}

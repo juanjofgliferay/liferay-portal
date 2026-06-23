@@ -69,7 +69,7 @@ public interface SamlSpMessageLocalService
 	public SamlSpMessage addSamlSpMessage(SamlSpMessage samlSpMessage);
 
 	public SamlSpMessage addSamlSpMessage(
-		String samlIdpEntityId, String samlIdpResponseKey, Date expirationDate,
+		String samlIdpEntityId, Date expirationDate, String samlIdpResponseKey,
 		ServiceContext serviceContext);
 
 	/**
@@ -276,3 +276,4 @@ public interface SamlSpMessageLocalService
 	public SamlSpMessage updateSamlSpMessage(SamlSpMessage samlSpMessage);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1941063503

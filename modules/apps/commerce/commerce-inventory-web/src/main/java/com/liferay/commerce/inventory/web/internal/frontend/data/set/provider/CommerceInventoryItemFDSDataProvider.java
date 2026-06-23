@@ -21,9 +21,9 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,7 +56,7 @@ public class CommerceInventoryItemFDSDataProvider
 				fdsPagination.getEndPosition(),
 				!portletResourcePermission.contains(
 					PermissionThreadLocal.getPermissionChecker(), null,
-					CommerceInventoryActionKeys.MANAGE_INVENTORY)),
+					CommerceInventoryActionKeys.VIEW_INVENTORIES)),
 			ciWarehouseItem -> new InventoryItem(
 				ciWarehouseItem.getSkuCode(),
 				ciWarehouseItem.getUnitOfMeasureKey(),
@@ -80,7 +80,7 @@ public class CommerceInventoryItemFDSDataProvider
 				fdsKeywords.getKeywords(),
 				!portletResourcePermission.contains(
 					PermissionThreadLocal.getPermissionChecker(), null,
-					CommerceInventoryActionKeys.MANAGE_INVENTORY));
+					CommerceInventoryActionKeys.VIEW_INVENTORIES));
 	}
 
 	@Reference

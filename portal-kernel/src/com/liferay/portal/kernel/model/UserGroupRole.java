@@ -117,4 +117,9 @@ public interface UserGroupRole extends PersistedModel, UserGroupRoleModel {
 
 	public int hashCode();
 
+	public boolean hasOrganizationRole();
+
+	public boolean hasSiteRole();
+
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1975264668

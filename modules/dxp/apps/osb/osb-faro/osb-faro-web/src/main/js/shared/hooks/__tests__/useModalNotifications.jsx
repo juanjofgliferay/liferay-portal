@@ -3,10 +3,9 @@ import * as data from 'test/data';
 import mockStore from 'test/mock-store';
 import ModalRenderer from 'shared/components/ModalRenderer';
 import React from 'react';
-import useModalNotifications from '../useModalNotifications';
 import {close, open} from 'shared/actions/modals';
 import {connect} from 'react-redux';
-import {fireEvent, render} from '@testing-library/react';
+import {fireEvent, render, waitFor} from '@testing-library/react';
 import {mockGetDateNow} from 'test/mock-date';
 import {
 	NotificationSubtypes,
@@ -14,9 +13,11 @@ import {
 } from 'shared/util/records/Notification';
 import {Provider} from 'react-redux';
 import {range} from 'lodash';
-import {waitForLoadingToBeRemoved} from 'test/helpers';
+import {useModalNotifications} from 'shared/hooks/useModalNotifications';
 
 jest.unmock('react-dom');
+
+jest.mock('shared/components/modals/NewRequestModal', () => () => null);
 
 const WrapperComponent = connect(null, {close, open})(({close, open}) => {
 	useModalNotifications(close, '23', open);
@@ -43,20 +44,18 @@ describe('useModalNotifications', () => {
 			)
 		);
 
-		const {container} = render(
+		const {getByText} = render(
 			<Provider store={mockStore()}>
 				<ModalRenderer />
 				<WrapperComponent />
 			</Provider>
 		);
 
-		await waitForLoadingToBeRemoved(container);
-
 		jest.runAllTimers();
 
-		await waitForLoadingToBeRemoved(container);
+		await waitFor(() => getByText('Set Timezone'));
 
-		expect(container).toMatchSnapshot();
+		expect(getByText('Set Timezone')).toBeInTheDocument();
 	});
 
 	it('should open another notification modal after closing one when having multiple modals', async () => {
@@ -73,7 +72,7 @@ describe('useModalNotifications', () => {
 			)
 		);
 
-		const {container, getByText} = render(
+		const {getByText} = render(
 			<Provider store={mockStore()}>
 				<ModalRenderer />
 				<WrapperComponent />
@@ -82,7 +81,7 @@ describe('useModalNotifications', () => {
 
 		jest.runAllTimers();
 
-		await waitForLoadingToBeRemoved(container);
+		await waitFor(() => getByText('Do This Later'));
 
 		fireEvent.click(getByText('Do This Later'));
 

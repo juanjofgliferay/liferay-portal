@@ -128,6 +128,8 @@ public class ReleasePersistenceTest {
 
 		newRelease.setBuildDate(RandomTestUtil.nextDate());
 
+		newRelease.setVersionDisplayName(RandomTestUtil.randomString());
+
 		newRelease.setVerified(RandomTestUtil.randomBoolean());
 
 		newRelease.setState(RandomTestUtil.nextInt());
@@ -159,6 +161,9 @@ public class ReleasePersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingRelease.getBuildDate()),
 			Time.getShortTimestamp(newRelease.getBuildDate()));
+		Assert.assertEquals(
+			existingRelease.getVersionDisplayName(),
+			newRelease.getVersionDisplayName());
 		Assert.assertEquals(
 			existingRelease.isVerified(), newRelease.isVerified());
 		Assert.assertEquals(existingRelease.getState(), newRelease.getState());
@@ -203,7 +208,8 @@ public class ReleasePersistenceTest {
 			"Release_", "mvccVersion", true, "releaseId", true, "createDate",
 			true, "modifiedDate", true, "servletContextName", true,
 			"schemaVersion", true, "buildNumber", true, "buildDate", true,
-			"verified", true, "state", true, "testString", true);
+			"versionDisplayName", true, "verified", true, "state", true,
+			"testString", true);
 	}
 
 	@Test
@@ -484,6 +490,8 @@ public class ReleasePersistenceTest {
 
 		release.setBuildDate(RandomTestUtil.nextDate());
 
+		release.setVersionDisplayName(RandomTestUtil.randomString());
+
 		release.setVerified(RandomTestUtil.randomBoolean());
 
 		release.setState(RandomTestUtil.nextInt());
@@ -500,3 +508,4 @@ public class ReleasePersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:356339734

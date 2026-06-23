@@ -1,10 +1,11 @@
+import BaseCard from 'shared/components/base-card';
 import BasePage from 'shared/components/base-page';
 import Card from 'shared/components/Card';
-import CardWithRangeKey from 'shared/hoc/CardWithRangeKey';
 import ChartTooltip, {
 	Alignments,
 	Weights
 } from 'shared/components/chart-tooltip';
+import ClayLink from '@clayui/link';
 import HeatmapChart from 'shared/components/HeatmapChart';
 import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
@@ -12,13 +13,13 @@ import ReactDOMServer from 'react-dom/server';
 import URLConstants from 'shared/util/url-constants';
 import VisitorsByTimeQuery from 'shared/queries/VisitorsByTimeQuery';
 import {compose} from 'shared/hoc';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
-import {graphql} from '@apollo/react-hoc';
+import {graphql, OperationOption} from '@apollo/client/react/hoc';
 import {IBasePageContext} from 'shared/types';
 import {
 	mapPropsToOptions,
 	mapResultToProps
 } from './mappers/visitors-by-time-query';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {sub} from 'shared/util/lang';
 import {withEmpty, withError, withLoading} from 'shared/hoc';
 
@@ -36,7 +37,15 @@ export const formatHour = (hour: string) => {
 	return `${hourDisplay} ${suffix}`;
 };
 
-export const renderTooltip = ({column, row, value}) =>
+export const renderTooltip = ({
+	column,
+	row,
+	value
+}: {
+	column: string;
+	row: string;
+	value: number;
+}) =>
 	ReactDOMServer.renderToString(
 		<ChartTooltip
 			header={[
@@ -68,7 +77,7 @@ const HeatmapChartWithData = compose<any>(
 	graphql(VisitorsByTimeQuery, {
 		options: mapPropsToOptions,
 		props: mapResultToProps
-	}),
+	} as OperationOption<object, object>),
 	withLoading(),
 	withError({page: false}),
 	withEmpty({
@@ -80,7 +89,7 @@ const HeatmapChartWithData = compose<any>(
 					)}
 				</span>
 
-				<a
+				<ClayLink
 					href={URLConstants.SitesDashboardVisitorsByDayAndTime}
 					key='DOCUMENTATION'
 					target='_blank'
@@ -88,7 +97,7 @@ const HeatmapChartWithData = compose<any>(
 					{Liferay.Language.get(
 						'learn-more-about-visitors-by-day-and-time'
 					)}
-				</a>
+				</ClayLink>
 			</>
 		),
 		title: Liferay.Language.get(
@@ -110,16 +119,16 @@ const VisitorsByTimeCard: React.FC<IVisitorsByTimeCardProps> = ({
 	);
 
 	return (
-		<CardWithRangeKey
+		<BaseCard
 			className={className}
-			id={Containers.VisitorsByTimeCard}
 			label={label}
 			legacyDropdownRangeKey={false}
+			reportContainer={ReportContainer.VisitorsByTimeCard}
 		>
 			{({rangeSelectors}) => (
 				<Card.Body>
 					<HeatmapChartWithData
-						columnAxisFormatter={col => col.slice(0, 3)}
+						columnAxisFormatter={(col: string) => col.slice(0, 3)}
 						rangeSelectors={rangeSelectors}
 						renderTooltip={renderTooltip}
 						router={router}
@@ -127,13 +136,13 @@ const VisitorsByTimeCard: React.FC<IVisitorsByTimeCardProps> = ({
 					/>
 				</Card.Body>
 			)}
-		</CardWithRangeKey>
+		</BaseCard>
 	);
 };
 
 VisitorsByTimeCard.propTypes = {
 	className: PropTypes.string,
-	label: PropTypes.string
+	label: PropTypes.string.isRequired
 };
 
 export default VisitorsByTimeCard;

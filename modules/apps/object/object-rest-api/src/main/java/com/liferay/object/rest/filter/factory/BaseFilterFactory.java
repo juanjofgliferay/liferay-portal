@@ -8,6 +8,7 @@ package com.liferay.object.rest.filter.factory;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.rest.filter.parser.ObjectDefinitionFilterParser;
 import com.liferay.object.rest.odata.entity.v1_0.provider.EntityModelProvider;
+import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.filter.InvalidFilterException;
@@ -15,7 +16,7 @@ import com.liferay.portal.odata.filter.expression.Expression;
 import com.liferay.portal.odata.filter.expression.ExpressionVisitException;
 import com.liferay.portal.odata.filter.expression.ExpressionVisitor;
 
-import javax.ws.rs.ServerErrorException;
+import jakarta.ws.rs.ServerErrorException;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -37,6 +38,20 @@ public abstract class BaseFilterFactory<T> implements FilterFactory<T> {
 			entityModel,
 			objectDefinitionFilterParser.parse(
 				entityModel, filterString, objectDefinition),
+			null, objectDefinition);
+	}
+
+	@Override
+	public final T create(
+		Expression filterExpression, Long[] groupIds,
+		ObjectDefinition objectDefinition) {
+
+		if (filterExpression == null) {
+			return null;
+		}
+
+		return _create(
+			getEntityModel(objectDefinition), filterExpression, groupIds,
 			objectDefinition);
 	}
 
@@ -49,7 +64,7 @@ public abstract class BaseFilterFactory<T> implements FilterFactory<T> {
 		}
 
 		return _create(
-			getEntityModel(objectDefinition), filterExpression,
+			getEntityModel(objectDefinition), filterExpression, null,
 			objectDefinition);
 	}
 
@@ -70,6 +85,13 @@ public abstract class BaseFilterFactory<T> implements FilterFactory<T> {
 		}
 	}
 
+	public ExpressionVisitor<?> getExpressionVisitor(
+		EntityModel entityModel, Long[] groupIds,
+		ObjectDefinition objectDefinition) {
+
+		return getExpressionVisitor(entityModel, objectDefinition);
+	}
+
 	public abstract ExpressionVisitor<?> getExpressionVisitor(
 		EntityModel entityModel, ObjectDefinition objectDefinition);
 
@@ -83,13 +105,16 @@ public abstract class BaseFilterFactory<T> implements FilterFactory<T> {
 	@Reference
 	protected ObjectDefinitionFilterParser objectDefinitionFilterParser;
 
+	@Reference
+	protected ObjectFieldLocalService objectFieldLocalService;
+
 	private T _create(
-		EntityModel entityModel, Expression filterExpression,
+		EntityModel entityModel, Expression filterExpression, Long[] groupIds,
 		ObjectDefinition objectDefinition) {
 
 		try {
 			return (T)filterExpression.accept(
-				getExpressionVisitor(entityModel, objectDefinition));
+				getExpressionVisitor(entityModel, groupIds, objectDefinition));
 		}
 		catch (ExpressionVisitException expressionVisitException) {
 			throw new InvalidFilterException(

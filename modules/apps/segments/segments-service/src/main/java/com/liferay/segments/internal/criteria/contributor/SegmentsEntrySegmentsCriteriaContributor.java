@@ -6,7 +6,9 @@
 package com.liferay.segments.internal.criteria.contributor;
 
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
 import com.liferay.segments.criteria.mapper.SegmentsCriteriaJSONObjectMapper;
@@ -14,9 +16,10 @@ import com.liferay.segments.field.Field;
 import com.liferay.segments.internal.odata.entity.EntityModelFieldMapper;
 import com.liferay.segments.internal.odata.entity.SegmentsEntryEntityModel;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,7 +34,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 	property = {
 		"segments.criteria.contributor.key=" + SegmentsEntrySegmentsCriteriaContributor.KEY,
 		"segments.criteria.contributor.model.class.name=*",
-		"segments.criteria.contributor.priority:Integer=1000"
+		"segments.criteria.contributor.priority:Integer=40"
 	},
 	service = SegmentsCriteriaContributor.class
 )
@@ -41,7 +44,7 @@ public class SegmentsEntrySegmentsCriteriaContributor
 	public static final String KEY = "segments";
 
 	@Override
-	public void contribute(
+	public void contributeForMemberLookup(
 		Criteria criteria, String filterString,
 		Criteria.Conjunction conjunction) {
 
@@ -85,6 +88,13 @@ public class SegmentsEntrySegmentsCriteriaContributor
 		return Criteria.Type.REFERRED;
 	}
 
+	@Override
+	public boolean isDisabled(PortletRequest portletRequest) {
+		return Objects.equals(
+			_portal.getPortletId(portletRequest),
+			SegmentsPortletKeys.AUDIENCES);
+	}
+
 	@Reference(
 		cardinality = ReferenceCardinality.MANDATORY,
 		policy = ReferencePolicy.DYNAMIC,
@@ -95,6 +105,9 @@ public class SegmentsEntrySegmentsCriteriaContributor
 
 	@Reference
 	private EntityModelFieldMapper _entityModelFieldMapper;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference(target = "(segments.criteria.mapper.key=odata)")
 	private SegmentsCriteriaJSONObjectMapper _segmentsCriteriaJSONObjectMapper;

@@ -9,7 +9,7 @@ import React from 'react';
 
 import AuditBarChart from '../../../src/main/resources/META-INF/resources/js/components/AuditGraphApp/AuditBarChart';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
 // Mock needed due to a bug in ResponsiveContainer Recharts component
 // See https://github.com/recharts/recharts/issues/2268
@@ -19,8 +19,8 @@ jest.mock('recharts', () => {
 
 	return {
 		...OriginalModule,
-		ResponsiveContainer: ({children, height}) => (
-			<OriginalModule.ResponsiveContainer height={height} width={800}>
+		ResponsiveContainer: ({children}) => (
+			<OriginalModule.ResponsiveContainer aspect={1} width={100}>
 				{children}
 			</OriginalModule.ResponsiveContainer>
 		),

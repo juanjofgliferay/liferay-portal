@@ -66,12 +66,13 @@ public class CommerceInventoryWarehouseServiceWrapper
 
 	@Override
 	public com.liferay.commerce.inventory.model.CommerceInventoryWarehouse
-			fetchByExternalReferenceCode(
+			fetchCommerceInventoryWarehouseByExternalReferenceCode(
 				String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _commerceInventoryWarehouseService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
+		return _commerceInventoryWarehouseService.
+			fetchCommerceInventoryWarehouseByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -103,7 +104,7 @@ public class CommerceInventoryWarehouseServiceWrapper
 					com.liferay.portal.kernel.util.OrderByComparator
 						<com.liferay.commerce.inventory.model.
 							CommerceInventoryWarehouse> orderByComparator)
-			throws com.liferay.portal.kernel.security.auth.PrincipalException {
+			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceInventoryWarehouseService.
 			getCommerceInventoryWarehouses(
@@ -146,11 +147,13 @@ public class CommerceInventoryWarehouseServiceWrapper
 	public java.util.List
 		<com.liferay.commerce.inventory.model.CommerceInventoryWarehouse>
 				getCommerceInventoryWarehouses(
-					long companyId, long groupId, boolean active)
+					long companyId, long accountEntryId, long groupId,
+					boolean active)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceInventoryWarehouseService.
-			getCommerceInventoryWarehouses(companyId, groupId, active);
+			getCommerceInventoryWarehouses(
+				companyId, accountEntryId, groupId, active);
 	}
 
 	@Override
@@ -262,3 +265,4 @@ public class CommerceInventoryWarehouseServiceWrapper
 		_commerceInventoryWarehouseService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-719022370

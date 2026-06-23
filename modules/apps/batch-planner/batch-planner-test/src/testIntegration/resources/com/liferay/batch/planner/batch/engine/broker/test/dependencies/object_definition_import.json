@@ -33,7 +33,7 @@
 			"en_US": "TestObject"
 		},
 		"modifiable": true,
-		"name": "TestObject",
+		"name": "[$OBJECT_DEFINITION_NAME$]",
 		"objectActions": [
 			{
 				"active": true,
@@ -50,9 +50,10 @@
 					"en_US": "actionLabel"
 				},
 				"name": "actionLabel",
-				"objectActionExecutorKey": "groovy",
+				"objectActionExecutorKey": "webhook",
 				"objectActionTriggerKey": "standalone",
 				"parameters": {
+					"url": "http://localhost:8080"
 				},
 				"status": {
 					"code": 0,
@@ -225,10 +226,10 @@
 					},
 					{
 						"name": "fileSource",
-						"value": "userComputer"
+						"value": "userComputerToDocumentsAndMedia"
 					},
 					{
-						"name": "showFilesInDocumentsAndMedia",
+						"name": "showFilesInLibrary",
 						"value": false
 					}
 				],
@@ -479,7 +480,7 @@
 				"unique": false
 			}
 		],
-		"objectFolderExternalReferenceCode": "uncategorized",
+		"objectFolderExternalReferenceCode": "default",
 		"objectLayouts": [
 			{
 				"dateCreated": "2023-09-19T13:44:14Z",
@@ -522,8 +523,8 @@
 				"active": false,
 				"dateCreated": "2023-09-19T14:02:26Z",
 				"dateModified": "2023-09-19T14:02:26Z",
-				"engine": "groovy",
-				"engineLabel": "Groovy",
+				"engine": "ddm",
+				"engineLabel": "Expression Builder",
 				"errorLabel": {
 				},
 				"externalReferenceCode": "74ad169a-6ed2-d875-aff8-a5afde81682e",

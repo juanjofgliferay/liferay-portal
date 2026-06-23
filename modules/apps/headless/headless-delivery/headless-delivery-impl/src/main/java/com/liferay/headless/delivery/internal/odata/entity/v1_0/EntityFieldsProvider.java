@@ -10,15 +10,18 @@ import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.constants.FieldConstants;
 import com.liferay.dynamic.data.mapping.util.DDMIndexer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.odata.entity.BooleanEntityField;
 import com.liferay.portal.odata.entity.DateEntityField;
+import com.liferay.portal.odata.entity.DateTimeEntityField;
 import com.liferay.portal.odata.entity.DoubleEntityField;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.IntegerEntityField;
@@ -27,7 +30,6 @@ import com.liferay.portal.odata.entity.StringEntityField;
 import java.text.DateFormat;
 import java.text.ParseException;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -45,20 +47,9 @@ public class EntityFieldsProvider {
 	public List<EntityField> provide(DDMStructure ddmStructure)
 		throws Exception {
 
-		List<EntityField> entityFields = new ArrayList<>();
-
-		List<DDMFormField> ddmFormFields = ddmStructure.getDDMFormFields(false);
-
-		for (DDMFormField ddmFormField : ddmFormFields) {
-			EntityField entityField = _createEntityField(
-				ddmStructure, ddmFormField);
-
-			if (entityField != null) {
-				entityFields.add(entityField);
-			}
-		}
-
-		return entityFields;
+		return TransformUtil.transform(
+			ddmStructure.getDDMFormFields(false),
+			ddmFormField -> _createEntityField(ddmStructure, ddmFormField));
 	}
 
 	private EntityField _createEntityField(
@@ -95,6 +86,18 @@ public class EntityFieldsProvider {
 				this::_toFieldValue);
 		}
 		else if (Objects.equals(
+					ddmFormField.getDataType(), FieldConstants.DATETIME)) {
+
+			return new DateTimeEntityField(
+				ddmFormField.getFieldReference(),
+				locale -> _toFilterableOrSortableFieldName(
+					ddmStructure.getStructureId(),
+					ddmFormField.getFieldReference(), locale, "String"),
+				locale -> _toFilterableOrSortableFieldName(
+					ddmStructure.getStructureId(),
+					ddmFormField.getFieldReference(), locale, "String"));
+		}
+		else if (Objects.equals(
 					ddmFormField.getDataType(), FieldConstants.DOUBLE) ||
 				 Objects.equals(
 					 ddmFormField.getDataType(), FieldConstants.NUMBER)) {
@@ -117,8 +120,7 @@ public class EntityFieldsProvider {
 					ddmFormField.getFieldReference(), locale, "Number"));
 		}
 		else if (Objects.equals(
-					ddmFormField.getDataType(),
-					DDMFormFieldTypeConstants.RADIO) ||
+					ddmFormField.getType(), DDMFormFieldTypeConstants.RADIO) ||
 				 (Objects.equals(ddmFormField.getIndexType(), "keyword") &&
 				  (Objects.equals(
 					  ddmFormField.getType(),
@@ -148,7 +150,8 @@ public class EntityFieldsProvider {
 			Date date = indexDateFormat.parse(String.valueOf(fieldValue));
 
 			DateFormat searchDateFormat =
-				DateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd");
+				DateFormatFactoryUtil.getSimpleDateFormat(
+					"yyyy-MM-dd", LocaleUtil.US);
 
 			return searchDateFormat.format(date);
 		}

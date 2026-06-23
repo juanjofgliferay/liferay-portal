@@ -30,6 +30,7 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemList;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -62,18 +63,17 @@ import com.liferay.portal.kernel.util.comparator.GroupNameComparator;
 import com.liferay.portal.kernel.util.comparator.UserScreenNameComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletSession;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adam Brandizzi
@@ -239,12 +239,6 @@ public class CalendarDisplayContext {
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "scope"));
 			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(_getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(httpServletRequest, "order-by"));
-			}
 		).build();
 	}
 
@@ -375,76 +369,88 @@ public class CalendarDisplayContext {
 		return _orderByType;
 	}
 
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setActive(Objects.equals(getOrderByCol(), "name"));
+				dropdownItem.setHref(getPortletURL(), "orderByCol", "name");
+				dropdownItem.setLabel(
+					LanguageUtil.get(_themeDisplay.getRequest(), "name"));
+			}
+		).build();
+	}
+
 	public List<Calendar> getOtherCalendars(User user, long[] calendarIds)
 		throws PortalException {
 
-		List<Calendar> otherCalendars = new ArrayList<>();
+		return TransformUtil.transformToList(
+			calendarIds,
+			calendarId -> {
+				Calendar calendar = null;
 
-		for (long calendarId : calendarIds) {
-			Calendar calendar = null;
+				try {
+					calendar = _calendarService.fetchCalendar(calendarId);
+				}
+				catch (PrincipalException principalException) {
+					if (_log.isInfoEnabled()) {
+						_log.info(
+							StringBundler.concat(
+								"No ", ActionKeys.VIEW, " permission for user ",
+								user.getUserId()),
+							principalException);
+					}
 
-			try {
-				calendar = _calendarService.fetchCalendar(calendarId);
-			}
-			catch (PrincipalException principalException) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
-						StringBundler.concat(
-							"No ", ActionKeys.VIEW, " permission for user ",
-							user.getUserId()),
-						principalException);
+					return null;
 				}
 
-				continue;
-			}
+				if (calendar == null) {
+					return null;
+				}
 
-			if (calendar == null) {
-				continue;
-			}
+				CalendarResource calendarResource =
+					calendar.getCalendarResource();
 
-			CalendarResource calendarResource = calendar.getCalendarResource();
+				if (!calendarResource.isActive()) {
+					return null;
+				}
 
-			if (!calendarResource.isActive()) {
-				continue;
-			}
+				Group scopeGroup = _themeDisplay.getScopeGroup();
 
-			Group scopeGroup = _themeDisplay.getScopeGroup();
+				Group calendarGroup = _groupLocalService.getGroup(
+					calendar.getGroupId());
 
-			Group calendarGroup = _groupLocalService.getGroup(
-				calendar.getGroupId());
+				if (scopeGroup.isStagingGroup()) {
+					long calendarGroupId = calendarGroup.getGroupId();
 
-			if (scopeGroup.isStagingGroup()) {
-				long calendarGroupId = calendarGroup.getGroupId();
+					if (calendarGroup.isStagingGroup()) {
+						if (scopeGroup.getGroupId() != calendarGroupId) {
+							calendar =
+								_calendarLocalService.
+									fetchCalendarByUuidAndGroupId(
+										calendar.getUuid(),
+										calendarGroup.getLiveGroupId());
+						}
+					}
+					else if (scopeGroup.getLiveGroupId() == calendarGroupId) {
+						Group stagingGroup = calendarGroup.getStagingGroup();
 
-				if (calendarGroup.isStagingGroup()) {
-					if (scopeGroup.getGroupId() != calendarGroupId) {
 						calendar =
 							_calendarLocalService.fetchCalendarByUuidAndGroupId(
-								calendar.getUuid(),
-								calendarGroup.getLiveGroupId());
+								calendar.getUuid(), stagingGroup.getGroupId());
 					}
 				}
-				else if (scopeGroup.getLiveGroupId() == calendarGroupId) {
-					Group stagingGroup = calendarGroup.getStagingGroup();
-
+				else if (calendarGroup.isStagingGroup()) {
 					calendar =
 						_calendarLocalService.fetchCalendarByUuidAndGroupId(
-							calendar.getUuid(), stagingGroup.getGroupId());
+							calendar.getUuid(), calendarGroup.getLiveGroupId());
 				}
-			}
-			else if (calendarGroup.isStagingGroup()) {
-				calendar = _calendarLocalService.fetchCalendarByUuidAndGroupId(
-					calendar.getUuid(), calendarGroup.getLiveGroupId());
-			}
 
-			if (calendar == null) {
-				continue;
-			}
+				if (calendar == null) {
+					return null;
+				}
 
-			otherCalendars.add(calendar);
-		}
-
-		return otherCalendars;
+				return calendar;
+			});
 	}
 
 	public PortletURL getPortletURL() {
@@ -491,7 +497,7 @@ public class CalendarDisplayContext {
 		}
 
 		calendarResourceSearch.setOrderByComparator(
-			new CalendarResourceNameComparator(orderByAsc));
+			CalendarResourceNameComparator.getInstance(orderByAsc));
 		calendarResourceSearch.setOrderByType(getOrderByType());
 
 		CalendarResourceDisplayTerms displayTerms =
@@ -563,7 +569,7 @@ public class CalendarDisplayContext {
 		}
 
 		_userSearchContainer.setOrderByComparator(
-			new UserScreenNameComparator(orderByAsc));
+			UserScreenNameComparator.getInstance(orderByAsc));
 		_userSearchContainer.setOrderByType(getOrderByType());
 		_userSearchContainer.setResultsAndTotal(
 			() -> UserLocalServiceUtil.search(
@@ -636,17 +642,6 @@ public class CalendarDisplayContext {
 		return _iteratorURL;
 	}
 
-	private List<DropdownItem> _getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(Objects.equals(getOrderByCol(), "name"));
-				dropdownItem.setHref(getPortletURL(), "orderByCol", "name");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_themeDisplay.getRequest(), "name"));
-			}
-		).build();
-	}
-
 	private String _getPortletPreference(String name, String defaultValue) {
 		if (_themeDisplay.isSignedIn()) {
 			PortletPreferences portletPreferences = _getPortletPreferences();
@@ -710,11 +705,7 @@ public class CalendarDisplayContext {
 	}
 
 	private boolean _isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(getKeywords());
 	}
 
 	private boolean _isShowAddResourceButton() {

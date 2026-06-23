@@ -5,32 +5,69 @@
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
 
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.processor.PortletRegistry;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.fragment.service.FragmentEntryLocalService;
+import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
+import com.liferay.headless.delivery.dto.v1_0.FragmentStyle;
+import com.liferay.headless.delivery.dto.v1_0.FragmentViewport;
 import com.liferay.headless.delivery.dto.v1_0.PageElement;
-import com.liferay.headless.delivery.internal.dto.v1_0.util.PageWidgetInstanceDefinitionUtil;
+import com.liferay.headless.delivery.dto.v1_0.PageWidgetInstanceDefinition;
+import com.liferay.headless.delivery.internal.dto.v1_0.mapper.util.StyledLayoutStructureItemUtil;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.layout.exporter.PortletPermissionsExporter;
+import com.liferay.layout.exporter.PortletPreferencesPortletConfigurationExporter;
 import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructureItem;
-import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutService;
+import com.liferay.portal.kernel.service.PortletLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jürgen Kappler
  */
-@Component(
-	property = "class.name=com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem",
-	service = LayoutStructureItemMapper.class
-)
 public class FragmentLayoutStructureItemMapper
 	extends BaseStyledLayoutStructureItemMapper {
+
+	public FragmentLayoutStructureItemMapper(
+		FragmentCollectionContributorRegistry
+			fragmentCollectionContributorRegistry,
+		FragmentEntryConfigurationParser fragmentEntryConfigurationParser,
+		FragmentEntryLinkLocalService fragmentEntryLinkLocalService,
+		FragmentEntryLocalService fragmentEntryLocalService,
+		GroupLocalService groupLocalService,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		JSONFactory jsonFactory, LayoutService layoutService, Portal portal,
+		PortletLocalService portletLocalService,
+		PortletPermissionsExporter portletPermissionsExporter,
+		PortletPreferencesPortletConfigurationExporter
+			portletPreferencesPortletConfigurationExporter,
+		PortletRegistry portletRegistry) {
+
+		super(infoItemServiceRegistry, portal);
+
+		_fragmentEntryLinkLocalService = fragmentEntryLinkLocalService;
+		_jsonFactory = jsonFactory;
+
+		_widgetInstanceMapper = new WidgetInstanceMapper(
+			layoutService, portletLocalService, portletPermissionsExporter,
+			portletPreferencesPortletConfigurationExporter);
+
+		_pageFragmentInstanceDefinitionMapper =
+			new PageFragmentInstanceDefinitionMapper(
+				fragmentCollectionContributorRegistry,
+				fragmentEntryConfigurationParser,
+				_fragmentEntryLinkLocalService, fragmentEntryLocalService,
+				groupLocalService, infoItemServiceRegistry, _jsonFactory,
+				portal, portletRegistry, _widgetInstanceMapper);
+	}
 
 	@Override
 	public PageElement getPageElement(
@@ -48,40 +85,37 @@ public class FragmentLayoutStructureItemMapper
 			return null;
 		}
 
-		JSONObject editableValuesJSONObject = null;
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
 
-		try {
-			editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
-			}
-
+		if (editableValuesJSONObject == null) {
 			return null;
 		}
 
 		String portletId = editableValuesJSONObject.getString("portletId");
 
-		JSONObject itemConfigJSONObject =
-			fragmentStyledLayoutStructureItem.getItemConfigJSONObject();
-
 		if (Validator.isNull(portletId)) {
 			return new PageElement() {
 				{
-					definition =
-						_pageFragmentInstanceDefinitionMapper.
-							getPageFragmentInstanceDefinition(
-								fragmentStyledLayoutStructureItem,
-								toFragmentStyle(
-									itemConfigJSONObject.getJSONObject(
-										"styles"),
-									saveMappingConfiguration),
-								getFragmentViewPorts(itemConfigJSONObject),
-								saveInlineContent, saveMappingConfiguration);
-					id = layoutStructureItem.getItemId();
-					type = Type.FRAGMENT;
+					setDefinition(
+						() -> {
+							JSONObject itemConfigJSONObject =
+								fragmentStyledLayoutStructureItem.
+									getItemConfigJSONObject();
+
+							return _pageFragmentInstanceDefinitionMapper.
+								getPageFragmentInstanceDefinition(
+									fragmentStyledLayoutStructureItem,
+									toFragmentStyle(
+										itemConfigJSONObject.getJSONObject(
+											"styles"),
+										saveMappingConfiguration),
+									getFragmentViewPorts(itemConfigJSONObject),
+									saveInlineContent,
+									saveMappingConfiguration);
+						});
+					setId(layoutStructureItem::getItemId);
+					setType(() -> Type.FRAGMENT);
 				}
 			};
 		}
@@ -90,9 +124,13 @@ public class FragmentLayoutStructureItemMapper
 
 		return new PageElement() {
 			{
-				definition =
-					PageWidgetInstanceDefinitionUtil.
-						toPageWidgetInstanceDefinition(
+				setDefinition(
+					() -> {
+						JSONObject itemConfigJSONObject =
+							fragmentStyledLayoutStructureItem.
+								getItemConfigJSONObject();
+
+						return _toPageWidgetInstanceDefinition(
 							fragmentEntryLink,
 							fragmentStyledLayoutStructureItem,
 							itemConfigJSONObject.getString("name", null),
@@ -101,28 +139,53 @@ public class FragmentLayoutStructureItemMapper
 								saveMappingConfiguration),
 							getFragmentViewPorts(
 								itemConfigJSONObject.getJSONObject("style")),
-							PortletIdCodec.encode(portletId, instanceId),
-							_widgetInstanceMapper);
-				id = layoutStructureItem.getItemId();
-				type = Type.WIDGET;
+							PortletIdCodec.encode(portletId, instanceId));
+					});
+				setId(layoutStructureItem::getItemId);
+				setType(() -> Type.WIDGET);
 			}
 		};
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		FragmentLayoutStructureItemMapper.class);
+	private PageWidgetInstanceDefinition _toPageWidgetInstanceDefinition(
+		FragmentEntryLink fragmentEntryLink,
+		FragmentStyledLayoutStructureItem fragmentStyledLayoutStructureItem,
+		String nameValue,
+		FragmentStyle pageWidgetInstanceDefinitionFragmentStyle,
+		FragmentViewport[] pageWidgetInstanceDefinitionFragmentViewports,
+		String portletId) {
 
-	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+		if (Validator.isNull(portletId)) {
+			return null;
+		}
 
-	@Reference
-	private JSONFactory _jsonFactory;
+		return new PageWidgetInstanceDefinition() {
+			{
+				setCssClasses(
+					() -> StyledLayoutStructureItemUtil.getCssClasses(
+						fragmentStyledLayoutStructureItem));
+				setCustomCSS(
+					() -> StyledLayoutStructureItemUtil.getCustomCSS(
+						fragmentStyledLayoutStructureItem));
+				setCustomCSSViewports(
+					() -> StyledLayoutStructureItemUtil.getCustomCSSViewports(
+						fragmentStyledLayoutStructureItem));
+				setFragmentStyle(
+					() -> pageWidgetInstanceDefinitionFragmentStyle);
+				setFragmentViewports(
+					() -> pageWidgetInstanceDefinitionFragmentViewports);
+				setName(() -> nameValue);
+				setWidgetInstance(
+					() -> _widgetInstanceMapper.getWidgetInstance(
+						fragmentEntryLink, portletId));
+			}
+		};
+	}
 
-	@Reference
-	private PageFragmentInstanceDefinitionMapper
+	private final FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+	private final JSONFactory _jsonFactory;
+	private final PageFragmentInstanceDefinitionMapper
 		_pageFragmentInstanceDefinitionMapper;
-
-	@Reference
-	private WidgetInstanceMapper _widgetInstanceMapper;
+	private final WidgetInstanceMapper _widgetInstanceMapper;
 
 }

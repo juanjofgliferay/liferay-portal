@@ -8,6 +8,7 @@ package com.liferay.portal.search.test.util.indexing;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
+import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
@@ -17,11 +18,12 @@ import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.search.TermQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
-import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryImpl;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.aggregation.Aggregation;
 import com.liferay.portal.search.aggregation.AggregationResult;
@@ -33,24 +35,17 @@ import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
-import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.highlight.FieldConfigBuilderFactory;
 import com.liferay.portal.search.highlight.HighlightBuilderFactory;
 import com.liferay.portal.search.internal.aggregation.AggregationsImpl;
-import com.liferay.portal.search.internal.document.DocumentBuilderFactoryImpl;
 import com.liferay.portal.search.internal.filter.ComplexQueryPartBuilderFactoryImpl;
-import com.liferay.portal.search.internal.geolocation.GeoBuildersImpl;
 import com.liferay.portal.search.internal.highlight.FieldConfigBuilderFactoryImpl;
 import com.liferay.portal.search.internal.highlight.HighlightBuilderFactoryImpl;
 import com.liferay.portal.search.internal.legacy.searcher.SearchRequestBuilderImpl;
 import com.liferay.portal.search.internal.legacy.searcher.SearchResponseBuilderImpl;
-import com.liferay.portal.search.internal.query.QueriesImpl;
 import com.liferay.portal.search.internal.rescore.RescoreBuilderFactoryImpl;
-import com.liferay.portal.search.internal.script.ScriptsImpl;
 import com.liferay.portal.search.internal.sort.SortsImpl;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.rescore.RescoreBuilderFactory;
-import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.SearchResponseBuilder;
@@ -59,6 +54,7 @@ import com.liferay.portal.search.test.util.DocumentsAssert;
 import com.liferay.portal.search.test.util.IdempotentRetryAssert;
 import com.liferay.portal.search.test.util.SearchMapUtil;
 import com.liferay.portal.search.test.util.document.DocumentTranslator;
+import com.liferay.portal.util.FastDateFormatFactoryImpl;
 
 import java.io.Serializable;
 
@@ -89,6 +85,10 @@ public abstract class BaseIndexingTestCase {
 		_indexingFixture = null;
 
 		_documentFixture.setUp();
+
+		ReflectionTestUtil.setFieldValue(
+			FastDateFormatFactoryUtil.class, "_fastDateFormatFactory",
+			new FastDateFormatFactoryImpl());
 	}
 
 	@AfterClass
@@ -108,7 +108,7 @@ public abstract class BaseIndexingTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		setUpIndexingFixture();
+		_setUpIndexingFixture();
 
 		Class<?> clazz = getClass();
 
@@ -158,7 +158,7 @@ public abstract class BaseIndexingTestCase {
 
 	protected void addDocument(DocumentCreationHelper documentCreationHelper) {
 		Document document = DocumentFixture.newDocument(
-			getCompanyId(), GROUP_ID, _entryClassName);
+			getCompanyId(), _GROUP_ID, _entryClassName);
 
 		documentCreationHelper.populate(document);
 
@@ -203,8 +203,9 @@ public abstract class BaseIndexingTestCase {
 	protected SearchContext createSearchContext() {
 		SearchContext searchContext = new SearchContext();
 
+		searchContext.setCommitImmediately(true);
 		searchContext.setCompanyId(getCompanyId());
-		searchContext.setGroupIds(new long[] {GROUP_ID});
+		searchContext.setGroupIds(new long[] {_GROUP_ID});
 
 		QueryConfig queryConfig = searchContext.getQueryConfig();
 
@@ -226,13 +227,13 @@ public abstract class BaseIndexingTestCase {
 			toMap(Field.COMPANY_ID, String.valueOf(getCompanyId())),
 			toMap(Field.ENTRY_CLASS_NAME, _entryClassName));
 
-		BooleanQueryImpl booleanQueryImpl = new BooleanQueryImpl();
+		BooleanQuery booleanQuery = new BooleanQuery();
 
 		map.forEach(
-			(key, value) -> booleanQueryImpl.add(
-				new TermQueryImpl(key, value), BooleanClauseOccur.MUST));
+			(key, value) -> booleanQuery.add(
+				new TermQuery(key, value), BooleanClauseOccur.MUST));
 
-		return booleanQueryImpl;
+		return booleanQuery;
 	}
 
 	protected String getEntryClassName() {
@@ -240,7 +241,11 @@ public abstract class BaseIndexingTestCase {
 	}
 
 	protected long getGroupId() {
-		return GROUP_ID;
+		return _GROUP_ID;
+	}
+
+	protected String getIndexName() {
+		return _indexingFixture.getIndexName();
 	}
 
 	protected IndexSearcher getIndexSearcher() {
@@ -256,7 +261,7 @@ public abstract class BaseIndexingTestCase {
 	}
 
 	protected DocumentBuilder newDocumentBuilder() {
-		return documentBuilderFactory.builder(
+		return DocumentBuilderFactory.builder(
 		).setLong(
 			Field.COMPANY_ID, getCompanyId()
 		).setString(
@@ -300,39 +305,18 @@ public abstract class BaseIndexingTestCase {
 		query.setPreBooleanFilter(booleanFilter);
 	}
 
-	protected void setUpIndexingFixture() throws Exception {
-		if (_indexingFixture != null) {
-			Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
-
-			return;
-		}
-
-		_indexingFixture = createIndexingFixture();
-
-		Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
-
-		_indexingFixture.setUp();
-	}
-
-	protected static final long GROUP_ID = RandomTestUtil.randomLong();
-
 	protected final AggregationFixture aggregationFixture =
 		new AggregationFixture();
 	protected final Aggregations aggregations = new AggregationsImpl();
 	protected final ComplexQueryPartBuilderFactory
 		complexQueryPartBuilderFactory =
 			new ComplexQueryPartBuilderFactoryImpl();
-	protected DocumentBuilderFactory documentBuilderFactory =
-		new DocumentBuilderFactoryImpl();
 	protected final FieldConfigBuilderFactory fieldConfigBuilderFactory =
 		new FieldConfigBuilderFactoryImpl();
-	protected final GeoBuilders geoBuilders = new GeoBuildersImpl();
 	protected final HighlightBuilderFactory highlightBuilderFactory =
 		new HighlightBuilderFactoryImpl();
-	protected final Queries queries = new QueriesImpl();
 	protected final RescoreBuilderFactory rescoreBuilderFactory =
 		new RescoreBuilderFactoryImpl();
-	protected final Scripts scripts = new ScriptsImpl();
 	protected final Sorts sorts = new SortsImpl();
 
 	protected class IndexingTestHelper {
@@ -374,13 +358,13 @@ public abstract class BaseIndexingTestCase {
 		public <AR extends AggregationResult> AR getAggregationResult(
 			Aggregation aggregation) {
 
-			return getAggregationResult(aggregation.getName());
+			return _getAggregationResult(aggregation.getName());
 		}
 
 		public <AR extends AggregationResult> AR getAggregationResult(
 			PipelineAggregation pipelineAggregation) {
 
-			return getAggregationResult(pipelineAggregation.getName());
+			return _getAggregationResult(pipelineAggregation.getName());
 		}
 
 		public <AR extends AggregationResult> AR getChildAggregationResult(
@@ -407,7 +391,7 @@ public abstract class BaseIndexingTestCase {
 
 		public void search() {
 			_hits = BaseIndexingTestCase.this.search(
-				_searchContext, getQuery());
+				_searchContext, _getQuery());
 
 			SearchResponseBuilder searchResponseBuilder =
 				new SearchResponseBuilderImpl(_searchContext);
@@ -417,7 +401,7 @@ public abstract class BaseIndexingTestCase {
 
 		public long searchCount() {
 			long count = BaseIndexingTestCase.this.searchCount(
-				_searchContext, getQuery());
+				_searchContext, _getQuery());
 
 			SearchResponseBuilder searchResponseBuilder =
 				new SearchResponseBuilderImpl(_searchContext);
@@ -463,7 +447,7 @@ public abstract class BaseIndexingTestCase {
 			searchResponseConsumer.accept(_searchResponse);
 		}
 
-		protected <AR extends AggregationResult> AR getAggregationResult(
+		private <AR extends AggregationResult> AR _getAggregationResult(
 			String name) {
 
 			AggregationResult aggregationResult =
@@ -474,7 +458,7 @@ public abstract class BaseIndexingTestCase {
 			return (AR)aggregationResult;
 		}
 
-		protected Query getQuery() {
+		private Query _getQuery() {
 			Query query = _query;
 
 			if (query == null) {
@@ -518,6 +502,22 @@ public abstract class BaseIndexingTestCase {
 			throw new RuntimeException(throwable);
 		}
 	}
+
+	private void _setUpIndexingFixture() throws Exception {
+		if (_indexingFixture != null) {
+			Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
+
+			return;
+		}
+
+		_indexingFixture = createIndexingFixture();
+
+		Assume.assumeTrue(_indexingFixture.isSearchEngineAvailable());
+
+		_indexingFixture.setUp();
+	}
+
+	private static final long _GROUP_ID = RandomTestUtil.randomLong();
 
 	private static final DocumentFixture _documentFixture =
 		new DocumentFixture();

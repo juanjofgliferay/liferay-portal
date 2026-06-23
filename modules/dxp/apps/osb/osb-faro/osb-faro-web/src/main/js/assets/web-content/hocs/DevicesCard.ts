@@ -1,10 +1,16 @@
 import getDevicesMapper from 'cerebro-shared/hocs/mappers/devices';
 import URLConstants from 'shared/util/url-constants';
 import {BROWSER_FRAGMENT, DEVICE_FRAGMENT} from 'shared/queries/fragments';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
-import {gql} from 'apollo-boost';
-import {graphql} from '@apollo/react-hoc';
+import {gql} from '@apollo/client';
+import {graphql, OperationOption} from '@apollo/client/react/hoc';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 import {withDevicesCard} from 'shared/hoc/DevicesCard';
+
+type JournalMetricResult = {
+	journal: {
+		viewsMetric: unknown;
+	};
+};
 
 const BROWSER_DEVICE_QUERY = gql`
 	query WebContentMetrics(
@@ -53,7 +59,9 @@ const BROWSER_DEVICE_QUERY = gql`
 const withWebContentDevices = () =>
 	graphql(
 		BROWSER_DEVICE_QUERY,
-		getDevicesMapper(result => result.journal.viewsMetric)
+		getDevicesMapper(
+			(result: JournalMetricResult) => result.journal.viewsMetric
+		) as OperationOption<object, object>
 	);
 
 export default withDevicesCard(withWebContentDevices, {
@@ -61,6 +69,6 @@ export default withDevicesCard(withWebContentDevices, {
 		'learn-more-about-views-by-technology'
 	),
 	documentationUrl: URLConstants.SitesDashboardWebContentViewsByTechnology,
-	id: Containers.ViewsByTechnologyCard,
+	reportContainer: ReportContainer.ViewsByTechnologyCard,
 	title: Liferay.Language.get('there-are-no-views-on-the-selected-period')
 });

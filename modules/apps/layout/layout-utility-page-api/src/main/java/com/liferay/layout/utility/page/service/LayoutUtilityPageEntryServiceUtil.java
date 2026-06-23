@@ -7,6 +7,7 @@ package com.liferay.layout.utility.page.service;
 
 import com.liferay.layout.utility.page.model.LayoutUtilityPageEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -33,14 +34,14 @@ public class LayoutUtilityPageEntryServiceUtil {
 	public static LayoutUtilityPageEntry addLayoutUtilityPageEntry(
 			String externalReferenceCode, long groupId, long plid,
 			long previewFileEntryId, boolean defaultLayoutUtilityPageEntry,
-			String name, String type, long masterLayoutPlid,
+			String name, String type, String masterLayoutPageTemplateEntryERC,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addLayoutUtilityPageEntry(
 			externalReferenceCode, groupId, plid, previewFileEntryId,
-			defaultLayoutUtilityPageEntry, name, type, masterLayoutPlid,
-			serviceContext);
+			defaultLayoutUtilityPageEntry, name, type,
+			masterLayoutPageTemplateEntryERC, serviceContext);
 	}
 
 	public static LayoutUtilityPageEntry copyLayoutUtilityPageEntry(
@@ -60,11 +61,28 @@ public class LayoutUtilityPageEntryServiceUtil {
 			layoutUtilityPageEntryId);
 	}
 
+	public static LayoutUtilityPageEntry deleteLayoutUtilityPageEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteLayoutUtilityPageEntry(
+			externalReferenceCode, groupId);
+	}
+
 	public static LayoutUtilityPageEntry fetchLayoutUtilityPageEntry(
 		long layoutUtilityPageEntryId) {
 
 		return getService().fetchLayoutUtilityPageEntry(
 			layoutUtilityPageEntryId);
+	}
+
+	public static LayoutUtilityPageEntry
+			fetchLayoutUtilityPageEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().fetchLayoutUtilityPageEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	public static LayoutUtilityPageEntry getDefaultLayoutUtilityPageEntry(
@@ -96,8 +114,46 @@ public class LayoutUtilityPageEntryServiceUtil {
 			groupId, type, start, end, orderByComparator);
 	}
 
+	public static List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String keyword, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
+
+		return getService().getLayoutUtilityPageEntries(
+			groupId, keyword, types, start, end, orderByComparator);
+	}
+
+	public static List<LayoutUtilityPageEntry> getLayoutUtilityPageEntries(
+		long groupId, String[] types, int start, int end,
+		OrderByComparator<LayoutUtilityPageEntry> orderByComparator) {
+
+		return getService().getLayoutUtilityPageEntries(
+			groupId, types, start, end, orderByComparator);
+	}
+
 	public static int getLayoutUtilityPageEntriesCount(long groupId) {
 		return getService().getLayoutUtilityPageEntriesCount(groupId);
+	}
+
+	public static int getLayoutUtilityPageEntriesCount(
+		long groupId, String keyword, String[] types) {
+
+		return getService().getLayoutUtilityPageEntriesCount(
+			groupId, keyword, types);
+	}
+
+	public static int getLayoutUtilityPageEntriesCount(
+		long groupId, String[] types) {
+
+		return getService().getLayoutUtilityPageEntriesCount(groupId, types);
+	}
+
+	public static LayoutUtilityPageEntry
+			getLayoutUtilityPageEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getLayoutUtilityPageEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -126,29 +182,31 @@ public class LayoutUtilityPageEntryServiceUtil {
 	}
 
 	public static LayoutUtilityPageEntry updateLayoutUtilityPageEntry(
-			long layoutUtilityPageEntryId, long previewFileEntryId)
+			long layoutUtilityPageEntryId, long previewFileEntryId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateLayoutUtilityPageEntry(
-			layoutUtilityPageEntryId, previewFileEntryId);
+			layoutUtilityPageEntryId, previewFileEntryId, serviceContext);
 	}
 
 	public static LayoutUtilityPageEntry updateLayoutUtilityPageEntry(
-			long layoutUtilityPageEntryId, String name)
+			long layoutUtilityPageEntryId, String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateLayoutUtilityPageEntry(
-			layoutUtilityPageEntryId, name);
+			layoutUtilityPageEntryId, name, serviceContext);
 	}
 
 	public static LayoutUtilityPageEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(LayoutUtilityPageEntryService service) {
-		_service = service;
-	}
-
-	private static volatile LayoutUtilityPageEntryService _service;
+	private static final Snapshot<LayoutUtilityPageEntryService>
+		_serviceSnapshot = new Snapshot<>(
+			LayoutUtilityPageEntryServiceUtil.class,
+			LayoutUtilityPageEntryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1090309240

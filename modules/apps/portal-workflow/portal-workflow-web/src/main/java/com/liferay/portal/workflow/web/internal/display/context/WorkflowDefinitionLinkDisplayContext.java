@@ -5,24 +5,14 @@
 
 package com.liferay.portal.workflow.web.internal.display.context;
 
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.exception.NoSuchWorkflowDefinitionLinkException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
@@ -57,6 +47,13 @@ import com.liferay.portal.workflow.web.internal.util.filter.WorkflowDefinitionLi
 import com.liferay.portal.workflow.web.internal.util.filter.WorkflowDefinitionLinkSearchEntryResourcePredicate;
 import com.liferay.portal.workflow.web.internal.util.filter.WorkflowDefinitionScopePredicate;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -64,14 +61,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.function.Predicate;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Leonardo Barros
@@ -96,9 +85,6 @@ public class WorkflowDefinitionLinkDisplayContext {
 		_workflowDefinitionLinkRequestHelper =
 			new WorkflowDefinitionLinkRequestHelper(renderRequest);
 
-		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
-			_httpServletRequest);
-
 		_resourceBundleLoader = resourceBundleLoader;
 		_workflowHandlerVisibleFilter = workflowHandlerVisibleFilter;
 		_workflowComparatorFactory = workflowComparatorFactory;
@@ -111,38 +97,24 @@ public class WorkflowDefinitionLinkDisplayContext {
 			_workflowDefinitionLinkLocalService.
 				fetchDefaultWorkflowDefinitionLink(
 					_workflowDefinitionLinkRequestHelper.getCompanyId(),
-					className, 0, 0);
+					className);
 
 		if (defaultWorkflowDefinitionLink == null) {
 			return null;
 		}
 
-		return WorkflowDefinitionManagerUtil.getLatestWorkflowDefinition(
+		return WorkflowDefinitionManagerUtil.liberalGetLatestWorkflowDefinition(
 			_workflowDefinitionLinkRequestHelper.getCompanyId(),
 			defaultWorkflowDefinitionLink.getWorkflowDefinitionName());
-	}
-
-	public String getClearResultsURL() {
-		return PortletURLBuilder.create(
-			getPortletURL()
-		).setKeywords(
-			StringPool.BLANK
-		).buildString();
 	}
 
 	public String getDefaultWorkflowDefinitionLabel(String className)
 		throws PortalException {
 
-		if (isControlPanelPortlet()) {
-			return LanguageUtil.get(
-				_workflowDefinitionLinkRequestHelper.getRequest(),
-				"no-workflow");
-		}
-
 		WorkflowDefinition defaultWorkflowDefinition =
 			fetchDefaultWorkflowDefinition(className);
 
-		if (defaultWorkflowDefinition == null) {
+		if ((defaultWorkflowDefinition == null) || isControlPanelPortlet()) {
 			return LanguageUtil.get(
 				_workflowDefinitionLinkRequestHelper.getRequest(),
 				"no-workflow");
@@ -153,27 +125,6 @@ public class WorkflowDefinitionLinkDisplayContext {
 			defaultWorkflowDefinition.getTitle(
 				LanguageUtil.getLanguageId(
 					_workflowDefinitionLinkRequestHelper.getLocale())));
-	}
-
-	public DropdownItemList getFilterOptions(
-		HttpServletRequest httpServletRequest) {
-
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					DropdownItemListBuilder.add(
-						_getOrderByDropdownItem(
-							"resource", _getCurrentOrder(httpServletRequest))
-					).add(
-						_getOrderByDropdownItem(
-							"workflow", _getCurrentOrder(httpServletRequest))
-					).build());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_workflowDefinitionLinkRequestHelper.getRequest(),
-						"order-by"));
-			}
-		).build();
 	}
 
 	public long getGroupId() {
@@ -339,46 +290,6 @@ public class WorkflowDefinitionLinkDisplayContext {
 		return searchContainer;
 	}
 
-	public String getSearchURL() {
-		return PortletURLBuilder.create(
-			getPortletURL()
-		).setParameter(
-			"groupId",
-			() -> {
-				ThemeDisplay themeDisplay =
-					_workflowDefinitionLinkRequestHelper.getThemeDisplay();
-
-				return themeDisplay.getScopeGroupId();
-			}
-		).buildString();
-	}
-
-	public String getSortingURL() throws PortletException {
-		return PortletURLBuilder.createRenderURL(
-			_workflowDefinitionLinkRequestHelper.getLiferayPortletResponse()
-		).setParameter(
-			"orderByCol", getOrderByCol()
-		).setParameter(
-			"orderByType",
-			() -> {
-				if (Objects.equals(getOrderByType(), "asc")) {
-					return "desc";
-				}
-
-				return "asc";
-			}
-		).setParameter(
-			"tab", WorkflowWebKeys.WORKFLOW_TAB_DEFINITION_LINK
-		).buildString();
-	}
-
-	public int getTotalItems() throws PortalException {
-		SearchContainer<WorkflowDefinitionLinkSearchEntry> searchContainer =
-			getSearchContainer();
-
-		return searchContainer.getTotal();
-	}
-
 	public String getWorkflowDefinitionLabel(
 		WorkflowDefinition workflowDefinition) {
 
@@ -395,7 +306,7 @@ public class WorkflowDefinitionLinkDisplayContext {
 		}
 
 		_workflowDefinitions = ListUtil.filter(
-			WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(
+			WorkflowDefinitionManagerUtil.liberalGetActiveWorkflowDefinitions(
 				_workflowDefinitionLinkRequestHelper.getCompanyId(),
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 				_workflowComparatorFactory.getDefinitionNameComparator(true)),
@@ -413,14 +324,31 @@ public class WorkflowDefinitionLinkDisplayContext {
 	}
 
 	public boolean isControlPanelPortlet() {
-		if (Objects.equals(
-				_getPortletName(),
-				WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW)) {
+		return Objects.equals(
+			_getPortletName(), WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW);
+	}
 
+	public boolean isWorkflowDefinitionActive(
+			WorkflowDefinitionLinkSearchEntry workflowDefinitionLinkSearchEntry)
+		throws PortalException {
+
+		WorkflowDefinitionLink workflowDefinitionLink =
+			_workflowDefinitionLinkLocalService.fetchWorkflowDefinitionLink(
+				_workflowDefinitionLinkRequestHelper.getCompanyId(),
+				getGroupId(), workflowDefinitionLinkSearchEntry.getClassName(),
+				0, 0, true);
+
+		if (workflowDefinitionLink == null) {
 			return true;
 		}
 
-		return false;
+		WorkflowDefinition workflowDefinition =
+			WorkflowDefinitionManagerUtil.liberalGetWorkflowDefinition(
+				_workflowDefinitionLinkRequestHelper.getCompanyId(),
+				workflowDefinitionLink.getWorkflowDefinitionName(),
+				workflowDefinitionLink.getWorkflowDefinitionVersion());
+
+		return workflowDefinition.isActive();
 	}
 
 	public boolean isWorkflowDefinitionEquals(
@@ -441,8 +369,7 @@ public class WorkflowDefinitionLinkDisplayContext {
 	}
 
 	public boolean isWorkflowDefinitionSelected(
-			WorkflowDefinition workflowDefinition, String className)
-		throws PortalException {
+		WorkflowDefinition workflowDefinition, String className) {
 
 		WorkflowDefinitionLink workflowDefinitionLink =
 			_getWorkflowDefinitionLink(className);
@@ -501,6 +428,17 @@ public class WorkflowDefinitionLinkDisplayContext {
 		return predicate;
 	}
 
+	protected WorkflowDefinitionLinkSearchEntry
+			createWorkflowDefinitionLinkSearchEntry(
+				WorkflowHandler<?> workflowHandler, Locale locale)
+		throws PortalException {
+
+		return new WorkflowDefinitionLinkSearchEntry(
+			workflowHandler.getClassName(),
+			HtmlUtil.escapeAttribute(workflowHandler.getType(locale)),
+			getWorkflowDefinitionLabel(workflowHandler));
+	}
+
 	protected List<WorkflowDefinitionLinkSearchEntry> filter(
 		List<WorkflowDefinitionLinkSearchEntry>
 			workflowDefinitionLinkSearchEntries,
@@ -535,6 +473,23 @@ public class WorkflowDefinitionLinkDisplayContext {
 			}
 		}
 
+		WorkflowDefinitionLink workflowDefinitionLink =
+			_getWorkflowDefinitionLink(workflowHandler.getClassName());
+
+		if (workflowDefinitionLink != null) {
+			WorkflowDefinition workflowDefinition =
+				WorkflowDefinitionManagerUtil.liberalGetWorkflowDefinition(
+					_workflowDefinitionLinkRequestHelper.getCompanyId(),
+					workflowDefinitionLink.getWorkflowDefinitionName(),
+					workflowDefinitionLink.getWorkflowDefinitionVersion());
+
+			if (!workflowDefinition.isActive()) {
+				return workflowDefinition.getTitle(
+					LanguageUtil.getLanguageId(
+						_workflowDefinitionLinkRequestHelper.getLocale()));
+			}
+		}
+
 		return getDefaultWorkflowDefinitionLabel(
 			workflowHandler.getClassName());
 	}
@@ -566,16 +521,6 @@ public class WorkflowDefinitionLinkDisplayContext {
 			});
 	}
 
-	private WorkflowDefinitionLinkSearchEntry
-			_createWorkflowDefinitionLinkSearchEntry(
-				WorkflowHandler<?> workflowHandler, Locale locale)
-		throws PortalException {
-
-		return new WorkflowDefinitionLinkSearchEntry(
-			workflowHandler.getClassName(), workflowHandler.getType(locale),
-			getWorkflowDefinitionLabel(workflowHandler));
-	}
-
 	private List<WorkflowDefinitionLinkSearchEntry>
 			_createWorkflowDefinitionLinkSearchEntryList()
 		throws PortalException {
@@ -592,7 +537,7 @@ public class WorkflowDefinitionLinkDisplayContext {
 
 			WorkflowDefinitionLinkSearchEntry
 				workflowDefinitionLinkSearchEntry =
-					_createWorkflowDefinitionLinkSearchEntry(
+					createWorkflowDefinitionLinkSearchEntry(
 						workflowHandler, themeDisplay.getLocale());
 
 			workflowDefinitionLinkSearchEntries.add(
@@ -600,24 +545,6 @@ public class WorkflowDefinitionLinkDisplayContext {
 		}
 
 		return workflowDefinitionLinkSearchEntries;
-	}
-
-	private String _getCurrentOrder(HttpServletRequest httpServletRequest) {
-		return ParamUtil.getString(
-			httpServletRequest, "orderByCol", "resource");
-	}
-
-	private UnsafeConsumer<DropdownItem, Exception> _getOrderByDropdownItem(
-		String orderByCol, String currentOrder) {
-
-		return dropdownItem -> {
-			dropdownItem.setActive(Objects.equals(currentOrder, orderByCol));
-			dropdownItem.setHref(getPortletURL(), "orderByCol", orderByCol);
-			dropdownItem.setLabel(
-				LanguageUtil.get(
-					_workflowDefinitionLinkRequestHelper.getRequest(),
-					orderByCol));
-		};
 	}
 
 	private String _getPortletName() {
@@ -629,44 +556,26 @@ public class WorkflowDefinitionLinkDisplayContext {
 		return portletDisplay.getPortletName();
 	}
 
-	private WorkflowDefinitionLink _getWorkflowDefinitionLink(String className)
-		throws PortalException {
+	private WorkflowDefinitionLink _getWorkflowDefinitionLink(
+		String className) {
 
-		try {
-			if (isControlPanelPortlet()) {
-				return _workflowDefinitionLinkLocalService.
-					getDefaultWorkflowDefinitionLink(
-						_workflowDefinitionLinkRequestHelper.getCompanyId(),
-						className, 0, 0);
-			}
-
+		if (isControlPanelPortlet()) {
 			return _workflowDefinitionLinkLocalService.
-				getWorkflowDefinitionLink(
+				fetchDefaultWorkflowDefinitionLink(
 					_workflowDefinitionLinkRequestHelper.getCompanyId(),
-					getGroupId(), className, 0, 0, true);
+					className);
 		}
-		catch (NoSuchWorkflowDefinitionLinkException
-					noSuchWorkflowDefinitionLinkException) {
 
-			// LPS-52675
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchWorkflowDefinitionLinkException);
-			}
-
-			return null;
-		}
+		return _workflowDefinitionLinkLocalService.fetchWorkflowDefinitionLink(
+			_workflowDefinitionLinkRequestHelper.getCompanyId(), getGroupId(),
+			className, 0, 0, true);
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		WorkflowDefinitionLinkDisplayContext.class);
 
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private String _orderByCol;
 	private String _orderByType;
-	private final PortalPreferences _portalPreferences;
 	private final ResourceBundleLoader _resourceBundleLoader;
 	private final WorkflowComparatorFactory _workflowComparatorFactory;
 	private final WorkflowDefinitionLinkLocalService

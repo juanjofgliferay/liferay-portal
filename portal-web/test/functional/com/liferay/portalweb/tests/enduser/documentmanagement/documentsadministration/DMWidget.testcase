@@ -1,10 +1,11 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property custom.properties = "default.layout.template.id=1_column${line.separator}dl.actions.visible=true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Document Management";
+	property testray.main.component.name = "Documents and Media";
 
 	var pageName = "Documents and Media Page";
 	var portletName = "Documents and Media";
@@ -25,8 +26,6 @@ definition {
 			widgetName = "Documents and Media");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
-
-		LexiconEntry.changeDisplayStyle(displayStyle = "list");
 	}
 
 	tearDown {
@@ -191,6 +190,8 @@ definition {
 	@priority = 3
 	@refactordone
 	test SelectionPersistsWhenTraversingPages {
+		property custom.properties = "search.container.page.delta.values=4,8,20,40,60";
+
 		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONLayout.addPublicLayout(
@@ -230,23 +231,6 @@ definition {
 		AssertTextEquals.assertPartialText(
 			locator1 = "ManagementBar#NAVBAR_TEXT",
 			value1 = "2 of 10 Items Selected");
-	}
-
-	@description = "This test ensures that the DM widgets follow W3C accessibility standards."
-	@ignore = "true"
-	@priority = 3
-	test WidgetsFollowAccessibilityStandards {
-		JSONLayout.addWidgetToPublicLayout(
-			column = 1,
-			groupName = "Guest",
-			layoutName = "Documents and Media Page",
-			widgetName = "Media Gallery");
-
-		Navigator.openSitePage(
-			pageName = "Documents and Media Page",
-			siteName = "Guest");
-
-		AssertAccessible();
 	}
 
 	@description = "This test checks that the javascript in the user name will not be executed when viewing a document on page."

@@ -23,6 +23,7 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 <liferay-frontend:side-panel-content
 	title='<%= LanguageUtil.format(request, "edit-x", commerceOrderItem.getSku()) %>'
 >
+	<liferay-ui:error embed="<%= false %>" exception="<%= CommerceShipmentItemQuantityException.class %>" message="please-enter-a-valid-quantity" />
 	<liferay-ui:error embed="<%= false %>" exception="<%= DuplicateCommerceShipmentItemException.class %>" message="please-enter-a-unique-external-reference-code" />
 
 	<aui:form action="<%= editCommerceShipmentItemActionURL %>" method="post" name="fm">
@@ -66,7 +67,6 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 				dataProviderKey="<%= CommerceShipmentFDSNames.INVENTORY_WAREHOUSE_ITEM %>"
 				formId="fm"
 				id="<%= CommerceShipmentFDSNames.INVENTORY_WAREHOUSE_ITEM %>"
-				itemsPerPage="<%= 10 %>"
 				showManagementBar="<%= false %>"
 			/>
 		</commerce-ui:panel>

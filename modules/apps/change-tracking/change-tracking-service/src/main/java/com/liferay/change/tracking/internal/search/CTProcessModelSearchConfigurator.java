@@ -6,10 +6,18 @@
 package com.liferay.change.tracking.internal.search;
 
 import com.liferay.change.tracking.model.CTProcess;
+import com.liferay.change.tracking.service.CTProcessLocalService;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,9 +53,39 @@ public class CTProcessModelSearchConfigurator
 		return true;
 	}
 
-	@Reference(
-		target = "(indexer.class.name=com.liferay.change.tracking.model.CTProcess)"
-	)
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor = new ModelIndexerWriterContributor<>(
+			() -> {
+				IndexableActionableDynamicQuery
+					indexableActionableDynamicQuery =
+						_ctProcessLocalService.
+							getIndexableActionableDynamicQuery();
+
+				if (!CTCollectionThreadLocal.isProductionMode()) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							StringBundler.concat(
+								"Restricting indexable results of ",
+								CTProcess.class.getName(), " because this can ",
+								"only be performed in production mode"));
+					}
+
+					indexableActionableDynamicQuery.setAddCriteriaMethod(
+						dynamicQuery -> dynamicQuery.add(
+							RestrictionsFactoryUtil.eq("ctCollectionId", -1L)));
+				}
+
+				return indexableActionableDynamicQuery;
+			});
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CTProcessModelSearchConfigurator.class);
+
+	@Reference
+	private CTProcessLocalService _ctProcessLocalService;
+
 	private ModelIndexerWriterContributor<CTProcess>
 		_modelIndexWriterContributor;
 

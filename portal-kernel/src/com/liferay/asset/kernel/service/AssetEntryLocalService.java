@@ -145,12 +145,15 @@ public interface AssetEntryLocalService
 
 	public void deleteAssetTagAssetEntry(long tagId, long entryId);
 
+	public void deleteEntries(long companyId, String className)
+		throws PortalException;
+
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
-	public void deleteEntry(AssetEntry entry) throws PortalException;
+	public AssetEntry deleteEntry(AssetEntry entry) throws PortalException;
 
-	public void deleteEntry(long entryId) throws PortalException;
+	public AssetEntry deleteEntry(long entryId) throws PortalException;
 
-	public void deleteEntry(String className, long classPK)
+	public AssetEntry deleteEntry(String className, long classPK)
 		throws PortalException;
 
 	public void deleteGroupEntries(long groupId) throws PortalException;
@@ -425,6 +428,12 @@ public interface AssetEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(
+		long companyId, long[] groupIds, long userId, long[] classNameIds,
+		long classTypeId, String keywords, boolean showNonindexable,
+		int[] statuses, int start, int end, Sort[] sorts);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Hits search(
 		long companyId, long[] groupIds, long userId, String className,
 		long classTypeId, String keywords, boolean showNonindexable, int status,
 		int start, int end);
@@ -440,6 +449,12 @@ public interface AssetEntryLocalService
 		long companyId, long[] groupIds, long userId, String className,
 		long classTypeId, String keywords, boolean showNonindexable,
 		int[] statuses, int start, int end, Sort sort);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Hits search(
+		long companyId, long[] groupIds, long userId, String className,
+		long classTypeId, String keywords, boolean showNonindexable,
+		int[] statuses, int start, int end, Sort[] sorts);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(
@@ -591,3 +606,4 @@ public interface AssetEntryLocalService
 		throws E;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1816903266

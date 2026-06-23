@@ -6,8 +6,6 @@
 package com.liferay.object.web.internal.object.entries.frontend.data.set.filter.factory;
 
 import com.liferay.frontend.data.set.filter.FDSFilter;
-import com.liferay.object.constants.ObjectFieldConstants;
-import com.liferay.object.constants.ObjectViewFilterColumnConstants;
 import com.liferay.object.field.frontend.data.set.filter.ObjectFieldDateRangeFDSFilter;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.model.ObjectViewFilterColumn;
@@ -19,25 +17,22 @@ import com.liferay.portal.kernel.search.Field;
 import java.util.Locale;
 import java.util.Objects;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Feliphe Marinho
  */
-@Component(
-	property = {
-		"object.field.business.type.key=" + ObjectFieldConstants.BUSINESS_TYPE_DATE,
-		"object.field.filter.type.key=" + ObjectViewFilterColumnConstants.FILTER_TYPE_DATE_RANGE
-	},
-	service = ObjectFieldFDSFilterFactory.class
-)
 public class ObjectFieldDateRangeFDSFilterFactory
 	implements ObjectFieldFDSFilterFactory {
 
+	public ObjectFieldDateRangeFDSFilterFactory(
+		Language language, ObjectFieldLocalService objectFieldLocalService) {
+
+		_language = language;
+		_objectFieldLocalService = objectFieldLocalService;
+	}
+
 	@Override
 	public FDSFilter create(
-			Locale locale, long objectDefinitionId,
+			long groupId, Locale locale, long objectDefinitionId,
 			ObjectViewFilterColumn objectViewFilterColumn)
 		throws PortalException {
 
@@ -57,7 +52,7 @@ public class ObjectFieldDateRangeFDSFilterFactory
 		}
 
 		return new ObjectFieldDateRangeFDSFilter(
-			id,
+			groupId, id,
 			_getLabel(
 				locale, objectDefinitionId,
 				objectViewFilterColumn.getObjectFieldName()));
@@ -81,10 +76,7 @@ public class ObjectFieldDateRangeFDSFilterFactory
 		return objectField.getLabel(locale);
 	}
 
-	@Reference
-	private Language _language;
-
-	@Reference
-	private ObjectFieldLocalService _objectFieldLocalService;
+	private final Language _language;
+	private final ObjectFieldLocalService _objectFieldLocalService;
 
 }

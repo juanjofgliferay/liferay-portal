@@ -6,9 +6,14 @@
 import {act, render, screen} from '@testing-library/react';
 import React from 'react';
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 
-import ContentTypeModal from '../../../src/main/resources/META-INF/resources/js/components/ContentTypeModal';
+// eslint-disable-next-line
+import {checkAccessibility} from '@liferay/layout-js-components-web/test/__lib__/index';
+
+import ContentTypeModal, {
+	ModalContent,
+} from '../../../src/main/resources/META-INF/resources/js/components/ContentTypeModal';
 
 const DEFAULT_PROPS = {
 	mappingTypes: [
@@ -134,5 +139,22 @@ describe('ContentTypeModal', () => {
 		});
 
 		expect(screen.queryByLabelText('name')).not.toBeInTheDocument();
+	});
+});
+
+describe('ContentTypeModal Accessibility', () => {
+	it('checks accesibility of modal content', async () => {
+		const componentProps = {
+			disableWarning: false,
+			error: {other: 'error'},
+			setError: jest.fn(),
+			setWarningVisible: jest.fn(),
+			warningMessage: 'warning message',
+			warningVisible: true,
+		};
+
+		const {container} = render(<ModalContent {...componentProps} />);
+
+		await checkAccessibility({bestPractices: true, context: container});
 	});
 });

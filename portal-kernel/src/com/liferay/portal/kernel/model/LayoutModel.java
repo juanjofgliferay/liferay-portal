@@ -28,8 +28,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface LayoutModel
-	extends AttachedModel, BaseModel<Layout>, CTModel<Layout>, LocalizedModel,
-			MVCCModel, ShardedModel, StagedGroupedModel, WorkflowedModel {
+	extends AttachedModel, BaseModel<Layout>, CTModel<Layout>,
+			ExternalReferenceCodeModel, LocalizedModel, MVCCModel, ShardedModel,
+			StagedGroupedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -101,6 +102,23 @@ public interface LayoutModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this layout.
+	 *
+	 * @return the external reference code of this layout
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this layout.
+	 *
+	 * @param externalReferenceCode the external reference code of this layout
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the plid of this layout.
@@ -966,18 +984,19 @@ public interface LayoutModel
 	public void setColorSchemeId(String colorSchemeId);
 
 	/**
-	 * Returns the style book entry ID of this layout.
+	 * Returns the style book entry erc of this layout.
 	 *
-	 * @return the style book entry ID of this layout
+	 * @return the style book entry erc of this layout
 	 */
-	public long getStyleBookEntryId();
+	@AutoEscape
+	public String getStyleBookEntryERC();
 
 	/**
-	 * Sets the style book entry ID of this layout.
+	 * Sets the style book entry erc of this layout.
 	 *
-	 * @param styleBookEntryId the style book entry ID of this layout
+	 * @param styleBookEntryERC the style book entry erc of this layout
 	 */
-	public void setStyleBookEntryId(long styleBookEntryId);
+	public void setStyleBookEntryERC(String styleBookEntryERC);
 
 	/**
 	 * Returns the css of this layout.
@@ -1009,84 +1028,120 @@ public interface LayoutModel
 	public void setPriority(int priority);
 
 	/**
-	 * Returns the favicon file entry ID of this layout.
+	 * Returns the favicon file entry erc of this layout.
 	 *
-	 * @return the favicon file entry ID of this layout
-	 */
-	public long getFaviconFileEntryId();
-
-	/**
-	 * Sets the favicon file entry ID of this layout.
-	 *
-	 * @param faviconFileEntryId the favicon file entry ID of this layout
-	 */
-	public void setFaviconFileEntryId(long faviconFileEntryId);
-
-	/**
-	 * Returns the master layout plid of this layout.
-	 *
-	 * @return the master layout plid of this layout
-	 */
-	public long getMasterLayoutPlid();
-
-	/**
-	 * Sets the master layout plid of this layout.
-	 *
-	 * @param masterLayoutPlid the master layout plid of this layout
-	 */
-	public void setMasterLayoutPlid(long masterLayoutPlid);
-
-	/**
-	 * Returns the layout prototype uuid of this layout.
-	 *
-	 * @return the layout prototype uuid of this layout
+	 * @return the favicon file entry erc of this layout
 	 */
 	@AutoEscape
-	public String getLayoutPrototypeUuid();
+	public String getFaviconFileEntryERC();
 
 	/**
-	 * Sets the layout prototype uuid of this layout.
+	 * Sets the favicon file entry erc of this layout.
 	 *
-	 * @param layoutPrototypeUuid the layout prototype uuid of this layout
+	 * @param faviconFileEntryERC the favicon file entry erc of this layout
 	 */
-	public void setLayoutPrototypeUuid(String layoutPrototypeUuid);
+	public void setFaviconFileEntryERC(String faviconFileEntryERC);
 
 	/**
-	 * Returns the layout prototype link enabled of this layout.
+	 * Returns the favicon file entry scope erc of this layout.
 	 *
-	 * @return the layout prototype link enabled of this layout
-	 */
-	public boolean getLayoutPrototypeLinkEnabled();
-
-	/**
-	 * Returns <code>true</code> if this layout is layout prototype link enabled.
-	 *
-	 * @return <code>true</code> if this layout is layout prototype link enabled; <code>false</code> otherwise
-	 */
-	public boolean isLayoutPrototypeLinkEnabled();
-
-	/**
-	 * Sets whether this layout is layout prototype link enabled.
-	 *
-	 * @param layoutPrototypeLinkEnabled the layout prototype link enabled of this layout
-	 */
-	public void setLayoutPrototypeLinkEnabled(
-		boolean layoutPrototypeLinkEnabled);
-
-	/**
-	 * Returns the source prototype layout uuid of this layout.
-	 *
-	 * @return the source prototype layout uuid of this layout
+	 * @return the favicon file entry scope erc of this layout
 	 */
 	@AutoEscape
-	public String getSourcePrototypeLayoutUuid();
+	public String getFaviconFileEntryScopeERC();
 
 	/**
-	 * Sets the source prototype layout uuid of this layout.
+	 * Sets the favicon file entry scope erc of this layout.
 	 *
-	 * @param sourcePrototypeLayoutUuid the source prototype layout uuid of this layout
+	 * @param faviconFileEntryScopeERC the favicon file entry scope erc of this layout
 	 */
-	public void setSourcePrototypeLayoutUuid(String sourcePrototypeLayoutUuid);
+	public void setFaviconFileEntryScopeERC(String faviconFileEntryScopeERC);
+
+	/**
+	 * Returns the master layout page template entry erc of this layout.
+	 *
+	 * @return the master layout page template entry erc of this layout
+	 */
+	@AutoEscape
+	public String getMasterLayoutPageTemplateEntryERC();
+
+	/**
+	 * Sets the master layout page template entry erc of this layout.
+	 *
+	 * @param masterLayoutPageTemplateEntryERC the master layout page template entry erc of this layout
+	 */
+	public void setMasterLayoutPageTemplateEntryERC(
+		String masterLayoutPageTemplateEntryERC);
+
+	/**
+	 * Returns the portlet layout page template entry erc of this layout.
+	 *
+	 * @return the portlet layout page template entry erc of this layout
+	 */
+	@AutoEscape
+	public String getPortletLayoutPageTemplateEntryERC();
+
+	/**
+	 * Sets the portlet layout page template entry erc of this layout.
+	 *
+	 * @param portletLayoutPageTemplateEntryERC the portlet layout page template entry erc of this layout
+	 */
+	public void setPortletLayoutPageTemplateEntryERC(
+		String portletLayoutPageTemplateEntryERC);
+
+	/**
+	 * Returns the portlet layout page template entry scope erc of this layout.
+	 *
+	 * @return the portlet layout page template entry scope erc of this layout
+	 */
+	@AutoEscape
+	public String getPortletLayoutPageTemplateEntryScopeERC();
+
+	/**
+	 * Sets the portlet layout page template entry scope erc of this layout.
+	 *
+	 * @param portletLayoutPageTemplateEntryScopeERC the portlet layout page template entry scope erc of this layout
+	 */
+	public void setPortletLayoutPageTemplateEntryScopeERC(
+		String portletLayoutPageTemplateEntryScopeERC);
+
+	/**
+	 * Returns the portlet layout page template entry link enabled of this layout.
+	 *
+	 * @return the portlet layout page template entry link enabled of this layout
+	 */
+	public boolean getPortletLayoutPageTemplateEntryLinkEnabled();
+
+	/**
+	 * Returns <code>true</code> if this layout is portlet layout page template entry link enabled.
+	 *
+	 * @return <code>true</code> if this layout is portlet layout page template entry link enabled; <code>false</code> otherwise
+	 */
+	public boolean isPortletLayoutPageTemplateEntryLinkEnabled();
+
+	/**
+	 * Sets whether this layout is portlet layout page template entry link enabled.
+	 *
+	 * @param portletLayoutPageTemplateEntryLinkEnabled the portlet layout page template entry link enabled of this layout
+	 */
+	public void setPortletLayoutPageTemplateEntryLinkEnabled(
+		boolean portletLayoutPageTemplateEntryLinkEnabled);
+
+	/**
+	 * Returns the layout set prototype layout erc of this layout.
+	 *
+	 * @return the layout set prototype layout erc of this layout
+	 */
+	@AutoEscape
+	public String getLayoutSetPrototypeLayoutERC();
+
+	/**
+	 * Sets the layout set prototype layout erc of this layout.
+	 *
+	 * @param layoutSetPrototypeLayoutERC the layout set prototype layout erc of this layout
+	 */
+	public void setLayoutSetPrototypeLayoutERC(
+		String layoutSetPrototypeLayoutERC);
 
 	/**
 	 * Returns the publish date of this layout.
@@ -1284,3 +1339,4 @@ public interface LayoutModel
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:821665297

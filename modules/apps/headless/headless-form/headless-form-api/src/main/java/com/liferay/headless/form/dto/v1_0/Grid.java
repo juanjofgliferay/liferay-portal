@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -49,89 +48,128 @@ public class Grid implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Grid.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public FormFieldOption[] getColumns() {
+		if (_columnsSupplier != null) {
+			columns = _columnsSupplier.get();
+
+			_columnsSupplier = null;
+		}
+
 		return columns;
 	}
 
 	public void setColumns(FormFieldOption[] columns) {
 		this.columns = columns;
+
+		_columnsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setColumns(
 		UnsafeSupplier<FormFieldOption[], Exception> columnsUnsafeSupplier) {
 
-		try {
-			columns = columnsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_columnsSupplier = () -> {
+			try {
+				return columnsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FormFieldOption[] columns;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<FormFieldOption[]> _columnsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public FormFieldOption[] getRows() {
+		if (_rowsSupplier != null) {
+			rows = _rowsSupplier.get();
+
+			_rowsSupplier = null;
+		}
+
 		return rows;
 	}
 
 	public void setRows(FormFieldOption[] rows) {
 		this.rows = rows;
+
+		_rowsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRows(
 		UnsafeSupplier<FormFieldOption[], Exception> rowsUnsafeSupplier) {
 
-		try {
-			rows = rowsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_rowsSupplier = () -> {
+			try {
+				return rowsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FormFieldOption[] rows;
+
+	@JsonIgnore
+	private Supplier<FormFieldOption[]> _rowsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -160,6 +198,8 @@ public class Grid implements Serializable {
 
 		sb.append("{");
 
+		FormFieldOption[] columns = getColumns();
+
 		if (columns != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -180,6 +220,8 @@ public class Grid implements Serializable {
 			sb.append("]");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -189,6 +231,8 @@ public class Grid implements Serializable {
 
 			sb.append(id);
 		}
+
+		FormFieldOption[] rows = getRows();
 
 		if (rows != null) {
 			if (sb.length() > 1) {
@@ -215,8 +259,8 @@ public class Grid implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.form.dto.v1_0.Grid",
 		name = "x-class-name"
 	)
@@ -262,7 +306,10 @@ public class Grid implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -308,3 +355,4 @@ public class Grid implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:166009663

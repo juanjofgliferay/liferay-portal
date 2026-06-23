@@ -158,6 +158,13 @@ public class SamlIdpSsoSessionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByUserId() throws Exception {
+		_persistence.countByUserId(RandomTestUtil.nextLong());
+
+		_persistence.countByUserId(0L);
+	}
+
+	@Test
 	public void testCountByLtCreateDate() throws Exception {
 		_persistence.countByLtCreateDate(RandomTestUtil.nextDate());
 
@@ -477,6 +484,12 @@ public class SamlIdpSsoSessionPersistenceTest {
 
 	private void _assertOriginalValues(SamlIdpSsoSession samlIdpSsoSession) {
 		Assert.assertEquals(
+			Long.valueOf(samlIdpSsoSession.getUserId()),
+			ReflectionTestUtil.<Long>invoke(
+				samlIdpSsoSession, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "userId"));
+
+		Assert.assertEquals(
 			samlIdpSsoSession.getSamlIdpSsoSessionKey(),
 			ReflectionTestUtil.invoke(
 				samlIdpSsoSession, "getColumnOriginalValue",
@@ -512,3 +525,4 @@ public class SamlIdpSsoSessionPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2066045229

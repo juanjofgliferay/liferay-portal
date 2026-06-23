@@ -90,9 +90,9 @@ const Experiences = ({
 
 const ExportFileFormats = ({
 	availableExportFileFormats,
-	exportMimeType,
 	portletNamespace,
-	setExportMimeType,
+	setXLIFFMimeType,
+	xliffMimeType,
 }) => {
 	if (availableExportFileFormats.length === 1) {
 		return (
@@ -105,12 +105,12 @@ const ExportFileFormats = ({
 	else {
 		return (
 			<ClaySelect
-				id={`${portletNamespace}exportMimeType`}
-				name={`${portletNamespace}exportMimeType`}
+				id={`${portletNamespace}xliffMimeType`}
+				name={`${portletNamespace}xliffMimeType`}
 				onChange={(event) => {
-					setExportMimeType(event.currentTarget.value);
+					setXLIFFMimeType(event.currentTarget.value);
 				}}
-				value={exportMimeType}
+				value={xliffMimeType}
 			>
 				{availableExportFileFormats.map((exportFileFormat) => (
 					<ClaySelect.Option
@@ -239,7 +239,7 @@ const ExportTranslation = ({
 	portletNamespace,
 	redirectURL,
 }) => {
-	const [exportMimeType, setExportMimeType] = useState(
+	const [xliffMimeType, setXLIFFMimeType] = useState(
 		availableExportFileFormats[0].mimeType
 	);
 
@@ -255,9 +255,8 @@ const ExportTranslation = ({
 		experiences?.length ? experiences.map(({value}) => value) : []
 	);
 
-	const [selectedExperienceValue, setSelectedExperienceValue] = useState(
-		EXPORT_DEFAULT
-	);
+	const [selectedExperienceValue, setSelectedExperienceValue] =
+		useState(EXPORT_DEFAULT);
 
 	const exportTranslationURL = addParams(
 		'download=true',
@@ -270,7 +269,7 @@ const ExportTranslation = ({
 				? languageIds.concat(selectedLanguageId)
 				: languageIds.filter(
 						(languageId) => languageId !== selectedLanguageId
-				  )
+					)
 		);
 	};
 
@@ -280,7 +279,7 @@ const ExportTranslation = ({
 				? experiencesIds.concat(selectedExperienceId)
 				: experiencesIds.filter(
 						(experienceId) => experienceId !== selectedExperienceId
-				  )
+					)
 		);
 	};
 
@@ -294,18 +293,17 @@ const ExportTranslation = ({
 				event.preventDefault();
 
 				const params = {
-					exportMimeType,
 					sourceLanguageId,
 					targetLanguageIds: selectedTargetLanguageIds.join(','),
+					xliffMimeType,
 				};
 
 				if (multiplePagesSelected) {
 					params.segmentsExperienceIds = selectedExperienceValue;
 				}
 				else if (selectedExperiencesIds.length) {
-					params.segmentsExperienceIds = selectedExperiencesIds.join(
-						','
-					);
+					params.segmentsExperienceIds =
+						selectedExperiencesIds.join(',');
 				}
 
 				location.href = addParams(params, exportTranslationURL);
@@ -315,7 +313,7 @@ const ExportTranslation = ({
 				<label
 					htmlFor={
 						availableExportFileFormats.length > 1
-							? `${portletNamespace}exportMimeType`
+							? `${portletNamespace}xliffMimeType`
 							: undefined
 					}
 				>
@@ -324,9 +322,9 @@ const ExportTranslation = ({
 
 				<ExportFileFormats
 					availableExportFileFormats={availableExportFileFormats}
-					exportMimeType={exportMimeType}
 					portletNamespace={portletNamespace}
-					setExportMimeType={setExportMimeType}
+					setXLIFFMimeType={setXLIFFMimeType}
+					xliffMimeType={xliffMimeType}
 				/>
 			</ClayForm.Group>
 
@@ -392,9 +390,11 @@ const ExportTranslation = ({
 					{Liferay.Language.get('export')}
 				</ClayButton>
 
-				<ClayLink button displayType="secondary" href={redirectURL}>
-					{Liferay.Language.get('cancel')}
-				</ClayLink>
+				{redirectURL && (
+					<ClayLink button displayType="secondary" href={redirectURL}>
+						{Liferay.Language.get('cancel')}
+					</ClayLink>
+				)}
 			</ClayButton.Group>
 		</ClayForm>
 	);

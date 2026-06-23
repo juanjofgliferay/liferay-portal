@@ -10,18 +10,23 @@ import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFacto
 import com.liferay.osgi.service.tracker.collections.map.PropertyServiceReferenceComparator;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.segments.context.Context;
+import com.liferay.segments.internal.cache.SegmentsEntryCacheUtil;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.provider.SegmentsEntryProvider;
 import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
 import com.liferay.segments.service.SegmentsEntryLocalService;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import org.osgi.framework.BundleContext;
@@ -69,7 +74,7 @@ public class SegmentsEntryProviderRegistryImpl
 		}
 
 		return segmentsEntryProvider.getSegmentsEntryClassPKs(
-			segmentsEntryId, start, end);
+			segmentsEntryId, true, start, end);
 	}
 
 	@Override
@@ -103,14 +108,22 @@ public class SegmentsEntryProviderRegistryImpl
 		}
 
 		return segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-			segmentsEntryId);
+			segmentsEntryId, true);
 	}
 
 	@Override
 	public long[] getSegmentsEntryIds(
-			long groupId, String className, long classPK, Context context,
-			long[] segmentEntryIds)
+			long groupId, String className, long classPK, Context context)
 		throws PortalException {
+
+		String cacheKey = _generateCacheKey(classPK, context);
+
+		long[] cachedSegmentsEntryIds =
+			SegmentsEntryCacheUtil.getSegmentsEntryIds(cacheKey, classPK);
+
+		if (cachedSegmentsEntryIds != null) {
+			return cachedSegmentsEntryIds;
+		}
 
 		long[] finalSegmentsEntryIds = new long[0];
 
@@ -120,9 +133,12 @@ public class SegmentsEntryProviderRegistryImpl
 			finalSegmentsEntryIds = ArrayUtil.append(
 				finalSegmentsEntryIds,
 				segmentsEntryProvider.getSegmentsEntryIds(
-					groupId, className, classPK, context, segmentEntryIds,
+					groupId, className, classPK, context, new long[0],
 					finalSegmentsEntryIds));
 		}
+
+		SegmentsEntryCacheUtil.putSegmentsEntryIds(
+			cacheKey, finalSegmentsEntryIds, classPK);
 
 		Set<Long> segmentsEntryIdsSet = SetUtil.fromArray(
 			finalSegmentsEntryIds);
@@ -151,6 +167,51 @@ public class SegmentsEntryProviderRegistryImpl
 	protected void deactivate() {
 		_serviceTrackerList.close();
 		_serviceTrackerMap.close();
+	}
+
+	private String _generateCacheKey(long classPK, Context context) {
+		if (context == null) {
+			return String.valueOf(classPK);
+		}
+
+		String jSessionId = null;
+
+		String[] cookies = (String[])context.get(Context.COOKIES);
+
+		if (cookies != null) {
+			for (String cookie : cookies) {
+				if (StringUtil.startsWith(cookie, "JSESSIONID")) {
+					jSessionId = cookie;
+
+					break;
+				}
+			}
+		}
+
+		String requestParametersString = null;
+
+		String[] requestParameters = (String[])context.get(
+			Context.REQUEST_PARAMETERS);
+
+		if (requestParameters != null) {
+			requestParametersString = String.join(
+				StringPool.COMMA, requestParameters);
+		}
+
+		return String.valueOf(
+			Objects.hash(
+				classPK,
+				GetterUtil.get(context.get(Context.BROWSER), StringPool.BLANK),
+				GetterUtil.get(context.get(Context.HOSTNAME), StringPool.BLANK),
+				GetterUtil.get(
+					context.get(Context.LANGUAGE_ID), StringPool.BLANK),
+				GetterUtil.get(
+					context.get(Context.REFERRER_URL), StringPool.BLANK),
+				GetterUtil.get(context.get(Context.URL), StringPool.BLANK),
+				GetterUtil.get(
+					context.get(Context.USER_AGENT), StringPool.BLANK),
+				GetterUtil.get(jSessionId, StringPool.BLANK),
+				GetterUtil.get(requestParametersString, StringPool.BLANK)));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

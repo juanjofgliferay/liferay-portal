@@ -11,13 +11,17 @@ import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypeController;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -29,12 +33,14 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -118,6 +124,15 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 	public List<LayoutPageTemplateEntry> getLayoutPageTemplateEntries(
 		int start, int end) {
 
+		if (!_isWidgetPageFeatureFlagEnabled()) {
+			return LayoutPageTemplateEntryServiceUtil.
+				getLayoutPageTemplateEntriesByType(
+					_themeDisplay.getScopeGroupId(),
+					getLayoutPageTemplateCollectionId(),
+					LayoutPageTemplateEntryTypeConstants.BASIC, start, end,
+					null);
+		}
+
 		return LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
 			_themeDisplay.getScopeGroupId(),
 			getLayoutPageTemplateCollectionId(),
@@ -125,6 +140,14 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 	}
 
 	public int getLayoutPageTemplateEntriesCount() {
+		if (!_isWidgetPageFeatureFlagEnabled()) {
+			return LayoutPageTemplateEntryServiceUtil.
+				getLayoutPageTemplateEntriesCountByType(
+					_themeDisplay.getScopeGroupId(),
+					getLayoutPageTemplateCollectionId(),
+					LayoutPageTemplateEntryTypeConstants.BASIC);
+		}
+
 		return LayoutPageTemplateEntryServiceUtil.
 			getLayoutPageTemplateEntriesCount(
 				_themeDisplay.getScopeGroupId(),
@@ -159,6 +182,15 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 			"layoutPageTemplateEntryId",
 			String.valueOf(
 				layoutPageTemplateEntry.getLayoutPageTemplateEntryId())
+		).put(
+			"modalTitle",
+			() -> {
+				if (ParamUtil.getBoolean(_httpServletRequest, "emptyLayout")) {
+					return LanguageUtil.get(_httpServletRequest, "page-name");
+				}
+
+				return LanguageUtil.get(_httpServletRequest, "add-page");
+			}
 		).put(
 			"subtitle",
 			() -> {
@@ -264,14 +296,35 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 			return _types;
 		}
 
+		boolean widgetPageFeatureFlagEnabled =
+			_isWidgetPageFeatureFlagEnabled();
+
 		_types = ListUtil.filter(
 			ListUtil.fromArray(LayoutTypeControllerTracker.getTypes()),
 			type -> {
 				LayoutTypeController layoutTypeController =
 					LayoutTypeControllerTracker.getLayoutTypeController(type);
 
+				boolean deprecatedType = false;
+
+				if (type.equals(LayoutConstants.TYPE_FULL_PAGE_APPLICATION) ||
+					type.equals(LayoutConstants.TYPE_PANEL) ||
+					type.equals(LayoutConstants.TYPE_PORTLET)) {
+
+					deprecatedType = true;
+				}
+
+				if (ParamUtil.getBoolean(_httpServletRequest, "emptyLayout")) {
+					return layoutTypeController.isInstanceable() &&
+						   !layoutTypeController.isPrimaryType() &&
+						   (!deprecatedType || widgetPageFeatureFlagEnabled) &&
+						   !type.equals(LayoutConstants.TYPE_URL) &&
+						   !type.equals(LayoutConstants.TYPE_EMBEDDED);
+				}
+
 				return layoutTypeController.isInstanceable() &&
-					   !layoutTypeController.isPrimaryType();
+					   !layoutTypeController.isPrimaryType() &&
+					   (!deprecatedType || widgetPageFeatureFlagEnabled);
 			});
 
 		return _types;
@@ -314,7 +367,9 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 	private String _getLayoutPageTemplateEntryAddLayoutURL(
 		LayoutPageTemplateEntry layoutPageTemplateEntry) {
 
-		return PortletURLBuilder.createRenderURL(
+		long selPlid = ParamUtil.getLong(_httpServletRequest, "selPlid");
+
+		PortletURL addLayoutURL = PortletURLBuilder.createRenderURL(
 			_liferayPortletResponse
 		).setMVCRenderCommandName(
 			"/layout_admin/add_layout"
@@ -327,10 +382,31 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 			"privateLayout",
 			ParamUtil.getBoolean(_httpServletRequest, "privateLayout")
 		).setParameter(
-			"selPlid", ParamUtil.getLong(_httpServletRequest, "selPlid")
+			"selPlid", selPlid
 		).setWindowState(
 			LiferayWindowState.POP_UP
-		).buildString();
+		).buildPortletURL();
+
+		if (selPlid != LayoutConstants.DEFAULT_PLID) {
+			Layout layout = LayoutLocalServiceUtil.fetchLayout(selPlid);
+
+			if ((layout != null) && layout.isTypeEmpty()) {
+				addLayoutURL.setParameter(
+					"emptyLayout",
+					String.valueOf(
+						ParamUtil.getBoolean(
+							_httpServletRequest, "emptyLayout")));
+				addLayoutURL.setParameter(
+					"externalReferenceCode", layout.getExternalReferenceCode());
+			}
+		}
+
+		return addLayoutURL.toString();
+	}
+
+	private boolean _isWidgetPageFeatureFlagEnabled() {
+		return FeatureFlagManagerUtil.isEnabled(
+			_themeDisplay.getCompanyId(), "LPD-76864");
 	}
 
 	private String _backURL;

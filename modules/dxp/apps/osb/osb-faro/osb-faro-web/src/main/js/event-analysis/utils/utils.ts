@@ -2,6 +2,7 @@ import moment from 'moment';
 import {
 	Attribute,
 	AttributeOwnerTypes,
+	AttributeTypes,
 	Breakdown,
 	BreakdownData,
 	BreakdownDataItem,
@@ -53,7 +54,7 @@ export const STRING_OPTIONS = [
 	Operators.NE
 ];
 
-export const BOOLEAN_LABELS_MAP = {
+export const BOOLEAN_LABELS_MAP: Record<string, string> = {
 	false: Liferay.Language.get('false'),
 	true: Liferay.Language.get('true')
 };
@@ -80,47 +81,50 @@ export const DATE_GROUPING_LABELS_MAP = {
 	[DateGroupings.Year]: Liferay.Language.get('year')
 };
 
-export const DATE_OPERATOR_LABELS_MAP = {
+type PartialOperatorLabelsMap = Partial<Record<Operators, string>>;
+
+export const DATE_OPERATOR_LABELS_MAP: PartialOperatorLabelsMap = {
 	[Operators.Between]: '-',
-	[Operators.EQ]: '=',
-	[Operators.GT]: Liferay.Language.get('after-fragment'),
-	[Operators.LT]: Liferay.Language.get('before-fragment')
+	[Operators.EQ]: Liferay.Language.get('is').toLowerCase(),
+	[Operators.GT]: Liferay.Language.get('after').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('before').toLowerCase()
 };
 
-export const DATE_OPERATOR_LONGHAND_LABELS_MAP = {
-	[Operators.Between]: Liferay.Language.get('is-between-fragment'),
-	[Operators.EQ]: Liferay.Language.get('is-fragment'),
-	[Operators.GT]: Liferay.Language.get('after-fragment'),
-	[Operators.LT]: Liferay.Language.get('before-fragment')
+export const DATE_OPERATOR_LONGHAND_LABELS_MAP: PartialOperatorLabelsMap = {
+	[Operators.Between]: Liferay.Language.get('is-between').toLowerCase(),
+	[Operators.EQ]: Liferay.Language.get('is').toLowerCase(),
+	[Operators.GT]: Liferay.Language.get('after').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('before').toLowerCase()
 };
 
-export const DURATION_OPERATOR_LABELS_MAP = {
-	[Operators.GT]: '>',
-	[Operators.LT]: '<'
+export const DURATION_OPERATOR_LABELS_MAP: PartialOperatorLabelsMap = {
+	[Operators.GT]: Liferay.Language.get('is-greater-than').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('is-less-than').toLowerCase()
 };
 
-export const DURATION_OPERATOR_LONGHAND_LABELS_MAP = {
-	[Operators.GT]: Liferay.Language.get('is-greater-than-fragment'),
-	[Operators.LT]: Liferay.Language.get('is-less-than-fragment')
+export const DURATION_OPERATOR_LONGHAND_LABELS_MAP: PartialOperatorLabelsMap = {
+	[Operators.GT]: Liferay.Language.get('is-greater-than').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('is-less-than').toLowerCase()
 };
 
-export const NUMBER_OPERATOR_LABELS_MAP = {
+export const NUMBER_OPERATOR_LABELS_MAP: PartialOperatorLabelsMap = {
 	[Operators.Between]: '-',
-	[Operators.GT]: '>',
-	[Operators.LT]: '<'
+	[Operators.GT]: Liferay.Language.get('is-greater-than').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('is-less-than').toLowerCase()
 };
 
-export const NUMBER_OPERATOR_LONGHAND_LABELS_MAP = {
-	[Operators.Between]: Liferay.Language.get('between-fragment'),
-	[Operators.GT]: Liferay.Language.get('is-greater-than-fragment'),
-	[Operators.LT]: Liferay.Language.get('is-less-than-fragment')
+export const NUMBER_OPERATOR_LONGHAND_LABELS_MAP: PartialOperatorLabelsMap = {
+	[Operators.Between]: Liferay.Language.get('between').toLowerCase(),
+	[Operators.GT]: Liferay.Language.get('is-greater-than').toLowerCase(),
+	[Operators.LT]: Liferay.Language.get('is-less-than').toLowerCase()
 };
 
-export const STRING_OPERATOR_LABELS_MAP = {
-	[Operators.Contains]: Liferay.Language.get('contains-fragment'),
-	[Operators.NotContains]: Liferay.Language.get('not-contains-fragment'),
-	[Operators.EQ]: Liferay.Language.get('is-fragment'),
-	[Operators.NE]: Liferay.Language.get('is-not-fragment')
+export const STRING_OPERATOR_LABELS_MAP: PartialOperatorLabelsMap = {
+	[Operators.Contains]: Liferay.Language.get('contains').toLowerCase(),
+	[Operators.NotContains]:
+		Liferay.Language.get('does-not-contain').toLowerCase(),
+	[Operators.EQ]: Liferay.Language.get('is').toLowerCase(),
+	[Operators.NE]: Liferay.Language.get('is-not').toLowerCase()
 };
 
 const getBooleanDisplay = (
@@ -141,7 +145,9 @@ const getDateDisplay = (
 
 	const breakdownValue =
 		operator === Operators.Between
-			? `${formattedStartDate} ${operatorLabel} ${formatUTCDate(
+			? `${Liferay.Language.get(
+					'between'
+			  )} ${formattedStartDate} ${operatorLabel} ${formatUTCDate(
 					endDate as string,
 					'll'
 			  )}`
@@ -218,12 +224,21 @@ export const getFilterDisplay = (
 export const isAttribute = (item: Attribute | Event): boolean =>
 	(item as Attribute).dataType !== undefined;
 
+interface IBreakdownFnArgs {
+	attributeId: string;
+	attributeType: AttributeOwnerTypes;
+	binSize?: number;
+	dateGrouping?: DateGroupings;
+	description?: string;
+	displayName: string;
+}
+
 export const createBooleanBreakdown = ({
 	attributeId,
 	attributeType,
 	description,
 	displayName
-}): Breakdown => ({
+}: IBreakdownFnArgs): Breakdown => ({
 	attributeId,
 	attributeType,
 	binSize: null,
@@ -240,7 +255,7 @@ export const createDateBreakdown = ({
 	dateGrouping = DEFAULT_DATE_GROUPING,
 	description,
 	displayName
-}): Breakdown => ({
+}: IBreakdownFnArgs): Breakdown => ({
 	attributeId,
 	attributeType,
 	binSize: null,
@@ -257,7 +272,7 @@ export const createDurationBreakdown = ({
 	binSize = DEFAULT_DURATION_BIN,
 	description,
 	displayName
-}): Breakdown => ({
+}: IBreakdownFnArgs): Breakdown => ({
 	attributeId,
 	attributeType,
 	binSize,
@@ -274,7 +289,7 @@ export const createNumberBreakdown = ({
 	binSize = DEFAULT_NUMBER_BIN,
 	description,
 	displayName
-}): Breakdown => ({
+}: IBreakdownFnArgs): Breakdown => ({
 	attributeId,
 	attributeType,
 	binSize,
@@ -290,7 +305,7 @@ export const createStringBreakdown = ({
 	attributeType,
 	description,
 	displayName
-}): Breakdown => ({
+}: IBreakdownFnArgs): Breakdown => ({
 	attributeId,
 	attributeType,
 	binSize: null,
@@ -314,7 +329,7 @@ export const getRowSpan = (breakdownItems: BreakdownDataItem[]): number => {
 
 	breakdownItems.forEach(({breakdownItems, leafNode}) => {
 		if (!leafNode) {
-			rowSpan = rowSpan + (getRowSpan(breakdownItems) - 1);
+			rowSpan = rowSpan + (getRowSpan(breakdownItems ?? []) - 1);
 		}
 	});
 
@@ -339,9 +354,9 @@ export const formatDateName = (
 export const formatDurationName = (name: string): string => {
 	const [durationStart, durationEnd] = name.split('-');
 
-	return `${formatTime(Number(durationStart))} - ${formatTime(
-		Number(durationEnd)
-	)}`;
+	return `${Liferay.Language.get('between')} ${formatTime(
+		Number(durationStart)
+	)} - ${formatTime(Number(durationEnd))}`;
 };
 
 export const formatBreakdownNameByDataType = (
@@ -354,7 +369,10 @@ export const formatBreakdownNameByDataType = (
 
 	switch (breakdown?.dataType) {
 		case DataTypes.Date:
-			return formatDateName(name, breakdown.dateGrouping);
+			return formatDateName(
+				name,
+				breakdown.dateGrouping ?? DateGroupings.Month
+			);
 		case DataTypes.Duration:
 			return formatDurationName(name);
 		case DataTypes.Boolean:
@@ -365,19 +383,31 @@ export const formatBreakdownNameByDataType = (
 	}
 };
 
+function formatName(name = 'undefined') {
+	if (name === '') {
+		return 'undefined';
+	}
+
+	return name;
+}
+
 export const parseBreakdownData = (
 	{breakdownItems}: BreakdownData | BreakdownDataItem,
 	orderedBreakdowns: Breakdown[],
 	rows: ParsedBreakdownData = [{index: '0'} as ParsedBreakdownItem],
 	level: number = 0
 ): ParsedBreakdownData => {
-	breakdownItems.forEach(data => {
+	const items = breakdownItems ?? [];
+
+	items.forEach(data => {
 		const {
 			breakdownItems: nextBreakdownItems,
 			leafNode: isLeafCurrentNode,
 			name,
 			...node
 		} = data;
+
+		const nextItems = nextBreakdownItems ?? [];
 
 		const currentRowIndex = rows.length - 1;
 
@@ -389,27 +419,26 @@ export const parseBreakdownData = (
 			return;
 		}
 
-		const isLeafNextNode =
-			nextBreakdownItems.length > 0 && nextBreakdownItems[0].leafNode;
+		const isLeafNextNode = nextItems.length > 0 && nextItems[0].leafNode;
 
 		Object.assign(rows[currentRowIndex], {
 			[`breakdown${level}`]: {
 				...node,
 				name: isLeafCurrentNode
-					? name
+					? formatName(name)
 					: formatBreakdownNameByDataType(
-							name,
+							formatName(name),
 							orderedBreakdowns[level]
 					  ),
 				rowSpan:
 					!isLeafCurrentNode && !isLeafNextNode
-						? getRowSpan(nextBreakdownItems)
+						? getRowSpan(nextItems)
 						: 1
 			},
 			index: currentRowIndex
 		});
 
-		if (!nextBreakdownItems.length) {
+		if (!nextItems.length) {
 			rows.push({} as ParsedBreakdownItem);
 		}
 
@@ -417,22 +446,25 @@ export const parseBreakdownData = (
 			parseBreakdownData(data, orderedBreakdowns, rows, level + 1);
 		} else {
 			Object.assign(rows[currentRowIndex], {
-				events: nextBreakdownItems
+				events: nextItems
 			});
 
 			rows.push({} as ParsedBreakdownItem);
 		}
 	});
 
-	return level === 0 && !breakdownItems.length
+	return level === 0 && !items.length
 		? rows
 		: rows.filter(obj => Object.keys(obj).length !== 0);
 };
 
-export const getMaxEventValue = (parsedData, compareToPrevious: boolean) =>
-	parsedData.reduce(
+export const getMaxEventValue = (
+	parsedData: ParsedBreakdownData,
+	compareToPrevious: boolean
+) =>
+	parsedData.reduce<number>(
 		(prev, {events = []}) =>
-			events.reduce(
+			events.reduce<number>(
 				(
 					prev2,
 					{
@@ -445,14 +477,14 @@ export const getMaxEventValue = (parsedData, compareToPrevious: boolean) =>
 						? Math.max(
 								value,
 								prev2,
-								compareToPrevious && previousValue
+								compareToPrevious ? previousValue : 0
 						  )
-						: segments.reduce(
-								(prev3, {previousValue, value}) =>
+						: segments.reduce<number>(
+								(prev3, {previousValue = 0, value = 0}) =>
 									Math.max(
 										value,
 										prev3,
-										compareToPrevious && previousValue
+										compareToPrevious ? previousValue : 0
 									),
 								prev2
 						  ),
@@ -460,3 +492,89 @@ export const getMaxEventValue = (parsedData, compareToPrevious: boolean) =>
 			),
 		0
 	);
+
+export function getModifiedEventAttributeDefinitions({
+	attribute,
+	attributeOwnerType,
+	eventAttributeDefinitions
+}: {
+	attribute: Attribute;
+	attributeOwnerType: AttributeOwnerTypes;
+	eventAttributeDefinitions: Attribute[];
+}): Attribute[] {
+	let modifiedEventAttributeDefinitions: Attribute[] = [];
+
+	if (attributeOwnerType === AttributeOwnerTypes.Event) {
+		modifiedEventAttributeDefinitions = attribute
+			? eventAttributeDefinitions.map(eventAttributeDefinition => {
+					if (attribute.id === eventAttributeDefinition.id) {
+						return attribute;
+					}
+
+					return eventAttributeDefinition;
+			  })
+			: eventAttributeDefinitions;
+	} else if (attributeOwnerType === AttributeOwnerTypes.Individual) {
+		modifiedEventAttributeDefinitions = [
+			{
+				dataType: DataTypes.String,
+				displayName: 'jobTitle',
+				id: 'jobTitle',
+				name: 'jobTitle',
+				type: AttributeTypes.Global
+			},
+			{
+				dataType: DataTypes.String,
+				displayName: 'languageId',
+				id: 'languageId',
+				name: 'languageId',
+				type: AttributeTypes.Global
+			},
+			{
+				dataType: DataTypes.String,
+				displayName: Liferay.Language.get('role'),
+				id: 'role',
+				name: 'role',
+				type: AttributeTypes.Local
+			},
+			{
+				dataType: DataTypes.String,
+				displayName: Liferay.Language.get('site-membership'),
+				id: 'group',
+				name: 'group',
+				type: AttributeTypes.Local
+			},
+			{
+				dataType: DataTypes.String,
+				displayName: Liferay.Language.get('team'),
+				id: 'team',
+				name: 'team',
+				type: AttributeTypes.Local
+			},
+			{
+				dataType: DataTypes.String,
+				displayName: Liferay.Language.get('user-group'),
+				id: 'userGroup',
+				name: 'userGroup',
+				type: AttributeTypes.Local
+			}
+		];
+	}
+
+	return modifiedEventAttributeDefinitions;
+}
+
+export const getTabs = (
+	setAttributeOwnerType: (type: AttributeOwnerTypes) => void
+) => [
+	{
+		onClick: () => setAttributeOwnerType(AttributeOwnerTypes.Event),
+		tabId: AttributeOwnerTypes.Event,
+		title: Liferay.Language.get('event')
+	},
+	{
+		onClick: () => setAttributeOwnerType(AttributeOwnerTypes.Individual),
+		tabId: AttributeOwnerTypes.Individual,
+		title: Liferay.Language.get('individual')
+	}
+];

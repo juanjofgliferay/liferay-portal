@@ -5,42 +5,45 @@ const dropdownElement = fragmentElement.querySelector('.dropdown-menu');
 const optionListElement = fragmentElement.querySelector('.list-unstyled');
 
 const chooseOptionElement = document.getElementById(
+
 	// eslint-disable-next-line no-undef
-	`${fragmentEntryLinkNamespace}-choose-option-message`
+	`${fragmentElementId}-choose-option-message`
 );
 const labelInputElement = document.getElementById(
+
 	// eslint-disable-next-line no-undef
-	`${fragmentEntryLinkNamespace}-label-input`
+	`${fragmentElementId}-label-input`
 );
 const loadingResultsElement = document.getElementById(
+
 	// eslint-disable-next-line no-undef
-	`${fragmentEntryLinkNamespace}-loading-results-message`
+	`${fragmentElementId}-loading-results-message`
 );
 const noResultsElement = document.getElementById(
+
 	// eslint-disable-next-line no-undef
-	`${fragmentEntryLinkNamespace}-no-results-message`
+	`${fragmentElementId}-no-results-message`
 );
 const uiInputElement = document.getElementById(
+
 	// eslint-disable-next-line no-undef
-	`${fragmentEntryLinkNamespace}-select-from-list-input`
+	`${fragmentElementId}-select-from-list-input`
 );
 const valueInputElement = document.getElementById(
+
 	// eslint-disable-next-line no-undef
-	`${fragmentEntryLinkNamespace}-value-input`
+	`${fragmentElementId}-value-input`
 );
 
-if (layoutMode === 'edit') {
-	buttonElement.setAttribute('disabled', true);
-	uiInputElement.setAttribute('disabled', true);
+if (!input.readOnly) {
+	buttonElement.addEventListener('click', toggleDropdown);
+	buttonElement.addEventListener('blur', handleResultListBlur);
+	buttonElement.addEventListener('keydown', handleButtonPress);
+	uiInputElement.addEventListener('click', toggleDropdown);
+	uiInputElement.addEventListener('input', debounce(handleInputChange, 1000));
+	uiInputElement.addEventListener('blur', handleInputBlur);
+	uiInputElement.addEventListener('keydown', handleInputKeyDown);
 }
-
-buttonElement.addEventListener('click', toggleDropdown);
-buttonElement.addEventListener('blur', handleResultListBlur);
-uiInputElement.addEventListener('click', toggleDropdown);
-uiInputElement.addEventListener('input', debounce(handleInputChange, 1000));
-uiInputElement.addEventListener('blur', handleInputBlur);
-uiInputElement.addEventListener('keydown', handleInputKeyDown);
-optionListElement.addEventListener('click', handleResultListClick);
 
 window.addEventListener('resize', handleWindowResizeOrScroll, {
 	passive: true,
@@ -51,26 +54,236 @@ window.addEventListener('scroll', handleWindowResizeOrScroll, {
 
 let lastSearchAbortController = new AbortController();
 let lastSearchQuery = null;
-valueInputElement.value = '';
 
-if (input.value) {
-	const selectedOption = (input.attributes.options || []).find(
-		(option) => option.value === input.value
-	);
-
-	lastSearchQuery = selectedOption.label.toLowerCase();
-	valueInputElement.value = selectedOption.value;
-
-	const selectedOptionElement = optionListElement.querySelector(
-		'.active.dropdown-item'
-	);
-
-	if (selectedOptionElement) {
-		optionListElement.setAttribute(
-			'aria-activedescendant',
-			selectedOption.id
+if (layoutMode === 'edit') {
+	buttonElement.setAttribute('disabled', true);
+	uiInputElement.setAttribute('disabled', true);
+}
+else {
+	if (input.value) {
+		const selectedOption = (input.attributes.options || []).find(
+			(option) => option.value === input.value
 		);
+
+		if (selectedOption) {
+			lastSearchQuery = selectedOption.label.toLowerCase();
+
+			if (valueInputElement) {
+				valueInputElement.value = selectedOption.value;
+			}
+
+			if (optionListElement) {
+				const selectedOptionElement = optionListElement.querySelector(
+					'.active.dropdown-item'
+				);
+
+				if (selectedOptionElement) {
+					optionListElement.setAttribute(
+						'aria-activedescendant',
+						selectedOptionElement.id
+					);
+				}
+			}
+		}
 	}
+
+	const defaultLanguageId = input.attributes.defaultLanguageId;
+
+	import('@liferay/fragment-impl/api').then(
+		({
+			getTranslationInput,
+			registerLocalizedInput,
+			registerUnlocalizedInput,
+		}) => {
+			let currentLanguageId = defaultLanguageId;
+
+			if (input.localizable) {
+				Object.entries(input.valueI18n).forEach(
+					([languageId, value]) => {
+						const translationInput = getTranslationInput({
+							inputId: uiInputElement.id,
+							inputName: input.name,
+							languageId,
+							localizationInputsContainer:
+								uiInputElement.parentNode,
+							namespace: fragmentElementId,
+						});
+
+						// Set data-label with the option label for each translation input
+
+						translationInput.dataset.label =
+							input.attributes.options.find(
+								(option) => option.value === value
+							).label;
+					}
+				);
+
+				const {onChange} = registerLocalizedInput({
+					availableLanguageIds: input.attributes.availableLanguageIds,
+					customLocaleChangeHandler: true,
+					defaultLanguageId,
+					initialValues: input.valueI18n,
+					inputElement: uiInputElement,
+					inputName: input.name,
+					localizationInputsContainer: uiInputElement.parentNode,
+					namespace: fragmentElementId,
+					onLocaleChange: ({languageId}) => {
+						currentLanguageId = languageId;
+
+						const translationInput = getTranslationInput({
+							inputId: uiInputElement.id,
+							inputName: input.name,
+							languageId,
+							localizationInputsContainer:
+								uiInputElement.parentNode,
+							namespace: fragmentElementId,
+						});
+
+						if (translationInput.getAttribute('value') !== null) {
+							uiInputElement.value =
+								translationInput.dataset.label;
+						}
+						else {
+							const defaultLanguageInput = getTranslationInput({
+								inputId: uiInputElement.id,
+								inputName: input.name,
+								languageId: defaultLanguageId,
+								localizationInputsContainer:
+									uiInputElement.parentNode,
+								namespace: fragmentElementId,
+							});
+
+							uiInputElement.value =
+								defaultLanguageInput.dataset.label || '';
+						}
+					},
+					onMarkAsTranslated: () => {
+						const defaultLanguageInput = getTranslationInput({
+							inputId: uiInputElement.id,
+							inputName: input.name,
+							languageId: defaultLanguageId,
+							localizationInputsContainer:
+								uiInputElement.parentNode,
+							namespace: fragmentElementId,
+						});
+
+						const translationInput = getTranslationInput({
+							inputId: uiInputElement.id,
+							inputName: input.name,
+							languageId: currentLanguageId,
+							localizationInputsContainer:
+								uiInputElement.parentNode,
+							namespace: fragmentElementId,
+						});
+
+						translationInput.dataset.label =
+							defaultLanguageInput.dataset.label;
+
+						translationInput.value = defaultLanguageInput.value;
+
+						uiInputElement.value =
+							defaultLanguageInput.dataset.label;
+					},
+					onResetTranslation: () => {
+						const defaultLanguageInput = getTranslationInput({
+							inputId: uiInputElement.id,
+							inputName: input.name,
+							languageId: defaultLanguageId,
+							localizationInputsContainer:
+								uiInputElement.parentNode,
+							namespace: fragmentElementId,
+						});
+
+						const translationInput = getTranslationInput({
+							inputId: uiInputElement.id,
+							inputName: input.name,
+							languageId: currentLanguageId,
+							localizationInputsContainer:
+								uiInputElement.parentNode,
+							namespace: fragmentElementId,
+						});
+
+						translationInput.dataset.label = '';
+						translationInput.value = '';
+
+						uiInputElement.value =
+							defaultLanguageInput.dataset.label || '';
+					},
+				});
+
+				uiInputElement.addEventListener('blur', () => {
+					const translationInput = getTranslationInput({
+						inputId: uiInputElement.id,
+						inputName: input.name,
+						languageId: currentLanguageId,
+						localizationInputsContainer: uiInputElement.parentNode,
+						namespace: fragmentElementId,
+					});
+
+					if (!uiInputElement.value) {
+						translationInput.value = null;
+					}
+				});
+
+				optionListElement?.addEventListener('click', (event) => {
+					const translationInput = getTranslationInput({
+						inputId: uiInputElement.id,
+						inputName: input.name,
+						languageId: currentLanguageId,
+						localizationInputsContainer: uiInputElement.parentNode,
+						namespace: fragmentElementId,
+					});
+
+					handleResultListClick(event, onChange, translationInput);
+				});
+			}
+			else {
+				registerUnlocalizedInput({
+					defaultLanguageId,
+					inputElement: uiInputElement,
+					onLocaleChange: (languageId) => {
+						if (defaultLanguageId === languageId) {
+							uiInputElement.addEventListener(
+								'click',
+								toggleDropdown
+							);
+							uiInputElement.addEventListener(
+								'keydown',
+								handleInputKeyDown
+							);
+
+							buttonElement.classList.remove('d-none');
+						}
+						else {
+							uiInputElement.removeEventListener(
+								'click',
+								toggleDropdown
+							);
+							uiInputElement.removeEventListener(
+								'keydown',
+								handleInputKeyDown
+							);
+
+							buttonElement.classList.add('d-none');
+						}
+					},
+					readOnlyInputLabel: document.getElementById(
+						`${fragmentElementId}-select-from-list-read-only`
+					),
+					unlocalizedFieldsState:
+						input.attributes.unlocalizedFieldsState,
+					unlocalizedMessageContainer: document.getElementById(
+						`${fragmentElementId}-unlocalized-info`
+					),
+				});
+
+				optionListElement?.addEventListener(
+					'click',
+					handleResultListClick
+				);
+			}
+		}
+	);
 }
 
 const KEYS = {
@@ -87,7 +300,7 @@ const optionList = (input.attributes.options || []).map((option) => ({
 	value: option.value,
 }));
 
-function handleResultListClick(event) {
+function handleResultListClick(event, onChange, translationInput) {
 	let selectedOptionElement = null;
 
 	if (event.target.matches('.dropdown-item')) {
@@ -100,11 +313,42 @@ function handleResultListClick(event) {
 	if (selectedOptionElement) {
 		setFocusedOption(selectedOptionElement, {scrollToElement: false});
 		setSelectedOption(selectedOptionElement);
+
+		if (onChange) {
+			translationInput.value = selectedOptionElement.dataset.optionValue;
+			translationInput.dataset.label =
+				selectedOptionElement.dataset.optionLabel;
+
+			onChange();
+		}
+	}
+}
+
+function handleButtonPress(event) {
+	event.preventDefault();
+
+	if (checkIsOpenDropdown()) {
+		handleKeydown(event);
+
+		if (event.key === KEYS.Enter) {
+			closeDropdown();
+		}
+	}
+	else {
+		if (event.key === KEYS.Enter) {
+			openDropdown();
+		}
 	}
 }
 
 function handleInputBlur() {
-	uiInputElement.value = labelInputElement.value;
+	if (!uiInputElement.value) {
+		labelInputElement.value = '';
+		valueInputElement.value = null;
+	}
+	else {
+		uiInputElement.value = labelInputElement.value;
+	}
 
 	if (checkIsOpenDropdown()) {
 		setTimeout(() => closeDropdown(), 500);
@@ -122,14 +366,18 @@ function handleInputKeyDown(event) {
 		return;
 	}
 
-	const currentFocusedOption = document.getElementById(
-		optionListElement.getAttribute('aria-activedescendant')
-	);
-
 	if (KEYS[event.key]) {
 		openDropdown();
 		event.preventDefault();
 	}
+
+	handleKeydown(event);
+}
+
+function handleKeydown(event) {
+	const currentFocusedOption = document.getElementById(
+		optionListElement.getAttribute('aria-activedescendant')
+	);
 
 	if (event.key === KEYS.ArrowDown && !event.altKey) {
 		if (currentFocusedOption) {
@@ -248,11 +496,13 @@ function filterRemoteOptions(query, abortController) {
 	}
 
 	const url = new URL(input.attributes.relationshipURL);
+	url.searchParams.set('pageSize', 0);
 	url.searchParams.set('search', query);
 
 	return Liferay.Util.fetch(url, {
 		headers: new Headers({
 			'Accept': 'application/json',
+			'Accept-Language': Liferay.ThemeDisplay.getBCP47LanguageId(),
 			'Content-Type': 'application/json',
 		}),
 		method: 'GET',
@@ -261,7 +511,10 @@ function filterRemoteOptions(query, abortController) {
 		.then((response) => response.json())
 		.then((result) => {
 			return result.items.map((entry) => {
-				let label = entry[input.attributes.relationshipLabelFieldName];
+				const finalEntry = entry.embedded || entry;
+
+				let label =
+					finalEntry[input.attributes.relationshipLabelFieldName];
 
 				if (Array.isArray(label)) {
 					label = label.map((label) => label.name).join(', ');
@@ -274,7 +527,7 @@ function filterRemoteOptions(query, abortController) {
 					textContent: label,
 					textValue: label,
 					value: `${
-						entry[input.attributes.relationshipValueFieldName]
+						finalEntry[input.attributes.relationshipValueFieldName]
 					}`,
 				};
 			});
@@ -330,9 +583,11 @@ function setFocusedOption(
 function createOptionElement(option) {
 	const optionElement = document.createElement('li');
 
+	optionElement.dataset.optionLabel = option.textContent;
 	optionElement.dataset.optionValue = option.value;
+
 	// eslint-disable-next-line no-undef
-	optionElement.id = `${fragmentEntryLinkNamespace}-option-${option.value}`;
+	optionElement.id = `${fragmentElementId}-option-${option.value}`;
 	optionElement.textContent = option.textContent;
 
 	optionElement.classList.add('dropdown-item');
@@ -357,20 +612,21 @@ function setSelectedOption(optionElement) {
 	closeDropdown();
 
 	const selectedOption = document.getElementById(
+
 		// eslint-disable-next-line no-undef
-		`${fragmentEntryLinkNamespace}-option-${valueInputElement.value}`
+		`${fragmentElementId}-option-${valueInputElement.value}`
 	);
 
 	if (selectedOption) {
 		selectedOption.classList.remove('active');
 	}
 
-	lastSearchQuery = optionElement.textContent.toLowerCase();
+	lastSearchQuery = optionElement.textContent.toLowerCase().trim();
 
 	optionElement.classList.add('active');
 
-	labelInputElement.value = optionElement.textContent;
-	uiInputElement.value = optionElement.textContent;
+	labelInputElement.value = optionElement.dataset.optionLabel;
+	uiInputElement.value = optionElement.dataset.optionLabel;
 	valueInputElement.value = optionElement.dataset.optionValue;
 }
 

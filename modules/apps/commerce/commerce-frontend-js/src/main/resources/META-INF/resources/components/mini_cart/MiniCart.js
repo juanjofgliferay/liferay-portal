@@ -3,20 +3,27 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {useLiferayState} from '@liferay/frontend-js-state-web/react';
 import classnames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useCallback, useEffect, useState} from 'react';
 
 import ServiceProvider from '../../ServiceProvider/index';
+import cartAtom from '../../utilities/atoms/cartAtom';
 import {
+	CART_RESET,
+	CART_UPDATED,
 	CURRENT_ACCOUNT_UPDATED,
+	CURRENT_ORDER_DELETED,
 	CURRENT_ORDER_UPDATED,
+	GUEST_ORDER_ENABLED,
 } from '../../utilities/eventsDefinitions';
 import {showErrorNotification} from '../../utilities/notifications';
 import MiniCartContext from './MiniCartContext';
 import {
 	ADD_PRODUCT,
 	CART,
+	CART_ITEMS_PAGINATION_DEFAULT,
 	HEADER,
 	ITEM,
 	ITEMS_LIST,
@@ -31,9 +38,16 @@ import {
 	VIEW_DETAILS,
 	YOUR_ORDER,
 } from './util/constants';
-import {regenerateOrderDetailURL, summaryDataMapper} from './util/index';
+import {summaryDataMapper} from './util/index';
 import {DEFAULT_LABELS} from './util/labels';
 import {resolveCartViews} from './util/views';
+
+import './mini_cart.scss';
+
+import LoadingIndicator from '@clayui/loading-indicator';
+
+import {isLowEndDevice} from '../../utilities/device';
+import {regenerateOrderDetailURL} from '../../utilities/regenerateOrderDetailURL';
 
 const CartResource = ServiceProvider.DeliveryCartAPI('v1');
 
@@ -44,54 +58,132 @@ function MiniCart({
 	channel,
 	displayDiscountLevels,
 	displayTotalItemsQuantity,
+	guestOrderEnabled,
 	itemsQuantity,
 	labels,
 	onAddToCart,
 	orderId,
 	productURLSeparator,
 	requestQuoteEnabled,
+	slowConnectionOrderFlowEnabled,
 	summaryDataMapper,
 	toggleable,
+	undoCartItemDeletionDisabled,
 }) {
-	const [isOpen, setIsOpen] = useState(!toggleable);
-	const [isUpdating, setIsUpdating] = useState(false);
-	const [editedItem, setEditedItem] = useState(null);
 	const [actionURLs, setActionURLs] = useState(cartActionURLs);
 	const [CartViews, setCartViews] = useState({});
+	const [cartItemsPagination, setCartItemsPagination] = useState(
+		CART_ITEMS_PAGINATION_DEFAULT
+	);
 	const [cartState, setCartState] = useState({
 		accountId,
+		cartItems: [],
 		channel: {channel},
 		id: orderId,
 		summary: {itemsQuantity},
 	});
+	const [editedItem, setEditedItem] = useState(null);
+	const [isOpen, setIsOpen] = useState(!toggleable);
+	const [isUpdating, setIsUpdating] = useState(false);
+	const [cartAtomState] = useLiferayState(cartAtom);
+	const [replacementSKUList, setReplacementSKUList] = useState([]);
+
+	const manageSlowConnections =
+		cartAtomState.updating &&
+		isLowEndDevice() &&
+		slowConnectionOrderFlowEnabled;
 
 	const closeCart = () => {
+		if (isUpdating) {
+			return;
+		}
+
 		setIsOpen(false);
+
+		if (toggleable) {
+			document.body.classList.remove('overflow-hidden');
+		}
 
 		if (editedItem) {
 			setEditedItem(null);
 		}
 	};
-	const openCart = () => setIsOpen(true);
 
-	const [replacementSKUList, setReplacementSKUList] = useState([]);
+	const openCart = () => {
+		if (toggleable) {
+			document.body.classList.add('overflow-hidden');
+		}
+
+		setIsOpen(true);
+	};
+
+	const getCartItems = useCallback(async () => {
+		const {items, lastPage} = await CartResource.getCartItemsByCartId(
+			cartState.id,
+			{
+				page: cartItemsPagination.page,
+				pageSize: cartItemsPagination.pageSize,
+			}
+		);
+
+		const remainder = cartItemsPagination.pageSize - items.length;
+
+		let nextPage = cartItemsPagination.page;
+
+		if (!remainder) {
+			nextPage += 1;
+		}
+
+		setCartState((currentState) => {
+			return {
+				...currentState,
+				cartItems: [
+					...currentState.cartItems,
+					...items.reduce((appended, item) => {
+						const found = currentState.cartItems.find(
+							(currentItem) => currentItem.id === item.id
+						);
+
+						if (!found) {
+							appended.push(item);
+						}
+
+						return appended;
+					}, []),
+				],
+			};
+		});
+
+		setCartItemsPagination({
+			lastPage,
+			page: nextPage,
+			pageSize: cartItemsPagination.pageSize,
+		});
+	}, [cartItemsPagination, cartState, setCartItemsPagination, setCartState]);
 
 	const resetCartState = useCallback(
-		({accountId = 0}) =>
-			setCartState({
-				accountId,
-				id: 0,
-				summary: {itemsQuantity: 0},
-			}),
-		[setCartState]
+		({accountId = 0, id = 0}) => {
+			const isAccountChanged = cartState.accountId !== accountId;
+			const isCartEmptied = cartState.id === id;
+			const isOrderDeleted =
+				id === 0 && cartState.accountId === accountId;
+
+			if (isAccountChanged || isCartEmptied || isOrderDeleted) {
+				setCartState({
+					accountId,
+					channel: {channel},
+					id,
+					summary: {itemsQuantity: 0},
+				});
+			}
+		},
+		[cartState.accountId, cartState.id, channel, setCartState]
 	);
 
 	const updateCartModel = useCallback(
-		async ({order}) => {
+		async ({order, refreshItems = false, updatedFromCart = true}) => {
 			try {
-				const updatedCart = order.orderUUID
-					? order
-					: await CartResource.getCartByIdWithItems(order.id);
+				const updatedCart = await CartResource.getCartById(order.id);
 
 				let latestActionURLs;
 				let latestCartState;
@@ -103,19 +195,33 @@ function MiniCart({
 						...currentURLs,
 						orderDetailURL: !orderDetailURL
 							? regenerateOrderDetailURL(
-									updatedCart.orderUUID,
-									currentURLs.siteDefaultURL
-							  )
+									currentURLs.baseOrderDetailURL,
+									updatedCart.id,
+									updatedCart.orderUUID
+								)
 							: new URL(orderDetailURL),
 					};
 
 					return latestActionURLs;
 				});
 
+				if (refreshItems) {
+					setCartItemsPagination(CART_ITEMS_PAGINATION_DEFAULT);
+				}
+
 				setCartState((currentState) => {
-					latestCartState = {...currentState, ...updatedCart};
+					latestCartState = {
+						...currentState,
+						...updatedCart,
+						...(refreshItems ? {cartItems: []} : {}),
+					};
 
 					return latestCartState;
+				});
+
+				Liferay.fire(CART_UPDATED, {
+					order: updatedCart,
+					updatedFromCart,
 				});
 
 				onAddToCart(latestActionURLs, latestCartState);
@@ -134,7 +240,7 @@ function MiniCart({
 						cartState.cartItems.filter(
 							({replacedSku: replacedSKU}) => Boolean(replacedSKU)
 						)
-				  )
+					)
 				: null,
 		[cartState.cartItems]
 	);
@@ -162,23 +268,34 @@ function MiniCart({
 	}, [orderId, updateCartModel]);
 
 	useEffect(() => {
+		Liferay.on(CART_RESET, resetCartState);
 		Liferay.on(CURRENT_ACCOUNT_UPDATED, resetCartState);
+		Liferay.on(CURRENT_ORDER_DELETED, resetCartState);
 
 		return () => {
+			Liferay.detach(CART_RESET, resetCartState);
 			Liferay.detach(CURRENT_ACCOUNT_UPDATED, resetCartState);
+			Liferay.detach(CURRENT_ORDER_DELETED, resetCartState);
 		};
 	}, [resetCartState]);
+
+	useEffect(() => {
+		Liferay.fire(GUEST_ORDER_ENABLED, {guestOrderEnabled});
+	}, [guestOrderEnabled]);
 
 	return (
 		<MiniCartContext.Provider
 			value={{
 				CartViews,
 				actionURLs,
+				cartItemsPagination,
 				cartState,
 				closeCart,
 				displayDiscountLevels,
 				displayTotalItemsQuantity,
 				editedItem,
+				getCartItems,
+				guestOrderEnabled,
 				isOpen,
 				isUpdating,
 				labels: {...DEFAULT_LABELS, ...labels},
@@ -190,31 +307,46 @@ function MiniCart({
 				setEditedItem,
 				setIsUpdating,
 				setReplacementSKUList,
+				slowConnectionOrderFlowEnabled,
 				summaryDataMapper,
 				toggleable,
+				undoCartItemDeletionDisabled,
 				updateCartModel,
 			}}
 		>
 			{!!CartViews[CART] && (
-				<div
-					className={classnames({
-						'is-open': isOpen || !toggleable,
-						'mini-cart': true,
-					})}
-				>
-					{toggleable && (
-						<>
-							<div
-								className="mini-cart-overlay"
-								onClick={() => closeCart()}
+				<>
+					<div
+						className={classnames({
+							'is-open': isOpen || !toggleable,
+							'mini-cart': true,
+						})}
+					>
+						{toggleable && (
+							<>
+								<div
+									className="mini-cart-overlay"
+									onClick={() => closeCart()}
+								/>
+
+								<CartViews.Opener
+									disabled={manageSlowConnections}
+								/>
+							</>
+						)}
+
+						<CartViews.Cart />
+					</div>
+
+					{manageSlowConnections && (
+						<div className="mini-cart-slow-connection-overlay">
+							<LoadingIndicator
+								displayType="secondary"
+								size="sm"
 							/>
-
-							<CartViews.Opener />
-						</>
+						</div>
 					)}
-
-					<CartViews.Cart />
-				</div>
+				</>
 			)}
 		</MiniCartContext.Provider>
 	);
@@ -224,20 +356,25 @@ MiniCart.defaultProps = {
 	cartViews: {},
 	displayDiscountLevels: false,
 	displayTotalItemsQuantity: false,
+	guestOrderEnabled: false,
 	itemsQuantity: 0,
 	labels: DEFAULT_LABELS,
 	onAddToCart: () => {},
 	orderId: 0,
 	requestQuoteEnabled: false,
+	slowConnectionOrderFlowEnabled: false,
 	summaryDataMapper,
 	toggleable: true,
+	undoCartItemDeletionDisabled: false,
 };
 
 MiniCart.propTypes = {
 	cartActionURLs: PropTypes.shape({
+		baseOrderDetailURL: PropTypes.string,
 		checkoutURL: PropTypes.string,
 		orderDetailURL: PropTypes.string,
 		productURLSeparator: PropTypes.string,
+		signInURL: PropTypes.string,
 		siteDefaultURL: PropTypes.string,
 	}).isRequired,
 	cartViews: PropTypes.shape({
@@ -246,7 +383,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[HEADER]: PropTypes.oneOfType([
@@ -254,7 +391,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[ITEM]: PropTypes.oneOfType([
@@ -262,7 +399,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[ITEMS_LIST]: PropTypes.oneOfType([
@@ -270,7 +407,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[ITEMS_LIST_ACTIONS]: PropTypes.oneOfType([
@@ -278,7 +415,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[OPENER]: PropTypes.oneOfType([
@@ -286,7 +423,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[ORDER_BUTTON]: PropTypes.oneOfType([
@@ -294,7 +431,7 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 		[SUMMARY]: PropTypes.oneOfType([
@@ -302,12 +439,13 @@ MiniCart.propTypes = {
 				component: PropTypes.func,
 			}),
 			PropTypes.shape({
-				contentRendererModuleUrl: PropTypes.string,
+				contentRendererModuleURL: PropTypes.string,
 			}),
 		]),
 	}),
 	displayDiscountLevels: PropTypes.bool,
 	displayTotalItemsQuantity: PropTypes.bool,
+	guestOrderEnabled: PropTypes.bool,
 	itemsQuantity: PropTypes.number,
 	labels: PropTypes.shape({
 		[ADD_PRODUCT]: PropTypes.string,

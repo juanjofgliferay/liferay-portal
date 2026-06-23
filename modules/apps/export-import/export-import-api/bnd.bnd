@@ -1,7 +1,8 @@
 Bundle-Name: Liferay Export Import API
 Bundle-SymbolicName: com.liferay.exportimport.api
-Bundle-Version: 8.1.1
+Bundle-Version: 17.2.0
 Export-Package:\
+	com.liferay.exportimport.attachment,\
 	com.liferay.exportimport.configuration,\
 	com.liferay.exportimport.constants,\
 	com.liferay.exportimport.content.processor,\
@@ -11,9 +12,11 @@ Export-Package:\
 	com.liferay.exportimport.portlet.data.handler.helper,\
 	com.liferay.exportimport.portlet.data.handler.provider,\
 	com.liferay.exportimport.portlet.data.handler.util,\
+	com.liferay.exportimport.portlet.element.handler,\
 	com.liferay.exportimport.portlet.preferences.processor,\
 	com.liferay.exportimport.portlet.preferences.processor.base,\
 	com.liferay.exportimport.resources.importer.portlet.preferences,\
 	com.liferay.exportimport.resources.importer.provider,\
 	com.liferay.exportimport.staged.model.repository,\
-	com.liferay.exportimport.util.comparator
+	com.liferay.exportimport.util.comparator,\
+	com.liferay.exportimport.vulcan.batch.engine

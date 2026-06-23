@@ -35,6 +35,7 @@ public class SharingEntryWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("sharingEntryId", getSharingEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -42,6 +43,8 @@ public class SharingEntryWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("toTicketId", getToTicketId());
+		attributes.put("toUserGroupId", getToUserGroupId());
 		attributes.put("toUserId", getToUserId());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
@@ -58,6 +61,13 @@ public class SharingEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long sharingEntryId = (Long)attributes.get("sharingEntryId");
@@ -100,6 +110,18 @@ public class SharingEntryWrapper
 
 		if (modifiedDate != null) {
 			setModifiedDate(modifiedDate);
+		}
+
+		Long toTicketId = (Long)attributes.get("toTicketId");
+
+		if (toTicketId != null) {
+			setToTicketId(toTicketId);
+		}
+
+		Long toUserGroupId = (Long)attributes.get("toUserGroupId");
+
+		if (toUserGroupId != null) {
+			setToUserGroupId(toUserGroupId);
 		}
 
 		Long toUserId = (Long)attributes.get("toUserId");
@@ -215,6 +237,16 @@ public class SharingEntryWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this sharing entry.
+	 *
+	 * @return the external reference code of this sharing entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the group ID of this sharing entry.
 	 *
 	 * @return the group ID of this sharing entry
@@ -262,6 +294,26 @@ public class SharingEntryWrapper
 	@Override
 	public long getSharingEntryId() {
 		return model.getSharingEntryId();
+	}
+
+	/**
+	 * Returns the to ticket ID of this sharing entry.
+	 *
+	 * @return the to ticket ID of this sharing entry
+	 */
+	@Override
+	public long getToTicketId() {
+		return model.getToTicketId();
+	}
+
+	/**
+	 * Returns the to user group ID of this sharing entry.
+	 *
+	 * @return the to user group ID of this sharing entry
+	 */
+	@Override
+	public long getToUserGroupId() {
+		return model.getToUserGroupId();
 	}
 
 	/**
@@ -421,6 +473,16 @@ public class SharingEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this sharing entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this sharing entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this sharing entry.
 	 *
 	 * @param groupId the group ID of this sharing entry
@@ -468,6 +530,26 @@ public class SharingEntryWrapper
 	@Override
 	public void setSharingEntryId(long sharingEntryId) {
 		model.setSharingEntryId(sharingEntryId);
+	}
+
+	/**
+	 * Sets the to ticket ID of this sharing entry.
+	 *
+	 * @param toTicketId the to ticket ID of this sharing entry
+	 */
+	@Override
+	public void setToTicketId(long toTicketId) {
+		model.setToTicketId(toTicketId);
+	}
+
+	/**
+	 * Sets the to user group ID of this sharing entry.
+	 *
+	 * @param toUserGroupId the to user group ID of this sharing entry
+	 */
+	@Override
+	public void setToUserGroupId(long toUserGroupId) {
+		model.setToUserGroupId(toUserGroupId);
 	}
 
 	/**
@@ -546,3 +628,4 @@ public class SharingEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:906755228

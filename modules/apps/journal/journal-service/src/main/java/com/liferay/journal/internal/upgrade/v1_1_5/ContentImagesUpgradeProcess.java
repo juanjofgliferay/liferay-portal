@@ -14,7 +14,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -38,9 +38,11 @@ import java.util.List;
 public class ContentImagesUpgradeProcess extends UpgradeProcess {
 
 	public ContentImagesUpgradeProcess(
-		JournalArticleImageUpgradeHelper journalArticleImageUpgradeHelper) {
+		JournalArticleImageUpgradeHelper journalArticleImageUpgradeHelper,
+		PortletFileRepository portletFileRepository) {
 
 		_journalArticleImageUpgradeHelper = journalArticleImageUpgradeHelper;
+		_portletFileRepository = portletFileRepository;
 	}
 
 	@Override
@@ -171,8 +173,7 @@ public class ContentImagesUpgradeProcess extends UpgradeProcess {
 		FileEntry fileEntry = null;
 
 		try {
-			fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-				fileEntryId);
+			fileEntry = _portletFileRepository.getPortletFileEntry(fileEntryId);
 		}
 		catch (PortalException portalException) {
 			String message = "Unable to get file entry " + fileEntryId;
@@ -201,7 +202,7 @@ public class ContentImagesUpgradeProcess extends UpgradeProcess {
 		FileEntry fileEntry = null;
 
 		try {
-			fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
+			fileEntry = _portletFileRepository.getPortletFileEntry(
 				groupId, folderId, id);
 		}
 		catch (PortalException portalException) {
@@ -223,11 +224,14 @@ public class ContentImagesUpgradeProcess extends UpgradeProcess {
 
 	private void _updateContentImages() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
+
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select id_, resourcePrimKey, groupId, companyId, userId, " +
 					"content from JournalArticle where content like " +
 						"'%type=\"image\"%'");
+
 			ResultSet resultSet = preparedStatement1.executeQuery();
+
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
@@ -237,10 +241,12 @@ public class ContentImagesUpgradeProcess extends UpgradeProcess {
 				preparedStatement2.setString(
 					1,
 					_convertTypeImageElements(
-						resultSet.getLong(5), resultSet.getLong(3),
-						resultSet.getLong(4), resultSet.getString(6),
-						resultSet.getLong(2)));
-				preparedStatement2.setLong(2, resultSet.getLong(1));
+						resultSet.getLong("userId"),
+						resultSet.getLong("groupId"),
+						resultSet.getLong("companyId"),
+						resultSet.getString("content"),
+						resultSet.getLong("resourcePrimKey")));
+				preparedStatement2.setLong(2, resultSet.getLong("id_"));
 
 				preparedStatement2.addBatch();
 			}
@@ -254,5 +260,6 @@ public class ContentImagesUpgradeProcess extends UpgradeProcess {
 
 	private final JournalArticleImageUpgradeHelper
 		_journalArticleImageUpgradeHelper;
+	private final PortletFileRepository _portletFileRepository;
 
 }

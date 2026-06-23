@@ -8,6 +8,7 @@ package com.liferay.headless.commerce.delivery.cart.resource.v1_0.test;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
+import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
@@ -23,9 +24,16 @@ import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.headless.commerce.delivery.cart.client.dto.v1_0.CartItem;
 import com.liferay.headless.commerce.delivery.cart.client.dto.v1_0.Price;
+import com.liferay.headless.commerce.delivery.cart.client.dto.v1_0.SkuUnitOfMeasure;
+import com.liferay.headless.commerce.delivery.cart.client.pagination.Page;
+import com.liferay.headless.commerce.delivery.cart.client.pagination.Pagination;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
+import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
+import com.liferay.portal.kernel.settings.ModifiableSettings;
+import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -78,8 +86,7 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 
 		_commerceOrder = _commerceOrderLocalService.addCommerceOrder(
 			_user.getUserId(), _commerceChannel.getGroupId(),
-			_accountEntry.getAccountEntryId(),
-			_commerceCurrency.getCommerceCurrencyId(), 0);
+			_accountEntry.getAccountEntryId(), _commerceCurrency.getCode(), 0);
 	}
 
 	@Ignore
@@ -90,22 +97,101 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 
 	@Override
 	@Test
-	public void testGetCartItem() throws Exception {
-		super.testGetCartItem();
+	public void testGetCartByExternalReferenceCodeItemsPage() throws Exception {
+		super.testGetCartByExternalReferenceCodeItemsPage();
 
-		_testGetCartItemPriceOnApplication();
+		_testGetCartByExternalReferenceCodeItemsPage();
 	}
 
 	@Ignore
 	@Override
 	@Test
-	public void testGetCartItemsPageWithPagination() throws Exception {
+	public void testGetCartByExternalReferenceCodeItemsPageWithPagination()
+		throws Exception {
+	}
+
+	@Override
+	@Test
+	public void testGetCartItem() throws Exception {
+		super.testGetCartItem();
+
+		_testGetCartItemPriceOnApplication();
+		_testGetCartItemPriceOnApplicationForUnitOfMeasure();
+	}
+
+	@Override
+	@Test
+	public void testGetCartItemByExternalReferenceCode() throws Exception {
+		super.testGetCartItemByExternalReferenceCode();
+
+		_testGetCartItemPriceOnApplication();
+	}
+
+	@Override
+	@Test
+	public void testGetCartItemsPage() throws Exception {
+		super.testGetCartItemsPage();
+
+		_testGetCartItemsPage();
 	}
 
 	@Ignore
 	@Override
 	@Test
 	public void testGraphQLDeleteCartItem() throws Exception {
+	}
+
+	@Override
+	@Test
+	public void testPostCartByExternalReferenceCodeItem() throws Exception {
+		CartItem randomCartItem = randomCartItem();
+
+		CartItem postCartItem1 =
+			testPostCartByExternalReferenceCodeItem_addCartItem(randomCartItem);
+
+		assertEquals(randomCartItem, postCartItem1);
+		assertValid(postCartItem1);
+
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new GroupServiceSettingsLocator(
+				_commerceChannel.getGroupId(),
+				CommerceConstants.SERVICE_NAME_COMMERCE_ORDER));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		modifiableSettings.setValue(
+			"showSeparateOrderItems", Boolean.TRUE.toString());
+
+		modifiableSettings.store();
+
+		CartItem postCartItem2 =
+			testPostCartByExternalReferenceCodeItem_addCartItem(randomCartItem);
+
+		Assert.assertNotEquals(postCartItem1.getId(), postCartItem2.getId());
+	}
+
+	@Override
+	@Test
+	public void testPutCartItemByExternalReferenceCode() throws Exception {
+		CartItem postCartItem =
+			testPutCartItemByExternalReferenceCode_addCartItem();
+
+		CartItem randomCartItem = randomCartItem();
+
+		CartItem putCartItem =
+			cartItemResource.putCartItemByExternalReferenceCode(
+				postCartItem.getExternalReferenceCode(), randomCartItem);
+
+		assertEquals(randomCartItem, putCartItem);
+		assertValid(putCartItem);
+
+		CartItem getCartItem =
+			cartItemResource.getCartItemByExternalReferenceCode(
+				putCartItem.getExternalReferenceCode());
+
+		assertEquals(randomCartItem, getCartItem);
+		assertValid(getCartItem);
 	}
 
 	@Override
@@ -125,9 +211,42 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 	}
 
 	@Override
+	protected CartItem testDeleteCartItemByExternalReferenceCode_addCartItem()
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			_commerceOrder.getExternalReferenceCode(), randomCartItem());
+	}
+
+	@Override
+	protected CartItem testGetCartByExternalReferenceCodeItemsPage_addCartItem(
+			String externalReferenceCode, CartItem cartItem)
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			externalReferenceCode, cartItem);
+	}
+
+	@Override
+	protected String
+			testGetCartByExternalReferenceCodeItemsPage_getExternalReferenceCode()
+		throws Exception {
+
+		return _commerceOrder.getExternalReferenceCode();
+	}
+
+	@Override
 	protected CartItem testGetCartItem_addCartItem() throws Exception {
 		return cartItemResource.postCartItem(
 			_commerceOrder.getCommerceOrderId(), randomCartItem());
+	}
+
+	@Override
+	protected CartItem testGetCartItemByExternalReferenceCode_addCartItem()
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			_commerceOrder.getExternalReferenceCode(), randomCartItem());
 	}
 
 	@Override
@@ -150,9 +269,35 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 	}
 
 	@Override
+	protected CartItem
+			testGraphQLGetCartItemByExternalReferenceCode_addCartItem()
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			_commerceOrder.getExternalReferenceCode(), randomCartItem());
+	}
+
+	@Override
 	protected CartItem testPatchCartItem_addCartItem() throws Exception {
 		return cartItemResource.postCartItem(
 			_commerceOrder.getCommerceOrderId(), randomCartItem());
+	}
+
+	@Override
+	protected CartItem testPatchCartItemByExternalReferenceCode_addCartItem()
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			_commerceOrder.getExternalReferenceCode(), randomCartItem());
+	}
+
+	@Override
+	protected CartItem testPostCartByExternalReferenceCodeItem_addCartItem(
+			CartItem cartItem)
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			_commerceOrder.getExternalReferenceCode(), cartItem);
 	}
 
 	@Override
@@ -167,6 +312,14 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 	protected CartItem testPutCartItem_addCartItem() throws Exception {
 		return cartItemResource.postCartItem(
 			_commerceOrder.getCommerceOrderId(), randomCartItem());
+	}
+
+	@Override
+	protected CartItem testPutCartItemByExternalReferenceCode_addCartItem()
+		throws Exception {
+
+		return cartItemResource.postCartByExternalReferenceCodeItem(
+			_commerceOrder.getExternalReferenceCode(), randomCartItem());
 	}
 
 	private CPInstance _addCPInstance(boolean priceOnApplication)
@@ -197,15 +350,56 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 	private CartItem _randomCartItem(boolean priceOnApplication)
 		throws Exception {
 
-		CPInstance cpInstance = _addCPInstance(priceOnApplication);
+		return _randomCartItem(_addCPInstance(priceOnApplication));
+	}
 
+	private CartItem _randomCartItem(CPInstance cpInstance) {
 		return new CartItem() {
 			{
+				deliveryGroup = RandomTestUtil.randomString();
+				externalReferenceCode = RandomTestUtil.randomString();
 				quantity = BigDecimal.valueOf(RandomTestUtil.randomInt(1, 10));
+				replacedSkuExternalReferenceCode =
+					RandomTestUtil.randomString();
+				requestedDeliveryDate = RandomTestUtil.nextDate();
+				shippingAddressExternalReferenceCode =
+					RandomTestUtil.randomString();
 				sku = cpInstance.getSku();
 				skuId = cpInstance.getCPInstanceId();
 			}
 		};
+	}
+
+	private void _testGetCartByExternalReferenceCodeItemsPage()
+		throws Exception {
+
+		CartItem postCartItem = cartItemResource.postCartItem(
+			_commerceOrder.getCommerceOrderId(), _randomCartItem(false));
+
+		cartItemResource.postCartItem(
+			_commerceOrder.getCommerceOrderId(), _randomCartItem(false));
+
+		Page<CartItem> cartItemsPage =
+			cartItemResource.getCartByExternalReferenceCodeItemsPage(
+				testGetCartByExternalReferenceCodeItemsPage_getExternalReferenceCode(),
+				RandomTestUtil.randomString(), null, Pagination.of(1, 10));
+
+		List<CartItem> cartItems = (List<CartItem>)cartItemsPage.getItems();
+
+		Assert.assertEquals(cartItems.toString(), 0, cartItems.size());
+
+		cartItemsPage =
+			cartItemResource.getCartByExternalReferenceCodeItemsPage(
+				testGetCartByExternalReferenceCodeItemsPage_getExternalReferenceCode(),
+				postCartItem.getSku(), null, Pagination.of(1, 10));
+
+		cartItems = (List<CartItem>)cartItemsPage.getItems();
+
+		Assert.assertEquals(cartItems.toString(), 1, cartItems.size());
+
+		CartItem cartItem = cartItems.get(0);
+
+		assertEquals(postCartItem, cartItem);
 	}
 
 	private void _testGetCartItemPriceOnApplication() throws Exception {
@@ -224,6 +418,91 @@ public class CartItemResourceTest extends BaseCartItemResourceTestCase {
 		Price price = getCartItem.getPrice();
 
 		Assert.assertEquals(priceOnApplication, price.getPriceOnApplication());
+	}
+
+	private void _testGetCartItemPriceOnApplicationForUnitOfMeasure()
+		throws Exception {
+
+		CPInstance cpInstance = _addCPInstance(false);
+		String unitOfMeasureKey1 = RandomTestUtil.randomString();
+
+		CPTestUtil.addCPInstanceUnitOfMeasure(
+			testGroup.getGroupId(), cpInstance.getCPInstanceId(),
+			unitOfMeasureKey1, BigDecimal.ONE, cpInstance.getSku());
+
+		String unitOfMeasureKey2 = RandomTestUtil.randomString();
+
+		CPTestUtil.addCPInstanceUnitOfMeasure(
+			testGroup.getGroupId(), cpInstance.getCPInstanceId(),
+			unitOfMeasureKey2, BigDecimal.ONE, cpInstance.getSku());
+
+		CommercePriceEntry commercePriceEntry =
+			_commercePriceEntryLocalService.getInstanceBaseCommercePriceEntry(
+				cpInstance.getCPInstanceUuid(),
+				CommercePriceListConstants.TYPE_PRICE_LIST, unitOfMeasureKey2);
+
+		commercePriceEntry.setPriceOnApplication(true);
+
+		_commercePriceEntryLocalService.updateCommercePriceEntry(
+			commercePriceEntry);
+
+		CartItem cartItemUnitOfMeasure2 = _randomCartItem(cpInstance);
+
+		SkuUnitOfMeasure skuUnitOfMeasure2 = new SkuUnitOfMeasure();
+
+		skuUnitOfMeasure2.setKey(unitOfMeasureKey2);
+
+		cartItemUnitOfMeasure2.setSkuUnitOfMeasure(skuUnitOfMeasure2);
+
+		CartItem postCartItemUnitOfMeasure2 = cartItemResource.postCartItem(
+			_commerceOrder.getCommerceOrderId(), cartItemUnitOfMeasure2);
+
+		Price priceUnitOfMeasure2 = postCartItemUnitOfMeasure2.getPrice();
+
+		Assert.assertTrue(priceUnitOfMeasure2.getPriceOnApplication());
+
+		CartItem cartItemUnitOfMeasure1 = _randomCartItem(cpInstance);
+
+		SkuUnitOfMeasure skuUnitOfMeasure1 = new SkuUnitOfMeasure();
+
+		skuUnitOfMeasure1.setKey(unitOfMeasureKey1);
+
+		cartItemUnitOfMeasure1.setSkuUnitOfMeasure(skuUnitOfMeasure1);
+
+		CartItem postCartItemUnitOfMeasure1 = cartItemResource.postCartItem(
+			_commerceOrder.getCommerceOrderId(), cartItemUnitOfMeasure1);
+
+		Price priceUnitOfMeasure1 = postCartItemUnitOfMeasure1.getPrice();
+
+		Assert.assertFalse(priceUnitOfMeasure1.getPriceOnApplication());
+	}
+
+	private void _testGetCartItemsPage() throws Exception {
+		CartItem postCartItem = cartItemResource.postCartItem(
+			_commerceOrder.getCommerceOrderId(), _randomCartItem(false));
+
+		cartItemResource.postCartItem(
+			_commerceOrder.getCommerceOrderId(), _randomCartItem(false));
+
+		Page<CartItem> cartItemsPage = cartItemResource.getCartItemsPage(
+			_commerceOrder.getCommerceOrderId(), RandomTestUtil.randomString(),
+			null, Pagination.of(1, 10));
+
+		List<CartItem> cartItems = (List<CartItem>)cartItemsPage.getItems();
+
+		Assert.assertEquals(cartItems.toString(), 0, cartItems.size());
+
+		cartItemsPage = cartItemResource.getCartItemsPage(
+			_commerceOrder.getCommerceOrderId(), postCartItem.getSku(), null,
+			Pagination.of(1, 10));
+
+		cartItems = (List<CartItem>)cartItemsPage.getItems();
+
+		Assert.assertEquals(cartItems.toString(), 1, cartItems.size());
+
+		CartItem cartItem = cartItems.get(0);
+
+		assertEquals(postCartItem, cartItem);
 	}
 
 	private void _updateCommercePriceEntry(

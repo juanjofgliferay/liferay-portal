@@ -10,9 +10,10 @@ import SubHeader from './SubHeader';
 
 interface IBasePageProps extends React.HTMLAttributes<HTMLElement> {
 	documentTitle: string;
+	fluid?: boolean;
 }
 
-const BasePage: React.FC<IBasePageProps> & {
+export const BasePage: React.FC<IBasePageProps> & {
 	Body: typeof Body;
 	Context: typeof Context;
 	Header: typeof Header;

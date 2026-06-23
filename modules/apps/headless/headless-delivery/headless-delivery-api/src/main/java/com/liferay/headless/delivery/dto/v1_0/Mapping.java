@@ -17,7 +17,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -25,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -52,62 +51,92 @@ public class Mapping implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Mapping.class, json);
 	}
 
-	@Schema(description = "The mapping's field key.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The mapping's field key."
+	)
 	public String getFieldKey() {
+		if (_fieldKeySupplier != null) {
+			fieldKey = _fieldKeySupplier.get();
+
+			_fieldKeySupplier = null;
+		}
+
 		return fieldKey;
 	}
 
 	public void setFieldKey(String fieldKey) {
 		this.fieldKey = fieldKey;
+
+		_fieldKeySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldKey(
 		UnsafeSupplier<String, Exception> fieldKeyUnsafeSupplier) {
 
-		try {
-			fieldKey = fieldKeyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldKeySupplier = () -> {
+			try {
+				return fieldKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The mapping's field key.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String fieldKey;
 
-	@Schema(description = "The mapping's item reference.")
+	@JsonIgnore
+	private Supplier<String> _fieldKeySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The mapping's item reference."
+	)
 	@Valid
 	public Object getItemReference() {
+		if (_itemReferenceSupplier != null) {
+			itemReference = _itemReferenceSupplier.get();
+
+			_itemReferenceSupplier = null;
+		}
+
 		return itemReference;
 	}
 
 	public void setItemReference(Object itemReference) {
 		this.itemReference = itemReference;
+
+		_itemReferenceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setItemReference(
 		UnsafeSupplier<Object, Exception> itemReferenceUnsafeSupplier) {
 
-		try {
-			itemReference = itemReferenceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_itemReferenceSupplier = () -> {
+			try {
+				return itemReferenceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The mapping's item reference.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object itemReference;
+
+	@JsonIgnore
+	private Supplier<Object> _itemReferenceSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -136,6 +165,8 @@ public class Mapping implements Serializable {
 
 		sb.append("{");
 
+		String fieldKey = getFieldKey();
+
 		if (fieldKey != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -149,6 +180,8 @@ public class Mapping implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Object itemReference = getItemReference();
 
 		if (itemReference != null) {
 			if (sb.length() > 1) {
@@ -176,8 +209,8 @@ public class Mapping implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.Mapping",
 		name = "x-class-name"
 	)
@@ -223,7 +256,10 @@ public class Mapping implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -269,3 +305,4 @@ public class Mapping implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1961653538

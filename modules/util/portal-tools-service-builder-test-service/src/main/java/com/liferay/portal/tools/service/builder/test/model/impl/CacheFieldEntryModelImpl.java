@@ -7,8 +7,10 @@ package com.liferay.portal.tools.service.builder.test.model.impl;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
+import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
@@ -21,6 +23,8 @@ import com.liferay.portal.tools.service.builder.test.model.CacheFieldEntryModel;
 
 import java.io.Serializable;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -74,6 +78,8 @@ public class CacheFieldEntryModelImpl
 		"create table CacheFieldEntry (cacheFieldEntryId LONG not null primary key,groupId LONG,name VARCHAR(75) null)";
 
 	public static final String TABLE_SQL_DROP = "drop table CacheFieldEntry";
+
+	public static final String ENTITY_ALIAS = "cacheFieldEntry";
 
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY cacheFieldEntry.cacheFieldEntryId ASC";
@@ -416,6 +422,14 @@ public class CacheFieldEntryModelImpl
 	}
 
 	@Override
+	public void copyCacheFields(CacheFieldEntry source) {
+		CacheFieldEntryModelImpl sourceModelImpl =
+			(CacheFieldEntryModelImpl)source;
+
+		setNickname(sourceModelImpl.getNickname());
+	}
+
+	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
 			return true;
@@ -486,9 +500,16 @@ public class CacheFieldEntryModelImpl
 			cacheFieldEntryCacheModel.name = null;
 		}
 
-		setNickname(null);
+		try {
+			setNickname(null);
 
-		cacheFieldEntryCacheModel._nickname = getNickname();
+			cacheFieldEntryCacheModel.nickname =
+				(String)_nicknameMethodHandle.invokeExact(
+					(CacheFieldEntryImpl)this);
+		}
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
+		}
 
 		return cacheFieldEntryCacheModel;
 	}
@@ -609,6 +630,34 @@ public class CacheFieldEntryModelImpl
 	}
 
 	private long _columnBitmask;
+
+	protected static final BiConsumer<CacheFieldEntry, String>
+		nicknameUpdateEntityCacheBiConsumer = (cacheFieldEntry, nickname) -> {
+			CacheFieldEntryCacheModel cacheFieldEntryCacheModel =
+				EntityCacheUtil.fetchCacheModel(
+					CacheFieldEntryImpl.class, cacheFieldEntry.getPrimaryKey(),
+					CacheFieldEntryCacheModel.class);
+
+			if (cacheFieldEntryCacheModel != null) {
+				cacheFieldEntryCacheModel.nickname = nickname;
+			}
+		};
+
+	private static final MethodHandle _nicknameMethodHandle;
+
+	static {
+		MethodHandles.Lookup lookup = ReflectionUtil.getImplLookup();
+
+		try {
+			_nicknameMethodHandle = lookup.findGetter(
+				CacheFieldEntryImpl.class, "_nickname", String.class);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
 	private CacheFieldEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1399620276

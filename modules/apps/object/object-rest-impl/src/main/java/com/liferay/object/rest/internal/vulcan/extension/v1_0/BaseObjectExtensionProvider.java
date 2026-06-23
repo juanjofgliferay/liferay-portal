@@ -7,14 +7,20 @@ package com.liferay.object.rest.internal.vulcan.extension.v1_0;
 
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.object.system.SystemObjectDefinitionManager;
+import com.liferay.object.system.SystemObjectDefinitionManagerRegistry;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.dto.converter.DTOMapper;
 import com.liferay.portal.vulcan.extension.ExtensionProvider;
 
+import java.lang.reflect.Method;
+
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -62,20 +68,50 @@ public abstract class BaseObjectExtensionProvider implements ExtensionProvider {
 			companyId, internalDTOClassName);
 	}
 
-	protected long getPrimaryKey(Object entity) throws PortalException {
-		JSONObject jsonObject = jsonFactory.createJSONObject(
-			jsonFactory.looseSerializeDeep(entity));
+	protected long getPrimaryKey(
+			Object entity, ObjectDefinition objectDefinition)
+		throws Exception {
 
-		return jsonObject.getLong("id");
+		String idPropertyName = "id";
+
+		if ((objectDefinition != null) &&
+			objectDefinition.isUnmodifiableSystemObject()) {
+
+			SystemObjectDefinitionManager systemObjectDefinitionManager =
+				systemObjectDefinitionManagerRegistry.
+					getSystemObjectDefinitionManager(
+						objectDefinition.getName());
+
+			if (systemObjectDefinitionManager != null) {
+				String restDTOIdPropertyName =
+					systemObjectDefinitionManager.getRESTDTOIdPropertyName();
+
+				if (Validator.isNotNull(restDTOIdPropertyName)) {
+					idPropertyName = restDTOIdPropertyName;
+				}
+			}
+		}
+
+		if (entity instanceof Map) {
+			return MapUtil.getLong((Map<String, Object>)entity, idPropertyName);
+		}
+
+		Class<?> clazz = entity.getClass();
+
+		Method method = clazz.getMethod(
+			"get" + StringUtil.upperCaseFirstLetter(idPropertyName));
+
+		return GetterUtil.getLong(method.invoke(entity));
 	}
 
 	@Reference
 	protected DTOMapper dtoMapper;
 
 	@Reference
-	protected JSONFactory jsonFactory;
+	protected ObjectDefinitionLocalService objectDefinitionLocalService;
 
 	@Reference
-	protected ObjectDefinitionLocalService objectDefinitionLocalService;
+	protected SystemObjectDefinitionManagerRegistry
+		systemObjectDefinitionManagerRegistry;
 
 }

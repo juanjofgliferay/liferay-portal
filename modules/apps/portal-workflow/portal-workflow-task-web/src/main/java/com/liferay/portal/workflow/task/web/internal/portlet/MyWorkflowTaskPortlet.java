@@ -5,7 +5,10 @@
 
 package com.liferay.portal.workflow.task.web.internal.portlet;
 
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.model.CTCollection;
+import com.liferay.change.tracking.service.CTCollectionLocalService;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -17,36 +20,31 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManagerUtil;
 import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.manager.WorkflowLogManager;
 import com.liferay.portal.workflow.security.permission.WorkflowTaskPermission;
-import com.liferay.portal.workflow.task.web.internal.configuration.WorkflowTaskWebConfiguration;
 import com.liferay.portal.workflow.task.web.internal.display.context.WorkflowTaskDisplayContext;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
-import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Leonardo Barros
  */
 @Component(
-	configurationPid = "com.liferay.portal.workflow.task.web.internal.configuration.WorkflowTaskWebConfiguration",
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-workflow-tasks",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -58,14 +56,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=My Workflow Tasks",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user",
-		"javax.portlet.version=3.0"
+		"jakarta.portlet.display-name=My Workflow Tasks",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -110,13 +108,6 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		_workflowTaskWebConfiguration = ConfigurableUtil.createConfigurable(
-			WorkflowTaskWebConfiguration.class, properties);
-	}
-
 	@Override
 	protected void doDispatch(
 			RenderRequest renderRequest, RenderResponse renderResponse)
@@ -147,15 +138,31 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 		return false;
 	}
 
-	private void _checkWorkflowTaskViewPermission(
-			WorkflowTask workflowTask, ThemeDisplay themeDisplay)
-		throws PortalException {
+	private boolean _hasWorkflowTaskViewPermission(
+		ThemeDisplay themeDisplay, WorkflowTask workflowTask) {
+
+		long ctCollectionId = MapUtil.getLong(
+			workflowTask.getOptionalAttributes(), "ctCollectionId",
+			CTConstants.CT_COLLECTION_ID_PRODUCTION);
+
+		CTCollection ctCollection = _ctCollectionLocalService.fetchCTCollection(
+			ctCollectionId);
+
+		if ((ctCollection != null) &&
+			(ctCollection.getStatus() == WorkflowConstants.STATUS_APPROVED)) {
+
+			ctCollectionId = CTConstants.CT_COLLECTION_ID_PRODUCTION;
+		}
+
+		if (ctCollectionId != CTCollectionThreadLocal.getCTCollectionId()) {
+			return false;
+		}
 
 		long groupId = MapUtil.getLong(
 			workflowTask.getOptionalAttributes(), "groupId",
 			themeDisplay.getSiteGroupId());
 
-		_workflowTaskPermission.check(
+		return _workflowTaskPermission.contains(
 			themeDisplay.getPermissionChecker(), workflowTask, groupId);
 	}
 
@@ -185,15 +192,15 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 			WorkflowTask workflowTask = WorkflowTaskManagerUtil.getWorkflowTask(
 				themeDisplay.getCompanyId(), workflowTaskId);
 
-			_checkWorkflowTaskViewPermission(workflowTask, themeDisplay);
-
 			renderRequest.setAttribute(WebKeys.WORKFLOW_TASK, workflowTask);
+			renderRequest.setAttribute(
+				WebKeys.WORKFLOW_TASK_READ_ONLY,
+				!_hasWorkflowTaskViewPermission(themeDisplay, workflowTask));
 		}
-
-		renderRequest.setAttribute(
-			WorkflowTaskWebConfiguration.class.getName(),
-			_workflowTaskWebConfiguration);
 	}
+
+	@Reference
+	private CTCollectionLocalService _ctCollectionLocalService;
 
 	@Reference
 	private Portal _portal;
@@ -206,7 +213,5 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 
 	@Reference
 	private WorkflowTaskPermission _workflowTaskPermission;
-
-	private volatile WorkflowTaskWebConfiguration _workflowTaskWebConfiguration;
 
 }

@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,8 +36,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ClassTypeReference")
+@io.swagger.v3.oas.annotations.media.Schema(requiredProperties = {"className"})
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"className"})
 @XmlRootElement(name = "ClassTypeReference")
 public class ClassTypeReference implements Serializable {
 
@@ -50,28 +49,38 @@ public class ClassTypeReference implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ClassTypeReference.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getClassName() {
+		if (_classNameSupplier != null) {
+			className = _classNameSupplier.get();
+
+			_classNameSupplier = null;
+		}
+
 		return className;
 	}
 
 	public void setClassName(String className) {
 		this.className = className;
+
+		_classNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassName(
 		UnsafeSupplier<String, Exception> classNameUnsafeSupplier) {
 
-		try {
-			className = classNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classNameSupplier = () -> {
+			try {
+				return classNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -79,33 +88,49 @@ public class ClassTypeReference implements Serializable {
 	@NotEmpty
 	protected String className;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _classNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getClassType() {
+		if (_classTypeSupplier != null) {
+			classType = _classTypeSupplier.get();
+
+			_classTypeSupplier = null;
+		}
+
 		return classType;
 	}
 
 	public void setClassType(Long classType) {
 		this.classType = classType;
+
+		_classTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassType(
 		UnsafeSupplier<Long, Exception> classTypeUnsafeSupplier) {
 
-		try {
-			classType = classTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classTypeSupplier = () -> {
+			try {
+				return classTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long classType;
+
+	@JsonIgnore
+	private Supplier<Long> _classTypeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -134,6 +159,8 @@ public class ClassTypeReference implements Serializable {
 
 		sb.append("{");
 
+		String className = getClassName();
+
 		if (className != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -147,6 +174,8 @@ public class ClassTypeReference implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long classType = getClassType();
 
 		if (classType != null) {
 			if (sb.length() > 1) {
@@ -163,8 +192,8 @@ public class ClassTypeReference implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ClassTypeReference",
 		name = "x-class-name"
 	)
@@ -210,7 +239,10 @@ public class ClassTypeReference implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -256,3 +288,4 @@ public class ClassTypeReference implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1373073045

@@ -33,7 +33,6 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -42,6 +41,8 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
+
+import jakarta.portlet.ResourceRequest;
 
 import java.io.File;
 
@@ -54,8 +55,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import javax.portlet.ResourceRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -95,7 +94,8 @@ public class ExportDisplayPagesMVCResourceCommandTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), layoutPageTemplateEntry.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				layoutPageTemplateEntry.getPlid(),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(
 						layoutPageTemplateEntry.getPlid()),
@@ -171,7 +171,8 @@ public class ExportDisplayPagesMVCResourceCommandTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), layoutPageTemplateEntry1.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				layoutPageTemplateEntry1.getPlid(),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(
 						layoutPageTemplateEntry1.getPlid()),
@@ -185,7 +186,8 @@ public class ExportDisplayPagesMVCResourceCommandTest {
 
 		_layoutPageTemplateStructureLocalService.
 			updateLayoutPageTemplateStructureData(
-				_group.getGroupId(), layoutPageTemplateEntry2.getPlid(),
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				layoutPageTemplateEntry2.getPlid(),
 				_segmentsExperienceLocalService.
 					fetchDefaultSegmentsExperienceId(
 						layoutPageTemplateEntry2.getPlid()),
@@ -303,13 +305,23 @@ public class ExportDisplayPagesMVCResourceCommandTest {
 		String className = "com.liferay.journal.model.JournalArticle";
 
 		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			_serviceContext.getUserId(), _serviceContext.getScopeGroupId(), 0,
-			_portal.getClassNameId(className), _getClassTypeId(className), name,
-			LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, status,
+			null, _serviceContext.getUserId(),
+			_serviceContext.getScopeGroupId(), 0, null,
+			_portal.getClassNameId(className), _getClassTypeKey(className),
+			name, LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0, status,
 			_serviceContext);
 	}
 
-	private long _getClassTypeId(String className) {
+	private String _getClassTypeKey(String className) {
+		InfoItemFormVariation infoItemFormVariation =
+			_getFirstInfoItemFormVariation(className);
+
+		return infoItemFormVariation.getExternalReferenceCode();
+	}
+
+	private InfoItemFormVariation _getFirstInfoItemFormVariation(
+		String className) {
+
 		InfoItemFormVariationsProvider<?> infoItemFormVariationsProvider =
 			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFormVariationsProvider.class, className);
@@ -323,10 +335,7 @@ public class ExportDisplayPagesMVCResourceCommandTest {
 		infoItemFormVariations.sort(
 			Comparator.comparing(InfoItemFormVariation::getKey));
 
-		InfoItemFormVariation infoItemFormVariation =
-			infoItemFormVariations.get(0);
-
-		return GetterUtil.getLong(infoItemFormVariation.getKey());
+		return infoItemFormVariations.get(0);
 	}
 
 	private MockLiferayResourceRequest _getMockLiferayResourceRequest(
@@ -445,15 +454,19 @@ public class ExportDisplayPagesMVCResourceCommandTest {
 		}
 
 		if (_isDisplayPageFile(zipEntry.getName())) {
+			InfoItemFormVariation infoItemFormVariation =
+				_getFirstInfoItemFormVariation(
+					"com.liferay.journal.model.JournalArticle");
+
 			_validateContent(
 				StringUtil.read(zipFile.getInputStream(zipEntry)),
 				"expected_display_page_template.json",
 				expectedDisplayPageTemplateNames,
 				HashMapBuilder.put(
-					"CONTENT_SUBTYPE_SUBTYPE_ID",
-					String.valueOf(
-						_getClassTypeId(
-							"com.liferay.journal.model.JournalArticle"))
+					"CONTENT_SUBTYPE_SUBTYPE_ID", infoItemFormVariation.getKey()
+				).put(
+					"CONTENT_SUBTYPE_SUBTYPE_KEY",
+					infoItemFormVariation.getExternalReferenceCode()
 				).build());
 		}
 

@@ -12,12 +12,12 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Kresimir Coko
@@ -150,7 +150,15 @@ public class SelectTag extends BaseContainerTag {
 		JspWriter jspWriter = pageContext.getOut();
 
 		if (Validator.isNotNull(_label)) {
-			jspWriter.write("<label>");
+			jspWriter.write("<label");
+
+			if (Validator.isNotNull(getId())) {
+				jspWriter.write(" for=\"");
+				jspWriter.write(getId());
+				jspWriter.write("\"");
+			}
+
+			jspWriter.write(">");
 			jspWriter.write(getLabel());
 			jspWriter.write("</label>");
 		}

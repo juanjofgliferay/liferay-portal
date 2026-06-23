@@ -9,7 +9,8 @@ import {
 	openModal,
 	openSelectionModal,
 	openSimpleInputModal,
-} from 'frontend-js-web';
+} from 'frontend-js-components-web';
+import {setFormValues, sub} from 'frontend-js-web';
 
 import openContentTypeModal from '../commands/openContentTypeModal';
 import openDeletePageTemplateModal from '../commands/openDeletePageTemplateModal';
@@ -37,7 +38,7 @@ const ACTIONS = {
 				description: hasMissingType
 					? Liferay.Language.get(
 							'this-display-page-template-does-not-have-any-content-type-assigned-you-must-select-one-to-edit-it'
-					  )
+						)
 					: '',
 				disableWarning: Boolean(hasMissingType) || !assetType,
 				formSubmitURL: changeContentTypeURL,
@@ -104,6 +105,41 @@ const ACTIONS = {
 		else {
 			send(markAsDefaultDisplayPageURL);
 		}
+	},
+
+	moveDisplayPage(
+		{
+			itemSelectorURL,
+			layoutPageTemplateEntryId,
+			layoutPageTemplateEntryName,
+			moveSelectedDisplayPageURL,
+		},
+		portletNamespace
+	) {
+		openSelectionModal({
+			height: '70vh',
+			onSelect: (selectedItem) => {
+				const form = document.getElementById(
+					`${portletNamespace}actionEntriesFm`
+				);
+
+				setFormValues(form, {
+					copyPermissions: true,
+					layoutPageTemplateEntriesIds: layoutPageTemplateEntryId,
+					layoutParentPageTemplateCollectionId:
+						selectedItem.resourceid,
+				});
+
+				submitForm(form, moveSelectedDisplayPageURL);
+			},
+			selectEventName: 'selectFolder',
+			size: 'md',
+			title: sub(
+				Liferay.Language.get('move-x-to'),
+				`"${layoutPageTemplateEntryName}"`
+			),
+			url: itemSelectorURL,
+		});
 	},
 
 	permissionsDisplayPage({permissionsDisplayPageURL}) {
@@ -182,7 +218,10 @@ function send(url) {
 export default function DisplayPageDropdownPropsTransformer({
 	actions,
 	additionalProps,
+	inputName,
+	inputValue,
 	portletNamespace,
+	title,
 	...otherProps
 }) {
 	const updateItem = (item) => {
@@ -212,5 +251,11 @@ export default function DisplayPageDropdownPropsTransformer({
 	return {
 		...otherProps,
 		actions: actions?.map(updateItem),
+		checkboxProps: {
+			'aria-label': sub(Liferay.Language.get('select-x'), title),
+			'name': inputName,
+			'value': inputValue,
+		},
+		title,
 	};
 }

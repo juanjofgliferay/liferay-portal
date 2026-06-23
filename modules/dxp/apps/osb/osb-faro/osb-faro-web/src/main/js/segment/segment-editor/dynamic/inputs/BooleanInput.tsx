@@ -8,28 +8,14 @@ import {Property} from 'shared/util/records';
 interface IBooleanInputProps {
 	displayValue: string;
 	id?: string;
-	onChange: (object) => void;
+	onChange: (params: {value: React.Key}) => void;
 	operatorRenderer: React.ElementType;
 	property: Property;
 	value: string;
 }
 export default class BooleanInput extends React.Component<IBooleanInputProps> {
-	componentDidMount() {
-		const {
-			id,
-			property: {entityName, type}
-		} = this.props;
-
-		if (!id) {
-			analytics.track('Dynamic Segment Creation - Completed Attribute', {
-				entityName,
-				type
-			});
-		}
-	}
-
 	@autobind
-	handleChange(value) {
+	handleChange(value: React.Key) {
 		this.props.onChange({value});
 	}
 

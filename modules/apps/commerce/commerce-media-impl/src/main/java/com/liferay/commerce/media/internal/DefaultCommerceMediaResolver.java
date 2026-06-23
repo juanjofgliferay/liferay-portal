@@ -18,27 +18,24 @@ import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.permission.CommerceProductViewPermission;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryLocalService;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
-import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
-import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemLocalService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
-import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,23 +64,14 @@ public class DefaultCommerceMediaResolver implements CommerceMediaResolver {
 
 	@Override
 	public String getDownloadVirtualOrderItemURL(
-			long commerceVirtualOrderItemId)
-		throws PortalException {
-
-		CommerceVirtualOrderItem commerceVirtualOrderItem =
-			_commerceVirtualOrderItemLocalService.fetchCommerceVirtualOrderItem(
-				commerceVirtualOrderItemId);
-
-		FileEntry fileEntry = _dlAppService.getFileEntry(
-			commerceVirtualOrderItem.getFileEntryId());
+		long commerceVirtualOrderItemId, long fileEntryId) {
 
 		return StringBundler.concat(
 			_portal.getPathModule(), StringPool.SLASH,
 			CommerceMediaConstants.SERVLET_PATH,
 			CommerceMediaConstants.URL_SEPARATOR_VIRTUAL_ORDER_ITEM,
 			commerceVirtualOrderItemId,
-			CommerceMediaConstants.URL_SEPARATOR_FILE,
-			fileEntry.getFileEntryId());
+			CommerceMediaConstants.URL_SEPARATOR_FILE, fileEntryId);
 	}
 
 	@Override
@@ -142,6 +130,16 @@ public class DefaultCommerceMediaResolver implements CommerceMediaResolver {
 	}
 
 	@Override
+	public String getThumbnailURL(
+			long commerceAccountId, long cpAttachmentFileEntryId,
+			boolean secure)
+		throws PortalException {
+
+		return getURL(
+			commerceAccountId, cpAttachmentFileEntryId, false, false, secure);
+	}
+
+	@Override
 	public String getURL(long commerceAccountId, long cpAttachmentFileEntryId)
 		throws PortalException {
 
@@ -190,10 +188,10 @@ public class DefaultCommerceMediaResolver implements CommerceMediaResolver {
 			return getDefaultURL(company.getGroupId());
 		}
 
-		if (secure) {
-			DLFileEntry dlFileEntry = _dlFileEntryLocalService.fetchDLFileEntry(
-				cpAttachmentFileEntry.getFileEntryId());
+		DLFileEntry dlFileEntry = _dlFileEntryLocalService.fetchDLFileEntry(
+			cpAttachmentFileEntry.getFileEntryId());
 
+		if (secure) {
 			if ((dlFileEntry != null) &&
 				!cpAttachmentFileEntry.isCDNEnabled() &&
 				!_dlFileEntryModelResourcePermission.contains(
@@ -266,8 +264,15 @@ public class DefaultCommerceMediaResolver implements CommerceMediaResolver {
 		}
 
 		sb.append(cpAttachmentFileEntry.getCPAttachmentFileEntryId());
-		sb.append("?download=");
-		sb.append(download);
+
+		if ((dlFileEntry == null) ||
+			!ArrayUtil.contains(
+				CommerceMediaConstants.XML_MIME_TYPES,
+				dlFileEntry.getMimeType())) {
+
+			sb.append("?download=");
+			sb.append(download);
+		}
 
 		return sb.toString();
 	}
@@ -285,10 +290,6 @@ public class DefaultCommerceMediaResolver implements CommerceMediaResolver {
 	private CommerceProductViewPermission _commerceProductViewPermission;
 
 	@Reference
-	private CommerceVirtualOrderItemLocalService
-		_commerceVirtualOrderItemLocalService;
-
-	@Reference
 	private CompanyLocalService _companyLocalService;
 
 	@Reference
@@ -297,9 +298,6 @@ public class DefaultCommerceMediaResolver implements CommerceMediaResolver {
 
 	@Reference
 	private CPDefinitionLocalService _cpDefinitionLocalService;
-
-	@Reference
-	private DLAppService _dlAppService;
 
 	@Reference
 	private DLFileEntryLocalService _dlFileEntryLocalService;

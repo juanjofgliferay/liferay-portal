@@ -12,9 +12,12 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
@@ -23,17 +26,18 @@ import com.liferay.portal.security.sso.openid.connect.OpenIdConnectServiceExcept
 import com.liferay.portal.security.sso.openid.connect.constants.OpenIdConnectConstants;
 import com.liferay.portal.security.sso.openid.connect.constants.OpenIdConnectWebKeys;
 import com.liferay.portal.security.sso.openid.connect.internal.session.manager.OfflineOpenIdConnectSessionManager;
+import com.liferay.portal.security.sso.openid.connect.internal.util.OpenIdConnectHttpUtil;
 import com.liferay.portal.security.sso.openid.connect.internal.util.OpenIdConnectProviderUtil;
 import com.liferay.portal.security.sso.openid.connect.internal.util.OpenIdConnectRequestParametersUtil;
 import com.liferay.portal.security.sso.openid.connect.internal.util.OpenIdConnectTokenRequestUtil;
 
 import com.nimbusds.jwt.JWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.langtag.LangTag;
 import com.nimbusds.langtag.LangTagException;
 import com.nimbusds.oauth2.sdk.ErrorObject;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
@@ -57,22 +61,24 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.util.Collections;
+import java.util.Dictionary;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import net.minidev.json.JSONObject;
 
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -127,24 +133,56 @@ public class OpenIdConnectAuthenticationHandlerImpl
 
 		OIDCProviderMetadata oidcProviderMetadata =
 			_authorizationServerMetadataResolver.resolveOIDCProviderMetadata(
-				oAuthClientEntry.getAuthServerWellKnownURI());
+				oAuthClientEntry.getAuthServerWellKnownURI(),
+				oAuthClientEntry.getCompanyId(),
+				oAuthClientEntry.getMetadataCacheInSeconds(),
+				oAuthClientEntry.getOAuthClientEntryId());
+
+		int timeout = 0;
+
+		Dictionary<String, Object> properties =
+			OpenIdConnectProviderUtil.
+				getOpenIdConnectProviderConfigurationProperties(
+					oAuthClientEntry.getAuthServerWellKnownURI(),
+					oAuthClientEntry.getClientId(),
+					_portal.getCompanyId(httpServletRequest),
+					_configurationAdmin,
+					String.valueOf(oidcProviderMetadata.getIssuer()),
+					String.valueOf(oidcProviderMetadata.getTokenEndpointURI()));
+
+		if (properties != null) {
+			timeout = GetterUtil.getInteger(
+				properties.get("tokenConnectionTimeout"));
+		}
 
 		OIDCTokens oidcTokens = OpenIdConnectTokenRequestUtil.request(
 			authenticationSuccessResponse,
 			openIdConnectAuthenticationSession.getCodeVerifier(),
 			openIdConnectAuthenticationSession.getNonce(),
 			oidcClientInformation, oidcProviderMetadata,
-			_getLoginRedirectURI(httpServletRequest),
+			_getLoginRedirectURI(httpServletRequest), timeout,
 			oAuthClientEntry.getTokenRequestParametersJSON());
 
-		String userInfoJSON = _requestUserInfoJSON(
-			oidcTokens.getAccessToken(), oidcProviderMetadata);
+		String userInfoJSON = null;
+
+		if (oidcProviderMetadata.getUserInfoEndpointURI() == null) {
+			UserInfo userInfo = new UserInfo(
+				JWTClaimsSet.parse(getUserInfoClaims(oidcTokens.getIDToken())));
+
+			userInfoJSON = userInfo.toJSONString();
+		}
+		else {
+			userInfoJSON = _requestUserInfoJSON(
+				oidcTokens.getAccessToken(), oidcProviderMetadata);
+		}
+
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			httpServletRequest);
 
 		long userId = _oidcUserInfoProcessor.processUserInfo(
 			_portal.getCompanyId(httpServletRequest),
-			String.valueOf(oidcProviderMetadata.getIssuer()),
-			ServiceContextFactory.getInstance(httpServletRequest), userInfoJSON,
-			oAuthClientEntry.getOIDCUserInfoMapperJSON());
+			String.valueOf(oidcProviderMetadata.getIssuer()), oAuthClientEntry,
+			serviceContext, userInfoJSON);
 
 		userIdUnsafeConsumer.accept(userId);
 
@@ -200,14 +238,17 @@ public class OpenIdConnectAuthenticationHandlerImpl
 			).put(
 				"state", new State()
 			).put(
-				"ui_Locals", _getLangTags(httpServletRequest)
+				"ui_locales", _getLangTags(httpServletRequest)
 			).build();
 
 		try {
 			OIDCProviderMetadata oidcProviderMetadata =
 				_authorizationServerMetadataResolver.
 					resolveOIDCProviderMetadata(
-						oAuthClientEntry.getAuthServerWellKnownURI());
+						oAuthClientEntry.getAuthServerWellKnownURI(),
+						oAuthClientEntry.getCompanyId(),
+						oAuthClientEntry.getMetadataCacheInSeconds(),
+						oAuthClientEntryId);
 
 			URI authenticationRequestURI = _getAuthenticationRequestURI(
 				oidcProviderMetadata.getAuthorizationEndpointURI(),
@@ -247,6 +288,21 @@ public class OpenIdConnectAuthenticationHandlerImpl
 				_portal.getCompanyId(httpServletRequest),
 				openIdConnectProviderName, _oAuthClientEntryLocalService),
 			httpServletRequest, httpServletResponse);
+	}
+
+	protected Map<String, Object> getUserInfoClaims(JWT jwt)
+		throws java.text.ParseException {
+
+		JWTClaimsSet jwtClaimsSet = jwt.getJWTClaimsSet();
+
+		Map<String, Object> claims = jwtClaimsSet.toJSONObject();
+
+		claims.put("email", jwtClaimsSet.getStringClaim("email"));
+		claims.put("family_name", jwtClaimsSet.getStringClaim("family_name"));
+		claims.put("given_name", jwtClaimsSet.getStringClaim("given_name"));
+		claims.put("groups", jwtClaimsSet.getStringArrayClaim("groups"));
+
+		return claims;
 	}
 
 	private URI _getAuthenticationRequestURI(
@@ -340,7 +396,8 @@ public class OpenIdConnectAuthenticationHandlerImpl
 		}
 
 		try {
-			return Collections.singletonList(new LangTag(locale.getLanguage()));
+			return Collections.singletonList(
+				LangTag.parse(_language.getBCP47LangTag(locale)));
 		}
 		catch (LangTagException langTagException) {
 			if (_log.isDebugEnabled()) {
@@ -384,10 +441,8 @@ public class OpenIdConnectAuthenticationHandlerImpl
 			"text/html, image/gif, image/jpeg, */*; q=0.2, */*; q=0.2");
 
 		try {
-			HTTPResponse httpResponse = httpRequest.send();
-
 			UserInfoResponse userInfoResponse = UserInfoResponse.parse(
-				httpResponse);
+				OpenIdConnectHttpUtil.send(httpRequest));
 
 			if (userInfoResponse instanceof UserInfoErrorResponse) {
 				UserInfoErrorResponse userInfoErrorResponse =
@@ -455,6 +510,12 @@ public class OpenIdConnectAuthenticationHandlerImpl
 	@Reference
 	private AuthorizationServerMetadataResolver
 		_authorizationServerMetadataResolver;
+
+	@Reference
+	private ConfigurationAdmin _configurationAdmin;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private OAuthClientEntryLocalService _oAuthClientEntryLocalService;

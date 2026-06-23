@@ -7,9 +7,11 @@ package com.liferay.headless.commerce.delivery.catalog.internal.graphql.servlet.
 
 import com.liferay.headless.commerce.delivery.catalog.internal.graphql.mutation.v1_0.Mutation;
 import com.liferay.headless.commerce.delivery.catalog.internal.graphql.query.v1_0.Query;
+import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.AccountResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.AttachmentResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.CategoryResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.ChannelResourceImpl;
+import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.CurrencyResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.LinkedProductResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.MappedProductResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.PinResourceImpl;
@@ -21,9 +23,11 @@ import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.Rel
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.SkuResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.WishListItemResourceImpl;
 import com.liferay.headless.commerce.delivery.catalog.internal.resource.v1_0.WishListResourceImpl;
+import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.AccountResource;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.AttachmentResource;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.CategoryResource;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.ChannelResource;
+import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.CurrencyResource;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.LinkedProductResource;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.MappedProductResource;
 import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.PinResource;
@@ -38,10 +42,10 @@ import com.liferay.headless.commerce.delivery.catalog.resource.v1_0.WishListReso
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
+import jakarta.annotation.Generated;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Generated;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -60,8 +64,12 @@ public class ServletDataImpl implements ServletData {
 
 	@Activate
 	public void activate(BundleContext bundleContext) {
+		Mutation.setAccountResourceComponentServiceObjects(
+			_accountResourceComponentServiceObjects);
 		Mutation.setChannelResourceComponentServiceObjects(
 			_channelResourceComponentServiceObjects);
+		Mutation.setProductOptionValueResourceComponentServiceObjects(
+			_productOptionValueResourceComponentServiceObjects);
 		Mutation.setSkuResourceComponentServiceObjects(
 			_skuResourceComponentServiceObjects);
 		Mutation.setWishListResourceComponentServiceObjects(
@@ -69,12 +77,16 @@ public class ServletDataImpl implements ServletData {
 		Mutation.setWishListItemResourceComponentServiceObjects(
 			_wishListItemResourceComponentServiceObjects);
 
+		Query.setAccountResourceComponentServiceObjects(
+			_accountResourceComponentServiceObjects);
 		Query.setAttachmentResourceComponentServiceObjects(
 			_attachmentResourceComponentServiceObjects);
 		Query.setCategoryResourceComponentServiceObjects(
 			_categoryResourceComponentServiceObjects);
 		Query.setChannelResourceComponentServiceObjects(
 			_channelResourceComponentServiceObjects);
+		Query.setCurrencyResourceComponentServiceObjects(
+			_currencyResourceComponentServiceObjects);
 		Query.setLinkedProductResourceComponentServiceObjects(
 			_linkedProductResourceComponentServiceObjects);
 		Query.setMappedProductResourceComponentServiceObjects(
@@ -134,10 +146,34 @@ public class ServletDataImpl implements ServletData {
 			new HashMap<String, ObjectValuePair<Class<?>, String>>() {
 				{
 					put(
+						"mutation#createChannelAccount",
+						new ObjectValuePair<>(
+							AccountResourceImpl.class, "postChannelAccount"));
+					put(
 						"mutation#createChannelsPageExportBatch",
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class,
 							"postChannelsPageExportBatch"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage",
+						new ObjectValuePair<>(
+							ProductOptionValueResourceImpl.class,
+							"postChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage"));
+					put(
+						"mutation#createChannelProductProductOptionProductOptionValuesPage",
+						new ObjectValuePair<>(
+							ProductOptionValueResourceImpl.class,
+							"postChannelProductProductOptionProductOptionValuesPage"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSku",
+						new ObjectValuePair<>(
+							SkuResourceImpl.class,
+							"postChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSku"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuBySkuOption",
+						new ObjectValuePair<>(
+							SkuResourceImpl.class,
+							"postChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuBySkuOption"));
 					put(
 						"mutation#createChannelProductSku",
 						new ObjectValuePair<>(
@@ -147,10 +183,6 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							SkuResourceImpl.class,
 							"postChannelProductSkuBySkuOption"));
-					put(
-						"mutation#createChannelWishList",
-						new ObjectValuePair<>(
-							WishListResourceImpl.class, "postChannelWishList"));
 					put(
 						"mutation#deleteWishList",
 						new ObjectValuePair<>(
@@ -163,6 +195,15 @@ public class ServletDataImpl implements ServletData {
 						"mutation#patchWishList",
 						new ObjectValuePair<>(
 							WishListResourceImpl.class, "patchWishList"));
+					put(
+						"mutation#createChannelByExternalReferenceCodeWishList",
+						new ObjectValuePair<>(
+							WishListResourceImpl.class,
+							"postChannelByExternalReferenceCodeWishList"));
+					put(
+						"mutation#createChannelWishList",
+						new ObjectValuePair<>(
+							WishListResourceImpl.class, "postChannelWishList"));
 					put(
 						"mutation#deleteWishListItem",
 						new ObjectValuePair<>(
@@ -179,6 +220,11 @@ public class ServletDataImpl implements ServletData {
 							WishListItemResourceImpl.class,
 							"postWishlistWishListWishListItem"));
 
+					put(
+						"query#channelAccounts",
+						new ObjectValuePair<>(
+							AccountResourceImpl.class,
+							"getChannelAccountsPage"));
 					put(
 						"query#channelProductAttachments",
 						new ObjectValuePair<>(
@@ -199,6 +245,16 @@ public class ServletDataImpl implements ServletData {
 						new ObjectValuePair<>(
 							ChannelResourceImpl.class, "getChannelsPage"));
 					put(
+						"query#channelByExternalReferenceCodeCurrencies",
+						new ObjectValuePair<>(
+							CurrencyResourceImpl.class,
+							"getChannelByExternalReferenceCodeCurrenciesPage"));
+					put(
+						"query#channelCurrencies",
+						new ObjectValuePair<>(
+							CurrencyResourceImpl.class,
+							"getChannelCurrenciesPage"));
+					put(
 						"query#channelProductLinkedProducts",
 						new ObjectValuePair<>(
 							LinkedProductResourceImpl.class,
@@ -209,29 +265,54 @@ public class ServletDataImpl implements ServletData {
 							MappedProductResourceImpl.class,
 							"getChannelProductMappedProductsPage"));
 					put(
+						"query#channelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodePins",
+						new ObjectValuePair<>(
+							PinResourceImpl.class,
+							"getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodePinsPage"));
+					put(
 						"query#channelProductPins",
 						new ObjectValuePair<>(
 							PinResourceImpl.class,
 							"getChannelProductPinsPage"));
+					put(
+						"query#channelProduct",
+						new ObjectValuePair<>(
+							ProductResourceImpl.class, "getChannelProduct"));
+					put(
+						"query#channelProductByFriendlyUrlPath",
+						new ObjectValuePair<>(
+							ProductResourceImpl.class,
+							"getChannelProductByFriendlyUrlPath"));
 					put(
 						"query#channelProducts",
 						new ObjectValuePair<>(
 							ProductResourceImpl.class,
 							"getChannelProductsPage"));
 					put(
-						"query#channelProduct",
+						"query#channelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptions",
 						new ObjectValuePair<>(
-							ProductResourceImpl.class, "getChannelProduct"));
+							ProductOptionResourceImpl.class,
+							"getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionsPage"));
 					put(
 						"query#channelProductProductOptions",
 						new ObjectValuePair<>(
 							ProductOptionResourceImpl.class,
 							"getChannelProductProductOptionsPage"));
 					put(
+						"query#channelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValues",
+						new ObjectValuePair<>(
+							ProductOptionValueResourceImpl.class,
+							"getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductOptionByExternalReferenceCodeProductOptionExternalReferenceCodeProductOptionValuesPage"));
+					put(
 						"query#channelProductProductOptionProductOptionValues",
 						new ObjectValuePair<>(
 							ProductOptionValueResourceImpl.class,
 							"getChannelProductProductOptionProductOptionValuesPage"));
+					put(
+						"query#channelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductSpecifications",
+						new ObjectValuePair<>(
+							ProductSpecificationResourceImpl.class,
+							"getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeProductSpecificationsPage"));
 					put(
 						"query#channelProductProductSpecifications",
 						new ObjectValuePair<>(
@@ -243,14 +324,29 @@ public class ServletDataImpl implements ServletData {
 							RelatedProductResourceImpl.class,
 							"getChannelProductRelatedProductsPage"));
 					put(
+						"query#channelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode",
+						new ObjectValuePair<>(
+							SkuResourceImpl.class,
+							"getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkuByExternalReferenceCodeSkuExternalReferenceCode"));
+					put(
+						"query#channelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkus",
+						new ObjectValuePair<>(
+							SkuResourceImpl.class,
+							"getChannelByExternalReferenceCodeChannelExternalReferenceCodeProductByExternalReferenceCodeProductExternalReferenceCodeSkusPage"));
+					put(
+						"query#channelProductSku",
+						new ObjectValuePair<>(
+							SkuResourceImpl.class, "getChannelProductSku"));
+					put(
 						"query#channelProductSkus",
 						new ObjectValuePair<>(
 							SkuResourceImpl.class,
 							"getChannelProductSkusPage"));
 					put(
-						"query#channelProductSku",
+						"query#channelByExternalReferenceCodeWishLists",
 						new ObjectValuePair<>(
-							SkuResourceImpl.class, "getChannelProductSku"));
+							WishListResourceImpl.class,
+							"getChannelByExternalReferenceCodeWishListsPage"));
 					put(
 						"query#channelWishLists",
 						new ObjectValuePair<>(
@@ -279,8 +375,16 @@ public class ServletDataImpl implements ServletData {
 			};
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<AccountResource>
+		_accountResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<ChannelResource>
 		_channelResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<ProductOptionValueResource>
+		_productOptionValueResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<SkuResource>
@@ -303,6 +407,10 @@ public class ServletDataImpl implements ServletData {
 		_categoryResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
+	private ComponentServiceObjects<CurrencyResource>
+		_currencyResourceComponentServiceObjects;
+
+	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<LinkedProductResource>
 		_linkedProductResourceComponentServiceObjects;
 
@@ -323,10 +431,6 @@ public class ServletDataImpl implements ServletData {
 		_productOptionResourceComponentServiceObjects;
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
-	private ComponentServiceObjects<ProductOptionValueResource>
-		_productOptionValueResourceComponentServiceObjects;
-
-	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<ProductSpecificationResource>
 		_productSpecificationResourceComponentServiceObjects;
 
@@ -335,3 +439,4 @@ public class ServletDataImpl implements ServletData {
 		_relatedProductResourceComponentServiceObjects;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1536777671

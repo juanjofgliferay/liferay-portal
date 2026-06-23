@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class SamlAdminPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "lock";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class SamlAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

@@ -1,11 +1,11 @@
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import React from 'react';
 import RecommendationList from '../hocs/RecommendationList';
 import {Router} from 'shared/types';
 
 interface IRecommendationsProps {
 	history: {
-		push: (string) => void;
+		push: (value: string) => void;
 	};
 	router: Router;
 }
@@ -18,7 +18,6 @@ const Recommendations: React.FC<IRecommendationsProps> = ({
 
 	return (
 		<BasePage
-			groupId={groupId}
 			pageDescription={Liferay.Language.get(
 				'create-and-train-machine-learning-models-to-use-in-your-recommendations'
 			)}

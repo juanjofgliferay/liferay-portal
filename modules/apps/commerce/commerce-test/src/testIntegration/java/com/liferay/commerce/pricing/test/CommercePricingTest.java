@@ -17,6 +17,7 @@ import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalServiceUtil;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.model.CommerceOrder;
@@ -47,6 +48,7 @@ import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
+import com.liferay.commerce.test.util.pricing.CommercePriceModifierTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
@@ -57,7 +59,6 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -65,8 +66,6 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
-import java.util.Calendar;
 
 import org.frutilla.FrutillaRule;
 
@@ -102,18 +101,26 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext();
 
 		AccountGroup accountGroup = _accountGroupLocalService.addAccountGroup(
-			serviceContext.getUserId(), null, RandomTestUtil.randomString(),
-			serviceContext);
+			StringPool.BLANK, serviceContext.getUserId(), null,
+			RandomTestUtil.randomString(), serviceContext);
 
-		accountGroup.setExternalReferenceCode("");
 		accountGroup.setDefaultAccountGroup(false);
 		accountGroup.setType(AccountConstants.ACCOUNT_GROUP_TYPE_DYNAMIC);
 		accountGroup.setExpandoBridgeAttributes(serviceContext);
 
 		_accountGroupLocalService.updateAccountGroup(accountGroup);
 
-		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
-			_group.getCompanyId());
+		_commerceCurrency =
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
+				_group.getCompanyId());
+
+		if (_commerceCurrency == null) {
+			_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				_group.getCompanyId());
+		}
+
+		_commerceChannel = CommerceTestUtil.addCommerceChannel(
+			_group.getGroupId(), _commerceCurrency.getCode());
 
 		_serviceContext = ServiceContextTestUtil.getServiceContext(
 			_group.getCompanyId(), _group.getGroupId(), _user.getUserId());
@@ -133,7 +140,7 @@ public class CommercePricingTest {
 			"The correct price is returned given the quantity"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -141,10 +148,10 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -171,7 +178,8 @@ public class CommercePricingTest {
 			BigDecimal.TEN, true, false, null, null, null, null, true, true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		BigDecimal quantity = BigDecimal.ONE;
 
@@ -219,7 +227,7 @@ public class CommercePricingTest {
 			"The discounts are applied correctly"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -228,7 +236,7 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList1 =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePriceList1.getCommercePriceListId(),
@@ -236,7 +244,7 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -248,7 +256,8 @@ public class CommercePricingTest {
 			null, null, null, true, true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -341,7 +350,7 @@ public class CommercePricingTest {
 			_user.getUserId(), commerceChannel.getGroupId(), _commerceCurrency);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group,
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
 			commerceOrder);
 
 		CommerceOrderItem commerceOrderItem =
@@ -425,7 +434,7 @@ public class CommercePricingTest {
 			_user.getUserId(), commerceChannel.getGroupId(), _commerceCurrency);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group,
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
 			commerceOrder);
 
 		CommerceOrderItem commerceOrderItem =
@@ -456,7 +465,7 @@ public class CommercePricingTest {
 			"The correct price is returned"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -464,10 +473,10 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -479,7 +488,8 @@ public class CommercePricingTest {
 			null, null, null, true, true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -509,7 +519,7 @@ public class CommercePricingTest {
 			"The correct price and the promo is returned "
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -517,13 +527,14 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		CommercePriceList commercePromotion =
-			CommercePriceListTestUtil.addPromotion(catalog.getGroupId(), 0.0);
+			CommercePriceListTestUtil.addPromotion(
+				commerceCatalog.getGroupId(), 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -541,7 +552,8 @@ public class CommercePricingTest {
 			null, null, null, true, true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -574,7 +586,7 @@ public class CommercePricingTest {
 				"to the base price"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -583,7 +595,7 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList1 =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePriceList1.getCommercePriceListId(),
@@ -592,7 +604,7 @@ public class CommercePricingTest {
 
 		CommercePriceList basePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), true, 0.0);
+				commerceCatalog.getGroupId(), true, 0.0);
 
 		CommercePricingClass commercePricingClass =
 			_commercePricingClassLocalService.addCommercePricingClass(
@@ -609,7 +621,7 @@ public class CommercePricingTest {
 		long[] assetCategoryIds = {assetCategory.getCategoryId()};
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId(), assetCategoryIds);
+			commerceCatalog.getGroupId(), assetCategoryIds);
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -626,12 +638,13 @@ public class CommercePricingTest {
 			basePriceList.getCommercePriceListId(), price1);
 
 		CommercePriceModifier commercePriceModifier1 =
-			_addCommercePriceModifier(
-				commercePriceList1.getGroupId(),
-				CommercePriceModifierConstants.TARGET_PRODUCT_GROUPS,
+			CommercePriceModifierTestUtil.addCommercePriceModifier(
+				commercePriceList1.getGroupId(), _user,
 				commercePriceList1.getCommercePriceListId(),
-				CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE,
-				BigDecimal.valueOf(-10), true);
+				CommercePriceModifierConstants.TARGET_PRODUCT_GROUPS,
+				BigDecimal.valueOf(-10),
+				CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE, true,
+				_serviceContext);
 
 		_commercePriceModifierRelLocalService.addCommercePriceModifierRel(
 			commercePriceModifier1.getCommercePriceModifierId(),
@@ -640,12 +653,13 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		CommercePriceModifier commercePriceModifier2 =
-			_addCommercePriceModifier(
-				commercePriceList1.getGroupId(),
-				CommercePriceModifierConstants.TARGET_CATEGORIES,
+			CommercePriceModifierTestUtil.addCommercePriceModifier(
+				commercePriceList1.getGroupId(), _user,
 				commercePriceList1.getCommercePriceListId(),
-				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE,
-				BigDecimal.valueOf(19), true);
+				CommercePriceModifierConstants.TARGET_CATEGORIES,
+				BigDecimal.valueOf(19),
+				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE, true,
+				_serviceContext);
 
 		_commercePriceModifierRelLocalService.addCommercePriceModifierRel(
 			commercePriceModifier2.getCommercePriceModifierId(),
@@ -653,7 +667,8 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -689,7 +704,7 @@ public class CommercePricingTest {
 				"to the base price"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -698,7 +713,7 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList1 =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePriceList1.getCommercePriceListId(),
@@ -707,10 +722,10 @@ public class CommercePricingTest {
 
 		CommercePriceList basePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), true, 0.0);
+				commerceCatalog.getGroupId(), true, 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -720,12 +735,14 @@ public class CommercePricingTest {
 			"", cpDefinition.getCProductId(), cpInstance.getCPInstanceUuid(),
 			basePriceList.getCommercePriceListId(), price1);
 
-		CommercePriceModifier commercePriceModifier = _addCommercePriceModifier(
-			commercePriceList1.getGroupId(),
-			CommercePriceModifierConstants.TARGET_PRODUCTS,
-			commercePriceList1.getCommercePriceListId(),
-			CommercePriceModifierConstants.MODIFIER_TYPE_FIXED_AMOUNT,
-			BigDecimal.valueOf(-10), true);
+		CommercePriceModifier commercePriceModifier =
+			CommercePriceModifierTestUtil.addCommercePriceModifier(
+				commercePriceList1.getGroupId(), _user,
+				commercePriceList1.getCommercePriceListId(),
+				CommercePriceModifierConstants.TARGET_PRODUCTS,
+				BigDecimal.valueOf(-10),
+				CommercePriceModifierConstants.MODIFIER_TYPE_FIXED_AMOUNT, true,
+				_serviceContext);
 
 		_commercePriceModifierRelLocalService.addCommercePriceModifierRel(
 			commercePriceModifier.getCommercePriceModifierId(),
@@ -733,7 +750,8 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -766,7 +784,7 @@ public class CommercePricingTest {
 			"The correct price is returned given the quantity"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -774,10 +792,10 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -804,7 +822,8 @@ public class CommercePricingTest {
 			BigDecimal.TEN, false, false, null, null, null, null, true, true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -850,7 +869,7 @@ public class CommercePricingTest {
 			"The correct price and the promo is returned "
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
@@ -858,13 +877,14 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), 0.0);
+				commerceCatalog.getGroupId(), 0.0);
 
 		CommercePriceList commercePromotion =
-			CommercePriceListTestUtil.addPromotion(catalog.getGroupId(), 0.0);
+			CommercePriceListTestUtil.addPromotion(
+				commerceCatalog.getGroupId(), 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -904,7 +924,8 @@ public class CommercePricingTest {
 			BigDecimal.valueOf(RandomTestUtil.randomInt()), true, true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -934,7 +955,7 @@ public class CommercePricingTest {
 			"The product price is correctly calculated"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -943,10 +964,10 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList1 =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), true, 0.0);
+				commerceCatalog.getGroupId(), true, 0.0);
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -983,7 +1004,8 @@ public class CommercePricingTest {
 			BigDecimal.valueOf(20), true);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -1063,7 +1085,7 @@ public class CommercePricingTest {
 				"value between promo and unit price"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -1072,7 +1094,7 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList1 =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), true, 0.0);
+				commerceCatalog.getGroupId(), true, 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePriceList1.getCommercePriceListId(),
@@ -1080,7 +1102,7 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -1117,7 +1139,8 @@ public class CommercePricingTest {
 			BigDecimal.valueOf(20), false);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -1136,7 +1159,8 @@ public class CommercePricingTest {
 			finalPrice.stripTrailingZeros());
 
 		CommercePriceList commercePromotion =
-			CommercePriceListTestUtil.addPromotion(catalog.getGroupId(), 0.0);
+			CommercePriceListTestUtil.addPromotion(
+				commerceCatalog.getGroupId(), 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePromotion.getCommercePriceListId(),
@@ -1183,7 +1207,7 @@ public class CommercePricingTest {
 				"value between promo and unit price"
 		);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -1192,7 +1216,7 @@ public class CommercePricingTest {
 
 		CommercePriceList commercePriceList1 =
 			CommercePriceListTestUtil.addCommercePriceList(
-				catalog.getGroupId(), true, 0.0);
+				commerceCatalog.getGroupId(), true, 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePriceList1.getCommercePriceListId(),
@@ -1200,7 +1224,7 @@ public class CommercePricingTest {
 			ServiceContextTestUtil.getServiceContext());
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
@@ -1237,7 +1261,8 @@ public class CommercePricingTest {
 			BigDecimal.valueOf(20), false);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_accountEntry, _commerceCurrency, null, _user, _group, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
@@ -1256,7 +1281,8 @@ public class CommercePricingTest {
 			finalPrice.stripTrailingZeros());
 
 		CommercePriceList commercePromotion =
-			CommercePriceListTestUtil.addPromotion(catalog.getGroupId(), 0.0);
+			CommercePriceListTestUtil.addPromotion(
+				commerceCatalog.getGroupId(), 0.0);
 
 		_commercePriceListAccountRelLocalService.addCommercePriceListAccountRel(
 			_user.getUserId(), commercePromotion.getCommercePriceListId(),
@@ -1303,30 +1329,7 @@ public class CommercePricingTest {
 	@Rule
 	public FrutillaRule frutillaRule = new FrutillaRule();
 
-	private CommercePriceModifier _addCommercePriceModifier(
-			long groupId, String target, long commercePriceListId, String type,
-			BigDecimal amount, boolean neverExpire)
-		throws Exception {
-
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(groupId);
-
-		Calendar calendar = CalendarFactoryUtil.getCalendar(
-			_user.getTimeZone());
-
-		return _commercePriceModifierLocalService.addCommercePriceModifier(
-			groupId, RandomTestUtil.randomString(), target, commercePriceListId,
-			type, amount, 0.0, true, calendar.get(Calendar.MONTH),
-			calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.YEAR),
-			calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE),
-			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
-			calendar.get(Calendar.YEAR), calendar.get(Calendar.HOUR_OF_DAY),
-			calendar.get(Calendar.MINUTE), neverExpire, serviceContext);
-	}
-
 	private static final int _SCALE = 10;
-
-	private static User _user;
 
 	@DeleteAfterTestRun
 	private AccountEntry _accountEntry;
@@ -1336,6 +1339,9 @@ public class CommercePricingTest {
 
 	@Inject
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
+
+	@DeleteAfterTestRun
+	private CommerceChannel _commerceChannel;
 
 	private CommerceCurrency _commerceCurrency;
 
@@ -1369,5 +1375,6 @@ public class CommercePricingTest {
 
 	private Group _group;
 	private ServiceContext _serviceContext;
+	private User _user;
 
 }

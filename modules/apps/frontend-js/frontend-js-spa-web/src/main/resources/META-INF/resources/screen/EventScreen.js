@@ -201,6 +201,44 @@ class EventScreen extends HtmlScreen {
 	}
 
 	/**
+	 * Detects whether the navigation target enforces a different Content
+	 * Security Policy than the currently loaded document. Browsers bind the
+	 * CSP to the document at load time, so an SPA (PJAX) content swap keeps
+	 * enforcing the original document's policy. When the policy differs (for
+	 * example when navigating between a CSP protected page and a page whose
+	 * path is excluded from CSP), the nonce in the response no longer matches
+	 * the nonce of the document, and a full page reload is required so the
+	 * browser applies the correct header.
+	 * @return {!Boolean} True if the response and the document enforce
+	 *         different Content Security Policies
+	 */
+
+	isContentSecurityPolicyMismatch() {
+		const response = this.getResponse();
+
+		if (
+			!response ||
+			!response.headers ||
+			typeof response.headers.get !== 'function'
+		) {
+			return false;
+		}
+
+		const policy =
+			response.headers.get('content-security-policy') ||
+			response.headers.get('content-security-policy-report-only') ||
+			'';
+
+		const match = policy.match(/'nonce-([^']*)'/i);
+
+		const responseNonce = match ? match[1] : '';
+
+		const documentNonce = (Liferay.CSP && Liferay.CSP.nonce) || '';
+
+		return responseNonce !== documentNonce;
+	}
+
+	/**
 	 * Returns whether a given status code is considered valid
 	 * @param  {!Number} The status code to check
 	 * @return {!Boolean} True if the given status code is valid
@@ -224,6 +262,12 @@ class EventScreen extends HtmlScreen {
 		return super.load(path).then((content) => {
 			const redirectPath = this.beforeUpdateHistoryPath(path);
 
+			if (this.isContentSecurityPolicyMismatch()) {
+				window.location.href = redirectPath;
+
+				return new Promise(() => {});
+			}
+
 			this.checkRedirectPath(redirectPath);
 
 			Liferay.fire('screenLoad', {
@@ -246,19 +290,21 @@ class EventScreen extends HtmlScreen {
 	 */
 
 	makePermanentSelectorsTemporary_(currentLanguageId, languageId) {
-		HtmlScreen.selectors.stylesTemporary = HtmlScreen.selectors.stylesTemporary
-			.split(',')
-			.concat(
-				HtmlScreen.selectors.stylesPermanent
-					.split(',')
-					.map((item) => `${item}[href*="${currentLanguageId}"]`)
-			)
-			.join();
+		HtmlScreen.selectors.stylesTemporary =
+			HtmlScreen.selectors.stylesTemporary
+				.split(',')
+				.concat(
+					HtmlScreen.selectors.stylesPermanent
+						.split(',')
+						.map((item) => `${item}[href*="${currentLanguageId}"]`)
+				)
+				.join();
 
-		HtmlScreen.selectors.stylesPermanent = HtmlScreen.selectors.stylesPermanent
-			.split(',')
-			.map((item) => `${item}[href*="${languageId}"]`)
-			.join();
+		HtmlScreen.selectors.stylesPermanent =
+			HtmlScreen.selectors.stylesPermanent
+				.split(',')
+				.map((item) => `${item}[href*="${languageId}"]`)
+				.join();
 	}
 
 	/**
@@ -286,24 +332,6 @@ class EventScreen extends HtmlScreen {
 		if (onLoad) {
 			onLoad();
 		}
-	}
-
-	/**
-	 * Adds the type attribute with 'image/x-icon' when the favicon is an icon,
-	 * this ensures that it works fine in IE 11.
-	 * @param {!Array<Element>} elements
-	 * @private
-	 * @return {Promise}
-	 */
-
-	runFaviconInElement_(elements) {
-		return super.runFaviconInElement_(elements).then(() => {
-			elements.forEach((element) => {
-				if (!element.type && element.href.indexOf('.ico') !== -1) {
-					element.type = 'image/x-icon';
-				}
-			});
-		});
 	}
 }
 

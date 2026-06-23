@@ -16,7 +16,12 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,20 +29,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
  * @generated
  */
 @Generated("")
-@GraphQLName("Diagram")
+@GraphQLName(
+	description = "A shop-by-diagram setting that turns a product into an interactive image with clickable pins. Created and updated by the admin catalog write surface, which first uploads the diagram image as a diagram-type attachment and then persists the diagram setting.",
+	value = "Diagram"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "Diagram")
 public class Diagram implements Serializable {
@@ -50,14 +52,22 @@ public class Diagram implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Diagram.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public AttachmentBase64 getAttachmentBase64() {
+		if (_attachmentBase64Supplier != null) {
+			attachmentBase64 = _attachmentBase64Supplier.get();
+
+			_attachmentBase64Supplier = null;
+		}
+
 		return attachmentBase64;
 	}
 
 	public void setAttachmentBase64(AttachmentBase64 attachmentBase64) {
 		this.attachmentBase64 = attachmentBase64;
+
+		_attachmentBase64Supplier = null;
 	}
 
 	@JsonIgnore
@@ -65,135 +75,222 @@ public class Diagram implements Serializable {
 		UnsafeSupplier<AttachmentBase64, Exception>
 			attachmentBase64UnsafeSupplier) {
 
-		try {
-			attachmentBase64 = attachmentBase64UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attachmentBase64Supplier = () -> {
+			try {
+				return attachmentBase64UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected AttachmentBase64 attachmentBase64;
 
-	@Schema(example = "black")
+	@JsonIgnore
+	private Supplier<AttachmentBase64> _attachmentBase64Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Hex or CSS color string used to render the diagram background or overlay. No server-side validation; maximum length is 75 characters.",
+		example = "black"
+	)
 	public String getColor() {
+		if (_colorSupplier != null) {
+			color = _colorSupplier.get();
+
+			_colorSupplier = null;
+		}
+
 		return color;
 	}
 
 	public void setColor(String color) {
 		this.color = color;
+
+		_colorSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setColor(
 		UnsafeSupplier<String, Exception> colorUnsafeSupplier) {
 
-		try {
-			color = colorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_colorSupplier = () -> {
+			try {
+				return colorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Hex or CSS color string used to render the diagram background or overlay. No server-side validation; maximum length is 75 characters."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String color;
 
+	@JsonIgnore
+	private Supplier<String> _colorSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "31130")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the diagram setting. Assigned by the server.",
+		example = "31130"
+	)
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the diagram setting. Assigned by the server."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "33132")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the attachment that holds the diagram image. Populated from the uploaded `attachmentBase64`; can also be set explicitly to point at an existing diagram-type attachment.",
+		example = "33132"
+	)
 	public Long getImageId() {
+		if (_imageIdSupplier != null) {
+			imageId = _imageIdSupplier.get();
+
+			_imageIdSupplier = null;
+		}
+
 		return imageId;
 	}
 
 	public void setImageId(Long imageId) {
 		this.imageId = imageId;
+
+		_imageIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setImageId(
 		UnsafeSupplier<Long, Exception> imageIdUnsafeSupplier) {
 
-		try {
-			imageId = imageIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_imageIdSupplier = () -> {
+			try {
+				return imageIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the attachment that holds the diagram image. Populated from the uploaded `attachmentBase64`; can also be set explicitly to point at an existing diagram-type attachment."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long imageId;
 
-	@Schema(example = "Name 1")
+	@JsonIgnore
+	private Supplier<Long> _imageIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Public download URL for the diagram image. Read-only; returns null when the underlying attachment has no document-library file.",
+		example = "Name 1"
+	)
 	public String getImageURL() {
+		if (_imageURLSupplier != null) {
+			imageURL = _imageURLSupplier.get();
+
+			_imageURLSupplier = null;
+		}
+
 		return imageURL;
 	}
 
 	public void setImageURL(String imageURL) {
 		this.imageURL = imageURL;
+
+		_imageURLSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setImageURL(
 		UnsafeSupplier<String, Exception> imageURLUnsafeSupplier) {
 
-		try {
-			imageURL = imageURLUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_imageURLSupplier = () -> {
+			try {
+				return imageURLUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Public download URL for the diagram image. Read-only; returns null when the underlying attachment has no document-library file."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String imageURL;
 
-	@Schema(example = "exampleERC")
+	@JsonIgnore
+	private Supplier<String> _imageURLSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "External reference code of the parent product the diagram belongs to. Read-only; populated from the linked product.",
+		example = "exampleERC"
+	)
 	public String getProductExternalReferenceCode() {
+		if (_productExternalReferenceCodeSupplier != null) {
+			productExternalReferenceCode =
+				_productExternalReferenceCodeSupplier.get();
+
+			_productExternalReferenceCodeSupplier = null;
+		}
+
 		return productExternalReferenceCode;
 	}
 
@@ -201,6 +298,8 @@ public class Diagram implements Serializable {
 		String productExternalReferenceCode) {
 
 		this.productExternalReferenceCode = productExternalReferenceCode;
+
+		_productExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -208,104 +307,164 @@ public class Diagram implements Serializable {
 		UnsafeSupplier<String, Exception>
 			productExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			productExternalReferenceCode =
-				productExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productExternalReferenceCodeSupplier = () -> {
+			try {
+				return productExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "External reference code of the parent product the diagram belongs to. Read-only; populated from the linked product."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String productExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _productExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema(example = "33131")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Identifier of the parent product. Read-only; populated from the linked product.",
+		example = "33131"
+	)
 	public Long getProductId() {
+		if (_productIdSupplier != null) {
+			productId = _productIdSupplier.get();
+
+			_productIdSupplier = null;
+		}
+
 		return productId;
 	}
 
 	public void setProductId(Long productId) {
 		this.productId = productId;
+
+		_productIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProductId(
 		UnsafeSupplier<Long, Exception> productIdUnsafeSupplier) {
 
-		try {
-			productId = productIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_productIdSupplier = () -> {
+			try {
+				return productIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Identifier of the parent product. Read-only; populated from the linked product."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long productId;
 
-	@Schema(example = "33.54")
+	@JsonIgnore
+	private Supplier<Long> _productIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Pixel radius used by the storefront to compute the click area around each pin.",
+		example = "33.54"
+	)
 	public Double getRadius() {
+		if (_radiusSupplier != null) {
+			radius = _radiusSupplier.get();
+
+			_radiusSupplier = null;
+		}
+
 		return radius;
 	}
 
 	public void setRadius(Double radius) {
 		this.radius = radius;
+
+		_radiusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRadius(
 		UnsafeSupplier<Double, Exception> radiusUnsafeSupplier) {
 
-		try {
-			radius = radiusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_radiusSupplier = () -> {
+			try {
+				return radiusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Pixel radius used by the storefront to compute the click area around each pin."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double radius;
 
-	@Schema(example = "default")
+	@JsonIgnore
+	private Supplier<Double> _radiusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Diagram type key resolved against the registered diagram types. Defaults to `diagram.type.default` on add when omitted; patch preserves the previous value when omitted.",
+		example = "default"
+	)
 	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	public void setType(String type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Diagram type key resolved against the registered diagram types. Defaults to `diagram.type.default` on add when omitted; patch preserves the previous value when omitted."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String type;
+
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -334,6 +493,8 @@ public class Diagram implements Serializable {
 
 		sb.append("{");
 
+		AttachmentBase64 attachmentBase64 = getAttachmentBase64();
+
 		if (attachmentBase64 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -343,6 +504,8 @@ public class Diagram implements Serializable {
 
 			sb.append(String.valueOf(attachmentBase64));
 		}
+
+		String color = getColor();
 
 		if (color != null) {
 			if (sb.length() > 1) {
@@ -358,6 +521,8 @@ public class Diagram implements Serializable {
 			sb.append("\"");
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -368,6 +533,8 @@ public class Diagram implements Serializable {
 			sb.append(id);
 		}
 
+		Long imageId = getImageId();
+
 		if (imageId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -377,6 +544,8 @@ public class Diagram implements Serializable {
 
 			sb.append(imageId);
 		}
+
+		String imageURL = getImageURL();
 
 		if (imageURL != null) {
 			if (sb.length() > 1) {
@@ -392,6 +561,8 @@ public class Diagram implements Serializable {
 			sb.append("\"");
 		}
 
+		String productExternalReferenceCode = getProductExternalReferenceCode();
+
 		if (productExternalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -406,6 +577,8 @@ public class Diagram implements Serializable {
 			sb.append("\"");
 		}
 
+		Long productId = getProductId();
+
 		if (productId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -416,6 +589,8 @@ public class Diagram implements Serializable {
 			sb.append(productId);
 		}
 
+		Double radius = getRadius();
+
 		if (radius != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -425,6 +600,8 @@ public class Diagram implements Serializable {
 
 			sb.append(radius);
 		}
+
+		String type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -445,8 +622,8 @@ public class Diagram implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.Diagram",
 		name = "x-class-name"
 	)
@@ -492,7 +669,10 @@ public class Diagram implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -538,3 +718,4 @@ public class Diagram implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1285464076

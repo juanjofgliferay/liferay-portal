@@ -101,7 +101,7 @@ public class ExportImportLayoutUtilityPageTest {
 				externalReferenceCode, _serviceContext.getUserId(),
 				_serviceContext.getScopeGroupId(), 0, 0, false,
 				StringUtil.randomString(),
-				LayoutUtilityPageEntryConstants.TYPE_SC_NOT_FOUND, 0,
+				LayoutUtilityPageEntryConstants.TYPE_SC_NOT_FOUND, null,
 				_serviceContext);
 
 		_addItemsToLayout(
@@ -125,7 +125,7 @@ public class ExportImportLayoutUtilityPageTest {
 		layoutUtilityPageEntry1 =
 			_layoutUtilityPageEntryLocalService.updateLayoutUtilityPageEntry(
 				layoutUtilityPageEntry1.getLayoutUtilityPageEntryId(),
-				fileEntry.getFileEntryId());
+				fileEntry.getFileEntryId(), _serviceContext);
 
 		Assert.assertNotEquals(
 			0, layoutUtilityPageEntry1.getPreviewFileEntryId());
@@ -198,7 +198,7 @@ public class ExportImportLayoutUtilityPageTest {
 				externalReferenceCode, _serviceContext.getUserId(),
 				_serviceContext.getScopeGroupId(), 0, 0, false,
 				StringUtil.randomString(),
-				LayoutUtilityPageEntryConstants.TYPE_SC_NOT_FOUND, 0,
+				LayoutUtilityPageEntryConstants.TYPE_SC_NOT_FOUND, null,
 				_serviceContext);
 
 		_addItemsToLayout(
@@ -222,7 +222,7 @@ public class ExportImportLayoutUtilityPageTest {
 		layoutUtilityPageEntry1 =
 			_layoutUtilityPageEntryLocalService.updateLayoutUtilityPageEntry(
 				layoutUtilityPageEntry1.getLayoutUtilityPageEntryId(),
-				fileEntry.getFileEntryId());
+				fileEntry.getFileEntryId(), _serviceContext);
 
 		Assert.assertNotEquals(
 			0, layoutUtilityPageEntry1.getPreviewFileEntryId());

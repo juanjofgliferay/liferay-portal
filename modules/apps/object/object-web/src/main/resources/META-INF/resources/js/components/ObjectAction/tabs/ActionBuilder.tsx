@@ -15,14 +15,17 @@ import {InputLocalized} from 'frontend-js-components-web';
 import React, {useEffect, useMemo, useState} from 'react';
 
 import {defaultLanguageId} from '../../../utils/constants';
-import {ActionError} from '../index';
+import {DisabledGroovyScriptAlert} from '../../DisabledGroovyScriptAlert';
+import {ActionError} from '../ObjectActionContainer';
 import {ActionContainer} from './ActionContainer/ActionContainer';
 import {ConditionContainer} from './ConditionContainer';
 
 import './ActionBuilder.scss';
 
 interface ActionBuilderProps {
+	disableGroovyAction: boolean;
 	errors: ActionError;
+	hasUserNotificationHandler: boolean;
 	isApproved: boolean;
 	objectActionCodeEditorElements: SidebarCategory[];
 	objectActionExecutors: ObjectActionTriggerExecutorItem[];
@@ -30,6 +33,8 @@ interface ActionBuilderProps {
 	objectDefinitionExternalReferenceCode: string;
 	objectDefinitionId: number;
 	objectDefinitionsRelationshipsURL: string;
+	objectFields: ObjectField[];
+	scriptManagementConfigurationPortletURL: string;
 	setValues: (values: Partial<ObjectAction>) => void;
 	systemObject: boolean;
 	validateExpressionURL: string;
@@ -47,12 +52,15 @@ const triggerKeys = [
 	'onAfterAdd',
 	'onAfterAttachmentDownload',
 	'onAfterDelete',
+	'onAfterLogin',
 	'onAfterRootUpdate',
 	'onAfterUpdate',
 ];
 
 export default function ActionBuilder({
+	disableGroovyAction,
 	errors,
+	hasUserNotificationHandler,
 	isApproved,
 	objectActionCodeEditorElements,
 	objectActionExecutors,
@@ -60,6 +68,8 @@ export default function ActionBuilder({
 	objectDefinitionExternalReferenceCode,
 	objectDefinitionId,
 	objectDefinitionsRelationshipsURL,
+	objectFields,
+	scriptManagementConfigurationPortletURL,
 	setValues,
 	systemObject,
 	validateExpressionURL,
@@ -76,10 +86,8 @@ export default function ActionBuilder({
 		requiredFields: false,
 	});
 
-	const [
-		currentObjectDefinitionFields,
-		setCurrentObjectDefinitionFields,
-	] = useState<ObjectField[]>([]);
+	const [currentObjectDefinitionFields, setCurrentObjectDefinitionFields] =
+		useState<ObjectField[]>([]);
 
 	const [errorAlert, setErrorAlert] = useState(false);
 
@@ -103,7 +111,7 @@ export default function ActionBuilder({
 		const requiredFields = predefinedValues
 			? predefinedValues.filter(
 					({name}) => objectFieldsMap.get(name)?.required
-			  )
+				)
 			: [];
 
 		const hasEmptyValues = requiredFields?.some((item) =>
@@ -127,13 +135,17 @@ export default function ActionBuilder({
 		}));
 	};
 
+	const hasLocalizedField = useMemo(() => {
+		return objectFields.some((field) => field.localized);
+	}, [objectFields]);
+
 	useEffect(() => {
 		const predefinedValues = values.parameters?.predefinedValues;
 
 		const requiredFields = predefinedValues
 			? predefinedValues.filter(
 					({name}) => objectFieldsMap.get(name)?.required
-			  )
+				)
 			: [];
 
 		const hasEmptyValues = requiredFields?.some((item) =>
@@ -192,11 +204,20 @@ export default function ActionBuilder({
 
 			setNewObjectActionExecutors(newObjectActionExecutors);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [values.objectActionTriggerKey]);
 
 	return (
 		<>
+			{disableGroovyAction && (
+				<DisabledGroovyScriptAlert
+					scriptManagementConfigurationPortletURL={
+						scriptManagementConfigurationPortletURL
+					}
+				/>
+			)}
+
 			{infoAlert && (
 				<ClayAlert
 					className="lfr-objects__side-panel-content-container"
@@ -215,6 +236,21 @@ export default function ActionBuilder({
 					>
 						{Liferay.Language.get('click-here-for-documentation')}
 					</a>
+				</ClayAlert>
+			)}
+
+			{hasLocalizedField && (
+				<ClayAlert
+					className="lfr-objects__side-panel-content-container"
+					displayType="info"
+					onClose={() => setInfoAlert(false)}
+					title={`${Liferay.Language.get('info')}:`}
+				>
+					{`${Liferay.Language.get(
+						'this-object-includes-translatable-fields'
+					)} ${Liferay.Language.get(
+						'actions-always-use-the-object-entrys-default-language'
+					)}`}
 				</ClayAlert>
 			)}
 
@@ -237,7 +273,9 @@ export default function ActionBuilder({
 					viewMode="inline"
 				>
 					<SingleSelect
-						disabled={isApproved || values.system}
+						disabled={
+							isApproved || values.system || disableGroovyAction
+						}
 						error={errors.objectActionTriggerKey}
 						items={objectActionTriggers}
 						onSelectionChange={(value) =>
@@ -272,6 +310,7 @@ export default function ActionBuilder({
 
 			{showConditionContainer && (
 				<ConditionContainer
+					disabled={disableGroovyAction}
 					errors={errors}
 					setValues={setValues}
 					validateExpressionURL={validateExpressionURL}
@@ -304,10 +343,11 @@ export default function ActionBuilder({
 					)}
 				</ClayAlert>
 			)}
-
 			<ActionContainer
 				currentObjectDefinitionFields={currentObjectDefinitionFields}
+				disableGroovyAction={disableGroovyAction}
 				errors={errors}
+				hasUserNotificationHandler={hasUserNotificationHandler}
 				newObjectActionExecutors={newObjectActionExecutors}
 				objectActionCodeEditorElements={objectActionCodeEditorElements}
 				objectActionExecutors={objectActionExecutors}

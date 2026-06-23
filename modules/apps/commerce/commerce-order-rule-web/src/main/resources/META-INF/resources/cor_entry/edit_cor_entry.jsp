@@ -26,7 +26,7 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 	bean="<%= corEntry %>"
 	beanIdLabel="id"
 	externalReferenceCode="<%= corEntry.getExternalReferenceCode() %>"
-	externalReferenceCodeEditUrl="<%= editCOREntryExternalReferenceCodeURL %>"
+	externalReferenceCodeEditURL="<%= editCOREntryExternalReferenceCodeURL %>"
 	model="<%= COREntry.class %>"
 	title="<%= corEntry.getName() %>"
 />
@@ -44,5 +44,5 @@ portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
 			"workflowAction", WorkflowConstants.ACTION_PUBLISH
 		).build()
 	%>'
-	module="js/editCOREntry"
+	module="{editCOREntry} from commerce-order-rule-web"
 />

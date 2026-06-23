@@ -26,20 +26,20 @@ exports[`DataTransformation should render 1`] = `
         class="summary"
       >
         <svg
-          class="lexicon-icon lexicon-icon-faro-connection-success-ovals icon-root"
+          class="lexicon-icon lexicon-icon-faro_connection_success_ovals icon-root"
           role="presentation"
         >
           <use
-            href="#faro-connection-success-ovals"
+            href="#faro_connection_success_ovals"
           />
         </svg>
         0 fields mapped.
         <svg
-          class="lexicon-icon lexicon-icon-faro-connection-error-ovals icon-root"
+          class="lexicon-icon lexicon-icon-faro_connection_error_ovals icon-root"
           role="presentation"
         >
           <use
-            href="#faro-connection-error-ovals"
+            href="#faro_connection_error_ovals"
           />
         </svg>
         1 fields not mapped.
@@ -96,7 +96,6 @@ exports[`DataTransformation should render 1`] = `
                 class="dropdown searchable-select-root"
               >
                 <button
-                  aria-controls="clay-dropdown-menu-1"
                   aria-expanded="false"
                   aria-haspopup="true"
                   class="dropdown-toggle button-root d-flex align-items-center justify-content-between w-100 btn btn-unstyled"
@@ -122,11 +121,11 @@ exports[`DataTransformation should render 1`] = `
             class="form-group-item add-on form-group-item-shrink"
           >
             <svg
-              class="lexicon-icon lexicon-icon-faro-connection-error-ovals icon-root"
+              class="lexicon-icon lexicon-icon-faro_connection_error_ovals icon-root"
               role="presentation"
             >
               <use
-                href="#faro-connection-error-ovals"
+                href="#faro_connection_error_ovals"
               />
             </svg>
           </div>
@@ -140,7 +139,6 @@ exports[`DataTransformation should render 1`] = `
                 class="dropdown searchable-select-root"
               >
                 <button
-                  aria-controls="clay-dropdown-menu-2"
                   aria-expanded="false"
                   aria-haspopup="true"
                   class="dropdown-toggle button-root d-flex align-items-center justify-content-between w-100 btn btn-unstyled"
@@ -241,16 +239,16 @@ exports[`DataTransformation should render 1`] = `
 `;
 
 exports[`processFieldMappings should return fieldMappings 1`] = `
-Array [
-  Object {
+[
+  {
     "dataSourceFieldName": "foo",
     "name": undefined,
   },
-  Object {
+  {
     "dataSourceFieldName": "bar",
     "name": undefined,
   },
-  Object {
+  {
     "dataSourceFieldName": "baz",
     "name": undefined,
   },

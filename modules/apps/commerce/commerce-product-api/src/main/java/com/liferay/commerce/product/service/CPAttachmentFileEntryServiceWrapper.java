@@ -86,21 +86,23 @@ public class CPAttachmentFileEntryServiceWrapper
 	}
 
 	@Override
-	public CPAttachmentFileEntry fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpAttachmentFileEntryService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public CPAttachmentFileEntry fetchCPAttachmentFileEntry(
 			long cpAttachmentFileEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpAttachmentFileEntryService.fetchCPAttachmentFileEntry(
 			cpAttachmentFileEntryId);
+	}
+
+	@Override
+	public CPAttachmentFileEntry
+			fetchCPAttachmentFileEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpAttachmentFileEntryService.
+			fetchCPAttachmentFileEntryByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -211,3 +213,4 @@ public class CPAttachmentFileEntryServiceWrapper
 	private CPAttachmentFileEntryService _cpAttachmentFileEntryService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1478058498

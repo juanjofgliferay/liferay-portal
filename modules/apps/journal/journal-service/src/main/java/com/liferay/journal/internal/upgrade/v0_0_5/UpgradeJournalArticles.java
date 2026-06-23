@@ -28,12 +28,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portlet.PortletPreferencesImpl;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Eudaldo Alonso
@@ -97,51 +97,56 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 				StringBundler.concat(
 					"select distinct PortletPreferences.portletPreferencesId ",
 					"from PortletPreferences inner join ",
-					"PortletPreferenceValue on ",
-					"PortletPreferenceValue.portletPreferencesId = ",
-					"PortletPreferences.portletPreferencesId where portletId ",
-					"= '", oldRootPortletId, "' OR portletId like '",
-					oldRootPortletId, "_INSTANCE_%' OR portletId like '",
-					oldRootPortletId, "_USER_%_INSTANCE_%'"));
-			ResultSet resultSet = preparedStatement.executeQuery()) {
+					"PortletPreferenceValue on PortletPreferenceValue.",
+					"portletPreferencesId = PortletPreferences.",
+					"portletPreferencesId where portletId = ? OR portletId ",
+					"like ? OR portletId like ?"))) {
 
-			while (resultSet.next()) {
-				long portletPreferencesId = resultSet.getLong(
-					"portletPreferencesId");
+			preparedStatement.setString(1, oldRootPortletId);
+			preparedStatement.setString(2, oldRootPortletId + "_INSTANCE_%");
+			preparedStatement.setString(
+				3, oldRootPortletId + "_USER_%_INSTANCE_%");
 
-				com.liferay.portal.kernel.model.PortletPreferences
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					long portletPreferencesId = resultSet.getLong(
+						"portletPreferencesId");
+
+					com.liferay.portal.kernel.model.PortletPreferences
+						portletPreferences =
+							_portletPreferencesLocalService.
+								getPortletPreferences(portletPreferencesId);
+
+					long plid = portletPreferences.getPlid();
+
+					String portletId = portletPreferences.getPortletId();
+
+					long userId = PortletIdCodec.decodeUserId(portletId);
+					String instanceId = PortletIdCodec.decodeInstanceId(
+						portletId);
+
+					String newPortletId = PortletIdCodec.encode(
+						_PORTLET_ID_ASSET_PUBLISHER, userId, instanceId);
+
+					portletPreferences.setPortletId(newPortletId);
+
 					portletPreferences =
-						_portletPreferencesLocalService.getPortletPreferences(
-							portletPreferencesId);
+						_portletPreferencesLocalService.
+							updatePortletPreferences(portletPreferences);
 
-				long plid = portletPreferences.getPlid();
+					PortletPreferences oldPortletPreferences =
+						_portletPreferenceValueLocalService.getPreferences(
+							portletPreferences);
 
-				String portletId = portletPreferences.getPortletId();
-
-				long userId = PortletIdCodec.decodeUserId(portletId);
-				String instanceId = PortletIdCodec.decodeInstanceId(portletId);
-
-				String newPortletId = PortletIdCodec.encode(
-					_PORTLET_ID_ASSET_PUBLISHER, userId, instanceId);
-
-				portletPreferences.setPortletId(newPortletId);
-
-				portletPreferences =
-					_portletPreferencesLocalService.updatePortletPreferences(
-						portletPreferences);
-
-				PortletPreferences oldPortletPreferences =
-					_portletPreferenceValueLocalService.getPreferences(
-						portletPreferences);
-
-				_portletPreferencesLocalService.updatePreferences(
-					portletPreferences.getOwnerId(),
-					portletPreferences.getOwnerType(),
-					portletPreferences.getPlid(),
-					portletPreferences.getPortletId(),
-					_getNewPortletPreferences(
-						oldPortletPreferences, plid, oldRootPortletId,
-						newRootPortletId));
+					_portletPreferencesLocalService.updatePreferences(
+						portletPreferences.getOwnerId(),
+						portletPreferences.getOwnerType(),
+						portletPreferences.getPlid(),
+						portletPreferences.getPortletId(),
+						_getNewPortletPreferences(
+							oldPortletPreferences, plid, oldRootPortletId,
+							newRootPortletId));
+				}
 			}
 		}
 	}
@@ -183,22 +188,6 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 			String oldRootPortletId, String newRootPortletId)
 		throws Exception {
 
-		String ddmStructureKey = oldPortletPreferences.getValue(
-			"ddmStructureKey", StringPool.BLANK);
-		long groupId = GetterUtil.getLong(
-			oldPortletPreferences.getValue("groupId", StringPool.BLANK));
-		String orderByCol = oldPortletPreferences.getValue(
-			"orderByCol", StringPool.BLANK);
-		String orderByType = oldPortletPreferences.getValue(
-			"orderByType", StringPool.BLANK);
-		int pageDelta = GetterUtil.getInteger(
-			oldPortletPreferences.getValue("pageDelta", StringPool.BLANK));
-		String pageUrl = oldPortletPreferences.getValue(
-			"pageUrl", StringPool.BLANK);
-		String portletSetupCss = oldPortletPreferences.getValue(
-			"portletSetupCss", StringPool.BLANK);
-		String type = oldPortletPreferences.getValue("type", StringPool.BLANK);
-
 		PortletPreferences newPortletPreferences = new PortletPreferencesImpl();
 
 		newPortletPreferences.setValue(
@@ -206,6 +195,8 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 			String.valueOf(
 				PortalUtil.getClassNameId(JournalArticle.class.getName())));
 
+		String ddmStructureKey = oldPortletPreferences.getValue(
+			"ddmStructureKey", StringPool.BLANK);
 		Layout layout = _layoutLocalService.getLayout(plid);
 
 		long structureId = getStructureId(
@@ -219,7 +210,10 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 
 		String assetLinkBehavior = "showFullContent";
 
-		if (pageUrl.equals("viewInContext")) {
+		if (StringUtil.equals(
+				oldPortletPreferences.getValue("pageUrl", StringPool.BLANK),
+				"viewInContext")) {
+
 			assetLinkBehavior = "viewInPortlet";
 		}
 
@@ -230,12 +224,24 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 				"classTypeIds", String.valueOf(structureId));
 		}
 
-		newPortletPreferences.setValue("delta", String.valueOf(pageDelta));
+		newPortletPreferences.setValue(
+			"delta",
+			String.valueOf(
+				GetterUtil.getInteger(
+					oldPortletPreferences.getValue(
+						"pageDelta", StringPool.BLANK))));
 		newPortletPreferences.setValue("displayStyle", "table");
 		newPortletPreferences.setValue("metadataFields", "publish-date,author");
-		newPortletPreferences.setValue("orderByColumn1", orderByCol);
-		newPortletPreferences.setValue("orderByType1", orderByType);
+		newPortletPreferences.setValue(
+			"orderByColumn1",
+			oldPortletPreferences.getValue("orderByCol", StringPool.BLANK));
+		newPortletPreferences.setValue(
+			"orderByType1",
+			oldPortletPreferences.getValue("orderByType", StringPool.BLANK));
 		newPortletPreferences.setValue("paginationType", "none");
+
+		String portletSetupCss = oldPortletPreferences.getValue(
+			"portletSetupCss", StringPool.BLANK);
 
 		portletSetupCss = StringUtil.replace(
 			portletSetupCss,
@@ -248,7 +254,9 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 
 		newPortletPreferences.setValue("portletSetupCss", portletSetupCss);
 
-		long categoryId = _getCategoryId(layout.getCompanyId(), type);
+		long categoryId = _getCategoryId(
+			layout.getCompanyId(),
+			oldPortletPreferences.getValue("type", StringPool.BLANK));
 
 		if (categoryId > 0) {
 			newPortletPreferences.setValue(
@@ -262,6 +270,9 @@ public class UpgradeJournalArticles extends BasePortletIdUpgradeProcess {
 
 		newPortletPreferences.setValue(
 			"showAddContentButton", Boolean.FALSE.toString());
+
+		long groupId = GetterUtil.getLong(
+			oldPortletPreferences.getValue("groupId", StringPool.BLANK));
 
 		String groupName = String.valueOf(groupId);
 

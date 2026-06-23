@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,19 +28,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Petteri Karttunen
  * @generated
  */
 @Generated("")
-@GraphQLName("SearchRequestBody")
+@GraphQLName(
+	description = "Request body for POST /search. Carries search context attributes (including blueprint selection and empty-search behavior) and any facet aggregations to be returned alongside the results.",
+	value = "SearchRequestBody"
+)
 @JsonFilter("Liferay.Vulcan")
 @XmlRootElement(name = "SearchRequestBody")
 public class SearchRequestBody implements Serializable {
@@ -49,14 +51,24 @@ public class SearchRequestBody implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(SearchRequestBody.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Custom search context attributes. Recognized keys are search.empty.search (set to true to return results when the search parameter is omitted from the request - equivalent to the emptySearch GET query parameter), search.experiences.blueprint.external.reference.code (External Reference Code of a Search Blueprint controlling the query and configuration - preferred over passing the blueprint ID; Search Blueprints require DXP Enterprise tier with the Liferay Enterprise Search (LES) add-on subscription), search.experiences.blueprint.id (ID of a Search Blueprint - prefer search.experiences.blueprint.external.reference.code when available), search.experiences.ip.address (overrides the autodetected client IP for geolocation-aware blueprint elements such as IP-based boosting or region targeting; defaults to the actual HTTP request's client IP when omitted; LES-only since the consumers ship with Search Experiences), search.experiences.scope.group.id (set when the blueprint contains elements that require a group context, such as 'Limit Search to the Current Site', 'Boost Contents in a Category for a User Segment', or 'Staging Aware'), and any other key prefixed with search.experiences. (dynamic parameters declared in the blueprint's Parameter Configuration - see https://learn.liferay.com/w/dxp/search/liferay-enterprise-search/search-blueprints/search-blueprints-configuration-reference#parameter-configuration for more information)."
+	)
 	@Valid
 	public Map<String, Object> getAttributes() {
+		if (_attributesSupplier != null) {
+			attributes = _attributesSupplier.get();
+
+			_attributesSupplier = null;
+		}
+
 		return attributes;
 	}
 
 	public void setAttributes(Map<String, Object> attributes) {
 		this.attributes = attributes;
+
+		_attributesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -64,24 +76,39 @@ public class SearchRequestBody implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			attributesUnsafeSupplier) {
 
-		try {
-			attributes = attributesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_attributesSupplier = () -> {
+			try {
+				return attributesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Custom search context attributes. Recognized keys are search.empty.search (set to true to return results when the search parameter is omitted from the request - equivalent to the emptySearch GET query parameter), search.experiences.blueprint.external.reference.code (External Reference Code of a Search Blueprint controlling the query and configuration - preferred over passing the blueprint ID; Search Blueprints require DXP Enterprise tier with the Liferay Enterprise Search (LES) add-on subscription), search.experiences.blueprint.id (ID of a Search Blueprint - prefer search.experiences.blueprint.external.reference.code when available), search.experiences.ip.address (overrides the autodetected client IP for geolocation-aware blueprint elements such as IP-based boosting or region targeting; defaults to the actual HTTP request's client IP when omitted; LES-only since the consumers ship with Search Experiences), search.experiences.scope.group.id (set when the blueprint contains elements that require a group context, such as 'Limit Search to the Current Site', 'Boost Contents in a Category for a User Segment', or 'Staging Aware'), and any other key prefixed with search.experiences. (dynamic parameters declared in the blueprint's Parameter Configuration - see https://learn.liferay.com/w/dxp/search/liferay-enterprise-search/search-blueprints/search-blueprints-configuration-reference#parameter-configuration for more information)."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> attributes;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _attributesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "Facet aggregation configurations to apply to the search. Each entry describes a facet to compute alongside the results. The processed facet term buckets appear in the response's `searchFacets` field - a map keyed by `aggregationName`, where each value is an array of term-bucket objects with `displayName` (locale-dependent label), `term` (raw term value), and `frequency` (count of matching documents). The `searchFacets` field is returned only when this property is provided in the request."
+	)
 	@Valid
 	public FacetConfiguration[] getFacetConfigurations() {
+		if (_facetConfigurationsSupplier != null) {
+			facetConfigurations = _facetConfigurationsSupplier.get();
+
+			_facetConfigurationsSupplier = null;
+		}
+
 		return facetConfigurations;
 	}
 
@@ -89,6 +116,8 @@ public class SearchRequestBody implements Serializable {
 		FacetConfiguration[] facetConfigurations) {
 
 		this.facetConfigurations = facetConfigurations;
+
+		_facetConfigurationsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -96,20 +125,27 @@ public class SearchRequestBody implements Serializable {
 		UnsafeSupplier<FacetConfiguration[], Exception>
 			facetConfigurationsUnsafeSupplier) {
 
-		try {
-			facetConfigurations = facetConfigurationsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_facetConfigurationsSupplier = () -> {
+			try {
+				return facetConfigurationsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
-	@GraphQLField
+	@GraphQLField(
+		description = "Facet aggregation configurations to apply to the search. Each entry describes a facet to compute alongside the results. The processed facet term buckets appear in the response's `searchFacets` field - a map keyed by `aggregationName`, where each value is an array of term-bucket objects with `displayName` (locale-dependent label), `term` (raw term value), and `frequency` (count of matching documents). The `searchFacets` field is returned only when this property is provided in the request."
+	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FacetConfiguration[] facetConfigurations;
+
+	@JsonIgnore
+	private Supplier<FacetConfiguration[]> _facetConfigurationsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -138,6 +174,8 @@ public class SearchRequestBody implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Object> attributes = getAttributes();
+
 		if (attributes != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -147,6 +185,8 @@ public class SearchRequestBody implements Serializable {
 
 			sb.append(_toJSON(attributes));
 		}
+
+		FacetConfiguration[] facetConfigurations = getFacetConfigurations();
 
 		if (facetConfigurations != null) {
 			if (sb.length() > 1) {
@@ -173,8 +213,8 @@ public class SearchRequestBody implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.search.rest.dto.v1_0.SearchRequestBody",
 		name = "x-class-name"
 	)
@@ -220,7 +260,10 @@ public class SearchRequestBody implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -266,3 +309,4 @@ public class SearchRequestBody implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:1885673368

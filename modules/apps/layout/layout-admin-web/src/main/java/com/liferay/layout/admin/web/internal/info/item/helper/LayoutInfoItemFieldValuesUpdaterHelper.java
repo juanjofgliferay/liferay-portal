@@ -5,6 +5,7 @@
 
 package com.liferay.layout.admin.web.internal.info.item.helper;
 
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.info.field.InfoField;
@@ -12,9 +13,6 @@ import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.InfoItemFieldValues;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.layout.admin.web.internal.info.item.LayoutInfoItemFields;
-import com.liferay.petra.reflect.ReflectionUtil;
-import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -57,18 +55,6 @@ public class LayoutInfoItemFieldValuesUpdaterHelper {
 		return _updateLayout(layout, infoItemFieldValues, segmentsExperienceId);
 	}
 
-	private JSONObject _createEditableValuesJSONObject(
-		FragmentEntryLink fragmentEntryLink) {
-
-		try {
-			return JSONFactoryUtil.createJSONObject(
-				fragmentEntryLink.getEditableValues());
-		}
-		catch (JSONException jsonException) {
-			return ReflectionUtil.throwException(jsonException);
-		}
-	}
-
 	private Map<Locale, String> _getFieldMap(
 		String fieldName, InfoItemFieldValues infoItemFieldValues,
 		Map<Locale, String> initialValue) {
@@ -96,7 +82,11 @@ public class LayoutInfoItemFieldValuesUpdaterHelper {
 			JSONObject processorJSONObject = jsonObject.getJSONObject(
 				processorKey);
 
-			if (!processorJSONObject.has(fieldName)) {
+			if (!processorJSONObject.has(fieldName) ||
+				processorKey.equals(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR)) {
+
 				continue;
 			}
 
@@ -142,7 +132,8 @@ public class LayoutInfoItemFieldValuesUpdaterHelper {
 
 			_updateEditableValuesJSONObject(
 				editableValuesJSONObjects.computeIfAbsent(
-					fragmentEntryLink, this::_createEditableValuesJSONObject),
+					fragmentEntryLink,
+					FragmentEntryLink::getEditableValuesJSONObject),
 				matcher.group("name"), infoFieldValue);
 		}
 

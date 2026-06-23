@@ -6,14 +6,11 @@
 package com.liferay.commerce.payment.internal.search.spi.model.query.contributor;
 
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.ParseException;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.WildcardQuery;
-import com.liferay.portal.kernel.search.generic.WildcardQueryImpl;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.query.QueryHelper;
@@ -45,26 +42,21 @@ public class CommercePaymentEntryKeywordQueryContributor
 			booleanQuery, searchContext, Field.ENTRY_CLASS_PK, false);
 
 		if (Validator.isNotNull(keywords)) {
-			try {
-				keywords = StringUtil.toLowerCase(keywords);
+			keywords = StringUtil.toLowerCase(keywords);
 
-				booleanQuery.add(
-					_getTrailingWildcardQuery(Field.ENTRY_CLASS_PK, keywords),
-					BooleanClauseOccur.SHOULD);
-			}
-			catch (ParseException parseException) {
-				throw new SystemException(parseException);
-			}
+			booleanQuery.add(
+				_getTrailingWildcardQuery(Field.ENTRY_CLASS_PK, keywords),
+				BooleanClauseOccur.SHOULD);
 		}
 
 		_queryHelper.addSearchTerm(
 			booleanQuery, searchContext, Field.USER_NAME, false);
 		_queryHelper.addSearchTerm(
+			booleanQuery, searchContext, "classPK", false);
+		_queryHelper.addSearchTerm(
 			booleanQuery, searchContext, "currencyCode", false);
 		_queryHelper.addSearchTerm(
-			booleanQuery, searchContext, "paymentMethodName", false);
-		_queryHelper.addSearchTerm(
-			booleanQuery, searchContext, "paymentStatus", false);
+			booleanQuery, searchContext, "externalReferenceCode", false);
 		_queryHelper.addSearchTerm(
 			booleanQuery, searchContext, "transactionCode", false);
 	}
@@ -72,7 +64,7 @@ public class CommercePaymentEntryKeywordQueryContributor
 	private WildcardQuery _getTrailingWildcardQuery(
 		String field, String value) {
 
-		return new WildcardQueryImpl(field, value + StringPool.STAR);
+		return new WildcardQuery(field, value + StringPool.STAR);
 	}
 
 	@Reference

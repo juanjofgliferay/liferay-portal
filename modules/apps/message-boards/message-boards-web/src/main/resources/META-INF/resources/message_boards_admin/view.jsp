@@ -36,7 +36,7 @@ MBAdminListDisplayContext mbAdminListDisplayContext = MBDisplayContextUtil.getMB
 
 PortletURL portletURL = mbEntriesManagementToolbarDisplayContext.getPortletURL();
 
-SearchContainer entriesSearchContainer = new SearchContainer(renderRequest, null, null, "cur1", 0, mbAdminListDisplayContext.getEntriesDelta(), portletURL, null, "there-are-no-threads-or-categories");
+SearchContainer entriesSearchContainer = new SearchContainer(renderRequest, null, null, "cur1", 0, mbAdminListDisplayContext.getEntriesDelta(), portletURL, null, mbAdminListDisplayContext.getEmptyResultsMessage());
 
 mbAdminListDisplayContext.setEntriesDelta(entriesSearchContainer);
 
@@ -65,12 +65,12 @@ String entriesNavigation = ParamUtil.getString(request, "entriesNavigation", "al
 	additionalProps="<%= mbEntriesManagementToolbarDisplayContext.getAdditionalProps() %>"
 	clearResultsURL="<%= mbEntriesManagementToolbarDisplayContext.getSearchActionURL() %>"
 	creationMenu="<%= mbEntriesManagementToolbarDisplayContext.getCreationMenu() %>"
-	disabled='<%= (entriesSearchContainer.getTotal() == 0) && (categoryId == MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID) && entriesNavigation.equals("all") %>'
+	disabled='<%= !mbAdminListDisplayContext.isShowSearch() && (entriesSearchContainer.getTotal() == 0) && (categoryId == MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID) && entriesNavigation.equals("all") %>'
 	filterDropdownItems="<%= mbEntriesManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 	filterLabelItems="<%= mbEntriesManagementToolbarDisplayContext.getFilterLabelItems() %>"
 	itemsTotal="<%= entriesSearchContainer.getTotal() %>"
 	orderDropdownItems="<%= mbEntriesManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
-	propsTransformer="message_boards_admin/js/MBEntriesManagementToolbarPropsTransformer"
+	propsTransformer="{MBEntriesManagementToolbarPropsTransformer} from message-boards-web"
 	searchActionURL="<%= mbEntriesManagementToolbarDisplayContext.getSearchActionURL() %>"
 	searchContainerId="mbEntries"
 	searchFormName="searchFm"

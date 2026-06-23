@@ -1,25 +1,28 @@
 import Card from 'shared/components/Card';
-import DropdownRangeKey from 'shared/hoc/DropdownRangeKey';
 import IntervalSelector from 'shared/components/IntervalSelector';
 import React, {useCallback} from 'react';
+import {DropdownRangeKey} from 'shared/components/dropdown-range-key/DropdownRangeKey';
 import {Interval} from 'shared/types';
 import {INTERVAL_KEY_MAP} from 'shared/util/time';
 import {isHourlyRangeKey} from 'shared/util/time';
 import {RangeSelectors} from 'shared/types';
+import {Text} from '@clayui/core';
 
 export interface BaseCardHeaderDefaultIProps
 	extends React.HTMLAttributes<HTMLElement> {
+	description?: string;
 	interval: Interval;
 	label: string;
 	legacy: boolean;
 	onChangeInterval: (val: Interval) => void;
-	onRangeSelectorsChange: (val: any) => void;
+	onRangeSelectorsChange?: (val: any) => void;
 	rangeSelectors: RangeSelectors;
 	showInterval: boolean;
 	showRangeKey?: boolean;
 }
 
 const BaseCardHeaderDefault: React.FC<BaseCardHeaderDefaultIProps> = ({
+	description = '',
 	interval,
 	label,
 	legacy,
@@ -29,7 +32,7 @@ const BaseCardHeaderDefault: React.FC<BaseCardHeaderDefaultIProps> = ({
 	showInterval,
 	showRangeKey = true
 }) => {
-	const handleRangeSelectorsChange = useCallback(newVal => {
+	const handleRangeSelectorsChange = useCallback((newVal: any) => {
 		onRangeSelectorsChange && onRangeSelectorsChange(newVal);
 
 		if (isHourlyRangeKey(newVal.rangeKey)) {
@@ -38,13 +41,19 @@ const BaseCardHeaderDefault: React.FC<BaseCardHeaderDefaultIProps> = ({
 	}, []);
 
 	const handleChangeInterval = useCallback(
-		newVal => onChangeInterval && onChangeInterval(newVal),
+		(newVal: any) => onChangeInterval && onChangeInterval(newVal),
 		[]
 	);
 
 	return (
 		<Card.Header className='align-items-center d-flex justify-content-between'>
-			<Card.Title>{label}</Card.Title>
+			<div>
+				<Card.Title>{label}</Card.Title>
+
+				<Text color='secondary' size={4}>
+					{description}
+				</Text>
+			</div>
 
 			<div className='d-flex'>
 				{showInterval && (
@@ -59,7 +68,7 @@ const BaseCardHeaderDefault: React.FC<BaseCardHeaderDefaultIProps> = ({
 				{showRangeKey && (
 					<DropdownRangeKey
 						legacy={legacy}
-						onChange={handleRangeSelectorsChange}
+						onRangeSelectorChange={handleRangeSelectorsChange}
 						rangeSelectors={rangeSelectors}
 					/>
 				)}

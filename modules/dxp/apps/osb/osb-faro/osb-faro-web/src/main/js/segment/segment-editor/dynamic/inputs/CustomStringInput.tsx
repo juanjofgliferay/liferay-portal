@@ -31,25 +31,6 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 		autocomplete: true
 	};
 
-	_completedAnalytics = false;
-
-	componentDidUpdate() {
-		const {
-			id,
-			property: {entityName, type},
-			valid
-		} = this.props;
-
-		if (!id && valid && !this._completedAnalytics) {
-			this._completedAnalytics = true;
-
-			analytics.track('Dynamic Segment Creation - Completed Attribute', {
-				entityName,
-				type
-			});
-		}
-	}
-
 	getSelectedOperatorKey() {
 		const criterionIMap = this.props.value.getIn(
 			['criterionGroup', 'items', 0],
@@ -69,7 +50,7 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 			operatorKey = isKnown;
 		}
 
-		return TEXT_OPERATORS.find(({key}) => key === operatorKey).key;
+		return TEXT_OPERATORS.find(({key}) => key === operatorKey)?.key;
 	}
 
 	@autobind
@@ -84,17 +65,17 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 	}
 
 	@autobind
-	handleOperatorChange(operator) {
+	handleOperatorChange(operator: React.Key) {
 		const {onChange, value: valueIMap} = this.props;
 
 		let newVal = null;
 
 		newVal = valueIMap.setIn(
 			['criterionGroup', 'items', 0, 'operatorName'],
-			TEXT_OPERATORS.find(({key}) => key === operator).name
+			TEXT_OPERATORS.find(({key}) => key === operator)?.name
 		);
 
-		if (isOfKnownType(operator)) {
+		if (isOfKnownType(String(operator))) {
 			newVal = newVal.setIn(
 				['criterionGroup', 'items', 0, 'value'],
 				null
@@ -112,7 +93,7 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 	}
 
 	@autobind
-	handleValueChange(value) {
+	handleValueChange(value: React.Key) {
 		const {onChange, value: valueIMap} = this.props;
 
 		onChange({
@@ -139,7 +120,7 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 		const value = getPropertyValue(valueIMap, 'value', 0);
 
 		const selectedOperatorKey = this.getSelectedOperatorKey();
-		const knownType = isOfKnownType(selectedOperatorKey);
+		const knownType = isOfKnownType(selectedOperatorKey ?? '');
 
 		const showError = !valid && touched;
 
@@ -147,7 +128,6 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 			className: getCN(className, {
 				'has-error': showError
 			}),
-			'data-testid': 'string-input',
 			onBlur: this.handleBlur,
 			value
 		};
@@ -193,7 +173,9 @@ export default class CustomStringInput extends React.Component<ICustomStringInpu
 									<Input
 										{...sharedInputProps}
 										autoComplete='nope'
-										onChange={event => {
+										onChange={(
+											event: React.ChangeEvent<HTMLInputElement>
+										) => {
 											this.handleValueChange(
 												event.target.value
 											);

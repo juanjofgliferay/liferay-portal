@@ -7,10 +7,10 @@ package com.liferay.frontend.taglib.clay.servlet.taglib;
 
 import com.liferay.frontend.taglib.clay.internal.servlet.taglib.BaseContainerTag;
 
-import java.util.Set;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
+import java.util.Set;
 
 /**
  * @author Chema Balsas
@@ -36,6 +36,10 @@ public class BadgeTag extends BaseContainerTag {
 		return _label;
 	}
 
+	public boolean isTranslucent() {
+		return _translucent;
+	}
+
 	public void setDisplayType(String displayType) {
 		_displayType = displayType;
 	}
@@ -44,18 +48,27 @@ public class BadgeTag extends BaseContainerTag {
 		_label = label;
 	}
 
+	public void setTranslucent(boolean translucent) {
+		_translucent = translucent;
+	}
+
 	@Override
 	protected void cleanUp() {
 		super.cleanUp();
 
 		_displayType = "primary";
 		_label = null;
+		_translucent = false;
 	}
 
 	@Override
 	protected String processCssClasses(Set<String> cssClasses) {
 		cssClasses.add("badge");
 		cssClasses.add("badge-" + _displayType);
+
+		if (_translucent) {
+			cssClasses.add("badge-translucent");
+		}
 
 		return super.processCssClasses(cssClasses);
 	}
@@ -79,5 +92,6 @@ public class BadgeTag extends BaseContainerTag {
 
 	private String _displayType = "primary";
 	private String _label;
+	private boolean _translucent;
 
 }

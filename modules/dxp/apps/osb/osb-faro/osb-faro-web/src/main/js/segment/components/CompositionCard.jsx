@@ -1,8 +1,8 @@
 import Card from 'shared/components/Card';
 import CompositionChart from 'shared/components/CompositionChart';
 import React from 'react';
-import {Containers} from 'shared/components/download-report/DownloadPDFReport';
 import {PropTypes} from 'prop-types';
+import {ReportContainer} from 'shared/components/download-report/DownloadPDFReport';
 
 export default class CompositionCard extends React.Component {
 	static propTypes = {
@@ -12,16 +12,13 @@ export default class CompositionCard extends React.Component {
 	};
 
 	render() {
-		const {
-			activeIndividualCount,
-			individualCount,
-			knownIndividualCount
-		} = this.props;
+		const {activeIndividualCount, individualCount, knownIndividualCount} =
+			this.props;
 
 		return (
 			<Card
 				className='composition-card-root'
-				id={Containers.SegmentCompositionCard}
+				reportContainer={ReportContainer.SegmentCompositionCard}
 			>
 				<Card.Header>
 					<Card.Title>

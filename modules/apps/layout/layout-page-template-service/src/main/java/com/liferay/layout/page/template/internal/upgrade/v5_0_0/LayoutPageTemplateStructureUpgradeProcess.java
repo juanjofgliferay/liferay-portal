@@ -21,35 +21,59 @@ public class LayoutPageTemplateStructureUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select layoutPageTemplateStructureId, classPK from " +
-					"LayoutPageTemplateStructure where classNameId = ?");
+		try (PreparedStatement deletePreparedStatement =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection,
+					"delete from LayoutPageTemplateStructure where " +
+						"ctCollectionId = ? and " +
+							"layoutPageTemplateStructureId = ?");
+			PreparedStatement preparedStatement1 = connection.prepareStatement(
+				"select ctCollectionId, layoutPageTemplateStructureId, " +
+					"classPK from LayoutPageTemplateStructure where " +
+						"classNameId = ?");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update LayoutPageTemplateStructure set classNameId = ?, " +
-						"classPK = ? where layoutPageTemplateStructureId = " +
-							"?")) {
+						"classPK = ? where ctCollectionId = ? and " +
+							"layoutPageTemplateStructureId = ?")) {
 
 			preparedStatement1.setLong(
 				1, PortalUtil.getClassNameId(LayoutPageTemplateEntry.class));
 
 			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
-				long classNameId = PortalUtil.getClassNameId(Layout.class);
-
 				while (resultSet.next()) {
+					long ctCollectionId = resultSet.getLong("ctCollectionId");
 					long layoutPageTemplateStructureId = resultSet.getLong(
 						"layoutPageTemplateStructureId");
 					long classPK = resultSet.getLong("classPK");
 
-					preparedStatement2.setLong(1, classNameId);
+					long plid = _getPlidFromLayoutPageTemplateEntry(
+						ctCollectionId, classPK);
+
+					if ((plid == 0) ||
+						_hasLayoutPageTemplateStructure(ctCollectionId, plid)) {
+
+						deletePreparedStatement.setLong(1, ctCollectionId);
+						deletePreparedStatement.setLong(
+							2, layoutPageTemplateStructureId);
+
+						deletePreparedStatement.addBatch();
+
+						continue;
+					}
+
 					preparedStatement2.setLong(
-						2, _getPlidFromLayoutPageTemplateEntry(classPK));
+						1, PortalUtil.getClassNameId(Layout.class));
+					preparedStatement2.setLong(2, plid);
+					preparedStatement2.setLong(3, ctCollectionId);
 					preparedStatement2.setLong(
-						3, layoutPageTemplateStructureId);
+						4, layoutPageTemplateStructureId);
 
 					preparedStatement2.addBatch();
 				}
+
+				deletePreparedStatement.executeBatch();
 
 				preparedStatement2.executeBatch();
 			}
@@ -57,14 +81,15 @@ public class LayoutPageTemplateStructureUpgradeProcess extends UpgradeProcess {
 	}
 
 	private long _getPlidFromLayoutPageTemplateEntry(
-			long layoutPageTemplateEntryId)
+			long ctCollectionId, long layoutPageTemplateEntryId)
 		throws Exception {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select plid from LayoutPageTemplateEntry where " +
-					"layoutPageTemplateEntryId = ?")) {
+					"ctCollectionId = ? and layoutPageTemplateEntryId = ?")) {
 
-			preparedStatement.setLong(1, layoutPageTemplateEntryId);
+			preparedStatement.setLong(1, ctCollectionId);
+			preparedStatement.setLong(2, layoutPageTemplateEntryId);
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				if (resultSet.next()) {
@@ -74,6 +99,25 @@ public class LayoutPageTemplateStructureUpgradeProcess extends UpgradeProcess {
 		}
 
 		return 0;
+	}
+
+	private boolean _hasLayoutPageTemplateStructure(
+			long ctCollectionId, long classPK)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select 1 from LayoutPageTemplateStructure where " +
+					"ctCollectionId = ? and classNameId = ? and classPK = ?")) {
+
+			preparedStatement.setLong(1, ctCollectionId);
+			preparedStatement.setLong(
+				2, PortalUtil.getClassNameId(Layout.class));
+			preparedStatement.setLong(3, classPK);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				return resultSet.next();
+			}
+		}
 	}
 
 }

@@ -1,11 +1,12 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property browser.chrome.version = "139.0";
 	property ci.retries.disabled = "true";
 	property custom.properties = "virtual.hosts.default.site.name=Guest";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Export/Import Framework";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -14,6 +15,8 @@ definition {
 	}
 
 	tearDown {
+		ImportExport.tearDownSettingsConfigurations();
+
 		var testPortalInstance = PropsUtil.get("test.portal.instance");
 
 		if (${testPortalInstance} == "true") {
@@ -33,6 +36,10 @@ definition {
 		task ("When: Not set URL Pattern in System Settings") {
 			StagingNavigator.openToConfigInSystemSettings(portlet = "Export/Import, Staging");
 
+			AssertElementPresent(
+				checkboxName = "Validate Layout References",
+				locator1 = "Checkbox#ANY_CHECKBOX_CHECKED");
+
 			AssertTextEquals(
 				locator1 = "ExportImport#URL_PATTERN",
 				value1 = "");
@@ -51,7 +58,25 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/dl/XYZ123">${portalURL}/dl/XYZ123</a></p>''');
 
-			Button.clickPublish();
+			WaitForPageLoad();
+
+			WaitForElementPresent(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			SelectFrame.selectFrameNoLoading(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CKEditor#BODY",
+				value1 = "dl/XYZ123");
+
+			SelectFrame.selectFrameTop();
+
+			WaitForPageLoad();
+
+			WebContent.publishWithPermissions();
 
 			ExportImport.viewValidationMessage(
 				url = "/dl/XYZ123",
@@ -75,7 +100,25 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/dl/XYZ123">${portalURL}/dl/XYZ123</a></p>''');
 
-			PortletEntry.publish();
+			WaitForPageLoad();
+
+			WaitForElementPresent(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			SelectFrame.selectFrameNoLoading(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CKEditor#BODY",
+				value1 = "dl/XYZ123");
+
+			SelectFrame.selectFrameTop();
+
+			WaitForPageLoad();
+
+			WebContent.publishWithPermissions();
 		}
 	}
 
@@ -103,7 +146,7 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/dl/XYZ123">${portalURL}/dl/XYZ123</a></p>''');
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("When: Reset default values in Instance Settings") {
@@ -123,7 +166,7 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/dl/XYZ123">${portalURL}/dl/XYZ123</a></p>''');
 
-			Button.clickPublish();
+			WebContent.publishWithPermissions();
 
 			ExportImport.viewValidationMessage(
 				url = "/dl/XYZ123",
@@ -153,7 +196,7 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/files/MyFileToLinkToWebContent">MyFileToLinkToWebContent</a></p>''');
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 	}
 
@@ -166,9 +209,11 @@ definition {
 		task ("Given: Add multiple URL Pattern in System Settings") {
 			StagingNavigator.openToConfigInSystemSettings(portlet = "Export/Import, Staging");
 
-			ExportImport.configureURLPattern(
-				multipleURL = "/files/MyFileToLinkToWebContent",
-				urlPattern = "/dl/*");
+			AssertElementPresent(
+				checkboxName = "Validate Layout References",
+				locator1 = "Checkbox#ANY_CHECKBOX_CHECKED");
+
+			ExportImport.configureURLPattern(urlPattern = "/dl/*");
 
 			takeScreenshot();
 		}
@@ -185,7 +230,27 @@ definition {
 				webContentContent = '''<p><a href="${portalURL}/unaddedurl/XYZ123">${portalURL}/unaddedurl/XYZ123</a></p>''',
 				webContentTitle = "Web Content Title");
 
-			Button.clickPublish();
+			WebContent.publishWithPermissions();
+
+			WaitForPageLoad();
+
+			WaitForElementPresent(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			SelectFrame.selectFrameNoLoading(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			var portalURL = PropsUtil.get("portal.url");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CKEditor#BODY",
+				value1 = "/unaddedurl/XYZ123");
+
+			SelectFrame.selectFrameTop();
+
+			WaitForPageLoad();
 		}
 
 		task ("Then: Custom URL cannot bypass validation") {
@@ -204,10 +269,28 @@ definition {
 			var portalURL = PropsUtil.get("portal.url");
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/files/MyFileToLinkToWebContent">MyFileToLinkToWebContent</a></p>''');
+
+			WaitForPageLoad();
+
+			WaitForElementPresent(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			SelectFrame.selectFrameNoLoading(
+				key_fieldLabel = "Content",
+				locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CKEditor#BODY",
+				value1 = "MyFileToLinkToWebContent");
+
+			SelectFrame.selectFrameTop();
+
+			WaitForPageLoad();
 		}
 
 		task ("Then: Custom URL can bypass validation") {
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 	}
 
@@ -257,7 +340,7 @@ definition {
 			UserBar.signOut();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "http://www.able.com:8080",
 				userEmailAddress = "test@www.able.com");
 		}
@@ -295,7 +378,7 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/dl/XYZ123">${portalURL}/dl/XYZ123</a></p>''');
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 	}
 
@@ -336,7 +419,7 @@ definition {
 
 			ExportImport.addSourceContent(content = '''<p><a href="${portalURL}/dl/XYZ123">${portalURL}/dl/XYZ123</a></p>''');
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 	}
 

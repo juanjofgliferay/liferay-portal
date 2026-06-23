@@ -18,7 +18,12 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
@@ -99,6 +104,16 @@ public class UserPermissionUtil {
 				organizationIds = user.getOrganizationIds();
 			}
 
+			if (!Arrays.equals(organizationIds, user.getOrganizationIds())) {
+				List<Long> organizationIdsList = ListUtil.fromArray(
+					ArrayUtil.append(
+						organizationIds, user.getOrganizationIds()));
+
+				ListUtil.distinct(organizationIdsList);
+
+				organizationIds = ArrayUtil.toLongArray(organizationIdsList);
+			}
+
 			for (long organizationId : organizationIds) {
 				Organization organization =
 					OrganizationLocalServiceUtil.getOrganization(
@@ -147,7 +162,9 @@ public class UserPermissionUtil {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception);
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
 		}
 
 		return false;

@@ -55,7 +55,7 @@
 							{
 								"definition": {
 									"fragment": {
-										"key": "DIALECT-dialect-text",
+										"key": "dialect-text",
 										"siteKey": "[$GROUP_KEY$]"
 									},
 									"fragmentConfig": {
@@ -217,40 +217,9 @@
 									},
 									{
 										"definition": {
-											"fragment": {
-												"key": "DIALECT-dialect-text",
-												"siteKey": "[$GROUP_KEY$]"
-											},
-											"fragmentConfig": {
-												"textType": "h3"
-											},
-											"fragmentFields": [
-												{
-													"id": "element-text",
-													"value": {
-														"fragmentLink": {
-														},
-														"text": {
-															"value_i18n": {
-																"en_US": "How can we help?"
-															}
-														}
-													}
-												}
-											],
-											"fragmentStyle": {
-												"marginBottom": "5",
-												"textColor": "colorNeutral10"
-											},
-											"indexed": true
-										},
-										"type": "Fragment"
-									},
-									{
-										"definition": {
 											"formConfig": {
 												"formReference": {
-													"className": "com.liferay.object.model.ObjectDefinition#[$OBJECT_DEFINITION_ID:Ticket$]",
+													"className": "[$OBJECT_DEFINITION_CLASS_NAME:J3Y7Ticket$]",
 													"classType": 0
 												}
 											},
@@ -263,7 +232,38 @@
 											{
 												"definition": {
 													"fragment": {
-														"key": "DIALECT-dialect-text",
+														"key": "dialect-text",
+														"siteKey": "[$GROUP_KEY$]"
+													},
+													"fragmentConfig": {
+														"textType": "h3"
+													},
+													"fragmentFields": [
+														{
+															"id": "element-text",
+															"value": {
+																"fragmentLink": {
+																},
+																"text": {
+																	"value_i18n": {
+																		"en_US": "How can we help?"
+																	}
+																}
+															}
+														}
+													],
+													"fragmentStyle": {
+														"marginBottom": "5",
+														"textColor": "colorNeutral10"
+													},
+													"indexed": true
+												},
+												"type": "Fragment"
+											},
+											{
+												"definition": {
+													"fragment": {
+														"key": "dialect-text",
 														"siteKey": "[$GROUP_KEY$]"
 													},
 													"fragmentConfig": {
@@ -329,7 +329,7 @@
 											{
 												"definition": {
 													"fragment": {
-														"key": "DIALECT-dialect-text",
+														"key": "dialect-text",
 														"siteKey": "[$GROUP_KEY$]"
 													},
 													"fragmentConfig": {
@@ -380,7 +380,7 @@
 											{
 												"definition": {
 													"fragment": {
-														"key": "DIALECT-dialect-text",
+														"key": "dialect-text",
 														"siteKey": "[$GROUP_KEY$]"
 													},
 													"fragmentConfig": {
@@ -415,7 +415,7 @@
 														"key": "INPUTS-select-from-list"
 													},
 													"fragmentConfig": {
-														"inputFieldId": "ObjectField_r_relatedTicket_c_ticketId",
+														"inputFieldId": "ObjectField_r_j3y7TicketToJ3Y7Ticket_c_j3y7TicketId",
 														"inputShowLabel": false
 													},
 													"fragmentFields": [
@@ -431,7 +431,7 @@
 											{
 												"definition": {
 													"fragment": {
-														"key": "DIALECT-dialect-text",
+														"key": "dialect-text",
 														"siteKey": "[$GROUP_KEY$]"
 													},
 													"fragmentConfig": {

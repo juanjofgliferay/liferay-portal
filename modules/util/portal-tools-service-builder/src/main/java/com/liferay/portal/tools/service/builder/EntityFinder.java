@@ -20,13 +20,14 @@ public class EntityFinder {
 
 	public EntityFinder(
 		ServiceBuilder serviceBuilder, String name, String pluralName,
-		String returnType, boolean unique, String where, String dbWhere,
-		boolean dbIndex, List<EntityColumn> entityColumns) {
+		boolean pretouch, String returnType, boolean unique, String where,
+		String dbWhere, boolean dbIndex, List<EntityColumn> entityColumns) {
 
 		_serviceBuilder = serviceBuilder;
 		_name = name;
 		_pluralName = GetterUtil.getString(
 			pluralName, serviceBuilder.formatPlural(name));
+		_pretouch = pretouch;
 		_returnType = returnType;
 		_unique = unique;
 		_where = where;
@@ -157,12 +158,40 @@ public class EntityFinder {
 		return false;
 	}
 
+	public boolean isCollectionPersistenceFinderEnabled() {
+		if (isFinderDelegationEnabled() && isCollection()) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public boolean isDBIndex() {
 		return _dbIndex;
 	}
 
+	public boolean isFinderDelegationEnabled() {
+		if (!_serviceBuilder.isVersionGTE_7_4_0() || hasArrayablePagination()) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public boolean isPretouch() {
+		return _pretouch;
+	}
+
 	public boolean isUnique() {
 		return _unique;
+	}
+
+	public boolean isUniquePersistenceFinderEnabled() {
+		if (isFinderDelegationEnabled() && (!isCollection() || isUnique())) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private final List<EntityColumn> _arrayableColumns = new ArrayList<>();
@@ -171,6 +200,7 @@ public class EntityFinder {
 	private final List<EntityColumn> _entityColumns;
 	private final String _name;
 	private final String _pluralName;
+	private final boolean _pretouch;
 	private final String _returnType;
 	private final ServiceBuilder _serviceBuilder;
 	private final boolean _unique;

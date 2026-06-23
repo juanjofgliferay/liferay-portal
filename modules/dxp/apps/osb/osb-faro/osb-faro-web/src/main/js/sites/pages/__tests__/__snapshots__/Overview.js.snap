@@ -15,17 +15,22 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root analytics-metrics-card"
-          id="siteActivityCardRoot"
+          id="container.report.siteActivityCard"
           style="min-height: 605px;"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
-            >
-              Test Channel Activities
-            </h5>
+            <div>
+              <div
+                class="card-title"
+              >
+                Test Channel Activities
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
             <div
               class="d-flex"
             >
@@ -83,20 +88,29 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root top-pages-card-root table-tabs-root"
-          id="topPagesCardRoot"
+          id="container.report.topPagesCard"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
+            <div>
+              <div
+                class="card-title"
+              >
+                Top Pages
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
+            <div
+              class="d-flex"
             >
-              Top Pages
-            </h5>
-            <span
-              aria-hidden="true"
-              class="loading-root loading-animation"
-            />
+              <span
+                aria-hidden="true"
+                class="loading-root loading-animation"
+              />
+            </div>
           </div>
           <div
             class="card-body w-100 d-flex flex-column flex-grow-1 no-padding"
@@ -163,7 +177,7 @@ exports[`Sites Dashboard Overview render 1`] = `
           >
             <a
               class="button-root btn btn-outline-borderless btn-sm btn-outline-secondary"
-              href="/workspace/23/123123/sites/pages?rangeKey=30"
+              href="/workspace/23/123123/sites/pages?rangeKey=30&field=visitorsMetric&sortOrder=DESC"
             >
               View Pages
               <svg
@@ -183,20 +197,29 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root acquisitions-card-root table-tabs-root"
-          id="acquisitionsCardRoot"
+          id="container.report.acquisitionsCard"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
+            <div>
+              <div
+                class="card-title"
+              >
+                Acquisitions
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
+            <div
+              class="d-flex"
             >
-              Acquisitions
-            </h5>
-            <span
-              aria-hidden="true"
-              class="loading-root loading-animation"
-            />
+              <span
+                aria-hidden="true"
+                class="loading-root loading-animation"
+              />
+            </div>
           </div>
           <div
             class="card-body w-100 d-flex flex-column flex-grow-1 no-padding"
@@ -271,20 +294,29 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root visitors-by-time-card"
-          id="visitorsByTimeCardRoot"
+          id="container.report.visitorsByTimeCard"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
+            <div>
+              <div
+                class="card-title"
+              >
+                Visitors by Day and Time
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
+            <div
+              class="d-flex"
             >
-              Visitors by Day and Time
-            </h5>
-            <span
-              aria-hidden="true"
-              class="loading-root loading-animation"
-            />
+              <span
+                aria-hidden="true"
+                class="loading-root loading-animation"
+              />
+            </div>
           </div>
           <div
             class="card-body"
@@ -301,50 +333,55 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root search-terms-card-root"
-          id="searchTermsCardRoot"
+          id="container.report.searchTermsCard"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
-            >
-              Search Terms
-            </h5>
-            <span
-              aria-hidden="true"
-              class="loading-root loading-animation"
-            />
-          </div>
-          <div
-            class="table-responsive table-root flex-grow-1"
-          >
-            <table
-              class="table table-autofit table-hover table-heading-nowrap table-nowrap table-row-no-bordered"
-            >
-              <thead>
-                <tr>
-                  <th
-                    class="table-head-title table-cell-expand"
-                  >
-                    Search Query | Searches
-                  </th>
-                  <th
-                    class="table-head-title table-column-text-end"
-                  >
-                    % of Searches
-                  </th>
-                </tr>
-              </thead>
-            </table>
+            <div>
+              <div
+                class="card-title"
+              >
+                Search Terms
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
             <div
-              class="loading-root overlay"
+              class="d-flex"
             >
               <span
                 aria-hidden="true"
-                class="loading-root center loading-animation"
+                class="loading-root loading-animation"
               />
             </div>
+          </div>
+          <div
+            class="flex-grow-1 mx-4 table-root"
+          >
+            <span
+              aria-hidden="true"
+              class="loading-root spacer loading-animation"
+            />
+          </div>
+          <div
+            class="card-footer"
+          >
+            <a
+              class="button-root btn btn-outline-borderless btn-sm btn-outline-secondary"
+              href="/workspace/23/123123/sites/search-terms?rangeKey=30"
+            >
+              All Search Terms
+              <svg
+                class="lexicon-icon lexicon-icon-angle-right-small icon-root ml-2"
+                role="presentation"
+              >
+                <use
+                  href="#angle-right-small"
+                />
+              </svg>
+            </a>
           </div>
         </div>
       </div>
@@ -353,57 +390,44 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root interests-card-root"
-          id="interestsCardRoot"
+          id="container.report.interestsCard"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
-            >
-              Interests
-            </h5>
-            <span
-              aria-hidden="true"
-              class="loading-root loading-animation"
-            />
-          </div>
-          <div
-            class="table-responsive table-root flex-grow-1"
-          >
-            <table
-              class="table table-autofit table-hover table-heading-nowrap table-nowrap table-row-no-bordered"
-            >
-              <thead>
-                <tr>
-                  <th
-                    class="table-head-title table-cell-expand"
-                  >
-                    Interest Topics | Sessions
-                  </th>
-                  <th
-                    class="table-head-title table-column-text-end"
-                  >
-                    % of Sessions
-                  </th>
-                </tr>
-              </thead>
-            </table>
+            <div>
+              <div
+                class="card-title"
+              >
+                Interests
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
             <div
-              class="loading-root overlay"
+              class="d-flex"
             >
               <span
                 aria-hidden="true"
-                class="loading-root center loading-animation"
+                class="loading-root loading-animation"
               />
             </div>
+          </div>
+          <div
+            class="flex-grow-1 mx-4 table-root"
+          >
+            <span
+              aria-hidden="true"
+              class="loading-root spacer loading-animation"
+            />
           </div>
           <div
             class="card-footer"
           >
             <a
               class="button-root btn btn-outline-borderless btn-sm btn-outline-secondary"
-              href="/workspace/23/123123/sites/interests?rangeEnd=null&rangeKey=30&rangeStart=null"
+              href="/workspace/23/123123/sites/interests?rangeKey=30"
             >
               All Interests
               <svg
@@ -429,17 +453,22 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root analytics-locations-card"
-          id="sessionsByLocationCardRoot"
+          id="container.report.sessionsByLocationCard"
           style="min-height: 536px;"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
-            >
-              Sessions by Location
-            </h5>
+            <div>
+              <div
+                class="card-title"
+              >
+                Sessions by Location
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
             <div
               class="d-flex"
             >
@@ -464,17 +493,22 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root analytics-devices-card"
-          id="sessionTechnologyCardRoot"
+          id="container.report.sessionTechnologyCard"
           style="min-height: 536px;"
         >
           <div
             class="card-header align-items-center d-flex justify-content-between"
           >
-            <h5
-              class="card-title"
-            >
-              Session Technology
-            </h5>
+            <div>
+              <div
+                class="card-title"
+              >
+                Session Technology
+              </div>
+              <span
+                class="text-4 text-secondary"
+              />
+            </div>
             <div
               class="d-flex"
             >
@@ -503,18 +537,18 @@ exports[`Sites Dashboard Overview render 1`] = `
       >
         <div
           class="card card-root cohort-analysis-card-root"
-          id="cohortAnalysisCardRoot"
+          id="container.report.cohortAnalysisCard"
         >
           <div
             aria-hidden="true"
             class="card-header"
             data-aria-hidden="true"
           >
-            <h5
+            <div
               class="card-title"
             >
               Cohort Analysis
-            </h5>
+            </div>
           </div>
           <div
             class="card-body"
@@ -527,6 +561,7 @@ exports[`Sites Dashboard Overview render 1`] = `
               >
                 <button
                   aria-activedescendant="visitors"
+                  aria-controls="clay-id-2"
                   aria-expanded="true"
                   aria-haspopup="listbox"
                   aria-owns="clay-id-2"

@@ -20,7 +20,7 @@ import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.MappedProductUtil;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.PinUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.PinResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -84,7 +84,8 @@ public class PinResourceImpl extends BasePinResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -110,7 +111,8 @@ public class PinResourceImpl extends BasePinResourceImpl {
 		throws Exception {
 
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(
+				productId, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -150,7 +152,8 @@ public class PinResourceImpl extends BasePinResourceImpl {
 		CPDefinition cpDefinition =
 			_cpDefinitionService.
 				fetchCPDefinitionByCProductExternalReferenceCode(
-					externalReferenceCode, contextCompany.getCompanyId());
+					externalReferenceCode, contextCompany.getCompanyId(),
+					false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -165,7 +168,8 @@ public class PinResourceImpl extends BasePinResourceImpl {
 	@Override
 	public Pin postProductIdPin(Long productId, Pin pin) throws Exception {
 		CPDefinition cpDefinition =
-			_cpDefinitionService.fetchCPDefinitionByCProductId(productId);
+			_cpDefinitionService.fetchCPDefinitionByCProductId(
+				productId, false);
 
 		if (cpDefinition == null) {
 			throw new NoSuchCPDefinitionException(
@@ -186,7 +190,7 @@ public class PinResourceImpl extends BasePinResourceImpl {
 			long skuId = GetterUtil.getLong(mappedProduct.getSkuId());
 
 			CPInstance cpInstance =
-				_cpInstanceService.fetchByExternalReferenceCode(
+				_cpInstanceService.fetchCPInstanceByExternalReferenceCode(
 					mappedProduct.getSkuExternalReferenceCode(),
 					contextCompany.getCompanyId());
 
@@ -200,7 +204,7 @@ public class PinResourceImpl extends BasePinResourceImpl {
 				_cpDefinitionService.
 					fetchCPDefinitionByCProductExternalReferenceCode(
 						mappedProduct.getProductExternalReferenceCode(),
-						contextCompany.getCompanyId());
+						contextCompany.getCompanyId(), false);
 
 			if (cpDefinition != null) {
 				productId = cpDefinition.getCProductId();

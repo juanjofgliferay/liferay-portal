@@ -1,14 +1,19 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property browser.chrome.version = "139.0";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 
 		HeadlessSite.addSite(siteName = "Site Name");
 
@@ -224,36 +229,13 @@ definition {
 			searchAssetType = "Wiki Page");
 	}
 
-	@description = "This ensures that a depot category cannot be shown in Category Navigation on a disconnected site."
-	@priority = 4
-	test CannotViewCategoryInCategoriesNavigationFromDisconnectedSite {
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Page Name",
-			widgetName = "Category Filter");
-
-		var categoryId = JSONCategory.addCategory(
-			groupName = "Test Depot Name",
-			site = "false",
-			title = "Category Name",
-			vocabularyName = "Vocabulary Name");
-
-		JSONDepot.connectSite(
-			depotName = "Test Depot Name",
-			groupName = "Site Name");
-
-		JSONDepot.disconnectSite(groupName = "Site Name");
-
-		Navigator.gotoSitePage(
-			pageName = "Page Name",
-			siteName = "Site Name");
-
-		CategoriesNavigationPortlet.viewNoCategory();
-	}
-
 	@description = "This ensures that a depot category can be selected in Category Navigation on a connected site."
 	@priority = 4
 	test CanSelectCategoryInCategoriesNavigation {
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
 		for (var portletName : list "Asset Publisher,Category Filter") {
 			JSONLayout.addWidgetToPublicLayout(
 				groupName = "Site Name",
@@ -301,9 +283,9 @@ definition {
 			assetTitle = "WC WebContent Title 2");
 	}
 
-	@description = "This test covers LPS-131774. It ensures that a depot category can be viewed through details info on a connected site."
+	@description = "This test covers LPS-131774 and LPS-131849. It ensures that a depot category can be viewed through details info on a connected site, and that a user cannot add a category to depot from the connected site."
 	@priority = 4
-	test CategoryCanBeViewedFromInfoPanel {
+	test CategoryCanBeViewedFromInfoPanelAndCannotBeAddedFromConnectedSite {
 		var categoryId = JSONCategory.addCategory(
 			groupName = "Test Depot Name",
 			site = "false",
@@ -322,6 +304,12 @@ definition {
 			mimeType = "text/plain",
 			sourceFileName = "Document_1.txt");
 
+		DMNavigator.openToAddEntry(
+			groupName = "Site Name",
+			siteURLKey = "site-name");
+
+		AssetCategorization.viewNoAddPermissions(vocabularyName = "Vocabulary Name");
+
 		DMNavigator.openToEntryInAdmin(
 			dmDocumentTitle = "Document_1.txt",
 			groupName = "Site Name",
@@ -330,29 +318,14 @@ definition {
 		DMDocument.viewCategoriesInfo(categoryName = "apple");
 	}
 
-	@description = "This test covers LPS-131849. It ensures that a user cannot add a category to depot from the connected site."
-	@priority = 3
-	test CategoryCannotBeAddedToDepotFromConnectedSite {
-		JSONCategory.addCategory(
-			groupName = "Test Depot Name",
-			site = "false",
-			title = "depot",
-			vocabularyName = "Vocabulary Name");
-
-		JSONDepot.connectSite(
-			depotName = "Test Depot Name",
-			groupName = "Site Name");
-
-		DMNavigator.openToAddEntry(
-			groupName = "Site Name",
-			siteURLKey = "site-name");
-
-		AssetCategorization.viewNoAddPermissions(vocabularyName = "Vocabulary Name");
-	}
-
-	@description = "This ensures that a depot vocabulary cannot be seen when creating assets from the disconnected site."
+	@description = "This ensures that a depot vocabulary cannot be seen when creating assets from the disconnected site, and that a depot category cannot be shown in Category Navigation on a disconnected site."
 	@priority = 4
-	test VocabularyShouldNotBeViewedFromDisconnectedSite {
+	test VocabularyAndCategoryShouldNotBeViewedFromDisconnectedSite {
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Page Name",
+			widgetName = "Category Filter");
+
 		JSONCategory.addCategory(
 			groupName = "Test Depot Name",
 			site = "false",
@@ -365,9 +338,15 @@ definition {
 
 		JSONDepot.disconnectSite(groupName = "Site Name");
 
+		Navigator.gotoSitePage(
+			pageName = "Page Name",
+			siteName = "Site Name");
+
+		CategoriesNavigationPortlet.viewNoCategory();
+
 		BlogsNavigator.openToAddEntry(siteURLKey = "site-name");
 
-		AssetCategorization.viewNoVocabularyField(vocabularyName = "Vocabulary Name");
+		AssetCategorization.viewBlogsNoVocabularyField(vocabularyName = "Vocabulary Name");
 
 		DMNavigator.openToAddEntry(
 			groupName = "Site Name",

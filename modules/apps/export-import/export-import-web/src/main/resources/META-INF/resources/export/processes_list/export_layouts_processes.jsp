@@ -80,7 +80,7 @@ PortletURL portletURL = exportLayoutsProcessesDisplayContext.getPortletURL();
 									icon="download"
 									markupView="lexicon"
 									method="get"
-									url="<%= PortletFileRepositoryUtil.getDownloadPortletFileEntryURL(themeDisplay, fileEntry, StringPool.BLANK) %>"
+									url='<%= PortletFileRepositoryUtil.getDownloadPortletFileEntryURL(themeDisplay, fileEntry, "useTitle=true") %>'
 								/>
 
 							<%
@@ -96,30 +96,9 @@ PortletURL portletURL = exportLayoutsProcessesDisplayContext.getPortletURL();
 							%>
 
 							<c:if test="<%= backgroundTaskStatus != null %>">
-
-								<%
-								int percentage = 100;
-
-								long allModelAdditionCountersTotal = GetterUtil.getLong(backgroundTaskStatus.getAttribute("allModelAdditionCountersTotal"));
-								long allPortletAdditionCounter = GetterUtil.getLong(backgroundTaskStatus.getAttribute("allPortletAdditionCounter"));
-								long currentModelAdditionCountersTotal = GetterUtil.getLong(backgroundTaskStatus.getAttribute("currentModelAdditionCountersTotal"));
-								long currentPortletAdditionCounter = GetterUtil.getLong(backgroundTaskStatus.getAttribute("currentPortletAdditionCounter"));
-
-								long allProgressBarCountersTotal = allModelAdditionCountersTotal + allPortletAdditionCounter;
-								long currentProgressBarCountersTotal = currentModelAdditionCountersTotal + currentPortletAdditionCounter;
-
-								if (allProgressBarCountersTotal > 0) {
-									percentage = Math.round((float)currentProgressBarCountersTotal / allProgressBarCountersTotal * 100);
-								}
-								%>
-
-								<div class="active progress">
-									<div class="progress-bar" style="width: <%= percentage %>%;">
-										<c:if test="<%= allProgressBarCountersTotal > 0 %>">
-											<%= percentage + StringPool.PERCENT %>
-										</c:if>
-									</div>
-								</div>
+								<clay:progressbar
+									value='<%= GetterUtil.getInteger(backgroundTaskStatus.getAttribute("percentage")) %>'
+								/>
 
 								<%
 								String stagedModelName = (String)backgroundTaskStatus.getAttribute("stagedModelName");
@@ -145,9 +124,11 @@ PortletURL portletURL = exportLayoutsProcessesDisplayContext.getPortletURL();
 
 						<c:if test="<%= Validator.isNotNull(backgroundTask.getStatusMessage()) %>">
 							<span class="background-task-status-row">
-								<a class="details-link" href="javascript:void(0);" onclick="<portlet:namespace />viewBackgroundTaskDetails(<%= backgroundTask.getBackgroundTaskId() %>);">
-									<liferay-ui:message key="see-more-details" />
-								</a>
+								<liferay-ui:csp>
+									<a class="details-link" href="javascript:void(0);" onclick="<portlet:namespace />viewBackgroundTaskDetails(<%= backgroundTask.getBackgroundTaskId() %>);">
+										<liferay-ui:message key="see-more-details" />
+									</a>
+								</liferay-ui:csp>
 							</span>
 
 							<div class="background-task-status-message hide" id="<portlet:namespace />backgroundTaskStatusMessage<%= backgroundTask.getBackgroundTaskId() %>">
@@ -222,7 +203,7 @@ PortletURL portletURL = exportLayoutsProcessesDisplayContext.getPortletURL();
 								markupView="lexicon"
 								message="<%= sb.toString() %>"
 								method="get"
-								url="<%= PortletFileRepositoryUtil.getDownloadPortletFileEntryURL(themeDisplay, fileEntry, StringPool.BLANK) %>"
+								url='<%= PortletFileRepositoryUtil.getDownloadPortletFileEntryURL(themeDisplay, fileEntry, "useTitle=true") %>'
 							/>
 
 						<%
@@ -292,7 +273,7 @@ int incompleteBackgroundTasksCount = BackgroundTaskManagerUtil.getBackgroundTask
 	</liferay-util:include>
 </div>
 
-<script>
+<aui:script>
 	function <portlet:namespace />viewBackgroundTaskDetails(backgroundTaskId) {
 		var title = '';
 
@@ -309,4 +290,4 @@ int incompleteBackgroundTasksCount = BackgroundTaskManagerUtil.getBackgroundTask
 			title: title,
 		});
 	}
-</script>
+</aui:script>

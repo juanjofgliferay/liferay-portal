@@ -8,60 +8,29 @@ package com.liferay.dynamic.data.lists.internal.search.spi.model.index.contribut
 import com.liferay.dynamic.data.lists.internal.search.DDLRecordBatchReindexer;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetLocalService;
-import com.liferay.portal.search.batch.BatchIndexingActionable;
-import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
-import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Marcela Cunha
  */
-@Component(
-	property = "indexer.class.name=com.liferay.dynamic.data.lists.model.DDLRecordSet",
-	service = ModelIndexerWriterContributor.class
-)
 public class DDLRecordSetModelIndexerWriterContributor
-	implements ModelIndexerWriterContributor<DDLRecordSet> {
+	extends ModelIndexerWriterContributor<DDLRecordSet> {
 
-	@Override
-	public void customize(
-		BatchIndexingActionable batchIndexingActionable,
-		ModelIndexerWriterDocumentHelper modelIndexerWriterDocumentHelper) {
+	public DDLRecordSetModelIndexerWriterContributor(
+		DDLRecordBatchReindexer ddlRecordBatchReindexer,
+		DDLRecordSetLocalService ddlRecordSetLocalService) {
 
-		batchIndexingActionable.setPerformActionMethod(
-			(DDLRecordSet ddlRecordSet) -> batchIndexingActionable.addDocuments(
-				modelIndexerWriterDocumentHelper.getDocument(ddlRecordSet)));
-	}
+		super(ddlRecordSetLocalService::getIndexableActionableDynamicQuery);
 
-	@Override
-	public BatchIndexingActionable getBatchIndexingActionable() {
-		return dynamicQueryBatchIndexingActionableFactory.
-			getBatchIndexingActionable(
-				ddlRecordSetLocalService.getIndexableActionableDynamicQuery());
-	}
-
-	@Override
-	public long getCompanyId(DDLRecordSet ddlRecordSet) {
-		return ddlRecordSet.getCompanyId();
+		_ddlRecordBatchReindexer = ddlRecordBatchReindexer;
 	}
 
 	@Override
 	public void modelIndexed(DDLRecordSet ddlRecordSet) {
-		ddlRecordBatchReindexer.reindex(
+		_ddlRecordBatchReindexer.reindex(
 			ddlRecordSet.getRecordSetId(), ddlRecordSet.getCompanyId());
 	}
 
-	@Reference
-	protected DDLRecordBatchReindexer ddlRecordBatchReindexer;
-
-	@Reference
-	protected DDLRecordSetLocalService ddlRecordSetLocalService;
-
-	@Reference
-	protected DynamicQueryBatchIndexingActionableFactory
-		dynamicQueryBatchIndexingActionableFactory;
+	private final DDLRecordBatchReindexer _ddlRecordBatchReindexer;
 
 }

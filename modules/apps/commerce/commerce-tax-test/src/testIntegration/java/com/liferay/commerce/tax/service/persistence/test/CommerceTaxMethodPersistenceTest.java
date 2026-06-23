@@ -140,6 +140,8 @@ public class CommerceTaxMethodPersistenceTest {
 
 		newCommerceTaxMethod.setActive(RandomTestUtil.randomBoolean());
 
+		newCommerceTaxMethod.setTypeSettings(RandomTestUtil.randomString());
+
 		_commerceTaxMethods.add(_persistence.update(newCommerceTaxMethod));
 
 		CommerceTaxMethod existingCommerceTaxMethod =
@@ -184,6 +186,9 @@ public class CommerceTaxMethodPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceTaxMethod.isActive(),
 			newCommerceTaxMethod.isActive());
+		Assert.assertEquals(
+			existingCommerceTaxMethod.getTypeSettings(),
+			newCommerceTaxMethod.getTypeSettings());
 	}
 
 	@Test
@@ -556,6 +561,8 @@ public class CommerceTaxMethodPersistenceTest {
 
 		commerceTaxMethod.setActive(RandomTestUtil.randomBoolean());
 
+		commerceTaxMethod.setTypeSettings(RandomTestUtil.randomString());
+
 		_commerceTaxMethods.add(_persistence.update(commerceTaxMethod));
 
 		return commerceTaxMethod;
@@ -567,3 +574,4 @@ public class CommerceTaxMethodPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:653272755

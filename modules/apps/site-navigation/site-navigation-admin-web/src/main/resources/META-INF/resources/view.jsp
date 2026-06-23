@@ -13,14 +13,14 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= siteNavigationAdminManagementToolbarDisplayContext %>"
-	propsTransformer="js/SiteNavigationManagementToolbarPropsTransformer"
+	propsTransformer="{SiteNavigationManagementToolbarPropsTransformer} from site-navigation-admin-web"
 />
 
 <portlet:actionURL name="/site_navigation_admin/delete_site_navigation_menu" var="deleteSitaNavigationMenuURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteSitaNavigationMenuURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteSitaNavigationMenuURL %>" cssClass="container-fluid" name="fm">
 	<liferay-ui:search-container
 		id="siteNavigationMenus"
 		searchContainer="<%= siteNavigationAdminDisplayContext.getSearchContainer() %>"
@@ -92,7 +92,7 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= siteNavigationMenuActionDropdownItemsProvider.getActionDropdownItems() %>"
-							propsTransformer="js/SiteNavigationMenuDropdownDefaultPropsTransformer"
+							propsTransformer="{SiteNavigationMenuDropdownDefaultPropsTransformer} from site-navigation-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -143,7 +143,7 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 						<clay:dropdown-actions
 							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= siteNavigationMenuActionDropdownItemsProvider.getActionDropdownItems() %>"
-							propsTransformer="js/SiteNavigationMenuDropdownDefaultPropsTransformer"
+							propsTransformer="{SiteNavigationMenuDropdownDefaultPropsTransformer} from site-navigation-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:otherwise>

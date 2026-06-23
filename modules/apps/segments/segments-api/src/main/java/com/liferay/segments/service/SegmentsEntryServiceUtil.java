@@ -6,6 +6,7 @@
 package com.liferay.segments.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.segments.model.SegmentsEntry;
 
@@ -34,25 +35,25 @@ public class SegmentsEntryServiceUtil {
 	public static SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria, String type,
+			String criteria,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSegmentsEntry(
-			segmentsEntryKey, nameMap, descriptionMap, active, criteria, type,
+			segmentsEntryKey, nameMap, descriptionMap, active, criteria,
 			serviceContext);
 	}
 
 	public static SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria, String source, String type,
+			String criteria, String source,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSegmentsEntry(
 			segmentsEntryKey, nameMap, descriptionMap, active, criteria, source,
-			type, serviceContext);
+			serviceContext);
 	}
 
 	public static void addSegmentsEntryClassPKs(
@@ -77,6 +78,14 @@ public class SegmentsEntryServiceUtil {
 		getService().deleteSegmentsEntryClassPKs(segmentsEntryId, classPKs);
 	}
 
+	public static SegmentsEntry fetchSegmentsEntryByExternalReferenceCode(
+			String segmentsEntryERC, long groupId)
+		throws PortalException {
+
+		return getService().fetchSegmentsEntryByExternalReferenceCode(
+			segmentsEntryERC, groupId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -86,39 +95,32 @@ public class SegmentsEntryServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries) {
-
-		return getService().getSegmentsEntries(
-			groupId, includeAncestorSegmentsEntries);
+	public static List<SegmentsEntry> getSegmentsEntries(long groupId) {
+		return getService().getSegmentsEntries(groupId);
 	}
 
 	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator) {
-
-		return getService().getSegmentsEntries(
-			groupId, includeAncestorSegmentsEntries, start, end,
-			orderByComparator);
-	}
-
-	public static List<SegmentsEntry> getSegmentsEntries(
-		long companyId, int start, int end,
+		long groupId, int start, int end,
 		OrderByComparator<SegmentsEntry> orderByComparator) {
 
 		return getService().getSegmentsEntries(
-			companyId, start, end, orderByComparator);
+			groupId, start, end, orderByComparator);
 	}
 
-	public static int getSegmentsEntriesCount(long companyId) {
-		return getService().getSegmentsEntriesCount(companyId);
+	public static List<SegmentsEntry> getSegmentsEntries(
+		long groupId, String[] sources, int start, int end,
+		OrderByComparator<SegmentsEntry> orderByComparator) {
+
+		return getService().getSegmentsEntries(
+			groupId, sources, start, end, orderByComparator);
 	}
 
-	public static int getSegmentsEntriesCount(
-		long groupId, boolean includeAncestorSegmentsEntries) {
+	public static int getSegmentsEntriesCount(long groupId) {
+		return getService().getSegmentsEntriesCount(groupId);
+	}
 
-		return getService().getSegmentsEntriesCount(
-			groupId, includeAncestorSegmentsEntries);
+	public static int getSegmentsEntriesCount(long groupId, String[] sources) {
+		return getService().getSegmentsEntriesCount(groupId, sources);
 	}
 
 	public static SegmentsEntry getSegmentsEntry(long segmentsEntryId)
@@ -127,26 +129,23 @@ public class SegmentsEntryServiceUtil {
 		return getService().getSegmentsEntry(segmentsEntryId);
 	}
 
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<SegmentsEntry> searchSegmentsEntries(
-				long companyId, long groupId, String keywords,
-				boolean includeAncestorSegmentsEntries, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
-			throws PortalException {
+	public static SegmentsEntry getSegmentsEntryByExternalReferenceCode(
+			String segmentsEntryERC, long groupId)
+		throws PortalException {
 
-		return getService().searchSegmentsEntries(
-			companyId, groupId, keywords, includeAncestorSegmentsEntries, start,
-			end, sort);
+		return getService().getSegmentsEntryByExternalReferenceCode(
+			segmentsEntryERC, groupId);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<SegmentsEntry> searchSegmentsEntries(
-				long companyId, String keywords, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
+				long companyId, long groupId, String keywords,
+				java.util.LinkedHashMap<String, Object> params, int start,
+				int end, com.liferay.portal.kernel.search.Sort sort)
 			throws PortalException {
 
 		return getService().searchSegmentsEntries(
-			companyId, keywords, start, end, sort);
+			companyId, groupId, keywords, params, start, end, sort);
 	}
 
 	public static SegmentsEntry updateSegmentsEntry(
@@ -163,13 +162,12 @@ public class SegmentsEntryServiceUtil {
 	}
 
 	public static SegmentsEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	public static void setService(SegmentsEntryService service) {
-		_service = service;
-	}
-
-	private static volatile SegmentsEntryService _service;
+	private static final Snapshot<SegmentsEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			SegmentsEntryServiceUtil.class, SegmentsEntryService.class);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:600949036

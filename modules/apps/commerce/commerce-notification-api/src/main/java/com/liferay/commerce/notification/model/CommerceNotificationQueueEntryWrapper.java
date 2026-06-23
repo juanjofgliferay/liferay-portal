@@ -19,8 +19,10 @@ import java.util.Map;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntry
+ * @deprecated
  * @generated
  */
+@Deprecated
 public class CommerceNotificationQueueEntryWrapper
 	extends BaseModelWrapper<CommerceNotificationQueueEntry>
 	implements CommerceNotificationQueueEntry,
@@ -738,3 +740,4 @@ public class CommerceNotificationQueueEntryWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1065783162

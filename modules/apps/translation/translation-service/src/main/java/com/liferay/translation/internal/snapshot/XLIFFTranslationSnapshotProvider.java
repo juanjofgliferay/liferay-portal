@@ -16,7 +16,9 @@ import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -81,6 +83,7 @@ import org.osgi.service.component.annotations.Reference;
 public class XLIFFTranslationSnapshotProvider
 	implements TranslationSnapshotProvider {
 
+	@Override
 	public TranslationSnapshot getTranslationSnapshot(
 			long groupId, InfoItemReference infoItemReference,
 			InputStream inputStream, boolean includeSource)
@@ -242,7 +245,9 @@ public class XLIFFTranslationSnapshotProvider
 		}
 
 		return new InfoItemReference(
-			matcher.group(1), GetterUtil.getLong(matcher.group(2)));
+			StringUtil.replace(
+				matcher.group(1), CharPool.UNDERLINE, CharPool.POUND),
+			GetterUtil.getLong(matcher.group(2)));
 	}
 
 	private InfoItemReference _getInfoItemReference(XLIFFDocument xliffDocument)
@@ -258,7 +263,9 @@ public class XLIFFTranslationSnapshotProvider
 		}
 
 		return new InfoItemReference(
-			matcher.group(1), GetterUtil.getLong(matcher.group(2)));
+			StringUtil.replace(
+				matcher.group(1), CharPool.UNDERLINE, CharPool.POUND),
+			GetterUtil.getLong(matcher.group(2)));
 	}
 
 	private String[] _getNamespaceAndNameArray(String value) {
@@ -574,7 +581,8 @@ public class XLIFFTranslationSnapshotProvider
 			throw new XLIFFFileException.MustHaveValidId("File ID is invalid");
 		}
 
-		String className = matcher.group(1);
+		String className = StringUtil.replace(
+			matcher.group(1), CharPool.UNDERLINE, CharPool.POUND);
 		long classPK = GetterUtil.getLong(matcher.group(2));
 
 		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =

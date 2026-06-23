@@ -9,9 +9,9 @@ import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.frontend.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
+import com.liferay.commerce.product.helper.CPCompareHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.service.CPDefinitionLocalServiceUtil;
-import com.liferay.commerce.product.util.CPCompareHelper;
 import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
@@ -20,11 +20,11 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import java.util.List;
 
 /**
  * @author Fabio Diego Mastrorilli
@@ -39,6 +39,12 @@ public class CompareCheckboxTag extends IncludeTag {
 			CommerceContext commerceContext =
 				(CommerceContext)httpServletRequest.getAttribute(
 					CommerceWebKeys.COMMERCE_CONTEXT);
+
+			if ((commerceContext == null) ||
+				(commerceContext.getCommerceChannelId() == 0)) {
+
+				return SKIP_BODY;
+			}
 
 			long commerceAccountId = CommerceUtil.getCommerceAccountId(
 				commerceContext);
@@ -60,7 +66,7 @@ public class CompareCheckboxTag extends IncludeTag {
 				CPDefinitionLocalServiceUtil.getCPDefinition(
 					_cpCatalogEntry.getCPDefinitionId());
 
-			_pictureUrl = cpDefinition.getDefaultImageThumbnailSrc(
+			_pictureURL = cpDefinition.getDefaultImageThumbnailSrc(
 				commerceAccountId);
 		}
 		catch (Exception exception) {
@@ -112,7 +118,7 @@ public class CompareCheckboxTag extends IncludeTag {
 		_disabled = false;
 		_inCompare = false;
 		_label = StringPool.BLANK;
-		_pictureUrl = null;
+		_pictureURL = null;
 		_refreshOnRemove = false;
 	}
 
@@ -136,7 +142,7 @@ public class CompareCheckboxTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-commerce:compare-checkbox:label", _label);
 		httpServletRequest.setAttribute(
-			"liferay-commerce:compare-checkbox:pictureUrl", _pictureUrl);
+			"liferay-commerce:compare-checkbox:pictureURL", _pictureURL);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:compare-checkbox:refreshOnRemove",
 			_refreshOnRemove);
@@ -151,7 +157,7 @@ public class CompareCheckboxTag extends IncludeTag {
 			ServletContextUtil.getCPCompareHelper();
 
 		return cpCompareHelper.getCPDefinitionIds(
-			groupId, commerceAccountId, cpDefinitionIdsCookieValue);
+			groupId, commerceAccountId, cpDefinitionIdsCookieValue, false);
 	}
 
 	private String _getCPDefinitionIdsCookieKey(long commerceChannelGroupId) {
@@ -172,7 +178,7 @@ public class CompareCheckboxTag extends IncludeTag {
 	private boolean _disabled;
 	private boolean _inCompare;
 	private String _label = StringPool.BLANK;
-	private String _pictureUrl;
+	private String _pictureURL;
 	private boolean _refreshOnRemove;
 
 }

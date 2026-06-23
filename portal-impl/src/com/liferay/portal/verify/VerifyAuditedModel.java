@@ -5,8 +5,8 @@
 
 package com.liferay.portal.verify;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
@@ -15,8 +15,15 @@ import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.security.auth.FullNameGenerator;
 import com.liferay.portal.kernel.security.auth.FullNameGeneratorFactory;
 import com.liferay.portal.kernel.util.LoggingTimer;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.verify.model.VerifiableAuditedModel;
+import com.liferay.portal.verify.model.LayoutFriendlyURLVerifiableAuditedModel;
+import com.liferay.portal.verify.model.LayoutPrototypeVerifiableModel;
+import com.liferay.portal.verify.model.LayoutSetPrototypeVerifiableModel;
+import com.liferay.portal.verify.model.LayoutVerifiableAuditedModel;
+import com.liferay.portal.verify.model.OrganizationVerifiableModel;
+import com.liferay.portal.verify.model.RepositoryEntryVerifiableAuditedModel;
+import com.liferay.portal.verify.model.RoleVerifiableModel;
+import com.liferay.portal.verify.model.UserGroupVerifiableModel;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,9 +31,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 
 /**
@@ -83,13 +88,14 @@ public class VerifyAuditedModel extends VerifyProcess {
 
 	@Override
 	protected void doVerify() throws Exception {
-		Map<String, VerifiableAuditedModel> verifiableAuditedModelsMap =
-			PortalBeanLocatorUtil.locate(VerifiableAuditedModel.class);
-
-		Collection<VerifiableAuditedModel> verifiableAuditedModels =
-			verifiableAuditedModelsMap.values();
-
-		verify(verifiableAuditedModels.toArray(new VerifiableAuditedModel[0]));
+		verify(
+			new LayoutFriendlyURLVerifiableAuditedModel(),
+			new LayoutPrototypeVerifiableModel(),
+			new LayoutSetPrototypeVerifiableModel(),
+			new LayoutVerifiableAuditedModel(),
+			new OrganizationVerifiableModel(),
+			new RepositoryEntryVerifiableAuditedModel(),
+			new RoleVerifiableModel(), new UserGroupVerifiableModel());
 	}
 
 	protected Object[] getAuditedModelArray(
@@ -133,8 +139,7 @@ public class VerifyAuditedModel extends VerifyProcess {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						StringBundler.concat(
-							"Unable to find ", tableName, " ",
-							String.valueOf(primKey)));
+							"Unable to find ", tableName, " ", primKey));
 				}
 
 				return null;
@@ -280,9 +285,12 @@ public class VerifyAuditedModel extends VerifyProcess {
 			long previousCompanyId = 0;
 
 			try (Connection connection = DataAccess.getConnection();
+
 				PreparedStatement preparedStatement1 =
 					connection.prepareStatement(sb.toString());
+
 				ResultSet resultSet = preparedStatement1.executeQuery();
+
 				PreparedStatement preparedStatement2 =
 					AutoBatchPreparedStatementUtil.autoBatch(
 						connection,

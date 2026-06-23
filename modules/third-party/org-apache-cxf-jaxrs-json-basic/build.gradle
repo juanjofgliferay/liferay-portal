@@ -8,12 +8,15 @@ dependencies {
 	api group: "org.apache.cxf", name: "cxf-rt-rs-json-basic", version: "3.2.14"
 }
 
+jarSources {
+	mustRunAfter patch
+}
+
 patch {
 	ext {
 		autoClean = false
 	}
 
 	fileNames "org/apache/cxf/jaxrs/json/basic/JsonMapObjectReaderWriter.java"
-
 	originalLibModuleName = "cxf-rt-rs-json-basic"
 }

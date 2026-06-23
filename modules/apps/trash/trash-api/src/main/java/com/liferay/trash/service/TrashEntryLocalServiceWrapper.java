@@ -157,6 +157,11 @@ public class TrashEntryLocalServiceWrapper
 		return _trashEntryLocalService.deletePersistedModel(persistedModel);
 	}
 
+	@Override
+	public void deleteTrashEntries(long companyId, String className) {
+		_trashEntryLocalService.deleteTrashEntries(companyId, className);
+	}
+
 	/**
 	 * Deletes the trash entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -563,3 +568,4 @@ public class TrashEntryLocalServiceWrapper
 	private TrashEntryLocalService _trashEntryLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1552995298

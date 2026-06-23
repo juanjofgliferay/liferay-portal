@@ -7,14 +7,15 @@ package com.liferay.site.initializer.extender.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.liferay.headless.site.dto.v1_0.Site;
-import com.liferay.headless.site.resource.v1_0.SiteResource;
+import com.liferay.headless.admin.site.dto.v1_0.Site;
+import com.liferay.headless.admin.site.resource.v1_0.SiteResource;
 import com.liferay.layout.util.LayoutServiceContextHelper;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -28,6 +29,7 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -37,6 +39,8 @@ import com.liferay.portal.security.permission.PermissionCacheUtil;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 import com.liferay.site.initializer.extender.SiteInitializerUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,11 +52,10 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -158,7 +161,7 @@ public class SiteInitializerClientExtension
 			httpServletRequest
 		).build();
 
-		return siteResource.putSiteByExternalReferenceCode(
+		return siteResource.putSiteSiteInitializer(
 			externalReferenceCode, multipartBody);
 	}
 
@@ -200,13 +203,22 @@ public class SiteInitializerClientExtension
 			}
 		}
 
-		Company company = _companyLocalService.getCompanyByWebId(
-			PropsUtil.get(PropsKeys.COMPANY_DEFAULT_WEB_ID));
+		String webId = GetterUtil.getString(
+			headers.get("Liferay-Virtual-Instance-Id"), "default");
+
+		if (Objects.equals(webId, "default")) {
+			webId = PropsUtil.get(PropsKeys.COMPANY_DEFAULT_WEB_ID);
+		}
+
+		Company company = _companyLocalService.getCompanyByWebId(webId);
 
 		long companyId = company.getCompanyId();
 
 		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setWithSafeCloseable(companyId)) {
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
+
+			List<User> users = _userLocalService.getUsersByRoleName(
+				companyId, RoleConstants.ADMINISTRATOR, 0, 1);
 
 			TransactionInvokerUtil.invoke(
 				_transactionConfig,
@@ -215,10 +227,7 @@ public class SiteInitializerClientExtension
 					MultipartBody.of(
 						binaryFiles, __ -> _objectMapper,
 						Collections.singletonMap("site", site.toString())),
-					site,
-					_userLocalService.getUserByScreenName(
-						companyId,
-						PropsUtil.get(PropsKeys.DEFAULT_ADMIN_SCREEN_NAME))));
+					site, users.get(0)));
 		}
 	}
 

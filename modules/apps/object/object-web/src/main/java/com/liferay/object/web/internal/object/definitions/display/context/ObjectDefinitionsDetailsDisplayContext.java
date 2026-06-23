@@ -6,8 +6,8 @@
 package com.liferay.object.web.internal.object.definitions.display.context;
 
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
 import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
 import com.liferay.object.constants.ObjectActionKeys;
 import com.liferay.object.constants.ObjectWebKeys;
@@ -16,7 +16,9 @@ import com.liferay.object.model.ObjectField;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
 import com.liferay.object.scope.ObjectScopeProvider;
 import com.liferay.object.scope.ObjectScopeProviderRegistry;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.web.internal.display.context.helper.ObjectRequestHelper;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -33,15 +35,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.ArrayList;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Marco Leo
@@ -55,15 +56,16 @@ public class ObjectDefinitionsDetailsDisplayContext
 		ModelResourcePermission<ObjectDefinition>
 			objectDefinitionModelResourcePermission,
 		ObjectEntryManagerRegistry objectEntryManagerRegistry,
-		ObjectScopeProviderRegistry objectScopeProviderRegistry,
-		PanelCategoryRegistry panelCategoryRegistry) {
+		ObjectFolderLocalService objectFolderLocalService,
+		ObjectScopeProviderRegistry objectScopeProviderRegistry) {
 
-		super(httpServletRequest, objectDefinitionModelResourcePermission);
+		super(
+			httpServletRequest, objectDefinitionModelResourcePermission,
+			objectFolderLocalService);
 
 		_configurationProvider = configurationProvider;
 		_objectEntryManagerRegistry = objectEntryManagerRegistry;
 		_objectScopeProviderRegistry = objectScopeProviderRegistry;
-		_panelCategoryRegistry = panelCategoryRegistry;
 
 		_objectRequestHelper = new ObjectRequestHelper(httpServletRequest);
 	}
@@ -83,22 +85,17 @@ public class ObjectDefinitionsDetailsDisplayContext
 			getObjectFields(),
 			objectField -> Validator.isNull(objectField.getRelationshipType()));
 
-		List<Map<String, Object>> nonrelationshipObjectFieldsInfo =
-			new ArrayList<>();
-
-		for (ObjectField objectField : objectFields) {
-			nonrelationshipObjectFieldsInfo.add(
-				HashMapBuilder.<String, Object>put(
-					"label",
-					LocalizationUtil.getLocalizationMap(objectField.getLabel())
-				).put(
-					"name", objectField.getName()
-				).build());
-		}
-
-		return nonrelationshipObjectFieldsInfo;
+		return TransformUtil.transform(
+			objectFields,
+			objectField -> HashMapBuilder.<String, Object>put(
+				"label",
+				LocalizationUtil.getLocalizationMap(objectField.getLabel())
+			).put(
+				"name", objectField.getName()
+			).build());
 	}
 
+	@Override
 	public ObjectDefinition getObjectDefinition() {
 		HttpServletRequest httpServletRequest =
 			objectRequestHelper.getRequest();
@@ -166,10 +163,10 @@ public class ObjectDefinitionsDetailsDisplayContext
 			}
 
 			PanelCategory panelCategory =
-				_panelCategoryRegistry.getPanelCategory(panelCategoryKey);
+				PanelCategoryRegistryUtil.getPanelCategory(panelCategoryKey);
 
 			List<PanelCategory> childPanelCategories =
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey);
 
 			JSONArray itemsJSONArray = JSONFactoryUtil.createJSONArray();
@@ -233,6 +230,5 @@ public class ObjectDefinitionsDetailsDisplayContext
 	private final ObjectEntryManagerRegistry _objectEntryManagerRegistry;
 	private final ObjectRequestHelper _objectRequestHelper;
 	private final ObjectScopeProviderRegistry _objectScopeProviderRegistry;
-	private final PanelCategoryRegistry _panelCategoryRegistry;
 
 }

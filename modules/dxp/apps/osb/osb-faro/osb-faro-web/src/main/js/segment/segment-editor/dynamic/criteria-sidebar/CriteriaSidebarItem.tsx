@@ -11,12 +11,13 @@ import {PropertyTypes} from '../utils/constants';
 const TYPE_ICON_MAP = {
 	[PropertyTypes.Behavior]: 'web-content',
 	[PropertyTypes.Boolean]: 'check',
+	[PropertyTypes.AccountDate]: 'date',
 	[PropertyTypes.AccountNumber]: 'integer',
 	[PropertyTypes.AccountText]: 'text',
 	[PropertyTypes.Date]: 'date',
 	[PropertyTypes.DateTime]: 'date',
 	[PropertyTypes.Duration]: 'time',
-	[PropertyTypes.Event]: 'ac-event-analysis',
+	[PropertyTypes.Event]: 'ac_event_analysis',
 	[PropertyTypes.Number]: 'integer',
 	[PropertyTypes.OrganizationBoolean]: 'check',
 	[PropertyTypes.OrganizationDate]: 'date',
@@ -27,7 +28,9 @@ const TYPE_ICON_MAP = {
 	[PropertyTypes.SessionDateTime]: 'date',
 	[PropertyTypes.SessionNumber]: 'integer',
 	[PropertyTypes.SessionText]: 'text',
+	[PropertyTypes.Vocabulary]: 'text',
 	[PropertyTypes.Interest]: 'check',
+	[PropertyTypes.Tag]: 'text',
 	[PropertyTypes.Text]: 'text'
 };
 
@@ -117,13 +120,8 @@ interface ICriteriaSidebarItemProps {
 
 export class CriteriaSidebarItem extends React.Component<ICriteriaSidebarItemProps> {
 	render() {
-		const {
-			className,
-			connectDragSource,
-			dragging,
-			label,
-			type
-		} = this.props;
+		const {className, connectDragSource, dragging, label, type} =
+			this.props;
 
 		const classes = getCN(
 			'criteria-sidebar-item-root',
@@ -132,7 +130,7 @@ export class CriteriaSidebarItem extends React.Component<ICriteriaSidebarItemPro
 		);
 
 		return connectDragSource(
-			<li className={classes}>
+			<li className={classes} data-testid={`criteria-item-${label}`}>
 				<span className='inline-item'>
 					<ClayIcon className='icon-root' symbol='drag' />
 				</span>
@@ -141,7 +139,11 @@ export class CriteriaSidebarItem extends React.Component<ICriteriaSidebarItemPro
 					<span className='inline-item'>
 						<ClayIcon
 							className='icon-root'
-							symbol={TYPE_ICON_MAP[type] || 'text'}
+							symbol={
+								TYPE_ICON_MAP[
+									type as keyof typeof TYPE_ICON_MAP
+								] || 'text'
+							}
 						/>
 					</span>
 				</span>

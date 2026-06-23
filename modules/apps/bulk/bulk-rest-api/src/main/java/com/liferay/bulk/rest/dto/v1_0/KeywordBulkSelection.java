@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alejandro Tardín
@@ -50,9 +49,15 @@ public class KeywordBulkSelection implements Serializable {
 			KeywordBulkSelection.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public DocumentBulkSelection getDocumentBulkSelection() {
+		if (_documentBulkSelectionSupplier != null) {
+			documentBulkSelection = _documentBulkSelectionSupplier.get();
+
+			_documentBulkSelectionSupplier = null;
+		}
+
 		return documentBulkSelection;
 	}
 
@@ -60,6 +65,8 @@ public class KeywordBulkSelection implements Serializable {
 		DocumentBulkSelection documentBulkSelection) {
 
 		this.documentBulkSelection = documentBulkSelection;
+
+		_documentBulkSelectionSupplier = null;
 	}
 
 	@JsonIgnore
@@ -67,76 +74,107 @@ public class KeywordBulkSelection implements Serializable {
 		UnsafeSupplier<DocumentBulkSelection, Exception>
 			documentBulkSelectionUnsafeSupplier) {
 
-		try {
-			documentBulkSelection = documentBulkSelectionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_documentBulkSelectionSupplier = () -> {
+			try {
+				return documentBulkSelectionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DocumentBulkSelection documentBulkSelection;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<DocumentBulkSelection> _documentBulkSelectionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getKeywordsToAdd() {
+		if (_keywordsToAddSupplier != null) {
+			keywordsToAdd = _keywordsToAddSupplier.get();
+
+			_keywordsToAddSupplier = null;
+		}
+
 		return keywordsToAdd;
 	}
 
 	public void setKeywordsToAdd(String[] keywordsToAdd) {
 		this.keywordsToAdd = keywordsToAdd;
+
+		_keywordsToAddSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKeywordsToAdd(
 		UnsafeSupplier<String[], Exception> keywordsToAddUnsafeSupplier) {
 
-		try {
-			keywordsToAdd = keywordsToAddUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keywordsToAddSupplier = () -> {
+			try {
+				return keywordsToAddUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] keywordsToAdd;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String[]> _keywordsToAddSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getKeywordsToRemove() {
+		if (_keywordsToRemoveSupplier != null) {
+			keywordsToRemove = _keywordsToRemoveSupplier.get();
+
+			_keywordsToRemoveSupplier = null;
+		}
+
 		return keywordsToRemove;
 	}
 
 	public void setKeywordsToRemove(String[] keywordsToRemove) {
 		this.keywordsToRemove = keywordsToRemove;
+
+		_keywordsToRemoveSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKeywordsToRemove(
 		UnsafeSupplier<String[], Exception> keywordsToRemoveUnsafeSupplier) {
 
-		try {
-			keywordsToRemove = keywordsToRemoveUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keywordsToRemoveSupplier = () -> {
+			try {
+				return keywordsToRemoveUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String[] keywordsToRemove;
+
+	@JsonIgnore
+	private Supplier<String[]> _keywordsToRemoveSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -166,6 +204,9 @@ public class KeywordBulkSelection implements Serializable {
 
 		sb.append("{");
 
+		DocumentBulkSelection documentBulkSelection =
+			getDocumentBulkSelection();
+
 		if (documentBulkSelection != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -175,6 +216,8 @@ public class KeywordBulkSelection implements Serializable {
 
 			sb.append(String.valueOf(documentBulkSelection));
 		}
+
+		String[] keywordsToAdd = getKeywordsToAdd();
 
 		if (keywordsToAdd != null) {
 			if (sb.length() > 1) {
@@ -199,6 +242,8 @@ public class KeywordBulkSelection implements Serializable {
 
 			sb.append("]");
 		}
+
+		String[] keywordsToRemove = getKeywordsToRemove();
 
 		if (keywordsToRemove != null) {
 			if (sb.length() > 1) {
@@ -229,8 +274,8 @@ public class KeywordBulkSelection implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.bulk.rest.dto.v1_0.KeywordBulkSelection",
 		name = "x-class-name"
 	)
@@ -276,7 +321,10 @@ public class KeywordBulkSelection implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -322,3 +370,4 @@ public class KeywordBulkSelection implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1485934365

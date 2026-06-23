@@ -5,6 +5,7 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.exportimport.kernel.empty.model.EmptyModelManagerUtil;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
@@ -23,25 +24,31 @@ import com.liferay.portal.kernel.exception.CountryNumberException;
 import com.liferay.portal.kernel.exception.CountryTitleException;
 import com.liferay.portal.kernel.exception.DuplicateCountryException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.CountryLocalization;
 import com.liferay.portal.kernel.model.CountryLocalizationTable;
 import com.liferay.portal.kernel.model.CountryTable;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.RegionLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.service.base.CountryLocalServiceBaseImpl;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
@@ -54,15 +61,22 @@ import java.util.Map;
  */
 public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Country addCountry(
-			String a2, String a3, boolean active, boolean billingAllowed,
-			String idd, String name, String number, double position,
-			boolean shippingAllowed, boolean subjectToVAT, boolean zipRequired,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String a2, String a3, boolean active,
+			boolean billingAllowed, String idd, String name, String number,
+			double position, boolean shippingAllowed, boolean subjectToVAT,
+			boolean zipRequired, ServiceContext serviceContext)
 		throws PortalException {
 
+		// Country
+
 		_validate(0, serviceContext.getCompanyId(), a2, a3, name, number);
+
+		if (Validator.isNull(externalReferenceCode)) {
+			externalReferenceCode = a2;
+		}
 
 		long countryId = counterLocalService.increment();
 
@@ -70,6 +84,7 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
 
+		country.setExternalReferenceCode(externalReferenceCode);
 		country.setCompanyId(user.getCompanyId());
 		country.setUserId(user.getUserId());
 		country.setUserName(user.getFullName());
@@ -88,8 +103,17 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 		country.setShippingAllowed(shippingAllowed);
 		country.setSubjectToVAT(subjectToVAT);
 		country.setZipRequired(zipRequired);
+		country.setStatus(WorkflowConstants.STATUS_APPROVED);
 
-		return countryPersistence.update(country);
+		country = countryPersistence.update(country);
+
+		// Resources
+
+		_resourceLocalService.addResources(
+			user.getCompanyId(), 0, user.getUserId(), Country.class.getName(),
+			country.getCountryId(), false, false, false);
+
+		return country;
 	}
 
 	@Override
@@ -101,6 +125,7 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 		}
 	}
 
+	@Indexable(type = IndexableType.DELETE)
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public Country deleteCountry(Country country) throws PortalException {
@@ -120,6 +145,11 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 		// Regions
 
 		_regionLocalService.deleteCountryRegions(country.getCountryId());
+
+		// Resources
+
+		_resourceLocalService.deleteResource(
+			country, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		return country;
 	}
@@ -218,6 +248,38 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 	}
 
 	@Override
+	public Country getOrAddEmptyCountry(
+			String externalReferenceCode, String a2, String a3, long companyId,
+			String name, long userId)
+		throws PortalException {
+
+		return EmptyModelManagerUtil.getOrAddEmptyModel(
+			Country.class, companyId, externalReferenceCode,
+			this::fetchCountryByExternalReferenceCode,
+			this::getCountryByExternalReferenceCode,
+			() -> {
+				String countryName =
+					(fetchCountryByName(companyId, name) != null) ?
+						externalReferenceCode : name;
+
+				ServiceContext serviceContext = new ServiceContext();
+
+				serviceContext.setCompanyId(companyId);
+				serviceContext.setUserId(userId);
+
+				Country country = countryLocalService.addCountry(
+					externalReferenceCode, a2, a3, false, false, null,
+					countryName, externalReferenceCode, 0D, false, false, false,
+					serviceContext);
+
+				country.setStatus(WorkflowConstants.STATUS_EMPTY);
+
+				return countryPersistence.update(country);
+			},
+			"country");
+	}
+
+	@Override
 	public BaseModelSearchResult<Country> searchCountries(
 			long companyId, Boolean active, String keywords, int start, int end,
 			OrderByComparator<Country> orderByComparator)
@@ -241,6 +303,7 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 			start, end);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Country updateActive(long countryId, boolean active)
 		throws PortalException {
@@ -252,16 +315,22 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 		return countryPersistence.update(country);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Country updateCountry(
-			long countryId, String a2, String a3, boolean active,
-			boolean billingAllowed, String idd, String name, String number,
-			double position, boolean shippingAllowed, boolean subjectToVAT)
+			String externalReferenceCode, long countryId, String a2, String a3,
+			boolean active, boolean billingAllowed, String idd, String name,
+			String number, double position, boolean shippingAllowed,
+			boolean subjectToVAT)
 		throws PortalException {
 
 		Country country = countryPersistence.findByPrimaryKey(countryId);
 
 		_validate(countryId, country.getCompanyId(), a2, a3, name, number);
+
+		if (Validator.isNotNull(externalReferenceCode)) {
+			country.setExternalReferenceCode(externalReferenceCode);
+		}
 
 		country.setA2(a2);
 		country.setA3(a3);
@@ -272,6 +341,11 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 		country.setNumber(number);
 		country.setPosition(position);
 		country.setShippingAllowed(shippingAllowed);
+
+		if (country.getStatus() == WorkflowConstants.STATUS_EMPTY) {
+			country.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
 		country.setSubjectToVAT(subjectToVAT);
 
 		return countryPersistence.update(country);
@@ -287,6 +361,7 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 		return super.updateCountryLocalizations(country, titleMap);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Country updateGroupFilterEnabled(
 			long countryId, boolean groupFilterEnabled)
@@ -416,7 +491,9 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 			throw new CountryNumberException("Missing number");
 		}
 
-		if (CompanyThreadLocal.isInitializingPortalInstance()) {
+		if (CompanyThreadLocal.isInitializingPortalInstance() ||
+			LazyReferencingThreadLocal.isEnabled()) {
+
 			return;
 		}
 
@@ -471,6 +548,9 @@ public class CountryLocalServiceImpl extends CountryLocalServiceBaseImpl {
 
 	@BeanReference(type = RegionLocalService.class)
 	private RegionLocalService _regionLocalService;
+
+	@BeanReference(type = ResourceLocalService.class)
+	private ResourceLocalService _resourceLocalService;
 
 	@BeanReference(type = UserLocalService.class)
 	private UserLocalService _userLocalService;

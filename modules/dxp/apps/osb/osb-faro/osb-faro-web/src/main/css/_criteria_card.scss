@@ -51,16 +51,40 @@
 
 			> .conjunction {
 				font-weight: $fontWeightBold;
-				margin-left: 8px;
 				padding: 4px;
+				padding-left: 0;
 				text-transform: uppercase;
+			}
+
+			.criteria-group {
+				& .criteria-row {
+					padding-left: 8px;
+				}
+
+				& .conjunction {
+					padding-left: 8px;
+				}
+			}
+
+			.criteria-step {
+				align-items: center;
+				display: inline-flex;
+
+				.criteria-step-number {
+					align-items: center;
+					background-color: #e7e7ed;
+					border-radius: 100%;
+					display: inline-flex;
+					font-size: 10px;
+					font-weight: $fontWeightBold;
+					height: 1rem;
+					justify-content: center;
+					width: 1rem;
+				}
 			}
 		}
 
 		.criteria-row {
-			margin-left: 8px;
-			padding: 4px;
-
 			> b {
 				color: $main;
 				margin-left: 4px;

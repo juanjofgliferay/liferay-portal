@@ -1,15 +1,35 @@
 .fds-side-panel {
-	background-color: #f1f2f5;
+	background-color: $gray-200;
 	bottom: 0;
-	box-shadow: 0 0 0 rgba(39, 40, 51, 0.15);
+	box-shadow: 0 0 0 unquote('hsl(from #{$gray-900} h s l / 0.15)');
 	position: fixed;
 	right: 0;
 	top: 0;
 	transform: translateX(100%);
-	transition: transform ease 500ms, box-shadow ease 500ms, width ease 500ms;
+	transition:
+		transform ease 500ms,
+		box-shadow ease 500ms,
+		width ease 500ms;
 	width: 70%;
 	will-change: transform, box-shadow, opacity, width;
 	z-index: 999;
+
+	.fds-side-panel-header {
+		align-items: center;
+		background: $gray-100;
+		border-bottom: 1px solid $border-color;
+		display: flex;
+		height: 65px;
+		justify-content: space-between;
+		padding: 0 1rem;
+		position: sticky;
+		top: 0;
+		z-index: 10;
+	}
+
+	.fds-side-panel-title {
+		font-weight: 600;
+	}
 
 	iframe {
 		height: 100%;
@@ -43,7 +63,8 @@
 	}
 
 	&.is-visible {
-		box-shadow: -10px 20px 30px rgba(39, 40, 51, 0.15);
+		box-shadow: -10px 20px 30px
+			unquote('hsl(from #{$gray-900} h s l / 0.15)');
 		transform: translateX(0);
 		visibility: visible;
 	}
@@ -73,7 +94,7 @@
 	}
 
 	.nav {
-		border-bottom: 1px solid #dddee7;
+		border-bottom: 1px solid $border-color;
 	}
 
 	.fds-side-menu {
@@ -95,22 +116,23 @@
 	}
 
 	.fds-side-panel-close {
-		opacity: 0.5;
-		position: absolute;
-		right: 0;
-		top: 0;
-		transition: top ease-in-out 0.1s, right ease-in-out 0.1s,
+		opacity: 1;
+		transition:
+			top ease-in-out 0.1s,
+			right ease-in-out 0.1s,
 			opacity ease-in 0.2s;
 		z-index: 1;
 
 		&.fds-side-panel-close-menu {
 			opacity: 1;
+			position: absolute;
 			right: 16px;
 			top: 4px;
 		}
 
 		&.fds-side-panel-close-simple {
 			opacity: 1;
+			position: absolute;
 			right: 20px;
 			top: 29px;
 		}
@@ -118,13 +140,16 @@
 }
 
 .fds-side-panel-nav-cover {
-	background: white;
+	background: $white;
 	left: 0;
 	opacity: 0;
 	position: fixed;
 	right: 0;
 	transform: translateX(100%);
-	transition: opacity 0.2s ease-in, transform 0.4s ease-in, left 0.4s ease-in;
+	transition:
+		opacity 0.2s ease-in,
+		transform 0.4s ease-in,
+		left 0.4s ease-in;
 	z-index: 988;
 
 	body.open & {

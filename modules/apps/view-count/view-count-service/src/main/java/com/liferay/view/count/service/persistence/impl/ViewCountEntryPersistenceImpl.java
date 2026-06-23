@@ -5,23 +5,18 @@
 
 package com.liferay.view.count.service.persistence.impl;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
-import com.liferay.portal.kernel.dao.orm.Query;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.service.persistence.impl.CollectionPersistenceFinder;
+import com.liferay.portal.kernel.service.persistence.impl.FinderColumn;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.view.count.exception.NoSuchEntryException;
 import com.liferay.view.count.model.ViewCountEntry;
@@ -34,6 +29,8 @@ import com.liferay.view.count.service.persistence.ViewCountEntryUtil;
 import com.liferay.view.count.service.persistence.impl.constants.ViewCountPersistenceConstants;
 
 import java.io.Serializable;
+
+import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
 import java.util.Map;
@@ -58,7 +55,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = ViewCountEntryPersistence.class)
 public class ViewCountEntryPersistenceImpl
-	extends BasePersistenceImpl<ViewCountEntry>
+	extends BasePersistenceImpl<ViewCountEntry, NoSuchEntryException>
 	implements ViewCountEntryPersistence {
 
 	/*
@@ -75,9 +72,97 @@ public class ViewCountEntryPersistenceImpl
 	public static final String FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION =
 		FINDER_CLASS_NAME_ENTITY + ".List2";
 
-	private FinderPath _finderPathWithPaginationFindAll;
-	private FinderPath _finderPathWithoutPaginationFindAll;
-	private FinderPath _finderPathCountAll;
+	private CollectionPersistenceFinder<ViewCountEntry, NoSuchEntryException>
+		_collectionPersistenceFinderByC_CN;
+
+	/**
+	 * Returns an ordered range of all the view count entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of view count entries
+	 * @param end the upper bound of the range of view count entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching view count entries
+	 */
+	@Override
+	public List<ViewCountEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<ViewCountEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		return _collectionPersistenceFinderByC_CN.find(
+			finderCache, new Object[] {companyId, classNameId}, start, end,
+			orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first view count entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching view count entry
+	 * @throws NoSuchEntryException if a matching view count entry could not be found
+	 */
+	@Override
+	public ViewCountEntry findByC_CN_First(
+			long companyId, long classNameId,
+			OrderByComparator<ViewCountEntry> orderByComparator)
+		throws NoSuchEntryException {
+
+		return _collectionPersistenceFinderByC_CN.findFirst(
+			finderCache, new Object[] {companyId, classNameId},
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the first view count entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching view count entry, or <code>null</code> if a matching view count entry could not be found
+	 */
+	@Override
+	public ViewCountEntry fetchByC_CN_First(
+		long companyId, long classNameId,
+		OrderByComparator<ViewCountEntry> orderByComparator) {
+
+		return _collectionPersistenceFinderByC_CN.fetchFirst(
+			finderCache, new Object[] {companyId, classNameId},
+			orderByComparator);
+	}
+
+	/**
+	 * Removes all the view count entries where companyId = &#63; and classNameId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 */
+	@Override
+	public void removeByC_CN(long companyId, long classNameId) {
+		_collectionPersistenceFinderByC_CN.remove(
+			finderCache, new Object[] {companyId, classNameId});
+	}
+
+	/**
+	 * Returns the number of view count entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the number of matching view count entries
+	 */
+	@Override
+	public int countByC_CN(long companyId, long classNameId) {
+		return _collectionPersistenceFinderByC_CN.count(
+			finderCache, new Object[] {companyId, classNameId});
+	}
 
 	public ViewCountEntryPersistenceImpl() {
 		setModelClass(ViewCountEntry.class);
@@ -86,87 +171,6 @@ public class ViewCountEntryPersistenceImpl
 		setModelPKClass(ViewCountEntryPK.class);
 
 		setTable(ViewCountEntryTable.INSTANCE);
-	}
-
-	/**
-	 * Caches the view count entry in the entity cache if it is enabled.
-	 *
-	 * @param viewCountEntry the view count entry
-	 */
-	@Override
-	public void cacheResult(ViewCountEntry viewCountEntry) {
-		entityCache.putResult(
-			ViewCountEntryImpl.class, viewCountEntry.getPrimaryKey(),
-			viewCountEntry);
-	}
-
-	private int _valueObjectFinderCacheListThreshold;
-
-	/**
-	 * Caches the view count entries in the entity cache if it is enabled.
-	 *
-	 * @param viewCountEntries the view count entries
-	 */
-	@Override
-	public void cacheResult(List<ViewCountEntry> viewCountEntries) {
-		if ((_valueObjectFinderCacheListThreshold == 0) ||
-			((_valueObjectFinderCacheListThreshold > 0) &&
-			 (viewCountEntries.size() >
-				 _valueObjectFinderCacheListThreshold))) {
-
-			return;
-		}
-
-		for (ViewCountEntry viewCountEntry : viewCountEntries) {
-			if (entityCache.getResult(
-					ViewCountEntryImpl.class, viewCountEntry.getPrimaryKey()) ==
-						null) {
-
-				cacheResult(viewCountEntry);
-			}
-		}
-	}
-
-	/**
-	 * Clears the cache for all view count entries.
-	 *
-	 * <p>
-	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
-	 * </p>
-	 */
-	@Override
-	public void clearCache() {
-		entityCache.clearCache(ViewCountEntryImpl.class);
-
-		finderCache.clearCache(ViewCountEntryImpl.class);
-	}
-
-	/**
-	 * Clears the cache for the view count entry.
-	 *
-	 * <p>
-	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
-	 * </p>
-	 */
-	@Override
-	public void clearCache(ViewCountEntry viewCountEntry) {
-		entityCache.removeResult(ViewCountEntryImpl.class, viewCountEntry);
-	}
-
-	@Override
-	public void clearCache(List<ViewCountEntry> viewCountEntries) {
-		for (ViewCountEntry viewCountEntry : viewCountEntries) {
-			entityCache.removeResult(ViewCountEntryImpl.class, viewCountEntry);
-		}
-	}
-
-	@Override
-	public void clearCache(Set<Serializable> primaryKeys) {
-		finderCache.clearCache(ViewCountEntryImpl.class);
-
-		for (Serializable primaryKey : primaryKeys) {
-			entityCache.removeResult(ViewCountEntryImpl.class, primaryKey);
-		}
 	}
 
 	/**
@@ -199,47 +203,6 @@ public class ViewCountEntryPersistenceImpl
 		throws NoSuchEntryException {
 
 		return remove((Serializable)viewCountEntryPK);
-	}
-
-	/**
-	 * Removes the view count entry with the primary key from the database. Also notifies the appropriate model listeners.
-	 *
-	 * @param primaryKey the primary key of the view count entry
-	 * @return the view count entry that was removed
-	 * @throws NoSuchEntryException if a view count entry with the primary key could not be found
-	 */
-	@Override
-	public ViewCountEntry remove(Serializable primaryKey)
-		throws NoSuchEntryException {
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			ViewCountEntry viewCountEntry = (ViewCountEntry)session.get(
-				ViewCountEntryImpl.class, primaryKey);
-
-			if (viewCountEntry == null) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-				}
-
-				throw new NoSuchEntryException(
-					_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-			}
-
-			return remove(viewCountEntry);
-		}
-		catch (NoSuchEntryException noSuchEntityException) {
-			throw noSuchEntityException;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
 	}
 
 	@Override
@@ -277,6 +240,26 @@ public class ViewCountEntryPersistenceImpl
 	public ViewCountEntry updateImpl(ViewCountEntry viewCountEntry) {
 		boolean isNew = viewCountEntry.isNew();
 
+		if (!(viewCountEntry instanceof ViewCountEntryModelImpl)) {
+			InvocationHandler invocationHandler = null;
+
+			if (ProxyUtil.isProxyClass(viewCountEntry.getClass())) {
+				invocationHandler = ProxyUtil.getInvocationHandler(
+					viewCountEntry);
+
+				throw new IllegalArgumentException(
+					"Implement ModelWrapper in viewCountEntry proxy " +
+						invocationHandler.getClass());
+			}
+
+			throw new IllegalArgumentException(
+				"Implement ModelWrapper in custom ViewCountEntry implementation " +
+					viewCountEntry.getClass());
+		}
+
+		ViewCountEntryModelImpl viewCountEntryModelImpl =
+			(ViewCountEntryModelImpl)viewCountEntry;
+
 		Session session = null;
 
 		try {
@@ -296,39 +279,13 @@ public class ViewCountEntryPersistenceImpl
 			closeSession(session);
 		}
 
-		entityCache.putResult(
-			ViewCountEntryImpl.class, viewCountEntry, false, true);
+		cacheUniqueFindersResult(viewCountEntry, false);
 
 		if (isNew) {
 			viewCountEntry.setNew(false);
 		}
 
 		viewCountEntry.resetOriginalValues();
-
-		return viewCountEntry;
-	}
-
-	/**
-	 * Returns the view count entry with the primary key or throws a <code>com.liferay.portal.kernel.exception.NoSuchModelException</code> if it could not be found.
-	 *
-	 * @param primaryKey the primary key of the view count entry
-	 * @return the view count entry
-	 * @throws NoSuchEntryException if a view count entry with the primary key could not be found
-	 */
-	@Override
-	public ViewCountEntry findByPrimaryKey(Serializable primaryKey)
-		throws NoSuchEntryException {
-
-		ViewCountEntry viewCountEntry = fetchByPrimaryKey(primaryKey);
-
-		if (viewCountEntry == null) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-			}
-
-			throw new NoSuchEntryException(
-				_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
-		}
 
 		return viewCountEntry;
 	}
@@ -356,186 +313,6 @@ public class ViewCountEntryPersistenceImpl
 	@Override
 	public ViewCountEntry fetchByPrimaryKey(ViewCountEntryPK viewCountEntryPK) {
 		return fetchByPrimaryKey((Serializable)viewCountEntryPK);
-	}
-
-	/**
-	 * Returns all the view count entries.
-	 *
-	 * @return the view count entries
-	 */
-	@Override
-	public List<ViewCountEntry> findAll() {
-		return findAll(QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the view count entries.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of view count entries
-	 * @param end the upper bound of the range of view count entries (not inclusive)
-	 * @return the range of view count entries
-	 */
-	@Override
-	public List<ViewCountEntry> findAll(int start, int end) {
-		return findAll(start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the view count entries.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of view count entries
-	 * @param end the upper bound of the range of view count entries (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of view count entries
-	 */
-	@Override
-	public List<ViewCountEntry> findAll(
-		int start, int end,
-		OrderByComparator<ViewCountEntry> orderByComparator) {
-
-		return findAll(start, end, orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the view count entries.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ViewCountEntryModelImpl</code>.
-	 * </p>
-	 *
-	 * @param start the lower bound of the range of view count entries
-	 * @param end the upper bound of the range of view count entries (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of view count entries
-	 */
-	@Override
-	public List<ViewCountEntry> findAll(
-		int start, int end, OrderByComparator<ViewCountEntry> orderByComparator,
-		boolean useFinderCache) {
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<ViewCountEntry> list = null;
-
-		if (useFinderCache) {
-			list = (List<ViewCountEntry>)finderCache.getResult(
-				finderPath, finderArgs, this);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_VIEWCOUNTENTRY);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_VIEWCOUNTENTRY;
-
-				sql = sql.concat(ViewCountEntryModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<ViewCountEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
-	}
-
-	/**
-	 * Removes all the view count entries from the database.
-	 *
-	 */
-	@Override
-	public void removeAll() {
-		for (ViewCountEntry viewCountEntry : findAll()) {
-			remove(viewCountEntry);
-		}
-	}
-
-	/**
-	 * Returns the number of view count entries.
-	 *
-	 * @return the number of view count entries
-	 */
-	@Override
-	public int countAll() {
-		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
-
-		if (count == null) {
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(_SQL_COUNT_VIEWCOUNTENTRY);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(
-					_finderPathCountAll, FINDER_ARGS_EMPTY, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
 	}
 
 	@Override
@@ -568,20 +345,34 @@ public class ViewCountEntryPersistenceImpl
 	 */
 	@Activate
 	public void activate() {
-		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
-			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
-
-		_finderPathWithPaginationFindAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findAll", new String[0],
-			new String[0], true);
-
-		_finderPathWithoutPaginationFindAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findAll", new String[0],
-			new String[0], true);
-
-		_finderPathCountAll = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countAll",
-			new String[0], new String[0], false);
+		_collectionPersistenceFinderByC_CN = new CollectionPersistenceFinder<>(
+			this,
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_CN",
+				new String[] {
+					Long.class.getName(), Long.class.getName(),
+					Integer.class.getName(), Integer.class.getName(),
+					OrderByComparator.class.getName()
+				},
+				new String[] {"companyId", "classNameId"}, true),
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_CN",
+				new String[] {Long.class.getName(), Long.class.getName()},
+				new String[] {"companyId", "classNameId"}, true),
+			new FinderPath(
+				FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_CN",
+				new String[] {Long.class.getName(), Long.class.getName()},
+				new String[] {"companyId", "classNameId"}, false),
+			_SQL_SELECT_VIEWCOUNTENTRY_WHERE, _SQL_COUNT_VIEWCOUNTENTRY_WHERE,
+			ViewCountEntryModelImpl.ORDER_BY_JPQL, _ENTITY_ALIAS_PREFIX, "",
+			new FinderColumn<>(
+				"viewCountEntry.", "id.companyId", "companyId",
+				FinderColumn.Type.LONG, "=", true, true,
+				ViewCountEntry::getCompanyId),
+			new FinderColumn<>(
+				"viewCountEntry.", "id.classNameId", "classNameId",
+				FinderColumn.Type.LONG, "=", true, true,
+				ViewCountEntry::getClassNameId));
 
 		ViewCountEntryUtil.setPersistence(this);
 	}
@@ -625,19 +416,20 @@ public class ViewCountEntryPersistenceImpl
 	@Reference
 	protected FinderCache finderCache;
 
+	private static final String _ENTITY_ALIAS_PREFIX =
+		ViewCountEntryModelImpl.ENTITY_ALIAS + ".";
+
 	private static final String _SQL_SELECT_VIEWCOUNTENTRY =
 		"SELECT viewCountEntry FROM ViewCountEntry viewCountEntry";
 
-	private static final String _SQL_COUNT_VIEWCOUNTENTRY =
-		"SELECT COUNT(viewCountEntry) FROM ViewCountEntry viewCountEntry";
+	private static final String _SQL_SELECT_VIEWCOUNTENTRY_WHERE =
+		"SELECT viewCountEntry FROM ViewCountEntry viewCountEntry WHERE ";
 
-	private static final String _ORDER_BY_ENTITY_ALIAS = "viewCountEntry.";
+	private static final String _SQL_COUNT_VIEWCOUNTENTRY_WHERE =
+		"SELECT COUNT(viewCountEntry) FROM ViewCountEntry viewCountEntry WHERE ";
 
-	private static final String _NO_SUCH_ENTITY_WITH_PRIMARY_KEY =
-		"No ViewCountEntry exists with the primary key ";
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		ViewCountEntryPersistenceImpl.class);
+	private static final String _NO_SUCH_ENTITY_WITH_KEY =
+		"No ViewCountEntry exists with the key {";
 
 	private static final Set<String> _compoundPKColumnNames = SetUtil.fromArray(
 		new String[] {"companyId", "classNameId", "classPK"});
@@ -648,3 +440,4 @@ public class ViewCountEntryPersistenceImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1970292107

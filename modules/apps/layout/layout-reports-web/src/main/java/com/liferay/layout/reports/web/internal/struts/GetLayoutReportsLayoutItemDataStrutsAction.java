@@ -5,6 +5,8 @@
 
 package com.liferay.layout.reports.web.internal.struts;
 
+import com.liferay.blogs.model.BlogsEntry;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
@@ -12,7 +14,7 @@ import com.liferay.fragment.helper.FragmentEntryLinkHelper;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
-import com.liferay.fragment.service.FragmentEntryLocalService;
+import com.liferay.journal.model.JournalArticle;
 import com.liferay.layout.helper.LayoutWarningMessageHelper;
 import com.liferay.layout.provider.LayoutStructureProvider;
 import com.liferay.layout.taglib.servlet.taglib.renderer.LayoutStructureRenderer;
@@ -23,9 +25,9 @@ import com.liferay.layout.util.structure.FragmentStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.layout.util.structure.RowStyledLayoutStructureItem;
+import com.liferay.petra.io.DummyWriter;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.DummyWriter;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -35,7 +37,8 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
@@ -49,15 +52,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.taglib.servlet.PageContextFactoryUtil;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -85,8 +88,11 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 			return null;
 		}
 
-		LayoutPermissionUtil.checkLayoutUpdatePermission(
-			GuestOrUserUtil.getPermissionChecker(), layout);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		_checkLayoutUpdatePermission(layout, themeDisplay);
 
 		LayoutStructure layoutStructure =
 			_layoutStructureProvider.getLayoutStructure(
@@ -119,10 +125,6 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 
 			return null;
 		}
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
 
 		for (LayoutStructureRenderer.LayoutStructureItemRenderTime
 				layoutStructureItemRenderTime :
@@ -259,6 +261,30 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 		return null;
 	}
 
+	private void _checkLayoutUpdatePermission(
+			Layout layout, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+
+		if (permissionChecker.hasPermission(
+				themeDisplay.getScopeGroup(), BlogsEntry.class.getName(),
+				BlogsEntry.class.getName(), ActionKeys.UPDATE) ||
+			permissionChecker.hasPermission(
+				themeDisplay.getScopeGroup(), DLFileEntry.class.getName(),
+				DLFileEntry.class.getName(), ActionKeys.UPDATE) ||
+			permissionChecker.hasPermission(
+				themeDisplay.getScopeGroup(), JournalArticle.class.getName(),
+				JournalArticle.class.getName(), ActionKeys.UPDATE)) {
+
+			return;
+		}
+
+		LayoutPermissionUtil.checkLayoutUpdatePermission(
+			themeDisplay.getPermissionChecker(), layout);
+	}
+
 	private String _getFragmentCollectionURL(
 		FragmentEntry fragmentEntry, HttpServletRequest httpServletRequest,
 		ThemeDisplay themeDisplay) {
@@ -304,11 +330,10 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 			return null;
 		}
 
-		long fragmentEntryId = fragmentEntryLink.getFragmentEntryId();
+		FragmentEntry fragmentEntry = fragmentEntryLink.fetchFragmentEntry();
 
-		if (fragmentEntryId > 0) {
-			return _fragmentEntryLocalService.fetchFragmentEntry(
-				fragmentEntryId);
+		if (fragmentEntry != null) {
+			return fragmentEntry;
 		}
 
 		String rendererKey = fragmentEntryLink.getRendererKey();
@@ -353,7 +378,7 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 		}
 
 		if (Validator.isNotNull(fragmentEntryLink.getRendererKey()) ||
-			(fragmentEntryLink.getFragmentEntryId() > 0)) {
+			Validator.isNotNull(fragmentEntryLink.getFragmentEntryERC())) {
 
 			return _fragmentEntryLinkHelper.getFragmentEntryName(
 				fragmentEntryLink, locale);
@@ -455,8 +480,7 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 			return StringPool.BLANK;
 		}
 
-		JSONObject jsonObject = _jsonFactory.createJSONObject(
-			fragmentEntryLink.getEditableValues());
+		JSONObject jsonObject = fragmentEntryLink.getEditableValuesJSONObject();
 
 		return jsonObject.getString("portletId");
 	}
@@ -525,9 +549,6 @@ public class GetLayoutReportsLayoutItemDataStrutsAction
 
 	@Reference
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
-
-	@Reference
-	private FragmentEntryLocalService _fragmentEntryLocalService;
 
 	@Reference
 	private JSONFactory _jsonFactory;

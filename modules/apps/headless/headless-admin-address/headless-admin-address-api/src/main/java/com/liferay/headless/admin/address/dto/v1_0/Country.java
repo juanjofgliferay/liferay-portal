@@ -16,22 +16,25 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Drew Brokke
@@ -39,8 +42,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("Country")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"a2", "a3", "name", "number"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"a2", "a3", "name", "number"})
 @XmlRootElement(name = "Country")
 public class Country implements Serializable {
 
@@ -52,26 +57,36 @@ public class Country implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Country.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getA2() {
+		if (_a2Supplier != null) {
+			a2 = _a2Supplier.get();
+
+			_a2Supplier = null;
+		}
+
 		return a2;
 	}
 
 	public void setA2(String a2) {
 		this.a2 = a2;
+
+		_a2Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setA2(UnsafeSupplier<String, Exception> a2UnsafeSupplier) {
-		try {
-			a2 = a2UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_a2Supplier = () -> {
+			try {
+				return a2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -79,26 +94,39 @@ public class Country implements Serializable {
 	@NotEmpty
 	protected String a2;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _a2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getA3() {
+		if (_a3Supplier != null) {
+			a3 = _a3Supplier.get();
+
+			_a3Supplier = null;
+		}
+
 		return a3;
 	}
 
 	public void setA3(String a3) {
 		this.a3 = a3;
+
+		_a3Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setA3(UnsafeSupplier<String, Exception> a3UnsafeSupplier) {
-		try {
-			a3 = a3UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_a3Supplier = () -> {
+			try {
+				return a3UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -106,162 +134,414 @@ public class Country implements Serializable {
 	@NotEmpty
 	protected String a3;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _a3Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getActive() {
+		if (_activeSupplier != null) {
+			active = _activeSupplier.get();
+
+			_activeSupplier = null;
+		}
+
 		return active;
 	}
 
 	public void setActive(Boolean active) {
 		this.active = active;
+
+		_activeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActive(
 		UnsafeSupplier<Boolean, Exception> activeUnsafeSupplier) {
 
-		try {
-			active = activeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activeSupplier = () -> {
+			try {
+				return activeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean active;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _activeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getBillingAllowed() {
+		if (_billingAllowedSupplier != null) {
+			billingAllowed = _billingAllowedSupplier.get();
+
+			_billingAllowedSupplier = null;
+		}
+
 		return billingAllowed;
 	}
 
 	public void setBillingAllowed(Boolean billingAllowed) {
 		this.billingAllowed = billingAllowed;
+
+		_billingAllowedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setBillingAllowed(
 		UnsafeSupplier<Boolean, Exception> billingAllowedUnsafeSupplier) {
 
-		try {
-			billingAllowed = billingAllowedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_billingAllowedSupplier = () -> {
+			try {
+				return billingAllowedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean billingAllowed;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _billingAllowedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The user who created the country."
+	)
+	@Valid
+	public Creator getCreator() {
+		if (_creatorSupplier != null) {
+			creator = _creatorSupplier.get();
+
+			_creatorSupplier = null;
+		}
+
+		return creator;
+	}
+
+	public void setCreator(Creator creator) {
+		this.creator = creator;
+
+		_creatorSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setCreator(
+		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
+
+		_creatorSupplier = () -> {
+			try {
+				return creatorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The user who created the country.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Creator creator;
+
+	@JsonIgnore
+	private Supplier<Creator> _creatorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The country's creation date."
+	)
+	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
+		return dateCreated;
+	}
+
+	public void setDateCreated(Date dateCreated) {
+		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDateCreated(
+		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
+
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The country's creation date.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Date dateCreated;
+
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The country's most recent modification date."
+	)
+	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
+		return dateModified;
+	}
+
+	public void setDateModified(Date dateModified) {
+		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDateModified(
+		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
+
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The country's most recent modification date.")
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Date dateModified;
+
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The country's external reference code.",
+		example = "AB-34098-789-N"
+	)
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The country's external reference code.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getGroupFilterEnabled() {
+		if (_groupFilterEnabledSupplier != null) {
+			groupFilterEnabled = _groupFilterEnabledSupplier.get();
+
+			_groupFilterEnabledSupplier = null;
+		}
+
 		return groupFilterEnabled;
 	}
 
 	public void setGroupFilterEnabled(Boolean groupFilterEnabled) {
 		this.groupFilterEnabled = groupFilterEnabled;
+
+		_groupFilterEnabledSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setGroupFilterEnabled(
 		UnsafeSupplier<Boolean, Exception> groupFilterEnabledUnsafeSupplier) {
 
-		try {
-			groupFilterEnabled = groupFilterEnabledUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_groupFilterEnabledSupplier = () -> {
+			try {
+				return groupFilterEnabledUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean groupFilterEnabled;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _groupFilterEnabledSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getIdd() {
+		if (_iddSupplier != null) {
+			idd = _iddSupplier.get();
+
+			_iddSupplier = null;
+		}
+
 		return idd;
 	}
 
 	public void setIdd(Integer idd) {
 		this.idd = idd;
+
+		_iddSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setIdd(UnsafeSupplier<Integer, Exception> iddUnsafeSupplier) {
-		try {
-			idd = iddUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_iddSupplier = () -> {
+			try {
+				return iddUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer idd;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _iddSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -269,28 +549,41 @@ public class Country implements Serializable {
 	@NotEmpty
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getNumber() {
+		if (_numberSupplier != null) {
+			number = _numberSupplier.get();
+
+			_numberSupplier = null;
+		}
+
 		return number;
 	}
 
 	public void setNumber(Integer number) {
 		this.number = number;
+
+		_numberSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setNumber(
 		UnsafeSupplier<Integer, Exception> numberUnsafeSupplier) {
 
-		try {
-			number = numberUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_numberSupplier = () -> {
+			try {
+				return numberUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -298,127 +591,190 @@ public class Country implements Serializable {
 	@NotNull
 	protected Integer number;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Integer> _numberSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getPosition() {
+		if (_positionSupplier != null) {
+			position = _positionSupplier.get();
+
+			_positionSupplier = null;
+		}
+
 		return position;
 	}
 
 	public void setPosition(Double position) {
 		this.position = position;
+
+		_positionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPosition(
 		UnsafeSupplier<Double, Exception> positionUnsafeSupplier) {
 
-		try {
-			position = positionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_positionSupplier = () -> {
+			try {
+				return positionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double position;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _positionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Region[] getRegions() {
+		if (_regionsSupplier != null) {
+			regions = _regionsSupplier.get();
+
+			_regionsSupplier = null;
+		}
+
 		return regions;
 	}
 
 	public void setRegions(Region[] regions) {
 		this.regions = regions;
+
+		_regionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setRegions(
 		UnsafeSupplier<Region[], Exception> regionsUnsafeSupplier) {
 
-		try {
-			regions = regionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_regionsSupplier = () -> {
+			try {
+				return regionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Region[] regions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Region[]> _regionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getShippingAllowed() {
+		if (_shippingAllowedSupplier != null) {
+			shippingAllowed = _shippingAllowedSupplier.get();
+
+			_shippingAllowedSupplier = null;
+		}
+
 		return shippingAllowed;
 	}
 
 	public void setShippingAllowed(Boolean shippingAllowed) {
 		this.shippingAllowed = shippingAllowed;
+
+		_shippingAllowedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setShippingAllowed(
 		UnsafeSupplier<Boolean, Exception> shippingAllowedUnsafeSupplier) {
 
-		try {
-			shippingAllowed = shippingAllowedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_shippingAllowedSupplier = () -> {
+			try {
+				return shippingAllowedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean shippingAllowed;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _shippingAllowedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getSubjectToVAT() {
+		if (_subjectToVATSupplier != null) {
+			subjectToVAT = _subjectToVATSupplier.get();
+
+			_subjectToVATSupplier = null;
+		}
+
 		return subjectToVAT;
 	}
 
 	public void setSubjectToVAT(Boolean subjectToVAT) {
 		this.subjectToVAT = subjectToVAT;
+
+		_subjectToVATSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSubjectToVAT(
 		UnsafeSupplier<Boolean, Exception> subjectToVATUnsafeSupplier) {
 
-		try {
-			subjectToVAT = subjectToVATUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_subjectToVATSupplier = () -> {
+			try {
+				return subjectToVATUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean subjectToVAT;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _subjectToVATSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getTitle_i18n() {
+		if (_title_i18nSupplier != null) {
+			title_i18n = _title_i18nSupplier.get();
+
+			_title_i18nSupplier = null;
+		}
+
 		return title_i18n;
 	}
 
 	public void setTitle_i18n(Map<String, String> title_i18n) {
 		this.title_i18n = title_i18n;
+
+		_title_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -426,48 +782,66 @@ public class Country implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			title_i18nUnsafeSupplier) {
 
-		try {
-			title_i18n = title_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_title_i18nSupplier = () -> {
+			try {
+				return title_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> title_i18n;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _title_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getZipRequired() {
+		if (_zipRequiredSupplier != null) {
+			zipRequired = _zipRequiredSupplier.get();
+
+			_zipRequiredSupplier = null;
+		}
+
 		return zipRequired;
 	}
 
 	public void setZipRequired(Boolean zipRequired) {
 		this.zipRequired = zipRequired;
+
+		_zipRequiredSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setZipRequired(
 		UnsafeSupplier<Boolean, Exception> zipRequiredUnsafeSupplier) {
 
-		try {
-			zipRequired = zipRequiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_zipRequiredSupplier = () -> {
+			try {
+				return zipRequiredUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean zipRequired;
+
+	@JsonIgnore
+	private Supplier<Boolean> _zipRequiredSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -496,6 +870,11 @@ public class Country implements Serializable {
 
 		sb.append("{");
 
+		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
+			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		String a2 = getA2();
+
 		if (a2 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -509,6 +888,8 @@ public class Country implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String a3 = getA3();
 
 		if (a3 != null) {
 			if (sb.length() > 1) {
@@ -524,6 +905,8 @@ public class Country implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean active = getActive();
+
 		if (active != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -533,6 +916,8 @@ public class Country implements Serializable {
 
 			sb.append(active);
 		}
+
+		Boolean billingAllowed = getBillingAllowed();
 
 		if (billingAllowed != null) {
 			if (sb.length() > 1) {
@@ -544,6 +929,68 @@ public class Country implements Serializable {
 			sb.append(billingAllowed);
 		}
 
+		Creator creator = getCreator();
+
+		if (creator != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"creator\": ");
+
+			sb.append(String.valueOf(creator));
+		}
+
+		Date dateCreated = getDateCreated();
+
+		if (dateCreated != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateCreated\": ");
+
+			sb.append("\"");
+
+			sb.append(liferayToJSONDateFormat.format(dateCreated));
+
+			sb.append("\"");
+		}
+
+		Date dateModified = getDateModified();
+
+		if (dateModified != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"dateModified\": ");
+
+			sb.append("\"");
+
+			sb.append(liferayToJSONDateFormat.format(dateModified));
+
+			sb.append("\"");
+		}
+
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Boolean groupFilterEnabled = getGroupFilterEnabled();
+
 		if (groupFilterEnabled != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -553,6 +1000,8 @@ public class Country implements Serializable {
 
 			sb.append(groupFilterEnabled);
 		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -564,6 +1013,8 @@ public class Country implements Serializable {
 			sb.append(id);
 		}
 
+		Integer idd = getIdd();
+
 		if (idd != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -573,6 +1024,8 @@ public class Country implements Serializable {
 
 			sb.append(idd);
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -588,6 +1041,8 @@ public class Country implements Serializable {
 			sb.append("\"");
 		}
 
+		Integer number = getNumber();
+
 		if (number != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -598,6 +1053,8 @@ public class Country implements Serializable {
 			sb.append(number);
 		}
 
+		Double position = getPosition();
+
 		if (position != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -607,6 +1064,8 @@ public class Country implements Serializable {
 
 			sb.append(position);
 		}
+
+		Region[] regions = getRegions();
 
 		if (regions != null) {
 			if (sb.length() > 1) {
@@ -628,6 +1087,8 @@ public class Country implements Serializable {
 			sb.append("]");
 		}
 
+		Boolean shippingAllowed = getShippingAllowed();
+
 		if (shippingAllowed != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -637,6 +1098,8 @@ public class Country implements Serializable {
 
 			sb.append(shippingAllowed);
 		}
+
+		Boolean subjectToVAT = getSubjectToVAT();
 
 		if (subjectToVAT != null) {
 			if (sb.length() > 1) {
@@ -648,6 +1111,8 @@ public class Country implements Serializable {
 			sb.append(subjectToVAT);
 		}
 
+		Map<String, String> title_i18n = getTitle_i18n();
+
 		if (title_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -657,6 +1122,8 @@ public class Country implements Serializable {
 
 			sb.append(_toJSON(title_i18n));
 		}
+
+		Boolean zipRequired = getZipRequired();
 
 		if (zipRequired != null) {
 			if (sb.length() > 1) {
@@ -673,8 +1140,8 @@ public class Country implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.admin.address.dto.v1_0.Country",
 		name = "x-class-name"
 	)
@@ -720,7 +1187,10 @@ public class Country implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -766,3 +1236,4 @@ public class Country implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:117224820

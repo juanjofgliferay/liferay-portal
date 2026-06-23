@@ -27,7 +27,7 @@ import com.liferay.portal.kernel.security.permission.resource.StagedModelPermiss
 import com.liferay.portal.kernel.security.permission.resource.WorkflowedModelPermissionLogic;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PropsValues;
 
 import java.util.Dictionary;
 
@@ -49,6 +49,8 @@ public class MBMessagePermissionRegistrar {
 		Dictionary<String, Object> properties =
 			HashMapDictionaryBuilder.<String, Object>put(
 				"model.class.name", MBMessage.class.getName()
+			).put(
+				"permissions.view.dynamic.inheritance.checking", "true"
 			).build();
 
 		_serviceRegistration = bundleContext.registerService(

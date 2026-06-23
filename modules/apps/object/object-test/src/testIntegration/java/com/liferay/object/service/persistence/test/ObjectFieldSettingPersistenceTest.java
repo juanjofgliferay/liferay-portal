@@ -241,7 +241,7 @@ public class ObjectFieldSettingPersistenceTest {
 			"ObjectFieldSetting", "mvccVersion", true, "uuid", true,
 			"objectFieldSettingId", true, "companyId", true, "userId", true,
 			"userName", true, "createDate", true, "modifiedDate", true,
-			"objectFieldId", true, "name", true, "value", true);
+			"objectFieldId", true, "name", true);
 	}
 
 	@Test
@@ -568,3 +568,4 @@ public class ObjectFieldSettingPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:836036035

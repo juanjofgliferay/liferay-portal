@@ -27,6 +27,11 @@ import org.osgi.service.component.annotations.Reference;
 public class ClientExtensionAdminPanelApp extends BasePanelApp {
 
 	@Override
+	public String getIcon() {
+		return "puzzle";
+	}
+
+	@Override
 	public Portlet getPortlet() {
 		return _portlet;
 	}
@@ -37,7 +42,7 @@ public class ClientExtensionAdminPanelApp extends BasePanelApp {
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + ClientExtensionAdminPortletKeys.CLIENT_EXTENSION_ADMIN + ")"
+		target = "(jakarta.portlet.name=" + ClientExtensionAdminPortletKeys.CLIENT_EXTENSION_ADMIN + ")"
 	)
 	private Portlet _portlet;
 

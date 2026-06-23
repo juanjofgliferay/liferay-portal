@@ -4,9 +4,8 @@
  */
 
 import {render} from '@liferay/frontend-js-react-web';
+import {FragmentSetModal} from '@liferay/layout-js-components-web';
 import {getCheckedCheckboxes} from 'frontend-js-web';
-
-import CopyFragmentModal from './CopyFragmentModal';
 
 export default function propsTransformer({
 	additionalProps: {
@@ -30,7 +29,7 @@ export default function propsTransformer({
 		);
 
 		render(
-			CopyFragmentModal,
+			FragmentSetModal,
 			{
 				addFragmentCollectionURL,
 				contributedEntryKeys: contributedEntryKeys.split(','),

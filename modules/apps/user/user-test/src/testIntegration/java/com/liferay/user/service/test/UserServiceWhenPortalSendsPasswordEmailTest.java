@@ -17,16 +17,16 @@ import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.test.mail.MailServiceTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.SynchronousMailTestRule;
-import com.liferay.portal.util.PropsUtil;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -76,14 +76,10 @@ public class UserServiceWhenPortalSendsPasswordEmailTest {
 				new Class<?>[] {Localization.class},
 				(proxy, method, args) -> {
 					if (Objects.equals(
-							method.getName(), "getLocalizationMap") &&
-						(args.length == 3)) {
+							method.getName(), "getDefaultLanguageId") &&
+						(args.length == 2)) {
 
-						return _localization.getLocalizationMap(
-							(PortletPreferences)args[0], (String)args[1],
-							(String)args[2], PropsUtil.get((String)args[2]),
-							UserServiceWhenPortalSendsPasswordEmailTest.class.
-								getClassLoader());
+						return args[1].toString();
 					}
 					else if (Objects.equals(
 								method.getName(), "getLocalization") &&
@@ -91,6 +87,16 @@ public class UserServiceWhenPortalSendsPasswordEmailTest {
 
 						return _localization.getLocalization(
 							(String)args[0], (String)args[1]);
+					}
+					else if (Objects.equals(
+								method.getName(), "getLocalizationMap") &&
+							 (args.length == 3)) {
+
+						return _localization.getLocalizationMap(
+							(PortletPreferences)args[0], (String)args[1],
+							(String)args[2], PropsUtil.get((String)args[2]),
+							UserServiceWhenPortalSendsPasswordEmailTest.class.
+								getClassLoader());
 					}
 
 					throw new UnsupportedOperationException();

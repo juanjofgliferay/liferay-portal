@@ -332,13 +332,6 @@ public class PasswordPolicyLocalServiceUtil {
 	}
 
 	public static PasswordPolicy getPasswordPolicy(
-			long companyId, boolean defaultPolicy)
-		throws PortalException {
-
-		return getService().getPasswordPolicy(companyId, defaultPolicy);
-	}
-
-	public static PasswordPolicy getPasswordPolicy(
 			long companyId, long[] organizationIds)
 		throws PortalException {
 
@@ -443,3 +436,4 @@ public class PasswordPolicyLocalServiceUtil {
 	private static volatile PasswordPolicyLocalService _service;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1635504886

@@ -6,37 +6,63 @@
 import ClayIcon from '@clayui/icon';
 import classNames from 'classnames';
 
+import {
+	OrderTypes,
+	OrderWorkflowStatusCode,
+	getOrderStatusLabel,
+	orderWorkflowStatusCodeLabels,
+} from '../../enums/Order';
+
 import './OrderStatus.scss';
 
-export enum Statuses {
-	APPROVED = 'approved',
-	COMPLETED = 'completed',
-	PENDING = 'pending',
-	PROCESSING = 'processing',
-}
-
 type OrderStatusProps = {
-	children?: string;
-	orderStatus?: string;
+	placedOrder: PlacedOrder;
 };
 
-const OrderStatus = ({children, orderStatus}: OrderStatusProps) => (
-	<>
-		<ClayIcon
-			className={classNames('mr-2 order-status-icon', {
-				'order-status-icon-completed': [
-					Statuses.COMPLETED,
-					Statuses.APPROVED,
-				].includes(orderStatus as Statuses),
-				'order-status-icon-pending': orderStatus === Statuses.PENDING,
-				'order-status-icon-processing':
-					orderStatus === Statuses.PROCESSING,
-			})}
-			symbol="circle"
-		/>
+const OrderStatus = ({placedOrder}: OrderStatusProps) => {
+	const orderStatusLabel = getOrderStatusLabel(placedOrder);
 
-		<span className="order-status-text">{children}</span>
-	</>
-);
+	const getOrderStatusClassName = () => {
+		const orderStatus = placedOrder.orderStatusInfo.code;
+
+		if (
+			placedOrder.orderStatusInfo.code !==
+				OrderWorkflowStatusCode.COMPLETED &&
+			placedOrder.orderTypeExternalReferenceCode === OrderTypes.AI_HUB
+		) {
+			return 'order-status-icon-processing';
+		}
+
+		if (
+			orderStatusLabel ===
+				orderWorkflowStatusCodeLabels[
+					OrderWorkflowStatusCode.PENDING_PAYMENT
+				] ||
+			OrderWorkflowStatusCode.PENDING === orderStatus
+		) {
+			return 'order-status-icon-pending';
+		}
+
+		if (OrderWorkflowStatusCode.COMPLETED === orderStatus) {
+			return 'order-status-icon-completed';
+		}
+
+		return 'order-status-icon-processing';
+	};
+
+	return (
+		<>
+			<ClayIcon
+				className={classNames(
+					'mr-2 order-status-icon',
+					getOrderStatusClassName()
+				)}
+				symbol="circle"
+			/>
+
+			<span className="order-status-text">{orderStatusLabel}</span>
+		</>
+	);
+};
 
 export default OrderStatus;

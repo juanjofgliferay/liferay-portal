@@ -92,6 +92,8 @@ public class LayoutBranchModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table LayoutBranch";
 
+	public static final String ENTITY_ALIAS = "layoutBranch";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY layoutBranch.layoutBranchId ASC";
 
@@ -154,7 +156,7 @@ public class LayoutBranchModelImpl
 	public static final long LAYOUTBRANCHID_COLUMN_BITMASK = 16L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutBranch"));
 
 	public LayoutBranchModelImpl() {
@@ -932,3 +934,4 @@ public class LayoutBranchModelImpl
 	private LayoutBranch _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1290050932

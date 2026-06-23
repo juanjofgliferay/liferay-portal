@@ -6,6 +6,7 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
 import com.liferay.portal.kernel.model.Country;
@@ -14,10 +15,10 @@ import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.permission.CountryPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.service.base.CountryServiceBaseImpl;
-import com.liferay.portal.util.PortalInstances;
 
 import java.util.List;
 
@@ -28,18 +29,19 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 
 	@Override
 	public Country addCountry(
-			String a2, String a3, boolean active, boolean billingAllowed,
-			String idd, String name, String number, double position,
-			boolean shippingAllowed, boolean subjectToVAT, boolean zipRequired,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String a2, String a3, boolean active,
+			boolean billingAllowed, String idd, String name, String number,
+			double position, boolean shippingAllowed, boolean subjectToVAT,
+			boolean zipRequired, ServiceContext serviceContext)
 		throws PortalException {
 
 		PortalPermissionUtil.check(
-			getPermissionChecker(), ActionKeys.MANAGE_COUNTRIES);
+			getPermissionChecker(), ActionKeys.ADD_COUNTRY);
 
 		return countryLocalService.addCountry(
-			a2, a3, active, billingAllowed, idd, name, number, position,
-			shippingAllowed, subjectToVAT, zipRequired, serviceContext);
+			externalReferenceCode, a2, a3, active, billingAllowed, idd, name,
+			number, position, shippingAllowed, subjectToVAT, zipRequired,
+			serviceContext);
 	}
 
 	/**
@@ -60,14 +62,14 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 		serviceContext.setUserId(permissionChecker.getUserId());
 
 		return addCountry(
-			a2, a3, active, true, idd, name, number, 0, true, false, true,
+			null, a2, a3, active, true, idd, name, number, 0, true, false, true,
 			serviceContext);
 	}
 
 	@Override
 	public void deleteCountry(long countryId) throws PortalException {
-		PortalPermissionUtil.check(
-			getPermissionChecker(), ActionKeys.MANAGE_COUNTRIES);
+		CountryPermissionUtil.check(
+			getPermissionChecker(), countryId, ActionKeys.DELETE);
 
 		countryLocalService.deleteCountry(countryId);
 	}
@@ -88,7 +90,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country fetchCountryByA2(String a2) {
-		return fetchCountryByA2(PortalInstances.getDefaultCompanyId(), a2);
+		return fetchCountryByA2(PortalInstancePool.getDefaultCompanyId(), a2);
 	}
 
 	@Override
@@ -102,7 +104,25 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country fetchCountryByA3(String a3) {
-		return fetchCountryByA3(PortalInstances.getDefaultCompanyId(), a3);
+		return fetchCountryByA3(PortalInstancePool.getDefaultCompanyId(), a3);
+	}
+
+	@Override
+	public Country fetchCountryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Country country =
+			countryLocalService.fetchCountryByExternalReferenceCode(
+				externalReferenceCode, companyId);
+
+		if (country != null) {
+			CountryPermissionUtil.check(
+				getPermissionChecker(), country.getCountryId(),
+				ActionKeys.VIEW);
+		}
+
+		return country;
 	}
 
 	@Override
@@ -150,7 +170,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public List<Country> getCountries() {
-		return getCompanyCountries(PortalInstances.getDefaultCompanyId());
+		return getCompanyCountries(PortalInstancePool.getDefaultCompanyId());
 	}
 
 	/**
@@ -161,7 +181,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Override
 	public List<Country> getCountries(boolean active) {
 		return getCompanyCountries(
-			PortalInstances.getDefaultCompanyId(), active);
+			PortalInstancePool.getDefaultCompanyId(), active);
 	}
 
 	@Override
@@ -182,7 +202,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country getCountryByA2(String a2) throws PortalException {
-		return getCountryByA2(PortalInstances.getDefaultCompanyId(), a2);
+		return getCountryByA2(PortalInstancePool.getDefaultCompanyId(), a2);
 	}
 
 	@Override
@@ -198,7 +218,21 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country getCountryByA3(String a3) throws PortalException {
-		return getCountryByA3(PortalInstances.getDefaultCompanyId(), a3);
+		return getCountryByA3(PortalInstancePool.getDefaultCompanyId(), a3);
+	}
+
+	@Override
+	public Country getCountryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Country country = countryLocalService.getCountryByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		CountryPermissionUtil.check(
+			getPermissionChecker(), country.getCountryId(), ActionKeys.VIEW);
+
+		return country;
 	}
 
 	@Override
@@ -214,7 +248,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country getCountryByName(String name) throws PortalException {
-		return getCountryByName(PortalInstances.getDefaultCompanyId(), name);
+		return getCountryByName(PortalInstancePool.getDefaultCompanyId(), name);
 	}
 
 	@Override
@@ -239,25 +273,26 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	public Country updateActive(long countryId, boolean active)
 		throws PortalException {
 
-		PortalPermissionUtil.check(
-			getPermissionChecker(), ActionKeys.MANAGE_COUNTRIES);
+		CountryPermissionUtil.check(
+			getPermissionChecker(), countryId, ActionKeys.UPDATE);
 
 		return countryLocalService.updateActive(countryId, active);
 	}
 
 	@Override
 	public Country updateCountry(
-			long countryId, String a2, String a3, boolean active,
-			boolean billingAllowed, String idd, String name, String number,
-			double position, boolean shippingAllowed, boolean subjectToVAT)
+			String externalReferenceCode, long countryId, String a2, String a3,
+			boolean active, boolean billingAllowed, String idd, String name,
+			String number, double position, boolean shippingAllowed,
+			boolean subjectToVAT)
 		throws PortalException {
 
-		PortalPermissionUtil.check(
-			getPermissionChecker(), ActionKeys.MANAGE_COUNTRIES);
+		CountryPermissionUtil.check(
+			getPermissionChecker(), countryId, ActionKeys.UPDATE);
 
 		return countryLocalService.updateCountry(
-			countryId, a2, a3, active, billingAllowed, idd, name, number,
-			position, shippingAllowed, subjectToVAT);
+			externalReferenceCode, countryId, a2, a3, active, billingAllowed,
+			idd, name, number, position, shippingAllowed, subjectToVAT);
 	}
 
 	@Override
@@ -265,8 +300,8 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 			long countryId, boolean groupFilterEnabled)
 		throws PortalException {
 
-		PortalPermissionUtil.check(
-			getPermissionChecker(), ActionKeys.MANAGE_COUNTRIES);
+		CountryPermissionUtil.check(
+			getPermissionChecker(), countryId, ActionKeys.UPDATE);
 
 		return countryLocalService.updateGroupFilterEnabled(
 			countryId, groupFilterEnabled);

@@ -302,6 +302,15 @@ public class SiteNavigationMenuItemPersistenceTest {
 	}
 
 	@Test
+	public void testCountByType() throws Exception {
+		_persistence.countByType("");
+
+		_persistence.countByType("null");
+
+		_persistence.countByType((String)null);
+	}
+
+	@Test
 	public void testCountByS_P() throws Exception {
 		_persistence.countByS_P(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
@@ -736,3 +745,4 @@ public class SiteNavigationMenuItemPersistenceTest {
 	private ClassLoader _dynamicQueryClassLoader;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-185872142

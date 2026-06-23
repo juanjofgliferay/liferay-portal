@@ -9,11 +9,10 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.configuration.admin.util.ConfigurationFilterStringUtil;
 import com.liferay.fragment.helper.DefaultInputFragmentEntryConfigurationProvider;
 import com.liferay.info.field.type.BooleanInfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -37,10 +36,10 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import java.util.Dictionary;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Dictionary;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -139,10 +138,9 @@ public class UpdateDefaultInputFragmentsMVCActionCommandMVCActionCommandTest {
 	}
 
 	private Configuration[] _getConfigurations() throws Exception {
-		String pidFilter = StringBundler.concat(
-			"(service.factoryPid=", _PID, StringPool.CLOSE_PARENTHESIS);
-
-		return _configurationAdmin.listConfigurations(pidFilter);
+		return _configurationAdmin.listConfigurations(
+			ConfigurationFilterStringUtil.getGroupScopedFilterString(
+				_company.getCompanyId(), null, _PID, null));
 	}
 
 	private MockLiferayPortletActionRequest _getMockLiferayPortletActionRequest(
@@ -181,7 +179,7 @@ public class UpdateDefaultInputFragmentsMVCActionCommandMVCActionCommandTest {
 
 	private static final String _PID =
 		"com.liferay.fragment.configuration." +
-			"DefaultInputFragmentEntryConfiguration.scoped";
+			"DefaultInputFragmentEntryConfiguration";
 
 	private Company _company;
 

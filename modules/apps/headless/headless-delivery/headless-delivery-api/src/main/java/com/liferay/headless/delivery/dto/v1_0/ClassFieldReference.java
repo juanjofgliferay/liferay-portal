@@ -16,7 +16,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -24,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -37,8 +36,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ClassFieldReference")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"className", "fieldName", "fieldValue"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"className", "fieldName", "fieldValue"})
 @XmlRootElement(name = "ClassFieldReference")
 public class ClassFieldReference implements Serializable {
 
@@ -51,28 +52,38 @@ public class ClassFieldReference implements Serializable {
 			ClassFieldReference.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getClassName() {
+		if (_classNameSupplier != null) {
+			className = _classNameSupplier.get();
+
+			_classNameSupplier = null;
+		}
+
 		return className;
 	}
 
 	public void setClassName(String className) {
 		this.className = className;
+
+		_classNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassName(
 		UnsafeSupplier<String, Exception> classNameUnsafeSupplier) {
 
-		try {
-			className = classNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classNameSupplier = () -> {
+			try {
+				return classNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -80,28 +91,41 @@ public class ClassFieldReference implements Serializable {
 	@NotEmpty
 	protected String className;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _classNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFieldName() {
+		if (_fieldNameSupplier != null) {
+			fieldName = _fieldNameSupplier.get();
+
+			_fieldNameSupplier = null;
+		}
+
 		return fieldName;
 	}
 
 	public void setFieldName(String fieldName) {
 		this.fieldName = fieldName;
+
+		_fieldNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldName(
 		UnsafeSupplier<String, Exception> fieldNameUnsafeSupplier) {
 
-		try {
-			fieldName = fieldNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldNameSupplier = () -> {
+			try {
+				return fieldNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -109,34 +133,50 @@ public class ClassFieldReference implements Serializable {
 	@NotEmpty
 	protected String fieldName;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _fieldNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFieldValue() {
+		if (_fieldValueSupplier != null) {
+			fieldValue = _fieldValueSupplier.get();
+
+			_fieldValueSupplier = null;
+		}
+
 		return fieldValue;
 	}
 
 	public void setFieldValue(String fieldValue) {
 		this.fieldValue = fieldValue;
+
+		_fieldValueSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFieldValue(
 		UnsafeSupplier<String, Exception> fieldValueUnsafeSupplier) {
 
-		try {
-			fieldValue = fieldValueUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_fieldValueSupplier = () -> {
+			try {
+				return fieldValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	@NotEmpty
 	protected String fieldValue;
+
+	@JsonIgnore
+	private Supplier<String> _fieldValueSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -165,6 +205,8 @@ public class ClassFieldReference implements Serializable {
 
 		sb.append("{");
 
+		String className = getClassName();
+
 		if (className != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -179,6 +221,8 @@ public class ClassFieldReference implements Serializable {
 			sb.append("\"");
 		}
 
+		String fieldName = getFieldName();
+
 		if (fieldName != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -192,6 +236,8 @@ public class ClassFieldReference implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String fieldValue = getFieldValue();
 
 		if (fieldValue != null) {
 			if (sb.length() > 1) {
@@ -212,8 +258,8 @@ public class ClassFieldReference implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ClassFieldReference",
 		name = "x-class-name"
 	)
@@ -259,7 +305,10 @@ public class ClassFieldReference implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -305,3 +354,4 @@ public class ClassFieldReference implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:-1998722899

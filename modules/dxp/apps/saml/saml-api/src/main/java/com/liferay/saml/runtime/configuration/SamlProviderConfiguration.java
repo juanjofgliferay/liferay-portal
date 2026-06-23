@@ -25,24 +25,16 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface SamlProviderConfiguration {
 
-	@Meta.AD(deflt = "0", name = "company-id", required = false)
-	public long companyId();
-
+	/**
+	 * If no SAML IdP is matched then show the login portlet
+	 */
 	@Meta.AD(
-		deflt = "liferay",
-		description = "saml-keystore-credential-password-description",
-		id = "saml.keystore.credential.password",
-		name = "saml-keystore-credential-password", required = false
+		deflt = "true",
+		description = "saml-sp-allow-showing-the-login-portlet-description",
+		id = "saml.sp.allow.showing.the.login.portlet",
+		name = "saml-sp-allow-showing-the-login-portlet", required = false
 	)
-	public String keyStoreCredentialPassword();
-
-	@Meta.AD(
-		deflt = "liferay",
-		description = "saml-keystore-encryption-credential-password-description",
-		id = "saml.keystore.encryption.credential.password",
-		name = "saml-keystore-encryption-credential-password", required = false
-	)
-	public String keyStoreEncryptionCredentialPassword();
+	public boolean allowShowingTheLoginPortlet();
 
 	@Meta.AD(
 		description = "saml-sp-assertion-signature-required-description",
@@ -70,9 +62,12 @@ public interface SamlProviderConfiguration {
 
 	@Meta.AD(
 		deflt = "3000", description = "saml-sp-clock-skew-description",
-		id = "saml.sp.clock.skew", name = "saml-sp-clock-skew", required = false
+		id = "saml.sp.clock.skew", name = "clock-skew", required = false
 	)
 	public long clockSkew();
+
+	@Meta.AD(deflt = "0", name = "company-id", required = false)
+	public long companyId();
 
 	@Meta.AD(
 		deflt = "1800", description = "saml-idp-assertion-lifetime-description",
@@ -81,7 +76,7 @@ public interface SamlProviderConfiguration {
 	)
 	public int defaultAssertionLifetime();
 
-	@Meta.AD(id = "saml.enabled", name = "saml-enabled", required = false)
+	@Meta.AD(id = "saml.enabled", name = "enabled", required = false)
 	public boolean enabled();
 
 	@Meta.AD(
@@ -89,6 +84,22 @@ public interface SamlProviderConfiguration {
 		name = "saml-entity-id", required = false
 	)
 	public String entityId();
+
+	@Meta.AD(
+		deflt = "liferay",
+		description = "saml-keystore-credential-password-description",
+		id = "saml.keystore.credential.password",
+		name = "saml-keystore-credential-password", required = false
+	)
+	public String keyStoreCredentialPassword();
+
+	@Meta.AD(
+		deflt = "liferay",
+		description = "saml-keystore-encryption-credential-password-description",
+		id = "saml.keystore.encryption.credential.password",
+		name = "saml-keystore-encryption-credential-password", required = false
+	)
+	public String keyStoreEncryptionCredentialPassword();
 
 	@Meta.AD(
 		description = "saml-sp-ldap-import-enabled-description",
@@ -99,8 +110,12 @@ public interface SamlProviderConfiguration {
 
 	@Meta.AD(
 		deflt = SamlProviderConfigurationKeys.SAML_ROLE_SP, id = "saml.role",
-		name = "saml-role", optionLabels = {"saml-role-idp", "saml-role-sp"},
+		name = "saml-role",
+		optionLabels = {
+			"identity-broker", "identity-provider", "service-provider"
+		},
 		optionValues = {
+			SamlProviderConfigurationKeys.SAML_ROLE_IB,
 			SamlProviderConfigurationKeys.SAML_ROLE_IDP,
 			SamlProviderConfigurationKeys.SAML_ROLE_SP
 		},
@@ -140,16 +155,5 @@ public interface SamlProviderConfiguration {
 		name = "saml-ssl-required", required = false
 	)
 	public boolean sslRequired();
-
-	/**
-	 * If no SAML IdP is matched then show the login portlet
-	 */
-	@Meta.AD(
-		deflt = "true",
-		description = "saml-sp-allow-showing-the-login-portlet-description",
-		id = "saml.sp.allow.showing.the.login.portlet",
-		name = "saml-sp-allow-showing-the-login-portlet", required = false
-	)
-	public boolean allowShowingTheLoginPortlet();
 
 }

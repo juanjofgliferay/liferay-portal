@@ -9,6 +9,8 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.data.engine.rest.dto.v2_0.DataDefinition;
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.test.util.DataDefinitionTestUtil;
+import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
+import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
@@ -17,6 +19,7 @@ import com.liferay.dynamic.data.mapping.util.DDMFormValuesToFieldsConverter;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.constants.JournalPortletKeys;
+import com.liferay.journal.constants.JournalStructureConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.journal.util.JournalConverter;
@@ -26,14 +29,17 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
@@ -43,24 +49,38 @@ import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ThemeLocalService;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.template.TemplateConstants;
+import com.liferay.portal.kernel.template.TemplateHandler;
+import com.liferay.portal.kernel.template.TemplateHandlerRegistryUtil;
+import com.liferay.portal.kernel.template.TemplateVariableDefinition;
+import com.liferay.portal.kernel.template.TemplateVariableGroup;
+import com.liferay.portal.kernel.templateparser.TemplateNode;
 import com.liferay.portal.kernel.templateparser.TransformerListener;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.xml.Document;
+import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
@@ -71,6 +91,9 @@ import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.junit.AfterClass;
@@ -121,7 +144,7 @@ public class JournalTransformerTest {
 
 		_serviceTrackerList = ServiceTrackerListFactory.open(
 			bundle.getBundleContext(), TransformerListener.class,
-			"(javax.portlet.name=" + JournalPortletKeys.JOURNAL + ")");
+			"(jakarta.portlet.name=" + JournalPortletKeys.JOURNAL + ")");
 	}
 
 	@AfterClass
@@ -145,10 +168,28 @@ public class JournalTransformerTest {
 		_journalArticle = JournalTestUtil.addArticleWithXMLContent(
 			_group.getGroupId(),
 			StringUtil.replace(
-				_read("journal_content.xml"),
+				_read("journal_article_content.xml"),
 				new String[] {"[$FIELD_SET_NAME$]"},
 				new String[] {"FieldsGroup19507604"}),
 			dataDefinition.getDataDefinitionKey(), null);
+	}
+
+	@Test
+	public void testCreateTemplateNode() {
+		_testCreateTemplateNodeDocumentLibraryDDMFormField();
+		_testCreateTemplateNodeNumericDDMFormFieldWithMismatchedLocale(
+			LocaleUtil.SPAIN, LocaleUtil.US, "20.3", "20,30");
+		_testCreateTemplateNodeNumericDDMFormFieldWithMismatchedLocale(
+			LocaleUtil.US, LocaleUtil.SPAIN, "123,45", "123.45");
+		_testCreateTemplateNodeNumericDDMFormFieldWithTrailingZero(
+			"2,3", LocaleUtil.SPAIN, "2,30");
+		_testCreateTemplateNodeNumericDDMFormFieldWithTrailingZero(
+			"2.3", LocaleUtil.US, "2.30");
+		_testCreateTemplateNodeMultipleSelectTypeDDMFormFieldWithOptions();
+		_testCreateTemplateNodeMultipleSelectTypeDDMFormFieldWithoutOptions();
+		_testCreateTemplateNodeSingleSelectTypeDDMFormFieldWithOptions();
+		_testCreateTemplateNodeTextDDMFormFieldWithHTML();
+		_testCreateTemplateNodeTextDDMFormFieldWithPlainText();
 	}
 
 	@Test
@@ -182,7 +223,7 @@ public class JournalTransformerTest {
 		_journalArticle = JournalTestUtil.addArticleWithXMLContent(
 			_group.getGroupId(),
 			StringUtil.replace(
-				_read("journal_content.xml"),
+				_read("journal_article_content.xml"),
 				new String[] {"[$FIELD_SET_NAME$]"},
 				new String[] {"birthdayFieldSet"}),
 			dataDefinition.getDataDefinitionKey(), null);
@@ -200,6 +241,101 @@ public class JournalTransformerTest {
 	}
 
 	@Test
+	public void testJournalReservedVariables() throws Exception {
+		TemplateHandler journalTemplateHandler =
+			TemplateHandlerRegistryUtil.getTemplateHandler(
+				JournalArticle.class.getName());
+
+		Map<String, TemplateVariableGroup> templateVariableGroups =
+			journalTemplateHandler.getTemplateVariableGroups(
+				_journalArticle.getDDMStructureId(),
+				TemplateConstants.LANG_TYPE_FTL,
+				LocaleUtil.getMostRelevantLocale());
+
+		TemplateVariableGroup journalReservedTemplateVariableGroup =
+			templateVariableGroups.get("journal-reserved");
+
+		Assert.assertNotNull(journalReservedTemplateVariableGroup);
+
+		User user = TestPropsValues.getUser();
+		String languageId = _journalArticle.getDefaultLanguageId();
+		List<TransformerListener> transformerListeners = ListUtil.filter(
+			_serviceTrackerList.toList(), TransformerListener::isEnabled);
+
+		_assertReservedVariable(
+			user.getComments(), "comments", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_COMMENTS,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			user.getEmailAddress(), "author-email-address", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_EMAIL_ADDRESS,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			String.valueOf(user.getUserId()), "author-id", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_ID,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			user.getJobTitle(), "author-job-title", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_JOB_TITLE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			user.getFullName(), "author-name", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_AUTHOR_NAME,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			Time.getRFC822(_journalArticle.getCreateDate()), "create-date",
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_CREATE_DATE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			_journalArticle.getDescription(languageId), "description",
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_DESCRIPTION,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			Time.getRFC822(_journalArticle.getDisplayDate()), "display-date",
+			languageId, JournalStructureConstants.RESERVED_ARTICLE_DISPLAY_DATE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			_journalArticle.getExternalReferenceCode(),
+			"external-reference-code", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_EXTERNAL_REFERENCE_CODE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			_journalArticle.getArticleId(), "article-id", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_ID,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			String.valueOf(_journalArticle.getId()), "id", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_ID_,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			Time.getRFC822(_journalArticle.getModifiedDate()), "modified-date",
+			languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_MODIFIED_DATE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			String.valueOf(_journalArticle.getResourcePrimKey()),
+			"resource-prim-key", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_RESOURCE_PRIM_KEY,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			StringPool.BLANK, "small-image-url", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_SMALL_IMAGE_URL,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			_journalArticle.getTitle(languageId), "title", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_TITLE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			_journalArticle.getUrlTitle(), "url-title", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_URL_TITLE,
+			journalReservedTemplateVariableGroup, transformerListeners);
+		_assertReservedVariable(
+			String.valueOf(_journalArticle.getVersion()), "version", languageId,
+			JournalStructureConstants.RESERVED_ARTICLE_VERSION,
+			journalReservedTemplateVariableGroup, transformerListeners);
+	}
+
+	@Test
 	public void testLocaleTransformerListener() throws Exception {
 		Assert.assertEquals(
 			"Joe Bloggs",
@@ -213,7 +349,7 @@ public class JournalTransformerTest {
 				null, false, "${name.getData()}", null, Constants.VIEW));
 
 		Assert.assertEquals(
-			"Joao da Silva",
+			"João da Silva",
 			_transformMethod.invoke(
 				_journalTransformer, _journalArticle, null, _journalHelper,
 				LocaleUtil.toLanguageId(LocaleUtil.BRAZIL),
@@ -261,6 +397,32 @@ public class JournalTransformerTest {
 					_serviceTrackerList.toList(),
 					TransformerListener::isEnabled),
 				null, false, "${FieldsGroup19507604.birthday.getData()}", null,
+				Constants.VIEW));
+	}
+
+	@Test
+	public void testLocalTransformerWithPartialTranslation() throws Exception {
+		Assert.assertEquals(
+			"2022-11-26",
+			_transformMethod.invoke(
+				_journalTransformer, _journalArticle, null, _journalHelper,
+				LocaleUtil.toLanguageId(LocaleUtil.BRAZIL),
+				_layoutDisplayPageProviderRegistry,
+				ListUtil.filter(
+					_serviceTrackerList.toList(),
+					TransformerListener::isEnabled),
+				null, false, "${FieldsGroup19507604.birthday.getData()}", null,
+				Constants.VIEW));
+		Assert.assertEquals(
+			"English",
+			_transformMethod.invoke(
+				_journalTransformer, _journalArticle, null, _journalHelper,
+				LocaleUtil.toLanguageId(LocaleUtil.BRAZIL),
+				_layoutDisplayPageProviderRegistry,
+				ListUtil.filter(
+					_serviceTrackerList.toList(),
+					TransformerListener::isEnabled),
+				null, false, "${FieldsGroup19507604.language.getData()}", null,
 				Constants.VIEW));
 	}
 
@@ -346,7 +508,9 @@ public class JournalTransformerTest {
 				WebKeys.THEME_DISPLAY, themeDisplay);
 			mockHttpServletRequest.setMethod(HttpMethods.GET);
 			mockHttpServletRequest.setParameter(
-				"currentURL", "http://localhost:8080/currentURL");
+				"currentURL",
+				"http://localhost:" + PortalUtil.getPortalServerPort(false) +
+					"/currentURL");
 
 			themeDisplay.setRequest(mockHttpServletRequest);
 
@@ -440,7 +604,9 @@ public class JournalTransformerTest {
 		JournalArticle journalArticle =
 			JournalTestUtil.addArticleWithXMLContent(
 				_group.getGroupId(),
-				_read("journal_content_with_select_field_single_selection.xml"),
+				_read(
+					"journal_article_content" +
+						"_with_select_field_single_selection.xml"),
 				dataDefinition.getDataDefinitionKey(), null);
 
 		Assert.assertEquals(
@@ -462,7 +628,9 @@ public class JournalTransformerTest {
 
 		journalArticle = JournalTestUtil.addArticleWithXMLContent(
 			_group.getGroupId(),
-			_read("journal_content_with_select_field_multiple_selection.xml"),
+			_read(
+				"journal_article_content" +
+					"_with_select_field_multiple_selection.xml"),
 			dataDefinition.getDataDefinitionKey(), null);
 
 		Assert.assertEquals(
@@ -525,9 +693,320 @@ public class JournalTransformerTest {
 			_transformerListener, "_replacements", replacements);
 	}
 
+	private void _assertReservedVariable(
+			String expectedValue, String label, String languageId, String name,
+			TemplateVariableGroup templateVariableGroup,
+			List<TransformerListener> transformerListeners)
+		throws Exception {
+
+		TemplateVariableDefinition templateVariableDefinition = null;
+
+		for (TemplateVariableDefinition
+				journalReservedTemplateVariableDefinition :
+					templateVariableGroup.getTemplateVariableDefinitions()) {
+
+			if (!Objects.equals(
+					journalReservedTemplateVariableDefinition.getName(),
+					name)) {
+
+				continue;
+			}
+
+			templateVariableDefinition =
+				journalReservedTemplateVariableDefinition;
+
+			break;
+		}
+
+		Assert.assertEquals(
+			templateVariableDefinition.getLabel(), label,
+			templateVariableDefinition.getLabel());
+		Assert.assertEquals(
+			expectedValue,
+			_transformMethod.invoke(
+				_journalTransformer, _journalArticle, null, _journalHelper,
+				languageId, _layoutDisplayPageProviderRegistry,
+				transformerListeners, null, false,
+				"${.vars[\"" + templateVariableDefinition.getName() +
+					"\"].data}",
+				null, Constants.VIEW));
+	}
+
 	private String _read(String fileName) throws Exception {
 		return new String(
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName));
+	}
+
+	private void _testCreateTemplateNodeDocumentLibraryDDMFormField() {
+		DDMFormField ddmFormField = new DDMFormField(
+			"name", DDMFormFieldTypeConstants.DOCUMENT_LIBRARY);
+
+		ddmFormField.setDataType("document_library");
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		Element dynamicContentElement = rootElement.addElement(
+			"dynamic-content");
+
+		JSONObject jsonObject = JSONUtil.put(
+			"fileEntryId", RandomTestUtil.randomLong()
+		).put(
+			"groupId", RandomTestUtil.randomLong()
+		);
+
+		dynamicContentElement.setText(jsonObject.toString());
+
+		TemplateNode templateNode = ReflectionTestUtil.invoke(
+			_journalTransformer, "_createTemplateNode",
+			new Class<?>[] {
+				DDMFormField.class, Element.class, Locale.class,
+				ThemeDisplay.class
+			},
+			ddmFormField, rootElement, LocaleUtil.getDefault(),
+			new ThemeDisplay());
+
+		Assert.assertEquals(
+			jsonObject.getString("fileEntryId"),
+			templateNode.getAttribute("fileEntryId"));
+		Assert.assertEquals(
+			jsonObject.getString("groupId"),
+			templateNode.getAttribute("groupId"));
+	}
+
+	private void _testCreateTemplateNodeMultipleSelectTypeDDMFormFieldWithOptions() {
+		DDMFormField ddmFormField = new DDMFormField(
+			"name", DDMFormFieldTypeConstants.SELECT);
+
+		ddmFormField.setDataType("string");
+		ddmFormField.setMultiple(true);
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		Element dynamicContentElement = rootElement.addElement(
+			"dynamic-content");
+
+		Element optionElement = dynamicContentElement.addElement("option");
+
+		String json = JSONUtil.putAll(
+			"option1", "option2"
+		).toString();
+
+		optionElement.setText(json);
+
+		TemplateNode templateNode = ReflectionTestUtil.invoke(
+			_journalTransformer, "_createTemplateNode",
+			new Class<?>[] {
+				DDMFormField.class, Element.class, Locale.class,
+				ThemeDisplay.class
+			},
+			ddmFormField, rootElement, LocaleUtil.getDefault(),
+			new ThemeDisplay());
+
+		Assert.assertTrue(MapUtil.isEmpty(templateNode.getAttributes()));
+
+		String data = templateNode.getData();
+
+		Assert.assertTrue(data.contains("option1"));
+		Assert.assertTrue(data.contains("option2"));
+
+		Assert.assertEquals("name", templateNode.getName());
+		Assert.assertEquals("select", templateNode.getType());
+
+		List<String> options = templateNode.getOptions();
+
+		Assert.assertEquals(options.toString(), 1, options.size());
+		Assert.assertEquals(json, options.get(0));
+
+		Assert.assertTrue(MapUtil.isEmpty(templateNode.getOptionsMap()));
+	}
+
+	private void _testCreateTemplateNodeMultipleSelectTypeDDMFormFieldWithoutOptions() {
+		DDMFormField ddmFormField = new DDMFormField(
+			"name", DDMFormFieldTypeConstants.SELECT);
+
+		ddmFormField.setDataType("string");
+		ddmFormField.setMultiple(true);
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		rootElement.addElement("dynamic-content");
+
+		TemplateNode templateNode = ReflectionTestUtil.invoke(
+			_journalTransformer, "_createTemplateNode",
+			new Class<?>[] {
+				DDMFormField.class, Element.class, Locale.class,
+				ThemeDisplay.class
+			},
+			ddmFormField, rootElement, LocaleUtil.getDefault(),
+			new ThemeDisplay());
+
+		Assert.assertTrue(MapUtil.isEmpty(templateNode.getAttributes()));
+		Assert.assertEquals("name", templateNode.getName());
+		Assert.assertEquals(StringPool.BLANK, templateNode.getData());
+		Assert.assertEquals("select", templateNode.getType());
+		Assert.assertTrue(ListUtil.isEmpty(templateNode.getOptions()));
+		Assert.assertTrue(MapUtil.isEmpty(templateNode.getOptionsMap()));
+	}
+
+	private void _testCreateTemplateNodeNumericDDMFormFieldWithMismatchedLocale(
+		Locale dataLocale, Locale displayLocale, String expectedValue,
+		String text) {
+
+		DDMFormField ddmFormField = new DDMFormField(
+			"numeric", DDMFormFieldTypeConstants.NUMERIC);
+
+		ddmFormField.setDataType("double");
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		Element dynamicContentElement = rootElement.addElement(
+			"dynamic-content");
+
+		dynamicContentElement.addAttribute(
+			"language-id", LocaleUtil.toLanguageId(dataLocale));
+		dynamicContentElement.setText(text);
+
+		Locale originalThemeDisplayLocale =
+			LocaleThreadLocal.getThemeDisplayLocale();
+
+		try {
+			LocaleThreadLocal.setThemeDisplayLocale(displayLocale);
+
+			TemplateNode templateNode = ReflectionTestUtil.invoke(
+				_journalTransformer, "_createTemplateNode",
+				new Class<?>[] {
+					DDMFormField.class, Element.class, Locale.class,
+					ThemeDisplay.class
+				},
+				ddmFormField, rootElement, displayLocale, new ThemeDisplay());
+
+			Assert.assertEquals(expectedValue, templateNode.getData());
+		}
+		finally {
+			LocaleThreadLocal.setThemeDisplayLocale(originalThemeDisplayLocale);
+		}
+	}
+
+	private void _testCreateTemplateNodeNumericDDMFormFieldWithTrailingZero(
+		String expectedValue, Locale locale, String text) {
+
+		DDMFormField ddmFormField = new DDMFormField(
+			"numeric", DDMFormFieldTypeConstants.NUMERIC);
+
+		ddmFormField.setDataType("double");
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		Element dynamicContentElement = rootElement.addElement(
+			"dynamic-content");
+
+		dynamicContentElement.setText(text);
+
+		Locale originalThemeDisplayLocale =
+			LocaleThreadLocal.getThemeDisplayLocale();
+
+		try {
+			LocaleThreadLocal.setThemeDisplayLocale(locale);
+
+			ThemeDisplay themeDisplay = new ThemeDisplay();
+
+			themeDisplay.setSiteDefaultLocale(locale);
+
+			TemplateNode templateNode = ReflectionTestUtil.invoke(
+				_journalTransformer, "_createTemplateNode",
+				new Class<?>[] {
+					DDMFormField.class, Element.class, Locale.class,
+					ThemeDisplay.class
+				},
+				ddmFormField, rootElement, locale, themeDisplay);
+
+			Assert.assertEquals(expectedValue, templateNode.getData());
+		}
+		finally {
+			LocaleThreadLocal.setThemeDisplayLocale(originalThemeDisplayLocale);
+		}
+	}
+
+	private void _testCreateTemplateNodeSingleSelectTypeDDMFormFieldWithOptions() {
+		DDMFormField ddmFormField = new DDMFormField(
+			"name", DDMFormFieldTypeConstants.SELECT);
+
+		ddmFormField.setDataType("string");
+		ddmFormField.setMultiple(false);
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		Element dynamicContentElement = rootElement.addElement(
+			"dynamic-content");
+
+		Element optionElement = dynamicContentElement.addElement("option");
+
+		optionElement.setText("value");
+
+		TemplateNode templateNode = ReflectionTestUtil.invoke(
+			_journalTransformer, "_createTemplateNode",
+			new Class<?>[] {
+				DDMFormField.class, Element.class, Locale.class,
+				ThemeDisplay.class
+			},
+			ddmFormField, rootElement, LocaleUtil.getDefault(),
+			new ThemeDisplay());
+
+		Assert.assertTrue(MapUtil.isEmpty(templateNode.getAttributes()));
+		Assert.assertEquals("value", templateNode.getData());
+
+		List<String> options = templateNode.getOptions();
+
+		Assert.assertEquals(options.toString(), 1, options.size());
+		Assert.assertEquals("value", options.get(0));
+	}
+
+	private void _testCreateTemplateNodeTextDDMFormField(String text) {
+		DDMFormField ddmFormField = new DDMFormField(
+			"text", DDMFormFieldTypeConstants.TEXT);
+
+		ddmFormField.setDataType("text");
+
+		Document document = SAXReaderUtil.createDocument();
+
+		Element rootElement = document.addElement("root");
+
+		Element dynamicContentElement = rootElement.addElement(
+			"dynamic-content");
+
+		dynamicContentElement.setText(text);
+
+		TemplateNode templateNode = ReflectionTestUtil.invoke(
+			_journalTransformer, "_createTemplateNode",
+			new Class<?>[] {
+				DDMFormField.class, Element.class, Locale.class,
+				ThemeDisplay.class
+			},
+			ddmFormField, rootElement, LocaleUtil.getDefault(),
+			new ThemeDisplay());
+
+		Assert.assertEquals(HtmlUtil.escape(text), templateNode.getData());
+	}
+
+	private void _testCreateTemplateNodeTextDDMFormFieldWithHTML() {
+		_testCreateTemplateNodeTextDDMFormField(
+			"<img src=\"x\" onerror=alert(document.cookie)>");
+	}
+
+	private void _testCreateTemplateNodeTextDDMFormFieldWithPlainText() {
+		_testCreateTemplateNodeTextDDMFormField(RandomTestUtil.randomString());
 	}
 
 	private static Object _journalTransformer;
@@ -571,7 +1050,7 @@ public class JournalTransformerTest {
 	private ThemeLocalService _themeLocalService;
 
 	@Inject(
-		filter = "component.name=com.liferay.journal.internal.transformer.RegexTransformerListener"
+		filter = "component.name=com.liferay.journal.internal.template.parser.RegexTransformerListener"
 	)
 	private TransformerListener _transformerListener;
 

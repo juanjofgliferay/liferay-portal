@@ -43,8 +43,8 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 
 	@Override
 	public AccountRole addAccountRole(
-			long accountEntryId, String name, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap)
+			String externalReferenceCode, long accountEntryId, String name,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap)
 		throws PortalException {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
@@ -59,8 +59,8 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 		}
 
 		return accountRoleLocalService.addAccountRole(
-			permissionChecker.getUserId(), accountEntryId, name, titleMap,
-			descriptionMap);
+			externalReferenceCode, permissionChecker.getUserId(),
+			accountEntryId, name, titleMap, descriptionMap);
 	}
 
 	@Override
@@ -69,8 +69,8 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 		throws PortalException {
 
 		try (SafeCloseable safeCloseable =
-				AccountRolePermissionThreadLocal.setWithSafeCloseable(
-					accountEntryId)) {
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(accountEntryId)) {
 
 			_accountRoleModelResourcePermission.check(
 				getPermissionChecker(), accountRoleId,
@@ -150,8 +150,8 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 		throws PortalException {
 
 		try (SafeCloseable safeCloseable =
-				AccountRolePermissionThreadLocal.setWithSafeCloseable(
-					accountEntryId)) {
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(accountEntryId)) {
 
 			for (long accountRoleId : accountRoleIds) {
 				_accountRoleModelResourcePermission.check(
@@ -161,7 +161,8 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 		}
 
 		_accountEntryModelResourcePermission.check(
-			getPermissionChecker(), accountEntryId, ActionKeys.MANAGE_USERS);
+			getPermissionChecker(), accountEntryId,
+			AccountActionKeys.ASSIGN_USERS);
 
 		accountRoleLocalService.setUserAccountRoles(
 			accountEntryId, accountRoleIds, userId);
@@ -173,8 +174,8 @@ public class AccountRoleServiceImpl extends AccountRoleServiceBaseImpl {
 		throws PortalException {
 
 		try (SafeCloseable safeCloseable =
-				AccountRolePermissionThreadLocal.setWithSafeCloseable(
-					accountEntryId)) {
+				AccountRolePermissionThreadLocal.
+					setAccountEntryIdWithSafeCloseable(accountEntryId)) {
 
 			_accountRoleModelResourcePermission.check(
 				getPermissionChecker(), accountRoleId,

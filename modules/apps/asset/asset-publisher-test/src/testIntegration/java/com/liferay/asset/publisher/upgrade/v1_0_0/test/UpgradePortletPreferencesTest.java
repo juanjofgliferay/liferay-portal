@@ -42,6 +42,8 @@ import com.liferay.portal.kernel.xml.SAXReader;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.lang.reflect.Constructor;
 
 import java.text.DateFormat;
@@ -49,8 +51,6 @@ import java.text.DateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -111,8 +111,9 @@ public class UpgradePortletPreferencesTest {
 
 					DLFileEntryType dlFileEntryType =
 						DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-							TestPropsValues.getUserId(), _group.getGroupId(),
-							ddmStructure.getStructureId(), null,
+							null, TestPropsValues.getUserId(),
+							_group.getGroupId(), ddmStructure.getStructureId(),
+							null,
 							Collections.singletonMap(
 								LocaleUtil.US, "New File Entry Type"),
 							Collections.singletonMap(
@@ -167,8 +168,9 @@ public class UpgradePortletPreferencesTest {
 
 					DLFileEntryType dlFileEntryType =
 						DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-							TestPropsValues.getUserId(), _group.getGroupId(),
-							ddmStructure.getStructureId(), null,
+							null, TestPropsValues.getUserId(),
+							_group.getGroupId(), ddmStructure.getStructureId(),
+							null,
 							Collections.singletonMap(
 								LocaleUtil.US, "New File Entry Type"),
 							Collections.singletonMap(
@@ -449,16 +451,13 @@ public class UpgradePortletPreferencesTest {
 		return getPortletPreferences(portletId);
 	}
 
-	@Inject
-	private static DDMStructureLinkLocalService _ddmStructureLinkLocalService;
-
-	@Inject
-	private static DDMStructureLocalService _ddmStructureLocalService;
-
-	@Inject
-	private static SAXReader _saxReader;
-
 	private boolean _active;
+
+	@Inject
+	private DDMStructureLinkLocalService _ddmStructureLinkLocalService;
+
+	@Inject
+	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;
@@ -466,6 +465,10 @@ public class UpgradePortletPreferencesTest {
 	private Layout _layout;
 	private DateFormat _newDateFormat;
 	private DateFormat _oldDateFormat;
+
+	@Inject
+	private SAXReader _saxReader;
+
 	private Object _upgradePortletPreferences;
 
 }

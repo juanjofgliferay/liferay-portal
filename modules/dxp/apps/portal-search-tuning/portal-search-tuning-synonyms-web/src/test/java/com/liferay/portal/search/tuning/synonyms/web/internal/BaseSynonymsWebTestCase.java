@@ -30,22 +30,20 @@ import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexNameBuilder;
-import com.liferay.portal.search.tuning.synonyms.web.internal.filter.SynonymSetFilterReader;
-import com.liferay.portal.search.tuning.synonyms.web.internal.filter.name.SynonymSetFilterNameHolder;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetFields;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetIndexReader;
 import com.liferay.portal.search.tuning.synonyms.web.internal.storage.SynonymSetStorageAdapter;
 
+import jakarta.portlet.ActionURL;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
-
-import javax.portlet.ActionURL;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
@@ -174,7 +172,7 @@ public abstract class BaseSynonymsWebTestCase {
 
 		_setUpPortletRequestGetAttribute(
 			portletRequest, Mockito.mock(PortletConfig.class),
-			JavaConstants.JAVAX_PORTLET_CONFIG);
+			JavaConstants.JAKARTA_PORTLET_CONFIG);
 		_setUpPortletRequestGetAttribute(
 			portletRequest, themeDisplay, WebKeys.THEME_DISPLAY);
 	}
@@ -314,24 +312,6 @@ public abstract class BaseSynonymsWebTestCase {
 		return searchHits;
 	}
 
-	protected void setUpSynonymSetFilterNameHolder(String[] synonyms) {
-		Mockito.doReturn(
-			synonyms
-		).when(
-			synonymSetFilterNameHolder
-		).getFilterNames();
-	}
-
-	protected void setUpSynonymSetFilterReader(String[] synonyms) {
-		Mockito.doReturn(
-			synonyms
-		).when(
-			synonymSetFilterReader
-		).getSynonymSets(
-			Mockito.anyString(), Mockito.anyString()
-		);
-	}
-
 	protected void setUpSynonymSetIndexNameBuilder() {
 		Mockito.doReturn(
 			Mockito.mock(SynonymSetIndexName.class)
@@ -385,10 +365,6 @@ public abstract class BaseSynonymsWebTestCase {
 	protected Portal portal = Mockito.mock(Portal.class);
 	protected SearchEngineAdapter searchEngineAdapter = Mockito.mock(
 		SearchEngineAdapter.class);
-	protected SynonymSetFilterNameHolder synonymSetFilterNameHolder =
-		Mockito.mock(SynonymSetFilterNameHolder.class);
-	protected SynonymSetFilterReader synonymSetFilterReader = Mockito.mock(
-		SynonymSetFilterReader.class);
 	protected SynonymSetIndexNameBuilder synonymSetIndexNameBuilder =
 		Mockito.mock(SynonymSetIndexNameBuilder.class);
 	protected SynonymSetIndexReader synonymSetIndexReader = Mockito.mock(

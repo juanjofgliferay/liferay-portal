@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {act, cleanup, render} from '@testing-library/react';
 import React from 'react';
 
@@ -63,9 +63,8 @@ describe('The performance by assignee body component with data should', () => {
 	});
 
 	it('Be rendered with user avatar or lexicon user icon', () => {
-		const assigneeProfileInfo = container.querySelectorAll(
-			'.assignee-name'
-		);
+		const assigneeProfileInfo =
+			container.querySelectorAll('.assignee-name');
 
 		expect(assigneeProfileInfo[0].children[0].innerHTML).toContain(
 			'path/to/image'

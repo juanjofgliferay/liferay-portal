@@ -5,7 +5,8 @@
 
 package com.liferay.depot.internal.verify;
 
-import com.liferay.depot.internal.util.DepotRoleUtil;
+import com.liferay.depot.constants.DepotRolesConstants;
+import com.liferay.depot.util.DepotRoleUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -33,12 +34,13 @@ public class DepotServiceVerifyProcess extends VerifyProcess {
 	private void _checkDepotRoleDescriptions() {
 		_companyLocalService.forEachCompanyId(
 			companyId -> {
-				for (String name : DepotRoleUtil.DEPOT_ROLE_NAMES) {
+				for (String name : DepotRolesConstants.DEPOT_ROLE_NAMES) {
 					Role role = _roleLocalService.fetchRole(companyId, name);
 
 					if (role != null) {
 						Map<Locale, String> descriptionMap =
-							DepotRoleUtil.getDescriptionMap(_language, name);
+							DepotRoleUtil.getDescriptionMap(
+								companyId, _language, name);
 
 						if (!Objects.equals(
 								descriptionMap, role.getDescriptionMap())) {

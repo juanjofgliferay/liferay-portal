@@ -5,11 +5,11 @@
 
 package com.liferay.portal.search.web.internal.result.display.context;
 
+import jakarta.portlet.PortletURL;
+
 import java.io.Serializable;
 
 import java.util.List;
-
-import javax.portlet.PortletURL;
 
 /**
  * @author André de Oliveira
@@ -18,6 +18,10 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 
 	public long getAssetEntryUserId() {
 		return _assetEntryUserId;
+	}
+
+	public long getAssetRendererDownloadSize() {
+		return _assetRendererDownloadSize;
 	}
 
 	public String getAssetRendererURLDownload() {
@@ -206,6 +210,10 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 
 	public void setAssetEntryUserId(long assetEntryUserId) {
 		_assetEntryUserId = assetEntryUserId;
+	}
+
+	public void setAssetRendererDownloadSize(long assetRendererDownloadSize) {
+		_assetRendererDownloadSize = assetRendererDownloadSize;
 	}
 
 	public void setAssetRendererURLDownload(String assetRendererURLDownload) {
@@ -399,6 +407,7 @@ public class SearchResultSummaryDisplayContext implements Serializable {
 
 	private boolean _assetCategoriesOrTagsVisible;
 	private long _assetEntryUserId;
+	private long _assetRendererDownloadSize;
 	private String _assetRendererURLDownload;
 	private boolean _assetRendererURLDownloadVisible;
 	private String _className;

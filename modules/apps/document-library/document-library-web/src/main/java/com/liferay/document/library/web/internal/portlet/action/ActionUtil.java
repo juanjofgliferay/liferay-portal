@@ -9,18 +9,21 @@ import com.liferay.document.library.constants.DLFileVersionPreviewConstants;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.exception.NoSuchFileShortcutException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.processor.RawMetadataProcessorUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.document.library.service.DLFileVersionPreviewLocalServiceUtil;
+import com.liferay.document.library.web.internal.display.context.helper.DLPortletInstanceSettingsHelper;
+import com.liferay.document.library.web.internal.display.context.helper.DLRequestHelper;
 import com.liferay.document.library.web.internal.security.permission.resource.DLPermission;
 import com.liferay.document.library.web.internal.util.DLFolderUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Repository;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.repository.capabilities.TrashCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -29,22 +32,18 @@ import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.RepositoryServiceUtil;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -57,23 +56,20 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
-		List<FileEntry> fileEntries = new ArrayList<>();
-
-		long[] fileEntryIds = ParamUtil.getLongValues(
-			httpServletRequest, "rowIdsFileEntry");
-
-		for (long fileEntryId : fileEntryIds) {
-			try {
-				fileEntries.add(DLAppServiceUtil.getFileEntry(fileEntryId));
-			}
-			catch (NoSuchFileEntryException noSuchFileEntryException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchFileEntryException);
+		return TransformUtil.transformToList(
+			ParamUtil.getLongValues(httpServletRequest, "rowIdsFileEntry"),
+			fileEntryId -> {
+				try {
+					return DLAppServiceUtil.getFileEntry(fileEntryId);
 				}
-			}
-		}
+				catch (NoSuchFileEntryException noSuchFileEntryException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchFileEntryException);
+					}
+				}
 
-		return fileEntries;
+				return null;
+			});
 	}
 
 	public static List<FileEntry> getFileEntries(PortletRequest portletRequest)
@@ -134,24 +130,22 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
-		long[] fileShortcutIds = ParamUtil.getLongValues(
-			httpServletRequest, "rowIdsDLFileShortcut");
-
-		List<FileShortcut> fileShortcuts = new ArrayList<>();
-
-		for (long fileShortcutId : fileShortcutIds) {
-			try {
-				fileShortcuts.add(
-					DLAppServiceUtil.getFileShortcut(fileShortcutId));
-			}
-			catch (NoSuchFileShortcutException noSuchFileShortcutException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchFileShortcutException);
+		return TransformUtil.transformToList(
+			ParamUtil.getLongValues(httpServletRequest, "rowIdsDLFileShortcut"),
+			fileShortcutId -> {
+				try {
+					return DLAppServiceUtil.getFileShortcut(fileShortcutId);
 				}
-			}
-		}
+				catch (NoSuchFileShortcutException
+							noSuchFileShortcutException) {
 
-		return fileShortcuts;
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchFileShortcutException);
+					}
+				}
+
+				return null;
+			});
 	}
 
 	public static List<FileShortcut> getFileShortcuts(
@@ -212,22 +206,20 @@ public class ActionUtil {
 		boolean ignoreRootFolder = ParamUtil.getBoolean(
 			httpServletRequest, "ignoreRootFolder");
 
+		long rootFolderId = DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
+
+			DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper =
+				new DLPortletInstanceSettingsHelper(
+					new DLRequestHelper(httpServletRequest));
+
+			rootFolderId = dlPortletInstanceSettingsHelper.getRootFolderId();
+		}
+
 		if ((folderId <= 0) && !ignoreRootFolder) {
-			PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
-			String portletId = portletDisplay.getId();
-
-			try (SafeCloseable safeCloseable =
-					CTCollectionThreadLocal.
-						setProductionModeWithSafeCloseable()) {
-
-				PortletPreferences portletPreferences =
-					PortletPreferencesFactoryUtil.getPortletPreferences(
-						httpServletRequest, portletId);
-
-				folderId = GetterUtil.getLong(
-					portletPreferences.getValue("rootFolderId", null));
-			}
+			folderId = rootFolderId;
 		}
 
 		if (folderId <= 0) {
@@ -239,6 +231,10 @@ public class ActionUtil {
 		}
 
 		Folder folder = DLAppServiceUtil.getFolder(folderId);
+
+		if (!ignoreRootFolder) {
+			DLFolderUtil.validateFolder(folder, rootFolderId);
+		}
 
 		DLFolderUtil.validateDepotFolder(
 			folderId, folder.getGroupId(), themeDisplay.getScopeGroupId());
@@ -273,23 +269,20 @@ public class ActionUtil {
 	public static List<Folder> getFolders(HttpServletRequest httpServletRequest)
 		throws PortalException {
 
-		long[] folderIds = ParamUtil.getLongValues(
-			httpServletRequest, "rowIdsFolder");
-
-		List<Folder> folders = new ArrayList<>();
-
-		for (long folderId : folderIds) {
-			try {
-				folders.add(DLAppServiceUtil.getFolder(folderId));
-			}
-			catch (NoSuchFolderException noSuchFolderException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchFolderException);
+		return TransformUtil.transformToList(
+			ParamUtil.getLongValues(httpServletRequest, "rowIdsFolder"),
+			folderId -> {
+				try {
+					return DLAppServiceUtil.getFolder(folderId);
 				}
-			}
-		}
+				catch (NoSuchFolderException noSuchFolderException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchFolderException);
+					}
+				}
 
-		return folders;
+				return null;
+			});
 	}
 
 	public static List<Folder> getFolders(PortletRequest portletRequest)

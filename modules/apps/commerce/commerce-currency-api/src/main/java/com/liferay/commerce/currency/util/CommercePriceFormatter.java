@@ -8,6 +8,8 @@ package com.liferay.commerce.currency.util;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.portal.kernel.exception.PortalException;
 
+import jakarta.portlet.ActionRequest;
+
 import java.math.BigDecimal;
 
 import java.util.Locale;
@@ -22,10 +24,22 @@ public interface CommercePriceFormatter {
 		throws PortalException;
 
 	public String format(
-			CommerceCurrency commerceCurrency, BigDecimal price, Locale locale)
+			CommerceCurrency commerceCurrency, boolean includeSymbol,
+			Locale locale, BigDecimal price)
 		throws PortalException;
 
 	public String formatAsRelative(
-		CommerceCurrency commerceCurrency, BigDecimal price, Locale locale);
+		CommerceCurrency commerceCurrency, boolean includeSymbol, Locale locale,
+		BigDecimal price);
+
+	public BigDecimal parse(
+			ActionRequest actionRequest, boolean allowNegativeValue,
+			String className, String param)
+		throws Exception;
+
+	public String parse(
+			boolean allowNegativeValue, String className, String price,
+			Locale locale)
+		throws Exception;
 
 }

@@ -16,6 +16,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.SetUtil;
@@ -68,6 +69,13 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.net.URI;
 
 import java.time.LocalDateTime;
@@ -85,13 +93,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -149,11 +150,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 	@Override
 	public Map<String, Schema> getSchemas(Class<?> entityClass) {
+		ModelConverters modelConverters = ModelConverters.getInstance();
+
 		return new HashMap<>(
-			ModelConverters.getInstance(
-			).readAll(
-				new AnnotatedType(entityClass)
-			));
+			modelConverters.readAll(new AnnotatedType(entityClass)));
 	}
 
 	@Override
@@ -371,34 +371,33 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	protected void activate(BundleContext bundleContext)
 		throws InvalidSyntaxException {
 
-		_entityClassNameServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, null,
-				"(" + JaxrsWhiteboardConstants.JAX_RS_RESOURCE + "=true)",
-				new PropertyServiceReferenceMapper<>("component.name"),
-				new ServiceTrackerCustomizer<Object, String>() {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, null,
+			"(" + JaxrsWhiteboardConstants.JAX_RS_RESOURCE + "=true)",
+			new PropertyServiceReferenceMapper<>("component.name"),
+			new ServiceTrackerCustomizer<Object, String>() {
 
-					@Override
-					public String addingService(
-						ServiceReference<Object> serviceReference) {
+				@Override
+				public String addingService(
+					ServiceReference<Object> serviceReference) {
 
-						return (String)serviceReference.getProperty(
-							"entity.class.name");
-					}
+					return (String)serviceReference.getProperty(
+						"entity.class.name");
+				}
 
-					@Override
-					public void modifiedService(
-						ServiceReference<Object> serviceReference,
-						String entityClassName) {
-					}
+				@Override
+				public void modifiedService(
+					ServiceReference<Object> serviceReference,
+					String entityClassName) {
+				}
 
-					@Override
-					public void removedService(
-						ServiceReference<Object> serviceReference,
-						String entityClassName) {
-					}
+				@Override
+				public void removedService(
+					ServiceReference<Object> serviceReference,
+					String entityClassName) {
+				}
 
-				});
+			});
 
 		_trackedOpenAPIContributors = ServiceTrackerListFactory.open(
 			bundleContext, OpenAPIContributor.class);
@@ -408,7 +407,7 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	protected void deactivate() {
 		_trackedOpenAPIContributors.close();
 
-		_entityClassNameServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static String _getUpdatedReference(
@@ -552,9 +551,8 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 		Set<String> classNames = new HashSet<>();
 
 		for (Class<?> resourceClass : resourceClasses) {
-			String entryClassName =
-				_entityClassNameServiceTrackerMap.getService(
-					resourceClass.getName());
+			String entryClassName = _serviceTrackerMap.getService(
+				resourceClass.getName());
 
 			if (entryClassName != null) {
 				classNames.add(entryClassName);
@@ -565,11 +563,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	}
 
 	private DTOProperty _getDTOProperty(PropertyDefinition propertyDefinition) {
-		PropertyDefinition.PropertyType propertyType =
-			propertyDefinition.getPropertyType();
-
 		DTOProperty dtoProperty;
 
+		PropertyDefinition.PropertyType propertyType =
+			propertyDefinition.getPropertyType();
 		String type = null;
 
 		if ((propertyType ==
@@ -944,6 +941,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 
 					operationId = StringUtil.replace(
 						operationId, entry.getKey(), entry.getValue());
+
+					operationId = StringUtil.replace(
+						operationId, "Related" + entry.getValue(),
+						"Related" + entry.getKey());
 				}
 
 				operation.setOperationId(operationId);
@@ -1099,7 +1100,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 					ArraySchema arraySchema = new ArraySchema();
 
 					arraySchema.setDescription(dtoProperty.getDescription());
-					arraySchema.setExtensions(dtoProperty.getExtensions());
+					arraySchema.setExtensions(
+						HashMapBuilder.putAll(
+							dtoProperty.getExtensions()
+						).build());
 					arraySchema.setName(dtoProperty.getName());
 					arraySchema.setType("array");
 
@@ -1132,8 +1136,12 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 				Schema<Object> schema = new Schema<>();
 
 				schema.setDescription(dtoProperty.getDescription());
-				schema.setExtensions(dtoProperty.getExtensions());
+				schema.setExtensions(
+					HashMapBuilder.putAll(
+						dtoProperty.getExtensions()
+					).build());
 				schema.setName(dtoProperty.getName());
+				schema.setReadOnly(dtoProperty.getReadOnly());
 
 				if (type.equals("Boolean")) {
 					schema.setType("boolean");
@@ -1251,7 +1259,9 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 							schema.setDescription(
 								childDTOProperty1.getDescription());
 							schema.setExtensions(
-								childDTOProperty1.getExtensions());
+								HashMapBuilder.putAll(
+									childDTOProperty1.getExtensions()
+								).build());
 							schema.setName(childDTOProperty1.getName());
 							schema.setType("object");
 
@@ -1437,11 +1447,10 @@ public class OpenAPIResourceImpl implements OpenAPIResource {
 	@Reference
 	private ConfigurationAdmin _configurationAdmin;
 
-	private ServiceTrackerMap<String, String> _entityClassNameServiceTrackerMap;
-
 	@Reference
 	private ExtensionProviderRegistry _extensionProviderRegistry;
 
+	private ServiceTrackerMap<String, String> _serviceTrackerMap;
 	private ServiceTrackerList<OpenAPIContributor> _trackedOpenAPIContributors;
 
 }

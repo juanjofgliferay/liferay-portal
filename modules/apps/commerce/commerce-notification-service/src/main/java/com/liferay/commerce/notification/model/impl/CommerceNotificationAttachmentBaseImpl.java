@@ -18,8 +18,10 @@ import com.liferay.commerce.notification.service.CommerceNotificationAttachmentL
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationAttachmentImpl
  * @see CommerceNotificationAttachment
+ * @deprecated
  * @generated
  */
+@Deprecated
 public abstract class CommerceNotificationAttachmentBaseImpl
 	extends CommerceNotificationAttachmentModelImpl
 	implements CommerceNotificationAttachment {
@@ -42,3 +44,4 @@ public abstract class CommerceNotificationAttachmentBaseImpl
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:802665701

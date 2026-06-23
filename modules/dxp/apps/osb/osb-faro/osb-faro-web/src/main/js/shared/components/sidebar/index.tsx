@@ -6,12 +6,10 @@ import React from 'react';
 import SidebarItem from './SidebarItem';
 import UserDropdown, {Menus} from 'shared/components/user-dropdown';
 import {ACCOUNTS, Routes, SEGMENTS, toRoute} from 'shared/util/router';
-import {
-	DEVELOPER_MODE,
-	ENABLE_ACCOUNTS,
-	LANGUAGES
-} from 'shared/util/constants';
+import {DEVELOPER_MODE, LANGUAGES} from 'shared/util/constants';
+import {ENABLE_COMMERCE} from 'shared/util/feature-flags';
 import {Link, matchPath} from 'react-router-dom';
+import {useLDPEnabled} from 'shared/hooks/useLDPEnabled';
 import {User} from 'shared/util/records';
 
 interface ISidebarProps {
@@ -35,23 +33,34 @@ const Sidebar: React.FC<ISidebarProps> = ({
 	groupId,
 	onToggle
 }) => {
+	const LDPEnabled = useLDPEnabled({groupId});
+
 	const sidebarSections = [
 		{
 			items: [
+				LDPEnabled && {
+					icon: 'polls',
+					label: Liferay.Language.get('lifecycles'),
+					route: Routes.LIFECYCLE,
+					url: toRoute(Routes.LIFECYCLE, {channelId, groupId})
+				},
 				{
-					icon: 'ac-page',
+					icon: 'ac_page',
 					label: Liferay.Language.get('sites'),
 					route: Routes.SITES,
 					url: toRoute(Routes.SITES, {channelId, groupId})
 				},
 				{
-					icon: 'ac-assets',
+					icon: 'ac_assets',
 					label: Liferay.Language.get('assets'),
 					route: Routes.ASSETS,
-					url: toRoute(Routes.ASSETS, {channelId, groupId})
+					url: toRoute(Routes.ASSETS, {
+						channelId,
+						groupId
+					})
 				},
 				{
-					icon: 'ac-event-analysis',
+					icon: 'ac_event_analysis',
 					label: Liferay.Language.get('events'),
 					route: Routes.EVENT_ANALYSIS,
 					url: toRoute(Routes.EVENT_ANALYSIS, {
@@ -59,13 +68,13 @@ const Sidebar: React.FC<ISidebarProps> = ({
 						groupId
 					})
 				}
-			],
+			].filter(Boolean) as [],
 			label: Liferay.Language.get('touchpoints')
 		},
 		{
 			items: [
 				{
-					icon: 'ac-segment',
+					icon: 'ac_segment',
 					label: Liferay.Language.get('segments'),
 					route: Routes.CONTACTS_LIST_SEGMENT,
 					url: toRoute(Routes.CONTACTS_LIST_ENTITY, {
@@ -74,8 +83,8 @@ const Sidebar: React.FC<ISidebarProps> = ({
 						type: SEGMENTS
 					})
 				},
-				ENABLE_ACCOUNTS && {
-					icon: 'ac-account',
+				LDPEnabled && {
+					icon: 'ac_account',
 					label: Liferay.Language.get('accounts'),
 					route: Routes.CONTACTS_LIST_ACCOUNT,
 					url: toRoute(Routes.CONTACTS_LIST_ENTITY, {
@@ -85,7 +94,7 @@ const Sidebar: React.FC<ISidebarProps> = ({
 					})
 				},
 				{
-					icon: 'ac-individual',
+					icon: 'ac_individual',
 					label: Liferay.Language.get('individuals'),
 					route: Routes.CONTACTS_INDIVIDUALS,
 					url: toRoute(Routes.CONTACTS_INDIVIDUALS, {
@@ -98,10 +107,10 @@ const Sidebar: React.FC<ISidebarProps> = ({
 		},
 		{
 			// LRAC-13187 - TODO Remove Feature flag after definition of the features that will be announced to commerce and AC connection.
-			hide: !DEVELOPER_MODE,
+			hide: !ENABLE_COMMERCE,
 			items: [
 				{
-					icon: 'ac-commerce',
+					icon: 'ac_commerce',
 					label: Liferay.Language.get('commerce'),
 					route: Routes.COMMERCE,
 					url: toRoute(Routes.COMMERCE, {channelId, groupId})
@@ -112,7 +121,7 @@ const Sidebar: React.FC<ISidebarProps> = ({
 		{
 			items: [
 				{
-					icon: 'ac-test',
+					icon: 'ac_test',
 					label: Liferay.Language.get('tests'),
 					route: Routes.TESTS,
 					url: toRoute(Routes.TESTS, {channelId, groupId})
@@ -156,15 +165,16 @@ const Sidebar: React.FC<ISidebarProps> = ({
 							active,
 							label,
 							onClick: active
-								? null
-								: () =>
+								? undefined
+								: () => {
 										API.user
 											.updateLanguage({
 												languageId: id
 											})
 											.then(() =>
 												window.location.reload()
-											)
+											);
+								  }
 						};
 					})
 				}
@@ -181,7 +191,7 @@ const Sidebar: React.FC<ISidebarProps> = ({
 				>
 					<ClayIcon
 						className='icon-root icon-size-md logo'
-						symbol='ac-logo'
+						symbol='ac_logo'
 					/>
 				</Link>
 
@@ -197,7 +207,7 @@ const Sidebar: React.FC<ISidebarProps> = ({
 					({hide = false, items, label}, sectionIndex) =>
 						!hide && (
 							<div className='section' key={sectionIndex}>
-								<h5 className='section-title'>{label}</h5>
+								<div className='h5 section-title'>{label}</div>
 
 								<ul className='nav-list'>
 									{items.map(

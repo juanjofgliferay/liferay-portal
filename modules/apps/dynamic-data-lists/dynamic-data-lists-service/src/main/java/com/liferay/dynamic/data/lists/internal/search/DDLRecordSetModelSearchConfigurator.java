@@ -5,11 +5,17 @@
 
 package com.liferay.dynamic.data.lists.internal.search;
 
+import com.liferay.dynamic.data.lists.internal.search.spi.model.index.contributor.DDLRecordSetModelIndexerWriterContributor;
+import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
+import com.liferay.dynamic.data.lists.service.DDLRecordSetLocalService;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
+import com.liferay.portal.search.indexer.IndexerWriter;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchConfigurator;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,9 +51,28 @@ public class DDLRecordSetModelSearchConfigurator
 		return _modelIndexWriterContributor;
 	}
 
+	@Activate
+	protected void activate() {
+		_modelIndexWriterContributor =
+			new DDLRecordSetModelIndexerWriterContributor(
+				new DDLRecordBatchReindexer(
+					_indexerDocumentBuilder, _indexerWriter),
+				_ddlRecordSetLocalService);
+	}
+
+	@Reference
+	private DDLRecordSetLocalService _ddlRecordSetLocalService;
+
 	@Reference(
-		target = "(indexer.class.name=com.liferay.dynamic.data.lists.model.DDLRecordSet)"
+		target = "(indexer.class.name=com.liferay.dynamic.data.lists.model.DDLRecord)"
 	)
+	private IndexerDocumentBuilder _indexerDocumentBuilder;
+
+	@Reference(
+		target = "(indexer.class.name=com.liferay.dynamic.data.lists.model.DDLRecord)"
+	)
+	private IndexerWriter<DDLRecord> _indexerWriter;
+
 	private ModelIndexerWriterContributor<DDLRecordSet>
 		_modelIndexWriterContributor;
 

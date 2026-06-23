@@ -234,6 +234,10 @@ public interface ObjectFieldSettingLocalService
 	public List<ObjectFieldSetting> getObjectFieldObjectFieldSettings(
 		long objectFieldId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectFieldSetting> getObjectFieldObjectFieldSettings(
+		ObjectField objectField);
+
 	/**
 	 * Returns the object field setting with the primary key.
 	 *
@@ -314,3 +318,4 @@ public interface ObjectFieldSettingLocalService
 		ObjectFieldSetting objectFieldSetting);
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-2031305935

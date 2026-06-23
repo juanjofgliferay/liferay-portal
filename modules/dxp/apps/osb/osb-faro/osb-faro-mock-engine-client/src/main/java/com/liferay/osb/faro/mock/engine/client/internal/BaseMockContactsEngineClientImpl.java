@@ -9,14 +9,27 @@ import com.liferay.osb.faro.engine.client.BaseEngineClient;
 import com.liferay.osb.faro.engine.client.ContactsEngineClient;
 import com.liferay.osb.faro.engine.client.exception.FaroEngineClientException;
 import com.liferay.osb.faro.engine.client.model.Account;
+import com.liferay.osb.faro.engine.client.model.AccountDetails;
+import com.liferay.osb.faro.engine.client.model.AccountLifecycle;
+import com.liferay.osb.faro.engine.client.model.AccountLifecycleMetric;
+import com.liferay.osb.faro.engine.client.model.AccountLifecycleStageMetric;
+import com.liferay.osb.faro.engine.client.model.AccountLifecycleStatus;
+import com.liferay.osb.faro.engine.client.model.AccountMetric;
 import com.liferay.osb.faro.engine.client.model.Activity;
 import com.liferay.osb.faro.engine.client.model.ActivityAggregation;
 import com.liferay.osb.faro.engine.client.model.ActivityAsset;
 import com.liferay.osb.faro.engine.client.model.ActivityGroup;
 import com.liferay.osb.faro.engine.client.model.Asset;
+import com.liferay.osb.faro.engine.client.model.AssetSummary;
+import com.liferay.osb.faro.engine.client.model.AssetSummaryCategory;
+import com.liferay.osb.faro.engine.client.model.AssetSummaryMimeType;
+import com.liferay.osb.faro.engine.client.model.AssetSummaryTag;
+import com.liferay.osb.faro.engine.client.model.AssetSummaryType;
+import com.liferay.osb.faro.engine.client.model.AssetSummaryVocabulary;
 import com.liferay.osb.faro.engine.client.model.Author;
 import com.liferay.osb.faro.engine.client.model.BlockedKeyword;
 import com.liferay.osb.faro.engine.client.model.Channel;
+import com.liferay.osb.faro.engine.client.model.ChannelDataSource;
 import com.liferay.osb.faro.engine.client.model.Credentials;
 import com.liferay.osb.faro.engine.client.model.DXPGroup;
 import com.liferay.osb.faro.engine.client.model.DXPOrganization;
@@ -34,11 +47,15 @@ import com.liferay.osb.faro.engine.client.model.IndividualSegment;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembership;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembershipChange;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembershipChangeAggregation;
+import com.liferay.osb.faro.engine.client.model.IndividualSegmentRealTimeMembership;
 import com.liferay.osb.faro.engine.client.model.IndividualTransformation;
 import com.liferay.osb.faro.engine.client.model.Interest;
+import com.liferay.osb.faro.engine.client.model.PageExperience;
 import com.liferay.osb.faro.engine.client.model.PageVisited;
 import com.liferay.osb.faro.engine.client.model.Provider;
+import com.liferay.osb.faro.engine.client.model.RealTimeMembershipMetric;
 import com.liferay.osb.faro.engine.client.model.Results;
+import com.liferay.osb.faro.engine.client.model.SegmentActivation;
 import com.liferay.osb.faro.engine.client.model.provider.LiferayProvider;
 import com.liferay.osb.faro.engine.client.util.FilterBuilder;
 import com.liferay.osb.faro.engine.client.util.OrderByField;
@@ -58,6 +75,15 @@ import org.osgi.service.component.annotations.Reference;
  */
 public abstract class BaseMockContactsEngineClientImpl
 	extends BaseEngineClient implements ContactsEngineClient {
+
+	@Override
+	public AccountLifecycle addAccountLifecycle(
+		FaroProject faroProject, String description, String name,
+		String segmentId) {
+
+		return contactsEngineClient.addAccountLifecycle(
+			faroProject, description, name, segmentId);
+	}
 
 	@Override
 	public Results<BlockedKeyword> addBlockedKeywords(
@@ -134,13 +160,14 @@ public abstract class BaseMockContactsEngineClientImpl
 
 	@Override
 	public IndividualSegment addIndividualSegment(
-		FaroProject faroProject, long userId, String channelId, String filter,
+		FaroProject faroProject, long userId, String channelId,
+		String externalReferenceCode, String filterString,
 		boolean includeAnonymousUsers, String name, String segmentType,
-		String status) {
+		boolean sequential, String status) {
 
 		return contactsEngineClient.addIndividualSegment(
-			faroProject, userId, channelId, filter, includeAnonymousUsers, name,
-			segmentType, status);
+			faroProject, userId, channelId, externalReferenceCode, filterString,
+			includeAnonymousUsers, name, segmentType, sequential, status);
 	}
 
 	@Override
@@ -239,10 +266,11 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
-	public void deleteIndividualSegment(FaroProject faroProject, String id)
+	public void deleteIndividualSegments(
+			FaroProject faroProject, List<String> ids)
 		throws Exception {
 
-		contactsEngineClient.deleteIndividualSegment(faroProject, id);
+		contactsEngineClient.deleteIndividualSegments(faroProject, ids);
 	}
 
 	@Override
@@ -269,6 +297,13 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public void disconnectDataSources(FaroProject faroProject)
+		throws FaroEngineClientException {
+
+		contactsEngineClient.disconnectDataSources(faroProject);
+	}
+
+	@Override
 	public <T> T get(
 			FaroProject faroProject, Map<String, String> headers, String path,
 			Map<String, List<String>> queryParameters, Class<T> returnType)
@@ -279,10 +314,29 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
-	public Account getAccount(FaroProject faroProject, String id)
+	public Account getAccount(
+			FaroProject faroProject, String id, Long channelId)
 		throws FaroEngineClientException {
 
-		return contactsEngineClient.getAccount(faroProject, id);
+		return contactsEngineClient.getAccount(faroProject, id, channelId);
+	}
+
+	@Override
+	public AccountDetails getAccountDetails(
+			FaroProject faroProject, String id, Long channelId)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountDetails(
+			faroProject, id, channelId);
+	}
+
+	@Override
+	public Results<Object> getAccountFieldValues(
+		FaroProject faroProject, Long channelId, String fieldMappingFieldName,
+		String query, int cur, int delta) {
+
+		return contactsEngineClient.getAccountFieldValues(
+			faroProject, channelId, fieldMappingFieldName, query, cur, delta);
 	}
 
 	@Override
@@ -297,25 +351,93 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public AccountLifecycle getAccountLifecycle(
+			FaroProject faroProject, String id)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountLifecycle(faroProject, id);
+	}
+
+	@Override
+	public Results<Account> getAccountLifecycleAccounts(
+			FaroProject faroProject, String filterString, String id,
+			String query, int cur, int delta, String sortString)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountLifecycleAccounts(
+			faroProject, filterString, id, query, cur, delta, sortString);
+	}
+
+	@Override
+	public List<AccountLifecycleMetric> getAccountLifecycleMetrics(
+			FaroProject faroProject, String country, String id, String industry)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountLifecycleMetrics(
+			faroProject, country, id, industry);
+	}
+
+	@Override
+	public List<AccountLifecycle> getAccountLifecycles(FaroProject faroProject)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountLifecycles(faroProject);
+	}
+
+	@Override
+	public List<AccountLifecycleStageMetric> getAccountLifecycleStageMetrics(
+			FaroProject faroProject, String country, String id, String industry)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountLifecycleStageMetrics(
+			faroProject, country, id, industry);
+	}
+
+	@Override
+	public AccountLifecycleStatus getAccountLifecycleStatus(
+			FaroProject faroProject, String accountLifecycleId, String id)
+		throws FaroEngineClientException {
+
+		return contactsEngineClient.getAccountLifecycleStatus(
+			faroProject, accountLifecycleId, id);
+	}
+
+	@Override
+	public List<AccountMetric> getAccountMetrics(
+		FaroProject faroProject, Long channelId) {
+
+		return contactsEngineClient.getAccountMetrics(faroProject, channelId);
+	}
+
+	@Override
 	public Results<Account> getAccounts(
-		FaroProject faroProject, String channelId, String dataSourceId,
-		String individualSegmentId, String filter, String query,
-		List<String> fields, int cur, int delta,
-		List<OrderByField> orderByFields) {
+		FaroProject faroProject, String channelId, String filterString,
+		String query, int cur, int delta, String sortString) {
 
 		return contactsEngineClient.getAccounts(
-			faroProject, channelId, dataSourceId, individualSegmentId, filter,
-			query, fields, cur, delta, orderByFields);
+			faroProject, channelId, filterString, query, cur, delta,
+			sortString);
+	}
+
+	@Override
+	public Results<Account> getAccounts(
+		FaroProject faroProject, String channelId, String filterString,
+		String query, String rangeEnd, Integer rangeKey, String rangeStart,
+		int cur, int delta, String sortString) {
+
+		return contactsEngineClient.getAccounts(
+			faroProject, channelId, filterString, query, rangeEnd, rangeKey,
+			rangeStart, cur, delta, sortString);
 	}
 
 	@Override
 	public Results<Distribution> getAccountsDistribution(
 		FaroProject faroProject, String channelId, String fieldMappingFieldName,
-		String filter, String individualSegmentId, int count, int numberOfBins,
-		List<OrderByField> orderByFields) {
+		String filterString, String individualSegmentId, int count,
+		int numberOfBins, List<OrderByField> orderByFields) {
 
 		return contactsEngineClient.getAccountsDistribution(
-			faroProject, channelId, fieldMappingFieldName, filter,
+			faroProject, channelId, fieldMappingFieldName, filterString,
 			individualSegmentId, count, numberOfBins, orderByFields);
 	}
 
@@ -395,6 +517,68 @@ public abstract class BaseMockContactsEngineClientImpl
 			orderByFields);
 	}
 
+	public Results<AssetSummary> getAssetSummaries(
+		FaroProject faroProject, String accountId, long channelId,
+		String filterString, String keywords, String objectType, int rangeKey,
+		String selectedMetric, int cur, int delta, String sortString) {
+
+		return contactsEngineClient.getAssetSummaries(
+			faroProject, accountId, channelId, filterString, keywords,
+			objectType, rangeKey, selectedMetric, cur, delta, sortString);
+	}
+
+	@Override
+	public Results<AssetSummaryCategory> getAssetSummaryCategories(
+		FaroProject faroProject, String accountId, long channelId,
+		String keywords, String rangeEnd, int rangeKey, String rangeStart,
+		String selectedMetric, String sort, String vocabularyId, int cur,
+		int delta) {
+
+		return contactsEngineClient.getAssetSummaryCategories(
+			faroProject, accountId, channelId, keywords, rangeEnd, rangeKey,
+			rangeStart, selectedMetric, sort, vocabularyId, cur, delta);
+	}
+
+	@Override
+	public Results<AssetSummaryMimeType> getAssetSummaryMimeTypes(
+		FaroProject faroProject, long channelId, String rangeEnd, int rangeKey,
+		String rangeStart, int cur, int delta) {
+
+		return contactsEngineClient.getAssetSummaryMimeTypes(
+			faroProject, channelId, rangeEnd, rangeKey, rangeStart, cur, delta);
+	}
+
+	@Override
+	public Results<AssetSummaryTag> getAssetSummaryTags(
+		FaroProject faroProject, String accountId, long channelId,
+		String keywords, String rangeEnd, int rangeKey, String rangeStart,
+		String selectedMetric, String sort, int cur, int delta) {
+
+		return contactsEngineClient.getAssetSummaryTags(
+			faroProject, accountId, channelId, keywords, rangeEnd, rangeKey,
+			rangeStart, selectedMetric, sort, cur, delta);
+	}
+
+	@Override
+	public Results<AssetSummaryType> getAssetSummaryTypes(
+		FaroProject faroProject, long channelId, String rangeEnd, int rangeKey,
+		String rangeStart, int cur, int delta) {
+
+		return contactsEngineClient.getAssetSummaryTypes(
+			faroProject, channelId, rangeEnd, rangeKey, rangeStart, cur, delta);
+	}
+
+	@Override
+	public Results<AssetSummaryVocabulary> getAssetSummaryVocabularies(
+		FaroProject faroProject, long channelId, String keywords,
+		String rangeEnd, int rangeKey, String rangeStart, String sort, int cur,
+		int delta) {
+
+		return contactsEngineClient.getAssetSummaryVocabularies(
+			faroProject, channelId, keywords, rangeEnd, rangeKey, rangeStart,
+			sort, cur, delta);
+	}
+
 	@Override
 	public DataSource getAvailableTokenDataSource(FaroProject faroProject) {
 		return contactsEngineClient.getAvailableTokenDataSource(faroProject);
@@ -421,6 +605,15 @@ public abstract class BaseMockContactsEngineClientImpl
 		throws FaroEngineClientException {
 
 		return contactsEngineClient.getChannel(faroProject, id);
+	}
+
+	public Results<ChannelDataSource> getChannelDataSources(
+		FaroProject faroProject, Long dataSourceId, Boolean enabled,
+		String name, int cur, int delta, List<OrderByField> orderByFields) {
+
+		return contactsEngineClient.getChannelDataSources(
+			faroProject, dataSourceId, enabled, name, cur, delta,
+			orderByFields);
 	}
 
 	@Override
@@ -523,6 +716,30 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public long getDataSourceMetricsAccountsCount(
+		FaroProject faroProject, String dataSourceId) {
+
+		return contactsEngineClient.getDataSourceMetricsAccountsCount(
+			faroProject, dataSourceId);
+	}
+
+	@Override
+	public long getDataSourceMetricsEventsCount(
+		FaroProject faroProject, String dataSourceId) {
+
+		return contactsEngineClient.getDataSourceMetricsEventsCount(
+			faroProject, dataSourceId);
+	}
+
+	@Override
+	public long getDataSourceMetricsUsersCount(
+		FaroProject faroProject, String dataSourceId) {
+
+		return contactsEngineClient.getDataSourceMetricsUsersCount(
+			faroProject, dataSourceId);
+	}
+
+	@Override
 	public Map<String, DataSourceProgress> getDataSourceProgressMap(
 		FaroProject faroProject, String id) {
 
@@ -534,6 +751,14 @@ public abstract class BaseMockContactsEngineClientImpl
 		FaroProject faroProject, List<String> channelIds) {
 
 		return contactsEngineClient.getDataSources(faroProject, channelIds);
+	}
+
+	@Override
+	public List<DataSource> getDataSources(
+		FaroProject faroProject, long channelId, String provideTypeExclude) {
+
+		return contactsEngineClient.getDataSources(
+			faroProject, channelId, provideTypeExclude);
 	}
 
 	@Override
@@ -720,16 +945,19 @@ public abstract class BaseMockContactsEngineClientImpl
 
 	@Override
 	public Results<Individual> getIndividuals(
-		FaroProject faroProject, String accountId, String channelId,
-		String dataSourceId, String individualSegmentId,
-		String notIndividualSegmentId, String interestName, String filter,
-		String query, List<String> fields, boolean includeAnonymousUsers,
-		int cur, int delta, List<OrderByField> orderByFields) {
+		FaroProject faroProject, String accountId, String activityStatus,
+		String channelId, String dataSourceId, List<String> fields,
+		String filterString, boolean includeAnonymousUsers,
+		String individualSegmentId, String interestName,
+		String notIndividualSegmentId, List<String> profileTypes, String query,
+		String rangeEnd, Integer rangeKey, String rangeStart, int cur,
+		int delta, List<OrderByField> orderByFields) {
 
 		return contactsEngineClient.getIndividuals(
-			faroProject, accountId, channelId, dataSourceId,
-			individualSegmentId, notIndividualSegmentId, interestName, filter,
-			query, fields, includeAnonymousUsers, cur, delta, orderByFields);
+			faroProject, accountId, activityStatus, channelId, dataSourceId,
+			fields, filterString, includeAnonymousUsers, individualSegmentId,
+			interestName, notIndividualSegmentId, profileTypes, query, rangeEnd,
+			rangeKey, rangeStart, cur, delta, orderByFields);
 	}
 
 	@Override
@@ -746,12 +974,13 @@ public abstract class BaseMockContactsEngineClientImpl
 
 	@Override
 	public Results<Individual> getIndividualsByIndividualSegment(
-		FaroProject faroProject, String individualSegmentId, String filter,
-		String query, List<String> fields, boolean includeAnonymousUsers,
-		int cur, int delta, List<OrderByField> orderByFields) {
+		FaroProject faroProject, String individualSegmentId,
+		String filterString, String query, List<String> fields,
+		boolean includeAnonymousUsers, int cur, int delta,
+		List<OrderByField> orderByFields) {
 
 		return contactsEngineClient.getIndividualsByIndividualSegment(
-			faroProject, individualSegmentId, filter, query, fields,
+			faroProject, individualSegmentId, filterString, query, fields,
 			includeAnonymousUsers, cur, delta, orderByFields);
 	}
 
@@ -818,15 +1047,27 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public Results<IndividualSegmentRealTimeMembership>
+		getIndividualSegmentRealTimeMemberships(
+			FaroProject faroProject, String day, String individualSegmentId,
+			List<String> profileTypes, String query, List<String> types,
+			int cur, int delta, List<OrderByField> orderByFields) {
+
+		return contactsEngineClient.getIndividualSegmentRealTimeMemberships(
+			faroProject, day, individualSegmentId, profileTypes, query, types,
+			cur, delta, orderByFields);
+	}
+
+	@Override
 	public Results<IndividualSegment> getIndividualSegments(
 		FaroProject faroProject, String channelId, String dataSourceId,
-		String query, List<String> fields, String name, String segmentType,
-		String state, String status, int cur, int delta,
-		List<OrderByField> orderByFields) {
+		String query, List<String> fields, String name,
+		List<String> segmentTypes, String state, String status, int cur,
+		int delta, List<OrderByField> orderByFields) {
 
 		return contactsEngineClient.getIndividualSegments(
 			faroProject, channelId, dataSourceId, query, fields, name,
-			segmentType, state, status, cur, delta, orderByFields);
+			segmentTypes, state, status, cur, delta, orderByFields);
 	}
 
 	@Override
@@ -842,10 +1083,11 @@ public abstract class BaseMockContactsEngineClientImpl
 
 	@Override
 	public Results<String> getInterestKeywords(
-		FaroProject faroProject, String query, int cur, int delta) {
+		String channelId, FaroProject faroProject, String query, int cur,
+		int delta) {
 
 		return contactsEngineClient.getInterestKeywords(
-			faroProject, query, cur, delta);
+			channelId, faroProject, query, cur, delta);
 	}
 
 	@Override
@@ -857,6 +1099,16 @@ public abstract class BaseMockContactsEngineClientImpl
 		return contactsEngineClient.getInterests(
 			faroProject, channelId, ownerId, ownerType, name, query, expand,
 			cur, delta, orderByFields);
+	}
+
+	@Override
+	public List<PageExperience> getPageExperiences(
+			FaroProject faroProject, String canonicalUrl, String channelId,
+			String pageTitle)
+		throws Exception {
+
+		return contactsEngineClient.getPageExperiences(
+			faroProject, canonicalUrl, channelId, pageTitle);
 	}
 
 	@Override
@@ -877,12 +1129,30 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public RealTimeMembershipMetric getRealTimeMembershipMetric(
+		FaroProject faroProject, String individualSegmentId) {
+
+		return contactsEngineClient.getRealTimeMembershipMetric(
+			faroProject, individualSegmentId);
+	}
+
+	@Override
+	public long getReportsExportCSVCount(
+			FaroProject faroProject, String path,
+			Map<String, List<String>> queryParameters)
+		throws Exception {
+
+		return contactsEngineClient.getReportsExportCSVCount(
+			faroProject, path, queryParameters);
+	}
+
+	@Override
 	public Results<String> getSessionValues(
 		FaroProject faroProject, String channelId, String fieldName,
-		String filter, String query, int cur, int delta) {
+		String filterString, String query, int cur, int delta) {
 
 		return contactsEngineClient.getSessionValues(
-			faroProject, channelId, fieldName, filter, query, cur, delta);
+			faroProject, channelId, fieldName, filterString, query, cur, delta);
 	}
 
 	@Override
@@ -894,6 +1164,11 @@ public abstract class BaseMockContactsEngineClientImpl
 		return contactsEngineClient.getSimilarIndividuals(
 			faroProject, individualId, query, fields, cur, delta,
 			orderByFields);
+	}
+
+	@Override
+	public long getSyncedIndividualsCount(FaroProject faroProject) {
+		return contactsEngineClient.getSyncedIndividualsCount(faroProject);
 	}
 
 	@Override
@@ -935,12 +1210,12 @@ public abstract class BaseMockContactsEngineClientImpl
 	@Override
 	public DataSource patchDataSource(
 		FaroProject faroProject, String id, Credentials credentials,
-		long userId, String name, String url, Provider provider, Event event,
-		String status) {
+		Event event, String name, Provider provider, String status, String url,
+		long userId) {
 
 		return contactsEngineClient.patchDataSource(
-			faroProject, id, credentials, userId, name, url, provider, event,
-			status);
+			faroProject, id, credentials, event, name, provider, status, url,
+			userId);
 	}
 
 	@Override
@@ -974,6 +1249,17 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public DataSource reconnectDataSource(
+		FaroProject faroProject, String id, Credentials credentials,
+		Event event, String name, Provider provider, String status, String url,
+		long userId) {
+
+		return contactsEngineClient.reconnectDataSource(
+			faroProject, id, credentials, event, name, provider, status, url,
+			userId);
+	}
+
+	@Override
 	public List<Map<String, Object>> refreshLiferay(FaroProject faroProject) {
 		return contactsEngineClient.refreshLiferay(faroProject);
 	}
@@ -986,14 +1272,32 @@ public abstract class BaseMockContactsEngineClientImpl
 	}
 
 	@Override
+	public AccountLifecycle updateAccountLifecycle(
+		FaroProject faroProject, String description, String id, String name,
+		String segmentId) {
+
+		return contactsEngineClient.updateAccountLifecycle(
+			faroProject, description, id, name, segmentId);
+	}
+
+	@Override
+	public void updateAccountLifecycleStageRule(
+		FaroProject faroProject, String filterMetadata, String filterString,
+		String id, String name, String stageId) {
+
+		contactsEngineClient.updateAccountLifecycleStageRule(
+			faroProject, filterMetadata, filterString, id, name, stageId);
+	}
+
+	@Override
 	public DataSource updateDataSource(
 		FaroProject faroProject, String id, Credentials credentials,
-		long userId, String name, String url, Provider provider, Event event,
-		String status) {
+		Event event, String name, Provider provider, String status, String url,
+		long userId) {
 
 		return contactsEngineClient.updateDataSource(
-			faroProject, id, credentials, userId, name, url, provider, event,
-			status);
+			faroProject, id, credentials, event, name, provider, status, url,
+			userId);
 	}
 
 	@Override
@@ -1010,12 +1314,24 @@ public abstract class BaseMockContactsEngineClientImpl
 	@Override
 	public IndividualSegment updateIndividualSegment(
 		FaroProject faroProject, String id, long userId, String channelId,
-		String filter, boolean includeAnonymousUsers, String name,
-		String segmentType) {
+		String externalReferenceCode, String filterString,
+		boolean includeAnonymousUsers, String name, String segmentType,
+		boolean sequential) {
 
 		return contactsEngineClient.updateIndividualSegment(
-			faroProject, id, userId, channelId, filter, includeAnonymousUsers,
-			name, segmentType);
+			faroProject, id, userId, channelId, externalReferenceCode,
+			filterString, includeAnonymousUsers, name, segmentType, sequential);
+	}
+
+	@Override
+	public SegmentActivation updateSegmentActivation(
+		FaroProject faroProject, String cronExpression, String frequencyType,
+		Date scheduleEndDate, Date scheduleStartDate, String scheduleType,
+		Long segmentId) {
+
+		return contactsEngineClient.updateSegmentActivation(
+			faroProject, cronExpression, frequencyType, scheduleEndDate,
+			scheduleStartDate, scheduleType, segmentId);
 	}
 
 	@Reference(

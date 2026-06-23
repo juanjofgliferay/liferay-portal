@@ -92,10 +92,10 @@ public class JavaConstructorParametersCheck extends BaseJavaTermCheck {
 				addMessage(
 					fileName,
 					StringBundler.concat(
-						"'", previousGlobalVariableName, " = ",
-						previousParameterName, ";' should come before '",
+						"\"", previousGlobalVariableName, " = ",
+						previousParameterName, ";\" should come before \"",
 						matcher.group(2), " = ", parameterName,
-						";' to match order of constructor parameters"),
+						";\" to match order of constructor parameters"),
 					javaTerm.getLineNumber(previousPos));
 
 				return;
@@ -327,7 +327,8 @@ public class JavaConstructorParametersCheck extends BaseJavaTermCheck {
 			String globalVariableName = matcher.group(1);
 
 			String globalVariableTypeName = getVariableTypeName(
-				content, null, fileContent, fileName, globalVariableName, true);
+				content, null, fileContent, fileName, globalVariableName, true,
+				false);
 
 			String parameterTypeName = parameter.getParameterType();
 

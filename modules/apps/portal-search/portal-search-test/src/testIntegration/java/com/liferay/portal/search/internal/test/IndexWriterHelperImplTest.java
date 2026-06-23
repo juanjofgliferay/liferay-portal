@@ -9,7 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.blogs.test.util.BlogsTestUtil;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.instances.service.PortalInstancesLocalService;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.search.Field;
@@ -26,7 +26,7 @@ import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.search.CountSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.CountSearchResponse;
 import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
+import com.liferay.portal.search.query.QueriesUtil;
 import com.liferay.portal.search.query.TermQuery;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -148,7 +148,7 @@ public class IndexWriterHelperImplTest {
 	}
 
 	private long[] _getCompanyIds() {
-		long[] companyIds = _portalInstancesLocalService.getCompanyIds();
+		long[] companyIds = PortalInstancePool.getCompanyIds();
 
 		if (!ArrayUtil.contains(companyIds, CompanyConstants.SYSTEM)) {
 			companyIds = ArrayUtil.append(
@@ -168,11 +168,12 @@ public class IndexWriterHelperImplTest {
 			countSearchRequest.setIndexNames("liferay-" + companyId);
 		}
 
-		TermQuery classNameTermQuery = _queries.term(
+		TermQuery classNameTermQuery = QueriesUtil.term(
 			Field.ENTRY_CLASS_NAME, className);
-		TermQuery companyTermQuery = _queries.term(Field.COMPANY_ID, companyId);
+		TermQuery companyTermQuery = QueriesUtil.term(
+			Field.COMPANY_ID, companyId);
 
-		BooleanQuery booleanQuery = _queries.booleanQuery();
+		BooleanQuery booleanQuery = QueriesUtil.booleanQuery();
 
 		booleanQuery.addMustQueryClauses(classNameTermQuery, companyTermQuery);
 
@@ -241,12 +242,6 @@ public class IndexWriterHelperImplTest {
 
 	@Inject
 	private IndexWriterHelper _indexWriterHelper;
-
-	@Inject
-	private PortalInstancesLocalService _portalInstancesLocalService;
-
-	@Inject
-	private Queries _queries;
 
 	@Inject
 	private SearchEngineAdapter _searchEngineAdapter;

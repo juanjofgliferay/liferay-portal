@@ -11,17 +11,12 @@ import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.fragment.service.base.FragmentCollectionServiceBaseImpl;
 import com.liferay.portal.aop.AopService;
-import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
-import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -42,21 +37,7 @@ public class FragmentCollectionServiceImpl
 
 	@Override
 	public FragmentCollection addFragmentCollection(
-			long groupId, String name, String description,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), groupId,
-			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
-
-		return fragmentCollectionLocalService.addFragmentCollection(
-			getUserId(), groupId, name, description, serviceContext);
-	}
-
-	@Override
-	public FragmentCollection addFragmentCollection(
-			long groupId, String fragmentCollectionKey, String name,
+			String externalReferenceCode, long groupId, String name,
 			String description, ServiceContext serviceContext)
 		throws PortalException {
 
@@ -65,8 +46,24 @@ public class FragmentCollectionServiceImpl
 			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 
 		return fragmentCollectionLocalService.addFragmentCollection(
-			getUserId(), groupId, fragmentCollectionKey, name, description,
+			externalReferenceCode, getUserId(), groupId, name, description,
 			serviceContext);
+	}
+
+	@Override
+	public FragmentCollection addFragmentCollection(
+			String externalReferenceCode, long groupId,
+			String fragmentCollectionKey, String name, String description,
+			boolean marketplace, ServiceContext serviceContext)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		return fragmentCollectionLocalService.addFragmentCollection(
+			externalReferenceCode, getUserId(), groupId, fragmentCollectionKey,
+			name, description, marketplace, serviceContext);
 	}
 
 	@Override
@@ -81,6 +78,24 @@ public class FragmentCollectionServiceImpl
 		_portletResourcePermission.check(
 			getPermissionChecker(), fragmentCollection.getGroupId(),
 			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		return fragmentCollectionLocalService.deleteFragmentCollection(
+			fragmentCollection);
+	}
+
+	@Override
+	public FragmentCollection deleteFragmentCollection(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId,
+			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
+
+		FragmentCollection fragmentCollection =
+			fragmentCollectionLocalService.
+				getFragmentCollectionByExternalReferenceCode(
+					externalReferenceCode, groupId);
 
 		return fragmentCollectionLocalService.deleteFragmentCollection(
 			fragmentCollection);
@@ -113,6 +128,66 @@ public class FragmentCollectionServiceImpl
 	}
 
 	@Override
+	public List<FragmentCollection> getExportableFragmentCollections(
+		long[] fragmentCollectionIds) {
+
+		return fragmentCollectionLocalService.getExportableFragmentCollections(
+			fragmentCollectionIds);
+	}
+
+	@Override
+	public List<FragmentCollection> getExportableFragmentCollectionsByGroupId(
+		long[] groupIds, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return fragmentCollectionLocalService.
+			getExportableFragmentCollectionsByGroupId(
+				groupIds, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<FragmentCollection> getExportableFragmentCollectionsByGroupId(
+		long[] groupIds, String name, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return fragmentCollectionLocalService.
+			getExportableFragmentCollectionsByGroupId(
+				groupIds, name, start, end, orderByComparator);
+	}
+
+	@Override
+	public int getExportableFragmentCollectionsCount(
+		long[] fragmentCollectionIds) {
+
+		return fragmentCollectionLocalService.
+			getExportableFragmentCollectionsCount(fragmentCollectionIds);
+	}
+
+	@Override
+	public int getExportableFragmentCollectionsCountByGroupId(long[] groupIds) {
+		return fragmentCollectionLocalService.
+			getExportableFragmentCollectionsCountByGroupId(groupIds);
+	}
+
+	@Override
+	public int getExportableFragmentCollectionsCountByGroupId(
+		long[] groupIds, String name) {
+
+		return fragmentCollectionLocalService.
+			getExportableFragmentCollectionsCountByGroupId(groupIds, name);
+	}
+
+	@Override
+	public FragmentCollection getFragmentCollectionByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return fragmentCollectionLocalService.
+			getFragmentCollectionByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
+	@Override
 	public List<FileEntry> getFragmentCollectionFileEntries(
 			long fragmentCollectionId)
 		throws PortalException {
@@ -130,15 +205,15 @@ public class FragmentCollectionServiceImpl
 
 	@Override
 	public List<FragmentCollection> getFragmentCollections(long groupId) {
-		return getFragmentCollections(groupId, false);
+		return fragmentCollectionLocalService.getFragmentCollections(groupId);
 	}
 
 	@Override
 	public List<FragmentCollection> getFragmentCollections(
 		long groupId, boolean includeSystem) {
 
-		return fragmentCollectionPersistence.findByGroupId(
-			_getGroupIds(groupId, includeSystem));
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupId, includeSystem);
 	}
 
 	@Override
@@ -146,16 +221,16 @@ public class FragmentCollectionServiceImpl
 		long groupId, boolean includeSystem, int start, int end,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		return fragmentCollectionPersistence.findByGroupId(
-			_getGroupIds(groupId, includeSystem), start, end,
-			orderByComparator);
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupId, includeSystem, start, end, orderByComparator);
 	}
 
 	@Override
 	public List<FragmentCollection> getFragmentCollections(
 		long groupId, int start, int end) {
 
-		return fragmentCollectionPersistence.findByGroupId(groupId, start, end);
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupId, start, end);
 	}
 
 	@Override
@@ -172,10 +247,8 @@ public class FragmentCollectionServiceImpl
 		long groupId, String name, boolean includeSystem, int start, int end,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		return fragmentCollectionPersistence.findByG_LikeN(
-			_getGroupIds(groupId, includeSystem),
-			_customSQL.keywords(name, false, WildcardMode.SURROUND)[0], start,
-			end, orderByComparator);
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupId, name, includeSystem, start, end, orderByComparator);
 	}
 
 	@Override
@@ -189,13 +262,16 @@ public class FragmentCollectionServiceImpl
 
 	@Override
 	public List<FragmentCollection> getFragmentCollections(long[] groupIds) {
-		List<FragmentCollection> fragmentCollections = new ArrayList<>();
+		return fragmentCollectionLocalService.getFragmentCollections(groupIds);
+	}
 
-		for (long groupId : groupIds) {
-			fragmentCollections.addAll(getFragmentCollections(groupId));
-		}
+	@Override
+	public List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		return fragmentCollections;
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupIds, marketplace, start, end, orderByComparator);
 	}
 
 	@Override
@@ -203,8 +279,17 @@ public class FragmentCollectionServiceImpl
 		long[] groupIds, int start, int end,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		return fragmentCollectionPersistence.findByGroupId(
+		return fragmentCollectionLocalService.getFragmentCollections(
 			groupIds, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<FragmentCollection> getFragmentCollections(
+		long[] groupIds, String name, boolean marketplace, int start, int end,
+		OrderByComparator<FragmentCollection> orderByComparator) {
+
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupIds, name, marketplace, start, end, orderByComparator);
 	}
 
 	@Override
@@ -212,10 +297,8 @@ public class FragmentCollectionServiceImpl
 		long[] groupIds, String name, int start, int end,
 		OrderByComparator<FragmentCollection> orderByComparator) {
 
-		return fragmentCollectionPersistence.findByG_LikeN(
-			groupIds,
-			_customSQL.keywords(name, false, WildcardMode.SURROUND)[0], start,
-			end, orderByComparator);
+		return fragmentCollectionLocalService.getFragmentCollections(
+			groupIds, name, start, end, orderByComparator);
 	}
 
 	@Override
@@ -227,8 +310,8 @@ public class FragmentCollectionServiceImpl
 	public int getFragmentCollectionsCount(
 		long groupId, boolean includeSystem) {
 
-		return fragmentCollectionPersistence.countByGroupId(
-			_getGroupIds(groupId, includeSystem));
+		return fragmentCollectionLocalService.getFragmentCollectionsCount(
+			groupId, includeSystem);
 	}
 
 	@Override
@@ -240,21 +323,36 @@ public class FragmentCollectionServiceImpl
 	public int getFragmentCollectionsCount(
 		long groupId, String name, boolean includeSystem) {
 
-		return fragmentCollectionPersistence.countByG_LikeN(
-			_getGroupIds(groupId, includeSystem),
-			_customSQL.keywords(name, false, WildcardMode.SURROUND)[0]);
+		return fragmentCollectionLocalService.getFragmentCollectionsCount(
+			groupId, name, includeSystem);
 	}
 
 	@Override
 	public int getFragmentCollectionsCount(long[] groupIds) {
-		return fragmentCollectionPersistence.countByGroupId(groupIds);
+		return fragmentCollectionLocalService.getFragmentCollectionsCount(
+			groupIds);
+	}
+
+	@Override
+	public int getFragmentCollectionsCount(
+		long[] groupIds, boolean marketplace) {
+
+		return fragmentCollectionLocalService.getFragmentCollectionsCount(
+			groupIds, marketplace);
 	}
 
 	@Override
 	public int getFragmentCollectionsCount(long[] groupIds, String name) {
-		return fragmentCollectionPersistence.countByG_LikeN(
-			groupIds,
-			_customSQL.keywords(name, false, WildcardMode.SURROUND)[0]);
+		return fragmentCollectionLocalService.getFragmentCollectionsCount(
+			groupIds, name);
+	}
+
+	@Override
+	public int getFragmentCollectionsCount(
+		long[] groupIds, String name, boolean marketplace) {
+
+		return fragmentCollectionLocalService.getFragmentCollectionsCount(
+			groupIds, name, marketplace);
 	}
 
 	@Override
@@ -285,19 +383,6 @@ public class FragmentCollectionServiceImpl
 		return fragmentCollectionLocalService.updateFragmentCollection(
 			fragmentCollectionId, name, description);
 	}
-
-	private long[] _getGroupIds(long groupId, boolean includeSystem) {
-		long[] groupIds = {groupId};
-
-		if (includeSystem) {
-			groupIds = ArrayUtil.append(groupIds, CompanyConstants.SYSTEM);
-		}
-
-		return groupIds;
-	}
-
-	@Reference
-	private CustomSQL _customSQL;
 
 	@Reference
 	private FragmentEntryLocalService _fragmentEntryLocalService;

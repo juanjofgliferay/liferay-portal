@@ -122,11 +122,11 @@ public class SegmentsExperimentLocalServiceWrapper
 
 	@Override
 	public SegmentsExperiment deleteSegmentsExperiment(
-			long groupId, long segmentsExperienceId, long plid)
+			long groupId, String segmentsExperienceKey, long plid)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsExperimentLocalService.deleteSegmentsExperiment(
-			groupId, segmentsExperienceId, plid);
+			groupId, segmentsExperienceKey, plid);
 	}
 
 	/**
@@ -271,18 +271,18 @@ public class SegmentsExperimentLocalServiceWrapper
 
 	@Override
 	public SegmentsExperiment fetchSegmentsExperiment(
-		long groupId, long segmentsExperienceId, long plid) {
-
-		return _segmentsExperimentLocalService.fetchSegmentsExperiment(
-			groupId, segmentsExperienceId, plid);
-	}
-
-	@Override
-	public SegmentsExperiment fetchSegmentsExperiment(
 		long groupId, String segmentsExperimentKey) {
 
 		return _segmentsExperimentLocalService.fetchSegmentsExperiment(
 			groupId, segmentsExperimentKey);
+	}
+
+	@Override
+	public SegmentsExperiment fetchSegmentsExperiment(
+		long groupId, String segmentsExperienceKey, long plid) {
+
+		return _segmentsExperimentLocalService.fetchSegmentsExperiment(
+			groupId, segmentsExperienceKey, plid);
 	}
 
 	/**
@@ -348,10 +348,12 @@ public class SegmentsExperimentLocalServiceWrapper
 
 	@Override
 	public java.util.List<SegmentsExperiment>
-		getSegmentsEntrySegmentsExperiments(long segmentsEntryId) {
+		getSegmentsEntrySegmentsExperiments(
+			String segmentsEntryERC, long segmentsEntryGroupId) {
 
 		return _segmentsExperimentLocalService.
-			getSegmentsEntrySegmentsExperiments(segmentsEntryId);
+			getSegmentsEntrySegmentsExperiments(
+				segmentsEntryERC, segmentsEntryGroupId);
 	}
 
 	/**
@@ -464,12 +466,13 @@ public class SegmentsExperimentLocalServiceWrapper
 	@Override
 	public SegmentsExperiment runSegmentsExperiment(
 			long segmentsExperimentId, double confidenceLevel,
-			java.util.Map<Long, Double> segmentsExperienceIdSplitMap)
+			java.util.Map<Long, Double> segmentsExperienceIdSplitMap,
+			String type)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsExperimentLocalService.runSegmentsExperiment(
-			segmentsExperimentId, confidenceLevel,
-			segmentsExperienceIdSplitMap);
+			segmentsExperimentId, confidenceLevel, segmentsExperienceIdSplitMap,
+			type);
 	}
 
 	@Override
@@ -559,3 +562,4 @@ public class SegmentsExperimentLocalServiceWrapper
 	private SegmentsExperimentLocalService _segmentsExperimentLocalService;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-1227256236

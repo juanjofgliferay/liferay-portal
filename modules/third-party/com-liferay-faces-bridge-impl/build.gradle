@@ -1,0 +1,23 @@
+ext {
+	gitHash = "1340e2b7c668cccc0c6da8747f2b8a23708b9ccd"
+	gitHubOwner = "liferay"
+	gitHubRepository = "liferay-faces-bridge-impl"
+	mvnJARInclude = "com.liferay.faces.bridge.impl-7.0.1.jar"
+	mvnTargetDir = "bridge-impl/target"
+}
+
+apply from: "../build-maven.gradle"
+
+downloadSource {
+	doLast {
+		File pomXmlFile = new File(mvnSourceDir, "pom.xml")
+
+		if (pomXmlFile.exists()) {
+			pomXmlFile.text = pomXmlFile.text.replace("<module>demo</module>", "")
+			pomXmlFile.text = pomXmlFile.text.replace("<module>issue</module>", "")
+			pomXmlFile.text = pomXmlFile.text.replace("<module>support</module>", "")
+			pomXmlFile.text = pomXmlFile.text.replace("<module>tck</module>", "")
+			pomXmlFile.text = pomXmlFile.text.replace("<module>test</module>", "")
+		}
+	}
+}

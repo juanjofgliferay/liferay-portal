@@ -22,11 +22,11 @@ CommerceChannelAccountEntryRelDisplayContext commerceChannelAccountEntryRelDispl
 			containerElement="span"
 			expand="<%= true %>"
 		>
-			<span class="heading-text"><liferay-ui:message key="default-account-commerce-payment-methods" /></span>
+			<span class="heading-text"><liferay-ui:message key="payment-methods" /></span>
 		</clay:content-col>
 	</clay:content-row>
 
-	<div class="form-group-autofit">
+	<div class="form-group-autofit" data-qa-id="defaultCommercePaymentMethod">
 		<div class="form-group-item">
 			<div class="sheet-text">
 				<frontend-data-set:classic-display
@@ -37,7 +37,6 @@ CommerceChannelAccountEntryRelDisplayContext commerceChannelAccountEntryRelDispl
 					%>'
 					dataProviderKey="<%= CommercePaymentMethodGroupRelFDSNames.ACCOUNT_ENTRY_DEFAULT_PAYMENTS %>"
 					id="<%= CommercePaymentMethodGroupRelFDSNames.ACCOUNT_ENTRY_DEFAULT_PAYMENTS %>"
-					itemsPerPage="<%= 10 %>"
 					showSearch="<%= false %>"
 					style="fluid"
 				/>

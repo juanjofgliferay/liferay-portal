@@ -7,7 +7,6 @@ package com.liferay.osb.faro.web.internal.servlet.filter;
 
 import com.liferay.osb.faro.model.FaroProject;
 import com.liferay.osb.faro.service.FaroProjectLocalService;
-import com.liferay.osb.faro.service.FaroUserLocalService;
 import com.liferay.osb.faro.util.FaroPermissionChecker;
 import com.liferay.osb.faro.web.internal.util.FaroProjectThreadLocal;
 import com.liferay.petra.string.StringPool;
@@ -25,10 +24,10 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -182,9 +181,6 @@ public class AsahServletFilter extends BaseFilter {
 
 	@Reference
 	private FaroProjectLocalService _faroProjectLocalService;
-
-	@Reference
-	private FaroUserLocalService _faroUserLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

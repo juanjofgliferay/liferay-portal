@@ -6,7 +6,6 @@
 package com.liferay.account.admin.web.internal.helper;
 
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
 import com.liferay.application.list.display.context.logic.PersonalMenuEntryHelper;
@@ -17,9 +16,9 @@ import com.liferay.roles.admin.constants.RolesAdminWebKeys;
 import com.liferay.roles.admin.panel.category.role.type.mapper.PanelCategoryRoleTypeMapperRegistry;
 import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,10 +34,7 @@ public class AccountRoleRequestHelper {
 			ApplicationListWebKeys.PANEL_APP_REGISTRY, _panelAppRegistry);
 		httpServletRequest.setAttribute(
 			ApplicationListWebKeys.PANEL_CATEGORY_HELPER,
-			new PanelCategoryHelper(_panelAppRegistry, _panelCategoryRegistry));
-		httpServletRequest.setAttribute(
-			ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY,
-			_panelCategoryRegistry);
+			new PanelCategoryHelper(_panelAppRegistry));
 		httpServletRequest.setAttribute(
 			ApplicationListWebKeys.PERSONAL_MENU_ENTRY_HELPER,
 			new PersonalMenuEntryHelper(
@@ -64,9 +60,6 @@ public class AccountRoleRequestHelper {
 
 	@Reference
 	private PanelAppRegistry _panelAppRegistry;
-
-	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
 
 	@Reference
 	private PanelCategoryRoleTypeMapperRegistry

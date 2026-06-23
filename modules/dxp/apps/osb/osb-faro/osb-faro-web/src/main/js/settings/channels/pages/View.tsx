@@ -1,6 +1,6 @@
 import * as API from 'shared/api';
 import * as breadcrumbs from 'shared/util/breadcrumbs';
-import BasePage from 'settings/components/BasePage';
+import BasePage from 'settings/components/base-page/BasePage';
 import Card from 'shared/components/Card';
 import ClayButton from '@clayui/button';
 import Constants from 'shared/util/constants';
@@ -12,7 +12,7 @@ import Form, {
 } from 'shared/components/form';
 import HelpBlock from 'shared/components/form/HelpBlock';
 import RadioGroup from 'shared/components/RadioGroup';
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import StatesRenderer from 'shared/components/states-renderer/StatesRenderer';
 import SyncedStripe from '../components/SyncedStripe';
 import TitleEditor from 'shared/components/TitleEditor';
@@ -20,18 +20,17 @@ import UserList from '../components/UserList';
 import {addAlert} from 'shared/actions/alerts';
 import {Alert, IPaginationUnsorted} from 'shared/types';
 import {close, modalTypes, open} from 'shared/actions/modals';
-import {compose, withCurrentUser} from 'shared/hoc';
+import {compose} from 'shared/hoc';
 import {connect, ConnectedProps} from 'react-redux';
 import {RootState} from 'shared/store';
 import {Routes, toRoute} from 'shared/util/router';
 import {SafeResults} from 'shared/hoc/util';
 import {sequence} from 'shared/util/promise';
-import {setBackURL} from 'shared/actions/settings';
 import {sub} from 'shared/util/lang';
 import {UNAUTHORIZED_ACCESS} from 'shared/util/request';
 import {updateDefaultChannelId} from 'shared/actions/preferences';
-import {User} from 'shared/util/records';
-import {useRequest} from 'shared/hooks';
+import {useCurrentUser} from 'shared/hooks/useCurrentUser';
+import {useRequest} from 'shared/hooks/useRequest';
 
 const {channelPermissionTypes} = Constants;
 
@@ -59,7 +58,8 @@ export const ViewContainer: React.FC<Omit<IViewProps, 'channel'>> = ({
 
 	return (
 		<SafeResults
-			{...{data, error, loading}}
+			data={data}
+			error={error}
 			errorProps={{
 				href: toRoute(Routes.SETTINGS_CHANNELS, {groupId}),
 				linkLabel: Liferay.Language.get('go-to-properties'),
@@ -68,6 +68,7 @@ export const ViewContainer: React.FC<Omit<IViewProps, 'channel'>> = ({
 				),
 				subtitle: Liferay.Language.get('property-not-found')
 			}}
+			loading={loading}
 			onReload={refetch}
 			pageDisplay
 			spacer
@@ -93,7 +94,7 @@ const connector = connect(
 			'data'
 		])
 	}),
-	{addAlert, close, open, setBackURL, updateDefaultChannelId}
+	{addAlert, close, open, updateDefaultChannelId}
 );
 
 type PropsFromRedux = ConnectedProps<typeof connector>;
@@ -102,8 +103,7 @@ interface IViewProps
 	extends React.HTMLAttributes<HTMLElement>,
 		PropsFromRedux,
 		IPaginationUnsorted {
-	channel?: Channel;
-	currentUser: User;
+	channel: Channel;
 	groupId: string;
 	history: {
 		push: (value: string) => void;
@@ -115,35 +115,22 @@ const View: React.FC<IViewProps> = ({
 	addAlert,
 	channel,
 	close,
-	currentUser,
 	defaultChannelId,
 	groupId,
 	history,
 	id,
 	open,
-	setBackURL,
 	updateDefaultChannelId,
 	...otherProps
 }) => {
-	useEffect(() => {
-		const {createTime, id, name} = channel;
+	const currentUser = useCurrentUser();
 
-		analytics.track(
-			'Viewed Property Dashboard - Test',
-			{
-				channelId: id,
-				channelName: name,
-				createTime
-			},
-			{ip: '0'}
-		);
-	}, []);
 	const [name, setName] = useState(channel.name);
 	const [permissionType, setPermissionType] = useState(
 		channel.permissionType
 	);
 
-	const updatePermissions = permissionType =>
+	const updatePermissions = (permissionType: number) =>
 		API.channels
 			.update({
 				groupId,
@@ -177,7 +164,6 @@ const View: React.FC<IViewProps> = ({
 				})
 			]}
 			documentTitle={`${name} - ${Liferay.Language.get('properties')}`}
-			groupId={groupId}
 		>
 			<div className='content-header has-page-actions'>
 				<div className='header-text w-100'>
@@ -271,9 +257,8 @@ const View: React.FC<IViewProps> = ({
 												</p>
 											</>
 										),
-										deleteButtonLabel: Liferay.Language.get(
-											'clear-data'
-										),
+										deleteButtonLabel:
+											Liferay.Language.get('clear-data'),
 										deleteConfirmationText: sub(
 											Liferay.Language.get('clear-x'),
 											[name]
@@ -286,9 +271,10 @@ const View: React.FC<IViewProps> = ({
 													ids: [id]
 												})
 												.then(() => {
-													const clearedMessage = Liferay.Language.get(
-														'data-from-x-has-been-cleared'
-													);
+													const clearedMessage =
+														Liferay.Language.get(
+															'data-from-x-has-been-cleared'
+														);
 
 													addAlert({
 														alertType:
@@ -365,9 +351,8 @@ const View: React.FC<IViewProps> = ({
 												</p>
 											</>
 										),
-										deleteButtonLabel: Liferay.Language.get(
-											'delete'
-										),
+										deleteButtonLabel:
+											Liferay.Language.get('delete'),
 										deleteConfirmationText: sub(
 											Liferay.Language.get('delete-x'),
 											[name]
@@ -380,9 +365,10 @@ const View: React.FC<IViewProps> = ({
 													ids: [id]
 												})
 												.then(() => {
-													const deletedMessage = Liferay.Language.get(
-														'x-has-been-deleted'
-													);
+													const deletedMessage =
+														Liferay.Language.get(
+															'x-has-been-deleted'
+														);
 
 													close();
 
@@ -409,18 +395,10 @@ const View: React.FC<IViewProps> = ({
 														defaultChannelId === id
 													) {
 														updateDefaultChannelId({
-															defaultChannelId: null,
+															defaultChannelId:
+																null,
 															groupId
 														});
-
-														setBackURL(
-															toRoute(
-																Routes.WORKSPACE_WITH_ID,
-																{
-																	groupId
-																}
-															)
-														);
 													}
 												})
 												.catch(err =>
@@ -519,7 +497,7 @@ const View: React.FC<IViewProps> = ({
 								'all-users-from-this-workspace-have-access-to-this-property'
 							)}
 							icon={{
-								symbol: 'ac-no-sites'
+								symbol: 'ac_no_sites'
 							}}
 							title={Liferay.Language.get('all-aboard')}
 						/>
@@ -539,4 +517,4 @@ const View: React.FC<IViewProps> = ({
 	);
 };
 
-export default compose<any>(withCurrentUser, connector)(ViewContainer);
+export default compose<any>(connector)(ViewContainer);

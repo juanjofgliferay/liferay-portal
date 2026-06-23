@@ -5,25 +5,182 @@
 
 package com.liferay.object.internal.entry.util;
 
+import com.liferay.document.library.kernel.model.DLFileEntryTable;
+import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectEntryTable;
 import com.liferay.object.model.ObjectField;
+import com.liferay.object.petra.sql.dsl.DynamicObjectDefinitionLocalizationTable;
 import com.liferay.object.petra.sql.dsl.DynamicObjectDefinitionTable;
 import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.util.HttpServletRequestThreadLocal;
 import com.liferay.petra.sql.dsl.Column;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.Table;
 import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.string.CharPool;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
+
+import java.util.Locale;
 
 /**
  * @author Carolina Barbosa
  */
 public class ObjectEntrySearchUtil {
 
+	public static Predicate getAssigneeFieldPredicate(
+		Table<?> table, String dbColumnName, String search) {
+
+		String[] parts = StringUtil.split(search, CharPool.UNDERLINE);
+
+		if (parts.length != 2) {
+			return null;
+		}
+
+		long classNameId = GetterUtil.getLong(parts[0]);
+		long classPK = GetterUtil.getLong(parts[1]);
+
+		if ((classNameId == 0L) || (classPK == 0L)) {
+			return null;
+		}
+
+		Column<?, Long> classNameIdColumn = (Column<?, Long>)table.getColumn(
+			"classNameId_" + dbColumnName);
+		Column<?, Long> classPKColumn = (Column<?, Long>)table.getColumn(
+			"classPK_" + dbColumnName);
+
+		if ((classNameIdColumn == null) || (classPKColumn == null)) {
+			return null;
+		}
+
+		return classNameIdColumn.eq(
+			classNameId
+		).and(
+			classPKColumn.eq(classPK)
+		);
+	}
+
+	public static String getLanguageId() throws PortalException {
+		Locale locale = null;
+
+		HttpServletRequest httpServletRequest =
+			HttpServletRequestThreadLocal.getHttpServletRequest();
+
+		if (httpServletRequest != null) {
+			locale = httpServletRequest.getLocale();
+		}
+
+		if (locale == null) {
+			locale = LocaleThreadLocal.getThemeDisplayLocale();
+		}
+
+		if (locale == null) {
+			locale = LocaleThreadLocal.getSiteDefaultLocale();
+		}
+
+		if (locale == null) {
+			User user = GuestOrUserUtil.getGuestOrUser(
+				CompanyThreadLocal.getCompanyId());
+
+			locale = user.getLocale();
+		}
+
+		return LocaleUtil.toLanguageId(locale);
+	}
+
+	public static Predicate getLeftJoinLocalizationTablePredicate(
+			DynamicObjectDefinitionLocalizationTable
+				dynamicObjectDefinitionLocalizationTable,
+			DynamicObjectDefinitionTable dynamicObjectDefinitionTable,
+			String languageId)
+		throws PortalException {
+
+		if (dynamicObjectDefinitionLocalizationTable == null) {
+			return null;
+		}
+
+		return dynamicObjectDefinitionLocalizationTable.getForeignKeyColumn(
+		).eq(
+			dynamicObjectDefinitionTable.getPrimaryKeyColumn()
+		).and(
+			dynamicObjectDefinitionLocalizationTable.getLanguageIdColumn(
+			).eq(
+				(languageId == null) ? getLanguageId() : languageId
+			)
+		);
+	}
+
+	public static Predicate getObjectEntryIndexPredicate(
+		Long[] groupIds, ObjectDefinition objectDefinition,
+		Predicate predicate) {
+
+		return ObjectEntryTable.INSTANCE.companyId.eq(
+			objectDefinition.getCompanyId()
+		).and(
+			() -> {
+				if (StringUtil.equals(
+						objectDefinition.getScope(),
+						ObjectDefinitionConstants.SCOPE_COMPANY)) {
+
+					return ObjectEntryTable.INSTANCE.groupId.eq(0L);
+				}
+
+				if (ArrayUtil.isEmpty(groupIds)) {
+					return null;
+				}
+
+				return ObjectEntryTable.INSTANCE.groupId.in(groupIds);
+			}
+		).and(
+			ObjectEntryTable.INSTANCE.objectDefinitionId.eq(
+				objectDefinition.getObjectDefinitionId())
+		).and(
+			predicate
+		);
+	}
+
 	public static Predicate getObjectFieldPredicate(
-		Column<?, Object> column, String dbType, String search) {
+		String businessType, Column<?, ?> column, String dbType,
+		String search) {
+
+		if (column == null) {
+			return null;
+		}
+
+		Column<?, Object> objectColumn = (Column<?, Object>)column;
+
+		if (businessType.equals(
+				ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) &&
+			!Validator.isNumber(search)) {
+
+			return objectColumn.in(
+				DSLQueryFactoryUtil.select(
+					DLFileEntryTable.INSTANCE.fileEntryId
+				).from(
+					DLFileEntryTable.INSTANCE
+				).where(
+					DSLFunctionFactoryUtil.lower(
+						DLFileEntryTable.INSTANCE.title
+					).like(
+						StringUtil.quote(StringUtil.toLowerCase(search), "%")
+					)
+				));
+		}
 
 		if (dbType.equals(ObjectFieldConstants.DB_TYPE_BIG_DECIMAL) ||
 			dbType.equals(ObjectFieldConstants.DB_TYPE_DOUBLE)) {
@@ -32,13 +189,17 @@ public class ObjectEntrySearchUtil {
 				GetterUtil.getDouble(search));
 
 			if (searchBigDecimal.compareTo(BigDecimal.ZERO) != 0) {
-				return column.eq(searchBigDecimal);
+				return objectColumn.eq(searchBigDecimal);
 			}
 		}
 		else if (dbType.equals(ObjectFieldConstants.DB_TYPE_CLOB) ||
 				 dbType.equals(ObjectFieldConstants.DB_TYPE_STRING)) {
 
-			return column.like("%" + search + "%");
+			return DSLFunctionFactoryUtil.lower(
+				(Column<?, String>)column
+			).like(
+				StringUtil.quote(StringUtil.toLowerCase(search), "%")
+			);
 		}
 		else if (dbType.equals(ObjectFieldConstants.DB_TYPE_INTEGER) ||
 				 dbType.equals(ObjectFieldConstants.DB_TYPE_LONG)) {
@@ -46,19 +207,34 @@ public class ObjectEntrySearchUtil {
 			long searchLong = GetterUtil.getLong(search);
 
 			if (searchLong != 0L) {
-				return column.eq(searchLong);
+				return objectColumn.eq(searchLong);
 			}
 		}
 
 		return null;
 	}
 
-	public static Predicate getRelatedModelsPredicate(
-		DynamicObjectDefinitionTable dynamicObjectDefinitionTable,
-		ObjectDefinition objectDefinition,
-		ObjectFieldLocalService objectFieldLocalService, String search) {
+	public static Column<?, Long> getPrimaryKeyColumn(
+		String pkObjectFieldDBColumnName, Table<?> table) {
 
-		if ((objectDefinition == null) || Validator.isNull(search)) {
+		Column<?, Long> primaryKeyColumn = (Column<?, Long>)table.getColumn(
+			pkObjectFieldDBColumnName);
+
+		if (primaryKeyColumn == null) {
+			primaryKeyColumn = ObjectEntryTable.INSTANCE.objectEntryId;
+		}
+
+		return primaryKeyColumn;
+	}
+
+	public static Predicate getRelatedModelsPredicate(
+		ObjectDefinition objectDefinition,
+		ObjectFieldLocalService objectFieldLocalService, String search,
+		Table<?> table) {
+
+		if ((objectDefinition == null) || Validator.isNull(search) ||
+			(table == null)) {
+
 			return null;
 		}
 
@@ -71,7 +247,8 @@ public class ObjectEntrySearchUtil {
 		}
 
 		Predicate objectFieldPredicate = getObjectFieldPredicate(
-			(Column<?, Object>)objectFieldLocalService.getColumn(
+			titleObjectField.getBusinessType(),
+			objectFieldLocalService.getColumn(
 				objectDefinition.getObjectDefinitionId(),
 				titleObjectField.getName()),
 			titleObjectField.getDBType(), search);
@@ -82,11 +259,10 @@ public class ObjectEntrySearchUtil {
 			return objectFieldPredicate;
 		}
 
-		Predicate primaryKeyPredicate =
-			dynamicObjectDefinitionTable.getPrimaryKeyColumn(
-			).eq(
-				searchLong
-			);
+		Column<?, Long> primaryKeyColumn = getPrimaryKeyColumn(
+			objectDefinition.getPKObjectFieldDBColumnName(), table);
+
+		Predicate primaryKeyPredicate = primaryKeyColumn.eq(searchLong);
 
 		if (objectFieldPredicate == null) {
 			return primaryKeyPredicate;
@@ -98,7 +274,7 @@ public class ObjectEntrySearchUtil {
 	}
 
 	public static Predicate getUniqueCompositeKeyObjectFieldPredicate(
-		Column<?, Object> column, String dbType, String value) {
+		Column<?, Object> column, String dbType, Object value) {
 
 		if (dbType.equals(ObjectFieldConstants.DB_TYPE_INTEGER) ||
 			dbType.equals(ObjectFieldConstants.DB_TYPE_LONG)) {
@@ -106,7 +282,11 @@ public class ObjectEntrySearchUtil {
 			return column.eq(GetterUtil.getLong(value));
 		}
 		else if (dbType.equals(ObjectFieldConstants.DB_TYPE_STRING)) {
-			return column.eq(value);
+			if (value == null) {
+				return column.isNull();
+			}
+
+			return column.eq(String.valueOf(value));
 		}
 
 		return null;

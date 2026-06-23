@@ -11,12 +11,12 @@ import com.liferay.batch.engine.exception.BatchEngineImportTaskParametersExcepti
 import com.liferay.batch.engine.model.BatchEngineImportTask;
 import com.liferay.batch.engine.service.base.BatchEngineImportTaskLocalServiceBaseImpl;
 import com.liferay.batch.engine.service.persistence.BatchEngineImportTaskErrorPersistence;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.jdbc.OutputBlob;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -54,7 +54,7 @@ public class BatchEngineImportTaskLocalServiceImpl
 
 		BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate =
 			_batchEngineTaskItemDelegateRegistry.getBatchEngineTaskItemDelegate(
-				className, taskItemDelegateName);
+				companyId, className, taskItemDelegateName);
 
 		return addBatchEngineImportTask(
 			externalReferenceCode, companyId, userId, batchSize, callbackURL,
@@ -154,6 +154,14 @@ public class BatchEngineImportTaskLocalServiceImpl
 	@Override
 	public int getBatchEngineImportTasksCount(long companyId) {
 		return batchEngineImportTaskPersistence.countByCompanyId(companyId);
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public BatchEngineImportTask updateBatchEngineImportTask(
+		BatchEngineImportTask batchEngineImportTask) {
+
+		return super.updateBatchEngineImportTask(batchEngineImportTask);
 	}
 
 	private void _validateDelimiter(String delimiter)

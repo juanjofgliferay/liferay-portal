@@ -5,15 +5,19 @@
 
 package com.liferay.object.internal.field.business.type;
 
-import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.dynamic.data.mapping.form.field.type.constants.ObjectDDMFormFieldTypeConstants;
 import com.liferay.object.field.business.type.ObjectFieldBusinessType;
 import com.liferay.object.field.render.ObjectFieldRenderingContext;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectEntry;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.rest.dto.v1_0.ListEntry;
+import com.liferay.object.rest.dto.v1_0.util.ListEntryUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
@@ -21,9 +25,15 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.extension.PropertyDefinition;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -43,12 +53,12 @@ public class MultiselectPicklistObjectFieldBusinessType
 
 	@Override
 	public String getDBType() {
-		return ObjectFieldConstants.DB_TYPE_STRING;
+		return ObjectFieldConstants.DB_TYPE_CLOB;
 	}
 
 	@Override
 	public String getDDMFormFieldTypeName() {
-		return DDMFormFieldTypeConstants.SELECT;
+		return ObjectDDMFormFieldTypeConstants.MULTISELECT_PICKLIST;
 	}
 
 	@Override
@@ -57,8 +67,86 @@ public class MultiselectPicklistObjectFieldBusinessType
 	}
 
 	@Override
+	public Object getDisplayContextValue(
+			ObjectField objectField, long userId, Map<String, Object> values)
+		throws PortalException {
+
+		if (objectField.isLocalized()) {
+			return getLocalizedValues(objectField, userId, values);
+		}
+
+		return ObjectFieldBusinessType.super.getDisplayContextValue(
+			objectField, userId, values);
+	}
+
+	@Override
+	public Serializable getDTOValue(
+			DTOConverterContext dtoConverterContext,
+			ObjectDefinition objectDefinition, ObjectEntry objectEntry,
+			ObjectField objectField, Serializable serializable)
+		throws Exception {
+
+		if (objectField.getListTypeDefinitionId() == 0) {
+			return null;
+		}
+
+		if (serializable instanceof List) {
+			return serializable;
+		}
+
+		String[] keys = null;
+
+		if (serializable instanceof Object[]) {
+			keys = TransformUtil.transform(
+				(Object[])serializable,
+				object -> {
+					if (!(object instanceof Map)) {
+						return null;
+					}
+
+					return MapUtil.getString(
+						(Map<String, String>)object, "key");
+				},
+				String.class);
+		}
+		else if (serializable instanceof String) {
+			keys = StringUtil.split(
+				(String)serializable, StringPool.COMMA_AND_SPACE);
+		}
+
+		return (Serializable)TransformUtil.transformToList(
+			keys,
+			key -> ListEntryUtil.toListEntry(
+				dtoConverterContext, key,
+				objectField.getListTypeDefinitionId()));
+	}
+
+	@Override
 	public String getLabel(Locale locale) {
 		return _language.get(locale, "multiselect-picklist");
+	}
+
+	@Override
+	public Map<String, Object> getLocalizedValues(
+			ObjectField objectField, Long userId, Map<String, Object> values)
+		throws PortalException {
+
+		Map<String, Object> localizedValues =
+			ObjectFieldBusinessType.super.getLocalizedValues(
+				objectField, userId, values);
+
+		if (localizedValues == null) {
+			return null;
+		}
+
+		for (Map.Entry<String, Object> entry : localizedValues.entrySet()) {
+			localizedValues.put(
+				entry.getKey(),
+				_getValue(
+					objectField.getName(), entry.getValue(), new HashMap<>()));
+		}
+
+		return localizedValues;
 	}
 
 	@Override
@@ -75,29 +163,34 @@ public class MultiselectPicklistObjectFieldBusinessType
 		return HashMapBuilder.<String, Object>put(
 			"defaultSearch", true
 		).put(
+			"listTypeDefinitionId", objectField.getListTypeDefinitionId()
+		).put(
 			"multiple", true
 		).put(
 			"options",
 			() -> {
 				DDMFormFieldOptions ddmFormFieldOptions =
-					new DDMFormFieldOptions();
+					new DDMFormFieldOptions(
+						objectFieldRenderingContext.getLocale());
 
 				for (ListTypeEntry listTypeEntry :
 						_listTypeEntryLocalService.getListTypeEntries(
 							objectField.getListTypeDefinitionId())) {
 
-					ddmFormFieldOptions.addOptionLabel(
-						listTypeEntry.getKey(),
-						objectFieldRenderingContext.getLocale(),
-						GetterUtil.getString(
-							listTypeEntry.getName(
-								objectFieldRenderingContext.getLocale()),
-							listTypeEntry.getName(
-								listTypeEntry.getDefaultLanguageId())));
+					Map<Locale, String> nameMap = listTypeEntry.getNameMap();
+
+					for (Map.Entry<Locale, String> entry : nameMap.entrySet()) {
+						ddmFormFieldOptions.addOptionLabel(
+							listTypeEntry.getKey(), entry.getKey(),
+							GetterUtil.getString(entry.getValue()));
+					}
 				}
 
 				return ddmFormFieldOptions;
 			}
+		).putAll(
+			ObjectFieldBusinessType.super.getProperties(
+				objectField, objectFieldRenderingContext)
 		).build();
 	}
 
@@ -108,44 +201,71 @@ public class MultiselectPicklistObjectFieldBusinessType
 
 	@Override
 	public Object getValue(
-			ObjectField objectField, long userId, Map<String, Object> values)
+			Long groupId, ObjectField objectField, long userId,
+			Map<String, Object> values)
 		throws PortalException {
 
-		Object value = values.get(objectField.getName());
+		return _getValue(
+			objectField.getName(),
+			ObjectFieldBusinessType.super.getValue(
+				groupId, objectField, userId, values),
+			values);
+	}
+
+	private Object _getValue(
+		String objectFieldName, Object value, Map<String, Object> values) {
 
 		if (value instanceof List) {
-			List<String> keys = new ArrayList<>();
+			List<String> keys = _toKeys((List<Object>)value);
 
-			for (Object object : (List<Object>)value) {
-				if (object instanceof ListEntry) {
-					ListEntry listEntry = (ListEntry)object;
+			values.put(objectFieldName, keys);
 
-					keys.add(listEntry.getKey());
-				}
-				else if (object instanceof Map) {
-					keys.add(
-						MapUtil.getString((Map<String, String>)object, "key"));
-				}
-				else {
-					keys.add((String)object);
-				}
-			}
+			return keys;
+		}
+		else if (value instanceof Object[]) {
+			List<String> keys = _toKeys(Arrays.asList((Object[])value));
 
-			values.put(objectField.getName(), keys);
+			values.put(objectFieldName, keys);
+
+			return keys;
 		}
 		else if (value instanceof String) {
 			String valueString = GetterUtil.getString(value);
 
-			if (valueString.contains(StringPool.COMMA_AND_SPACE)) {
-				values.put(
-					objectField.getName(),
-					ListUtil.fromString(
-						valueString, StringPool.COMMA_AND_SPACE));
+			if (StringUtil.equals(valueString, "[]")) {
+				return StringPool.BLANK;
+			}
+			else if (valueString.contains(StringPool.COMMA_AND_SPACE)) {
+				List<String> keys = ListUtil.fromString(
+					valueString, StringPool.COMMA_AND_SPACE);
+
+				values.put(objectFieldName, keys);
+
+				return keys;
 			}
 		}
 
-		return ObjectFieldBusinessType.super.getValue(
-			objectField, userId, values);
+		return value;
+	}
+
+	private List<String> _toKeys(List<Object> objects) {
+		List<String> keys = new ArrayList<>();
+
+		for (Object object : objects) {
+			if (object instanceof ListEntry) {
+				ListEntry listEntry = (ListEntry)object;
+
+				keys.add(listEntry.getKey());
+			}
+			else if (object instanceof Map) {
+				keys.add(MapUtil.getString((Map<String, String>)object, "key"));
+			}
+			else {
+				keys.add((String)object);
+			}
+		}
+
+		return keys;
 	}
 
 	@Reference

@@ -9,13 +9,19 @@ import com.liferay.osb.faro.provisioning.client.ProvisioningClient;
 import com.liferay.osb.faro.provisioning.client.constants.KoroneikiConstants;
 import com.liferay.osb.faro.provisioning.client.constants.ProductConstants;
 import com.liferay.osb.faro.provisioning.client.exception.NoSuchCorpProjectException;
+import com.liferay.osb.faro.provisioning.client.exception.NoSuchProductPurchaseException;
 import com.liferay.osb.faro.provisioning.client.exception.NoSuchRoleException;
 import com.liferay.osb.faro.provisioning.client.model.OSBAccountEntry;
+import com.liferay.osb.faro.provisioning.client.model.OSBOfferingEntry;
 import com.liferay.osb.faro.provisioning.client.util.KoroneikiHttpUtil;
+import com.liferay.osb.faro.util.FaroPropsValues;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.Account;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.Contact;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ContactRole;
+import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ExternalLink;
 import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.Product;
+import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ProductConsumption;
+import com.liferay.osb.koroneiki.phloem.rest.client.dto.v1_0.ProductPurchase;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -26,7 +32,9 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,6 +73,37 @@ public class ProvisioningClientImpl implements ProvisioningClient {
 			KoroneikiHttpUtil.assignAccountContactRole(
 				account.getKey(), contactRole.getKey(), contact.getUuid());
 		}
+	}
+
+	@Override
+	public void addProductConsumption(String corpProjectUuid, long groupId)
+		throws Exception {
+
+		ProductConsumption productConsumption = new ProductConsumption();
+
+		Account account = _getCorpProjectAccount(corpProjectUuid);
+
+		productConsumption.setAccountKey(account.getKey());
+
+		Date date = new Date();
+
+		productConsumption.setDateCreated(date);
+
+		ProductPurchase productPurchase = _getProductPurchase(account);
+
+		if (productPurchase == null) {
+			throw new NoSuchProductPurchaseException();
+		}
+
+		productConsumption.setEndDate(productPurchase.getEndDate());
+		productConsumption.setExternalLinks(
+			new ExternalLink[] {_createExternalLink(date, groupId)});
+		productConsumption.setProductKey(productPurchase.getProductKey());
+		productConsumption.setProductPurchaseKey(productPurchase.getKey());
+		productConsumption.setStartDate(date);
+
+		KoroneikiHttpUtil.postProductConsumption(
+			account.getKey(), productConsumption);
 	}
 
 	@Override
@@ -183,7 +222,111 @@ public class ProvisioningClientImpl implements ProvisioningClient {
 	public OSBAccountEntry getOSBAccountEntry(String corpProjectUuid)
 		throws Exception {
 
-		return new OSBAccountEntry(_getCorpProjectAccount(corpProjectUuid));
+		if (!corpProjectUuid.contains("Test")) {
+			return new OSBAccountEntry(_getCorpProjectAccount(corpProjectUuid));
+		}
+
+		return new OSBAccountEntry() {
+			{
+				List<OSBOfferingEntry> osbOfferingEntries = new ArrayList<>();
+
+				OSBOfferingEntry osbOfferingEntry = new OSBOfferingEntry();
+
+				if (corpProjectUuid.endsWith("BusinessLXCTest")) {
+					osbOfferingEntry.setProductEntryId(
+						ProductConstants.LXC_BUSINESS_PRODUCT_ENTRY_ID);
+				}
+				else if (corpProjectUuid.endsWith("BusinessTest")) {
+					osbOfferingEntry.setProductEntryId(
+						ProductConstants.BUSINESS_PRODUCT_ENTRY_ID);
+				}
+				else if (corpProjectUuid.endsWith("EnterpriseLXCTest")) {
+					osbOfferingEntry.setProductEntryId(
+						ProductConstants.LXC_ENTERPRISE_PRODUCT_ENTRY_ID);
+				}
+				else if (corpProjectUuid.endsWith("EnterpriseTest")) {
+					osbOfferingEntry.setProductEntryId(
+						ProductConstants.ENTERPRISE_PRODUCT_ENTRY_ID);
+				}
+				else if (corpProjectUuid.endsWith("ProLXCTest")) {
+					osbOfferingEntry.setProductEntryId(
+						ProductConstants.LXC_PRO_PRODUCT_ENTRY_ID);
+				}
+
+				osbOfferingEntry.setQuantity(1);
+				osbOfferingEntry.setStatus(
+					ProductConstants.OSB_OFFERING_ENTRY_STATUS_ACTIVE);
+
+				osbOfferingEntries.add(osbOfferingEntry);
+
+				if (corpProjectUuid.contains("AddOn")) {
+					OSBOfferingEntry contactsOSBOfferingEntry =
+						new OSBOfferingEntry();
+					OSBOfferingEntry trackedPagesOSBOfferingEntry =
+						new OSBOfferingEntry();
+
+					if (corpProjectUuid.endsWith("BusinessLXCTest") ||
+						corpProjectUuid.endsWith("BusinessTest")) {
+
+						contactsOSBOfferingEntry.setProductEntryId(
+							ProductConstants.
+								BUSINESS_CONTACTS_PRODUCT_ENTRY_ID);
+						trackedPagesOSBOfferingEntry.setProductEntryId(
+							ProductConstants.
+								BUSINESS_TRACKED_PAGES_PRODUCT_ENTRY_ID);
+					}
+					else if (corpProjectUuid.endsWith("EnterpriseLXCTest") ||
+							 corpProjectUuid.endsWith("EnterpriseTest")) {
+
+						contactsOSBOfferingEntry.setProductEntryId(
+							ProductConstants.
+								ENTERPRISE_CONTACTS_PRODUCT_ENTRY_ID);
+						trackedPagesOSBOfferingEntry.setProductEntryId(
+							ProductConstants.
+								ENTERPRISE_TRACKED_PAGES_PRODUCT_ENTRY_ID);
+					}
+
+					contactsOSBOfferingEntry.setQuantity(1);
+					contactsOSBOfferingEntry.setStatus(
+						ProductConstants.OSB_OFFERING_ENTRY_STATUS_ACTIVE);
+
+					osbOfferingEntries.add(contactsOSBOfferingEntry);
+
+					trackedPagesOSBOfferingEntry.setQuantity(1);
+					trackedPagesOSBOfferingEntry.setStatus(
+						ProductConstants.OSB_OFFERING_ENTRY_STATUS_ACTIVE);
+
+					osbOfferingEntries.add(trackedPagesOSBOfferingEntry);
+				}
+
+				setOfferingEntries(osbOfferingEntries);
+			}
+		};
+	}
+
+	@Override
+	public boolean isProductConsumed(String corpProjectUuid) throws Exception {
+		Account account = _getCorpProjectAccount(corpProjectUuid);
+
+		ProductPurchase productPurchase = _getProductPurchase(account);
+
+		if (productPurchase == null) {
+			throw new NoSuchProductPurchaseException();
+		}
+
+		List<ProductConsumption> productConsumptions =
+			KoroneikiHttpUtil.getProductConsumptions(account.getKey(), 1, 100);
+
+		for (ProductConsumption productConsumption : productConsumptions) {
+			if (Objects.equals(
+					productConsumption.getProductKey(),
+					productPurchase.getProductKey())) {
+
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override
@@ -213,6 +356,26 @@ public class ProvisioningClientImpl implements ProvisioningClient {
 				page++;
 			}
 		}
+	}
+
+	private ExternalLink _createExternalLink(Date date, long groupId) {
+		ExternalLink externalLink = new ExternalLink();
+
+		externalLink.setDateCreated(date);
+		externalLink.setDomain("analytics-cloud");
+		externalLink.setEntityId(String.valueOf(groupId));
+		externalLink.setEntityName("groupId");
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(FaroPropsValues.FARO_URL);
+		sb.append("/workspace/");
+		sb.append(groupId);
+		sb.append("/sites");
+
+		externalLink.setUrl(sb.toString());
+
+		return externalLink;
 	}
 
 	private Contact _getContact(User user) throws Exception {
@@ -264,10 +427,67 @@ public class ProvisioningClientImpl implements ProvisioningClient {
 		String productName = ProductConstants.getProductName(productEntryId);
 
 		if (productName != null) {
-			return StringUtil.removeSubstring(productName, "Liferay ");
+			if (!productName.startsWith("Liferay SaaS")) {
+				productName = StringUtil.removeSubstring(
+					productName, "Liferay ");
+			}
+
+			return productName;
 		}
 
 		return null;
+	}
+
+	private ProductPurchase _getProductPurchase(Account account) {
+		ProductPurchase baseProductPurchase = null;
+
+		List<String> baseProductEntryIds =
+			ProductConstants.getBaseProductEntryIds();
+
+		for (ProductPurchase productPurchase : account.getProductPurchases()) {
+			if (!baseProductEntryIds.contains(
+					productPurchase.getProductKey())) {
+
+				continue;
+			}
+
+			if ((baseProductPurchase == null) ||
+				((baseProductPurchase.getStatus() !=
+					productPurchase.getStatus()) &&
+				 Objects.equals(
+					 productPurchase.getStatus(),
+					 ProductPurchase.Status.APPROVED)) ||
+				((baseProductPurchase.getStatus() ==
+					productPurchase.getStatus()) &&
+				 _isAfter(baseProductPurchase, productPurchase))) {
+
+				baseProductPurchase = productPurchase;
+			}
+		}
+
+		return baseProductPurchase;
+	}
+
+	private boolean _isAfter(
+		ProductPurchase baseProductPurchase, ProductPurchase productPurchase) {
+
+		Date baseProductPurchaseStartDate = baseProductPurchase.getStartDate();
+
+		if (baseProductPurchaseStartDate.getTime() >
+				System.currentTimeMillis()) {
+
+			return false;
+		}
+
+		Date productPurchaseStartDate = productPurchase.getStartDate();
+
+		if (productPurchaseStartDate.getTime() >
+				baseProductPurchaseStartDate.getTime()) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	@Reference

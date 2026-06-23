@@ -30,6 +30,10 @@ public class CommerceCurrencyTable extends BaseTable<CommerceCurrencyTable> {
 		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
 	public final Column<CommerceCurrencyTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<CommerceCurrencyTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceCurrencyTable, Long> commerceCurrencyId =
 		createColumn(
 			"commerceCurrencyId", Long.class, Types.BIGINT,
@@ -83,3 +87,4 @@ public class CommerceCurrencyTable extends BaseTable<CommerceCurrencyTable> {
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1225551505

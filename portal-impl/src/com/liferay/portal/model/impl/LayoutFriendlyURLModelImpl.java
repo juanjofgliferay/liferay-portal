@@ -98,6 +98,8 @@ public class LayoutFriendlyURLModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table LayoutFriendlyURL";
 
+	public static final String ENTITY_ALIAS = "layoutFriendlyURL";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY layoutFriendlyURL.layoutFriendlyURLId ASC";
 
@@ -178,7 +180,7 @@ public class LayoutFriendlyURLModelImpl
 	public static final long LAYOUTFRIENDLYURLID_COLUMN_BITMASK = 128L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.portal.util.PropsUtil.get(
+		com.liferay.portal.kernel.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.LayoutFriendlyURL"));
 
 	public LayoutFriendlyURLModelImpl() {
@@ -1171,3 +1173,4 @@ public class LayoutFriendlyURLModelImpl
 	private LayoutFriendlyURL _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:2107371127

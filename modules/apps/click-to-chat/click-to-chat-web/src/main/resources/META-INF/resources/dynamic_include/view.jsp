@@ -9,7 +9,7 @@
 
 <liferay-util:include page='<%= "/dynamic_include/" + clickToChatChatProviderId + ".jsp" %>' servletContext="<%= application %>" />
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	(function () {
 		function handleVisibility(selectors, hide) {
 			let selectorsList = selectors.split(',');
@@ -32,6 +32,7 @@
 		}
 
 		const clickToChatProviders = {
+			aihub: '#aihub-chatbot-widget',
 			chatwoot: function (hide) {
 				if (hide) {
 					document
@@ -59,13 +60,14 @@
 				}
 			},
 			tidio: '#tidio-chat',
-			zendesk: '#launcher,#webWidget',
+			zendesk_web_widget: '#launcher,#webWidget',
+			zendesk_web_widget_classic: '#launcher,#webWidget',
 		};
 
 		Object.entries(clickToChatProviders).forEach(([key, action]) => {
 			var hideElement = true;
 
-			if (key === '<%= clickToChatChatProviderId %>') {
+			if (key.includes('<%= clickToChatChatProviderId %>')) {
 				hideElement = false;
 			}
 
@@ -75,4 +77,4 @@
 			action(hideElement);
 		});
 	})();
-</script>
+</aui:script>

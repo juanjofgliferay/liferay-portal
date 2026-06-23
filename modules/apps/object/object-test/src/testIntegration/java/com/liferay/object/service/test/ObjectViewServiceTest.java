@@ -52,8 +52,8 @@ public class ObjectViewServiceTest {
 	public void setUp() throws Exception {
 		_guestUser = _userLocalService.getGuestUser(
 			TestPropsValues.getCompanyId());
-		_objectDefinition = ObjectDefinitionTestUtil.addCustomObjectDefinition(
-			_objectDefinitionLocalService);
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 		_originalName = PrincipalThreadLocal.getName();
 		_originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
@@ -84,6 +84,25 @@ public class ObjectViewServiceTest {
 		}
 
 		_testAddObjectView(_user);
+	}
+
+	@Test
+	public void testDeleteObjectView() throws Exception {
+		try {
+			_testDeleteObjectView(_guestUser);
+
+			Assert.fail();
+		}
+		catch (PrincipalException.MustHavePermission principalException) {
+			String message = principalException.getMessage();
+
+			Assert.assertTrue(
+				message.contains(
+					"User " + _guestUser.getUserId() +
+						" must have DELETE permission for"));
+		}
+
+		_testDeleteObjectView(_user);
 	}
 
 	@Test
@@ -138,60 +157,49 @@ public class ObjectViewServiceTest {
 	}
 
 	private void _testAddObjectView(User user) throws Exception {
-		ObjectView objectView = null;
+		_setUser(user);
 
-		try {
-			_setUser(user);
+		ObjectView objectView = _objectViewService.addObjectView(
+			_objectDefinition.getObjectDefinitionId(), false,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			Collections.emptyList(), Collections.emptyList(),
+			Collections.emptyList());
 
-			objectView = _objectViewService.addObjectView(
-				_objectDefinition.getObjectDefinitionId(), false,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				Collections.emptyList(), Collections.emptyList(),
-				Collections.emptyList());
-		}
-		finally {
-			if (objectView != null) {
-				_objectViewLocalService.deleteObjectView(objectView);
-			}
-		}
+		_objectViewLocalService.deleteObjectView(objectView);
+	}
+
+	private void _testDeleteObjectView(User user) throws Exception {
+		_setUser(user);
+
+		ObjectView objectView = _addObjectView(user);
+
+		_objectViewService.deleteObjectView(objectView.getObjectViewId());
+
+		_objectViewLocalService.deleteObjectView(objectView);
 	}
 
 	private void _testGetObjectView(User user) throws Exception {
-		ObjectView objectView = null;
+		_setUser(user);
 
-		try {
-			_setUser(user);
+		ObjectView objectView = _addObjectView(user);
 
-			objectView = _addObjectView(user);
+		_objectViewService.getObjectView(objectView.getObjectViewId());
 
-			_objectViewService.getObjectView(objectView.getObjectViewId());
-		}
-		finally {
-			if (objectView != null) {
-				_objectViewLocalService.deleteObjectView(objectView);
-			}
-		}
+		_objectViewLocalService.deleteObjectView(objectView);
 	}
 
 	private void _testUpdateObjectView(User user) throws Exception {
-		ObjectView objectView = null;
+		_setUser(user);
 
-		try {
-			_setUser(user);
+		ObjectView objectView = _addObjectView(user);
 
-			objectView = _addObjectView(user);
+		objectView = _objectViewService.updateObjectView(
+			objectView.getObjectViewId(), false,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			Collections.emptyList(), Collections.emptyList(),
+			Collections.emptyList());
 
-			objectView = _objectViewService.updateObjectView(
-				objectView.getObjectViewId(), false,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				Collections.emptyList(), Collections.emptyList(),
-				Collections.emptyList());
-		}
-		finally {
-			if (objectView != null) {
-				_objectViewLocalService.deleteObjectView(objectView);
-			}
-		}
+		_objectViewLocalService.deleteObjectView(objectView);
 	}
 
 	private User _guestUser;

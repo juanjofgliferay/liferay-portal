@@ -8,21 +8,13 @@
 <%@ include file="/init.jsp" %>
 
 <%
-String redirect = ParamUtil.getString(request, "redirect");
-
-String backURL = ParamUtil.getString(request, "backURL", redirect);
-
 LayoutsSEODisplayContext layoutsSEODisplayContext = (LayoutsSEODisplayContext)request.getAttribute(LayoutSEOWebKeys.LAYOUT_PAGE_LAYOUT_SEO_DISPLAY_CONTEXT);
-
-if (Validator.isNull(backURL)) {
-	backURL = PortalUtil.getLayoutFullURL(layoutsSEODisplayContext.getSelLayout(), themeDisplay);
-}
 
 Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 %>
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link hashedFile="<%= true %>" href="layout-seo-web/css/main.css" rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
 
 <portlet:actionURL copyCurrentRenderParameters="<%= true %>" name="/layout/edit_open_graph" var="editOpenGraphURL" />
@@ -37,7 +29,7 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 	wrappedFormContent="<%= false %>"
 >
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
-	<aui:input name="backURL" type="hidden" value="<%= backURL %>" />
+	<aui:input name="backURL" type="hidden" value="<%= layoutsSEODisplayContext.getBackURL() %>" />
 	<aui:input name="portletResource" type="hidden" value='<%= ParamUtil.getString(request, "portletResource") %>' />
 	<aui:input name="groupId" type="hidden" value="<%= layoutsSEODisplayContext.getGroupId() %>" />
 	<aui:input name="privateLayout" type="hidden" value="<%= layoutsSEODisplayContext.isPrivateLayout() %>" />
@@ -95,7 +87,7 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 							</div>
 
 							<react:component
-								module="js/seo/display_page_templates/OpenGraphMapping"
+								module="{OpenGraphMapping} from layout-seo-web"
 								props="<%= layoutsSEODisplayContext.getOpenGraphMappingData() %>"
 								servletContext="<%= application %>"
 							/>
@@ -163,6 +155,8 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 							</div>
 
 							<aui:input id="openGraphImageFileEntryId" name="openGraphImageFileEntryId" type="hidden" />
+							<aui:input id="openGraphImageFileEntryERC" name="openGraphImageFileEntryERC" type="hidden" />
+							<aui:input id="openGraphImageFileEntryScopeERC" name="openGraphImageFileEntryScopeERC" type="hidden" />
 						</div>
 
 						<div class="form-group">
@@ -172,10 +166,10 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 
 									<span>
 										<clay:icon
-											aria-label='<%= LanguageUtil.get(request, "preview-help") %>'
+											aria-label='<%= LanguageUtil.get(request, "the-image-ratio-might-change-depending-on-where-the-URL-is-posted") %>'
 											cssClass="lfr-portal-tooltip ml-1"
 											symbol="question-circle-full"
-											title='<%= LanguageUtil.get(request, "preview-help") %>'
+											title='<%= LanguageUtil.get(request, "the-image-ratio-might-change-depending-on-where-the-URL-is-posted") %>'
 										/>
 									</span>
 								</div>
@@ -183,38 +177,8 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 
 							<div>
 								<react:component
-									module="js/seo/PreviewSeo.es"
-									props='<%=
-										HashMapBuilder.<String, Object>put(
-											"displayType", "og"
-										).put(
-											"targets",
-											HashMapBuilder.<String, Object>put(
-												"description",
-												HashMapBuilder.<String, Object>put(
-													"defaultValue", selLayout.getDescriptionMap()
-												).put(
-													"id", "openGraphDescription"
-												).build()
-											).put(
-												"imgUrl",
-												HashMapBuilder.<String, Object>put(
-													"defaultValue", layoutsSEODisplayContext.getDefaultOpenGraphImageURL()
-												).put(
-													"value", layoutsSEODisplayContext.getOpenGraphImageURL()
-												).build()
-											).put(
-												"title",
-												HashMapBuilder.<String, Object>put(
-													"defaultValue", layoutsSEODisplayContext.getDefaultPageTitleWithSuffixMap()
-												).put(
-													"id", "openGraphTitle"
-												).build()
-											).put(
-												"url", Collections.singletonMap("defaultValue", layoutsSEODisplayContext.getDefaultCanonicalURLMap())
-											).build()
-										).build()
-									%>'
+									module="{PreviewSeo} from layout-seo-web"
+									props="<%= layoutsSEODisplayContext.getOpenGraphPreviewSeoProperties() %>"
 									servletContext="<%= application %>"
 								/>
 							</div>
@@ -228,7 +192,7 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 									"uploadOpenGraphImageURL", layoutsSEODisplayContext.getItemSelectorURL()
 								).build()
 							%>'
-							module="js/seo/openGraph.es"
+							module="{openGraph} from layout-seo-web"
 							servletContext="<%= application %>"
 						/>
 					</c:otherwise>
@@ -239,7 +203,7 @@ Layout selLayout = layoutsSEODisplayContext.getSelLayout();
 
 	<liferay-frontend:edit-form-footer>
 		<liferay-frontend:edit-form-buttons
-			redirect="<%= backURL %>"
+			redirect="<%= layoutsSEODisplayContext.getBackURL() %>"
 		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

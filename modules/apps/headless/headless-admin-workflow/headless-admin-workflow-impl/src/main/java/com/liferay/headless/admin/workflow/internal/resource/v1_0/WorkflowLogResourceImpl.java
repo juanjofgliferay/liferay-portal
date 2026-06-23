@@ -7,6 +7,7 @@ package com.liferay.headless.admin.workflow.internal.resource.v1_0;
 
 import com.liferay.headless.admin.workflow.dto.v1_0.Role;
 import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowLog;
+import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowTask;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.CreatorUtil;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.RoleUtil;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.WorkflowLogUtil;
@@ -18,6 +19,8 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.vulcan.fields.NestedField;
+import com.liferay.portal.vulcan.fields.NestedFieldId;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
@@ -39,7 +42,8 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	properties = "OSGI-INF/liferay/rest/v1_0/workflow-log.properties",
-	scope = ServiceScope.PROTOTYPE, service = WorkflowLogResource.class
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = WorkflowLogResource.class
 )
 @CTAware
 public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
@@ -71,9 +75,11 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 				_kaleoLogLocalService.getKaleoLog(workflowLogId)));
 	}
 
+	@NestedField(parentClass = WorkflowTask.class, value = "workflowLogs")
 	@Override
 	public Page<WorkflowLog> getWorkflowTaskWorkflowLogsPage(
-			Long workflowTaskId, String[] types, Pagination pagination)
+			@NestedFieldId(value = "id") Long workflowTaskId, String[] types,
+			Pagination pagination)
 		throws Exception {
 
 		return Page.of(
@@ -92,8 +98,14 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 	}
 
 	private String _toLogTypeName(WorkflowLog.Type type) {
-		if (type == WorkflowLog.Type.NODE_ENTRY) {
+		if (type == WorkflowLog.Type.INSTANCE_FAIL) {
+			return LogType.INSTANCE_FAIL.name();
+		}
+		else if (type == WorkflowLog.Type.NODE_ENTRY) {
 			return LogType.NODE_ENTRY.name();
+		}
+		else if (type == WorkflowLog.Type.NODE_USAGE_METADATA) {
+			return LogType.NODE_USAGE_METADATA.name();
 		}
 		else if (type == WorkflowLog.Type.TASK_ASSIGN) {
 			return LogType.TASK_ASSIGNMENT.name();
@@ -142,44 +154,57 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 
 		return new WorkflowLog() {
 			{
-				auditPerson = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(workflowLog.getAuditUserId()));
-				commentLog = _language.get(
-					ResourceBundleUtil.getBundle(
-						"content.Language",
-						contextAcceptLanguage.getPreferredLocale(), getClass()),
-					workflowLog.getComment());
-				dateCreated = workflowLog.getCreateDate();
-				description = WorkflowLogUtil.getDescription(
-					_language, contextAcceptLanguage.getPreferredLocale(),
-					_portal, _roleLocalService::fetchRole,
-					_userLocalService::fetchUser, workflowLog);
-				id = workflowLog.getWorkflowLogId();
-				person = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(workflowLog.getUserId()));
-				previousPerson = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(
-						workflowLog.getPreviousUserId()));
-				previousRole = _toRole(workflowLog.getPreviousRoleId());
-				previousState = workflowLog.getPreviousWorkflowNodeName();
-				previousStateLabel = workflowLog.getPreviousWorkflowNodeLabel(
-					contextAcceptLanguage.getPreferredLocale());
-				role = _toRole(workflowLog.getRoleId());
-				state = workflowLog.getCurrentWorkflowNodeName();
-				stateLabel = workflowLog.getCurrentWorkflowNodeLabel(
-					contextAcceptLanguage.getPreferredLocale());
-				type = _toWorkflowLogType(
-					KaleoLogUtil.convert(workflowLog.getType()));
-				workflowTaskId = workflowLog.getWorkflowTaskId();
+				setAuditPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							workflowLog.getAuditUserId())));
+				setCommentLog(
+					() -> _language.get(
+						ResourceBundleUtil.getBundle(
+							"content.Language",
+							contextAcceptLanguage.getPreferredLocale(),
+							getClass()),
+						workflowLog.getComment()));
+				setDateCreated(workflowLog::getCreateDate);
+				setDescription(
+					() -> WorkflowLogUtil.getDescription(
+						_language, contextAcceptLanguage.getPreferredLocale(),
+						_portal, _roleLocalService::fetchRole,
+						_userLocalService::fetchUser, workflowLog));
+				setId(workflowLog::getWorkflowLogId);
+				setPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(workflowLog.getUserId())));
+				setPreviousPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							workflowLog.getPreviousUserId())));
+				setPreviousRole(() -> _toRole(workflowLog.getPreviousRoleId()));
+				setPreviousState(workflowLog::getPreviousWorkflowNodeName);
+				setPreviousStateLabel(
+					() -> workflowLog.getPreviousWorkflowNodeLabel(
+						contextAcceptLanguage.getPreferredLocale()));
+				setRole(() -> _toRole(workflowLog.getRoleId()));
+				setState(workflowLog::getCurrentWorkflowNodeName);
+				setStateLabel(
+					() -> workflowLog.getCurrentWorkflowNodeLabel(
+						contextAcceptLanguage.getPreferredLocale()));
+				setType(
+					() -> _toWorkflowLogType(
+						KaleoLogUtil.convert(workflowLog.getType())));
+				setWorkflowTaskId(workflowLog::getWorkflowTaskId);
 			}
 		};
 	}
 
 	private WorkflowLog.Type _toWorkflowLogType(String type) {
-		if (Objects.equals(type, LogType.NODE_ENTRY.name())) {
+		if (Objects.equals(type, LogType.INSTANCE_FAIL.name())) {
+			return WorkflowLog.Type.INSTANCE_FAIL;
+		}
+		else if (Objects.equals(type, LogType.NODE_ENTRY.name())) {
 			return WorkflowLog.Type.NODE_ENTRY;
 		}
 		else if (Objects.equals(type, LogType.NODE_EXIT.name())) {

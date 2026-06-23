@@ -7,6 +7,7 @@ package com.liferay.portal.workflow.metrics.rest.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -18,7 +19,11 @@ import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -30,12 +35,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Rafael Praxedes
@@ -57,70 +57,104 @@ public class Instance implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Instance.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getActive() {
+		if (_activeSupplier != null) {
+			active = _activeSupplier.get();
+
+			_activeSupplier = null;
+		}
+
 		return active;
 	}
 
 	public void setActive(Boolean active) {
 		this.active = active;
+
+		_activeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setActive(
 		UnsafeSupplier<Boolean, Exception> activeUnsafeSupplier) {
 
-		try {
-			active = activeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_activeSupplier = () -> {
+			try {
+				return activeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean active;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _activeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getAssetTitle() {
+		if (_assetTitleSupplier != null) {
+			assetTitle = _assetTitleSupplier.get();
+
+			_assetTitleSupplier = null;
+		}
+
 		return assetTitle;
 	}
 
 	public void setAssetTitle(String assetTitle) {
 		this.assetTitle = assetTitle;
+
+		_assetTitleSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAssetTitle(
 		UnsafeSupplier<String, Exception> assetTitleUnsafeSupplier) {
 
-		try {
-			assetTitle = assetTitleUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assetTitleSupplier = () -> {
+			try {
+				return assetTitleUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String assetTitle;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _assetTitleSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getAssetTitle_i18n() {
+		if (_assetTitle_i18nSupplier != null) {
+			assetTitle_i18n = _assetTitle_i18nSupplier.get();
+
+			_assetTitle_i18nSupplier = null;
+		}
+
 		return assetTitle_i18n;
 	}
 
 	public void setAssetTitle_i18n(Map<String, String> assetTitle_i18n) {
 		this.assetTitle_i18n = assetTitle_i18n;
+
+		_assetTitle_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -128,57 +162,83 @@ public class Instance implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			assetTitle_i18nUnsafeSupplier) {
 
-		try {
-			assetTitle_i18n = assetTitle_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assetTitle_i18nSupplier = () -> {
+			try {
+				return assetTitle_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> assetTitle_i18n;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _assetTitle_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getAssetType() {
+		if (_assetTypeSupplier != null) {
+			assetType = _assetTypeSupplier.get();
+
+			_assetTypeSupplier = null;
+		}
+
 		return assetType;
 	}
 
 	public void setAssetType(String assetType) {
 		this.assetType = assetType;
+
+		_assetTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAssetType(
 		UnsafeSupplier<String, Exception> assetTypeUnsafeSupplier) {
 
-		try {
-			assetType = assetTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assetTypeSupplier = () -> {
+			try {
+				return assetTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String assetType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _assetTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getAssetType_i18n() {
+		if (_assetType_i18nSupplier != null) {
+			assetType_i18n = _assetType_i18nSupplier.get();
+
+			_assetType_i18nSupplier = null;
+		}
+
 		return assetType_i18n;
 	}
 
 	public void setAssetType_i18n(Map<String, String> assetType_i18n) {
 		this.assetType_i18n = assetType_i18n;
+
+		_assetType_i18nSupplier = null;
 	}
 
 	@JsonIgnore
@@ -186,394 +246,577 @@ public class Instance implements Serializable {
 		UnsafeSupplier<Map<String, String>, Exception>
 			assetType_i18nUnsafeSupplier) {
 
-		try {
-			assetType_i18n = assetType_i18nUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assetType_i18nSupplier = () -> {
+			try {
+				return assetType_i18nUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> assetType_i18n;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _assetType_i18nSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Assignee[] getAssignees() {
+		if (_assigneesSupplier != null) {
+			assignees = _assigneesSupplier.get();
+
+			_assigneesSupplier = null;
+		}
+
 		return assignees;
 	}
 
 	public void setAssignees(Assignee[] assignees) {
 		this.assignees = assignees;
+
+		_assigneesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAssignees(
 		UnsafeSupplier<Assignee[], Exception> assigneesUnsafeSupplier) {
 
-		try {
-			assignees = assigneesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_assigneesSupplier = () -> {
+			try {
+				return assigneesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Assignee[] assignees;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Assignee[]> _assigneesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getClassName() {
+		if (_classNameSupplier != null) {
+			className = _classNameSupplier.get();
+
+			_classNameSupplier = null;
+		}
+
 		return className;
 	}
 
 	public void setClassName(String className) {
 		this.className = className;
+
+		_classNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassName(
 		UnsafeSupplier<String, Exception> classNameUnsafeSupplier) {
 
-		try {
-			className = classNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classNameSupplier = () -> {
+			try {
+				return classNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String className;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _classNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getClassPK() {
+		if (_classPKSupplier != null) {
+			classPK = _classPKSupplier.get();
+
+			_classPKSupplier = null;
+		}
+
 		return classPK;
 	}
 
 	public void setClassPK(Long classPK) {
 		this.classPK = classPK;
+
+		_classPKSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setClassPK(
 		UnsafeSupplier<Long, Exception> classPKUnsafeSupplier) {
 
-		try {
-			classPK = classPKUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_classPKSupplier = () -> {
+			try {
+				return classPKUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long classPK;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _classPKSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getCompleted() {
+		if (_completedSupplier != null) {
+			completed = _completedSupplier.get();
+
+			_completedSupplier = null;
+		}
+
 		return completed;
 	}
 
 	public void setCompleted(Boolean completed) {
 		this.completed = completed;
+
+		_completedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCompleted(
 		UnsafeSupplier<Boolean, Exception> completedUnsafeSupplier) {
 
-		try {
-			completed = completedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_completedSupplier = () -> {
+			try {
+				return completedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean completed;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _completedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Creator getCreator() {
+		if (_creatorSupplier != null) {
+			creator = _creatorSupplier.get();
+
+			_creatorSupplier = null;
+		}
+
 		return creator;
 	}
 
 	public void setCreator(Creator creator) {
 		this.creator = creator;
+
+		_creatorSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCreator(
 		UnsafeSupplier<Creator, Exception> creatorUnsafeSupplier) {
 
-		try {
-			creator = creatorUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_creatorSupplier = () -> {
+			try {
+				return creatorUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Creator creator;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Creator> _creatorSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateCompletion() {
+		if (_dateCompletionSupplier != null) {
+			dateCompletion = _dateCompletionSupplier.get();
+
+			_dateCompletionSupplier = null;
+		}
+
 		return dateCompletion;
 	}
 
 	public void setDateCompletion(Date dateCompletion) {
 		this.dateCompletion = dateCompletion;
+
+		_dateCompletionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCompletion(
 		UnsafeSupplier<Date, Exception> dateCompletionUnsafeSupplier) {
 
-		try {
-			dateCompletion = dateCompletionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCompletionSupplier = () -> {
+			try {
+				return dateCompletionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateCompletion;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateCompletionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateCreated() {
+		if (_dateCreatedSupplier != null) {
+			dateCreated = _dateCreatedSupplier.get();
+
+			_dateCreatedSupplier = null;
+		}
+
 		return dateCreated;
 	}
 
 	public void setDateCreated(Date dateCreated) {
 		this.dateCreated = dateCreated;
+
+		_dateCreatedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateCreated(
 		UnsafeSupplier<Date, Exception> dateCreatedUnsafeSupplier) {
 
-		try {
-			dateCreated = dateCreatedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateCreatedSupplier = () -> {
+			try {
+				return dateCreatedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateCreated;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateCreatedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Date getDateModified() {
+		if (_dateModifiedSupplier != null) {
+			dateModified = _dateModifiedSupplier.get();
+
+			_dateModifiedSupplier = null;
+		}
+
 		return dateModified;
 	}
 
 	public void setDateModified(Date dateModified) {
 		this.dateModified = dateModified;
+
+		_dateModifiedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDateModified(
 		UnsafeSupplier<Date, Exception> dateModifiedUnsafeSupplier) {
 
-		try {
-			dateModified = dateModifiedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dateModifiedSupplier = () -> {
+			try {
+				return dateModifiedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Date dateModified;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Date> _dateModifiedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getDuration() {
+		if (_durationSupplier != null) {
+			duration = _durationSupplier.get();
+
+			_durationSupplier = null;
+		}
+
 		return duration;
 	}
 
 	public void setDuration(Long duration) {
 		this.duration = duration;
+
+		_durationSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDuration(
 		UnsafeSupplier<Long, Exception> durationUnsafeSupplier) {
 
-		try {
-			duration = durationUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_durationSupplier = () -> {
+			try {
+				return durationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long duration;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _durationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getProcessId() {
+		if (_processIdSupplier != null) {
+			processId = _processIdSupplier.get();
+
+			_processIdSupplier = null;
+		}
+
 		return processId;
 	}
 
 	public void setProcessId(Long processId) {
 		this.processId = processId;
+
+		_processIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProcessId(
 		UnsafeSupplier<Long, Exception> processIdUnsafeSupplier) {
 
-		try {
-			processId = processIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_processIdSupplier = () -> {
+			try {
+				return processIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long processId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _processIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getProcessVersion() {
+		if (_processVersionSupplier != null) {
+			processVersion = _processVersionSupplier.get();
+
+			_processVersionSupplier = null;
+		}
+
 		return processVersion;
 	}
 
 	public void setProcessVersion(String processVersion) {
 		this.processVersion = processVersion;
+
+		_processVersionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setProcessVersion(
 		UnsafeSupplier<String, Exception> processVersionUnsafeSupplier) {
 
-		try {
-			processVersion = processVersionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_processVersionSupplier = () -> {
+			try {
+				return processVersionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String processVersion;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _processVersionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public SLAResult[] getSlaResults() {
+		if (_slaResultsSupplier != null) {
+			slaResults = _slaResultsSupplier.get();
+
+			_slaResultsSupplier = null;
+		}
+
 		return slaResults;
 	}
 
 	public void setSlaResults(SLAResult[] slaResults) {
 		this.slaResults = slaResults;
+
+		_slaResultsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSlaResults(
 		UnsafeSupplier<SLAResult[], Exception> slaResultsUnsafeSupplier) {
 
-		try {
-			slaResults = slaResultsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_slaResultsSupplier = () -> {
+			try {
+				return slaResultsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected SLAResult[] slaResults;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<SLAResult[]> _slaResultsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@JsonGetter("slaStatus")
 	@Valid
 	public SLAStatus getSLAStatus() {
+		if (_slaStatusSupplier != null) {
+			slaStatus = _slaStatusSupplier.get();
+
+			_slaStatusSupplier = null;
+		}
+
 		return slaStatus;
 	}
 
 	@JsonIgnore
 	public String getSLAStatusAsString() {
+		SLAStatus slaStatus = getSLAStatus();
+
 		if (slaStatus == null) {
 			return null;
 		}
@@ -583,83 +826,116 @@ public class Instance implements Serializable {
 
 	public void setSLAStatus(SLAStatus slaStatus) {
 		this.slaStatus = slaStatus;
+
+		_slaStatusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSLAStatus(
 		UnsafeSupplier<SLAStatus, Exception> slaStatusUnsafeSupplier) {
 
-		try {
-			slaStatus = slaStatusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_slaStatusSupplier = () -> {
+			try {
+				return slaStatusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected SLAStatus slaStatus;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<SLAStatus> _slaStatusSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String[] getTaskNames() {
+		if (_taskNamesSupplier != null) {
+			taskNames = _taskNamesSupplier.get();
+
+			_taskNamesSupplier = null;
+		}
+
 		return taskNames;
 	}
 
 	public void setTaskNames(String[] taskNames) {
 		this.taskNames = taskNames;
+
+		_taskNamesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTaskNames(
 		UnsafeSupplier<String[], Exception> taskNamesUnsafeSupplier) {
 
-		try {
-			taskNames = taskNamesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_taskNamesSupplier = () -> {
+			try {
+				return taskNamesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected String[] taskNames;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String[]> _taskNamesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Transition[] getTransitions() {
+		if (_transitionsSupplier != null) {
+			transitions = _transitionsSupplier.get();
+
+			_transitionsSupplier = null;
+		}
+
 		return transitions;
 	}
 
 	public void setTransitions(Transition[] transitions) {
 		this.transitions = transitions;
+
+		_transitionsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setTransitions(
 		UnsafeSupplier<Transition[], Exception> transitionsUnsafeSupplier) {
 
-		try {
-			transitions = transitionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_transitionsSupplier = () -> {
+			try {
+				return transitionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Transition[] transitions;
+
+	@JsonIgnore
+	private Supplier<Transition[]> _transitionsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -691,6 +967,8 @@ public class Instance implements Serializable {
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+		Boolean active = getActive();
+
 		if (active != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -700,6 +978,8 @@ public class Instance implements Serializable {
 
 			sb.append(active);
 		}
+
+		String assetTitle = getAssetTitle();
 
 		if (assetTitle != null) {
 			if (sb.length() > 1) {
@@ -715,6 +995,8 @@ public class Instance implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> assetTitle_i18n = getAssetTitle_i18n();
+
 		if (assetTitle_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -724,6 +1006,8 @@ public class Instance implements Serializable {
 
 			sb.append(_toJSON(assetTitle_i18n));
 		}
+
+		String assetType = getAssetType();
 
 		if (assetType != null) {
 			if (sb.length() > 1) {
@@ -739,6 +1023,8 @@ public class Instance implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> assetType_i18n = getAssetType_i18n();
+
 		if (assetType_i18n != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -748,6 +1034,8 @@ public class Instance implements Serializable {
 
 			sb.append(_toJSON(assetType_i18n));
 		}
+
+		Assignee[] assignees = getAssignees();
 
 		if (assignees != null) {
 			if (sb.length() > 1) {
@@ -769,6 +1057,8 @@ public class Instance implements Serializable {
 			sb.append("]");
 		}
 
+		String className = getClassName();
+
 		if (className != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -783,6 +1073,8 @@ public class Instance implements Serializable {
 			sb.append("\"");
 		}
 
+		Long classPK = getClassPK();
+
 		if (classPK != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -792,6 +1084,8 @@ public class Instance implements Serializable {
 
 			sb.append(classPK);
 		}
+
+		Boolean completed = getCompleted();
 
 		if (completed != null) {
 			if (sb.length() > 1) {
@@ -803,6 +1097,8 @@ public class Instance implements Serializable {
 			sb.append(completed);
 		}
 
+		Creator creator = getCreator();
+
 		if (creator != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -812,6 +1108,8 @@ public class Instance implements Serializable {
 
 			sb.append(String.valueOf(creator));
 		}
+
+		Date dateCompletion = getDateCompletion();
 
 		if (dateCompletion != null) {
 			if (sb.length() > 1) {
@@ -827,6 +1125,8 @@ public class Instance implements Serializable {
 			sb.append("\"");
 		}
 
+		Date dateCreated = getDateCreated();
+
 		if (dateCreated != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -840,6 +1140,8 @@ public class Instance implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Date dateModified = getDateModified();
 
 		if (dateModified != null) {
 			if (sb.length() > 1) {
@@ -855,6 +1157,8 @@ public class Instance implements Serializable {
 			sb.append("\"");
 		}
 
+		Long duration = getDuration();
+
 		if (duration != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -864,6 +1168,8 @@ public class Instance implements Serializable {
 
 			sb.append(duration);
 		}
+
+		Long id = getId();
 
 		if (id != null) {
 			if (sb.length() > 1) {
@@ -875,6 +1181,8 @@ public class Instance implements Serializable {
 			sb.append(id);
 		}
 
+		Long processId = getProcessId();
+
 		if (processId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -884,6 +1192,8 @@ public class Instance implements Serializable {
 
 			sb.append(processId);
 		}
+
+		String processVersion = getProcessVersion();
 
 		if (processVersion != null) {
 			if (sb.length() > 1) {
@@ -898,6 +1208,8 @@ public class Instance implements Serializable {
 
 			sb.append("\"");
 		}
+
+		SLAResult[] slaResults = getSlaResults();
 
 		if (slaResults != null) {
 			if (sb.length() > 1) {
@@ -919,6 +1231,8 @@ public class Instance implements Serializable {
 			sb.append("]");
 		}
 
+		SLAStatus slaStatus = getSLAStatus();
+
 		if (slaStatus != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -927,11 +1241,11 @@ public class Instance implements Serializable {
 			sb.append("\"slaStatus\": ");
 
 			sb.append("\"");
-
 			sb.append(slaStatus);
-
 			sb.append("\"");
 		}
+
+		String[] taskNames = getTaskNames();
 
 		if (taskNames != null) {
 			if (sb.length() > 1) {
@@ -956,6 +1270,8 @@ public class Instance implements Serializable {
 
 			sb.append("]");
 		}
+
+		Transition[] transitions = getTransitions();
 
 		if (transitions != null) {
 			if (sb.length() > 1) {
@@ -982,8 +1298,8 @@ public class Instance implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.portal.workflow.metrics.rest.dto.v1_0.Instance",
 		name = "x-class-name"
 	)
@@ -1067,7 +1383,10 @@ public class Instance implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -1113,3 +1432,4 @@ public class Instance implements Serializable {
 	private Map<String, Serializable> _extendedProperties;
 
 }
+// LIFERAY-REST-BUILDER-HASH:858375329

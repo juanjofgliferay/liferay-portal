@@ -198,10 +198,10 @@ public class DDMStorageAdapterTest {
 
 	private static final String _STORAGE_TYPE_TEST = "test";
 
-	@Inject
-	private static DDMStorageAdapterRegistry _ddmStorageAdapterRegistry;
-
 	private static ServiceRegistration<DDMStorageAdapter> _serviceRegistration;
+
+	@Inject
+	private DDMStorageAdapterRegistry _ddmStorageAdapterRegistry;
 
 	private static class DDMTestStorageAdapter implements DDMStorageAdapter {
 
@@ -229,19 +229,19 @@ public class DDMStorageAdapterTest {
 				DDMStorageAdapterGetRequest ddmStorageAdapterGetRequest)
 			throws StorageException {
 
-			if (Objects.equals(
+			if (!Objects.equals(
 					_DEFAULT_PRIMARY_KEY,
 					ddmStorageAdapterGetRequest.getPrimaryKey())) {
 
-				DDMStorageAdapterGetResponse.Builder
-					ddmStorageAdapterGetResponseBuilder =
-						DDMStorageAdapterGetResponse.Builder.newBuilder(
-							_ddmFormValues);
-
-				return ddmStorageAdapterGetResponseBuilder.build();
+				return null;
 			}
 
-			return null;
+			DDMStorageAdapterGetResponse.Builder
+				ddmStorageAdapterGetResponseBuilder =
+					DDMStorageAdapterGetResponse.Builder.newBuilder(
+						_ddmFormValues);
+
+			return ddmStorageAdapterGetResponseBuilder.build();
 		}
 
 		@Override

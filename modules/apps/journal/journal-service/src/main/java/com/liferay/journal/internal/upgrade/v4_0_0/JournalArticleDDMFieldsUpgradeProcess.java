@@ -12,11 +12,30 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverter;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.util.JournalConverter;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
 import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.Portal;
+
+import java.io.StringReader;
+import java.io.StringWriter;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import org.xml.sax.InputSource;
 
 /**
  * @author Preston Crary
@@ -25,12 +44,14 @@ public class JournalArticleDDMFieldsUpgradeProcess extends UpgradeProcess {
 
 	public JournalArticleDDMFieldsUpgradeProcess(
 		ClassNameLocalService classNameLocalService,
+		CompanyLocalService companyLocalService,
 		DDMFieldLocalService ddmFieldLocalService,
 		DDMStructureLocalService ddmStructureLocalService,
 		FieldsToDDMFormValuesConverter fieldsToDDMFormValuesConverter,
 		JournalConverter journalConverter, Portal portal) {
 
 		_classNameLocalService = classNameLocalService;
+		_companyLocalService = companyLocalService;
 		_ddmFieldLocalService = ddmFieldLocalService;
 		_ddmStructureLocalService = ddmStructureLocalService;
 		_fieldsToDDMFormValuesConverter = fieldsToDDMFormValuesConverter;
@@ -43,36 +64,41 @@ public class JournalArticleDDMFieldsUpgradeProcess extends UpgradeProcess {
 		long classNameId = _classNameLocalService.getClassNameId(
 			JournalArticle.class);
 
-		processConcurrently(
-			"select id_, groupId, content, DDMStructureKey from " +
-				"JournalArticle where ctCollectionId = 0",
-			resultSet -> new Object[] {
-				resultSet.getLong("id_"), resultSet.getLong("groupId"),
-				resultSet.getString("content"),
-				resultSet.getString("DDMStructureKey")
-			},
-			values -> {
-				long id = (Long)values[0];
-				long groupId = (Long)values[1];
+		_companyLocalService.forEachCompanyId(
+			companyId -> processConcurrently(
+				StringBundler.concat(
+					"select id_, groupId, content, DDMStructureKey from ",
+					"JournalArticle where companyId = ", companyId,
+					" and ctCollectionId = 0"),
+				resultSet -> new Object[] {
+					resultSet.getLong("id_"), resultSet.getLong("groupId"),
+					resultSet.getString("content"),
+					resultSet.getString("DDMStructureKey")
+				},
+				values -> {
+					long groupId = (Long)values[1];
+					String ddmStructureKey = (String)values[3];
 
-				String content = (String)values[2];
+					DDMStructure ddmStructure =
+						_ddmStructureLocalService.getStructure(
+							_portal.getSiteGroupId(groupId), classNameId,
+							ddmStructureKey, true);
 
-				String ddmStructureKey = (String)values[3];
+					String content = (String)values[2];
 
-				DDMStructure ddmStructure =
-					_ddmStructureLocalService.getStructure(
-						_portal.getSiteGroupId(groupId), classNameId,
-						ddmStructureKey, true);
+					DDMFormValues ddmFormValues =
+						_fieldsToDDMFormValuesConverter.convert(
+							ddmStructure,
+							_journalConverter.getDDMFields(
+								ddmStructure, _convertFieldNames(content)));
 
-				DDMFormValues ddmFormValues =
-					_fieldsToDDMFormValuesConverter.convert(
-						ddmStructure,
-						_journalConverter.getDDMFields(ddmStructure, content));
+					long id = (Long)values[0];
 
-				_ddmFieldLocalService.updateDDMFormValues(
-					ddmStructure.getStructureId(), id, ddmFormValues);
-			},
-			null);
+					_ddmFieldLocalService.updateDDMFormValues(
+						ddmStructure.getStructureId(), id, ddmFormValues);
+				},
+				"Unable to upgrade journal article dynamic data mapping " +
+					"fields for company " + companyId));
 	}
 
 	@Override
@@ -82,7 +108,46 @@ public class JournalArticleDDMFieldsUpgradeProcess extends UpgradeProcess {
 		};
 	}
 
+	private String _convertFieldNames(String content) throws Exception {
+		TransformerFactory transformerFactory =
+			TransformerFactory.newInstance();
+
+		Transformer transformer = transformerFactory.newTransformer();
+
+		Document document =
+			SecureXMLFactoryProviderUtil.newDocumentBuilderFactory(
+			).newDocumentBuilder(
+			).parse(
+				new InputSource(new StringReader(content))
+			);
+
+		NodeList nodeList = document.getElementsByTagName("dynamic-element");
+
+		for (int i = 0; i < nodeList.getLength(); i++) {
+			Node node = nodeList.item(i);
+
+			NamedNodeMap namedNodeMap = node.getAttributes();
+
+			Node nameNode = namedNodeMap.getNamedItem("name");
+
+			String textContent = nameNode.getTextContent();
+
+			nameNode.setTextContent(
+				textContent.replaceAll(StringPool.MINUS, StringPool.BLANK));
+		}
+
+		StringWriter stringWriter = new StringWriter();
+
+		transformer.transform(
+			new DOMSource(document), new StreamResult(stringWriter));
+
+		StringBuffer stringBuffer = stringWriter.getBuffer();
+
+		return stringBuffer.toString();
+	}
+
 	private final ClassNameLocalService _classNameLocalService;
+	private final CompanyLocalService _companyLocalService;
 	private final DDMFieldLocalService _ddmFieldLocalService;
 	private final DDMStructureLocalService _ddmStructureLocalService;
 	private final FieldsToDDMFormValuesConverter

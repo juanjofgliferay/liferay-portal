@@ -7,10 +7,10 @@ package com.liferay.layout.internal.search.spi.model.query.contributor;
 
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.search.localization.SearchLocalizationHelper;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.query.QueryHelper;
+import com.liferay.portal.search.spi.model.query.contributor.HighlightFieldNamesQueryConfigContributor;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
 import com.liferay.portal.search.spi.model.query.contributor.helper.KeywordQueryContributorHelper;
 
@@ -34,25 +34,29 @@ public class LayoutKeywordQueryContributor implements KeywordQueryContributor {
 		SearchContext searchContext =
 			keywordQueryContributorHelper.getSearchContext();
 
-		_queryHelper.addSearchLocalizedTerm(
-			booleanQuery, searchContext, Field.CONTENT, false);
+		if (!GetterUtil.getBoolean(
+				searchContext.getAttribute("searchOnlyByTitle"))) {
+
+			_queryHelper.addSearchLocalizedTerm(
+				booleanQuery, searchContext, Field.CONTENT, false);
+		}
+
 		_queryHelper.addSearchTerm(
 			booleanQuery, searchContext, Field.NAME, false);
 		_queryHelper.addSearchLocalizedTerm(
 			booleanQuery, searchContext, Field.TITLE, false);
 
-		QueryConfig queryConfig = searchContext.getQueryConfig();
-
-		queryConfig.addHighlightFieldNames(
-			_searchLocalizationHelper.getLocalizedFieldNames(
-				new String[] {Field.CONTENT, Field.NAME, Field.TITLE},
-				searchContext));
+		_highlightFieldNamesQueryConfigContributor.
+			contributeHighlightFieldNames(searchContext);
 	}
+
+	@Reference(
+		target = "(indexer.class.name=com.liferay.portal.kernel.model.Layout)"
+	)
+	private HighlightFieldNamesQueryConfigContributor
+		_highlightFieldNamesQueryConfigContributor;
 
 	@Reference
 	private QueryHelper _queryHelper;
-
-	@Reference
-	private SearchLocalizationHelper _searchLocalizationHelper;
 
 }

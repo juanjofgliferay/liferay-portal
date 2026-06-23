@@ -19,6 +19,13 @@ import {waitForLoadingToBeRemoved} from 'test/helpers';
 
 jest.unmock('react-dom');
 
+jest.mock('react-router-dom', () => ({
+	...jest.requireActual('react-router-dom'),
+	useParams: () => ({
+		groupId: '23'
+	})
+}));
+
 const defaultProps = {
 	currentUser: new User(data.mockUser()),
 	groupId: '23'
@@ -48,8 +55,6 @@ describe('View Channel', () => {
 	it('should render', async () => {
 		const {container} = render(<DefaultComponent />);
 
-		jest.runAllTimers();
-
 		await waitForLoadingToBeRemoved(container);
 
 		expect(container).toMatchSnapshot();
@@ -61,8 +66,6 @@ describe('View Channel', () => {
 		);
 
 		const {container} = render(<DefaultComponent />);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -77,8 +80,6 @@ describe('View Channel', () => {
 
 		const {queryByLabelText, queryByText} = render(<DefaultComponent />);
 
-		jest.runAllTimers();
-
 		expect(queryByText('Delete')).toBeNull();
 		expect(queryByLabelText('Edit')).toBeNull();
 	});
@@ -89,8 +90,6 @@ describe('View Channel', () => {
 		);
 
 		const {container, queryByText} = render(<DefaultComponent />);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -113,8 +112,6 @@ describe('View Channel', () => {
 		);
 
 		const {container} = render(<DefaultComponent />);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -143,7 +140,7 @@ describe('View Channel', () => {
 		const modalText = screen.getByText((content, node) => {
 			const hasText = node =>
 				node.textContent ===
-				'Ensure no sites and channels are assigned to it before deleting a property. To disconnect them from a property, navigate to Instance Settings > Analytics Cloud > Properties and select the properties with synchronizations that you wish to undo. Access our documentation to learn more.';
+				'Ensure no sites and channels are assigned to it before deleting a property. To disconnect them from a property, navigate to Instance Settings > Analytics Cloud > Properties and select the properties with synchronizations that you wish to undo. Access our documentation to learn more.(Opens a new window)';
 			const nodeHasText = hasText(node);
 			const childrenDontHaveText = Array.from(node.children).every(
 				child => !hasText(child)
@@ -162,7 +159,7 @@ describe('View Channel', () => {
 			screen.getByText('Access our documentation to learn more.')
 		).toHaveAttribute(
 			'href',
-			'https://learn.liferay.com/en/w/analytics-cloud/workspace-settings/managing-properties#adding-and-removing-users-to-a-property'
+			'https://learn.liferay.com/w/dxp/personalization/analytics-cloud/workspace-settings/managing-properties#adding-and-removing-users-to-a-property'
 		);
 	});
 
@@ -181,8 +178,6 @@ describe('View Channel', () => {
 		);
 
 		const {container} = render(<DefaultComponent />);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -216,7 +211,7 @@ describe('View Channel', () => {
 			screen.getByText('Access our documentation to learn more.')
 		).toHaveAttribute(
 			'href',
-			'https://learn.liferay.com/en/w/analytics-cloud/workspace-settings/managing-properties#adding-and-removing-users-to-a-property'
+			'https://learn.liferay.com/w/dxp/personalization/analytics-cloud/workspace-settings/managing-properties#adding-and-removing-users-to-a-property'
 		);
 	});
 
@@ -235,8 +230,6 @@ describe('View Channel', () => {
 		);
 
 		const {container} = render(<DefaultComponent />);
-
-		jest.runAllTimers();
 
 		await waitForLoadingToBeRemoved(container);
 
@@ -272,17 +265,11 @@ describe('View Channel', () => {
 		const modalContainer = container.querySelector('.modal-renderer-root');
 		const customMatcher = content => content === 'Permissions Change';
 
-		jest.runAllTimers();
-
 		await waitForLoadingToBeRemoved(container);
 
 		expect(queryByText(modalContainer, customMatcher)).toBeNull();
 
 		fireEvent.click(screen.getByLabelText('Select Users'));
-
-		jest.runAllTimers();
-
-		await waitForLoadingToBeRemoved(container);
 
 		expect(getByText(modalContainer, customMatcher)).toBeTruthy();
 	});

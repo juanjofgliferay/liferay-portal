@@ -51,6 +51,7 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 		_portal = portal;
 	}
 
+	@Override
 	protected void doUpgrade() throws Exception {
 		long layoutPageTemplateStructureClassNameId = _portal.getClassNameId(
 			LayoutPageTemplateStructure.class);
@@ -58,8 +59,7 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 		try (PreparedStatement selectPreparedStatement =
 				connection.prepareStatement(
 					"select distinct containerKey from AssetListEntryUsage " +
-						"where containerType  = " +
-							layoutPageTemplateStructureClassNameId);
+						"where containerType = ?");
 			PreparedStatement insertPreparedStatement =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
@@ -71,6 +71,9 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 						"containerKey, containerType, key_, plid, type_) ",
 						"values(?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ",
 						"?)"))) {
+
+			selectPreparedStatement.setLong(
+				1, layoutPageTemplateStructureClassNameId);
 
 			try (ResultSet resultSet = selectPreparedStatement.executeQuery()) {
 				while (resultSet.next()) {
@@ -119,7 +122,8 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 
 						if (collectionJSONObject.has("classPK")) {
 							_addBatch(
-								_getAssetListEntryClassNameId(), itemId,
+								_portal.getClassNameId(AssetListEntry.class),
+								itemId,
 								collectionJSONObject.getString("classPK"),
 								layoutPageTemplateStructure,
 								insertPreparedStatement, type);
@@ -127,8 +131,9 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 
 						if (collectionJSONObject.has("key")) {
 							_addBatch(
-								_getInfoCollectionProviderClassNameId(), itemId,
-								collectionJSONObject.getString("key"),
+								_portal.getClassNameId(
+									InfoCollectionProvider.class),
+								itemId, collectionJSONObject.getString("key"),
 								layoutPageTemplateStructure,
 								insertPreparedStatement, type);
 						}
@@ -165,45 +170,13 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 		preparedStatement.setLong(9, classNameId);
 		preparedStatement.setString(10, containerKey);
 		preparedStatement.setLong(
-			11, _getCollectionStyleLayoutStructureItemClassNameId());
+			11,
+			_portal.getClassNameId(CollectionStyledLayoutStructureItem.class));
 		preparedStatement.setString(12, key);
 		preparedStatement.setLong(13, layoutPageTemplateStructure.getPlid());
 		preparedStatement.setLong(14, type);
 
 		preparedStatement.addBatch();
-	}
-
-	private long _getAssetListEntryClassNameId() {
-		if (_assetListEntryClassNameId != null) {
-			return _assetListEntryClassNameId;
-		}
-
-		_assetListEntryClassNameId = _portal.getClassNameId(
-			AssetListEntry.class);
-
-		return _assetListEntryClassNameId;
-	}
-
-	private long _getCollectionStyleLayoutStructureItemClassNameId() {
-		if (_collectionStyleLayoutStructureItemClassNameId != null) {
-			return _collectionStyleLayoutStructureItemClassNameId;
-		}
-
-		_collectionStyleLayoutStructureItemClassNameId = _portal.getClassNameId(
-			CollectionStyledLayoutStructureItem.class);
-
-		return _collectionStyleLayoutStructureItemClassNameId;
-	}
-
-	private long _getInfoCollectionProviderClassNameId() {
-		if (_infoCollectionProviderClassNameId != null) {
-			return _infoCollectionProviderClassNameId;
-		}
-
-		_infoCollectionProviderClassNameId = _portal.getClassNameId(
-			InfoCollectionProvider.class);
-
-		return _infoCollectionProviderClassNameId;
 	}
 
 	private int _getType(long plid) {
@@ -249,16 +222,9 @@ public class AssetListEntryUsageUpgradeProcess extends UpgradeProcess {
 			return false;
 		}
 
-		if (layoutStructure.isItemMarkedForDeletion(itemId)) {
-			return false;
-		}
-
-		return true;
+		return !layoutStructure.isItemMarkedForDeletion(itemId);
 	}
 
-	private Long _assetListEntryClassNameId;
-	private Long _collectionStyleLayoutStructureItemClassNameId;
-	private Long _infoCollectionProviderClassNameId;
 	private final LayoutLocalService _layoutLocalService;
 	private final LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;

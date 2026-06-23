@@ -5,9 +5,9 @@
 
 package com.liferay.portal.lpkg.deployer.override;
 
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
@@ -194,7 +194,7 @@ public class LPKGOverrideTest {
 	private void _upgradeModuleVersion(Path path, Map<String, String> overrides)
 		throws IOException {
 
-		try (FileSystem fileSystem = FileSystems.newFileSystem(path, null)) {
+		try (FileSystem fileSystem = FileSystems.newFileSystem(path)) {
 			Path manifestPath = fileSystem.getPath("META-INF/MANIFEST.MF");
 
 			try (InputStream inputStream = Files.newInputStream(manifestPath);

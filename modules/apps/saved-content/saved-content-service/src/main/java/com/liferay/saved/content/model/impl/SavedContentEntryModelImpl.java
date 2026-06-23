@@ -96,11 +96,18 @@ public class SavedContentEntryModelImpl
 
 	public static final String TABLE_SQL_DROP = "drop table SavedContentEntry";
 
+	public static final String ENTITY_ALIAS = "savedContentEntry";
+
+	public static final String FILTER_PK_COLUMN_NAME = "savedContentEntryId";
+
 	public static final String ORDER_BY_JPQL =
 		" ORDER BY savedContentEntry.savedContentEntryId ASC";
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY SavedContentEntry.savedContentEntryId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY savedContentEntry.savedContentEntryId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -1058,3 +1065,4 @@ public class SavedContentEntryModelImpl
 	private SavedContentEntry _escapedModel;
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:1790590022

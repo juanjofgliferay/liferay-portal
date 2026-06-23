@@ -45,10 +45,11 @@ public class FriendlyURLEntryLocalizationWrapper
 		attributes.put("companyId", getCompanyId());
 		attributes.put("friendlyURLEntryId", getFriendlyURLEntryId());
 		attributes.put("languageId", getLanguageId());
-		attributes.put("urlTitle", getUrlTitle());
 		attributes.put("groupId", getGroupId());
 		attributes.put("classNameId", getClassNameId());
+		attributes.put("parentClassPK", getParentClassPK());
 		attributes.put("classPK", getClassPK());
+		attributes.put("urlTitle", getUrlTitle());
 
 		return attributes;
 	}
@@ -92,12 +93,6 @@ public class FriendlyURLEntryLocalizationWrapper
 			setLanguageId(languageId);
 		}
 
-		String urlTitle = (String)attributes.get("urlTitle");
-
-		if (urlTitle != null) {
-			setUrlTitle(urlTitle);
-		}
-
 		Long groupId = (Long)attributes.get("groupId");
 
 		if (groupId != null) {
@@ -110,10 +105,22 @@ public class FriendlyURLEntryLocalizationWrapper
 			setClassNameId(classNameId);
 		}
 
+		Long parentClassPK = (Long)attributes.get("parentClassPK");
+
+		if (parentClassPK != null) {
+			setParentClassPK(parentClassPK);
+		}
+
 		Long classPK = (Long)attributes.get("classPK");
 
 		if (classPK != null) {
 			setClassPK(classPK);
+		}
+
+		String urlTitle = (String)attributes.get("urlTitle");
+
+		if (urlTitle != null) {
+			setUrlTitle(urlTitle);
 		}
 	}
 
@@ -220,6 +227,16 @@ public class FriendlyURLEntryLocalizationWrapper
 	@Override
 	public long getMvccVersion() {
 		return model.getMvccVersion();
+	}
+
+	/**
+	 * Returns the parent class pk of this friendly url entry localization.
+	 *
+	 * @return the parent class pk of this friendly url entry localization
+	 */
+	@Override
+	public long getParentClassPK() {
+		return model.getParentClassPK();
 	}
 
 	/**
@@ -340,6 +357,16 @@ public class FriendlyURLEntryLocalizationWrapper
 	}
 
 	/**
+	 * Sets the parent class pk of this friendly url entry localization.
+	 *
+	 * @param parentClassPK the parent class pk of this friendly url entry localization
+	 */
+	@Override
+	public void setParentClassPK(long parentClassPK) {
+		model.setParentClassPK(parentClassPK);
+	}
+
+	/**
 	 * Sets the primary key of this friendly url entry localization.
 	 *
 	 * @param primaryKey the primary key of this friendly url entry localization
@@ -387,3 +414,4 @@ public class FriendlyURLEntryLocalizationWrapper
 	}
 
 }
+// LIFERAY-SERVICE-BUILDER-HASH:-951510973

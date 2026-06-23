@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import '@testing-library/jest-dom/extend-expect';
+import '@testing-library/jest-dom';
 import {cleanup, render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import ShowPartialResultsAlert from '../../../src/main/resources/META-INF/resources/admin/js/util/ShowPartialResultsAlert';
+import ShowPartialResultsAlert from '../../../src/main/resources/META-INF/resources/js/util/ShowPartialResultsAlert';
 
 describe('Show Partial Results Alert', () => {
 	afterEach(() => {
